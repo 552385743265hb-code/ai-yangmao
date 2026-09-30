@@ -44,9 +44,10 @@ const PROMPT = `你是"AI 羊毛牧场"的信息抽取器。下面是某个 AI �
 - usdEstimate：折合美元（常驻额度按每月）。平台自有单位（credits、Neurons、Token、次数等）必须用同一平台官方公布的单价折算成美元，人民币按 7.1 折算；valueText 里在原单位后面括号写出折算依据，如"每天 10,000 Neurons（官方单价 $0.011/千 Neurons，约 $3.3/月）"。按 Token 折算时用官方输入价保守估算。只限速率的免费模型：按主力模型（该额度里最好的那个，如 Gemini 3.8 Flash）的官方输入价，乘以官方速率上限推出的每月最多 Token：每天最多 Token = min（每天请求数 × 单次最多 Token，每分钟 Token 数 × 1440），再 × 30。官方没公开速率上限就填 null，不要自己假设次数或每次 Token 数。价值有明显区间时（如分套餐档位、订阅价到最高额度）usdEstimate 填保守下限，usdMax 填上限。实在找不到任何官方单价才用 null，不要编单价
 - claimStart / claimEnd：官方时区下的日期 YYYY-MM-DD，没写就 null
 - endKind：有明确截止日期用 date；没写截止日期的活动（包括长期有效的新人礼、充值赠送）用 unknown；只有 type 为 standing 或 apply 时才用 standing
-- creditValidity：领取后额度多久失效，没写就 null
+- creditValidity：领取后额度多久失效，用中文写（如"30 天""每月重置，未用完不结转"），没写就 null
 - sourceTz：官方使用的 IANA 时区（中国厂商一般 Asia/Shanghai，美国厂商 America/Los_Angeles），拿不准用 UTC
-- steps：领取步骤，最多 4 条
+- steps：领取步骤，最多 4 条，用中文写
+- 语言：除 excerpts 必须保留官方原文外，title、valueText、creditValidity、steps 一律用中文；产品名、模型名、计量单位（如 credits、Neurons、Token）、按钮和命令等必要的英文保留原样，不要整句照搬英文
 - excerpts：从原文逐字复制的句子，分别支撑 benefit（赠送内容）/ eligibility（资格）/ claim（领取方式，可选，原文专门写了才填）/ validity（有效期或截止）。原文没有就留空字符串，绝对不要改写或编造。
 
 只输出 JSON：{"offers":[...]}，没有符合条件的就输出 {"offers":[]}。`;
