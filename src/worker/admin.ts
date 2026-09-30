@@ -82,7 +82,7 @@ async function publicationError(env: Env, offer: OfferRow): Promise<string | nul
   if (offer.evidence.tier === 'media') return '媒体或社区转述不能作为上架证据，请先补齐官方出处';
   if (offer.requirements.includes('unknown')) return '领取门槛尚未明确，先核对官方原文';
   const excerpts = offer.evidence.excerpts;
-  if (!excerpts.benefit?.trim() || !excerpts.claim?.trim()) return '缺少官方原文中的权益或领取说明';
+  if (!excerpts.benefit?.trim()) return '缺少官方原文中的权益说明';
   if (offer.audience !== 'unclear' && !excerpts.eligibility?.trim()) return '已指定领取对象，但缺少官方资格原文';
   if ((offer.endKind === 'date' || offer.creditValidity) && !excerpts.validity?.trim()) return '已指定有效期，但缺少官方有效期原文';
   let url: URL;

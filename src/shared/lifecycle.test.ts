@@ -75,6 +75,8 @@ describe('按日期查询', () => {
 describe('证据门槛', () => {
   it('四项缺一项就不能自动上架', () => {
     expect(missingEvidence({ benefit: 'x', eligibility: 'y', claim: 'z' })).toEqual(['validity']);
+    // 领取方式不要求官方原文
+    expect(missingEvidence({ benefit: 'x', eligibility: 'y', validity: 'w' })).toEqual([]);
     expect(missingEvidence({ benefit: 'x', eligibility: 'y', claim: 'z', validity: ' ' })).toEqual(['validity']);
     expect(missingEvidence({ benefit: 'x', eligibility: 'y', claim: 'z', validity: 'w' })).toEqual([]);
   });

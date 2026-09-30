@@ -85,9 +85,12 @@ export function activeOnDate(o: OfferTiming, date: string, viewerTz: string): bo
   return start <= dayEnd && end >= dayStart;
 }
 
-/** 自动上架的硬门槛：权益、资格、领取方式、有效期四项都要有官方原文摘录。 */
+/**
+ * 自动上架的硬门槛：权益、资格、有效期三项都要有官方原文摘录。
+ * 领取方式不要求原文：官方很少专门写，按常识推断即可（应用＝下载登录、云和模型＝开通使用、会员＝充值），claim 摘录有就展示，没有不算缺。
+ */
 export interface EvidenceExcerpts { benefit?: string; eligibility?: string; claim?: string; validity?: string }
 export function missingEvidence(e: EvidenceExcerpts | null | undefined): (keyof EvidenceExcerpts)[] {
-  const keys: (keyof EvidenceExcerpts)[] = ['benefit', 'eligibility', 'claim', 'validity'];
+  const keys: (keyof EvidenceExcerpts)[] = ['benefit', 'eligibility', 'validity'];
   return keys.filter(k => !e?.[k]?.trim());
 }
