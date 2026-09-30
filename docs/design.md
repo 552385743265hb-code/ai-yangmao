@@ -240,7 +240,7 @@ flowchart LR
 2. **数据底座**（已完成 2026-09-30）：D1 表结构（`src/db/schema.ts`）、时间与状态规则及测试（`src/shared/lifecycle.ts`）、Hono 接口与写入接口（`src/worker/index.ts`）、种子白名单 65 个平台（`seed/platforms.json`，待管理员审核）。原型已部署到 https://ai-yangmao.com（noindex）。
 3. **管线 v1**（已上线 2026-09-30，等模型 key 开启抽取）：`pipeline/`，GitHub Actions 每 6 小时运行，可手动补跑。线索：AIHOT（含 Codex 重置）、HN、Reddit（云端 IP 会被 Reddit 限流，需配置免费的 Reddit 应用走官方 API）。17 个官方页面 / RSS：只保留羊毛相关句子后比对哈希，有变化才抽取；正文抽取参考 AIHOT（Readability 与整页纯文本择优，不足时用 Jina Reader）；模型给出的摘录必须能在原文逐字找到。
 4. **推送**（2026-09-30 调整为 Hermes 方案）：Telegram 复用用户已有的 Hermes Agent 机器人——技能 `integrations/hermes/ai-yangmao/SKILL.md` 通过命令行 `scripts/ym.ts` 调用管理接口（`/api/admin/*`，ADMIN_TOKEN），用户用自然语言+4 位短码审核、编辑、补录、查询；Hermes 定时任务（无模型、脚本输出直接投递）每天 09:00 发日报、每小时检查加急与采集故障，没有内容就不发。通知台账按（羊毛, 阶段, 渠道）去重。飞书群日报由云端 Worker 定时发送（待提供 webhook）。依赖：常开 Mac 上的 Hermes 网关在运行。
-5. **网站 v1**：按原型实现，接真实数据。
+5. **网站 v1**（已上线 2026-09-30）：`web/` 复用原型的页面与图表（未改写为 React，避免视觉走样；复杂度上来再迁移），数据层读 `/api`。按模型找、重置时钟、节日往年记录标为"数据积累中"；公开网站不含后台，管理走 Hermes。
 6. **补全**：订阅邮箱、HN 与 Reddit 线索源、周六发现扫描、覆盖范围页、健康告警。
 7. **Discord**：自建服务器关注厂商公告频道 + 读取机器人。
 8. 跑两周校准审核规则，逐步放开自动上架。
