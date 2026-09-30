@@ -22,3 +22,9 @@ describe('模型输出的 JSON', () => {
     expect(parseModelJson('{"offers":[{"t":"含 } 括号"}]}{"extra":1}')).toEqual({ offers: [{ t: '含 } 括号' }] });
   });
 });
+
+describe('模型输出的 JSON（jsonrepair 兜底）', () => {
+  it('注释、单引号、缺引号的键都能修好', () => {
+    expect(parseModelJson("{\n  // 结果\n  'offers': [\n  {title: '免费额度'}\n]}")).toEqual({ offers: [{ title: '免费额度' }] });
+  });
+});

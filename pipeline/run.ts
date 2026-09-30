@@ -139,7 +139,9 @@ async function officialPage(src: Source) {
 
 /** 官方 RSS：只处理这次新出现、且标题或摘要命中关键词的文章；逐篇抓正文抽取。 */
 async function officialFeed(src: Source) {
-  const items = parseFeed(await fetchText(src.url, { accept: 'application/rss+xml' })).filter(i => i.link && isFreebie(`${i.title} ${i.summary}`));
+  // RSS 里的文章链接可能是相对路径（如 Sakana 的 /sail/），用 RSS 地址补全
+  const abs = (link: string) => { try { return new URL(link, src.url).href; } catch { return ''; } };
+  const items = parseFeed(await fetchText(src.url, { accept: 'application/rss+xml' })).map(i => ({ ...i, link: abs(i.link) })).filter(i => i.link && isFreebie(`${i.title} ${i.summary}`));
   const links = items.map(i => i.link).sort();
   const hash = sha256(links.join('\n'));
   if (hash === src.lastHash) { await report(src, true); log('  无新文章'); return; }

@@ -1,3 +1,4 @@
+import { jsonrepair } from 'jsonrepair';
 // 模型抽取：主用 Gemini Flash 免费档，GLM Flash、OpenRouter 免费模型备用。
 // 模型只做"把官方文本抽成字段"，不做搜索；摘录必须能在原文里逐字找到，否则丢弃。
 import { norm } from './lib';
@@ -141,7 +142,10 @@ export function parseModelJson(out: string): unknown {
     else if (ch === '}' && --depth === 0) { end = i; break; }
   }
   const body = end > 0 ? s.slice(start, end + 1) : s.slice(start);
-  try { return JSON.parse(body); } catch { return JSON.parse(body.replace(/,\s*([}\]])/g, '$1')); }
+  try { return JSON.parse(body); } catch { /* 继续尝试 */ }
+  try { return JSON.parse(body.replace(/,\s*([}\]])/g, '$1')); } catch { /* 继续尝试 */ }
+  // 最后用 jsonrepair 兜底：注释、单引号、缺引号、截断等常见格式错误
+  return JSON.parse(jsonrepair(body));
 }
 
 /** 摘录必须能在原文里逐字找到（忽略空白和大小写），找不到的清空。 */
