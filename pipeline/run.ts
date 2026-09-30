@@ -3,7 +3,7 @@
 import { aihot, hn, parseFeed, reddit, type Source } from './collectors';
 import { api, fetchPage, fetchText, isFreebie, relevantText, sha256, slug } from './lib';
 import { extract, llmAvailable, type Extracted } from './llm';
-import type { LeadIn, OfferIn } from '../src/shared/ingest';
+import { offerIn, type LeadIn, type OfferIn } from '../src/shared/ingest';
 
 const DAILY_TOKEN_CAP = Number(process.env.DAILY_TOKEN_CAP ?? 200000);
 const DRY = process.env.DRY_RUN === '1';
@@ -44,11 +44,18 @@ async function extractAndPost(src: Source, url: string, text: string): Promise<b
   if (!llmAvailable()) { stats.extractSkipped++; log('  没有配置模型 key，跳过抽取'); return false; }
   const estimate = Math.ceil(text.length / 2) + 1500;
   if (estimate > tokensLeft) { stats.extractSkipped++; log(`  今日模型预算不足（剩 ${tokensLeft}），留到下次`); return false; }
-  const r = await extract(src.platform?.name ?? src.platformId ?? '', url, text);
+  const r = await extract(src.platform?.name ?? src.platformId ?? '', url, text, log);
   tokensLeft -= r.tokens; stats.tokens += r.tokens;
   log(`  ${r.provider} 抽出 ${r.offers.length} 条，用 ${r.tokens} tokens`);
   if (!r.offers.length) return true;
-  const offers = r.offers.map(e => toOffer(src, e, url));
+  // 逐条校验：不合格的只丢这一条，并记下原因
+  const offers: OfferIn[] = [];
+  for (const e of r.offers) {
+    const v = offerIn.safeParse(toOffer(src, e, url));
+    if (v.success) offers.push(v.data);
+    else { const why = v.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('；'); stats.errors.push(`${src.id}/${e.key}: ${why}`); log(`  丢弃「${e.title}」：${why}`); }
+  }
+  if (!offers.length) return true;
   if (DRY) { offers.forEach(o => log('  羊毛', o.id, o.title, JSON.stringify(o.evidence.excerpts))); stats.offers += offers.length; return true; }
   const res = await api<{ results: { id: string; error?: string; reviewState?: string; unchanged?: boolean }[] }>('/offers', offers);
   for (const x of res.results) {

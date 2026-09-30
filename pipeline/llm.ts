@@ -57,7 +57,7 @@ function providers(): Provider[] {
         body: JSON.stringify({ systemInstruction: { parts: [{ text: sys }] }, contents: [{ role: 'user', parts: [{ text: user }] }], generationConfig: { responseMimeType: 'application/json', temperature: 0.1 } }),
         signal: AbortSignal.timeout(90000),
       });
-      if (!r.ok) throw new Error(`Gemini ${r.status}: ${(await r.text()).slice(0, 200)}`);
+      if (!r.ok) throw Object.assign(new Error(`Gemini ${r.status}: ${(await r.text()).slice(0, 200)}`), { retryable: r.status >= 500 || r.status === 404 || r.status === 429 });
       const j = await r.json() as { candidates?: { content?: { parts?: { text?: string }[] } }[]; usageMetadata?: { totalTokenCount?: number } };
       return { text: j.candidates?.[0]?.content?.parts?.map(p => p.text ?? '').join('') ?? '', tokens: j.usageMetadata?.totalTokenCount ?? 0 };
     },
@@ -95,16 +95,45 @@ export function keepVerbatim(ex: Extracted['excerpts'], source: string): Extract
   return out;
 }
 
-export async function extract(platformName: string, url: string, text: string): Promise<{ offers: Extracted[]; tokens: number; provider: string }> {
+/** 模型偶尔把数组写成逗号分隔的字符串、把枚举写成大写，这里统一整理。 */
+function toList(v: unknown): string[] {
+  if (Array.isArray(v)) return v.map(x => String(x).trim()).filter(Boolean);
+  if (typeof v === 'string') return v.split(/[,，、/|\s]+/).map(x => x.trim()).filter(Boolean);
+  return [];
+}
+function tidy(o: Extracted): Extracted {
+  const low = (v: unknown) => (typeof v === 'string' ? v.trim().toLowerCase() : v);
+  return {
+    ...o,
+    type: low(o.type) as Extracted['type'], claimMethod: low(o.claimMethod) as string, audience: (low(o.audience) || 'unclear') as Extracted['audience'],
+    endKind: low(o.endKind) as Extracted['endKind'],
+    modalities: toList(o.modalities).map(x => x.toLowerCase()),
+    requirements: toList(o.requirements).map(x => (x.includes(':') ? x : x.toLowerCase())),
+    steps: toList(o.steps).length && Array.isArray(o.steps) ? o.steps : typeof o.steps === 'string' ? [o.steps] : [],
+    usdEstimate: typeof o.usdEstimate === 'number' ? o.usdEstimate : Number(o.usdEstimate) || null,
+    claimStart: o.claimStart || null, claimEnd: o.claimEnd || null, creditValidity: o.creditValidity || null,
+  };
+}
+
+export async function extract(platformName: string, url: string, text: string, log: (...a: unknown[]) => void = () => undefined): Promise<{ offers: Extracted[]; tokens: number; provider: string }> {
   const user = `平台：${platformName}\n来源：${url}\n\n---- 原文 ----\n${text}`;
   let lastErr: unknown;
   for (const p of providers()) {
     try {
-      const { text: out, tokens } = await p.call(PROMPT, user);
+      let res: { text: string; tokens: number } | null = null;
+      for (let i = 0; i < 3 && !res; i++) {
+        try { res = await p.call(PROMPT, user); }
+        catch (e) {
+          if (!(e as { retryable?: boolean }).retryable || i === 2) throw e;
+          log(`  ${p.name} 临时出错，${3 * (i + 1)} 秒后重试：${(e as Error).message.slice(0, 80)}`);
+          await new Promise(r => setTimeout(r, 3000 * (i + 1)));
+        }
+      }
+      const { text: out, tokens } = res!;
       const json = JSON.parse(out.replace(/^```(json)?|```$/g, '').trim()) as { offers?: Extracted[] };
-      const offers = (json.offers ?? []).map(o => ({ ...o, excerpts: keepVerbatim(o.excerpts, text) }));
+      const offers = (Array.isArray(json.offers) ? json.offers : []).map(o => ({ ...tidy(o), excerpts: keepVerbatim(o.excerpts, text) }));
       return { offers, tokens, provider: p.name };
-    } catch (e) { lastErr = e; }
+    } catch (e) { lastErr = e; log(`  ${p.name} 失败，换下一个模型：${(e as Error).message.slice(0, 120)}`); }
   }
   throw lastErr ?? new Error('没有可用的模型（未配置任何 API key）');
 }
