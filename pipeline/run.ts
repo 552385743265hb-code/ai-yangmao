@@ -171,7 +171,7 @@ async function triageLeads(plats: Plat[]) {
     const findPlat = (x: string | undefined) => {
       if (!x) return undefined;
       const k = x.trim().toLowerCase();
-      return pmap.get(k) ?? plats.find(p => p.name.toLowerCase() === k || p.name.toLowerCase().includes(k) || k.includes(p.id));
+      return pmap.get(k) ?? plats.find(p => p.name.toLowerCase() === k); // 只认完全一致，宁可判白名单外也不归错平台
     };
     for (const e of r.offers) {
       const p = findPlat(e.platformId);
