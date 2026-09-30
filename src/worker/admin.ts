@@ -30,6 +30,7 @@ function view(o: OfferRow, platformName: string, now = new Date()) {
     requirements: o.requirements, audience: o.audience, claimMethod: o.claimMethod, creditValidity: o.creditValidity,
     sourceTz: o.sourceTz, claimStart: o.claimStart, claimEnd: o.claimEnd, endKind: o.endKind,
     evidenceUrl: o.evidence.url, evidenceTier: o.evidence.tier, excerpts: o.evidence.excerpts, missingEvidence: missingEvidence(o.evidence.excerpts),
+    steps: o.steps, modalities: o.modalities, usdEstimate: o.usdEstimate,
     link: `https://ai-yangmao.com/#offer-${o.id}`,
   };
 }
@@ -307,7 +308,7 @@ type NoticeMark = { offerId: string; stage: NoticeStage; messageId?: string };
 const FIELD_NAME: Record<string, string> = { title: '标题', type: '类型', modalities: '模态', claimMethod: '领取方式', requirements: '门槛', audience: '适用对象', valueText: '额度', usdEstimate: '价值估算', claimStart: '领取开始', claimEnd: '领取截止', endKind: '截止方式', creditValidity: '额度有效期', sourceTz: '官方时区', steps: '领取步骤', evidence: '官方证据' };
 const showValue = (value: unknown) => value == null ? '未写明' : Array.isArray(value) ? value.join('、') : typeof value === 'object' ? '已更新' : String(value);
 
-async function buildNotice(env: Env, kind: NoticeKind, channel: NoticeChannel) {
+export async function buildNotice(env: Env, kind: NoticeKind, channel: NoticeChannel) {
   const d = db(env), names = await platformNames(env), now = new Date();
   const approvedPlatforms = new Set((await d.select({ id: s.platforms.id }).from(s.platforms).where(eq(s.platforms.status, 'approved'))).map(p => p.id));
   const approved = (await d.select().from(s.offers).where(eq(s.offers.reviewState, 'approved'))).filter(o => approvedPlatforms.has(o.platformId));
@@ -322,7 +323,12 @@ async function buildNotice(env: Env, kind: NoticeKind, channel: NoticeChannel) {
       if (st === 'ending' && end && end > now && end.getTime() - now.getTime() <= 48 * 3600_000 && !has(o.id, 'urgent') && !has(o.id, 'new')) { out.urgent.push(v); marks.push({ offerId: o.id, stage: 'urgent' }); }
       continue;
     }
-    if (!has(o.id, 'new') && !has(o.id, 'urgent') && isClaimable(st)) { out.new.push(v); marks.push({ offerId: o.id, stage: 'new' }); continue; }
+    if (!has(o.id, 'new') && !has(o.id, 'urgent') && isClaimable(st)) {
+      out.new.push(v); marks.push({ offerId: o.id, stage: 'new' });
+      // 新上架时已经临期的，这次就算"临期"也通知过了，避免同一天再以"3 天内结束"重复推送
+      if (st === 'ending' && !has(o.id, 'ending')) marks.push({ offerId: o.id, stage: 'ending' });
+      continue;
+    }
     const lastRev = revs.filter(r => r.offerId === o.id).sort((a, b) => b.id - a.id)[0];
     const ch = has(o.id, 'changed');
     const firstAnnouncedAt = has(o.id, 'new')?.sentAt ?? has(o.id, 'urgent')?.sentAt;
@@ -371,12 +377,11 @@ admin.get('/notify', async c => {
   return c.json(await buildNotice(c.env, kind, channel));
 });
 
-/** 原子占位避免并发重复；失败或结果不明时不会自动重发。 */
-admin.post('/notify/claim', async c => {
-  const parsed = z.object({ kind: z.enum(['digest', 'urgent']), channel: z.enum(['telegram', 'feishu']) }).safeParse(await c.req.json().catch(() => null));
-  if (!parsed.success) return c.json({ error: '发送参数不正确' }, 400);
-  const notice = await buildNotice(c.env, parsed.data.kind, parsed.data.channel);
-  if (notice.empty) return c.json({ ...notice, alreadyClaimed: notice.blockedCount > 0 });
+/** 原子占位避免并发重复；失败或结果不明时不会自动重发。Telegram（经 Hermes）与飞书（Worker 定时任务）共用。 */
+export type ClaimedNotice = Awaited<ReturnType<typeof buildNotice>> & { deliveryId?: string; alreadyClaimed?: boolean };
+export async function claimNotice(env: Env, kind: NoticeKind, channel: NoticeChannel): Promise<ClaimedNotice> {
+  const notice = await buildNotice(env, kind, channel);
+  if (notice.empty) return { ...notice, alreadyClaimed: notice.blockedCount > 0 };
   const day = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
   const content = notice.marks.length
     ? JSON.stringify({ kind: notice.kind, channel: notice.channel, marks: notice.marks })
@@ -384,9 +389,14 @@ admin.post('/notify/claim', async c => {
   const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(content));
   const fingerprint = [...new Uint8Array(hash)].map(x => x.toString(16).padStart(2, '0')).join('');
   const id = crypto.randomUUID();
-  const created = await db(c.env).insert(s.deliveries).values({ id, fingerprint, channel: notice.channel, kind: notice.kind, payload: notice })
+  const created = await db(env).insert(s.deliveries).values({ id, fingerprint, channel: notice.channel, kind: notice.kind, payload: notice })
     .onConflictDoNothing().returning({ id: s.deliveries.id });
-  return created.length ? c.json({ ...notice, deliveryId: id }) : c.json({ ...notice, empty: true, alreadyClaimed: true });
+  return created.length ? { ...notice, deliveryId: id } : { ...notice, empty: true, alreadyClaimed: true };
+}
+admin.post('/notify/claim', async c => {
+  const parsed = z.object({ kind: z.enum(['digest', 'urgent']), channel: z.enum(['telegram', 'feishu']) }).safeParse(await c.req.json().catch(() => null));
+  if (!parsed.success) return c.json({ error: '发送参数不正确' }, 400);
+  return c.json(await claimNotice(c.env, parsed.data.kind, parsed.data.channel));
 });
 
 async function recordDeliveredMarks(env: Env, delivery: typeof s.deliveries.$inferSelect) {
@@ -398,17 +408,22 @@ async function recordDeliveredMarks(env: Env, delivery: typeof s.deliveries.$inf
   }
 }
 
+/** 回报一次发送的结果：sent 才写入通知台账；unknown 留待人工核对，不自动重发。 */
+export async function ackDelivery(env: Env, id: string, status: 'sent' | 'unknown', error?: string): Promise<{ ok: boolean; code?: number; error?: string; alreadyAcknowledged?: boolean; status?: string }> {
+  const d = db(env);
+  const [delivery] = await d.select().from(s.deliveries).where(eq(s.deliveries.id, id));
+  if (!delivery) return { ok: false, code: 404, error: '没有这次发送' };
+  if (delivery.status === 'sent') return { ok: true, alreadyAcknowledged: true };
+  if (delivery.status === 'unknown' && status !== 'unknown') return { ok: false, code: 409, error: '结果不明的消息需要先人工核对' };
+  if (status === 'sent') await recordDeliveredMarks(env, delivery);
+  await d.update(s.deliveries).set({ status, error: error ?? null, updatedAt: new Date().toISOString() }).where(eq(s.deliveries.id, id));
+  return { ok: true, status };
+}
 admin.post('/notify/:id/ack', async c => {
   const body = z.object({ status: z.enum(['sent', 'unknown']), error: z.string().max(500).optional() }).safeParse(await c.req.json().catch(() => null));
   if (!body.success) return c.json({ error: '发送结果不正确' }, 400);
-  const d = db(c.env), id = c.req.param('id');
-  const [delivery] = await d.select().from(s.deliveries).where(eq(s.deliveries.id, id));
-  if (!delivery) return c.json({ error: '没有这次发送' }, 404);
-  if (delivery.status === 'sent') return c.json({ ok: true, alreadyAcknowledged: true });
-  if (delivery.status === 'unknown' && body.data.status !== 'unknown') return c.json({ error: '结果不明的消息需要先人工核对' }, 409);
-  if (body.data.status === 'sent') await recordDeliveredMarks(c.env, delivery);
-  await d.update(s.deliveries).set({ status: body.data.status, error: body.data.error ?? null, updatedAt: new Date().toISOString() }).where(eq(s.deliveries.id, id));
-  return c.json({ ok: true, status: body.data.status });
+  const r = await ackDelivery(c.env, c.req.param('id'), body.data.status, body.data.error);
+  return r.ok ? c.json(r) : c.json({ error: r.error }, (r.code ?? 400) as 404 | 409);
 });
 
 /** 结果不明的通知必须由管理员核对收件端后才能结案或释放重发。 */

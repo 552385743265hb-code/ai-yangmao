@@ -7,6 +7,7 @@ import * as s from '../db/schema';
 import { isoDate, leadIn, offerIn, runIn } from '../shared/ingest';
 import { activeOnDate, isClaimable, liveStatus, missingEvidence } from '../shared/lifecycle';
 import { admin } from './admin';
+import { feishuAdmin, runScheduled } from './feishu';
 
 export interface Env {
   DB: D1Database;
@@ -15,6 +16,12 @@ export interface Env {
   ADMIN_TOKEN: string;
   DAILY_TOKEN_CAP?: string;
   MONTHLY_COST_CAP_CNY?: string;
+  FEISHU_WEBHOOK?: string; // 飞书群自定义机器人
+  FEISHU_SECRET?: string; // 签名校验密钥
+  GEMINI_API_KEY?: string; // 飞书日报把英文翻译成中文
+  GEMINI_MODEL?: string;
+  GH_DISPATCH_TOKEN?: string; // 只对本仓库有 Actions 写权限的令牌，用于准点触发采集
+  GH_REPO?: string;
 }
 
 const app = new Hono<{ Bindings: Env }>();
@@ -402,9 +409,12 @@ ingest.post('/runs', async c => {
 });
 
 app.route('/api/ingest', ingest);
+app.route('/api/admin', feishuAdmin); // 先于 admin 注册：/api/admin/feishu/*、/api/admin/collect/*
 app.route('/api/admin', admin);
 app.all('/api/*', c => c.json({ error: '没有这个接口' }, 404));
 
 export default {
   fetch: (req, env, ctx) => app.fetch(req, env, ctx),
+  // 定时任务：飞书日报（东京 09:00）、每小时加急检查、每 6 小时触发采集
+  scheduled: (controller, env, ctx) => { ctx.waitUntil(runScheduled(controller.cron, env)); },
 } satisfies ExportedHandler<Env>;

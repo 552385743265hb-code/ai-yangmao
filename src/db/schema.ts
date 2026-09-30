@@ -161,3 +161,11 @@ export const runs = sqliteTable('runs', {
   tokens: integer('tokens').notNull().default(0),
   costCny: real('cost_cny').notNull().default(0),
 }, t => [index('runs_kind_idx').on(t.kind, t.startedAt)]);
+
+/** 英文原文 → 中文译文的缓存（飞书日报用）。同一段文字只翻译一次。 */
+export const translations = sqliteTable('translations', {
+  hash: text('hash').primaryKey(), // 原文的 SHA-256
+  source: text('source').notNull(),
+  zh: text('zh').notNull(),
+  createdAt: text('created_at').notNull().default(now),
+});

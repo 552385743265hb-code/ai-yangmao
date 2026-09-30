@@ -11,5 +11,7 @@
     { "binding": "DB", "database_name": "ai-yangmao", "database_id": "41f11fe0-342f-405d-b598-a0572edabceb", "migrations_dir": "migrations" }
   ],
   "routes": [{ "pattern": "ai-yangmao.com", "custom_domain": true }],
+  // 定时任务（UTC）：0 0 * * * = 东京 09:00 飞书日报；7 * * * * = 每小时加急；17 */6 * * * = 每 6 小时触发采集
+  "triggers": { "crons": ["0 0 * * *", "7 * * * *", "17 */6 * * *"] },
   "observability": { "enabled": true }
 }

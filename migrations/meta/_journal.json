@@ -36,6 +36,13 @@
       "when": 1790749937553,
       "tag": "0004_yummy_darkstar",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1790762092465,
+      "tag": "0005_translations",
+      "breakpoints": true
     }
   ]
 }
