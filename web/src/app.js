@@ -1093,7 +1093,7 @@ async function admQueue() {
     <div><div style="font-weight:600;font-size:16px">${esc(o.title)}</div><div class="${/未写明|不明确/.test(o.value) ? 'st warn' : ''}" style="margin-top:4px">${esc(o.value)}</div><div class="small muted" style="margin-top:4px">${esc(o.end)} · 额度有效期：${esc(o.creditValidity || '未写')} · 门槛：${o.requirements.map(r => esc(reqLabel(r))).join('、')} · 对象：${AUD[o.audience] || o.audience}</div></div>
     <div class="rows">${EX_L.filter(([k]) => k !== 'claim' || o.excerpts[k]).map(([k, l]) => `<div class="orow" style="grid-template-columns:auto minmax(0,1fr);padding:6px 2px">${o.excerpts[k] ? `<span class="st good"><b>✓</b>${l}</span>` : `<span class="st warn"><b>!</b>${l}</span>`}<span class="t" style="font-weight:400;font-size:13.5px">${o.excerpts[k] ? '「' + esc(o.excerpts[k]) + '」' : '原文里没有找到'}</span></div>`).join('')}</div>
     <div class="small" style="word-break:break-all">来源：<a href="${esc(o.evidenceUrl)}" target="_blank" rel="noopener" style="text-decoration:underline">${esc(o.evidenceUrl)}</a></div>
-    <div class="row"><button class="btn sm good" type="button" data-act="approve">✓ 通过</button><button class="btn sm" type="button" data-act="edit">修改</button><button class="btn sm bad" type="button" data-act="rejectopen">✕ 拒绝…</button></div>
+    <div class="row">${o.evidenceTier === 'media' ? '<button class="btn sm good" type="button" data-act="tested" title="社区转述、官方没有文字公告，但你亲自领到过">✓ 我已实测，通过</button>' : '<button class="btn sm good" type="button" data-act="approve">✓ 通过</button>'}<button class="btn sm" type="button" data-act="edit">修改</button><button class="btn sm bad" type="button" data-act="rejectopen">✕ 拒绝…</button></div>
     <div data-rejectbox hidden style="display:flex;flex-direction:column;gap:8px">
       <div class="chips">${RC.map(([k, l]) => `<button class="btn sm" type="button" data-rc="${k}" aria-pressed="false">${l}</button>`).join('')}</div>
       <div class="row"><input type="text" placeholder="补充理由（写清楚，模型以后学得更快）" data-reason style="flex:1;min-width:160px;padding:6px 10px"><button class="btn sm bad" type="button" data-act="reject">确认拒绝</button></div>
@@ -1120,7 +1120,14 @@ async function admQueue() {
   const done = (el, msg) => { el.style.opacity = .45; el.querySelectorAll('button,input,select').forEach(x => { x.disabled = true; }); toast(msg); };
   $$('[data-code]', box).forEach(el => {
     const code = el.dataset.code, o = q.pending.find(x => x.code === code);
-    el.querySelector('[data-act="approve"]').addEventListener('click', async () => { try { const r = await adm(`/offers/${code}/approve`, {}); done(el, `已通过：${r.title}`); } catch (e) { toast(e.message); } });
+    el.querySelector('[data-act="approve"]')?.addEventListener('click', async () => { try { const r = await adm(`/offers/${code}/approve`, {}); done(el, `已通过：${r.title}`); } catch (e) { toast(e.message); } });
+    // 社区传闻 → 管理员实测 → 通过：证据级别改为“管理员实测”，链接和摘录保持原样
+    el.querySelector('[data-act="tested"]')?.addEventListener('click', async () => {
+      try {
+        await adm(`/offers/${code}/edit`, { fields: { evidence: { url: o.evidenceUrl, tier: 'tested', capturedAt: new Date().toISOString(), excerpts: o.excerpts } }, approve: true, reason: '社区转述，管理员亲自领到过', reasonCode: 'wrong_field' });
+        done(el, `已按管理员实测通过：${o.title}`);
+      } catch (e) { toast('没有通过：' + e.message); }
+    });
     const rb = el.querySelector('[data-rejectbox]');
     el.querySelector('[data-act="rejectopen"]').addEventListener('click', () => { rb.hidden = !rb.hidden; });
     let rc = null;
