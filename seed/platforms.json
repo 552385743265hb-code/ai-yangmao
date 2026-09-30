@@ -2201,6 +2201,13 @@
    "kind": "web_list",
    "url": "https://longcat.chat/platform/docs/zh/change-log",
    "tier": "docs"
+  },
+  {
+   "id": "minimax-token-plan-announcements",
+   "platform": "minimax",
+   "kind": "web_list",
+   "url": "https://platform.minimax.cn/docs/token-plan/announcements",
+   "tier": "docs"
   }
  ]
 }

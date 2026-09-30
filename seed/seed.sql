@@ -599,3 +599,5 @@ INSERT INTO sources (id, platform_id, kind, url, tier, config) VALUES ('meituan-
   ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
 INSERT INTO sources (id, platform_id, kind, url, tier, config) VALUES ('meituan-longcat-changelog', 'meituan', 'web_list', 'https://longcat.chat/platform/docs/zh/change-log', 'docs', '{}')
   ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
+INSERT INTO sources (id, platform_id, kind, url, tier, config) VALUES ('minimax-token-plan-announcements', 'minimax', 'web_list', 'https://platform.minimax.cn/docs/token-plan/announcements', 'docs', '{}')
+  ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
