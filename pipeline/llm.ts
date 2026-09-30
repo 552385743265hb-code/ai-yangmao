@@ -55,6 +55,25 @@ const PROMPT = `你是"AI 羊毛牧场"的信息抽取器。下面是某个 AI �
 
 /** 第二层：由每周纠正归纳、经管理员批准的规则（pipeline/learned-rules.md）。 */
 import { readFileSync } from 'node:fs';
+/** 平台抽取要点（pipeline/platform-notes.md）：`## 平台 id` 下每行 `- ` 一条，抽取该平台时附给模型。 */
+export function parsePlatformNotes(md: string): Map<string, string[]> {
+  const notes = new Map<string, string[]>();
+  let cur: string | null = null;
+  for (const line of md.split('\n')) {
+    const h = line.match(/^##\s+([a-z0-9][a-z0-9-]*)\s*$/);
+    if (h) { cur = h[1]; notes.set(cur, []); continue; }
+    const b = line.match(/^\s*-\s+(.+)$/);
+    if (cur && b) notes.get(cur)!.push(b[1].trim());
+  }
+  return notes;
+}
+const PLATFORM_NOTES = (() => { try { return parsePlatformNotes(readFileSync(new URL('./platform-notes.md', import.meta.url), 'utf8')); } catch { return new Map<string, string[]>(); } })();
+/** 取若干平台的要点，拼成提示词片段；没有就返回空串。 */
+export function platformNotesFor(ids: (string | null | undefined)[], notes = PLATFORM_NOTES): string {
+  const parts = [...new Set(ids.filter((x): x is string => !!x))].filter(id => notes.get(id)?.length).map(id => `【${id}】\n${notes.get(id)!.map(n => '- ' + n).join('\n')}`);
+  return parts.length ? `\n\n这些平台的抽取要点（管理员审核总结，务必照做）：\n${parts.join('\n')}` : '';
+}
+
 const LEARNED = (() => {
   try {
     const rules = readFileSync(new URL('./learned-rules.md', import.meta.url), 'utf8').split('\n').filter(l => /^\s*-\s+/.test(l)).join('\n');
@@ -213,9 +232,9 @@ export function tidy(o: Extracted): Extracted {
 /** 免费模型都不可用时抛出，调用方把这个页面推迟到下一轮。 */
 export class DeferError extends Error {}
 
-export async function extract(platformName: string, url: string, text: string, log: (...a: unknown[]) => void = () => undefined, opts: { allowPaid?: boolean; platformList?: string; existing?: string; corrections?: string[]; budget?: { reserve: (provider: string, system: string, user: string, price?: ModelPrice) => Promise<ModelReservation>; settle: (reservation: ModelReservation, provider: string, tokens: number, costCny: number) => Promise<void> } } = {}): Promise<{ offers: (Extracted & { platformId?: string; officialUrl?: string | null; sameAs?: string | null })[]; tokens: number; costCny: number; provider: string }> {
+export async function extract(platformName: string, url: string, text: string, log: (...a: unknown[]) => void = () => undefined, opts: { allowPaid?: boolean; platformList?: string; existing?: string; corrections?: string[]; platformIds?: (string | null | undefined)[]; budget?: { reserve: (provider: string, system: string, user: string, price?: ModelPrice) => Promise<ModelReservation>; settle: (reservation: ModelReservation, provider: string, tokens: number, costCny: number) => Promise<void> } } = {}): Promise<{ offers: (Extracted & { platformId?: string; officialUrl?: string | null; sameAs?: string | null })[]; tokens: number; costCny: number; provider: string }> {
   const user = `平台：${platformName}\n来源：${url}\n\n---- 原文 ----\n${text}`;
-  const base = PROMPT + LEARNED + (opts.corrections?.length ? `\n\n管理员最近的纠正（照这些改正方向抽取，同类错误不要再犯）：\n${opts.corrections.map(x => '- ' + x).join('\n')}` : '');
+  const base = PROMPT + LEARNED + platformNotesFor(opts.platformIds ?? []) + (opts.corrections?.length ? `\n\n管理员最近的纠正（照这些改正方向抽取，同类错误不要再犯）：\n${opts.corrections.map(x => '- ' + x).join('\n')}` : '');
   const known = opts.existing ? `\n已收录条目（id｜标题｜额度）：\n${opts.existing}` : '';
   const same = opts.existing && !opts.platformList ? `\n\n每条再加一个字段 sameAs：如果和下面"已收录条目"里的某条是同一个权益（说法不同也算），填那条的 id，否则 null。` : '';
   const sys = opts.platformList ? base + TRIAGE + opts.platformList + known : base + same + known;

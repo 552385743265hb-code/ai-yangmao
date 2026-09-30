@@ -38,3 +38,22 @@ describe('模型字段取值不合规时不丢整条', () => {
       .toMatchObject({ type: 'new', claimMethod: 'app', endKind: 'date', claimEnd: '2026-10-06', sourceTz: 'Asia/Shanghai', modalities: ['text'] });
   });
 });
+
+import { readFileSync } from 'node:fs';
+import { parsePlatformNotes, platformNotesFor } from '../pipeline/llm';
+describe('平台抽取要点', () => {
+  it('按平台 id 解析，只附上相关平台的要点', () => {
+    const notes = parsePlatformNotes('# 标题\n说明\n## hf\n- 免费 $0.10 仅限 Inference Providers\n## opencode\n- 分三条\n- Go 价值 $10–60\n');
+    expect(notes.get('opencode')).toEqual(['分三条', 'Go 价值 $10–60']);
+    const p = platformNotesFor(['hf', 'unknown', null], notes);
+    expect(p).toContain('【hf】');
+    expect(p).not.toContain('opencode');
+    expect(platformNotesFor([], notes)).toBe('');
+  });
+  it('仓库里的要点文件每个平台 id 都在白名单里', () => {
+    const notes = parsePlatformNotes(readFileSync(new URL('../pipeline/platform-notes.md', import.meta.url), 'utf8'));
+    const ids = new Set((JSON.parse(readFileSync(new URL('../seed/platforms.json', import.meta.url), 'utf8')) as { platforms: { id: string }[] }).platforms.map(p => p.id));
+    expect([...notes.keys()].filter(id => !ids.has(id))).toEqual([]);
+    expect(notes.size).toBeGreaterThan(20);
+  });
+});

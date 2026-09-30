@@ -72,7 +72,7 @@ async function extractAndPostUnlocked(src: Source, url: string, text: string): P
   let r: Awaited<ReturnType<typeof extract>>;
   try {
     const idx = (await offerIndex()).filter(k => k.platformId === src.platformId);
-    r = await extract(src.platform?.name ?? src.platformId ?? '', url, text, log, { allowPaid, corrections: await correctionsFor(src.platformId, src.id), existing: idx.map(k => `${k.id}｜${k.title}｜${k.valueText.slice(0, 40)}`).join('\n') || undefined, budget: modelBudget });
+    r = await extract(src.platform?.name ?? src.platformId ?? '', url, text, log, { allowPaid, platformIds: [src.platformId], corrections: await correctionsFor(src.platformId, src.id), existing: idx.map(k => `${k.id}｜${k.title}｜${k.valueText.slice(0, 40)}`).join('\n') || undefined, budget: modelBudget });
     // 同一个权益沿用已有 id，避免模型换个说法就生成重复条目
     for (const e of r.offers as (Extracted & { sameAs?: string | null; fixedId?: string })[]) { const hit = idx.find(k => k.id === e.sameAs); if (hit) e.fixedId = hit.id; }
   }
@@ -239,6 +239,11 @@ async function triageLeads(plats: Plat[]) {
   const { leads } = await api<{ leads: Lead[] }>(`/leads?limit=${LEAD_LIMIT}`);
   if (!leads.length) return;
   const list = plats.map(p => `${p.id}=${p.name}`).join('；');
+  // 线索原文提到了哪些白名单平台（按名称里的各个部分或 id 匹配），就附上这些平台的抽取要点
+  const mentionedPlatforms = (text: string) => {
+    const t = text.toLowerCase();
+    return plats.filter(p => [p.id, ...p.name.split(/[（）()\/·、\s]+/)].some(k => k.length >= 2 && t.includes(k.toLowerCase()))).map(p => p.id).slice(0, 6);
+  };
   const { offers: known } = await api<{ offers: { id: string; platformId: string; title: string; valueText: string }[] }>('/offers-index');
   const knownIds = new Set(known.map(k => k.id));
   let existing = known.map(k => `${k.id}｜${k.title}｜${k.valueText.slice(0, 40)}`).join('\n');
@@ -253,7 +258,7 @@ async function triageLeads(plats: Plat[]) {
     try { const pg = await fetchPage(l.url); text = `${l.title ?? ''}\n${pg.text}`.slice(0, 14000); effectiveUrl = pg.finalUrl; indirect = pg.via === 'jina'; fetched = true; }
     catch { if (l.origin === 'manual' || l.origin === 'telegram') { log(`  #${l.id} 原文暂时不可访问，下轮继续抓取`); continue; } }
     let r;
-    try { r = await extract('（见平台白名单）', l.url, text, log, { platformList: list, existing, corrections: await correctionsFor(null, null), budget: modelBudget }); }
+    try { r = await extract('（见平台白名单）', l.url, text, log, { platformList: list, platformIds: mentionedPlatforms(`${l.title ?? ''}\n${text}`), existing, corrections: await correctionsFor(null, null), budget: modelBudget }); }
     catch (e) {
       log(`  #${l.id} 抽取失败：${(e as Error).message.slice(0, 80)}`);
       if (!(e instanceof DeferError) && !(e instanceof BudgetExhaustedError) && !DRY) await api(`/leads/${l.id}/status`, { status: 'reviewing', note: `抽取失败，需人工确认后重试：${(e as Error).message.slice(0, 160)}` });
