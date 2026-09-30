@@ -1052,11 +1052,18 @@ function pCoverage() {
 
 /* ---------- 后台 ---------- */
 /* ---------- 后台（管理员密钥登录；数据走 /api/admin） ---------- */
-const ADM = { token: '', tab: 'queue' };
+// 管理员密钥：默认存 sessionStorage（刷新不丢，关标签页即清除）；勾选“记住”才存 localStorage。读写失败就只在内存里。
+const ADM_KEY = 'ym-admin-token';
+const admStore = {
+  load() { try { return sessionStorage.getItem(ADM_KEY) || localStorage.getItem(ADM_KEY) || ''; } catch (e) { return ''; } },
+  save(token, remember) { try { sessionStorage.setItem(ADM_KEY, token); if (remember) localStorage.setItem(ADM_KEY, token); else localStorage.removeItem(ADM_KEY); } catch (e) { /* 存不了就只在本次打开有效 */ } },
+  clear() { try { sessionStorage.removeItem(ADM_KEY); localStorage.removeItem(ADM_KEY); } catch (e) { /* 忽略 */ } },
+};
+const ADM = { token: admStore.load(), tab: 'queue' };
 async function adm(path, body) {
   const r = await fetch('/api/admin' + path, { method: body === undefined ? 'GET' : 'POST', headers: { Authorization: 'Bearer ' + ADM.token, 'Content-Type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) });
   const j = await r.json().catch(() => ({}));
-  if (r.status === 401) { ADM.token = ''; throw new Error('管理员密钥不正确，请重新登录'); }
+  if (r.status === 401) { ADM.token = ''; admStore.clear(); throw new Error('管理员密钥不正确，请重新登录'); }
   if (!r.ok) throw new Error((j.error || ('请求失败 ' + r.status)) + (Array.isArray(j.issues) && j.issues.length ? '：' + j.issues.map(i => `${FIELD_L[i.path?.[0]] || i.path?.join('.') || ''} ${i.message}`.trim()).join('；') : ''));
   return j;
 }
@@ -1066,14 +1073,15 @@ const RC = [['paid_bundle', '付费套餐自带'], ['not_ai', '不是 AI 额度'
 const FIELD_L = { title: '标题', type: '类型', valueText: '额度', usdEstimate: '折合美元', claimStart: '开始', claimEnd: '截止', endKind: '截止方式', creditValidity: '有效期', audience: '适用对象', requirements: '门槛', modalities: '模态', platformId: '平台', sourceTz: '时区', claimMethod: '领取方式' };
 function pAdmin() {
   if (!ADM.token) {
-    main().innerHTML = ribbon() + ph('后台', '用管理员密钥登录。密钥只在本次打开页面期间保存在内存中。') + `
+    main().innerHTML = ribbon() + ph('后台', '用管理员密钥登录。刷新页面不用重新输入，关掉标签页后需要重新登录；勾选“记住”则一直保留，直到退出登录。') + `
     <form id="admLogin" class="card" style="max-width:460px;display:flex;flex-direction:column;gap:10px">
       <label class="field" for="admTok">管理员密钥<input type="password" id="admTok" autocomplete="off" placeholder="输入管理员密钥"></label>
+      <label class="row small" style="gap:6px;align-items:center"><input type="checkbox" id="admRemember"> 在这台电脑上记住（公用电脑不要勾选）</label>
       <button class="btn pri" type="submit">登录</button><p class="small muted" id="admErr" style="margin:0"></p>
     </form>`;
     $('#admLogin').addEventListener('submit', async e => {
       e.preventDefault(); ADM.token = $('#admTok').value.trim();
-      try { await adm('/health'); render(true); } catch (err) { $('#admErr').textContent = err.message; }
+      try { await adm('/health'); admStore.save(ADM.token, $('#admRemember').checked); render(true); } catch (err) { $('#admErr').textContent = err.message; }
     });
     return;
   }
@@ -1081,7 +1089,7 @@ function pAdmin() {
   main().innerHTML = ribbon() + ph('后台', '审核、编辑、补录。每条都附来源链接和官方原文，点链接核对后再决定。', `<button class="btn sm" type="button" id="admOut">退出登录</button>`) + `
   <div class="seg" role="tablist" style="margin-bottom:14px">${tabs.map(([k, l]) => `<button type="button" data-admtab="${k}" aria-pressed="${ADM.tab === k}">${l}</button>`).join('')}</div>
   <div id="admBody">${emptySheep('加载中…')}</div>`;
-  $('#admOut').addEventListener('click', () => { ADM.token = ''; render(true); });
+  $('#admOut').addEventListener('click', () => { ADM.token = ''; admStore.clear(); render(true); });
   $$('[data-admtab]').forEach(b => b.addEventListener('click', () => { ADM.tab = b.dataset.admtab; render(true); }));
   ({ queue: admQueue, quality: admQuality, leads: admLeads, manual: admManual, health: admHealth })[ADM.tab]().catch(err => { $('#admBody').innerHTML = `<div class="card"><p>${esc(err.message)}</p></div>`; if (!ADM.token) render(true); });
 }
