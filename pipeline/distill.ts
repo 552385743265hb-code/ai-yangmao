@@ -2,6 +2,7 @@
 // 由 .github/workflows/distill.yml 每周六运行，改动以 PR 提交，管理员合并即生效。
 import { readFileSync, writeFileSync, appendFileSync } from 'node:fs';
 import { api } from './lib';
+import { MODEL_OUTPUT_LIMIT, reserveModel, settleModel } from './budget';
 
 const DAYS = Number(process.env.DISTILL_DAYS ?? 7);
 const file = new URL('./learned-rules.md', import.meta.url);
@@ -25,12 +26,15 @@ ${existing.join('\n') || '（无）'}
 最近的纠正：
 ${corrections.map(c => '- ' + c).join('\n')}`;
 
-const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${process.env.GEMINI_MODEL ?? 'gemini-flash-lite-latest'}:generateContent`, {
+const reserved = await reserveModel('gemini-distill', '', prompt);
+const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${process.env.GEMINI_MODEL || 'gemini-flash-lite-latest'}:generateContent`, {
   method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': process.env.GEMINI_API_KEY ?? '' },
-  body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: { responseMimeType: 'application/json', temperature: 0.2 } }),
+  body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: { responseMimeType: 'application/json', temperature: 0.2, maxOutputTokens: MODEL_OUTPUT_LIMIT } }),
 });
-if (!r.ok) { out(`模型调用失败：${r.status}`); process.exit(1); }
-const j = await r.json() as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
+if (!r.ok) { await settleModel(reserved, 'gemini-distill', 0, 0); out(`模型调用失败：${r.status}`); process.exit(1); }
+const j = await r.json() as { candidates?: { content?: { parts?: { text?: string }[] } }[]; usageMetadata?: { totalTokenCount?: number } };
+if (Number.isFinite(j.usageMetadata?.totalTokenCount)) await settleModel(reserved, 'gemini-distill', j.usageMetadata!.totalTokenCount!, 0);
+else out('模型未返回可靠用量，本次预算预留保留。');
 const parsed = JSON.parse((j.candidates?.[0]?.content?.parts?.map(p => p.text ?? '').join('') ?? '{}').replace(/^```(json)?|```$/g, '').trim()) as { rules?: { rule: string; basis?: string[]; replaces?: string | null }[] };
 const rules = (parsed.rules ?? []).filter(x => x.rule && !existing.some(e => e.includes(x.rule.slice(0, 20))));
 if (!rules.length) { out(`归纳了 ${corrections.length} 条纠正，没有值得新增的规则。`); process.exit(0); }

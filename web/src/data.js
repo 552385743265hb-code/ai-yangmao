@@ -16,10 +16,10 @@ const TYPES = {
 const MODAL = { text: '文本', code: '编程', image: '图像', video: '视频', audio: '音乐·语音' };
 const CLAIM = { auto: '自动到账', signup: '注册即送', app: '下载 App', form: '邮件或表单申请', topup: '充值触发', member: '会员自动生效', code: '兑换码' };
 const REQ = {
-  none: '零门槛', pay: '需充值', member: '需会员', phone: '需海外手机号', card: '需海外信用卡', net: '需海外网络',
+  none: '零门槛', unknown: '领取条件待确认', pay: '需充值', member: '需会员', phone: '需海外手机号', card: '需海外信用卡', net: '需海外网络',
   realname: '需实名', biz: '需企业认证', student: '需学生认证', invite: '需邀请码', targeted: '定向发放',
 };
-const SRC = { site: '官网公告', docs: '帮助文档', official: '官方账号', staff: '员工账号' };
+const SRC = { site: '官网公告', docs: '帮助文档', official: '官方账号', staff: '员工账号', media: '媒体转述（人工审核）' };
 const PTYPE = { lab: { l: '模型厂商', slot: 1 }, cloud: { l: '云厂商', slot: 2 }, infra: { l: '推理平台', slot: 3 }, tool: { l: 'AI 工具', slot: 4 }, new: { l: '新玩家', slot: 5 } };
 const TZ = { 'Asia/Shanghai': '北京时间', 'America/Los_Angeles': '美西时间（PT）', 'America/New_York': '美东时间（ET）', 'UTC': 'UTC' };
 const AUD = { new: '新用户', old: '老用户', all: '全部用户', unclear: '资格未明确' };
@@ -41,7 +41,6 @@ let OFFERS = [];
 let META = { lastSuccessfulCollect: null };
 let COVERAGE = null;
 const MODELS = []; // 按模型找：数据积累中
-const QUEUE = [], SOURCES = [], AUTOPUB = []; // 后台在公开网站上不提供
 
 async function loadData() {
   const get = async p => { const r = await fetch(p, { headers: { Accept: 'application/json' } }); if (!r.ok) throw new Error(`${p} ${r.status}`); return r.json(); };
@@ -57,7 +56,9 @@ async function loadData() {
       v: o.valueText, usd: o.usdEstimate ?? 0, noUsd: o.usdEstimate == null,
       s: rel(o.claimStart), e: o.endKind === 'date' ? rel(o.claimEnd) : null, ek: o.endKind,
       vf: o.lastVerifiedAt ? -(now - Date.parse(o.lastVerifiedAt)) / DAYMS : -99,
-      fs: -(now - Date.parse(o.discoveredAt)) / DAYMS,
+      vfDay: o.lastVerifiedAt ? dayIdx(new Date(o.lastVerifiedAt)) : null,
+      fs: dayIdx(new Date(o.discoveredAt)), discoveredAt: o.discoveredAt,
+      verifiedAt: o.lastVerifiedAt, withdrawnAt: o.withdrawnAt,
       st: o.evidence.tier, tz: o.sourceTz, val: o.creditValidity || '官方未写明', aud: o.audience,
       cn: !overseas, early: CHANNEL[o.firstChannel] || o.firstChannel || '官方页面', why: o.withdrawnReason || '',
       steps: o.steps || [], evidence: o.evidence, verify: o.verifyResult || '', apiStatus: o.status,

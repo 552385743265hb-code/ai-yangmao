@@ -1,0 +1,1 @@
+ALTER TABLE `offer_proposals` ADD `manual_fields` text DEFAULT '[]' NOT NULL;

@@ -4,7 +4,7 @@ import { drizzle } from 'drizzle-orm/d1';
 import { Hono } from 'hono';
 import { z } from 'zod';
 import * as s from '../db/schema';
-import { leadIn, offerIn, runIn } from '../shared/ingest';
+import { isoDate, leadIn, offerIn, runIn } from '../shared/ingest';
 import { activeOnDate, isClaimable, liveStatus, missingEvidence } from '../shared/lifecycle';
 import { admin } from './admin';
 
@@ -13,6 +13,8 @@ export interface Env {
   ASSETS: Fetcher;
   INGEST_TOKEN: string;
   ADMIN_TOKEN: string;
+  DAILY_TOKEN_CAP?: string;
+  MONTHLY_COST_CAP_CNY?: string;
 }
 
 const app = new Hono<{ Bindings: Env }>();
@@ -42,11 +44,12 @@ app.get('/api/coverage', async c => {
   const [{ n: platforms }] = await d.select({ n: sql<number>`count(*)` }).from(s.platforms).where(eq(s.platforms.status, 'approved'));
   const [lastOk] = await d.select().from(s.runs).where(and(eq(s.runs.kind, 'collect'), eq(s.runs.ok, true))).orderBy(desc(s.runs.finishedAt)).limit(1);
   const byKind: Record<string, { total: number; enabled: number; failing: number }> = {};
+  const unhealthy = (x: typeof srcs[number]) => x.failStreak >= 3 || !x.lastOkAt || Date.now() - Date.parse(x.lastOkAt) > 12 * 3600_000;
   for (const x of srcs) {
     const k = (byKind[x.kind] ??= { total: 0, enabled: 0, failing: 0 });
-    k.total++; if (x.enabled) k.enabled++; if (x.enabled && x.failStreak >= 3) k.failing++;
+    k.total++; if (x.enabled) k.enabled++; if (x.enabled && unhealthy(x)) k.failing++;
   }
-  return c.json({ platforms, sources: srcs.filter(x => x.enabled).length, byKind, lastSuccessfulCollect: lastOk?.finishedAt ?? null, officialPages: srcs.filter(x => x.enabled && x.platformId).map(x => ({ platformId: x.platformId, url: x.url, kind: x.kind, healthy: x.failStreak < 3 })) });
+  return c.json({ platforms, sources: srcs.filter(x => x.enabled).length, byKind, lastSuccessfulCollect: lastOk?.finishedAt ?? null, officialPages: srcs.filter(x => x.enabled && x.platformId).map(x => ({ platformId: x.platformId, url: x.url, kind: x.kind, healthy: !unhealthy(x) })) });
 });
 
 const listQuery = z.object({
@@ -54,8 +57,8 @@ const listQuery = z.object({
   type: z.string().optional(),
   modality: z.string().optional(),
   platform: z.string().optional(),
-  on: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  tz: z.string().default('Asia/Shanghai'),
+  on: isoDate.optional(),
+  tz: z.string().max(80).refine(tz => { try { new Intl.DateTimeFormat('en', { timeZone: tz }); return true; } catch { return false; } }, '无效的时区').default('Asia/Shanghai'),
 });
 
 app.get('/api/offers', async c => {
@@ -63,13 +66,15 @@ app.get('/api/offers', async c => {
   if (!q.success) return c.json({ error: '查询参数不正确', issues: q.error.issues }, 400);
   const { view, type, modality, platform, on, tz } = q.data;
   const now = new Date();
+  const d = db(c.env);
+  const approvedPlatforms = new Set((await d.select({ id: s.platforms.id }).from(s.platforms).where(eq(s.platforms.status, 'approved'))).map(p => p.id));
   const conds = [eq(s.offers.reviewState, 'approved')];
   if (type) conds.push(eq(s.offers.type, type as OfferRow['type']));
   if (platform) conds.push(eq(s.offers.platformId, platform));
-  let rows = (await db(c.env).select().from(s.offers).where(and(...conds))).map(o => withStatus(o, now));
+  let rows = (await d.select().from(s.offers).where(and(...conds))).filter(o => approvedPlatforms.has(o.platformId)).map(o => withStatus(o, now));
   if (modality) rows = rows.filter(o => o.modalities.includes(modality));
-  if (on) rows = rows.filter(o => activeOnDate(o, on, tz));
-  else if (view === 'claimable') rows = rows.filter(o => isClaimable(o.status) || o.status === 'upcoming' || o.status === 'open');
+  if (on) rows = rows.filter(o => o.status !== 'stale' && activeOnDate(o, on, tz));
+  else if (view === 'claimable') rows = rows.filter(o => isClaimable(o.status));
   return c.json({ count: rows.length, offers: rows });
 });
 
@@ -78,6 +83,7 @@ app.get('/api/offers/:id', async c => {
   const [o] = await d.select().from(s.offers).where(and(eq(s.offers.id, c.req.param('id')), eq(s.offers.reviewState, 'approved')));
   if (!o) return c.json({ error: '没有这条羊毛' }, 404);
   const [platform] = await d.select().from(s.platforms).where(eq(s.platforms.id, o.platformId));
+  if (platform?.status !== 'approved') return c.json({ error: '没有这条羊毛' }, 404);
   const revisions = await d.select().from(s.offerRevisions).where(eq(s.offerRevisions.offerId, o.id)).orderBy(desc(s.offerRevisions.at));
   return c.json({ offer: withStatus(o, new Date()), platform, revisions });
 });
@@ -94,6 +100,16 @@ app.get('/api/platforms/:id', async c => {
   const now = new Date();
   const rows = (await d.select().from(s.offers).where(and(eq(s.offers.platformId, p.id), eq(s.offers.reviewState, 'approved')))).map(o => withStatus(o, now));
   return c.json({ platform: p, offers: rows });
+});
+
+const xml = (value: unknown) => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' })[char]!);
+app.get('/rss.xml', async c => {
+  const now = new Date();
+  const approvedPlatforms = new Set((await db(c.env).select({ id: s.platforms.id }).from(s.platforms).where(eq(s.platforms.status, 'approved'))).map(p => p.id));
+  const offers = (await db(c.env).select().from(s.offers).where(eq(s.offers.reviewState, 'approved')).orderBy(desc(s.offers.discoveredAt)).limit(100))
+    .filter(offer => approvedPlatforms.has(offer.platformId) && isClaimable(liveStatus(offer, now)));
+  const items = offers.map(offer => `<item><title>${xml(offer.title)}</title><link>https://ai-yangmao.com/#offer-${xml(offer.id)}</link><guid isPermaLink="false">${xml(offer.id)}</guid><pubDate>${new Date(offer.discoveredAt).toUTCString()}</pubDate><description>${xml(`${offer.valueText}；领取证据：${offer.evidence.url}`)}</description></item>`).join('');
+  return c.body(`<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>AI 羊毛牧场 · 当前可领</title><link>https://ai-yangmao.com/</link><description>经过审核且仍可领取的 AI 额度与权益</description>${items}</channel></rss>`, 200, { 'Content-Type': 'application/rss+xml; charset=utf-8', 'Cache-Control': 'public, max-age=300', 'X-Robots-Tag': 'noindex' });
 });
 
 /* ---------- 写入接口（采集管线专用，Bearer 密钥） ---------- */
@@ -137,8 +153,12 @@ ingest.post('/offers', async c => {
     if (!plat) { results.push({ id: o.id, error: `平台 ${o.platformId} 不在白名单里，先建平台` }); continue; }
     const src = srcs.find(x => x.id === o.sourceId);
     const missing = missingEvidence(o.evidence.excerpts);
-    const auto = plat.status === 'approved' && !!src?.autoPublish && !['staff', 'media'].includes(o.evidence.tier) && missing.length === 0 && !/未写明|不明确/.test(o.valueText);
+    const sameOfficialHost = src && (() => { try { return new URL(src.url).hostname.toLowerCase() === new URL(o.evidence.url).hostname.toLowerCase(); } catch { return false; } })();
+    const auto = plat.status === 'approved' && !!src?.enabled && sameOfficialHost && src.platformId === o.platformId && src.autoPublish
+      && ['site', 'docs', 'official'].includes(src.tier) && src.tier === o.evidence.tier
+      && missing.length === 0 && !/未写明|不明确/.test(o.valueText) && !o.requirements.some(requirement => requirement === 'unknown' || /未写明/.test(requirement));
     const [prev] = await d.select().from(s.offers).where(eq(s.offers.id, o.id));
+    const [existingProposal] = prev ? await d.select().from(s.offerProposals).where(eq(s.offerProposals.offerId, o.id)) : [];
     const nowIso = new Date().toISOString();
     const { leadId, ...od } = o;
     const row = {
@@ -146,22 +166,56 @@ ingest.post('/offers', async c => {
       creditValidity: o.creditValidity ?? null, publishedAt: o.publishedAt ?? null, sourceId: o.sourceId ?? null,
       lastVerifiedAt: nowIso, verifyResult: '官方页面可以打开，已抽取字段', updatedAt: nowIso,
     };
+    // 人工改过的字段是已经核准的事实，后续模型提案不得静默覆盖。
+    let protectedEvidenceChanged = false;
+    if (prev) {
+      const adminRevisions = await d.select({ diff: s.offerRevisions.diff }).from(s.offerRevisions)
+        .where(and(eq(s.offerRevisions.offerId, prev.id), eq(s.offerRevisions.author, 'admin')));
+      const protectedFields = new Set([
+        ...adminRevisions.flatMap(revision => revision.diff.map(change => change.field)),
+        ...(existingProposal?.manualFields ?? []),
+      ]);
+      for (const field of protectedFields) {
+        if (field === 'evidence' && JSON.stringify(prev.evidence.excerpts) !== JSON.stringify(o.evidence.excerpts)) protectedEvidenceChanged = true;
+        if (field in row) (row as Record<string, unknown>)[field] = existingProposal?.manualFields.includes(field)
+          ? existingProposal.candidate[field] : (prev as Record<string, unknown>)[field];
+      }
+    }
     if (!prev) {
       await d.insert(s.offers).values({ ...row, reviewState: auto ? 'approved' : 'pending' });
       if (leadId) await d.update(s.leads).set({ status: 'linked', offerId: o.id }).where(eq(s.leads.id, leadId));
       results.push({ id: o.id, created: true, reviewState: auto ? 'approved' : 'pending', missingEvidence: missing });
       continue;
     }
-    const tracked = ['title', 'type', 'modalities', 'claimMethod', 'requirements', 'audience', 'valueText', 'usdEstimate', 'claimStart', 'claimEnd', 'endKind', 'creditValidity', 'sourceTz'] as const;
-    const diff = tracked.filter(k => JSON.stringify(prev[k] ?? null) !== JSON.stringify(row[k] ?? null)).map(k => ({ field: k, from: prev[k], to: row[k] }));
+    const tracked = ['platformId', 'title', 'type', 'modalities', 'claimMethod', 'requirements', 'audience', 'valueText', 'usdEstimate', 'claimStart', 'claimEnd', 'endKind', 'creditValidity', 'sourceTz', 'publishedAt', 'sourceId', 'steps', 'evidence'] as const;
+    const comparable = (key: string, value: unknown) => key === 'evidence' && value && typeof value === 'object'
+      ? { url: (value as typeof o.evidence).url, tier: (value as typeof o.evidence).tier, excerpts: (value as typeof o.evidence).excerpts } : value ?? null;
+    const diff = tracked.filter(k => JSON.stringify(comparable(k, prev[k])) !== JSON.stringify(comparable(k, row[k]))).map(k => ({ field: k, from: prev[k], to: row[k] }));
     if (!diff.length) {
-      await d.update(s.offers).set({ lastVerifiedAt: nowIso, verifyResult: '官方页面可以打开，条款没有变化', updatedAt: nowIso }).where(eq(s.offers.id, o.id));
+      if (existingProposal) await d.delete(s.offerProposals).where(eq(s.offerProposals.offerId, o.id));
+      await d.update(s.offers).set(protectedEvidenceChanged
+        ? { verifyResult: 'evidence_missing', updatedAt: nowIso }
+        : { lastVerifiedAt: nowIso, verifyResult: '官方页面可以打开，条款没有变化', evidence: row.evidence, updatedAt: nowIso }).where(eq(s.offers.id, o.id));
       results.push({ id: o.id, unchanged: true });
       continue;
     }
-    const reviewState = prev.reviewState === 'rejected' ? 'rejected' : auto ? 'approved' : 'pending';
+    if (prev.reviewState === 'rejected') {
+      results.push({ id: o.id, unchanged: true, reviewState: 'rejected' });
+      continue;
+    }
+    if (prev.reviewState === 'approved' && !auto) {
+      // 公开的已审核版本在提案通过前仍保持不变。
+      await d.insert(s.offerProposals).values({ offerId: o.id, candidate: row, diff, manualFields: existingProposal?.manualFields ?? [] })
+        .onConflictDoUpdate({ target: s.offerProposals.offerId, set: { candidate: row, diff, manualFields: existingProposal?.manualFields ?? [], updatedAt: nowIso } });
+      results.push({ id: o.id, changed: diff.map(x => x.field), reviewState: 'pending_update', missingEvidence: missing });
+      continue;
+    }
+    const reviewState = auto ? 'approved' : 'pending';
     await d.update(s.offers).set({ ...row, reviewState }).where(eq(s.offers.id, o.id));
-    await d.insert(s.offerRevisions).values({ offerId: o.id, diff });
+    if (existingProposal) await d.delete(s.offerProposals).where(eq(s.offerProposals.offerId, o.id));
+    if (prev.reviewState === 'approved') {
+      await d.insert(s.offerRevisions).values({ offerId: o.id, diff, evidenceBefore: prev.evidence, evidenceAfter: row.evidence });
+    }
     results.push({ id: o.id, changed: diff.map(x => x.field), reviewState, missingEvidence: missing });
   }
   return c.json({ results });
@@ -177,6 +231,53 @@ ingest.get('/sources', async c => {
   const snap = Object.fromEntries(last.results.map(r => [r.source_id, r]));
   const plats = await d.select({ id: s.platforms.id, name: s.platforms.name, status: s.platforms.status }).from(s.platforms);
   return c.json({ sources: rows.map(r => ({ ...r, lastHash: snap[r.id]?.hash ?? null, lastText: r.kind === 'rss' ? snap[r.id]?.text ?? null : null, platform: plats.find(p => p.id === r.platformId) ?? null })) });
+});
+
+/** 到期需要重新核验的权益。证据 URL 是逐条权益自己的 URL，RSS 和补录条目也能复核。 */
+ingest.get('/verification-queue', async c => {
+  const now = Date.now();
+  const sourceId = c.req.query('sourceId');
+  const forced = c.req.query('force') === '1';
+  const rows = await db(c.env).select().from(s.offers).where(sourceId
+    ? and(eq(s.offers.reviewState, 'approved'), eq(s.offers.sourceId, sourceId))
+    : eq(s.offers.reviewState, 'approved'));
+  const proposals = rows.length ? await db(c.env).select().from(s.offerProposals).where(inArray(s.offerProposals.offerId, rows.map(o => o.id))) : [];
+  return c.json({ offers: rows.filter(o => {
+    if (o.withdrawnAt || (o.endKind === 'date' && liveStatus(o, new Date(now)) === 'ended')) return false;
+    if (forced) return true;
+    const age = o.lastVerifiedAt ? now - Date.parse(o.lastVerifiedAt) : Infinity;
+    return age >= (o.type === 'standing' || o.type === 'apply' ? 7 : 1) * 86400_000;
+  }).map(o => ({ id: o.id, url: o.evidence.url, tier: o.evidence.tier, pageHash: o.evidence.pageHash ?? null,
+    proposalHash: (proposals.find(p => p.offerId === o.id)?.candidate.evidence as typeof o.evidence | undefined)?.pageHash ?? null,
+    sourceId: o.sourceId, platformId: o.platformId, excerpts: o.evidence.excerpts })) });
+});
+
+/** 只有同一证据页仍含保存的关键原文，才刷新该权益的核验时间。 */
+ingest.post('/verify', async c => {
+  const body = z.object({ offerId: z.string(), url: z.url(), finalUrl: z.url().optional(), text: z.string().max(250000),
+    pageHash: z.string().regex(/^[a-f0-9]{64}$/).optional(), processedChange: z.boolean().optional() }).safeParse(await c.req.json().catch(() => null));
+  if (!body.success) return c.json({ error: '核验数据不正确', issues: body.error.issues }, 400);
+  const d = db(c.env);
+  const [o] = await d.select().from(s.offers).where(eq(s.offers.id, body.data.offerId));
+  if (!o || o.reviewState !== 'approved' || o.evidence.url !== body.data.url) return c.json({ error: '证据或活动不匹配' }, 404);
+  if (body.data.finalUrl && new URL(body.data.finalUrl).hostname.toLowerCase() !== new URL(o.evidence.url).hostname.toLowerCase()) {
+    await d.update(s.offers).set({ verifyResult: 'evidence_missing', updatedAt: new Date().toISOString() }).where(eq(s.offers.id, o.id));
+    return c.json({ verified: false, redirectedOutsideOfficialHost: true });
+  }
+  const normalize = (value: string) => value.replace(/\s+/g, ' ').trim().toLowerCase();
+  const current = normalize(body.data.text);
+  const quotes = Object.values(o.evidence.excerpts).filter((value): value is string => typeof value === 'string' && !!value.trim());
+  const unprocessedChange = !!body.data.pageHash && body.data.pageHash !== o.evidence.pageHash && !body.data.processedChange;
+  const verified = !unprocessedChange && quotes.length > 0 && quotes.every(quote => current.includes(normalize(quote)));
+  const [proposal] = await d.select().from(s.offerProposals).where(eq(s.offerProposals.offerId, o.id));
+  const evidence = body.data.processedChange && body.data.pageHash && !proposal
+    ? { ...o.evidence, pageHash: body.data.pageHash } : o.evidence;
+  const nowIso = new Date().toISOString();
+  await d.update(s.offers).set(verified
+    ? { lastVerifiedAt: nowIso, verifyResult: '官方证据原文仍在当前页面', evidence, updatedAt: nowIso }
+    : { verifyResult: 'evidence_missing', evidence, updatedAt: nowIso })
+    .where(eq(s.offers.id, o.id));
+  return c.json({ verified, matchedExcerpts: verified ? quotes.length : 0 });
 });
 
 /** 一次抓取的结果：成功时记录内容哈希（变化才存快照），失败时累计连续失败次数。 */
@@ -243,15 +344,46 @@ ingest.get('/corrections', async c => {
   return c.json({ corrections: items.slice(0, limit).map(x => x.line), total: items.length });
 });
 
-/** 近 60 天没被拒绝的条目索引，研判时用来判断"是不是同一个活动"。 */
+/** 所有尚未拒绝的条目索引；常驻福利不能在第 61 天从判重范围消失。 */
 ingest.get('/offers-index', async c => {
-  const since = new Date(Date.now() - 60 * 86400_000).toISOString();
   const rows = await db(c.env).select({ id: s.offers.id, platformId: s.offers.platformId, title: s.offers.title, valueText: s.offers.valueText })
-    .from(s.offers).where(and(inArray(s.offers.reviewState, ['pending', 'approved']), gte(s.offers.discoveredAt, since)));
+    .from(s.offers).where(inArray(s.offers.reviewState, ['pending', 'approved']));
   return c.json({ offers: rows });
 });
 
 /** 模型预算：今日 token、本月费用。 */
+ingest.post('/model-budget/reserve', async c => {
+  const body = z.object({ provider: z.string().max(40), tokens: z.number().int().positive().max(400000), costCny: z.number().nonnegative().max(1000) })
+    .safeParse(await c.req.json().catch(() => null));
+  if (!body.success) return c.json({ error: '预算预留参数不正确' }, 400);
+  const tokenCap = Number(c.env.DAILY_TOKEN_CAP ?? 200000), costCap = Number(c.env.MONTHLY_COST_CAP_CNY ?? 10);
+  if (!Number.isFinite(tokenCap) || !Number.isFinite(costCap) || tokenCap <= 0 || costCap < 0) return c.json({ error: '服务端预算配置不正确' }, 503);
+  const nowIso = new Date().toISOString(), today = nowIso.slice(0, 10), month = nowIso.slice(0, 7);
+  // 一条 INSERT ... WHERE 同时判定与占用余额，多个并发采集任务也不能越过上限。
+  const reserved = await c.env.DB.prepare(`INSERT INTO runs (kind,started_at,finished_at,ok,stats,tokens,cost_cny)
+    SELECT 'model', ?1, ?1, 0, ?2, ?3, ?4
+    WHERE (SELECT COALESCE(SUM(tokens),0) FROM runs WHERE substr(started_at,1,10)=?5) + ?3 <= ?6
+      AND (SELECT COALESCE(SUM(cost_cny),0) FROM runs WHERE substr(started_at,1,7)=?7) + ?4 <= ?8
+    RETURNING id`).bind(nowIso, JSON.stringify({ state: 'reserved', provider: body.data.provider }), body.data.tokens,
+    body.data.costCny, today, tokenCap, month, costCap).first<{ id: number }>();
+  return reserved ? c.json({ id: reserved.id }) : c.json({ error: '模型预算不足，本次调用已推迟' }, 429);
+});
+
+ingest.post('/model-budget/:id/settle', async c => {
+  const body = z.object({ provider: z.string().max(40), tokens: z.number().int().nonnegative().max(400000), costCny: z.number().nonnegative().max(1000) })
+    .safeParse(await c.req.json().catch(() => null));
+  if (!body.success) return c.json({ error: '模型用量不正确' }, 400);
+  const id = Number(c.req.param('id'));
+  if (!Number.isSafeInteger(id) || id <= 0) return c.json({ error: '预留记录无效' }, 400);
+  const [record] = await db(c.env).select().from(s.runs).where(and(eq(s.runs.id, id), eq(s.runs.kind, 'model')));
+  if (!record) return c.json({ error: '没有这次模型调用' }, 404);
+  if ((record.stats as { state?: string }).state === 'settled') return c.json({ ok: true, alreadySettled: true });
+  if (body.data.tokens > record.tokens || body.data.costCny > record.costCny + 0.000001) return c.json({ error: '实际用量超出预留，请保留预留并人工核对' }, 409);
+  await db(c.env).update(s.runs).set({ tokens: body.data.tokens, costCny: body.data.costCny,
+    stats: { state: 'settled', provider: body.data.provider }, ok: true, finishedAt: new Date().toISOString() }).where(eq(s.runs.id, id));
+  return c.json({ ok: true });
+});
+
 ingest.get('/budget', async c => {
   const today = new Date().toISOString().slice(0, 10), month = today.slice(0, 7);
   const r = await c.env.DB.prepare(

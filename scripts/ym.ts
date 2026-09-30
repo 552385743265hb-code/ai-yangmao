@@ -20,7 +20,7 @@ async function call<T = any>(path: string, body?: unknown, admin = true): Promis
   return j as T;
 }
 
-const REQ: Record<string, string> = { none: '零门槛', phone: '海外手机号', card: '海外信用卡', net: '海外网络', realname: '实名', biz: '企业认证', student: '学生认证', invite: '邀请码', targeted: '定向发放' };
+const REQ: Record<string, string> = { none: '零门槛', unknown: '领取条件待确认', phone: '海外手机号', card: '海外信用卡', net: '海外网络', realname: '实名', biz: '企业认证', student: '学生认证', invite: '邀请码', targeted: '定向发放' };
 const req = (r: string[]) => r.map(x => x.startsWith('pay:') ? `充值 ${x.slice(4)}` : x.startsWith('member:') ? `会员 ${x.slice(7)}` : REQ[x] ?? x).join('、');
 const AUD: Record<string, string> = { new: '新用户', old: '老用户', all: '全部用户', unclear: '资格未明确' };
 const line = (o: any) => `[${o.code}] ${o.platform}｜${o.title}\n     ${o.value} · ${o.end}`;
@@ -37,11 +37,14 @@ const HELP = `用法：ym <命令>
   add <链接> [备注]     补录链接（下一轮采集抓取并抽取，进待审）
   today                 今天能领的羊毛
   on <YYYY-MM-DD>       某一天有效的限时羊毛
-  digest [--commit]     日报内容（--commit 记入通知台账；没有变化时不输出）
-  urgent [--commit]     48 小时内截止的新上架（加急提醒）
+  digest                只预览日报，不写通知台账
+  urgent                只预览加急，不写通知台账
+  dispatch digest|urgent 通过 Hermes 发送，成功后才确认通知台账
   health                采集健康状况（有问题才输出，--verbose 总是输出）
   platform-approve <平台id> / platform-reject <平台id>
-  auto-publish <信源id> on|off`;
+  auto-publish <信源id> on|off
+  withdraw <短码> <官方撤回链接> <具体理由>  核实后结束活动
+  delivery-delivered <发送ID> <理由> / delivery-unsent <发送ID> <理由>  人工核对结果不明的推送`;
 
 const [cmd, ...args] = process.argv.slice(2);
 const flag = (f: string) => args.includes(f);
@@ -50,7 +53,7 @@ const rest = args.filter(a => !a.startsWith('--'));
 switch (cmd) {
   case 'queue': {
     const q = await call('/queue');
-    if (!q.pending.length && !q.pendingPlatforms.length && !q.suggestAutoPublish.length) { console.log(`待审队列是空的。新线索 ${q.newLeads} 条。`); break; }
+    if (!q.pending.length && !q.pendingPlatforms.length && !q.suggestAutoPublish.length && !q.needsVerification?.length) { console.log(`待审队列是空的。新线索 ${q.newLeads} 条。`); break; }
     console.log(`待审 ${q.pending.length} 条（新线索 ${q.newLeads} 条）`);
     const TIER: Record<string, string> = { site: '官网', docs: '官方文档', official: '官方账号', staff: '员工账号', media: '媒体/社区转述，需核对官方' };
     for (const o of q.pending) console.log(`${line(o)}
@@ -58,6 +61,7 @@ switch (cmd) {
      原文：${o.excerpts.benefit ? `「${o.excerpts.benefit.slice(0, 80)}」` : '—'}
      来源：${o.evidenceUrl}`);
     if (q.pendingPlatforms.length) console.log(`\n新平台待准入：${q.pendingPlatforms.map((p: any) => `${p.name}（${p.id}）`).join('、')}`);
+    for (const o of q.needsVerification ?? []) console.log(`\n待核验：[${o.code}] ${o.title}｜${o.evidenceUrl}。如官方确认撤回：ym withdraw ${o.code} <官方撤回链接> <理由>`);
     for (const s of q.suggestAutoPublish) console.log(`\n建议放开自动上架：${s.id}（已连续原样通过 ${s.cleanStreak} 条）→ ym auto-publish ${s.id} on`);
     break;
   }
@@ -82,6 +86,13 @@ ${revisions.length ? `修订：${revisions.map((r: any) => r.diff.map((x: any) =
     const reasonCode = cmd === 'reject' ? (CODES.find(([re]) => re.test(text))?.[1] ?? (text ? 'other' : undefined)) : undefined;
     const r = await call(`/offers/${rest[0]}/${cmd}`, { reason: text || undefined, reasonCode });
     console.log(`${cmd === 'approve' ? '已通过' : '已拒绝'}：[${r.code}] ${r.title}${r.sourceCleanStreak != null ? `（该信源连续原样通过 ${r.sourceCleanStreak} 条）` : ''}${r.urgent ? '\n⚠️ 48 小时内截止，下一次整点检查会发加急提醒' : ''}`);
+    break;
+  }
+  case 'withdraw': {
+    const [ref, evidenceUrl, ...reason] = rest;
+    if (!ref || !evidenceUrl || !reason.length) { console.error('需要短码、官方撤回链接和具体理由'); process.exitCode = 2; break; }
+    const result = await call(`/offers/${ref}/withdraw`, { evidenceUrl, reason: reason.join(' ') });
+    console.log(`已结束活动 [${result.code}]；结束提醒会在下一次日报中处理。`);
     break;
   }
   case 'edit': {
@@ -116,20 +127,44 @@ ${revisions.length ? `修订：${revisions.map((r: any) => r.diff.map((x: any) =
     for (const o of r.offers) console.log(`• ${o.title}｜${o.valueText}${o.endKind === 'date' ? ` · ${o.claimEnd} 截止` : o.endKind === 'unknown' ? ' · 截止未知' : ''}\n  https://ai-yangmao.com/#offer-${o.id}`);
     break;
   }
-  case 'digest': case 'urgent': {
-    const r = await call(`/notify?kind=${cmd}&channel=telegram${flag('--commit') ? '&commit=1' : ''}`);
+  case 'digest': case 'urgent': case 'dispatch': {
+    const kind = cmd === 'dispatch' ? rest[0] : cmd;
+    if (kind !== 'digest' && kind !== 'urgent') { console.error('dispatch 只接受 digest 或 urgent'); process.exitCode = 2; break; }
+    const r = cmd === 'dispatch'
+      ? await call('/notify/claim', { kind, channel: 'telegram' })
+      : await call(`/notify?kind=${kind}&channel=telegram`);
     if (r.empty) break; // 没有变化不输出 → Hermes 定时任务不发空消息
     const d = new Intl.DateTimeFormat('zh-CN', { timeZone: 'Asia/Tokyo', month: 'numeric', day: 'numeric' }).format(new Date());
     const sec = (t: string, a: any[]) => a.length ? `\n${t}（${a.length}）\n${a.map(line).join('\n')}\n` : '';
-    if (cmd === 'urgent') console.log(`⚡ 加急：48 小时内截止\n${r.items.urgent.map(line).join('\n')}`);
-    else console.log(`🐑 AI 羊毛牧场日报 · ${d}\n${sec('🆕 新上架', r.items.new)}${sec('⏰ 3 天内结束', r.items.ending)}${sec('🔄 条款变化', r.items.changed)}${sec('❌ 已结束', r.items.ended)}${r.pendingCount ? `\n📝 待审 ${r.pendingCount} 条，回复"看待审"处理` : ''}\n\n网页：https://ai-yangmao.com`);
+    const message = kind === 'urgent'
+      ? `⚡ 加急：48 小时内截止\n${r.items.urgent.map(line).join('\n')}`
+      : `🐑 AI 羊毛牧场日报 · ${d}\n${sec('🆕 新上架', r.items.new)}${sec('⏰ 3 天内结束', r.items.ending)}${sec('🔄 条款变化', r.items.changed)}${sec('❌ 已结束', r.items.ended)}${r.pendingCount ? `\n📝 待审 ${r.pendingCount} 条，回复"看待审"处理` : ''}${r.needsVerificationCount ? `\n⚠️ ${r.needsVerificationCount} 条权益证据待核验，回复"看待审"处理` : ''}${r.suggestAutoPublish?.length ? `\n🔓 建议审核自动上架信源：${r.suggestAutoPublish.join('、')}` : ''}\n\n网页：https://ai-yangmao.com`;
+    if (cmd !== 'dispatch') { console.log(message); break; }
+    const { spawnSync } = await import('node:child_process');
+    const sent = spawnSync('hermes', ['send', '--to', 'telegram', '--quiet', '--file', '-'], { input: message, encoding: 'utf8', timeout: 30000 });
+    if (sent.error || sent.status !== 0) {
+      await call(`/notify/${r.deliveryId}/ack`, { status: 'unknown', error: String(sent.error?.message ?? sent.stderr ?? `Hermes exit ${sent.status}`).slice(0, 500) });
+      console.error('Telegram 投递结果不明，已留待人工核对，未自动重发。');
+      process.exitCode = 1;
+      break;
+    }
+    await call(`/notify/${r.deliveryId}/ack`, { status: 'sent' });
     break;
   }
   case 'health': {
     const h = await call('/health');
-    const bad = h.collectStale || h.failingSources.length;
+    const uncertain = (h.uncertainDeliveries ?? []).filter((d: any) => d.status === 'unknown' || Date.now() - Date.parse(d.createdAt) > 10 * 60_000);
+    const bad = h.collectStale || h.failingSources.length || uncertain.length;
     if (!bad && !flag('--verbose')) break;
-    console.log(`${bad ? '🚨 采集告警' : '✅ 采集正常'}：最近一次成功采集 ${h.lastSuccessfulCollect ? `${h.hoursSince.toFixed(1)} 小时前` : '从未成功'}${h.failingSources.length ? `\n连续失败的信源：\n${h.failingSources.map((s: any) => `• ${s.id}（${s.failStreak} 次）：${s.lastError ?? ''}`).join('\n')}` : ''}`);
+    console.log(`${bad ? '🚨 采集或投递告警' : '✅ 采集正常'}：最近一次完整成功采集 ${h.lastSuccessfulCollect ? `${h.hoursSince.toFixed(1)} 小时前` : '从未成功'}${h.failingSources.length ? `\n失效或连续失败的信源：\n${h.failingSources.map((s: any) => `• ${s.id}（${s.failStreak} 次）：${s.lastError ?? '超过 12 小时未成功'}`).join('\n')}` : ''}${uncertain.length ? `\n需人工核对的推送：\n${uncertain.map((d: any) => `• ${d.id}（${d.kind} / ${d.status}）：ym delivery-delivered ${d.id} <理由> 或 ym delivery-unsent ${d.id} <理由>`).join('\n')}` : ''}`);
+    break;
+  }
+  case 'delivery-delivered': case 'delivery-unsent': {
+    const [id, ...reason] = rest;
+    if (!id || !reason.length) { console.error('请提供发送 ID 和人工核对依据'); process.exitCode = 2; break; }
+    const outcome = cmd === 'delivery-delivered' ? 'delivered' : 'not_delivered';
+    await call(`/notify/${id}/resolve`, { outcome, reason: reason.join(' ') });
+    console.log(outcome === 'delivered' ? '已确认送达，通知台账已更新。' : '已确认未送达，可在下一轮重新领取发送。');
     break;
   }
   case 'platform-approve': case 'platform-reject': { await call(`/platforms/${rest[0]}/${cmd.slice(9)}`, {}); console.log(`平台 ${rest[0]} 已${cmd.endsWith('approve') ? '准入' : '拒绝'}`); break; }

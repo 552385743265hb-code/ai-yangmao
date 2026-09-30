@@ -15,6 +15,27 @@
       "when": 1790743511323,
       "tag": "0001_feedback",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1790748041345,
+      "tag": "0002_burly_maginty",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1790748614157,
+      "tag": "0003_sticky_black_knight",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1790749937553,
+      "tag": "0004_yummy_darkstar",
+      "breakpoints": true
     }
   ]
 }

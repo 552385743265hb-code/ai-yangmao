@@ -44,10 +44,15 @@ jobs:
           INGEST_TOKEN: ${{ secrets.INGEST_TOKEN }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GLM_API_KEY: ${{ secrets.GLM_API_KEY }}
+          GLM_MODEL: ${{ vars.GLM_MODEL || 'glm-4-flash' }}
+          USE_GLM: ${{ vars.USE_GLM || '0' }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           OPENROUTER_MODEL: ${{ vars.OPENROUTER_MODEL }}
           GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          DEEPSEEK_MODEL: ${{ vars.DEEPSEEK_MODEL || 'deepseek-flash' }}
+          DEEPSEEK_PRICE_IN: ${{ vars.DEEPSEEK_PRICE_IN || '3' }}
+          DEEPSEEK_PRICE_OUT: ${{ vars.DEEPSEEK_PRICE_OUT || '10' }}
           MONTHLY_COST_CAP_CNY: ${{ vars.MONTHLY_COST_CAP_CNY || '10' }}
           JINA_API_KEY: ${{ secrets.JINA_API_KEY }}
           REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}

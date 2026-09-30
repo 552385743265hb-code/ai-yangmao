@@ -1,6 +1,7 @@
 // 模型抽取：主用 Gemini Flash 免费档，GLM Flash、OpenRouter 免费模型备用。
 // 模型只做"把官方文本抽成字段"，不做搜索；摘录必须能在原文里逐字找到，否则丢弃。
 import { norm } from './lib';
+import { BudgetExhaustedError, BudgetLedgerError, MODEL_OUTPUT_LIMIT, type ModelPrice, type ModelReservation } from './budget';
 
 export interface Extracted {
   key: string;
@@ -37,7 +38,7 @@ const PROMPT = `你是"AI 羊毛牧场"的信息抽取器。下面是某个 AI �
 - type：new 注册新人礼 / free 限时免费开放 / perk 会员福利（重置、加赠）/ topup 充值赠送 / gift 会员免费送 / standing 常驻免费额度 / apply 申请制
 - modalities：text / code / image / video / audio 的子集
 - claimMethod：auto / signup / app / form / topup / member / code
-- requirements：none / phone（海外手机号）/ card（海外信用卡）/ net（海外网络）/ realname / biz / student / invite / targeted / "pay:金额" / "member:会员名"
+- requirements：none / unknown（官方条件未明确）/ phone（海外手机号）/ card（海外信用卡）/ net（海外网络）/ realname / biz / student / invite / targeted / "pay:金额" / "member:会员名"
 - audience：new / old / all / unclear（原文没写清楚就用 unclear）
 - valueText：必须写出具体数量和单位（如"每天 1000 次请求""新用户 2000 万 tokens""6 元赠金""$5/月"），数字从原文来。原文没有给出任何具体数量时，写"官方未写明具体额度："加原文说法
 - usdEstimate：折合美元的粗估（常驻额度按每月），估不出就 null
@@ -69,54 +70,56 @@ const TRIAGE = `\n\n补充规则（本文可能是媒体报道、社区帖子或
 - 再加一个字段 sameAs：如果这条和下面"已收录条目"里的某条是同一个活动（同一平台、同一权益，只是说法不同），填那条的 id；否则 null。
 平台白名单（id=名称）：`;
 
-interface Provider { name: string; paid?: boolean; call: (sys: string, user: string) => Promise<{ text: string; tokens: number; costCny?: number }> }
+interface Provider { name: string; paid?: boolean; price?: ModelPrice; call: (sys: string, user: string) => Promise<{ text: string; tokens: number; costCny?: number; usageKnown: boolean }> }
 
 function providers(): Provider[] {
   const list: Provider[] = [];
   if (process.env.GEMINI_API_KEY) list.push({
     name: 'gemini',
     call: async (sys, user) => {
-      const model = process.env.GEMINI_MODEL ?? 'gemini-flash-latest';
+      const model = process.env.GEMINI_MODEL || 'gemini-flash-lite-latest';
       const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
         method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': process.env.GEMINI_API_KEY! },
-        body: JSON.stringify({ systemInstruction: { parts: [{ text: sys }] }, contents: [{ role: 'user', parts: [{ text: user }] }], generationConfig: { responseMimeType: 'application/json', temperature: 0.1 } }),
+        body: JSON.stringify({ systemInstruction: { parts: [{ text: sys }] }, contents: [{ role: 'user', parts: [{ text: user }] }], generationConfig: { responseMimeType: 'application/json', temperature: 0.1, maxOutputTokens: MODEL_OUTPUT_LIMIT } }),
         signal: AbortSignal.timeout(90000),
       });
-      if (!r.ok) throw Object.assign(new Error(`Gemini ${r.status}: ${(await r.text()).slice(0, 200)}`), { retryable: r.status >= 500 || r.status === 404 || r.status === 429 });
+      if (!r.ok) throw Object.assign(new Error(`Gemini ${r.status}: ${(await r.text()).slice(0, 200)}`), { retryable: r.status >= 500 || r.status === 404 || r.status === 429, httpStatus: r.status });
       const j = await r.json() as { candidates?: { content?: { parts?: { text?: string }[] } }[]; usageMetadata?: { totalTokenCount?: number } };
-      return { text: j.candidates?.[0]?.content?.parts?.map(p => p.text ?? '').join('') ?? '', tokens: j.usageMetadata?.totalTokenCount ?? 0 };
+      return { text: j.candidates?.[0]?.content?.parts?.map(p => p.text ?? '').join('') ?? '', tokens: j.usageMetadata?.totalTokenCount ?? 0, usageKnown: Number.isFinite(j.usageMetadata?.totalTokenCount) };
     },
   });
   const openaiLike = (name: string, url: string, key: string | undefined, model: string | undefined, price?: { in: number; out: number }) => {
     if (key && model) list.push({
-      name, paid: !!price,
+      name, paid: !!price, price,
       call: async (sys, user) => {
         const r = await fetch(url, {
           method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
-          body: JSON.stringify({ model, temperature: 0.1, response_format: { type: 'json_object' }, messages: [{ role: 'system', content: sys }, { role: 'user', content: user }] }),
+          body: JSON.stringify({ model, temperature: 0.1, max_tokens: MODEL_OUTPUT_LIMIT, response_format: { type: 'json_object' }, messages: [{ role: 'system', content: sys }, { role: 'user', content: user }] }),
           signal: AbortSignal.timeout(90000),
         });
-        if (!r.ok) throw new Error(`${name} ${r.status}: ${(await r.text()).slice(0, 200)}`);
+        if (!r.ok) throw Object.assign(new Error(`${name} ${r.status}: ${(await r.text()).slice(0, 200)}`), { httpStatus: r.status });
         const j = await r.json() as { choices?: { message?: { content?: string } }[]; usage?: { total_tokens?: number; prompt_tokens?: number; completion_tokens?: number } };
         const costCny = price ? ((j.usage?.prompt_tokens ?? 0) * price.in + (j.usage?.completion_tokens ?? 0) * price.out) / 1e6 : 0;
-        return { text: j.choices?.[0]?.message?.content ?? '', tokens: j.usage?.total_tokens ?? 0, costCny };
+        return { text: j.choices?.[0]?.message?.content ?? '', tokens: j.usage?.total_tokens ?? 0, costCny,
+          usageKnown: Number.isFinite(j.usage?.total_tokens) && (!price || (Number.isFinite(j.usage?.prompt_tokens) && Number.isFinite(j.usage?.completion_tokens))) };
       },
     });
   };
   // 免费备用：OpenRouter 免费模型。GLM-4-Flash 质量不够，默认不用（设 USE_GLM=1 才启用）
   openaiLike('openrouter', 'https://openrouter.ai/api/v1/chat/completions', process.env.OPENROUTER_API_KEY, process.env.OPENROUTER_MODEL);
   if (process.env.USE_GLM === '1') openaiLike('glm', 'https://open.bigmodel.cn/api/paas/v4/chat/completions', process.env.GLM_API_KEY, process.env.GLM_MODEL ?? 'glm-4-flash');
-  // 最后一级：DeepSeek 付费。价格按元 / 百万 tokens，可用变量覆盖
-  openaiLike('deepseek', 'https://api.deepseek.com/chat/completions', process.env.DEEPSEEK_API_KEY, process.env.DEEPSEEK_MODEL ?? 'deepseek-chat',
-    { in: Number(process.env.DEEPSEEK_PRICE_IN ?? 2), out: Number(process.env.DEEPSEEK_PRICE_OUT ?? 3) });
+  // 最后一级：DeepSeek Flash 付费。按官方 2026-09-24 峰值美元价格保守折成人民币上界；可用变量覆盖。
+  // https://api-docs.deepseek.com/quick_start/pricing
+  openaiLike('deepseek', 'https://api.deepseek.com/chat/completions', process.env.DEEPSEEK_API_KEY, process.env.DEEPSEEK_MODEL || 'deepseek-flash',
+    { in: Number(process.env.DEEPSEEK_PRICE_IN ?? 3), out: Number(process.env.DEEPSEEK_PRICE_OUT ?? 10) });
   return list;
 }
 
 export const llmAvailable = () => providers().length > 0;
 // 免费档有每分钟请求数限制：两次调用至少间隔 MIN_GAP 毫秒
 const MIN_GAP = Number(process.env.LLM_MIN_GAP_MS ?? 4500);
-let lastCall = 0;
-async function pace() { const wait = lastCall + MIN_GAP - Date.now(); if (wait > 0) await new Promise(r => setTimeout(r, wait)); lastCall = Date.now(); }
+let nextCall = 0;
+async function pace() { const start = Math.max(Date.now(), nextCall); nextCall = start + MIN_GAP; const wait = start - Date.now(); if (wait > 0) await new Promise(r => setTimeout(r, wait)); }
 export const paidAvailable = () => providers().some(p => p.paid);
 
 /** 摘录必须能在原文里逐字找到（忽略空白和大小写），找不到的清空。 */
@@ -136,6 +139,14 @@ function toList(v: unknown): string[] {
   if (typeof v === 'string') return v.split(/[,，、/|\s]+/).map(x => x.trim()).filter(Boolean);
   return [];
 }
+function normalizeRequirements(value: unknown): string[] {
+  const accepted = /^(none|unknown|phone|card|net|realname|biz|student|invite|targeted|pay:.+|member:.+)$/;
+  const requirements = toList(value).map(x => x.includes(':') ? x : x.toLowerCase())
+    .map(x => x === 'member' ? 'member:付费会员' : x === 'pay' ? 'pay:金额未写明' : x)
+    .map(x => accepted.test(x) ? x : 'unknown');
+  const unique = [...new Set(requirements)];
+  return unique.length > 1 ? unique.filter(x => x !== 'none') : unique.length ? unique : ['unknown'];
+}
 function tidy(o: Extracted): Extracted {
   const low = (v: unknown) => (typeof v === 'string' ? v.trim().toLowerCase() : v);
   return {
@@ -145,8 +156,7 @@ function tidy(o: Extracted): Extracted {
     endKind: (['standing', 'apply'].includes(String(low(o.type))) ? 'standing' : low(o.endKind) === 'standing' ? 'unknown' : low(o.endKind)) as Extracted['endKind'],
     modalities: toList(o.modalities).map(x => x.toLowerCase()),
     // 模型偶尔只写 member / pay 不带内容，补成可读的占位，交给审核时修正
-    requirements: toList(o.requirements).map(x => (x.includes(':') ? x : x.toLowerCase())).map(x => (x === 'member' ? 'member:付费会员' : x === 'pay' ? 'pay:金额未写明' : x))
-      .filter(x => /^(none|phone|card|net|realname|biz|student|invite|targeted|pay:.+|member:.+)$/.test(x)),
+    requirements: normalizeRequirements(o.requirements),
     steps: toList(o.steps).length && Array.isArray(o.steps) ? o.steps : typeof o.steps === 'string' ? [o.steps] : [],
     usdEstimate: typeof o.usdEstimate === 'number' ? o.usdEstimate : Number(o.usdEstimate) || null,
     claimStart: o.claimStart || null, claimEnd: o.claimEnd || null, creditValidity: o.creditValidity || null,
@@ -156,7 +166,7 @@ function tidy(o: Extracted): Extracted {
 /** 免费模型都不可用时抛出，调用方把这个页面推迟到下一轮。 */
 export class DeferError extends Error {}
 
-export async function extract(platformName: string, url: string, text: string, log: (...a: unknown[]) => void = () => undefined, opts: { allowPaid?: boolean; platformList?: string; existing?: string; corrections?: string[] } = {}): Promise<{ offers: (Extracted & { platformId?: string; officialUrl?: string | null; sameAs?: string | null })[]; tokens: number; costCny: number; provider: string }> {
+export async function extract(platformName: string, url: string, text: string, log: (...a: unknown[]) => void = () => undefined, opts: { allowPaid?: boolean; platformList?: string; existing?: string; corrections?: string[]; budget?: { reserve: (provider: string, system: string, user: string, price?: ModelPrice) => Promise<ModelReservation>; settle: (reservation: ModelReservation, provider: string, tokens: number, costCny: number) => Promise<void> } } = {}): Promise<{ offers: (Extracted & { platformId?: string; officialUrl?: string | null; sameAs?: string | null })[]; tokens: number; costCny: number; provider: string }> {
   const user = `平台：${platformName}\n来源：${url}\n\n---- 原文 ----\n${text}`;
   const base = PROMPT + LEARNED + (opts.corrections?.length ? `\n\n管理员最近的纠正（照这些改正方向抽取，同类错误不要再犯）：\n${opts.corrections.map(x => '- ' + x).join('\n')}` : '');
   const known = opts.existing ? `\n已收录条目（id｜标题｜额度）：\n${opts.existing}` : '';
@@ -168,10 +178,20 @@ export async function extract(platformName: string, url: string, text: string, l
   const chain = opts.allowPaid ? [...free, ...paid] : free;
   for (const p of chain) {
     try {
-      let res: { text: string; tokens: number; costCny?: number } | null = null;
+      let res: { text: string; tokens: number; costCny?: number; usageKnown: boolean } | null = null;
       for (let i = 0; i < 3 && !res; i++) {
-        try { await pace(); res = await p.call(sys, user); }
+        const reservation = opts.budget ? await opts.budget.reserve(p.name, sys, user, p.price) : null;
+        try {
+          await pace();
+          res = await p.call(sys, user);
+          if (reservation) {
+            if (res.usageKnown) await opts.budget!.settle(reservation, p.name, res.tokens, res.costCny ?? 0);
+            else { log(`  ${p.name} 未返回可靠用量，保留预算预留`); res.tokens = reservation.tokens; res.costCny = reservation.costCny; }
+          }
+        }
         catch (e) {
+          if (e instanceof BudgetExhaustedError || e instanceof BudgetLedgerError) throw e;
+          if (reservation && (e as { httpStatus?: number }).httpStatus) await opts.budget!.settle(reservation, p.name, 0, 0);
           if (!(e as { retryable?: boolean }).retryable || i === 2) throw e;
           const wait = /429/.test((e as Error).message) ? 20000 * (i + 1) : 3000 * (i + 1);
           log(`  ${p.name} 临时出错，${wait / 1000} 秒后重试：${(e as Error).message.slice(0, 80)}`);
@@ -182,7 +202,10 @@ export async function extract(platformName: string, url: string, text: string, l
       const json = JSON.parse(out.replace(/^```(json)?|```$/g, '').trim()) as { offers?: Extracted[] };
       const offers = (Array.isArray(json.offers) ? json.offers : []).map(o => ({ ...tidy(o), excerpts: keepVerbatim(o.excerpts, text) }));
       return { offers, tokens, costCny, provider: p.name };
-    } catch (e) { lastErr = e; log(`  ${p.name} 失败，换下一个模型：${(e as Error).message.slice(0, 120)}`); }
+    } catch (e) {
+      if (e instanceof BudgetExhaustedError || e instanceof BudgetLedgerError) throw e;
+      lastErr = e; log(`  ${p.name} 失败，换下一个模型：${(e as Error).message.slice(0, 120)}`);
+    }
   }
   if (!opts.allowPaid && paid.length) throw new DeferError(`免费模型都不可用，推迟到下一轮：${(lastErr as Error)?.message?.slice(0, 80) ?? ''}`);
   throw lastErr ?? new Error('没有可用的模型（未配置任何 API key）');

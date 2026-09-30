@@ -2,6 +2,7 @@
 import { createHash } from 'node:crypto';
 import { Readability } from '@mozilla/readability';
 import { parseHTML } from 'linkedom';
+import { assertSafeUrl, fetchPublic, UnsafeTargetError } from './safe-fetch';
 
 export const UA = 'Mozilla/5.0 (compatible; ai-yangmao-bot/0.1; +https://ai-yangmao.com)';
 export async function api<T = unknown>(path: string, body?: unknown): Promise<T> {
@@ -20,8 +21,9 @@ export async function api<T = unknown>(path: string, body?: unknown): Promise<T>
 /** 网络层出错（不是 HTTP 错误码）时隔几秒重试，最多 2 次。 */
 export async function fetchRetry(url: string, init: RequestInit, tries = 3): Promise<Response> {
   for (let i = 1; ; i++) {
-    try { return await fetch(url, init); }
+    try { return await fetchPublic(url, init); }
     catch (e) {
+      if (e instanceof UnsafeTargetError) throw e;
       if (i >= tries) throw new Error(`网络错误（已重试 ${tries - 1} 次）：${(e as Error & { cause?: { code?: string } }).cause?.code ?? (e as Error).message}`);
       await new Promise(r => setTimeout(r, 3000 * i));
     }
@@ -29,9 +31,13 @@ export async function fetchRetry(url: string, init: RequestInit, tries = 3): Pro
 }
 
 export async function fetchText(url: string, opts: { accept?: string; timeoutMs?: number } = {}): Promise<string> {
+  return (await fetchTextWithUrl(url, opts)).text;
+}
+
+async function fetchTextWithUrl(url: string, opts: { accept?: string; timeoutMs?: number } = {}): Promise<{ text: string; finalUrl: string }> {
   const res = await fetchRetry(url, { headers: { 'User-Agent': UA, Accept: opts.accept ?? '*/*', 'Accept-Language': 'en-US,en;q=0.9,zh-CN;q=0.8' }, signal: AbortSignal.timeout(opts.timeoutMs ?? 30000) });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.text();
+  return { text: await res.text(), finalUrl: res.url || url };
 }
 
 export function htmlToText(html: string): string {
@@ -60,21 +66,23 @@ export function readableText(html: string, url: string): string {
  * 1. 直接抓取，Readability 正文和整页纯文本里，取羊毛相关内容更多的那个（Readability 有时会丢掉定价说明）；
  * 2. 字数仍然太少（多半是脚本渲染的页面），改用 Jina Reader，要 Markdown 格式以保留表格结构。
  */
-export async function fetchPage(url: string): Promise<{ text: string; via: 'readability' | 'direct' | 'jina' }> {
-  let text = '', via: 'readability' | 'direct' = 'direct';
+export async function fetchPage(url: string): Promise<{ text: string; via: 'readability' | 'direct' | 'jina'; finalUrl: string }> {
+  assertSafeUrl(url);
+  let text = '', via: 'readability' | 'direct' = 'direct', finalUrl = url;
   try {
-    const html = await fetchText(url, { accept: 'text/html' });
+    const page = await fetchTextWithUrl(url, { accept: 'text/html' });
+    const html = page.text; finalUrl = page.finalUrl;
     const full = htmlToText(html), read = readableText(html, url);
     // 哪个版本保留的羊毛相关内容多就用哪个；一样多时用更干净的 Readability
     if (read.length >= 800 && relevantText(read).length >= relevantText(full).length) { text = read; via = 'readability'; } else text = full;
   } catch { /* 直接抓失败就走 Jina */ }
-  if (text.length >= 800) return { text, via };
+  if (text.length >= 800) return { text, via, finalUrl };
   const headers: Record<string, string> = { 'User-Agent': UA, 'X-Return-Format': 'markdown', Accept: 'text/plain', 'X-Locale': 'en-US' };
   if (process.env.JINA_API_KEY) headers.Authorization = `Bearer ${process.env.JINA_API_KEY}`;
   const res = await fetch(`https://r.jina.ai/${url}`, { headers, signal: AbortSignal.timeout(60000) });
   if (!res.ok) throw new Error(`直接抓取只有 ${text.length} 字，Jina Reader 返回 ${res.status}`);
   const body = (await res.text()).replace(/^[\s\S]*?Markdown Content:\n/, ''); // 去掉 Jina 的元信息头
-  return { text: body.replace(/\n\s*\n+/g, '\n').trim(), via: 'jina' };
+  return { text: body.replace(/\n\s*\n+/g, '\n').trim(), via: 'jina', finalUrl: url };
 }
 
 // 羊毛关键词两档：

@@ -3,7 +3,7 @@ import { XMLParser } from 'fast-xml-parser';
 import { UA, fetchRetry, fetchText, isLead, sleep } from './lib';
 import type { LeadIn } from '../src/shared/ingest';
 
-export interface Source { id: string; kind: string; url: string; tier: string; platformId: string | null; lastHash: string | null; lastText?: string | null; config?: Record<string, unknown>; deferThisRun?: boolean; platform: { id: string; name: string; status: string } | null; autoPublish: boolean }
+export interface Source { id: string; kind: string; url: string; tier: string; platformId: string | null; lastHash: string | null; lastText?: string | null; lastOkAt?: string | null; config?: Record<string, unknown>; deferThisRun?: boolean; platform: { id: string; name: string; status: string } | null; autoPublish: boolean }
 
 const AIHOT_UA = { 'User-Agent': UA, Accept: 'application/json' };
 
@@ -29,17 +29,23 @@ export async function aihot(src: Source): Promise<LeadIn[]> {
 }
 
 const HN_QUERIES = ['free credits', 'free tier', 'free tokens', 'rate limits reset', 'free trial AI', 'credits giveaway'];
-/** Hacker News：官方搜索接口，只看最近 8 小时（每 6 小时跑一次，留一点重叠）。 */
-export async function hn(_src: Source): Promise<LeadIn[]> {
-  const since = Math.floor(Date.now() / 1000) - 8 * 3600;
+/** Hacker News：从上一次成功采集前两小时补查，分页走完才更新信源检查点。 */
+export async function hn(src: Source): Promise<LeadIn[]> {
+  const recent = Math.floor(Date.now() / 1000) - 8 * 3600;
+  const prior = src.lastOkAt ? Math.floor(Date.parse(src.lastOkAt) / 1000) - 2 * 3600 : recent;
+  const since = Number.isFinite(prior) ? Math.min(recent, prior) : recent;
   const out = new Map<string, LeadIn>();
   for (const q of HN_QUERIES) {
-    const u = `https://hn.algolia.com/api/v1/search_by_date?tags=story&hitsPerPage=50&numericFilters=created_at_i>${since}&query=${encodeURIComponent(q)}`;
-    const j = JSON.parse(await fetchText(u, { accept: 'application/json' })) as { hits: { objectID: string; title?: string; url?: string | null }[] };
-    for (const h of j.hits) {
-      if (!h.title || !isLead(h.title)) continue;
-      const url = h.url || `https://news.ycombinator.com/item?id=${h.objectID}`;
-      out.set(url, { origin: 'hn', url, title: h.title.slice(0, 300), raw: `https://news.ycombinator.com/item?id=${h.objectID}` });
+    for (let page = 0; ; page++) {
+      const u = `https://hn.algolia.com/api/v1/search_by_date?tags=story&hitsPerPage=100&page=${page}&numericFilters=created_at_i>${since}&query=${encodeURIComponent(q)}`;
+      const j = JSON.parse(await fetchText(u, { accept: 'application/json' })) as { hits: { objectID: string; title?: string; url?: string | null }[]; nbPages?: number };
+      for (const h of j.hits) {
+        if (!h.title || !isLead(h.title)) continue;
+        const url = h.url || `https://news.ycombinator.com/item?id=${h.objectID}`;
+        out.set(url, { origin: 'hn', url, title: h.title.slice(0, 300), raw: `https://news.ycombinator.com/item?id=${h.objectID}` });
+      }
+      if (page + 1 >= (j.nbPages ?? 1)) break;
+      if (page >= 99) throw new Error(`HN 查询 ${q} 超过 100 页，尚未完整补回，保留原采集检查点`);
     }
   }
   return [...out.values()];

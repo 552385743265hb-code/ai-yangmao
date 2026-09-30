@@ -35,6 +35,8 @@ cd /Volumes/AI/MyWorkspace/AI_Freebies && ./node_modules/.bin/tsx scripts/ym.ts 
 | 采集正常吗 | `ym health --verbose` |
 | 准入 / 拒绝新平台 xxx | `ym platform-approve <id>` / `ym platform-reject <id>` |
 | 放开 / 关闭某信源的自动上架 | `ym auto-publish <信源id> on` / `off` |
+| 官方宣布撤回某条权益 | 核对原文后执行 `ym withdraw <短码> <官方撤回链接> <具体理由>` |
+| 核对结果不明的 Telegram 推送 | `ym health --verbose` 查看 ID；确认收到后执行 `ym delivery-delivered <ID> <核对依据>`，确认没收到后执行 `ym delivery-unsent <ID> <核对依据>` |
 
 `edit` 可改字段：title type valueText usdEstimate claimStart claimEnd endKind creditValidity audience requirements modalities platformId sourceTz claimMethod。
 - type：new 注册新人礼 / free 限时免费开放 / perk 会员福利 / topup 充值赠送 / gift 会员免费送 / standing 常驻免费额度 / apply 申请制

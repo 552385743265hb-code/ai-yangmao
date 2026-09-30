@@ -65,6 +65,11 @@ describe('按日期查询', () => {
   it('常驻额度不参与按日查询', () => {
     expect(activeOnDate({ ...base, type: 'standing' }, '2026-10-05', 'Asia/Shanghai')).toBe(false);
   });
+  it('未公布开始时间的活动不能倒推到系统发现之前', () => {
+    const offer = { ...base, claimStart: null, claimEnd: null, endKind: 'unknown' as const, discoveredAt: '2026-09-30T04:00:00Z' };
+    expect(activeOnDate(offer, '2026-09-01', 'Asia/Tokyo')).toBe(false);
+    expect(activeOnDate(offer, '2026-09-30', 'Asia/Tokyo')).toBe(true);
+  });
 });
 
 describe('证据门槛', () => {

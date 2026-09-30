@@ -8,8 +8,10 @@ cp "$DIR/integrations/hermes/ai-yangmao/SKILL.md" ~/.hermes/skills/ai-yangmao/SK
 cp "$DIR/integrations/hermes/scripts/"ai-yangmao-*.sh ~/.hermes/scripts/
 chmod +x ~/.hermes/scripts/ai-yangmao-*.sh
 for name in ai-yangmao-digest ai-yangmao-watch; do
-  id="$(hermes cron list 2>/dev/null | grep -E "$name" | grep -oE '[0-9a-f]{8,}' | head -1 || true)"
-  [ -n "$id" ] && hermes cron remove "$id" >/dev/null 2>&1 || true
+  # 历史安装可能留下同名的多个任务；全部清除后只创建一个。
+  while IFS= read -r id; do
+    [ -n "$id" ] && hermes cron remove "$id" >/dev/null
+  done < <(hermes cron list 2>/dev/null | awk -v job="$name" '$1 ~ /^[0-9a-f]+$/ && $2 ~ /^\[/ { id=$1 } $1=="Name:" && $2==job { print id }')
 done
 hermes cron create '0 9 * * *' --name ai-yangmao-digest --no-agent --script ai-yangmao-digest.sh --deliver telegram
 hermes cron create '7 * * * *' --name ai-yangmao-watch --no-agent --script ai-yangmao-watch.sh --deliver telegram

@@ -13,6 +13,8 @@ export interface OfferTiming {
   endKind: EndKind;
   sourceTz: string; // IANA 时区，如 America/Los_Angeles
   lastVerifiedAt: string | null; // ISO 时间，最近一次核验成功
+  discoveredAt?: string | null; // 官方未写开始时间时，不能推断系统发现之前也有效
+  verifyResult?: string | null; // evidence_missing 表示刚检查的证据页已不再支持原条款
   withdrawnAt?: string | null; // 官方撤回
 }
 
@@ -53,11 +55,12 @@ export function isLimited(type: OfferType) {
 export function liveStatus(o: OfferTiming, now: Date = new Date()): LiveStatus {
   const t = now.getTime();
   const verifiedAge = o.lastVerifiedAt ? t - Date.parse(o.lastVerifiedAt) : Infinity;
-  if (o.type === 'standing') return verifiedAge >= STANDING_STALE_AFTER ? 'stale' : 'standing';
-  if (o.type === 'apply') return verifiedAge >= STANDING_STALE_AFTER ? 'stale' : 'open';
   if (o.withdrawnAt && Date.parse(o.withdrawnAt) <= t) return 'ended';
   const end = claimEndAt(o);
   if (end && end.getTime() < t) return 'ended';
+  if (o.verifyResult === 'evidence_missing') return 'stale';
+  if (o.type === 'standing') return verifiedAge >= STANDING_STALE_AFTER ? 'stale' : 'standing';
+  if (o.type === 'apply') return verifiedAge >= STANDING_STALE_AFTER ? 'stale' : 'open';
   const start = claimStartAt(o);
   if (start && start.getTime() > t) return 'upcoming';
   if (verifiedAge > LIMITED_STALE_AFTER) return 'stale';
@@ -76,7 +79,7 @@ export function activeOnDate(o: OfferTiming, date: string, viewerTz: string): bo
   if (!isLimited(o.type)) return false;
   const dayStart = zonedTime(date, '00:00:00', viewerTz).getTime();
   const dayEnd = zonedTime(date, '23:59:59', viewerTz).getTime();
-  const start = claimStartAt(o)?.getTime() ?? -Infinity;
+  const start = claimStartAt(o)?.getTime() ?? (o.discoveredAt ? Date.parse(o.discoveredAt) : -Infinity);
   const withdrawn = o.withdrawnAt ? Date.parse(o.withdrawnAt) : Infinity;
   const end = Math.min(claimEndAt(o)?.getTime() ?? Infinity, withdrawn);
   return start <= dayEnd && end >= dayStart;

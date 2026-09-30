@@ -2,8 +2,12 @@
 import { z } from 'zod';
 import { OFFER_TYPES } from './lifecycle';
 
-const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, '日期格式应为 YYYY-MM-DD');
-const REQ = /^(none|phone|card|net|realname|biz|student|invite|targeted|pay:.+|member:.+)$/;
+export const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, '日期格式应为 YYYY-MM-DD').refine(value => {
+  const [year, month, day] = value.split('-').map(Number);
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+  return parsed.getUTCFullYear() === year && parsed.getUTCMonth() === month - 1 && parsed.getUTCDate() === day;
+}, '日期不存在');
+const REQ = /^(none|unknown|phone|card|net|realname|biz|student|invite|targeted|pay:.+|member:.+)$/;
 
 export const leadIn = z.object({
   origin: z.enum(['aihot', 'email', 'sweep', 'manual', 'telegram', 'hn', 'reddit', 'discord', 'media', 'linuxdo', 'ithome', 'v2ex']),
@@ -38,13 +42,15 @@ export const offerIn = z.object({
     // media：媒体或社区转述，永远需要人工核对官方原文
     tier: z.enum(['site', 'docs', 'official', 'staff', 'media']),
     capturedAt: z.string(),
+    pageHash: z.string().regex(/^[a-f0-9]{64}$/).optional(),
     excerpts: z.object({ benefit: z.string().optional(), eligibility: z.string().optional(), claim: z.string().optional(), validity: z.string().optional() }),
   }),
 }).refine(o => o.endKind !== 'date' || !!o.claimEnd, { message: 'endKind=date 时必须有 claimEnd', path: ['claimEnd'] })
+  .refine(o => !o.claimStart || !o.claimEnd || o.claimStart <= o.claimEnd, { message: '领取开始日期不能晚于截止日期', path: ['claimEnd'] })
   .refine(o => (o.type === 'standing' || o.type === 'apply') === (o.endKind === 'standing'), { message: '常驻额度和申请制的 endKind 必须为 standing，其他类型不能是 standing', path: ['endKind'] });
 
 export const runIn = z.object({
-  kind: z.enum(['collect', 'verify', 'sweep', 'digest', 'health']),
+  kind: z.enum(['collect', 'verify', 'sweep', 'digest', 'health', 'model']),
   startedAt: z.string(),
   finishedAt: z.string(),
   ok: z.boolean(),

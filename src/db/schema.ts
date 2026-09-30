@@ -70,6 +70,7 @@ export interface Evidence {
   url: string;
   tier: 'site' | 'docs' | 'official' | 'staff' | 'media';
   capturedAt: string;
+  pageHash?: string;
   excerpts: { benefit?: string; eligibility?: string; claim?: string; validity?: string };
 }
 
@@ -99,9 +100,21 @@ export const offerRevisions = sqliteTable('offer_revisions', {
   at: text('at').notNull().default(now),
   diff: text('diff', { mode: 'json' }).$type<{ field: string; from: unknown; to: unknown }[]>().notNull(),
   evidenceHash: text('evidence_hash'),
+  evidenceBefore: text('evidence_before', { mode: 'json' }).$type<Evidence>(),
+  evidenceAfter: text('evidence_after', { mode: 'json' }).$type<Evidence>(),
   // pipeline：官方页面变化引起；admin：管理员人工修改（用作模型的纠错样本）
   author: text('author', { enum: ['pipeline', 'admin'] }).notNull().default('pipeline'),
 }, t => [index('revisions_offer_idx').on(t.offerId)]);
+
+/** 对已上架权益的条款提案：审核前保留公开的上一个已通过版本。 */
+export const offerProposals = sqliteTable('offer_proposals', {
+  offerId: text('offer_id').primaryKey().references(() => offers.id),
+  candidate: text('candidate', { mode: 'json' }).$type<Record<string, unknown>>().notNull(),
+  diff: text('diff', { mode: 'json' }).$type<{ field: string; from: unknown; to: unknown }[]>().notNull(),
+  manualFields: text('manual_fields', { mode: 'json' }).$type<string[]>().notNull().default(sql`'[]'`),
+  detectedAt: text('detected_at').notNull().default(now),
+  updatedAt: text('updated_at').notNull().default(now),
+});
 
 export const reviews = sqliteTable('reviews', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -125,9 +138,22 @@ export const notifications = sqliteTable('notifications', {
   sentAt: text('sent_at'),
 }, t => [uniqueIndex('notifications_uq').on(t.offerId, t.stage, t.channel)]);
 
+/** 一条实际消息的发送尝试。先占位，只有发送方收到成功回执后才写 notifications。 */
+export const deliveries = sqliteTable('deliveries', {
+  id: text('id').primaryKey(),
+  fingerprint: text('fingerprint').notNull().unique(),
+  channel: text('channel', { enum: ['telegram', 'feishu'] }).notNull(),
+  kind: text('kind', { enum: ['digest', 'urgent', 'health'] }).notNull(),
+  status: text('status', { enum: ['pending', 'sent', 'unknown', 'released'] }).notNull().default('pending'),
+  payload: text('payload', { mode: 'json' }).$type<Record<string, unknown>>().notNull(),
+  error: text('error'),
+  createdAt: text('created_at').notNull().default(now),
+  updatedAt: text('updated_at').notNull().default(now),
+});
+
 export const runs = sqliteTable('runs', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  kind: text('kind', { enum: ['collect', 'verify', 'sweep', 'digest', 'health'] }).notNull(),
+  kind: text('kind', { enum: ['collect', 'verify', 'sweep', 'digest', 'health', 'model'] }).notNull(),
   startedAt: text('started_at').notNull().default(now),
   finishedAt: text('finished_at'),
   ok: integer('ok', { mode: 'boolean' }),
