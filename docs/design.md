@@ -63,7 +63,7 @@
 | 订阅邮件 | 专用邮箱订阅厂商 newsletter，Cloudflare 邮件转发 → Email Worker 解析 | 零成本 |
 | 补录 | 后台粘贴链接，或把链接转发给 Telegram 机器人 | 补公众号和 X 的缺口 |
 | Hacker News | 官方免费搜索接口（Algolia），每 6 小时，关键词粗筛 | 只作线索 |
-| Reddit | 子版块公开 RSS（r/LocalLLaMA、r/ClaudeAI、r/singularity 等），每 6 小时，关键词粗筛 | 只作线索 |
+| Reddit | 已停用（2026-09-30）：Reddit 封锁云服务器和 Jina 的访问，自助创建 API 应用也被关闭，需按 Responsible Builder Policy 申请。代码已支持官方 API，获批后配置 REDDIT_CLIENT_ID / SECRET 即可启用。期间靠 AIHOT 和周六扫描覆盖 | 只作线索 |
 | Discord | 自建服务器，关注厂商官方服务器的公告频道，由机器人读取；首批 4～6 家多模态厂商（Midjourney、Suno、Pika、Luma 等） | 属于官方账号级别；后续阶段做；不抓取他人服务器 |
 | 发现扫描 | 每周六一次（Claude Code 云端定时任务），线索源：X、HN、Product Hunt、Reddit、V2EX、LINUX DO、AIHOT 日报 | 结果全部进待审 |
 
