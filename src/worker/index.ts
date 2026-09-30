@@ -1,5 +1,5 @@
 // Cloudflare Worker 入口：/api/* 走这里，其余由静态资源（网站页面）处理。
-import { and, desc, eq, inArray } from 'drizzle-orm';
+import { and, desc, eq, inArray, sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
 import { Hono } from 'hono';
 import { z } from 'zod';
@@ -33,6 +33,20 @@ app.get('/api/health', c => c.json({ ok: true, time: new Date().toISOString() })
 app.get('/api/meta', async c => {
   const [lastOk] = await db(c.env).select().from(s.runs).where(and(eq(s.runs.kind, 'collect'), eq(s.runs.ok, true))).orderBy(desc(s.runs.finishedAt)).limit(1);
   return c.json({ lastSuccessfulCollect: lastOk?.finishedAt ?? null });
+});
+
+/** 覆盖范围页：监控了哪些渠道、健康状况。不含任何密钥或内部地址以外的信息。 */
+app.get('/api/coverage', async c => {
+  const d = db(c.env);
+  const srcs = await d.select({ kind: s.sources.kind, enabled: s.sources.enabled, failStreak: s.sources.failStreak, lastOkAt: s.sources.lastOkAt, platformId: s.sources.platformId, url: s.sources.url, config: s.sources.config }).from(s.sources);
+  const [{ n: platforms }] = await d.select({ n: sql<number>`count(*)` }).from(s.platforms).where(eq(s.platforms.status, 'approved'));
+  const [lastOk] = await d.select().from(s.runs).where(and(eq(s.runs.kind, 'collect'), eq(s.runs.ok, true))).orderBy(desc(s.runs.finishedAt)).limit(1);
+  const byKind: Record<string, { total: number; enabled: number; failing: number }> = {};
+  for (const x of srcs) {
+    const k = (byKind[x.kind] ??= { total: 0, enabled: 0, failing: 0 });
+    k.total++; if (x.enabled) k.enabled++; if (x.enabled && x.failStreak >= 3) k.failing++;
+  }
+  return c.json({ platforms, sources: srcs.filter(x => x.enabled).length, byKind, lastSuccessfulCollect: lastOk?.finishedAt ?? null, officialPages: srcs.filter(x => x.enabled && x.platformId).map(x => ({ platformId: x.platformId, url: x.url, kind: x.kind, healthy: x.failStreak < 3 })) });
 });
 
 const listQuery = z.object({

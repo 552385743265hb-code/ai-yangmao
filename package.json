@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build:web": "bash prototype/build.sh && mkdir -p public && cp prototype/dist/preview.html public/index.html && cp web/_headers public/_headers",
+    "build:web": "bash web/build.sh",
     "dev": "npm run build:web && wrangler dev",
     "deploy": "npm run build:web && wrangler deploy",
     "db:generate": "drizzle-kit generate",
