@@ -35,7 +35,8 @@ app.use('/api/*', async (c, next) => {
   if (c.req.method === 'GET' && !c.res.headers.get('Cache-Control')) c.header('Cache-Control', 'public, max-age=60');
 });
 
-const withStatus = (o: OfferRow, now: Date) => ({ ...o, status: liveStatus(o, now), missingEvidence: missingEvidence(o.evidence.excerpts) });
+// 公开接口不输出内部核验记录
+const withStatus = (o: OfferRow, now: Date) => { const { reviewMemo: _memo, ...pub } = o; return { ...pub, status: liveStatus(o, now), missingEvidence: missingEvidence(o.evidence.excerpts) }; };
 
 app.get('/api/health', c => c.json({ ok: true, time: new Date().toISOString() }));
 

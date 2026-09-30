@@ -97,6 +97,16 @@ describe('official evidence verification', () => {
 });
 
 describe('review gates and preserved public version', () => {
+  it('内部核验记录只给管理员看，公开接口不输出', async () => {
+    await call('ingest/offers', [offer]);
+    await call('admin/offers/vendor-free/approve', {}, 'admin');
+    expect((await call('admin/offers/vendor-free/memo', { memo: '漏抓原因：平台没有信源' }, 'admin')).status).toBe(200);
+    const pub = await call('offers?view=all');
+    expect(JSON.stringify(pub.body)).not.toContain('漏抓原因');
+    expect(JSON.stringify((await call('offers/vendor-free')).body)).not.toContain('漏抓原因');
+    expect(JSON.stringify((await call('admin/queue', undefined, 'admin')).body) + JSON.stringify((await call('admin/offers/vendor-free', undefined, 'admin')).body)).toContain('漏抓原因');
+  });
+
   it('管理员心得：写入后公开显示，采集更新不会覆盖', async () => {
     await call('ingest/offers', [offer]);
     expect((await call('admin/offers/vendor-free/note', { note: '速度慢，适合做翻译' }, 'admin')).status).toBe(200);

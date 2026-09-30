@@ -61,6 +61,8 @@ export const offers = sqliteTable('offers', {
   withdrawnReason: text('withdrawn_reason'),
   // 管理员的使用心得（如免费模型好不好用），只能在后台写，采集和模型提案不会覆盖
   adminNote: text('admin_note'),
+  // 内部核验记录（漏抓原因、核验程度、证据截图位置），只给管理员看，公开接口会去掉
+  reviewMemo: text('review_memo'),
   reviewState: text('review_state', { enum: ['pending', 'approved', 'rejected'] }).notNull().default('pending'),
   evidence: text('evidence', { mode: 'json' }).$type<Evidence>().notNull(),
   steps: text('steps', { mode: 'json' }).$type<string[]>().notNull().default(sql`'[]'`),

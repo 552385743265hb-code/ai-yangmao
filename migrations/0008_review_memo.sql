@@ -1,0 +1,1 @@
+ALTER TABLE `offers` ADD `review_memo` text;

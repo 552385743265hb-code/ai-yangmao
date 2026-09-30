@@ -57,6 +57,13 @@
       "when": 1790777165393,
       "tag": "0007_usd_max",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1790788814060,
+      "tag": "0008_review_memo",
+      "breakpoints": true
     }
   ]
 }

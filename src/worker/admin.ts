@@ -30,7 +30,7 @@ function view(o: OfferRow, platformName: string, now = new Date()) {
     requirements: o.requirements, audience: o.audience, claimMethod: o.claimMethod, creditValidity: o.creditValidity,
     sourceTz: o.sourceTz, claimStart: o.claimStart, claimEnd: o.claimEnd, endKind: o.endKind,
     evidenceUrl: o.evidence.url, evidenceTier: o.evidence.tier, excerpts: o.evidence.excerpts, missingEvidence: missingEvidence(o.evidence.excerpts),
-    steps: o.steps, modalities: o.modalities, usdEstimate: o.usdEstimate, usdMax: o.usdMax ?? null, adminNote: o.adminNote ?? null,
+    steps: o.steps, modalities: o.modalities, usdEstimate: o.usdEstimate, usdMax: o.usdMax ?? null, adminNote: o.adminNote ?? null, reviewMemo: o.reviewMemo ?? null,
     link: `https://ai-yangmao.com/#offer-${o.id}`,
   };
 }
@@ -249,6 +249,17 @@ admin.post('/offers/:ref/edit', async c => {
   await d.insert(s.reviews).values({ offerId: o.id, action: 'edit', editedFields: diff.map(x => x.field), reviewer: 'admin', reason: body?.reason ?? null, reasonCode: body?.reasonCode ?? 'wrong_field' });
   if (o.sourceId && diff.length) await d.update(s.sources).set({ cleanStreak: 0 }).where(eq(s.sources.id, o.sourceId));
   return c.json({ ok: true, code: shortCode(o.id), changed: diff.map(x => x.field), approved: !!body?.approve });
+});
+
+/** 内部核验记录：只给管理员看，不公开、不触发审核。 */
+admin.post('/offers/:ref/memo', async c => {
+  const o = await findOffer(c.env, c.req.param('ref'));
+  if (!o) return c.json({ error: '找不到这条羊毛' }, 404);
+  const body = z.object({ memo: z.string().max(4000) }).safeParse(await c.req.json().catch(() => null));
+  if (!body.success) return c.json({ error: '核验记录最多 4000 字' }, 400);
+  const memo = body.data.memo.trim() || null;
+  await db(c.env).update(s.offers).set({ reviewMemo: memo }).where(eq(s.offers.id, o.id));
+  return c.json({ ok: true, code: shortCode(o.id), reviewMemo: memo });
 });
 
 /** 管理员使用心得：不改条款、不影响审核状态，写了立即公开；空字符串表示删除。 */
