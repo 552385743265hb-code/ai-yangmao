@@ -1269,7 +1269,7 @@ function drawShell() {
   $$('[data-brand]').forEach(el => { el.innerHTML = BRAND; });
   $('#sideNav').innerHTML = NAVS.map(([g, items]) => `<div class="nav-sep">${g}</div>${items.map(([k, l]) => `<a href="#${k}" data-nav="${k}">${ICON[k]}${l}</a>`).join('')}`).join('');
   $('#tabbar').innerHTML = [['today', '今天'], ['calendar', '日历'], ['timeline', '时间线'], ['insights', '洞察']].map(([k, l]) => `<a href="#${k}" data-nav="${k}">${ICON[k]}<span>${l}</span></a>`).join('') + `<button type="button" data-more>${ICON.more}<span>更多</span></button>`;
-  $('#sideFoot').innerHTML = `<span class="live"><i></i>最近更新 ${LAST_OK ? hm(LAST_OK) : '—'}</span><span>RSS 订阅（即将开放）</span><a href="#coverage" style="text-decoration:underline">只收能追到官方出处的羊毛，不保证覆盖所有活动</a>`;
+  $('#sideFoot').innerHTML = `<span class="live"><i></i>最近更新 ${LAST_OK ? hm(LAST_OK) : '—'}</span><a href="/rss.xml" target="_blank" rel="noopener" style="text-decoration:underline">RSS 订阅</a><a href="#coverage" style="text-decoration:underline">只收能追到官方出处的羊毛，不保证覆盖所有活动</a>`;
   drawCondBtn();
 }
 function drawCondBtn() {
