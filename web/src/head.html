@@ -129,6 +129,10 @@ section{margin-block:28px}
 .chip.have{background:transparent;border-color:color-mix(in oklab,var(--good) 55%,transparent);color:var(--good-ink)}
 .st{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:3px 9px 3px 8px;border-radius:999px;background:var(--surface-2);color:var(--ink-2);white-space:nowrap}
 .st b{font-family:var(--f-num);font-weight:700;font-size:11px;width:13px;text-align:center}
+/* 状态标签本身不换行；放在卡片里时不许超出卡片宽度，太长就换行（2026-10-01 审批页黄色提示溢出） */
+.card .st{max-width:100%;white-space:normal;overflow-wrap:anywhere}
+/* 额度里有“未写明”时的提示：可换行的块，不用状态标签样式 */
+.warn-note{display:block;margin-top:4px;padding:6px 10px;border-radius:10px;background:color-mix(in oklab,var(--warn) 16%,transparent);color:var(--warn-ink);font-weight:600;font-size:13.5px;line-height:1.5;overflow-wrap:anywhere}
 .st.good{color:var(--good-ink)} .st.warn{color:var(--warn-ink)} .st.serious{color:var(--serious-ink)} .st.critical{color:var(--critical-ink)}
 .score{display:inline-flex;align-items:baseline;gap:3px;font-family:var(--f-num);font-weight:700;font-size:13px;padding:2px 8px;border-radius:8px;background:var(--tag-soft);color:var(--ink)}
 .score small{font-weight:500;font-size:10.5px;color:var(--ink-2)}
