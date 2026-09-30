@@ -1,0 +1,1792 @@
+<title>AI 羊毛牧场</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Rubik:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: app shell. Desktop = sticky sidebar + one content column (max 1180px); phone = top bar + bottom tab bar. */
+:root{
+  --bg:#f1f5ee; --surface:#fbfcf9; --surface-2:#e9efe4; --surface-3:#dde6d6;
+  --ink:#1c2921; --ink-2:#4a5a50; --muted:#6f7d73; --line:#d9e2d3; --line-2:#c3cfbc;
+  --tag:#f4b91c; --tag-ink:#2a1f00; --tag-soft:#fbeec4;
+  --sky-1:#cfe6f3; --sky-2:#eaf5ee; --hill-1:#c3e2aa; --hill-2:#a0cf85; --hill-3:#7bb565; --hill-4:#5f9c4c;
+  --wool:#ffffff; --wool-edge:#c9d1c2; --skin:#f2cfc1; --face:#2c2a27; --fence:#a9845a; --sun:#f7c948; --cloud:#ffffff;
+  --good:#0ca30c; --warn:#fab219; --serious:#ec835a; --critical:#d03b3b;
+  --good-ink:#006300; --warn-ink:#8a5a00; --serious-ink:#a84416; --critical-ink:#b42323;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --s6:#008300; --s7:#4a3aa7;
+  --q0:#e8f3de; --q1:#cfe7bd; --q2:#b2d89a; --q3:#90c575; --q4:#6fb053; --q5:#4f963a; --q6:#377a29; --q7:#245d1d;
+  --shadow:0 1px 2px rgba(28,41,33,.06),0 8px 24px rgba(28,41,33,.08);
+  --f-display:"ZCOOL KuaiLe","PingFang SC","HarmonyOS Sans SC","Microsoft YaHei",sans-serif;
+  --f-body:"PingFang SC","HarmonyOS Sans SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-num:"Rubik","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e1511; --surface:#151e18; --surface-2:#1c2720; --surface-3:#243128;
+    --ink:#e9f0e9; --ink-2:#b3c1b6; --muted:#8a978d; --line:#27342c; --line-2:#34453a;
+    --tag:#f6c23a; --tag-ink:#231a00; --tag-soft:#3b3218;
+    --sky-1:#142336; --sky-2:#1a2c2b; --hill-1:#2b4a2c; --hill-2:#315733; --hill-3:#39653a; --hill-4:#427443;
+    --wool:#e6eae2; --wool-edge:#9aa495; --skin:#cfa898; --face:#121110; --fence:#7f6242; --sun:#e9d27a; --cloud:#5a6b76;
+    --good-ink:#3fcf3f; --warn-ink:#fab219; --serious-ink:#f09a74; --critical-ink:#ef7a7a;
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#9085e9;
+    --q0:#1c2a1f; --q1:#22402a; --q2:#2a5731; --q3:#336f38; --q4:#3f8841; --q5:#4fa24c; --q6:#66bb5b; --q7:#86d474;
+    --shadow:0 1px 2px rgba(0,0,0,.35),0 8px 24px rgba(0,0,0,.3);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e1511; --surface:#151e18; --surface-2:#1c2720; --surface-3:#243128;
+  --ink:#e9f0e9; --ink-2:#b3c1b6; --muted:#8a978d; --line:#27342c; --line-2:#34453a;
+  --tag:#f6c23a; --tag-ink:#231a00; --tag-soft:#3b3218;
+  --sky-1:#142336; --sky-2:#1a2c2b; --hill-1:#2b4a2c; --hill-2:#315733; --hill-3:#39653a; --hill-4:#427443;
+  --wool:#e6eae2; --wool-edge:#9aa495; --skin:#cfa898; --face:#121110; --fence:#7f6242; --sun:#e9d27a; --cloud:#5a6b76;
+  --good-ink:#3fcf3f; --warn-ink:#fab219; --serious-ink:#f09a74; --critical-ink:#ef7a7a;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#9085e9;
+  --q0:#1c2a1f; --q1:#22402a; --q2:#2a5731; --q3:#336f38; --q4:#3f8841; --q5:#4fa24c; --q6:#66bb5b; --q7:#86d474;
+  --shadow:0 1px 2px rgba(0,0,0,.35),0 8px 24px rgba(0,0,0,.3);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 var(--f-body);-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--s1);outline-offset:2px;border-radius:6px}
+.num{font-family:var(--f-num)}
+.tnum{font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.small{font-size:12.5px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ---------- shell ---------- */
+.app{display:grid;grid-template-columns:minmax(0,1fr)}
+.side{display:none}
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 16px;background:color-mix(in oklab,var(--bg) 86%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:9px;font-family:var(--f-display);font-size:21px;line-height:1;color:var(--ink);white-space:nowrap}
+.brand svg{width:34px;height:34px;flex:none}
+main{padding-inline:16px;padding-block:14px 112px;min-width:0;width:100%;max-width:1180px;margin-inline:auto}
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:30;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+.tabbar a,.tabbar button{display:flex;flex-direction:column;align-items:center;gap:1px;padding:7px 0 6px;font-size:11px;color:var(--muted);background:none;border:0;cursor:pointer}
+.tabbar svg{width:23px;height:23px}
+.tabbar .on{color:var(--ink);font-weight:600}
+.tabbar .on .ic-dot{fill:var(--tag)}
+.cond-btn{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border-radius:999px;border:1px solid var(--line-2);background:var(--surface);cursor:pointer;font-size:13px;white-space:nowrap}
+.cond-btn .badge{min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--tag);color:var(--tag-ink);font-size:11px;font-weight:700;display:inline-grid;place-items:center;font-family:var(--f-num)}
+@media (min-width:960px){
+  .app{grid-template-columns:236px minmax(0,1fr)}
+  .side{display:flex;flex-direction:column;gap:16px;position:sticky;top:0;height:100vh;overflow:auto;padding:22px 14px 18px;border-right:1px solid var(--line);background:var(--surface)}
+  .topbar,.tabbar{display:none}
+  main{padding-inline:32px;padding-block:24px 64px}
+}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav a{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:10px;color:var(--ink-2);font-size:14.5px}
+.nav a svg{width:19px;height:19px;flex:none}
+.nav a:hover{background:var(--surface-2);color:var(--ink)}
+.nav a.on{background:var(--tag-soft);color:var(--ink);font-weight:600}
+.nav a.on .ic-dot{fill:var(--tag)}
+.nav-sep{font-size:11px;letter-spacing:.14em;color:var(--muted);padding:12px 10px 3px}
+.side-foot{margin-top:auto;font-size:12px;color:var(--muted);display:flex;flex-direction:column;gap:8px;padding-inline:6px}
+
+/* ---------- page furniture ---------- */
+.ribbon{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;font-size:12.5px;color:var(--ink-2);background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:7px 12px;margin-bottom:14px}
+.ribbon b{color:var(--ink);font-weight:600}
+.live{display:inline-flex;align-items:center;gap:7px}
+.live i{width:8px;height:8px;border-radius:50%;background:var(--good);box-shadow:0 0 0 3px color-mix(in oklab,var(--good) 22%,transparent)}
+.sample{display:inline-flex;align-items:center;gap:6px;padding:1px 8px;border-radius:6px;background:var(--tag-soft);color:var(--ink);font-weight:600}
+.ph{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:10px 16px;margin:4px 0 16px}
+.ph h1{font-family:var(--f-display);font-weight:400;font-size:clamp(28px,4.4vw,38px);line-height:1.12;margin:0;text-wrap:balance;letter-spacing:.01em}
+.ph p{margin:6px 0 0;color:var(--ink-2);max-width:62ch}
+.crumb{font-size:13px;color:var(--muted);display:inline-flex;gap:6px;align-items:center;margin-bottom:6px}
+.crumb a:hover{color:var(--ink)}
+section{margin-block:28px}
+.sec-h{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 12px;margin-bottom:12px}
+.sec-h h2{font-family:var(--f-display);font-weight:400;font-size:23px;line-height:1.2;margin:0}
+.sec-h .hint{font-size:12.5px;color:var(--muted)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;min-width:0}
+.card h3{font-size:15px;margin:0 0 2px;font-weight:600}
+.card .sub{font-size:12.5px;color:var(--muted);margin:0 0 8px}
+.chart{width:100%;height:280px}
+.grid{display:grid;gap:14px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr))}
+.hscroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.hscroll>.chart{min-width:640px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;color:var(--ink-2)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:10px;height:10px;border-radius:3px;display:inline-block;flex:none}
+.empty{display:flex;flex-direction:column;align-items:center;gap:6px;padding:26px 10px;color:var(--muted);text-align:center}
+.empty svg{width:120px;height:80px}
+
+/* ---------- tokens of the domain ---------- */
+.etag{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;color:var(--ink-2);white-space:nowrap}
+.etag svg{width:14px;height:16px;flex:none}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:12px;line-height:1.2;padding:4px 9px;border-radius:999px;background:var(--surface-2);color:var(--ink-2);border:1px solid transparent;white-space:nowrap}
+.chip.miss{background:transparent;border-color:color-mix(in oklab,var(--critical) 60%,transparent);color:var(--critical-ink)}
+.chip.have{background:transparent;border-color:color-mix(in oklab,var(--good) 55%,transparent);color:var(--good-ink)}
+.st{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:3px 9px 3px 8px;border-radius:999px;background:var(--surface-2);color:var(--ink-2);white-space:nowrap}
+.st b{font-family:var(--f-num);font-weight:700;font-size:11px;width:13px;text-align:center}
+.st.good{color:var(--good-ink)} .st.warn{color:var(--warn-ink)} .st.serious{color:var(--serious-ink)} .st.critical{color:var(--critical-ink)}
+.score{display:inline-flex;align-items:baseline;gap:3px;font-family:var(--f-num);font-weight:700;font-size:13px;padding:2px 8px;border-radius:8px;background:var(--tag-soft);color:var(--ink)}
+.score small{font-weight:500;font-size:10.5px;color:var(--ink-2)}
+
+/* ---------- buttons & inputs ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 14px;border-radius:999px;border:1px solid var(--line-2);background:var(--surface);cursor:pointer;font-size:14px;font-weight:500;white-space:nowrap}
+.btn:hover{border-color:var(--ink-2)}
+.btn.pri{background:var(--tag);border-color:var(--tag);color:var(--tag-ink);font-weight:600}
+.btn.pri:hover{filter:brightness(1.04)}
+.btn[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.btn.sm{padding:5px 11px;font-size:12.5px}
+.btn.good{border-color:color-mix(in oklab,var(--good) 60%,transparent);color:var(--good-ink)}
+.btn.bad{border-color:color-mix(in oklab,var(--critical) 55%,transparent);color:var(--critical-ink)}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.seg{display:inline-flex;padding:3px;border-radius:999px;background:var(--surface-2);gap:2px}
+.seg button{border:0;background:none;padding:5px 12px;border-radius:999px;font-size:13px;cursor:pointer;color:var(--ink-2)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);font-weight:600;box-shadow:var(--shadow)}
+.filters{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,150px),1fr));gap:8px;margin-bottom:14px}
+.field{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted);min-width:0}
+select,input[type="date"],input[type="url"],input[type="text"]{width:100%;min-width:0;padding:8px 10px;border-radius:10px;border:1px solid var(--line-2);background:var(--surface);font-size:14px;color:var(--ink)}
+.tog{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 2px;border-bottom:1px solid var(--line);cursor:pointer}
+.tog span small{display:block;color:var(--muted);font-size:12px}
+.tog input{appearance:none;-webkit-appearance:none;width:42px;height:24px;border-radius:12px;background:var(--line-2);position:relative;cursor:pointer;flex:none;transition:background .15s}
+.tog input::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:var(--surface);box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .15s}
+.tog input:checked{background:var(--s3)}
+.tog input:checked::after{transform:translateX(18px)}
+
+/* ---------- today: hero meadow ---------- */
+.hero{position:relative;border-radius:22px;overflow:hidden;border:1px solid var(--line);background:linear-gradient(180deg,var(--sky-1),var(--sky-2) 62%)}
+.hero-over{position:absolute;left:18px;top:14px;right:18px;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-start;gap:12px;pointer-events:none}
+.hero-over>*{pointer-events:auto}
+.total{display:flex;flex-direction:column;gap:2px}
+.total .l{font-size:13px;color:var(--ink-2)}
+.total .v{font-family:var(--f-num);font-weight:700;font-size:clamp(36px,6vw,52px);line-height:1;color:var(--ink);letter-spacing:-.01em}
+.total .d{font-size:12.5px;color:var(--ink-2)}
+.wx{display:flex;align-items:center;gap:10px;padding:8px 14px 8px 10px;border-radius:16px;background:color-mix(in oklab,var(--surface) 78%,transparent);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border:1px solid var(--line)}
+.wx svg{width:40px;height:40px;flex:none}
+.wx .i{font-family:var(--f-num);font-weight:700;font-size:26px;line-height:1}
+.wx .t{font-size:12.5px;color:var(--ink-2);line-height:1.35}
+.meadow{display:block;width:100%;height:auto;touch-action:manipulation}
+.meadow .sheep{cursor:pointer}
+.meadow .sheep:focus{outline:none}
+.meadow .sheep:focus-visible .wool-o{stroke:var(--s1);stroke-width:4}
+.meadow .bob{animation:bob 3.2s ease-in-out infinite;transform-box:fill-box;transform-origin:50% 100%}
+.meadow .sheep:hover .bob{animation-duration:.9s}
+@keyframes bob{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-1.6px) rotate(-1.2deg)}}
+.meadow .snip{animation:snip 1.6s ease-in-out infinite;transform-box:fill-box;transform-origin:30% 70%}
+@keyframes snip{0%,100%{transform:rotate(0)}50%{transform:rotate(-16deg)}}
+.flock-legend{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;font-size:12.5px;color:var(--ink-2);padding:10px 16px;border-top:1px solid var(--line);background:var(--surface)}
+@media (max-width:640px){ .hero-over{position:static;padding:14px 14px 0} }
+
+.kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (min-width:760px){ .kpis{grid-template-columns:repeat(4,minmax(0,1fr))} }
+.kpi{padding:12px 14px 10px;border-radius:14px;background:var(--surface);border:1px solid var(--line);display:flex;flex-direction:column;gap:2px;min-width:0}
+.kpi .k-l{font-size:12.5px;color:var(--ink-2)}
+.kpi .k-v{font-family:var(--f-num);font-size:28px;font-weight:600;line-height:1.15}
+.kpi .k-v small{font-size:13px;font-weight:500;color:var(--muted);margin-left:4px}
+.kpi svg{width:100%;height:30px;color:var(--s1);margin-top:2px}
+
+.clocks{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,215px),1fr));gap:10px}
+.clock{position:relative;display:flex;gap:11px;align-items:center;padding:10px 12px;border-radius:14px;background:var(--surface);border:1px solid var(--line);min-width:0}
+.clock:hover{border-color:var(--line-2)}
+.clock svg{width:54px;height:54px;flex:none}
+.clock .cd{font-family:var(--f-num);font-size:18px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.2}
+.clock .ttl{font-size:13px;line-height:1.35;color:var(--ink-2);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+
+/* ---------- offer cards ---------- */
+.ocards{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr))}
+.ocard{position:relative;display:grid;grid-template-columns:minmax(0,1fr) 66px;gap:8px 12px;padding:14px;border-radius:16px;background:var(--surface);border:1px solid var(--line);transition:border-color .15s,transform .15s}
+.ocard:hover{border-color:var(--line-2);transform:translateY(-1px)}
+.ocard .stretch{position:absolute;inset:0;border-radius:16px;z-index:1}
+.oc-top{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.oc-title{font-weight:600;font-size:15.5px;line-height:1.38;margin:0}
+.oc-plat{font-size:12.5px;color:var(--muted)}
+.oc-val{font-family:var(--f-num);font-size:21px;font-weight:600;line-height:1.2}
+.oc-val small{font-size:12px;color:var(--muted);font-weight:500;font-family:var(--f-body);margin-left:4px}
+.oc-radar{width:66px;height:66px;align-self:center}
+.oc-foot{grid-column:1/-1;display:flex;flex-direction:column;gap:7px}
+.bar{height:6px;border-radius:99px;background:var(--surface-2);overflow:hidden}
+.bar i{display:block;height:100%;border-radius:99px}
+.oc-meta{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;color:var(--ink-2)}
+.cmp{position:relative;z-index:2;border:1px solid var(--line-2);background:var(--surface);border-radius:999px;font-size:11.5px;padding:2px 8px;cursor:pointer;color:var(--ink-2)}
+.cmp[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.rows{display:flex;flex-direction:column}
+.orow{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 12px;align-items:center;padding:10px 4px;border-bottom:1px solid var(--line)}
+.orow:hover{background:var(--surface-2)}
+.orow .when{font-family:var(--f-num);font-size:13px;color:var(--ink-2);min-width:62px}
+.orow .t{font-weight:500;line-height:1.35}
+.orow .t small{display:block;font-weight:400;font-size:12px;color:var(--muted)}
+
+/* ---------- calendar ---------- */
+.months{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr))}
+.month h3{font-family:var(--f-display);font-weight:400;font-size:19px;margin:0 0 2px}
+.ramp{display:inline-flex;gap:2px;vertical-align:middle}
+.ramp i{width:16px;height:10px;border-radius:3px;display:block}
+.hols{display:flex;flex-wrap:wrap;gap:8px}
+.hol{display:flex;flex-direction:column;padding:8px 12px;border-radius:12px;background:var(--surface);border:1px solid var(--line);font-size:12.5px;max-width:100%}
+.hol b{font-size:13.5px}
+
+/* ---------- detail ---------- */
+.dt-top{display:flex;flex-wrap:wrap;gap:8px 10px;align-items:center}
+.dt-title{font-family:var(--f-display);font-weight:400;font-size:clamp(26px,4.4vw,38px);line-height:1.18;margin:8px 0 4px;text-wrap:balance}
+.dt-grid{display:grid;gap:14px;grid-template-columns:minmax(0,1fr)}
+@media (min-width:920px){ .dt-grid{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr)} }
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,160px),1fr));gap:10px}
+.fact{padding:10px 12px;border-radius:12px;background:var(--surface-2);min-width:0}
+.fact .l{font-size:12px;color:var(--muted)}
+.fact .v{font-weight:600;line-height:1.4}
+.fact .v small{display:block;font-weight:400;color:var(--ink-2);font-size:12px}
+.bigval{font-family:var(--f-num);font-weight:700;font-size:clamp(30px,5vw,42px);line-height:1.05}
+.steps{margin:0;padding-left:1.4em;display:flex;flex-direction:column;gap:6px}
+.quote{position:relative;padding:12px 14px 12px 40px;background:var(--surface-2);border-radius:12px;font-size:14px;color:var(--ink-2);margin:0}
+.quote::before{content:"“";position:absolute;left:12px;top:0;font-family:var(--f-display);font-size:42px;color:var(--tag);line-height:1.1}
+.tl{list-style:none;margin:0;padding:0}
+.tl li{position:relative;padding:0 0 14px 22px;font-size:13.5px}
+.tl li::before{content:"";position:absolute;left:3px;top:7px;width:9px;height:9px;border-radius:50%;background:var(--line-2)}
+.tl li.hot::before{background:var(--tag)}
+.tl li::after{content:"";position:absolute;left:7px;top:19px;bottom:0;width:1px;background:var(--line)}
+.tl li:last-child::after{display:none}
+.tl time{font-family:var(--f-num);font-size:12px;color:var(--muted);display:block}
+.diff{font-size:13.5px;display:flex;flex-direction:column;gap:6px}
+.diff del{color:var(--critical-ink)}
+.diff ins{color:var(--good-ink);text-decoration:none;font-weight:600}
+.ring-big{display:flex;align-items:center;gap:14px}
+.ring-big svg{width:92px;height:92px;flex:none}
+.ring-big .cd{font-family:var(--f-num);font-size:24px;font-weight:600;font-variant-numeric:tabular-nums}
+
+/* ---------- misc blocks ---------- */
+.graves{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,148px),1fr));gap:16px 12px;align-items:end;padding-bottom:6px;border-bottom:6px solid var(--hill-2)}
+.grave{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;gap:3px;padding:20px 10px 12px;border-radius:72px 72px 8px 8px;background:var(--surface-3);border:1px solid var(--line-2);color:var(--ink-2);font-size:12.5px;min-width:0}
+.grave:hover{border-color:var(--ink-2)}
+.grave .rip{font-family:var(--f-display);font-size:14px;color:var(--muted);letter-spacing:.18em}
+.grave b{color:var(--ink);font-size:13.5px;line-height:1.35}
+.grave .age{font-family:var(--f-num);font-weight:600;color:var(--ink)}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-weight:600;color:var(--muted);font-size:12px;letter-spacing:.03em}
+td.n{font-variant-numeric:tabular-nums;font-family:var(--f-num)}
+tr.link{cursor:pointer}
+tr.link:hover td{background:var(--surface-2)}
+.ecg{width:160px;height:26px;display:block}
+.qitem{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+.qitem .t{font-weight:600}
+.qitem .m{font-size:12.5px;color:var(--muted)}
+.meter{height:8px;border-radius:99px;background:var(--surface-2);overflow:hidden}
+.meter i{display:block;height:100%;background:var(--s1);border-radius:99px}
+.pips{display:inline-flex;gap:3px}
+.pips i{width:9px;height:9px;border-radius:50%;background:var(--line-2)}
+.pips i.on{background:var(--good)}
+.prog{display:flex;align-items:center;gap:16px}
+.prog svg{width:132px;height:132px;flex:none}
+.kv{display:flex;flex-direction:column;gap:2px}
+.kv b{font-family:var(--f-num);font-size:24px}
+
+/* ---------- overlays ---------- */
+.sheet{position:fixed;inset:0;z-index:60;display:flex;align-items:flex-end;justify-content:center;background:rgba(8,14,10,.42)}
+.sheet-panel{width:min(560px,100%);max-height:88vh;overflow:auto;background:var(--surface);border-radius:22px 22px 0 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom,0px));box-shadow:var(--shadow)}
+.sheet-panel h2{font-family:var(--f-display);font-weight:400;font-size:24px;margin:0 0 4px}
+.sheet-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px}
+@media (min-width:720px){ .sheet{align-items:center} .sheet-panel{border-radius:22px} }
+.more-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px}
+.more-nav a{display:flex;align-items:center;gap:10px;padding:12px;border-radius:14px;background:var(--surface-2);font-size:14.5px}
+.more-nav svg{width:20px;height:20px}
+#tip{position:fixed;z-index:80;pointer-events:none;max-width:260px;padding:9px 11px;border-radius:12px;background:var(--surface);border:1px solid var(--line-2);box-shadow:var(--shadow);font-size:12.5px;line-height:1.45;color:var(--ink)}
+#tip b{display:block;font-size:13.5px}
+.tray{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(72px + env(safe-area-inset-bottom,0px));z-index:40;display:flex;gap:10px;align-items:center;padding:8px 8px 8px 14px;border-radius:999px;background:var(--ink);color:var(--bg);box-shadow:var(--shadow);font-size:13px;max-width:calc(100% - 32px)}
+.tray .btn{background:var(--tag);border-color:var(--tag);color:var(--tag-ink)}
+@media (min-width:960px){ .tray{bottom:22px} }
+#toast{bottom:auto;top:calc(14px + env(safe-area-inset-top,0px))}
+@media (prefers-reduced-motion: reduce){
+  *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+}
+</style>
+<div class="app">
+  <aside class="side" aria-label="主导航">
+    <a class="brand" href="#today" data-brand></a>
+    <button class="cond-btn" type="button" data-open-cond></button>
+    <nav class="nav" id="sideNav"></nav>
+    <div class="side-foot" id="sideFoot"></div>
+  </aside>
+  <header class="topbar">
+    <a class="brand" href="#today" data-brand></a>
+    <button class="cond-btn" type="button" data-open-cond></button>
+  </header>
+  <main id="main" tabindex="-1"></main>
+  <nav class="tabbar" id="tabbar" aria-label="主导航"></nav>
+</div>
+<div class="sheet" id="sheet" hidden>
+  <div class="sheet-panel" role="dialog" aria-modal="true" aria-labelledby="sheetTitle" id="sheetPanel"></div>
+</div>
+<div class="tray" id="tray" hidden></div>
+<div id="tip" hidden></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.6.0/echarts.min.js"></script>
+<script>
+/* ============================================================
+ * AI 羊毛牧场 · 原型示例数据
+ * 所有活动、额度、日期均为示例，用来演示页面效果，不是真实活动。
+ * 日期一律写成"相对今天的天数"，所以原型任何一天打开都有进行中的内容。
+ * ============================================================ */
+
+const TYPES = {
+  new:      { l: '注册新人礼',   slot: 1 },
+  free:     { l: '限时免费开放', slot: 2 },
+  perk:     { l: '会员福利',     slot: 3 },
+  topup:    { l: '充值赠送',     slot: 4 },
+  gift:     { l: '会员免费送',   slot: 5 },
+  standing: { l: '常驻免费额度', slot: 6 },
+  apply:    { l: '申请制',       slot: 7 },
+};
+const MODAL = { text: '文本', code: '编程', image: '图像', video: '视频', audio: '音乐·语音' };
+const CLAIM = { auto: '自动到账', signup: '注册即送', app: '下载 App', form: '邮件或表单申请', topup: '充值触发', member: '会员自动生效', code: '兑换码' };
+const REQ = {
+  none: '零门槛', pay: '需充值', member: '需会员', phone: '需海外手机号', card: '需海外信用卡', net: '需海外网络',
+  realname: '需实名', biz: '需企业认证', student: '需学生认证', invite: '需邀请码', targeted: '定向发放',
+};
+const SRC = { site: '官网公告', docs: '帮助文档', official: '官方账号', staff: '员工账号' };
+const PTYPE = { lab: { l: '模型厂商', slot: 1 }, cloud: { l: '云厂商', slot: 2 }, infra: { l: '推理平台', slot: 3 }, tool: { l: 'AI 工具', slot: 4 }, new: { l: '新玩家', slot: 5 } };
+const TZ = { 'Asia/Shanghai': '北京时间', 'America/Los_Angeles': '美西时间（PT）', 'America/New_York': '美东时间（ET）', 'UTC': 'UTC' };
+const AUD = { new: '新用户', old: '老用户', all: '全部用户', unclear: '资格未明确' };
+
+// id, 名称, 类型, 官网, 官方 X, 已准入
+const PLATFORMS = [
+  ['openai', 'OpenAI', 'lab', 'https://openai.com', '@OpenAI · @OpenAIDevs · 员工 @thsottiaux'],
+  ['anthropic', 'Anthropic', 'lab', 'https://www.anthropic.com', '@AnthropicAI · @claudeai'],
+  ['google', 'Google AI', 'lab', 'https://aistudio.google.com', '@GoogleAIStudio · @GeminiApp'],
+  ['deepseek', 'DeepSeek', 'lab', 'https://platform.deepseek.com', '@deepseek_ai'],
+  ['moonshot', 'Kimi 开放平台', 'lab', 'https://platform.moonshot.cn', '@Kimi_Moonshot'],
+  ['zhipu', '智谱 Z.ai', 'lab', 'https://bigmodel.cn', '@Zai_org'],
+  ['minimax', 'MiniMax', 'lab', 'https://www.minimaxi.com', '@MiniMax_AI'],
+  ['xai', 'xAI', 'lab', 'https://x.ai', '@xai'],
+  ['mistral', 'Mistral', 'lab', 'https://mistral.ai', '@MistralAI'],
+  ['aliyun', '阿里云百炼', 'cloud', 'https://bailian.console.aliyun.com', '@Alibaba_Qwen'],
+  ['volc', '火山方舟', 'cloud', 'https://www.volcengine.com/product/ark', ''],
+  ['tencent', '腾讯混元', 'cloud', 'https://cloud.tencent.com/product/hunyuan', '@TencentHunyuan'],
+  ['aws', 'AWS', 'cloud', 'https://aws.amazon.com/activate/', ''],
+  ['gcloud', 'Google Cloud', 'cloud', 'https://cloud.google.com/startup', ''],
+  ['azure', 'Microsoft Azure', 'cloud', 'https://www.microsoft.com/en-us/startups', ''],
+  ['openrouter', 'OpenRouter', 'infra', 'https://openrouter.ai', '@OpenRouter'],
+  ['opencode', 'OpenCode Zen', 'infra', 'https://opencode.ai', '@opencode'],
+  ['siliconflow', '硅基流动', 'infra', 'https://siliconflow.cn', '@SiliconFlowAI'],
+  ['groq', 'Groq', 'infra', 'https://groq.com', ''],
+  ['cerebras', 'Cerebras', 'infra', 'https://cerebras.ai', ''],
+  ['github', 'GitHub Models', 'infra', 'https://github.com/marketplace/models', ''],
+  ['cloudflare', 'Cloudflare Workers AI', 'infra', 'https://developers.cloudflare.com/workers-ai/', ''],
+  ['vercel', 'Vercel AI Gateway', 'infra', 'https://vercel.com/ai-gateway', ''],
+  ['hf', 'Hugging Face', 'infra', 'https://huggingface.co', ''],
+  ['cursor', 'Cursor', 'tool', 'https://cursor.com', ''],
+  ['kiro', 'Kiro', 'tool', 'https://kiro.dev', ''],
+  ['trae', 'Trae', 'tool', 'https://www.trae.ai', ''],
+  ['perplexity', 'Perplexity', 'tool', 'https://www.perplexity.ai', ''],
+  ['kling', '可灵 AI', 'tool', 'https://klingai.com', '@Kling_ai'],
+  ['jimeng', '即梦', 'tool', 'https://jimeng.jianying.com', ''],
+  ['suno', 'Suno', 'tool', 'https://suno.com', '@suno'],
+  ['eleven', 'ElevenLabs', 'tool', 'https://elevenlabs.io', ''],
+  ['runway', 'Runway', 'tool', 'https://runwayml.com', '@runwayml'],
+  ['krea', 'Krea', 'tool', 'https://www.krea.ai', '@krea_ai'],
+  ['pixverse', 'PixVerse', 'tool', 'https://pixverse.ai', '@PixVerse'],
+  ['higgsfield', 'Higgsfield', 'tool', 'https://higgsfield.ai', ''],
+  ['typesafe', 'TypeSafe · Jev', 'new', '', '@typesafeai'],
+].map(([id, name, type, site, x]) => ({ id, name, type, site, x }));
+
+/* 羊毛字段：
+ * p 平台 · t 标题 · ty 类型 · m 模态 · c 领取方式 · r 门槛 · v 官方原文额度 · usd 折合美元（常驻为每月）
+ * s 开始（相对今天天数）· e 截止 · ek 截止类型 date/unknown/standing · vf 最近核验（负数=几天前）
+ * st 信源级别 · tz 原始时区 · val 额度有效期 · aud 适用对象 · cn 国内可直接领 · fs 系统发现（相对天数）
+ */
+const OFFERS = [
+  // ---------- 进行中 / 即将开始的限时羊毛 ----------
+  { id: 'codex-reset', p: 'openai', t: 'Codex 付费用户额度全员重置', ty: 'perk', m: ['code'], c: 'member', r: ['member:ChatGPT Plus', 'net'], v: '5 小时与每周用量全部清零', usd: 20, s: -4, e: 3, ek: 'date', vf: -0.2, st: 'staff', tz: 'America/Los_Angeles', val: '本用量周期内', aud: 'all', cn: false, fs: -4, early: 'X 员工账号' },
+  { id: 'zcode-comp', p: 'zhipu', t: 'ZCode 补偿：重置卡 + 1 亿 Tokens', ty: 'perk', m: ['code', 'text'], c: 'auto', r: ['targeted'], v: '1 张额度重置卡 + 1 亿 Tokens', usd: 60, s: -2, e: 28, ek: 'date', vf: -0.3, st: 'official', tz: 'Asia/Shanghai', val: '到账后 30 天', aud: 'old', cn: true, fs: -2, early: '公众号' },
+  { id: 'minimax-reset', p: 'minimax', t: '新模型上线，Coding Plan 额度重置卡', ty: 'perk', m: ['code'], c: 'member', r: ['member:MiniMax Coding Plan'], v: '每位订阅用户 1 张重置卡', usd: 15, s: -3, e: 11, ek: 'date', vf: -0.5, st: 'official', tz: 'Asia/Shanghai', val: '领取后 7 天', aud: 'old', cn: true, fs: -3, early: '媒体报道' },
+  { id: 'longcat-free', p: 'opencode', t: 'LongCat-2.5 限时免费两周', ty: 'free', m: ['text', 'code'], c: 'auto', r: ['net'], v: '活动期内调用该模型不计费', usd: 30, s: -4, e: 10, ek: 'date', vf: -0.25, st: 'official', tz: 'UTC', val: '活动期内', aud: 'all', cn: false, fs: -4, early: 'X 官方账号' },
+  { id: 'deepseek-national', p: 'deepseek', t: '国庆充值加赠：充 ¥100 送 ¥20', ty: 'topup', m: ['text', 'code'], c: 'topup', r: ['pay:¥100', 'realname'], v: '单笔充值满 ¥100 赠送 ¥20 余额', usd: 3, s: 1, e: 7, ek: 'date', vf: -0.4, st: 'site', tz: 'Asia/Shanghai', val: '赠送余额 90 天内有效', aud: 'all', cn: true, fs: -1, early: '官网公告' },
+  { id: 'kimi-newbie', p: 'moonshot', t: '新用户注册送 ¥15 体验金', ty: 'new', m: ['text', 'code'], c: 'signup', r: ['realname'], v: '¥15 体验金', usd: 2, s: -60, e: 31, ek: 'date', vf: -1, st: 'site', tz: 'Asia/Shanghai', val: '到账后 30 天', aud: 'new', cn: true, fs: -58, early: '官网公告',
+    rev: [{ at: -10, from: '¥10 体验金', to: '¥15 体验金' }] },
+  { id: 'silicon-newbie', p: 'siliconflow', t: '注册送 2000 万 Tokens', ty: 'new', m: ['text', 'image'], c: 'signup', r: ['realname'], v: '2000 万 Tokens', usd: 5, s: -120, e: null, ek: 'unknown', vf: -0.6, st: 'site', tz: 'Asia/Shanghai', val: '长期有效', aud: 'new', cn: true, fs: -118, early: '官网公告',
+    rev: [{ at: -60, from: '仅文本模型可用', to: '文本和图像模型均可用' }] },
+  { id: 'gemini-students', p: 'google', t: '学生免费用一年 Google AI Pro', ty: 'gift', m: ['text', 'image', 'video'], c: 'form', r: ['student', 'net'], v: '12 个月 AI Pro 会员', usd: 240, s: -30, e: 45, ek: 'date', vf: -1, st: 'site', tz: 'America/Los_Angeles', val: '12 个月', aud: 'new', cn: false, fs: -29, early: '官网公告' },
+  { id: 'perplexity-paypal', p: 'perplexity', t: 'PayPal 用户送 12 个月 Pro', ty: 'gift', m: ['text'], c: 'signup', r: ['card', 'net'], v: '12 个月 Pro 会员', usd: 240, s: -20, e: 60, ek: 'date', vf: -2, st: 'site', tz: 'America/New_York', val: '12 个月', aud: 'new', cn: false, fs: -19, early: '媒体报道' },
+  { id: 'cursor-trial', p: 'cursor', t: '新用户 Pro 试用延长到 14 天', ty: 'new', m: ['code'], c: 'signup', r: ['net'], v: '14 天 Pro 试用', usd: 20, s: -5, e: 9, ek: 'date', vf: -0.5, st: 'docs', tz: 'America/Los_Angeles', val: '14 天', aud: 'new', cn: false, fs: -5, early: 'X 官方账号' },
+  { id: 'kiro-launch', p: 'kiro', t: '新用户首月 Pro+ 免费', ty: 'new', m: ['code'], c: 'signup', r: ['net'], v: '30 天 Pro+ 额度', usd: 40, s: -10, e: 2, ek: 'date', vf: -0.7, st: 'site', tz: 'America/Los_Angeles', val: '30 天', aud: 'new', cn: false, fs: -9, early: '官网公告' },
+  { id: 'trae-solo', p: 'trae', t: 'SOLO 模式限时免费', ty: 'free', m: ['code'], c: 'auto', r: ['none'], v: '活动期内 SOLO 模式不限次', usd: 10, s: -8, e: 0, ek: 'date', vf: -0.3, st: 'official', tz: 'Asia/Shanghai', val: '活动期内', aud: 'all', cn: true, fs: -8, early: '公众号' },
+  { id: 'kling-national', p: 'kling', t: '国庆每日签到 +66 灵感值', ty: 'free', m: ['video', 'image'], c: 'app', r: ['realname'], v: '每日签到 66 灵感值', usd: 8, s: 1, e: 8, ek: 'date', vf: -0.4, st: 'official', tz: 'Asia/Shanghai', val: '当月有效', aud: 'all', cn: true, fs: -1, early: '订阅邮件' },
+  { id: 'runway-weekend', p: 'runway', t: '周末 Gen-4 不限量生成', ty: 'perk', m: ['video'], c: 'member', r: ['member:Runway Unlimited', 'net'], v: '周末两天不限量', usd: 25, s: 3, e: 4, ek: 'date', vf: -0.6, st: 'official', tz: 'America/New_York', val: '活动期内', aud: 'old', cn: false, fs: -1, early: 'X 官方账号' },
+  { id: 'higgsfield-week', p: 'higgsfield', t: '新模型上线 7 天不限量生成', ty: 'perk', m: ['video', 'image'], c: 'member', r: ['member:Higgsfield Pro', 'card', 'net'], v: '7 天不限量', usd: 50, s: -6, e: 1, ek: 'date', vf: -0.2, st: 'official', tz: 'America/Los_Angeles', val: '活动期内', aud: 'old', cn: false, fs: -6, early: '周六扫描' },
+  { id: 'xai-share', p: 'xai', t: '开启数据共享，每月送 $150 API 额度', ty: 'topup', m: ['text', 'code'], c: 'topup', r: ['pay:$5', 'card', 'net'], v: '每月 $150 API 额度', usd: 150, s: -200, e: null, ek: 'unknown', vf: -1.5, st: 'docs', tz: 'UTC', val: '当月有效', aud: 'all', cn: false, fs: -190, early: '帮助文档' },
+  { id: 'aliyun-newbie', p: 'aliyun', t: '新用户每个模型送 100 万 Tokens', ty: 'new', m: ['text', 'image', 'video', 'audio'], c: 'signup', r: ['realname'], v: '每个模型 100 万 Tokens', usd: 25, s: -300, e: null, ek: 'unknown', vf: -0.8, st: 'docs', tz: 'Asia/Shanghai', val: '领取后 90 天', aud: 'new', cn: true, fs: -290, early: '帮助文档' },
+  { id: 'volc-newbie', p: 'volc', t: '新用户每个模型送 50 万 Tokens', ty: 'new', m: ['text', 'image', 'video'], c: 'signup', r: ['realname'], v: '每个模型 50 万 Tokens', usd: 20, s: -200, e: null, ek: 'unknown', vf: -2, st: 'docs', tz: 'Asia/Shanghai', val: '领取后 90 天', aud: 'new', cn: true, fs: -196, early: '帮助文档' },
+  { id: 'claude-invite', p: 'anthropic', t: '邀请好友：双方各得一周会员', ty: 'gift', m: ['text', 'code'], c: 'code', r: ['invite', 'card', 'net'], v: '邀请人与被邀请人各 7 天', usd: 25, s: -12, e: null, ek: 'unknown', vf: -3, st: 'docs', tz: 'America/Los_Angeles', val: '7 天', aud: 'unclear', cn: false, fs: -12, early: 'X 员工账号' },
+
+  // ---------- 常驻免费额度（usd = 每月折合） ----------
+  { id: 'openrouter-free', p: 'openrouter', t: '免费模型每天 50 次（充 $10 后 1000 次）', ty: 'standing', m: ['text', 'code'], c: 'signup', r: ['net'], v: '每天 50 次请求', usd: 15, vf: -2, st: 'docs', tz: 'UTC', val: '每日刷新', aud: 'all', cn: false, fs: -400, early: '帮助文档',
+    rev: [{ at: -40, from: '每天 20 次请求', to: '每天 50 次请求' }] },
+  { id: 'groq-free', p: 'groq', t: '免费层 API（按模型限速）', ty: 'standing', m: ['text', 'audio'], c: 'signup', r: ['net'], v: '按模型每分钟/每日限额', usd: 30, vf: -4, st: 'docs', tz: 'UTC', val: '每日刷新', aud: 'all', cn: false, fs: -380, early: '帮助文档' },
+  { id: 'cerebras-free', p: 'cerebras', t: '免费层每日 100 万 Tokens', ty: 'standing', m: ['text', 'code'], c: 'signup', r: ['net'], v: '每日 100 万 Tokens', usd: 20, vf: -6, st: 'docs', tz: 'UTC', val: '每日刷新', aud: 'all', cn: false, fs: -300, early: '帮助文档' },
+  { id: 'gemini-api', p: 'google', t: 'Gemini API 免费层', ty: 'standing', m: ['text', 'image'], c: 'signup', r: ['net'], v: '按模型每日请求上限', usd: 45, vf: -16, st: 'docs', tz: 'America/Los_Angeles', val: '每日刷新', aud: 'all', cn: false, fs: -500, early: '帮助文档',
+    rev: [{ at: -16, from: 'Flash 每日 1500 次请求', to: 'Flash 每日 1000 次请求' }] },
+  { id: 'gemini-cli', p: 'google', t: 'Gemini CLI 每日免费请求', ty: 'standing', m: ['code'], c: 'signup', r: ['net'], v: '个人账号每日请求额度', usd: 60, vf: -3, st: 'docs', tz: 'America/Los_Angeles', val: '每日刷新', aud: 'all', cn: false, fs: -450, early: '帮助文档' },
+  { id: 'qwen-code', p: 'aliyun', t: 'Qwen Code 每日免费请求', ty: 'standing', m: ['code'], c: 'signup', r: ['none'], v: '每日免费请求额度', usd: 30, vf: -2, st: 'docs', tz: 'Asia/Shanghai', val: '每日刷新', aud: 'all', cn: true, fs: -420, early: '帮助文档' },
+  { id: 'gh-models', p: 'github', t: 'GitHub Models 免费试用额度', ty: 'standing', m: ['text', 'code'], c: 'signup', r: ['none'], v: '按模型每日请求上限', usd: 10, vf: -5, st: 'docs', tz: 'UTC', val: '每日刷新', aud: 'all', cn: true, fs: -520, early: '帮助文档' },
+  { id: 'cf-workers-ai', p: 'cloudflare', t: 'Workers AI 每日 1 万 Neurons', ty: 'standing', m: ['text', 'image', 'audio'], c: 'signup', r: ['none'], v: '每日 10,000 Neurons', usd: 3, vf: -9, st: 'docs', tz: 'UTC', val: '每日刷新', aud: 'all', cn: true, fs: -600, early: '帮助文档' },
+  { id: 'vercel-gw', p: 'vercel', t: 'AI Gateway 每月 $5 免费额度', ty: 'standing', m: ['text', 'image'], c: 'signup', r: ['net'], v: '每月 $5', usd: 5, vf: -11, st: 'docs', tz: 'UTC', val: '当月有效', aud: 'all', cn: false, fs: -330, early: '帮助文档' },
+  { id: 'hf-credits', p: 'hf', t: 'Inference Providers 每月免费额度', ty: 'standing', m: ['text', 'image', 'audio'], c: 'signup', r: ['net'], v: '免费用户每月 $0.10', usd: 0.1, vf: -12, st: 'docs', tz: 'UTC', val: '当月有效', aud: 'all', cn: false, fs: -350, early: '帮助文档' },
+  { id: 'tencent-lite', p: 'tencent', t: '混元 lite 模型免费调用', ty: 'standing', m: ['text'], c: 'signup', r: ['realname'], v: 'lite 模型不计费', usd: 5, vf: -4, st: 'docs', tz: 'Asia/Shanghai', val: '长期', aud: 'all', cn: true, fs: -560, early: '帮助文档' },
+  { id: 'zhipu-flash', p: 'zhipu', t: 'Flash 系列模型免费调用', ty: 'standing', m: ['text', 'image', 'video'], c: 'signup', r: ['realname'], v: 'Flash 系列不计费', usd: 10, vf: -1, st: 'docs', tz: 'Asia/Shanghai', val: '长期', aud: 'all', cn: true, fs: -540, early: '帮助文档' },
+  { id: 'jimeng-daily', p: 'jimeng', t: '每日登录送积分', ty: 'standing', m: ['image', 'video'], c: 'app', r: ['realname'], v: '每日 80 积分', usd: 15, vf: -3, st: 'site', tz: 'Asia/Shanghai', val: '当日有效', aud: 'all', cn: true, fs: -310, early: '官网公告' },
+  { id: 'kling-daily', p: 'kling', t: '每日登录送灵感值', ty: 'standing', m: ['video', 'image'], c: 'app', r: ['realname'], v: '每日 66 灵感值', usd: 12, vf: -2, st: 'site', tz: 'Asia/Shanghai', val: '当月有效', aud: 'all', cn: true, fs: -300, early: '官网公告' },
+  { id: 'suno-free', p: 'suno', t: '免费版每日 50 credits', ty: 'standing', m: ['audio'], c: 'signup', r: ['net'], v: '每日 50 credits（约 10 首）', usd: 10, vf: -8, st: 'site', tz: 'America/New_York', val: '每日刷新', aud: 'all', cn: false, fs: -480, early: '官网公告' },
+  { id: 'mistral-free', p: 'mistral', t: 'La Plateforme 免费实验层', ty: 'standing', m: ['text', 'code'], c: 'signup', r: ['phone', 'net'], v: '实验层限速免费', usd: 10, vf: -20, st: 'docs', tz: 'UTC', val: '每月刷新', aud: 'all', cn: false, fs: -410, early: '帮助文档' },
+
+  // ---------- 申请制（usd = 最高额度） ----------
+  { id: 'aws-activate', p: 'aws', t: 'AWS Activate：最高 $100,000 credits', ty: 'apply', m: ['text', 'image'], c: 'form', r: ['biz', 'card'], v: '最高 $100,000', usd: 100000, vf: -10, st: 'site', tz: 'UTC', val: '2 年', aud: 'new', cn: false, fs: -700, early: '官网公告' },
+  { id: 'gcp-startups', p: 'gcloud', t: 'Google for Startups：AI 初创最高 $350,000', ty: 'apply', m: ['text', 'image', 'video'], c: 'form', r: ['biz', 'card'], v: '最高 $350,000', usd: 350000, vf: -9, st: 'site', tz: 'UTC', val: '2 年', aud: 'new', cn: false, fs: -690, early: '官网公告' },
+  { id: 'azure-founders', p: 'azure', t: 'Microsoft for Startups：最高 $150,000', ty: 'apply', m: ['text', 'image'], c: 'form', r: ['biz', 'card'], v: '最高 $150,000 Azure 额度', usd: 150000, vf: -12, st: 'site', tz: 'UTC', val: '最长 2 年', aud: 'new', cn: false, fs: -650, early: '官网公告' },
+  { id: 'anthropic-startups', p: 'anthropic', t: 'Claude 初创计划 API 额度', ty: 'apply', m: ['text', 'code'], c: 'form', r: ['biz'], v: '最高 $25,000', usd: 25000, vf: -6, st: 'site', tz: 'America/Los_Angeles', val: '1 年', aud: 'new', cn: false, fs: -400, early: '官网公告' },
+  { id: 'eleven-grants', p: 'eleven', t: 'ElevenLabs Grants：初创 3 个月免费', ty: 'apply', m: ['audio'], c: 'form', r: ['biz'], v: '3 个月付费档', usd: 990, vf: -7, st: 'site', tz: 'UTC', val: '3 个月', aud: 'new', cn: false, fs: -380, early: '官网公告' },
+  { id: 'volc-startup', p: 'volc', t: '创业扶持计划：最高 ¥10 万代金券', ty: 'apply', m: ['text', 'image', 'video'], c: 'form', r: ['biz', 'realname'], v: '最高 ¥100,000 代金券', usd: 14000, vf: -5, st: 'site', tz: 'Asia/Shanghai', val: '1 年', aud: 'new', cn: true, fs: -360, early: '官网公告' },
+
+  // ---------- 已结束（进墓地） ----------
+  { id: 'jev-free', p: 'typesafe', t: 'Jev 注册送免费额度', ty: 'new', m: ['text'], c: 'signup', r: ['none'], v: '注册即送免费调用额度', usd: 10, s: -40, e: -3, ek: 'date', vf: -3, st: 'official', tz: 'America/Los_Angeles', val: '30 天', aud: 'new', cn: false, fs: -38, early: 'X 官方账号', why: '官方暂停免费额度' },
+  { id: 'claude-code-reset', p: 'anthropic', t: 'Claude Code 周额度一次性重置', ty: 'perk', m: ['code'], c: 'member', r: ['member:Claude Pro/Max'], v: '周额度清零一次', usd: 30, s: -38, e: -35, ek: 'date', vf: -35, st: 'staff', tz: 'America/Los_Angeles', val: '本周期内', aud: 'old', cn: false, fs: -38, early: 'X 员工账号' },
+  { id: 'openrouter-stealth', p: 'openrouter', t: '隐身模型限时免费', ty: 'free', m: ['text', 'code'], c: 'auto', r: ['none'], v: '测试期不计费', usd: 20, s: -26, e: -12, ek: 'date', vf: -12, st: 'official', tz: 'UTC', val: '活动期内', aud: 'all', cn: false, fs: -26, early: 'AIHOT' },
+  { id: 'pixverse-3day', p: 'pixverse', t: '新版本上线三天免费生成', ty: 'free', m: ['video'], c: 'auto', r: ['none'], v: '三天不计积分', usd: 15, s: -11, e: -8, ek: 'date', vf: -8, st: 'official', tz: 'UTC', val: '活动期内', aud: 'all', cn: false, fs: -11, early: 'AIHOT' },
+  { id: 'deepseek-v4', p: 'deepseek', t: '新模型发布：新用户送 ¥10', ty: 'new', m: ['text'], c: 'signup', r: ['realname'], v: '¥10 余额', usd: 1.4, s: -70, e: -45, ek: 'date', vf: -45, st: 'site', tz: 'Asia/Shanghai', val: '30 天', aud: 'new', cn: true, fs: -70, early: '官网公告' },
+  { id: 'krea-weekend', p: 'krea', t: '周末不限量生成', ty: 'free', m: ['image', 'video'], c: 'auto', r: ['net'], v: '周末不限量', usd: 12, s: -5, e: -3, ek: 'date', vf: -3, st: 'official', tz: 'America/Los_Angeles', val: '活动期内', aud: 'all', cn: false, fs: -5, early: 'X 官方账号' },
+  { id: 'kimi-launch', p: 'moonshot', t: '新模型发布周：充值送代金券', ty: 'topup', m: ['text', 'code'], c: 'topup', r: ['pay:¥50', 'realname'], v: '充 ¥50 送 ¥10 代金券', usd: 5, s: -27, e: -20, ek: 'date', vf: -20, st: 'official', tz: 'Asia/Shanghai', val: '30 天', aud: 'all', cn: true, fs: -27, early: '公众号' },
+];
+
+// 节日与购物节（叠加在日历上）；past 为往年同一节点发过羊毛的平台（示例）
+const HOLIDAYS = [
+  { d: '2026-09-25', n: '中秋', past: '智谱、可灵' },
+  { d: '2026-10-01', n: '国庆', past: 'DeepSeek、Kimi、可灵、即梦' },
+  { d: '2026-11-11', n: '双 11', past: '阿里云百炼、火山方舟、腾讯混元' },
+  { d: '2026-11-27', n: '黑五', past: 'Cursor、Perplexity、ElevenLabs、Runway' },
+  { d: '2026-12-12', n: '双 12', past: '阿里云百炼、硅基流动' },
+  { d: '2026-12-25', n: '圣诞', past: 'OpenRouter、Suno、Krea' },
+  { d: '2027-01-01', n: '元旦', past: 'Kimi、MiniMax' },
+  { d: '2027-02-06', n: '春节', past: 'DeepSeek、智谱、Kimi、MiniMax、可灵' },
+];
+
+// 按模型找：模型 → 提供免费额度的平台
+const MODELS = [
+  { id: 'dsv41', n: 'DeepSeek V4.1 Flash', on: [['opencode', '额度永久有效'], ['openrouter', ':free 版本每天 50 次'], ['siliconflow', '新人 Tokens 可用'], ['volc', '新用户 50 万 Tokens']] },
+  { id: 'longcat', n: 'LongCat-2.5', on: [['opencode', '限时免费两周'], ['openrouter', ':free 版本']] },
+  { id: 'qwen3', n: 'Qwen3 系列', on: [['aliyun', '新用户 100 万 Tokens'], ['siliconflow', '部分尺寸免费'], ['openrouter', ':free 版本'], ['cloudflare', 'Neurons 额度内']] },
+  { id: 'glmflash', n: 'GLM Flash', on: [['zhipu', 'Flash 系列不计费'], ['siliconflow', '免费调用']] },
+  { id: 'geminiflash', n: 'Gemini Flash', on: [['google', 'API 免费层'], ['vercel', '每月 $5 额度内']] },
+  { id: 'gptoss', n: 'gpt-oss-120b', on: [['groq', '免费层'], ['cerebras', '每日 100 万 Tokens'], ['openrouter', ':free 版本'], ['github', '免费试用'], ['cloudflare', 'Neurons 额度内']] },
+  { id: 'llama4', n: 'Llama 4', on: [['groq', '免费层'], ['cerebras', '免费层'], ['github', '免费试用'], ['cloudflare', 'Neurons 额度内']] },
+  { id: 'minimax31', n: 'MiniMax M3.1', on: [['openrouter', ':free 版本'], ['siliconflow', '新人 Tokens 可用']] },
+];
+
+// 后台：待审队列（示例）
+const QUEUE = [
+  { id: 'q1', t: 'Instinct：公测期间免费使用', src: '周六发现扫描', tier: '新平台', note: '平台不在白名单，需你决定是否准入', kind: 'platform' },
+  { id: 'q2', t: 'Kimi 开放平台：国庆充值加赠', src: 'Telegram 转发补录（公众号文章）', tier: '官方账号', note: '四项证据齐全；该信源已连续通过 3/5 条', kind: 'offer' },
+  { id: 'q3', t: 'Gemini API 免费层额度调整', src: '帮助文档内容变化', tier: '帮助文档', note: '条款修订：Flash 每日请求上限下调', kind: 'change' },
+  { id: 'q4', t: 'Claude Max 用户额度重置', src: '员工账号推文（AIHOT 线索）', tier: '员工账号', note: '员工账号来源，永远人工审核', kind: 'offer' },
+  { id: 'q5', t: '某中转站：注册送 $50', src: 'LINUX DO 线索', tier: '社区线索', note: '预判拒绝：平台属于分销中转站', kind: 'reject' },
+];
+
+// 后台：信源健康（最近 30 次抓取，1 成功 0 失败）
+const SOURCES = [
+  ['OpenAI 官方博客 RSS', 'rss', '111111111111111111111111111111'],
+  ['AIHOT · Codex 重置接口', 'aihot', '111111111111111111111111111111'],
+  ['AIHOT · 全部动态', 'aihot', '111111111111101111111111111111'],
+  ['DeepSeek 公告页', 'web_list', '111111111111111111111111111111'],
+  ['Kimi 开放平台公告', 'web_list', '111111111110111111111111111111'],
+  ['Gemini API 定价与限额', 'web_list', '111111111111111111111111100011'],
+  ['火山方舟活动页', 'web_list', '111111111111111111111111111000'],
+  ['OpenRouter 免费模型 JSON', 'json', '111111111111111111111111111111'],
+  ['订阅邮箱', 'email', '111111111111111111111111111111'],
+  ['硅基流动权益页', 'web_list', '111111111111111110111111111111'],
+  ['Hacker News 搜索接口', 'json', '111111111111111111111111111111'],
+  ['Reddit r/LocalLLaMA RSS', 'rss', '111111111111111111110111111111'],
+].map(([n, kind, h]) => ({ n, kind, h: h.split('').map(Number) }));
+
+// 后台：自动上架放权（平台 × 信源）
+const AUTOPUB = [
+  ['DeepSeek', '官网公告', 5, true], ['OpenRouter', '帮助文档', 5, true], ['硅基流动', '权益页', 5, false],
+  ['Kimi 开放平台', '官方公众号', 3, false], ['阿里云百炼', '帮助文档', 4, false], ['OpenAI', '员工账号', 0, false],
+].map(([pl, src, n, on]) => ({ pl, src, n, on, never: src === '员工账号' }));
+/* ============================================================
+ * AI 羊毛牧场 · 原型主程序（单文件、无构建；ECharts 从 cdnjs 加载）
+ * ============================================================ */
+
+/* ---------- 基础工具 ---------- */
+const DAY = 864e5;
+const NOW = new Date();
+const T0 = new Date(NOW.getFullYear(), NOW.getMonth(), NOW.getDate());
+const dayAt = n => new Date(T0.getFullYear(), T0.getMonth(), T0.getDate() + n);
+const pad = n => String(n).padStart(2, '0');
+const ymd = dt => `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}`;
+const md = dt => `${dt.getMonth() + 1}月${dt.getDate()}日`;
+const hm = dt => `${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+const dayIdx = dt => Math.round((new Date(dt.getFullYear(), dt.getMonth(), dt.getDate()) - T0) / DAY);
+const WD = ['日', '一', '二', '三', '四', '五', '六'];
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const sum = (a, f) => a.reduce((x, o) => x + f(o), 0);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const uniq = a => [...new Set(a)];
+function rng(seed) { let s = seed >>> 0; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
+function hash(str) { let h = 2166136261; for (const ch of str) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const FONT = '"Rubik","PingFang SC","HarmonyOS Sans SC","Microsoft YaHei",sans-serif';
+const LS = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* 存不了就只在本次打开有效 */ } },
+};
+function tzOffset(tz, date) {
+  const f = new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const p = Object.fromEntries(f.formatToParts(date).map(x => [x.type, x.value]));
+  return (Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour % 24, +p.minute, +p.second) - date.getTime()) / 60000;
+}
+function zonedToDate(y, m, d, h, mi, tz) { const guess = Date.UTC(y, m, d, h, mi); return new Date(guess - tzOffset(tz, new Date(guess)) * 60000); }
+function luminance(hex) {
+  const m = hex.replace('#', '').match(/.{2}/g); if (!m) return 0.5;
+  const [r, g, b] = m.map(x => { const c = parseInt(x, 16) / 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+const onColor = hex => luminance(hex) > 0.32 ? '#1c2921' : '#ffffff';
+function hexA(hex, a) { const m = hex.replace('#', '').match(/.{2}/g); if (!m) return hex; const [r, g, b] = m.map(x => parseInt(x, 16)); return `rgba(${r},${g},${b},${a})`; }
+
+/* ---------- 主题色（从 CSS 变量读取，切换深浅色时重读） ---------- */
+function tk() {
+  const s = getComputedStyle(document.documentElement); const g = n => s.getPropertyValue(n).trim();
+  return {
+    bg: g('--bg'), surface: g('--surface'), surface2: g('--surface-2'), ink: g('--ink'), ink2: g('--ink-2'), muted: g('--muted'),
+    line: g('--line'), line2: g('--line-2'), tag: g('--tag'), tagSoft: g('--tag-soft'), good: g('--good'), warn: g('--warn'), serious: g('--serious'), critical: g('--critical'),
+    s: [1, 2, 3, 4, 5, 6, 7].map(i => g('--s' + i)), q: [0, 1, 2, 3, 4, 5, 6, 7].map(i => g('--q' + i)),
+  };
+}
+let TK = tk();
+const typeColor = ty => TK.s[TYPES[ty].slot - 1];
+const ptypeColor = pt => TK.s[PTYPE[pt].slot - 1];
+const typeVar = ty => `var(--s${TYPES[ty].slot})`;
+
+/* ---------- 数据准备 ---------- */
+const PMAP = Object.fromEntries(PLATFORMS.map(p => [p.id, p]));
+OFFERS.forEach(o => { o.plat = PMAP[o.p]; if (!o.r || !o.r.length) o.r = ['none']; });
+const OMAP = Object.fromEntries(OFFERS.map(o => [o.id, o]));
+const isLimited = o => o.ty !== 'standing' && o.ty !== 'apply';
+function statusOf(o, k = 0) {
+  if (o.ty === 'standing') return (-o.vf) >= 14 ? 'stale' : 'standing';
+  if (o.ty === 'apply') return 'open';
+  if (o.s != null && o.s > k) return 'upcoming';
+  if (o.ek === 'date' && o.e < k) return 'ended';
+  if (o.ek === 'date' && o.e - k <= 3) return 'ending';
+  return 'active';
+}
+const ST = {
+  active: { l: '进行中', i: '●', c: 'good' }, ending: { l: '即将结束', i: '◔', c: 'serious' }, upcoming: { l: '未开始', i: '◷', c: '' },
+  ended: { l: '已结束', i: '✕', c: '' }, standing: { l: '常驻', i: '∞', c: '' }, stale: { l: '待核验', i: '!', c: 'warn' }, open: { l: '长期开放', i: '◎', c: '' },
+};
+const activeLimited = o => isLimited(o) && ['active', 'ending'].includes(statusOf(o));
+const claimable = o => ['active', 'ending', 'standing'].includes(statusOf(o));
+const activeOn = (o, k) => isLimited(o) && (o.s == null || o.s <= k) && (o.ek !== 'date' || o.e >= k);
+const endInstant = o => { const d = dayAt(o.e); return zonedToDate(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, o.tz); };
+const startInstant = o => { const d = dayAt(o.s); return zonedToDate(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, o.tz); };
+const LAST_OK = new Date(NOW.getTime() - (2 * 60 + 13) * 60000);
+
+/* ---------- 我的条件 / 我的清单（只存在本机浏览器） ---------- */
+const MEMBERS = uniq(OFFERS.flatMap(o => o.r.filter(r => r.startsWith('member:')).map(r => r.slice(7))));
+const C = Object.assign({ only: false, phone: false, card: false, net: false, student: false, biz: false, invite: false, realname: true, pay: true, members: [] }, LS.get('ym-cond', {}));
+const MINE = Object.assign({ want: [], got: [] }, LS.get('ym-mine', {}));
+let CMP = [];
+const COND_ITEMS = [
+  ['net', '可以使用海外网络'], ['phone', '有海外手机号'], ['card', '有海外信用卡 / PayPal'], ['student', '有学生身份'],
+  ['biz', '有公司可做企业认证'], ['invite', '手上有邀请码'], ['realname', '可以完成国内实名'], ['pay', '接受小额充值'],
+];
+function missing(o) {
+  const miss = [];
+  for (const r of o.r) {
+    const [k, p] = r.split(':');
+    if (k === 'none' || k === 'targeted') continue;
+    if (k === 'member') { if (!C.members.includes(p)) miss.push(r); continue; }
+    if (!C[k]) miss.push(r);
+  }
+  return miss;
+}
+const eligible = o => missing(o).length === 0;
+const view = arr => C.only ? arr.filter(eligible) : arr;
+function reqLabel(r) { const [k, p] = r.split(':'); if (k === 'member') return `需会员 · ${p}`; if (k === 'pay') return `需充值 ${p}`; return REQ[k]; }
+function reqChips(o, mark = false) {
+  return `<div class="chips">${o.r.map(r => {
+    const k = r.split(':')[0];
+    let cls = '';
+    if (mark && k !== 'none' && k !== 'targeted') cls = missing({ r: [r] }).length ? 'miss' : 'have';
+    const pre = cls === 'have' ? '✓ ' : cls === 'miss' ? '✕ ' : '';
+    return `<span class="chip ${cls}">${pre}${esc(reqLabel(r))}</span>`;
+  }).join('')}</div>`;
+}
+
+/* ---------- 薅度雷达（全部按规则算，不调用模型） ---------- */
+const REQ_PEN = { pay: 30, member: 35, phone: 25, card: 25, net: 10, realname: 5, biz: 40, student: 30, invite: 25, targeted: 30 };
+const EASE = { auto: 100, member: 90, signup: 80, code: 70, app: 65, topup: 50, form: 30 };
+const SRCV = { site: 100, docs: 100, official: 85, staff: 70 };
+const DIMS = ['价值', '门槛低', '好领取', '剩余时间', '信源可信', '国内直领'];
+const WEIGHTS = [0.25, 0.2, 0.15, 0.15, 0.1, 0.15];
+function dims(o) {
+  const v = clamp(Math.round(Math.log10(o.usd + 1) / Math.log10(1001) * 100), 3, 100);
+  let th = 100; o.r.forEach(r => { th -= REQ_PEN[r.split(':')[0]] || 0; }); th = Math.max(5, th);
+  const st = statusOf(o);
+  let tm;
+  if (!isLimited(o)) tm = st === 'stale' ? 40 : 100;
+  else if (o.ek === 'unknown') tm = 60;
+  else if (st === 'ended') tm = 0;
+  else if (st === 'upcoming') tm = 100;
+  else tm = clamp(Math.round((o.e + 1) / 30 * 100), 4, 100);
+  const cn = o.cn ? 100 : (o.r.some(r => ['phone', 'card'].includes(r.split(':')[0])) ? 20 : 50);
+  return [v, th, EASE[o.c], tm, SRCV[o.st], cn];
+}
+const score = o => Math.round(dims(o).reduce((a, x, i) => a + x * WEIGHTS[i], 0));
+
+/* ---------- 文案格式 ---------- */
+function money(u) {
+  if (u >= 1000) return '$' + (u >= 10000 ? Math.round(u / 1000) : (u / 1000).toFixed(1)) + 'k';
+  if (u >= 1) return '$' + Math.round(u).toLocaleString('en-US');
+  return '$' + u.toFixed(2);
+}
+const valLabel = o => o.ty === 'standing' ? `≈ ${money(o.usd)}<small>每月</small>` : o.ty === 'apply' ? `最高 ${money(o.usd)}` : `≈ ${money(o.usd)}`;
+function leftText(o) {
+  const st = statusOf(o);
+  if (st === 'upcoming') return o.s === 1 ? '明天开始' : `${o.s} 天后开始`;
+  if (st === 'stale') return `${Math.round(-o.vf)} 天未核验成功`;
+  if (st === 'standing') return `常驻 · ${ago(o.vf)}核验`;
+  if (st === 'open') return '长期开放申请';
+  if (o.ek === 'unknown') return '截止未知 · 每 24 小时复核';
+  if (st === 'ended') return `${md(dayAt(o.e))}结束`;
+  if (o.e === 0) return '今天结束';
+  if (o.e === 1) return '明天结束';
+  return `还剩 ${o.e} 天`;
+}
+function ago(vf) { const v = -vf; if (v < 1) return `${Math.max(1, Math.round(v * 24))} 小时前`; return `${Math.round(v)} 天前`; }
+function cdText(ms) {
+  if (ms <= 0) return '已结束';
+  const s = Math.floor(ms / 1000), d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60), sec = s % 60;
+  return (d ? `${d}天 ` : '') + `${pad(h)}:${pad(m)}:${pad(sec)}`;
+}
+function barOf(o) {
+  const st = statusOf(o);
+  if (st === 'standing') return [1, 'var(--s6)'];
+  if (st === 'stale') return [0.4, 'var(--warn)'];
+  if (st === 'open') return [1, 'var(--s7)'];
+  if (st === 'upcoming') return [1, 'var(--line-2)'];
+  if (st === 'ended') return [0, 'var(--line-2)'];
+  if (o.ek === 'unknown') return [0.6, 'var(--muted)'];
+  const frac = clamp((o.e + 0.5) / Math.max(1, o.e - (o.s ?? o.e - 30)), 0.03, 1);
+  return [frac, o.e === 0 ? 'var(--critical)' : st === 'ending' ? 'var(--serious)' : 'var(--good)'];
+}
+
+/* ---------- 小部件 ---------- */
+const etagSvg = col => `<svg viewBox="0 0 14 16" aria-hidden="true"><rect x="4.5" y="0.5" width="5" height="4" rx="1.5" style="fill:${col}"/><rect x="0.5" y="3" width="13" height="12.5" rx="3.5" style="fill:${col}"/><circle cx="7" cy="6.6" r="1.5" style="fill:var(--surface)"/></svg>`;
+const etag = ty => `<span class="etag">${etagSvg(typeVar(ty))}${TYPES[ty].l}</span>`;
+function stChip(o) {
+  const s = statusOf(o);
+  let m = ST[s];
+  if (s === 'ending' && o.e === 0) m = { l: '今天结束', i: '!', c: 'critical' };
+  return `<span class="st ${m.c}"><b>${m.i}</b>${m.l}</span>`;
+}
+const stBadge = (c, i, l) => `<span class="st ${c}"><b>${i}</b>${l}</span>`;
+function miniRadar(o, size = 66) {
+  const d = dims(o), n = 6, c = size / 2, R = size / 2 - 5;
+  const pt = (i, r) => { const a = -Math.PI / 2 + i * 2 * Math.PI / n; return [c + Math.cos(a) * r, c + Math.sin(a) * r].map(v => v.toFixed(1)).join(','); };
+  const ring = f => Array.from({ length: n }, (_, i) => pt(i, R * f)).join(' ');
+  const poly = d.map((v, i) => pt(i, R * Math.max(v, 6) / 100)).join(' ');
+  const col = typeVar(o.ty);
+  return `<svg class="oc-radar" viewBox="0 0 ${size} ${size}" aria-hidden="true"><polygon points="${ring(1)}" style="fill:var(--surface-2);stroke:var(--line-2)"/><polygon points="${ring(0.5)}" style="fill:none;stroke:var(--line-2)"/><polygon points="${poly}" style="fill:${col};fill-opacity:.3;stroke:${col};stroke-width:1.6;stroke-linejoin:round"/></svg>`;
+}
+function spark(vals) {
+  const w = 120, h = 30, p = 3, mx = Math.max(...vals), mn = Math.min(...vals);
+  const x = i => p + i * (w - 2 * p) / (vals.length - 1), y = v => h - p - (v - mn) / ((mx - mn) || 1) * (h - 2 * p);
+  const line = vals.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join('');
+  return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true"><path d="${line}L${x(vals.length - 1)},${h}L${x(0)},${h}Z" style="fill:currentColor;opacity:.13"/><path d="${line}" style="fill:none;stroke:currentColor;stroke-width:2;vector-effect:non-scaling-stroke;stroke-linejoin:round"/></svg>`;
+}
+function ringSvg(frac, size, col, stroke = 6) {
+  const r = (size - stroke) / 2, c = 2 * Math.PI * r, m = size / 2;
+  return `<svg viewBox="0 0 ${size} ${size}" aria-hidden="true"><circle cx="${m}" cy="${m}" r="${r}" style="fill:none;stroke:var(--surface-2);stroke-width:${stroke}"/><circle cx="${m}" cy="${m}" r="${r}" transform="rotate(-90 ${m} ${m})" style="fill:none;stroke:${col};stroke-width:${stroke};stroke-linecap:round;stroke-dasharray:${(c * clamp(frac, 0, 1)).toFixed(1)} ${c.toFixed(1)}"/></svg>`;
+}
+function emptySheep(msg) {
+  return `<div class="empty"><svg viewBox="0 0 120 80" aria-hidden="true"><ellipse cx="60" cy="72" rx="44" ry="5" style="fill:var(--surface-2)"/><g transform="translate(64,46)"><g style="fill:var(--wool);stroke:var(--wool-edge);stroke-width:2">${[0, 1, 2, 3, 4, 5, 6, 7].map(i => `<circle cx="${(Math.cos(i / 8 * 6.28) * 17).toFixed(1)}" cy="${(Math.sin(i / 8 * 6.28) * 10 - 2).toFixed(1)}" r="8"/>`).join('')}</g><ellipse cx="0" cy="-2" rx="18" ry="11" style="fill:var(--wool)"/><g style="fill:var(--face)"><rect x="-12" y="7" width="3.5" height="12" rx="1.5"/><rect x="8" y="7" width="3.5" height="12" rx="1.5"/><ellipse cx="-22" cy="-6" rx="6.5" ry="8.5"/></g><circle cx="-24" cy="-8" r="1.3" style="fill:#fff"/></g><path d="M18 70 l3 -8 l3 8 M28 71 l2 -6 l2 6 M96 70 l3 -7 l3 7" style="fill:none;stroke:var(--hill-4);stroke-width:1.6;stroke-linecap:round"/></svg><div>${msg}</div></div>`;
+}
+
+/* ---------- 图标 ---------- */
+const svgI = inner => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${inner}</svg>`;
+const ICON = {
+  today: svgI('<circle class="ic-dot" cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/>'),
+  calendar: svgI('<rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/><rect class="ic-dot" x="7" y="13" width="4" height="4" rx="1"/>'),
+  timeline: svgI('<rect class="ic-dot" x="3" y="5" width="11" height="3.6" rx="1.8"/><rect x="8" y="10.2" width="13" height="3.6" rx="1.8"/><rect x="5" y="15.4" width="9" height="3.6" rx="1.8"/>'),
+  insights: svgI('<path d="M3.5 19.5h17"/><path d="M5 15l4-4.5 3.5 3 6.5-7.5"/><circle class="ic-dot" cx="19" cy="6" r="2.2"/>'),
+  all: svgI('<rect class="ic-dot" x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/>'),
+  library: svgI('<path class="ic-dot" d="M12 12c-2-2.6-3.6-4-5.6-4a4 4 0 0 0 0 8c2 0 3.6-1.4 5.6-4zm0 0c2 2.6 3.6 4 5.6 4a4 4 0 0 0 0-8c-2 0-3.6 1.4-5.6 4z"/>'),
+  apply: svgI('<path d="M7 3.5h7l4.5 4.5v12.5H7z"/><path d="M14 3.5V8h4.5"/><path class="ic-dot" d="M9.5 13h6M9.5 16.5h4"/>'),
+  models: svgI('<circle class="ic-dot" cx="6" cy="7" r="2.6"/><circle cx="18" cy="6" r="2.2"/><circle cx="12" cy="17.5" r="2.6"/><path d="M8.3 8.3l2.6 6.7M15.9 7.3l-2.9 7.9M8.5 6.8l7.3-.6"/>'),
+  mine: svgI('<circle class="ic-dot" cx="12" cy="8.5" r="3.8"/><path d="M4.5 20c1.2-3.8 4.1-5.6 7.5-5.6s6.3 1.8 7.5 5.6"/>'),
+  coverage: svgI('<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle class="ic-dot" cx="12" cy="12" r="1.4"/><path d="M12 12l6-6"/>'),
+  admin: svgI('<circle class="ic-dot" cx="12" cy="12" r="3"/><path d="M12 2.8v2.6M12 18.6v2.6M21.2 12h-2.6M5.4 12H2.8M18.5 5.5l-1.8 1.8M7.3 16.7l-1.8 1.8M18.5 18.5l-1.8-1.8M7.3 7.3L5.5 5.5"/>'),
+  more: svgI('<circle class="ic-dot" cx="5.5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="18.5" cy="12" r="1.7"/>'),
+};
+const BRAND = `<svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="19" style="fill:var(--tag-soft)"/><g style="fill:var(--wool);stroke:var(--wool-edge);stroke-width:1.4">${[0, 1, 2, 3, 4, 5, 6].map(i => `<circle cx="${(20 + Math.cos(i / 7 * 6.28 - 1.57) * 8).toFixed(1)}" cy="${(17 + Math.sin(i / 7 * 6.28 - 1.57) * 6).toFixed(1)}" r="5"/>`).join('')}</g><circle cx="20" cy="17" r="7" style="fill:var(--wool)"/><ellipse cx="20" cy="23" rx="6.4" ry="8" style="fill:var(--face)"/><ellipse cx="12.5" cy="20" rx="4.2" ry="1.8" transform="rotate(-20 12.5 20)" style="fill:var(--face)"/><ellipse cx="27.5" cy="20" rx="4.2" ry="1.8" transform="rotate(20 27.5 20)" style="fill:var(--face)"/><rect x="27.2" y="20.5" width="4" height="5" rx="1.3" style="fill:var(--tag)"/><circle cx="17.6" cy="22" r="1.1" style="fill:#fff"/><circle cx="22.4" cy="22" r="1.1" style="fill:#fff"/></svg><span>AI 羊毛牧场</span>`;
+
+/* ---------- 图表 ---------- */
+const CHARTS = new Set();
+function baseOpt() {
+  return {
+    textStyle: { fontFamily: FONT, color: TK.ink2 },
+    tooltip: { backgroundColor: TK.surface, borderColor: TK.line2, borderWidth: 1, padding: [8, 11], textStyle: { color: TK.ink, fontSize: 12.5, fontFamily: FONT }, extraCssText: 'border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.14);' },
+    animation: !REDUCED, animationDuration: 650, animationEasing: 'cubicOut',
+  };
+}
+function chart(el, opt, set = CHARTS) {
+  if (typeof el === 'string') el = $(el);
+  if (!el) return null;
+  const c = echarts.init(el, null, { renderer: 'svg' });
+  const b = baseOpt();
+  if (opt.tooltip) opt.tooltip = Object.assign({}, b.tooltip, opt.tooltip);
+  c.setOption(Object.assign(b, opt));
+  set.add(c);
+  return c;
+}
+const axisCommon = () => ({ axisLine: { lineStyle: { color: TK.line2 } }, axisTick: { show: false }, axisLabel: { color: TK.muted, fontSize: 11.5 }, splitLine: { lineStyle: { color: TK.line } } });
+const legendCommon = () => ({ icon: 'roundRect', itemWidth: 10, itemHeight: 10, itemGap: 12, textStyle: { color: TK.ink2, fontSize: 12 } });
+
+/* ---------- 浮层提示 ---------- */
+const tip = () => $('#tip');
+function showTip(html, x, y) {
+  const t = tip(); t.innerHTML = html; t.hidden = false;
+  const w = t.offsetWidth, h = t.offsetHeight;
+  let left = x + 14, top = y + 14;
+  if (left + w > innerWidth - 8) left = x - w - 14;
+  if (top + h > innerHeight - 8) top = y - h - 14;
+  t.style.left = Math.max(8, left) + 'px'; t.style.top = Math.max(8, top) + 'px';
+}
+const hideTip = () => { tip().hidden = true; };
+function toast(msg) {
+  let t = $('#toast');
+  if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'tray'; t.setAttribute('role', 'status'); document.body.appendChild(t); }
+  t.textContent = msg; t.hidden = false; t.style.zIndex = 90;
+  clearTimeout(toast.h); toast.h = setTimeout(() => { t.hidden = true; }, 2200);
+}
+
+/* ============================================================
+ * 羊群主视觉：每只羊一条羊毛。体型 = 价值，耳标颜色 = 类型，羊毛厚度 = 剩余时间。
+ * ============================================================ */
+function woolRatio(o) { if (o.ek === 'unknown') return 0.7; return clamp(o.e / 10, 0, 1); }
+function sheepSvg(p) {
+  const o = p.o, r = rng(hash(o.id)), flip = hash(o.id) % 2 ? -1 : 1;
+  const wool = woolRatio(o), sheared = wool <= 0.12;
+  const rx = 26, ry = 16, n = 12, br = 4.2 + 7.5 * wool;
+  let bumps = '';
+  for (let i = 0; i < n; i++) { const a = i / n * Math.PI * 2; bumps += `<circle cx="${(Math.cos(a) * rx * 0.9).toFixed(1)}" cy="${(Math.sin(a) * ry * 0.85 - 3).toFixed(1)}" r="${(br * (0.85 + 0.3 * r())).toFixed(1)}"/>`; }
+  const core = `<ellipse cx="0" cy="-3" rx="${rx}" ry="${ry}"/>`;
+  const body = sheared
+    ? `<g class="wool-o" style="fill:var(--skin);stroke:var(--wool-edge);stroke-width:2">${core}</g><g style="fill:var(--wool);stroke:var(--wool-edge);stroke-width:1.2"><circle cx="-8" cy="-15" r="3"/><circle cx="5" cy="-17" r="2.6"/><circle cx="15" cy="-10" r="2.4"/></g>`
+    : `<g class="wool-o" style="fill:var(--wool);stroke:var(--wool-edge);stroke-width:2.6">${core}${bumps}</g><g style="fill:var(--wool)">${core}${bumps}</g>`;
+  const scissors = sheared ? `<g class="snip" transform="translate(${flip < 0 ? -34 : 20},-40)" style="fill:none;stroke:var(--ink-2);stroke-width:1.8;stroke-linecap:round"><circle cx="0" cy="12" r="3"/><circle cx="7" cy="12" r="3"/><path d="M1.6 9.6L9 0M5.4 9.6L-2 0"/></g>` : '';
+  const x = p.x.toFixed(1), y = p.y.toFixed(1), sc = p.sc.toFixed(3);
+  const label = `${o.t}，${o.plat.name}，${TYPES[o.ty].l}，${valLabel(o).replace(/<[^>]+>/g, '')}，${leftText(o)}`;
+  return `<g class="sheep" tabindex="0" role="link" aria-label="${esc(label)}" data-id="${o.id}" transform="translate(${x},${y})">
+    <ellipse cx="0" cy="${(24 * p.sc).toFixed(1)}" rx="${(25 * p.sc).toFixed(1)}" ry="${(4 * p.sc).toFixed(1)}" style="fill:var(--hill-4);opacity:.35"/>
+    <g transform="scale(${flip * p.sc},${sc})"><g class="bob" style="animation-delay:-${(r() * 3).toFixed(2)}s">
+      <circle cx="${rx + 2}" cy="-6" r="4" style="fill:${sheared ? 'var(--skin)' : 'var(--wool)'};stroke:var(--wool-edge);stroke-width:1.5"/>
+      <g style="fill:var(--face)"><rect x="-17" y="9" width="4.4" height="15" rx="2"/><rect x="-8" y="11" width="4.4" height="14" rx="2"/><rect x="6" y="11" width="4.4" height="14" rx="2"/><rect x="14" y="9" width="4.4" height="15" rx="2"/></g>
+      ${body}
+      <g transform="translate(-29,-10) rotate(-12)">
+        ${sheared ? '' : '<circle cx="1" cy="-10" r="5" style="fill:var(--wool);stroke:var(--wool-edge);stroke-width:1.4"/>'}
+        <ellipse cx="0" cy="0" rx="8.5" ry="11" style="fill:var(--face)"/>
+        <ellipse cx="-8.5" cy="-6" rx="6" ry="2.6" transform="rotate(-25 -8.5 -6)" style="fill:var(--face)"/>
+        <ellipse cx="8.5" cy="-7" rx="6" ry="2.6" transform="rotate(25 8.5 -7)" style="fill:var(--face)"/>
+        <g transform="translate(10,-5)"><rect x="-3" y="-1" width="7" height="8" rx="2" style="fill:${typeVar(o.ty)};stroke:var(--face);stroke-width:.8"/><circle cx="0.5" cy="1.8" r="1" style="fill:var(--face)"/></g>
+        <circle cx="-3" cy="-2" r="1.7" style="fill:#fff"/>
+      </g>
+    </g></g>${scissors}</g>`;
+}
+function meadowBg(W, H, wx) {
+  const hill = (y0, amp, ph, v) => {
+    let d = `M0,${H} L0,${y0}`; const steps = 6;
+    for (let i = 1; i <= steps; i++) {
+      const xx = W * i / steps, yy = y0 + Math.sin(i * 1.3 + ph) * amp, cx = W * (i - 0.5) / steps, cy = y0 + Math.sin((i - 0.5) * 1.3 + ph) * amp - amp * 0.7;
+      d += ` Q${cx.toFixed(0)},${cy.toFixed(0)} ${xx.toFixed(0)},${yy.toFixed(0)}`;
+    }
+    return `<path d="${d} L${W},${H} Z" style="fill:var(${v})"/>`;
+  };
+  const r = rng(99);
+  const sunX = W - Math.min(110, W * 0.2), sunY = H * 0.17;
+  let sky = '';
+  if (wx.i >= 60) sky += `<g style="stroke:var(--sun);stroke-width:3;stroke-linecap:round">${[...Array(10)].map((_, i) => { const a = i / 10 * 6.283; return `<path d="M${(sunX + Math.cos(a) * 30).toFixed(1)},${(sunY + Math.sin(a) * 30).toFixed(1)} L${(sunX + Math.cos(a) * 38).toFixed(1)},${(sunY + Math.sin(a) * 38).toFixed(1)}"/>`; }).join('')}</g><circle cx="${sunX}" cy="${sunY}" r="22" style="fill:var(--sun)"/>`;
+  const cloud = (cx, cy, s) => `<g transform="translate(${cx},${cy}) scale(${s})" style="fill:var(--cloud);opacity:.92"><ellipse cx="0" cy="0" rx="26" ry="12"/><circle cx="-10" cy="-8" r="11"/><circle cx="8" cy="-11" r="14"/><circle cx="22" cy="-3" r="9"/></g>`;
+  if (wx.i < 80) sky += cloud(sunX - 20, sunY + 14, 1.1);
+  sky += cloud(W * 0.38, H * 0.12, 0.8) + cloud(W * 0.62, H * 0.2, 0.6);
+  if (wx.i < 40) sky += `<g style="stroke:var(--s1);stroke-width:2;stroke-linecap:round;opacity:.6">${[...Array(6)].map((_, i) => `<path d="M${sunX - 34 + i * 10},${sunY + 30} l-3,8"/>`).join('')}</g>`;
+  const fenceY = H * 0.43;
+  let fence = '';
+  for (let x = 14; x < W; x += 58) { const j = (r() - 0.5) * 3; fence += `<path d="M${x},${fenceY + 16 + j} L${x + 0.8},${fenceY - 14 + j}" />`; }
+  const rail = yy => { let d = `M0,${(yy + (r() - 0.5) * 2).toFixed(1)}`; for (let x = 60; x <= W + 60; x += 60) d += ` L${x},${(yy + (r() - 0.5) * 2.4).toFixed(1)}`; return `<path d="${d}"/>`; };
+  fence = `<g style="fill:none;stroke:var(--fence);stroke-width:3;stroke-linecap:round;opacity:.75">${fence}${rail(fenceY - 6)}${rail(fenceY + 6)}</g>`;
+  let tufts = '';
+  for (let i = 0; i < Math.round(W / 34); i++) { const x = r() * W, y = H * 0.55 + r() * H * 0.42; tufts += `<path d="M${x.toFixed(0)},${y.toFixed(0)} l2.5,-7 l2.5,7 l2,-5 l2,5"/>`; }
+  let flowers = '';
+  for (let i = 0; i < Math.round(W / 120); i++) { const x = r() * W, y = H * 0.6 + r() * H * 0.36; flowers += `<g transform="translate(${x.toFixed(0)},${y.toFixed(0)})"><circle r="3.2" style="fill:#fff"/><circle r="1.4" style="fill:var(--tag)"/></g>`; }
+  return sky + hill(H * 0.46, 10, 0.3, '--hill-1') + fence + hill(H * 0.55, 12, 2.1, '--hill-2') + hill(H * 0.7, 9, 4.2, '--hill-3') + `<g style="fill:none;stroke:var(--hill-4);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round">${tufts}</g>` + flowers;
+}
+function buildFlock(el, list, wx) {
+  const W = Math.max(300, Math.round(el.clientWidth || 800));
+  const small = W < 640, H = small ? 330 : 400;
+  const base = small ? 0.6 : W < 900 ? 0.78 : 0.95;
+  if (!list.length) { el.innerHTML = `<svg class="meadow" viewBox="0 0 ${W} ${H}" aria-hidden="true">${meadowBg(W, H, wx)}</svg>` + emptySheep('按你的条件，草地上暂时没有羊。去"我的条件"放宽一点试试。'); return; }
+  const maxU = Math.max(...list.map(o => o.usd));
+  const r = rng(20260930);
+  const items = list.map(o => ({ o, sc: base * (0.62 + 0.75 * Math.sqrt(o.usd / maxU)) })).sort((a, b) => b.sc - a.sc);
+  const top = H * (small ? 0.5 : 0.52), bottom = H - 26 * base;
+  const placed = [];
+  for (const it of items) {
+    const rad = 33 * it.sc;
+    let best = null, bestGap = -Infinity;
+    for (let k = 0; k < 320; k++) {
+      const x = 16 + rad * 1.2 + r() * (W - 32 - rad * 2.4);
+      const y = top + rad * 0.5 + r() * Math.max(4, bottom - top - rad * 1.3);
+      const gap = placed.length ? Math.min(...placed.map(p => Math.hypot(p.x - x, (p.y - y) * 1.5) - p.rad - rad)) : 999;
+      if (gap > bestGap) { best = { x, y }; bestGap = gap; }
+      if (gap > 8) break;
+    }
+    placed.push({ ...it, ...best, rad });
+  }
+  placed.sort((a, b) => a.y - b.y);
+  el.innerHTML = `<svg class="meadow" viewBox="0 0 ${W} ${H}" role="group" aria-label="进行中的羊毛，共 ${list.length} 只羊">${meadowBg(W, H, wx)}${placed.map(sheepSvg).join('')}</svg>`;
+  el.dataset.w = W;
+  $$('.sheep', el).forEach(g => {
+    const o = OMAP[g.dataset.id];
+    const html = `<b>${esc(o.t)}</b>${esc(o.plat.name)} · ${TYPES[o.ty].l}<br>${valLabel(o).replace(/<small>/, ' ').replace(/<\/small>/, '')} · ${leftText(o)}<br><span class="muted">薅度 ${score(o)} · 点击看详情</span>`;
+    g.addEventListener('mousemove', e => showTip(html, e.clientX, e.clientY));
+    g.addEventListener('mouseleave', hideTip);
+    g.addEventListener('focus', () => { const b = g.getBoundingClientRect(); showTip(html, b.right, b.top); });
+    g.addEventListener('blur', hideTip);
+    g.addEventListener('click', () => { hideTip(); location.hash = 'offer-' + o.id; });
+    g.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); location.hash = 'offer-' + o.id; } });
+  });
+}
+
+/* ---------- 羊毛天气 ---------- */
+function weatherNow() {
+  const act = view(OFFERS.filter(activeLimited));
+  const fresh = view(OFFERS.filter(o => o.fs >= -7 && claimable(o))).length;
+  const ending = act.filter(o => statusOf(o) === 'ending').length;
+  const val = sum(act, o => o.usd);
+  const i = clamp(Math.round(18 + fresh * 4 + Math.log10(1 + val) * 11 - ending * 2), 5, 99);
+  const [t, adv] = i >= 80 ? ['晴', '草肥羊壮，适合出门薅'] : i >= 60 ? ['晴间多云', '新羊毛不少，先领薅度分高的'] : i >= 40 ? ['多云', '羊毛一般，可以等等节日活动'] : ['小雨', '今天没什么可薅，明天再来'];
+  return { i, t, adv, fresh, ending, val };
+}
+function wxIcon(i) {
+  const sun = '<circle cx="18" cy="17" r="8" style="fill:var(--sun)"/>';
+  const cloud = (dx, dy) => `<g transform="translate(${dx},${dy})" style="fill:var(--cloud);stroke:var(--line-2);stroke-width:1"><path d="M8 32h22a6 6 0 0 0 0-12 9 9 0 0 0-17-2 6.5 6.5 0 0 0-5 14z"/></g>`;
+  const rain = '<g style="stroke:var(--s1);stroke-width:2;stroke-linecap:round"><path d="M14 36l-2 4M21 36l-2 4M28 36l-2 4"/></g>';
+  const inner = i >= 80 ? sun + '<g style="stroke:var(--sun);stroke-width:2.4;stroke-linecap:round"><path d="M18 3v4M18 27v4M4 17h4M28 17h4M8 7l3 3M25 24l3 3M8 27l3-3M25 10l3-3"/></g>' : i >= 60 ? sun + cloud(4, 2) : i >= 40 ? cloud(2, -2) : cloud(2, -6) + rain;
+  return `<svg viewBox="0 0 40 42" aria-hidden="true">${inner}</svg>`;
+}
+
+/* ============================================================
+ * 页面
+ * ============================================================ */
+const main = () => $('#main');
+const ph = (title, desc = '', extra = '') => `<div class="ph"><div><h1>${title}</h1>${desc ? `<p>${desc}</p>` : ''}</div>${extra}</div>`;
+const secH = (title, hint = '') => `<div class="sec-h"><h2>${title}</h2>${hint ? `<span class="hint">${hint}</span>` : ''}</div>`;
+function ribbon() {
+  return `<div class="ribbon"><span class="live"><i></i>最近成功更新：<b>${Math.round((NOW - LAST_OK) / 3600000)} 小时前（${hm(LAST_OK)}）</b></span><span class="sample">原型</span><span>页面上的活动、额度和日期都是示例数据，不是真实活动</span></div>`;
+}
+function ocard(o) {
+  const [frac, col] = barOf(o);
+  return `<article class="ocard">
+    <a class="stretch" href="#offer-${o.id}" aria-label="${esc(o.t)}"></a>
+    <div class="oc-top">${etag(o.ty)}${stChip(o)}</div>
+    <div style="min-width:0"><p class="oc-title">${esc(o.t)}</p><div class="oc-plat">${esc(o.plat.name)} · ${CLAIM[o.c]}</div><div class="oc-val">${valLabel(o)}</div></div>
+    ${miniRadar(o)}
+    <div class="oc-foot">
+      <div class="bar" aria-hidden="true"><i style="width:${(frac * 100).toFixed(0)}%;background:${col}"></i></div>
+      <div class="oc-meta"><span>${leftText(o)}</span><span class="row" style="gap:6px"><span class="score" title="薅度分">${score(o)}<small>薅度</small></span><button class="cmp" type="button" data-cmp="${o.id}" aria-pressed="${CMP.includes(o.id)}">对比</button></span></div>
+      ${reqChips(o)}
+    </div>
+  </article>`;
+}
+const ocards = list => list.length ? `<div class="ocards">${list.map(ocard).join('')}</div>` : emptySheep('这里暂时没有羊毛。');
+function orow(o, when) {
+  return `<a class="orow" href="#offer-${o.id}"><span class="when">${when}</span><span class="t">${esc(o.t)}<small>${esc(o.plat.name)} · ${TYPES[o.ty].l} · ${valLabel(o).replace(/<[^>]+>/g, ' ')}</small></span>${stChip(o)}</a>`;
+}
+function kpi(label, value, unit, series, color = 'var(--s1)') {
+  return `<div class="kpi"><span class="k-l">${label}</span><span class="k-v">${value}${unit ? `<small>${unit}</small>` : ''}</span><span style="color:${color}">${spark(series)}</span></div>`;
+}
+function seriesTo(end, n = 14, seed = 1, spread = 0.35) {
+  const r = rng(seed); const out = []; let v = end;
+  for (let i = 0; i < n; i++) { out.unshift(Math.max(0, Math.round(v))); v = v * (1 - spread * (r() - 0.35) * 0.4); }
+  out[n - 1] = end; return out;
+}
+
+/* ---------- 今天 ---------- */
+function pToday() {
+  const act = view(OFFERS.filter(activeLimited));
+  const stand = view(OFFERS.filter(o => statusOf(o) === 'standing'));
+  const upcoming = view(OFFERS.filter(o => isLimited(o) && statusOf(o) === 'upcoming')).sort((a, b) => a.s - b.s);
+  const ending = act.filter(o => statusOf(o) === 'ending');
+  const wx = weatherNow();
+  const vLim = sum(act, o => o.usd), vStand = sum(stand, o => o.usd);
+  const soon = act.filter(o => o.ek === 'date').sort((a, b) => endInstant(a) - endInstant(b)).slice(0, 5);
+  main().innerHTML = ribbon() + ph('今天', '今天能薅的羊毛都在这片草地上。点一只羊看详情。') + `
+  <div class="hero">
+    <div class="hero-over">
+      <div class="total"><span class="l">${C.only ? '按你的条件，' : ''}今天能薅到约</span><span class="v">${money(vLim + vStand)}</span><span class="d">限时活动 ${money(vLim)} + 常驻额度每月 ${money(vStand)} · 不含申请制</span></div>
+      <div class="wx">${wxIcon(wx.i)}<div><div class="row" style="gap:6px;align-items:baseline"><span class="i">${wx.i}</span><span class="t">今日羊毛指数 · ${wx.t}</span></div><div class="t">${wx.adv}</div></div></div>
+    </div>
+    <div id="flock"></div>
+    <div class="flock-legend"><span><b>羊越大</b>，价值越高</span><span><b>毛越厚</b>，剩余时间越多</span><span><b>剃秃的</b>今明两天结束</span><span class="legend">${Object.keys(TYPES).filter(isTypeLimited).map(t => `<span>${etagSvg(typeVar(t)).replace('<svg ', '<svg style="width:12px;height:14px" ')}${TYPES[t].l}</span>`).join('')}</span></div>
+  </div>
+  <section class="kpis">
+    ${kpi('进行中', act.length, '条', seriesTo(act.length, 14, 3))}
+    ${kpi('本周新增', wx.fresh, '条', seriesTo(wx.fresh, 14, 5, 0.9))}
+    ${kpi('3 天内结束', ending.length, '条', seriesTo(ending.length, 14, 7, 1.2), 'var(--serious)')}
+    ${kpi('常驻额度', stand.length, '项', seriesTo(stand.length, 14, 9, 0.1), 'var(--s6)')}
+  </section>
+  <section>${secH('倒计时', '最快结束的 5 条，按官方时区换算成你的本地时间')}
+    <div class="clocks">${soon.map(o => {
+      const end = endInstant(o), total = end - startInstant(o), frac = (end - NOW) / total;
+      const col = o.e === 0 ? 'var(--critical)' : statusOf(o) === 'ending' ? 'var(--serious)' : 'var(--good)';
+      return `<a class="clock" href="#offer-${o.id}">${ringSvg(frac, 54, col)}<div style="min-width:0"><div class="cd" data-end="${end.getTime()}">${cdText(end - NOW)}</div><div class="ttl">${esc(o.t)}</div></div></a>`;
+    }).join('') || emptySheep('没有即将结束的活动。')}</div>
+  </section>
+  <section class="grid g2">
+    <div class="card"><h3>进行中的类型分布</h3><p class="sub">点一块，查看这一类的全部羊毛</p><div class="chart" id="cType" style="height:270px"></div></div>
+    <div class="card"><h3>按模态分</h3><p class="sub">一条羊毛可能同时覆盖多个模态</p><div class="chart" id="cModal" style="height:270px"></div></div>
+  </section>
+  <section>${secH('即将开始', '官方已公布、还没开始的活动')}
+    <div class="rows">${upcoming.map(o => orow(o, `${md(dayAt(o.s))}开始`)).join('') || emptySheep('暂时没有已公布的新活动。')}</div>
+  </section>
+  <section>${secH('进行中的羊毛', '按薅度分排序')}${ocards(act.slice().sort((a, b) => score(b) - score(a)))}</section>`;
+
+  buildFlock($('#flock'), act, wx);
+  const types = Object.keys(TYPES).filter(isTypeLimited).map(t => ({ t, n: act.filter(o => o.ty === t).length })).filter(x => x.n);
+  const cT = chart('#cType', {
+    tooltip: { trigger: 'item', formatter: p => `${p.marker}${p.name}<br><b>${p.value}</b> 条 · ${p.percent}%` },
+    legend: Object.assign(legendCommon(), { bottom: 0 }),
+    series: [{ type: 'pie', radius: ['50%', '72%'], center: ['50%', '43%'], itemStyle: { borderRadius: 5, borderColor: TK.surface, borderWidth: 2 }, label: { show: false }, data: types.map(x => ({ name: TYPES[x.t].l, value: x.n, ty: x.t, itemStyle: { color: typeColor(x.t) } })) }],
+    graphic: [
+      { type: 'text', left: 'center', top: '33%', style: { text: String(act.length), fill: TK.ink, font: `700 30px ${FONT}`, textAlign: 'center' } },
+      { type: 'text', left: 'center', top: '47%', style: { text: '条进行中', fill: TK.muted, font: `12px ${FONT}`, textAlign: 'center' } },
+    ],
+  });
+  cT && cT.on('click', p => { ALLF = Object.assign(defaultAllF(), { ty: p.data.ty }); location.hash = 'all'; });
+  const mods = Object.keys(MODAL).map(m => ({ m, n: act.filter(o => o.m.includes(m)).length }));
+  const cM = chart('#cModal', {
+    grid: { left: 8, right: 36, top: 8, bottom: 8, containLabel: true },
+    tooltip: { trigger: 'item', formatter: p => `${p.name}<br><b>${p.value}</b> 条` },
+    xAxis: Object.assign(axisCommon(), { type: 'value', minInterval: 1, splitLine: { lineStyle: { color: TK.line } } }),
+    yAxis: Object.assign(axisCommon(), { type: 'category', inverse: true, data: mods.map(x => MODAL[x.m]), axisLabel: { color: TK.ink2, fontSize: 12.5 } }),
+    series: [{ type: 'bar', barWidth: 14, data: mods.map(x => ({ value: x.n, m: x.m })), itemStyle: { color: TK.s[0], borderRadius: [0, 4, 4, 0] }, label: { show: true, position: 'right', color: TK.ink2, fontFamily: FONT } }],
+  });
+  cM && cM.on('click', p => { ALLF = Object.assign(defaultAllF(), { m: p.data.m }); location.hash = 'all'; });
+}
+function isTypeLimited(t) { return t !== 'standing' && t !== 'apply'; }
+
+/* ---------- 日历 ---------- */
+const CAL = { metric: 'count', sel: ymd(T0) };
+function dayStats(k) {
+  const list = view(OFFERS.filter(o => activeOn(o, k)));
+  return {
+    list, n: list.length, v: sum(list, o => o.usd),
+    starts: view(OFFERS.filter(o => isLimited(o) && o.s === k)), ends: view(OFFERS.filter(o => isLimited(o) && o.ek === 'date' && o.e === k)),
+    hol: HOLIDAYS.find(h => h.d === ymd(dayAt(k))),
+  };
+}
+function pCalendar() {
+  const months = [-1, 0, 1, 2].map(i => new Date(T0.getFullYear(), T0.getMonth() + i, 1));
+  const hols = HOLIDAYS.filter(h => { const k = dayIdx(new Date(h.d + 'T00:00:00')); return k >= -10 && k <= 150; });
+  main().innerHTML = ribbon() + ph('日历', '点任意一天，看那天能薅什么。草色越深，那天的羊毛越多。',
+    `<div class="row"><div class="seg" role="group" aria-label="颜色表示"><button type="button" data-metric="count" aria-pressed="${CAL.metric === 'count'}">当天条数</button><button type="button" data-metric="value" aria-pressed="${CAL.metric === 'value'}">当天总价值</button></div><label class="field" style="flex-direction:row;align-items:center;gap:8px"><span>跳到</span><input type="date" id="pickDate" value="${CAL.sel}"></label></div>`) + `
+  <div class="row small muted" style="margin:-4px 0 12px;gap:14px"><span class="row" style="gap:6px">少 <span class="ramp">${[0, 2, 4, 6, 7].map(i => `<i style="background:var(--q${i})"></i>`).join('')}</span> 多</span><span class="row" style="gap:6px"><i class="sw" style="background:var(--s1);border-radius:50%"></i>当天开始</span><span class="row" style="gap:6px"><i class="sw" style="background:var(--muted);border-radius:50%"></i>当天结束</span><span class="row" style="gap:6px"><i class="sw" style="background:var(--tag)"></i>节日 / 购物节</span></div>
+  <div class="months">${months.map((m, i) => `<div class="card month"><h3>${m.getFullYear()}年${m.getMonth() + 1}月</h3><div class="chart" id="cal${i}" style="height:262px"></div></div>`).join('')}</div>
+  <section id="dayList"></section>
+  <section>${secH('节日提醒', '往年这些节点常有厂商发羊毛（示例）')}<div class="hols">${hols.map(h => { const dd = new Date(h.d + 'T00:00:00'); const k = dayIdx(dd); return `<div class="hol"><b>${h.n} · ${md(dd)}</b><span class="muted">${k < 0 ? `${-k} 天前` : k === 0 ? '就是今天' : `还有 ${k} 天`}</span><span>往年发过：${h.past}</span></div>`; }).join('')}</div></section>`;
+  drawMonths(months);
+  renderDayList();
+  $$('[data-metric]').forEach(b => b.addEventListener('click', () => { CAL.metric = b.dataset.metric; render(true); }));
+  $('#pickDate').addEventListener('change', e => { if (e.target.value) { CAL.sel = e.target.value; drawMonths(months); renderDayList(); } });
+}
+function drawMonths(months) {
+  $$('.month .chart').forEach(el => { const c = echarts.getInstanceByDom(el); if (c) { CHARTS.delete(c); c.dispose(); } });
+  const all = [];
+  months.forEach(m => { const days = new Date(m.getFullYear(), m.getMonth() + 1, 0).getDate(); for (let d = 1; d <= days; d++) all.push(dayStats(dayIdx(new Date(m.getFullYear(), m.getMonth(), d)))); });
+  const mx = Math.max(1, ...all.map(s => CAL.metric === 'count' ? s.n : s.v));
+  months.forEach((m, i) => {
+    const days = new Date(m.getFullYear(), m.getMonth() + 1, 0).getDate();
+    const cells = [];
+    for (let d = 1; d <= days; d++) {
+      const dt = new Date(m.getFullYear(), m.getMonth(), d), k = dayIdx(dt), s = dayStats(k), val = CAL.metric === 'count' ? s.n : s.v;
+      const fill = val === 0 ? TK.surface2 : TK.q[clamp(Math.round(Math.sqrt(val / mx) * 7), 0, 7)];
+      cells.push({ date: ymd(dt), d, k, s, val, fill });
+    }
+    const c = chart('#cal' + i, {
+      tooltip: {
+        trigger: 'item', formatter: p => {
+          const x = cells[p.dataIndex]; const dt = new Date(x.date + 'T00:00:00');
+          return `<b>${md(dt)} 周${WD[dt.getDay()]}</b><br>有效 ${x.s.n} 条 · 约 ${money(x.s.v)}${x.s.hol ? `<br>节日：${x.s.hol.n}` : ''}${x.s.starts.length ? `<br>开始：${x.s.starts.map(o => esc(o.t)).join('、')}` : ''}${x.s.ends.length ? `<br>结束：${x.s.ends.map(o => esc(o.t)).join('、')}` : ''}`;
+        },
+      },
+      calendar: { orient: 'vertical', range: `${m.getFullYear()}-${pad(m.getMonth() + 1)}`, cellSize: ['auto', 36], left: 6, right: 6, top: 24, bottom: 4, splitLine: { show: false }, itemStyle: { color: 'transparent', borderWidth: 0 }, dayLabel: { firstDay: 1, nameMap: ['日', '一', '二', '三', '四', '五', '六'], color: TK.muted, fontSize: 11, margin: 6 }, monthLabel: { show: false }, yearLabel: { show: false } },
+      series: [{
+        type: 'custom', coordinateSystem: 'calendar', data: cells.map(x => [x.date, x.val]),
+        renderItem: (params, api) => {
+          const x = cells[params.dataIndex], pt = api.coord(api.value(0));
+          const w = params.coordSys.cellWidth - 4, h = params.coordSys.cellHeight - 4;
+          const isToday = x.k === 0, isSel = x.date === CAL.sel;
+          const kids = [
+            { type: 'rect', shape: { x: pt[0] - w / 2, y: pt[1] - h / 2, width: w, height: h, r: 7 }, style: { fill: x.fill, stroke: isSel ? TK.ink : isToday ? TK.tag : null, lineWidth: isSel || isToday ? 2 : 0 } },
+            { type: 'text', style: { text: String(x.d), x: pt[0], y: pt[1], align: 'center', verticalAlign: 'middle', fill: x.val === 0 ? TK.muted : onColor(x.fill), font: `${isToday ? 700 : 500} 12px ${FONT}` } },
+          ];
+          if (x.s.hol) kids.push({ type: 'polygon', shape: { points: [[pt[0] - w / 2 + 2, pt[1] - h / 2 + 2], [pt[0] - w / 2 + 11, pt[1] - h / 2 + 2], [pt[0] - w / 2 + 2, pt[1] - h / 2 + 11]] }, style: { fill: TK.tag } });
+          if (x.s.starts.length) kids.push({ type: 'circle', shape: { cx: pt[0] + w / 2 - 6, cy: pt[1] - h / 2 + 6, r: 3 }, style: { fill: TK.s[0], stroke: TK.surface, lineWidth: 1 } });
+          if (x.s.ends.length) kids.push({ type: 'circle', shape: { cx: pt[0] + w / 2 - 6, cy: pt[1] + h / 2 - 6, r: 3 }, style: { fill: TK.muted, stroke: TK.surface, lineWidth: 1 } });
+          return { type: 'group', children: kids };
+        },
+      }],
+    });
+    c && c.on('click', p => { CAL.sel = cells[p.dataIndex].date; $('#pickDate').value = CAL.sel; drawMonths(months); renderDayList(); });
+  });
+}
+function renderDayList() {
+  const dt = new Date(CAL.sel + 'T00:00:00'), k = dayIdx(dt), s = dayStats(k);
+  const standN = view(OFFERS.filter(o => o.ty === 'standing')).length;
+  const when = k === 0 ? '今天' : k < 0 ? `${-k} 天前` : `${k} 天后`;
+  $('#dayList').innerHTML = secH(`${md(dt)} 周${WD[dt.getDay()]} · ${when}`, `当天有效 ${s.n} 条限时羊毛，约 ${money(s.v)}；另有 ${standN} 项常驻额度每天都能用`) +
+    (s.hol ? `<p class="small"><span class="sample">${s.hol.n}</span> 往年这个时候发过羊毛的平台：${s.hol.past}</p>` : '') +
+    (k < 0 ? '<p class="small muted">这是过去的日期，列出的是那天有效的羊毛。</p>' : k > 0 ? '<p class="small muted">这是未来的日期，只包含官方已公布的活动；"截止未知"的活动到那天不一定还在。</p>' : '') +
+    `<div class="rows">${s.list.sort((a, b) => score(b) - score(a)).map(o => orow(o, o.ek === 'date' ? `至${md(dayAt(o.e))}` : '截止未知')).join('') || emptySheep('这一天没有限时羊毛。')}</div>`;
+}
+
+/* ---------- 时间线（甘特图） ---------- */
+function pTimeline() {
+  const lo = -30, hi = 45;
+  const items = view(OFFERS.filter(o => isLimited(o) && (o.ek !== 'date' || o.e >= lo) && (o.s == null || o.s <= hi)));
+  const rowsIds = uniq(items.slice().sort((a, b) => (a.ek === 'date' ? a.e : 999) - (b.ek === 'date' ? b.e : 999)).map(o => o.p));
+  const rows = rowsIds.map(id => PMAP[id].name);
+  const h = rows.length * 34 + 90;
+  main().innerHTML = ribbon() + ph('时间线', '每个平台一行，横条是活动的起止时间。竖线是今天，描边的是 3 天内结束的活动。') +
+    `<div class="legend" style="margin-bottom:10px">${Object.keys(TYPES).filter(isTypeLimited).map(t => `<span><i class="sw" style="background:${typeVar(t)}"></i>${TYPES[t].l}</span>`).join('')}<span><i class="sw" style="background:linear-gradient(90deg,var(--muted),transparent)"></i>截止未知</span></div>
+    <div class="card" style="padding:10px 6px"><div class="chart" id="cGantt" style="height:${h}px"></div></div>
+    <p class="small muted">可以拖动下方滑块或用触控板缩放时间范围。点横条看详情。</p>`;
+  const data = items.map(o => {
+    const s = o.s == null ? lo : Math.max(lo, o.s), e = o.ek === 'date' ? o.e + 1 : hi;
+    return { value: [rowsIds.indexOf(o.p), dayAt(s).getTime(), dayAt(e).getTime()], o };
+  });
+  const c = chart('#cGantt', {
+    grid: { left: 8, right: 16, top: 26, bottom: 46, containLabel: true },
+    tooltip: { trigger: 'item', formatter: p => { const o = p.data.o; return `<b>${esc(o.t)}</b>${esc(o.plat.name)} · ${TYPES[o.ty].l}<br>${o.s != null ? md(dayAt(o.s)) : '早已开始'} → ${o.ek === 'date' ? md(dayAt(o.e)) : '截止未知'}<br>${leftText(o)}`; } },
+    xAxis: Object.assign(axisCommon(), { type: 'time', min: dayAt(lo).getTime(), max: dayAt(hi).getTime(), position: 'top', axisLabel: { color: TK.muted, fontSize: 11, formatter: v => { const d = new Date(v); return `${d.getMonth() + 1}/${d.getDate()}`; } }, splitLine: { show: true, lineStyle: { color: TK.line } } }),
+    yAxis: Object.assign(axisCommon(), { type: 'category', data: rows, inverse: true, axisLabel: { color: TK.ink2, fontSize: 12 }, splitLine: { show: false } }),
+    dataZoom: [{ type: 'inside', xAxisIndex: 0, filterMode: 'weakFilter' }, { type: 'slider', xAxisIndex: 0, height: 18, bottom: 10, filterMode: 'weakFilter', borderColor: TK.line, fillerColor: TK.tagSoft, handleStyle: { color: TK.surface, borderColor: TK.line2 }, textStyle: { color: TK.muted }, dataBackground: { lineStyle: { color: TK.line2 }, areaStyle: { color: TK.surface2 } } }],
+    series: [{
+      type: 'custom', encode: { x: [1, 2], y: 0 }, data,
+      renderItem: (params, api) => {
+        const o = data[params.dataIndex].o, cat = api.value(0), a = api.coord([api.value(1), cat]), b = api.coord([api.value(2), cat]);
+        const bh = api.size([0, 1])[1] * 0.56, cs = params.coordSys;
+        const rect = echarts.graphic.clipRectByRect({ x: a[0], y: a[1] - bh / 2, width: Math.max(3, b[0] - a[0] - 2), height: bh }, { x: cs.x, y: cs.y, width: cs.width, height: cs.height });
+        if (!rect) return null;
+        const col = typeColor(o.ty), st = statusOf(o);
+        const fill = o.ek === 'unknown' ? new echarts.graphic.LinearGradient(0, 0, 1, 0, [{ offset: 0, color: col }, { offset: 1, color: hexA(col, 0.06) }]) : col;
+        const kids = [{ type: 'rect', shape: Object.assign({ r: 4 }, rect), style: { fill, opacity: st === 'ended' ? 0.35 : st === 'upcoming' ? 0.55 : 1, stroke: st === 'ending' ? (o.e === 0 ? TK.critical : TK.serious) : null, lineWidth: st === 'ending' ? 2 : 0 } }];
+        if (rect.width > 70) {
+          const maxCh = Math.floor((rect.width - 12) / 12.5);
+          const txt = o.t.length > maxCh ? o.t.slice(0, Math.max(1, maxCh - 1)) + '…' : o.t;
+          kids.push({ type: 'text', style: { text: txt, x: rect.x + 6, y: rect.y + rect.height / 2, verticalAlign: 'middle', fill: o.ek === 'unknown' || st === 'ended' ? TK.ink : onColor(col), font: `500 11.5px ${FONT}` } });
+        }
+        return { type: 'group', children: kids };
+      },
+      markLine: { symbol: 'none', silent: true, data: [{ xAxis: NOW.getTime() }], lineStyle: { color: TK.ink, width: 1.5, type: 'solid' }, label: { formatter: '今天', color: TK.ink, fontFamily: FONT, fontSize: 11, position: 'start' } },
+    }],
+  });
+  c && c.on('click', p => { if (p.data && p.data.o) location.hash = 'offer-' + p.data.o.id; });
+}
+
+/* ---------- 全部 ---------- */
+const defaultAllF = () => ({ ty: '', m: '', c: '', p: '', st: 'claimable', req: '', sort: 'score' });
+let ALLF = defaultAllF();
+function filtered() {
+  let list = view(OFFERS.slice());
+  const f = ALLF;
+  if (f.ty) list = list.filter(o => o.ty === f.ty);
+  if (f.m) list = list.filter(o => o.m.includes(f.m));
+  if (f.c) list = list.filter(o => o.c === f.c);
+  if (f.p) list = list.filter(o => o.p === f.p);
+  if (f.st === 'claimable') list = list.filter(o => ['active', 'ending', 'standing', 'upcoming', 'open'].includes(statusOf(o)));
+  else if (f.st) list = list.filter(o => statusOf(o) === f.st);
+  const has = (o, ks) => o.r.some(r => ks.includes(r.split(':')[0]));
+  if (f.req === 'zero') list = list.filter(o => o.r.every(r => ['none', 'targeted'].includes(r)));
+  if (f.req === 'nooversea') list = list.filter(o => !has(o, ['phone', 'card', 'net']));
+  if (f.req === 'nopay') list = list.filter(o => !has(o, ['pay', 'member']));
+  if (f.req === 'special') list = list.filter(o => has(o, ['student', 'biz', 'invite', 'targeted']));
+  const endKey = o => o.ek === 'date' ? o.e : isLimited(o) ? 500 : 900;
+  const sorters = { score: (a, b) => score(b) - score(a), new: (a, b) => b.fs - a.fs, end: (a, b) => endKey(a) - endKey(b), value: (a, b) => b.usd - a.usd };
+  return list.sort(sorters[f.sort]);
+}
+function pAll() {
+  const sel = (id, label, opts) => `<label class="field" for="${id}">${label}<select id="${id}" data-f="${id.slice(2)}">${opts.map(([v, l]) => `<option value="${v}" ${ALLF[id.slice(2)] === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>`;
+  main().innerHTML = ribbon() + ph('全部羊毛', '筛选、排序，或者勾几条放在一起对比。') + `
+  <div class="filters">
+    ${sel('f-ty', '类型', [['', '全部类型'], ...Object.entries(TYPES).map(([k, v]) => [k, v.l])])}
+    ${sel('f-m', '模态', [['', '全部模态'], ...Object.entries(MODAL)])}
+    ${sel('f-req', '门槛', [['', '不限'], ['zero', '零门槛'], ['nooversea', '不需要海外条件'], ['nopay', '不用花钱'], ['special', '学生 / 企业 / 邀请 / 定向']])}
+    ${sel('f-c', '领取方式', [['', '全部方式'], ...Object.entries(CLAIM)])}
+    ${sel('f-p', '平台', [['', '全部平台'], ...PLATFORMS.filter(p => OFFERS.some(o => o.p === p.id)).map(p => [p.id, p.name])])}
+    ${sel('f-st', '状态', [['claimable', '现在或即将可领'], ['', '全部状态'], ['active', '进行中'], ['ending', '即将结束'], ['upcoming', '未开始'], ['standing', '常驻'], ['stale', '待核验'], ['ended', '已结束']])}
+    ${sel('f-sort', '排序', [['score', '薅度分高'], ['new', '新上架'], ['end', '快截止'], ['value', '价值高']])}
+  </div>
+  <div class="row small muted" style="justify-content:space-between;margin-bottom:10px"><span id="allCount"></span><button class="btn sm" type="button" id="resetF">清空筛选</button></div>
+  <div id="allList"></div>`;
+  const draw = () => { const l = filtered(); $('#allCount').textContent = `共 ${l.length} 条${C.only ? '（已按你的条件过滤）' : ''}`; $('#allList').innerHTML = ocards(l); };
+  $$('[data-f]').forEach(s => s.addEventListener('change', () => { ALLF[s.dataset.f] = s.value; draw(); }));
+  $('#resetF').addEventListener('click', () => { ALLF = defaultAllF(); render(true); });
+  draw();
+}
+
+/* ---------- 常驻额度库 ---------- */
+function pLibrary() {
+  const list = view(OFFERS.filter(o => o.ty === 'standing'));
+  const pids = uniq(list.map(o => o.p)).sort((a, b) => sum(list.filter(o => o.p === b), o => o.usd) - sum(list.filter(o => o.p === a), o => o.usd));
+  const mods = Object.keys(MODAL);
+  const cells = [];
+  pids.forEach((pid, y) => mods.forEach((m, x) => { const v = sum(list.filter(o => o.p === pid && o.m.includes(m)), o => o.usd); cells.push({ x, y, v, pid, m }); }));
+  const mx = Math.max(1, ...cells.map(c => c.v));
+  const fresh = list.slice().sort((a, b) => a.vf - b.vf);
+  main().innerHTML = ribbon() + ph('常驻额度库', '长期免费的额度，没有变化时不重复推送。每 7 天核验一次，14 天没核验成功就转为"待核验"。') + `
+  <section class="grid g2" style="margin-top:0">
+    <div class="card"><h3>平台 × 模态</h3><p class="sub">格子越深，这个平台在这个模态上每月送得越多</p><div class="chart" id="cMatrix" style="height:${pids.length * 30 + 60}px"></div></div>
+    <div class="card"><h3>每月免费价值排行</h3><p class="sub">按平台汇总常驻额度的折合美元</p><div class="chart" id="cRank" style="height:${pids.length * 30 + 60}px"></div></div>
+  </section>
+  <section>${secH('核验新鲜度', '上线后由管线每 7 天自动核验')}
+    <div class="card tbl" style="padding:4px 8px"><table><thead><tr><th>额度</th><th>平台</th><th>每月折合</th><th>最近核验</th><th>状态</th></tr></thead><tbody>
+    ${fresh.map(o => { const d = -o.vf; const s = d >= 14 ? stBadge('critical', '✕', '待核验') : d >= 8 ? stBadge('warn', '!', '快到核验期') : stBadge('good', '✓', '新鲜'); return `<tr class="link" data-href="#offer-${o.id}"><td>${esc(o.t)}</td><td>${esc(o.plat.name)}</td><td class="n">${money(o.usd)}</td><td class="n">${ago(o.vf)}</td><td>${s}</td></tr>`; }).join('')}
+    </tbody></table></div>
+  </section>
+  <section>${secH('全部常驻额度')}${ocards(list.slice().sort((a, b) => score(b) - score(a)))}</section>`;
+  const cm = chart('#cMatrix', {
+    grid: { left: 8, right: 8, top: 26, bottom: 6, containLabel: true },
+    tooltip: { trigger: 'item', formatter: p => { const c = cells[p.dataIndex]; return `<b>${esc(PMAP[c.pid].name)}</b> · ${MODAL[c.m]}<br>${c.v ? `每月约 ${money(c.v)}` : '不覆盖这个模态'}`; } },
+    xAxis: Object.assign(axisCommon(), { type: 'category', position: 'top', data: mods.map(m => MODAL[m]), axisLine: { show: false }, axisLabel: { color: TK.ink2, fontSize: 12 } }),
+    yAxis: Object.assign(axisCommon(), { type: 'category', inverse: true, data: pids.map(p => PMAP[p].name), axisLine: { show: false }, axisLabel: { color: TK.ink2, fontSize: 12 } }),
+    series: [{
+      type: 'custom', data: cells.map(c => [c.x, c.y, c.v]),
+      renderItem: (params, api) => {
+        const c = cells[params.dataIndex], pt = api.coord([api.value(0), api.value(1)]), sz = api.size([1, 1]);
+        const w = sz[0] - 4, h = sz[1] - 4;
+        const fill = c.v ? TK.q[clamp(Math.round(Math.sqrt(c.v / mx) * 7), 1, 7)] : TK.surface2;
+        const kids = [{ type: 'rect', shape: { x: pt[0] - w / 2, y: pt[1] - h / 2, width: w, height: h, r: 5 }, style: { fill } }];
+        if (c.v && w > 34) kids.push({ type: 'text', style: { text: money(c.v), x: pt[0], y: pt[1], align: 'center', verticalAlign: 'middle', fill: onColor(fill), font: `500 11px ${FONT}` } });
+        return { type: 'group', children: kids };
+      },
+    }],
+  });
+  cm && cm.on('click', p => { location.hash = 'platform-' + cells[p.dataIndex].pid; });
+  const tot = pids.map(pid => ({ pid, v: sum(list.filter(o => o.p === pid), o => o.usd) }));
+  const cr = chart('#cRank', {
+    grid: { left: 8, right: 48, top: 8, bottom: 6, containLabel: true },
+    tooltip: { trigger: 'item', formatter: p => `${p.name}<br>每月约 <b>${money(p.value)}</b>` },
+    xAxis: Object.assign(axisCommon(), { type: 'value', axisLabel: { color: TK.muted, formatter: v => money(v) } }),
+    yAxis: Object.assign(axisCommon(), { type: 'category', inverse: true, data: tot.map(t => PMAP[t.pid].name), axisLabel: { color: TK.ink2, fontSize: 12 } }),
+    series: [{ type: 'bar', barWidth: 12, data: tot.map(t => ({ value: t.v, pid: t.pid })), itemStyle: { color: TK.s[5], borderRadius: [0, 4, 4, 0] }, label: { show: true, position: 'right', color: TK.ink2, formatter: p => money(p.value), fontFamily: FONT } }],
+  });
+  cr && cr.on('click', p => { location.hash = 'platform-' + p.data.pid; });
+}
+
+/* ---------- 申请制 ---------- */
+function pApply() {
+  const list = view(OFFERS.filter(o => o.ty === 'apply')).sort((a, b) => b.usd - a.usd);
+  main().innerHTML = ribbon() + ph('申请制', '需要提交材料、等待审核的大额 credits。只收官方长期计划，不计入"今天能薅"的总价值。') + `
+  <div class="card"><h3>额度量级</h3><p class="sub">最高可申请额度，对数刻度</p><div class="chart" id="cApply" style="height:${list.length * 40 + 50}px"></div></div>
+  <section>${ocards(list)}</section>`;
+  const c = chart('#cApply', {
+    grid: { left: 8, right: 64, top: 6, bottom: 6, containLabel: true },
+    tooltip: { trigger: 'item', formatter: p => `${esc(OMAP[p.data.id].t)}<br>最高 <b>${money(p.value)}</b>` },
+    xAxis: Object.assign(axisCommon(), { type: 'log', min: 100, axisLabel: { color: TK.muted, formatter: v => money(v) } }),
+    yAxis: Object.assign(axisCommon(), { type: 'category', inverse: true, data: list.map(o => o.plat.name), axisLabel: { color: TK.ink2, fontSize: 12 } }),
+    series: [{ type: 'bar', barWidth: 14, data: list.map(o => ({ value: o.usd, id: o.id })), itemStyle: { color: TK.s[6], borderRadius: [0, 4, 4, 0] }, label: { show: true, position: 'right', color: TK.ink2, formatter: p => money(p.value), fontFamily: FONT } }],
+  });
+  c && c.on('click', p => { location.hash = 'offer-' + p.data.id; });
+}
+
+/* ---------- 按模型找 ---------- */
+let MODEL_SEL = MODELS[0].id;
+function pModels() {
+  main().innerHTML = ribbon() + ph('按模型找', '同一个模型，在哪些平台能免费用？点圆形的模型看清单，点方块的平台进平台页。') + `
+  <div class="chips" style="margin-bottom:12px">${MODELS.map(m => `<button class="btn sm" type="button" data-model="${m.id}" aria-pressed="${m.id === MODEL_SEL}">${m.n}</button>`).join('')}</div>
+  <div class="grid g2" style="align-items:start">
+    <div class="card" style="padding:6px"><div class="chart" id="cGraph" style="height:460px"></div></div>
+    <div class="card" id="modelPanel"></div>
+  </div>`;
+  const pids = uniq(MODELS.flatMap(m => m.on.map(x => x[0])));
+  const nodes = [
+    ...MODELS.map(m => ({ id: 'm:' + m.id, name: m.n, category: 0, symbolSize: 16 + m.on.length * 5, symbol: 'circle' })),
+    ...pids.map(p => ({ id: 'p:' + p, name: PMAP[p].name, category: 1, symbolSize: 12 + MODELS.filter(m => m.on.some(x => x[0] === p)).length * 3, symbol: 'roundRect' })),
+  ];
+  const links = MODELS.flatMap(m => m.on.map(([p, note]) => ({ source: 'm:' + m.id, target: 'p:' + p, note })));
+  const c = chart('#cGraph', {
+    legend: Object.assign(legendCommon(), { top: 6, data: ['模型', '平台'] }),
+    tooltip: { trigger: 'item', formatter: p => p.dataType === 'edge' ? `${esc(p.data.note)}` : `<b>${esc(p.name)}</b>` },
+    series: [{
+      type: 'graph', layout: 'force', roam: true, draggable: true, top: 36,
+      force: { repulsion: 210, edgeLength: [50, 110], gravity: 0.09 },
+      categories: [{ name: '模型', itemStyle: { color: TK.s[0] } }, { name: '平台', itemStyle: { color: TK.s[1] } }],
+      label: { show: true, position: 'right', color: TK.ink, fontSize: 11.5, fontFamily: FONT },
+      lineStyle: { color: TK.line2, width: 1.4, curveness: 0.12, opacity: 0.9 },
+      itemStyle: { borderColor: TK.surface, borderWidth: 2 },
+      emphasis: { focus: 'adjacency', lineStyle: { width: 3 } },
+      data: nodes, links,
+    }],
+  });
+  c && c.on('click', p => {
+    if (p.dataType !== 'node') return;
+    if (p.data.id.startsWith('m:')) { MODEL_SEL = p.data.id.slice(2); drawPanel(); $$('[data-model]').forEach(b => b.setAttribute('aria-pressed', b.dataset.model === MODEL_SEL)); }
+    else location.hash = 'platform-' + p.data.id.slice(2);
+  });
+  const drawPanel = () => {
+    const m = MODELS.find(x => x.id === MODEL_SEL);
+    $('#modelPanel').innerHTML = `<h3 style="font-family:var(--f-display);font-weight:400;font-size:22px">${m.n}</h3><p class="sub">有 ${m.on.length} 个平台提供免费额度</p><div class="rows">${m.on.map(([p, note]) => `<a class="orow" href="#platform-${p}"><span class="when" style="min-width:0">${etagSvg(ptypeColor(PMAP[p].type))}</span><span class="t">${esc(PMAP[p].name)}<small>${esc(note)}</small></span><span class="chip">${PTYPE[PMAP[p].type].l}</span></a>`).join('')}</div>`;
+  };
+  drawPanel();
+  $$('[data-model]').forEach(b => b.addEventListener('click', () => { MODEL_SEL = b.dataset.model; $$('[data-model]').forEach(x => x.setAttribute('aria-pressed', x === b)); drawPanel(); }));
+}
+
+/* ---------- 洞察 ---------- */
+const RESETS = (() => {
+  const r = rng(38), out = [], utcH = [15, 16, 16, 17, 17, 17, 18, 18, 18, 19, 19, 20, 21, 22, 23];
+  for (let i = 0; i < 38; i++) {
+    let a = i === 0 ? 4 : Math.floor(6 + r() * 104);
+    const wd = dayAt(-a).getDay();
+    if ((wd === 0 || wd === 6) && r() < 0.75) a += wd === 0 ? 2 : 1;
+    const b = dayAt(-a), h = utcH[Math.floor(r() * utcH.length)];
+    out.push({ ts: Date.UTC(b.getFullYear(), b.getMonth(), b.getDate(), h, Math.floor(r() * 60)), kind: r() < 0.72 ? '全员重置' : '发重置卡' });
+  }
+  return out.sort((x, y) => y.ts - x.ts);
+})();
+const RACE = (() => {
+  const r = rng(606);
+  const months = [...Array(6)].map((_, i) => { const d = new Date(T0.getFullYear(), T0.getMonth() - 5 + i, 1); return `${d.getFullYear()}年${d.getMonth() + 1}月`; });
+  const ids = ['google', 'openai', 'anthropic', 'zhipu', 'aliyun', 'deepseek', 'openrouter', 'kling', 'moonshot', 'cursor', 'minimax', 'xai'];
+  return { months, series: ids.map(id => { let acc = 0; return { id, vals: months.map(() => (acc += Math.round(15 + r() * r() * 420))) }; }) };
+})();
+const TREND = (() => {
+  const r = rng(1212), labels = [], nw = [], ed = [], by = {};
+  Object.keys(TYPES).forEach(t => { by[t] = []; });
+  const mon = dayAt(-((T0.getDay() + 6) % 7));
+  for (let w = 11; w >= 0; w--) {
+    const d0 = new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() - w * 7);
+    labels.push(w === 0 ? '本周' : `${d0.getMonth() + 1}/${d0.getDate()}`);
+    const n = Math.round(4 + (12 - w) * 0.55 + r() * 4); nw.push(n); ed.push(Math.max(1, Math.round(n * 0.7 + r() * 3 - 1.5)));
+    let left = n; const wts = [0.22, 0.2, 0.16, 0.1, 0.08, 0.14, 0.1];
+    Object.keys(TYPES).forEach((t, i) => { const v = i === 6 ? left : clamp(Math.round(n * wts[i] + (r() - 0.5) * 1.4), 0, left); by[t].push(v); left -= v; });
+  }
+  return { labels, nw, ed, by };
+})();
+function pInsights() {
+  const ended = OFFERS.filter(o => statusOf(o) === 'ended').sort((a, b) => b.e - a.e);
+  main().innerHTML = ribbon() + ph('洞察', '把整片牧场放在一起看：哪里该先薅、谁最大方、羊毛从哪来、什么时候会重置。') + `
+  <section style="margin-top:0"><div class="card"><h3>薅羊毛四象限</h3><p class="sub">横轴是门槛难度，纵轴是价值（对数刻度）；限时活动的气泡越大，剩余时间越多。左上角最值得先薅。</p><div class="chart" id="cQuad" style="height:400px"></div></div></section>
+  <section><div class="card"><h3>羊毛从哪来、怎么到你手里</h3><p class="sub">平台类型 → 羊毛类型 → 领取方式 → 主要门槛</p><div class="hscroll"><div class="chart" id="cSankey" style="height:470px"></div></div></div></section>
+  <section class="grid g2">
+    <div class="card"><h3>谁最大方</h3><p class="sub">面积 = 这个平台所有羊毛的折合美元（不含申请制）</p><div class="chart" id="cTree" style="height:360px"></div><div class="legend">${Object.entries(PTYPE).map(([k, v]) => `<span><i class="sw" style="background:var(--s${v.slot})"></i>${v.l}</span>`).join('')}</div></div>
+    <div class="card"><div class="row" style="justify-content:space-between"><div><h3>大方榜</h3><p class="sub" style="margin:0">近 6 个月累计发放价值（示例）</p></div><button class="btn sm pri" type="button" id="racePlay">▶ 回放</button></div><div class="chart" id="cRace" style="height:340px"></div></div>
+  </section>
+  <section class="grid g2">
+    <div class="card"><h3>重置时钟</h3><p class="sub">Codex 额度重置（来自 AIHOT 重置接口）按星期 × 本地小时分布。只展示历史，不预测下一次。</p><div class="chart" id="cClock" style="height:340px"></div></div>
+    <div class="card" style="display:flex;flex-direction:column;gap:12px">
+      <div><div class="small muted">距离上次 Codex 重置</div><div class="num" style="font-size:30px;font-weight:600;font-variant-numeric:tabular-nums" data-since="${RESETS[0].ts}">${cdText(NOW - RESETS[0].ts)}</div></div>
+      <div class="row" style="gap:18px"><div class="kv"><span class="small muted">近 110 天</span><b>${RESETS.length} 次</b></div><div class="kv"><span class="small muted">全员重置</span><b>${RESETS.filter(x => x.kind === '全员重置').length}</b></div><div class="kv"><span class="small muted">发重置卡</span><b>${RESETS.filter(x => x.kind === '发重置卡').length}</b></div></div>
+      <ul class="tl">${RESETS.slice(0, 5).map((x, i) => { const d = new Date(x.ts); return `<li class="${i ? '' : 'hot'}"><time>${md(d)} ${hm(d)}</time>${x.kind}</li>`; }).join('')}</ul>
+    </div>
+  </section>
+  <section class="grid g2">
+    <div class="card"><h3>每周新增与结束</h3><p class="sub">最近 12 周</p><div class="chart" id="cTrend" style="height:280px"></div></div>
+    <div class="card"><h3>新增羊毛的类型构成</h3><p class="sub">最近 12 周，按周堆叠</p><div class="chart" id="cStack" style="height:280px"></div></div>
+  </section>
+  <section>${secH('羊毛墓地', '已经结束的羊毛。点墓碑看它活了多久、平台过去的发放规律。')}
+    <div class="graves">${ended.map(o => { const life = o.e - o.s + 1; return `<a class="grave" href="#offer-${o.id}"><span class="rip">R.I.P.</span><b>${esc(o.t)}</b><span>${esc(o.plat.name)}</span><span>存活 <span class="age">${life}</span> 天</span><span class="muted">${md(dayAt(o.s))} – ${md(dayAt(o.e))}</span>${o.why ? `<span class="chip">${esc(o.why)}</span>` : ''}</a>`; }).join('')}</div>
+  </section>`;
+
+  // 四象限
+  const groups = [['限时活动', o => isLimited(o)], ['常驻额度', o => o.ty === 'standing'], ['申请制', o => o.ty === 'apply']];
+  const live = view(OFFERS.filter(o => !['ended'].includes(statusOf(o))));
+  const vals = live.map(o => o.usd).sort((a, b) => a - b), med = vals[Math.floor(vals.length / 2)] || 10;
+  const cq = chart('#cQuad', {
+    grid: { left: 10, right: 20, top: 40, bottom: 34, containLabel: true },
+    legend: Object.assign(legendCommon(), { top: 4, left: 0 }),
+    tooltip: { trigger: 'item', formatter: p => { const o = OMAP[p.data.id]; return `<b>${esc(o.t)}</b>${esc(o.plat.name)}<br>${valLabel(o).replace(/<[^>]+>/g, ' ')} · 门槛难度 ${p.data.value[0]}<br>${leftText(o)}`; } },
+    xAxis: Object.assign(axisCommon(), { type: 'value', min: 0, max: 100, name: '门槛难度 →', nameLocation: 'end', nameGap: 8, nameTextStyle: { color: TK.muted, fontSize: 11, verticalAlign: 'top', padding: [14, 0, 0, 0] } }),
+    yAxis: Object.assign(axisCommon(), { type: 'log', min: 0.1, max: 1000000, name: '价值 ↑', nameTextStyle: { color: TK.muted, fontSize: 11, align: 'left' }, axisLabel: { color: TK.muted, fontSize: 11, formatter: v => money(v) } }),
+    series: groups.map(([name, fn], gi) => ({
+      name, type: 'scatter',
+      data: live.filter(fn).map(o => { const d = dims(o); const size = isLimited(o) ? (o.ek === 'date' ? 10 + clamp(o.e, 0, 30) * 0.8 : 22) : 14; return { id: o.id, value: [100 - d[1], o.usd], symbolSize: size }; }),
+      itemStyle: { color: TK.s[gi], opacity: 0.85, borderColor: TK.surface, borderWidth: 2 },
+      emphasis: { scale: 1.2 },
+      ...(gi === 0 ? {
+        markArea: { silent: true, itemStyle: { color: TK.tagSoft, opacity: 0.7 }, label: { color: TK.ink, fontFamily: FONT, fontSize: 12, position: 'insideTopLeft', padding: [6, 8] }, data: [[{ name: '优先薅：价值高 · 门槛低', xAxis: 0, yAxis: med }, { xAxis: 50, yAxis: 1000000 }]] },
+        markLine: { silent: true, symbol: 'none', lineStyle: { color: TK.line2, type: 'solid' }, label: { show: false }, data: [{ xAxis: 50 }, { yAxis: med }] },
+      } : {}),
+    })),
+  });
+  cq && cq.on('click', p => { if (p.data && p.data.id) location.hash = 'offer-' + p.data.id; });
+
+  // 桑基图
+  const mainReq = o => { let best = 'none', pen = -1; o.r.forEach(r => { const k = r.split(':')[0]; const v = REQ_PEN[k] || 0; if (v > pen) { pen = v; best = k; } }); return REQ[best]; };
+  const flow = OFFERS.filter(o => statusOf(o) !== 'ended');
+  const L = {};
+  const add = (a, b, col) => { const key = a + '\u0000' + b; L[key] = L[key] || { source: a, target: b, value: 0, col }; L[key].value += 1; };
+  flow.forEach(o => { const pt = PTYPE[o.plat.type].l, ty = TYPES[o.ty].l, cl = CLAIM[o.c], rq = mainReq(o); add(pt, ty, typeColor(o.ty)); add(ty, cl, typeColor(o.ty)); add(cl, rq, null); });
+  const nodeNames = uniq(Object.values(L).flatMap(l => [l.source, l.target]));
+  const typeByLabel = Object.fromEntries(Object.entries(TYPES).map(([k, v]) => [v.l, k]));
+  chart('#cSankey', {
+    tooltip: { trigger: 'item', formatter: p => p.dataType === 'edge' ? `${p.data.source} → ${p.data.target}<br><b>${p.data.value}</b> 条` : `<b>${p.name}</b>` },
+    series: [{
+      type: 'sankey', left: 8, right: 110, top: 10, bottom: 10, nodeWidth: 12, nodeGap: 10, draggable: false, layoutIterations: 64,
+      label: { color: TK.ink, fontFamily: FONT, fontSize: 12 },
+      data: nodeNames.map(n => ({ name: n, itemStyle: { color: typeByLabel[n] ? typeColor(typeByLabel[n]) : TK.ink2, borderWidth: 0 } })),
+      links: Object.values(L).map(l => ({ source: l.source, target: l.target, value: l.value, lineStyle: { color: l.col || TK.line2, opacity: l.col ? 0.32 : 0.55, curveness: 0.5 } })),
+      emphasis: { focus: 'adjacency' },
+    }],
+  });
+
+  // 谁最大方
+  const byP = uniq(OFFERS.filter(o => o.ty !== 'apply').map(o => o.p)).map(pid => ({ pid, v: sum(OFFERS.filter(o => o.p === pid && o.ty !== 'apply'), o => o.usd) })).sort((a, b) => b.v - a.v);
+  const ct = chart('#cTree', {
+    tooltip: { trigger: 'item', formatter: p => `<b>${esc(p.name)}</b><br>约 ${money(p.value)} · ${PTYPE[PMAP[p.data.pid].type].l}` },
+    series: [{
+      type: 'treemap', roam: false, nodeClick: false, breadcrumb: { show: false }, left: 0, right: 0, top: 0, bottom: 0,
+      itemStyle: { borderColor: TK.surface, borderWidth: 2, gapWidth: 2, borderRadius: 6 },
+      label: { show: true, fontFamily: FONT, fontSize: 12, formatter: p => `${p.name}\n${money(p.value)}`, lineHeight: 16 },
+      data: byP.map(x => { const col = ptypeColor(PMAP[x.pid].type); return { name: PMAP[x.pid].name, value: x.v, pid: x.pid, itemStyle: { color: col }, label: { color: onColor(col) } }; }),
+    }],
+  });
+  ct && ct.on('click', p => { if (p.data && p.data.pid) location.hash = 'platform-' + p.data.pid; });
+
+  // 大方榜赛跑
+  const raceData = mi => RACE.series.map(s => ({ value: s.vals[mi], name: PMAP[s.id].name, pid: s.id, itemStyle: { color: ptypeColor(PMAP[s.id].type), borderRadius: [0, 4, 4, 0] } }));
+  const last = RACE.months.length - 1;
+  const cr = chart('#cRace', {
+    grid: { left: 8, right: 58, top: 40, bottom: 8, containLabel: true },
+    xAxis: Object.assign(axisCommon(), { type: 'value', max: 'dataMax', axisLabel: { color: TK.muted, formatter: v => money(v) } }),
+    yAxis: Object.assign(axisCommon(), { type: 'category', inverse: true, max: 9, data: RACE.series.map(s => PMAP[s.id].name), axisLabel: { color: TK.ink2, fontSize: 12 }, animationDuration: 300, animationDurationUpdate: 300 }),
+    series: [{ type: 'bar', realtimeSort: true, barWidth: 14, data: raceData(last), label: { show: true, position: 'right', valueAnimation: true, color: TK.ink2, fontFamily: FONT, formatter: p => money(p.value) } }],
+    animationDuration: 0, animationDurationUpdate: REDUCED ? 0 : 900, animationEasing: 'linear', animationEasingUpdate: 'linear',
+    graphic: [{ type: 'text', id: 'mon', right: 8, top: 4, style: { text: RACE.months[last], fill: TK.muted, font: `700 20px ${FONT}`, textAlign: 'right' } }],
+  });
+  cr && cr.on('click', p => { if (p.data && p.data.pid) location.hash = 'platform-' + p.data.pid; });
+  $('#racePlay').addEventListener('click', e => {
+    const btn = e.currentTarget; btn.disabled = true; let mi = 0;
+    const step = () => { if (!cr || cr.isDisposed()) return; cr.setOption({ series: [{ data: raceData(mi) }], graphic: [{ id: 'mon', style: { text: RACE.months[mi] } }] }); mi++; if (mi <= last) setTimeout(step, 1000); else btn.disabled = false; };
+    step();
+  });
+
+  // 重置时钟
+  const agg = {};
+  RESETS.forEach(x => { const d = new Date(x.ts), key = `${d.getHours()}|${(d.getDay() + 6) % 7}`; agg[key] = (agg[key] || 0) + 1; });
+  chart('#cClock', {
+    tooltip: { trigger: 'item', formatter: p => `周${'一二三四五六日'[p.value[1]]} ${pad(p.value[0])}:00 前后<br><b>${p.value[2]}</b> 次` },
+    polar: { radius: ['14%', '76%'], center: ['50%', '52%'] },
+    angleAxis: { type: 'category', data: [...Array(24)].map((_, i) => String(i)), boundaryGap: false, startAngle: 90, axisLine: { lineStyle: { color: TK.line2 } }, axisTick: { show: false }, splitLine: { show: true, lineStyle: { color: TK.line } }, axisLabel: { color: TK.muted, fontSize: 11, interval: 2, formatter: v => `${v}时` } },
+    radiusAxis: { type: 'category', data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'], axisLine: { show: false }, axisTick: { show: false }, axisLabel: { color: TK.muted, fontSize: 9.5 } },
+    series: [{ type: 'scatter', coordinateSystem: 'polar', data: Object.entries(agg).map(([k, v]) => { const [h, w] = k.split('|').map(Number); return [h, w, v]; }), symbolSize: v => 7 + v[2] * 6, itemStyle: { color: TK.s[2], opacity: 0.85, borderColor: TK.surface, borderWidth: 1.5 } }],
+  });
+
+  // 趋势
+  chart('#cTrend', {
+    grid: { left: 8, right: 40, top: 34, bottom: 6, containLabel: true },
+    legend: Object.assign(legendCommon(), { top: 0, left: 0 }),
+    tooltip: { trigger: 'axis', axisPointer: { type: 'line', lineStyle: { color: TK.line2 } } },
+    xAxis: Object.assign(axisCommon(), { type: 'category', data: TREND.labels, boundaryGap: false }),
+    yAxis: Object.assign(axisCommon(), { type: 'value', minInterval: 1 }),
+    series: [['新增', TREND.nw, 0], ['结束', TREND.ed, 1]].map(([n, d, i]) => ({ name: n, type: 'line', data: d, smooth: 0.3, symbol: 'circle', symbolSize: 5, showSymbol: false, lineStyle: { width: 2, color: TK.s[i] }, itemStyle: { color: TK.s[i] }, areaStyle: i === 0 ? { color: TK.s[0], opacity: 0.1 } : undefined, endLabel: { show: true, color: TK.ink2, fontFamily: FONT, formatter: p => `${p.value}` } })),
+  });
+  chart('#cStack', {
+    grid: { left: 8, right: 12, top: 56, bottom: 6, containLabel: true },
+    legend: Object.assign(legendCommon(), { top: 0, left: 0, itemGap: 8, textStyle: { color: TK.ink2, fontSize: 11 } }),
+    tooltip: { trigger: 'axis', axisPointer: { type: 'line', lineStyle: { color: TK.line2 } } },
+    xAxis: Object.assign(axisCommon(), { type: 'category', data: TREND.labels, boundaryGap: false }),
+    yAxis: Object.assign(axisCommon(), { type: 'value', minInterval: 1 }),
+    series: Object.keys(TYPES).map(t => ({ name: TYPES[t].l, type: 'line', stack: 'all', data: TREND.by[t], symbol: 'none', smooth: 0.25, lineStyle: { width: 1, color: TK.surface }, areaStyle: { color: typeColor(t), opacity: 0.9 }, itemStyle: { color: typeColor(t) } })),
+  });
+}
+
+/* ---------- 平台页 ---------- */
+function pPlatform(id) {
+  const p = PMAP[id];
+  if (!p) { main().innerHTML = ribbon() + emptySheep('没找到这个平台。<a href="#today">回到今天</a>'); return; }
+  const list = OFFERS.filter(o => o.p === id).sort((a, b) => (b.s ?? b.fs) - (a.s ?? a.fs));
+  const live = list.filter(o => statusOf(o) !== 'ended');
+  const avg = i => list.length ? Math.round(sum(list, o => dims(o)[i]) / list.length) : 0;
+  const pd = [clamp(list.length * 22, 10, 100), avg(0), avg(1), avg(5), avg(4), list.some(o => o.ty === 'standing') ? 100 : 30];
+  main().innerHTML = ribbon() + `<div class="crumb"><a href="#all">全部羊毛</a> / 平台</div>` + ph(esc(p.name), `${PTYPE[p.type].l} · 已准入白名单${p.x ? ` · 监控的 X 账号：${esc(p.x)}` : ''}`, p.site ? `<a class="btn" href="${p.site}" target="_blank" rel="noopener">打开官网 ↗</a>` : '') + `
+  <section class="kpis" style="margin-top:0">
+    <div class="kpi"><span class="k-l">收录过的羊毛</span><span class="k-v">${list.length}<small>条</small></span></div>
+    <div class="kpi"><span class="k-l">现在可领</span><span class="k-v">${list.filter(claimable).length}<small>条</small></span></div>
+    <div class="kpi"><span class="k-l">已结束</span><span class="k-v">${list.length - live.length}<small>条</small></span></div>
+    <div class="kpi"><span class="k-l">累计价值（不含申请制）</span><span class="k-v">${money(sum(list.filter(o => o.ty !== 'apply'), o => o.usd))}</span></div>
+  </section>
+  <section class="grid g2">
+    <div class="card"><h3>平台雷达</h3><p class="sub">由它发过的所有羊毛按规则汇总</p><div class="chart" id="cPRadar" style="height:300px"></div></div>
+    <div class="card"><h3>发放历史</h3><p class="sub">每条羊毛从开始到结束；常驻额度画到今天</p><div class="chart" id="cPHist" style="height:${Math.max(160, list.length * 34 + 70)}px"></div></div>
+  </section>
+  <section>${secH('这个平台的羊毛')}${ocards(list)}</section>`;
+  const col = ptypeColor(p.type);
+  chart('#cPRadar', {
+    tooltip: { trigger: 'item' },
+    radar: { indicator: ['发放频率', '平均价值', '门槛友好', '国内可用', '信源透明', '常驻额度'].map(n => ({ name: n, max: 100 })), radius: '64%', center: ['50%', '54%'], splitNumber: 4, axisName: { color: TK.ink2, fontSize: 12 }, splitLine: { lineStyle: { color: TK.line2 } }, splitArea: { areaStyle: { color: [TK.surface, TK.surface2] } }, axisLine: { lineStyle: { color: TK.line2 } } },
+    series: [{ type: 'radar', data: [{ value: pd, name: p.name, areaStyle: { color: col, opacity: 0.25 }, lineStyle: { color: col, width: 2 }, itemStyle: { color: col }, symbolSize: 5 }] }],
+  });
+  const lo = Math.max(-150, Math.min(-60, ...list.map(o => o.s ?? o.fs))), hi = Math.max(20, ...list.map(o => o.ek === 'date' ? o.e + 1 : 0));
+  const hd = list.map((o, i) => ({ value: [i, dayAt(Math.max(lo, o.s ?? o.fs)).getTime(), dayAt(o.ek === 'date' ? o.e + 1 : 0.2).getTime()], o }));
+  const ch = chart('#cPHist', {
+    grid: { left: 8, right: 16, top: 24, bottom: 8, containLabel: true },
+    tooltip: { trigger: 'item', formatter: q => `<b>${esc(q.data.o.t)}</b>${leftText(q.data.o)}` },
+    xAxis: Object.assign(axisCommon(), { type: 'time', position: 'top', min: dayAt(lo).getTime(), max: dayAt(hi).getTime(), axisLabel: { color: TK.muted, fontSize: 11, formatter: v => { const d = new Date(v); return `${d.getMonth() + 1}/${d.getDate()}`; } } }),
+    yAxis: Object.assign(axisCommon(), { type: 'category', inverse: true, data: list.map(o => o.t.length > 12 ? o.t.slice(0, 11) + '…' : o.t), axisLabel: { color: TK.ink2, fontSize: 11.5 }, splitLine: { show: false } }),
+    series: [{
+      type: 'custom', encode: { x: [1, 2], y: 0 }, data: hd,
+      renderItem: (params, api) => {
+        const o = hd[params.dataIndex].o, a = api.coord([api.value(1), api.value(0)]), b = api.coord([api.value(2), api.value(0)]), bh = api.size([0, 1])[1] * 0.5;
+        const st = statusOf(o), c = typeColor(o.ty);
+        return { type: 'rect', shape: { x: a[0], y: a[1] - bh / 2, width: Math.max(4, b[0] - a[0]), height: bh, r: 4 }, style: { fill: c, opacity: st === 'ended' ? 0.4 : 1 } };
+      },
+      markLine: { symbol: 'none', silent: true, data: [{ xAxis: NOW.getTime() }], lineStyle: { color: TK.ink, width: 1.2, type: 'solid' }, label: { formatter: '今天', color: TK.ink, fontSize: 11, position: 'start' } },
+    }],
+  });
+  ch && ch.on('click', q => { if (q.data && q.data.o) location.hash = 'offer-' + q.data.o.id; });
+}
+
+/* ---------- 详情页 ---------- */
+const STEPS = {
+  signup: ['打开官方页面（见下方"打开官方领取页"）', '完成注册和所需的身份验证', '额度自动发放，在控制台的余额或用量页查看'],
+  auto: ['无需操作，额度或权益自动生效', '在官方控制台或产品设置里确认'],
+  member: ['确认你的会员档位符合要求', '权益自动生效，在产品的用量页查看'],
+  topup: ['在活动期内完成指定金额的充值', '赠送部分自动到账，留意赠送余额的有效期'],
+  form: ['准备材料（公司或学生身份证明等）', '在官方申请页提交表单', '等待审核邮件，通常需要 1 到 4 周'],
+  app: ['下载官方 App 并登录', '按活动页提示签到或领取'],
+  code: ['向已有用户索取邀请链接或兑换码', '用链接注册，或在账户设置里兑换', '双方权益自动到账'],
+};
+function pOffer(id) {
+  const o = OMAP[id];
+  if (!o) { main().innerHTML = ribbon() + emptySheep('没找到这条羊毛。<a href="#today">回到今天</a>'); return; }
+  const st = statusOf(o), d = dims(o), sc = score(o), miss = missing(o);
+  const tzName = TZ[o.tz] || o.tz, viewerTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  let timeBlock;
+  if (isLimited(o) && o.ek === 'date' && st !== 'ended') {
+    const target = st === 'upcoming' ? startInstant(o) : endInstant(o);
+    const total = endInstant(o) - startInstant(o), frac = st === 'upcoming' ? 1 : (endInstant(o) - NOW) / total;
+    const col = o.e === 0 ? 'var(--critical)' : st === 'ending' ? 'var(--serious)' : st === 'upcoming' ? 'var(--s1)' : 'var(--good)';
+    timeBlock = `<div class="ring-big">${ringSvg(frac, 92, col, 8)}<div><div class="small muted">${st === 'upcoming' ? '距离开始' : '距离领取截止'}</div><div class="cd" data-end="${target.getTime()}">${cdText(target - NOW)}</div><div class="small muted">按官方${tzName}换算成你的本地时间</div></div></div>`;
+  } else if (st === 'ended') timeBlock = `<div class="ring-big">${ringSvg(0, 92, 'var(--muted)', 8)}<div><div class="cd">已结束</div><div class="small muted">${md(dayAt(o.e))}结束${o.why ? ` · ${esc(o.why)}` : ''}</div></div></div>`;
+  else if (o.ek === 'unknown') timeBlock = `<div class="ring-big">${ringSvg(0.6, 92, 'var(--muted)', 8)}<div><div class="cd">截止未知</div><div class="small muted">官方没写截止日期；每 24 小时复核一次权益页</div></div></div>`;
+  else timeBlock = `<div class="ring-big">${ringSvg(st === 'stale' ? 0.35 : 1, 92, st === 'stale' ? 'var(--warn)' : o.ty === 'apply' ? 'var(--s7)' : 'var(--s6)', 8)}<div><div class="cd">${st === 'stale' ? '待核验' : o.ty === 'apply' ? '长期开放' : '常驻'}</div><div class="small muted">每 7 天核验一次 · 上次成功核验在${ago(o.vf)}</div></div></div>`;
+  const endLocal = o.ek === 'date' ? endInstant(o) : null;
+  const deadline = o.ek === 'date' ? `${md(dayAt(o.e))} 23:59<small>官方按${tzName}${endLocal && o.tz !== viewerTz ? `；你的本地时间 ${md(endLocal)} ${hm(endLocal)}` : ''}</small>` : o.ek === 'unknown' ? '截止未知<small>必须有仍然有效的权益页作证据</small>' : '长期<small>没有截止日期</small>';
+  const verify = st === 'stale' ? `${ago(o.vf)}最后一次核验成功；之后 2 次抓取失败，已转为待核验（不会直接判定结束）` : `${ago(o.vf)}核验：官方页面可以打开，条款没有变化`;
+  const hist = [];
+  hist.push([o.fs, `系统发现（最早出现在：${o.early}）`]);
+  hist.push([o.fs + 0.1, o.st === 'staff' ? '员工账号来源，人工审核通过后上架' : '审核通过，上架']);
+  if (o.s != null && o.s <= 0 && o.s > o.fs + 0.1) hist.push([o.s, '活动开始']);
+  (o.rev || []).forEach(rv => hist.push([rv.at, `条款修订：${rv.from} → ${rv.to}`]));
+  if (o.ek === 'date' && o.e - 3 <= 0 && o.e - 3 > o.fs) hist.push([o.e - 3, '进入最后 3 天，已推送临期提醒']);
+  if (st === 'ended') hist.push([o.e + 0.99, `已结束${o.why ? `（${o.why}）` : ''}，退出可领列表`]);
+  if (st !== 'ended') hist.push([o.vf, st === 'stale' ? '核验失败，转为待核验' : '最近一次核验']);
+  hist.sort((a, b) => b[0] - a[0]);
+  const same = OFFERS.filter(x => x.p === o.p && x.id !== o.id);
+  const wanted = MINE.want.includes(o.id), got = MINE.got.includes(o.id);
+  main().innerHTML = ribbon() + `<div class="crumb"><a href="javascript:history.back()">← 返回</a> / <a href="#platform-${o.p}">${esc(o.plat.name)}</a></div>
+  <div class="dt-top">${etag(o.ty)}${stChip(o)}<span class="score" title="薅度分">${sc}<small>薅度</small></span></div>
+  <h1 class="dt-title">${esc(o.t)}</h1>
+  <div class="row" style="margin:6px 0 18px">
+    ${o.plat.site ? `<a class="btn pri" href="${o.plat.site}" target="_blank" rel="noopener">打开官方领取页 ↗</a>` : ''}
+    <button class="btn" type="button" data-want="${o.id}" aria-pressed="${wanted}">${wanted ? '★ 想领' : '☆ 想领'}</button>
+    <button class="btn" type="button" data-got="${o.id}" aria-pressed="${got}">${got ? '✓ 已领' : '已领'}</button>
+    <button class="btn" type="button" data-cmp="${o.id}" aria-pressed="${CMP.includes(o.id)}">加入对比</button>
+  </div>
+  <div class="dt-grid">
+    <div style="display:flex;flex-direction:column;gap:14px;min-width:0">
+      <div class="card"><div class="row" style="justify-content:space-between;align-items:flex-start;gap:16px"><div><div class="small muted">赠送内容</div><div class="bigval">${valLabel(o)}</div><div style="margin-top:4px">${esc(o.v)}</div></div>${timeBlock}</div></div>
+      <div class="facts">
+        <div class="fact"><div class="l">领取方式</div><div class="v">${CLAIM[o.c]}</div></div>
+        <div class="fact"><div class="l">领取开始</div><div class="v">${o.s != null ? md(dayAt(o.s)) : '已开放'}</div></div>
+        <div class="fact"><div class="l">领取截止</div><div class="v">${deadline}</div></div>
+        <div class="fact"><div class="l">额度有效期</div><div class="v">${esc(o.val)}<small>领取之后多久失效，和领取截止是两回事</small></div></div>
+        <div class="fact"><div class="l">适用对象</div><div class="v">${AUD[o.aud]}</div></div>
+        <div class="fact"><div class="l">模态</div><div class="v">${o.m.map(m => MODAL[m]).join('、')}</div></div>
+      </div>
+      <div class="card"><h3>适用资格</h3><p class="sub">${miss.length ? `按你的条件，还差 ${miss.length} 项` : '按你的条件，全部满足'} · <a href="#" data-open-cond style="text-decoration:underline">修改我的条件</a></p>${reqChips(o, true)}${o.r.includes('targeted') ? '<p class="small muted" style="margin:8px 0 0">定向发放：只有部分账号收到，能不能领要看你的账号。</p>' : ''}${o.aud === 'unclear' ? '<p class="small muted" style="margin:8px 0 0">官方没写清楚谁能领，这里不宣称人人可领。</p>' : ''}</div>
+      <div class="card"><h3>领取步骤</h3><ol class="steps">${(STEPS[o.c] || []).map(s => `<li>${s}</li>`).join('')}</ol></div>
+      <div class="card"><h3>官方证据</h3><p class="sub">信源：${SRC[o.st]}${o.st === 'staff' ? '（白名单内的在职员工账号）' : ''} · ${verify}</p>
+        <div class="rows">${[['权益', `「${o.v}」`], ['资格', `${AUD[o.aud]}；${o.r.map(reqLabel).join('、')}`], ['领取方式', CLAIM[o.c]], ['有效期', `${o.val}${o.ek === 'date' ? `；${md(dayAt(o.e))}截止（${tzName}）` : ''}`]].map(([k, v]) => `<div class="orow" style="grid-template-columns:auto minmax(0,1fr)"><span class="st good"><b>✓</b>${k}</span><span class="t">${esc(v)}<small>摘录自官方原文（原型里为示例）</small></span></div>`).join('')}</div>
+        <p class="small muted" style="margin:10px 0 0">四项都有官方原文支撑，才可能自动上架；缺一项就进待审。</p>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px;min-width:0">
+      <div class="card"><h3>薅度雷达</h3><p class="sub">六项按规则计算，合成薅度分 ${sc}</p><div class="chart" id="cRadar" style="height:280px"></div>
+        <div class="rows">${DIMS.map((n, i) => `<div class="row small" style="gap:10px;padding:3px 0"><span style="width:64px;color:var(--ink-2)">${n}</span><span class="meter" style="flex:1"><i style="width:${d[i]}%;background:${typeVar(o.ty)}"></i></span><span class="num tnum" style="width:28px;text-align:right">${d[i]}</span></div>`).join('')}</div></div>
+      <div class="card"><h3>条款修订记录</h3>${(o.rev || []).length ? `<div class="diff">${o.rev.map(rv => `<div><span class="small muted">${md(dayAt(rv.at))}</span><br><del>${esc(rv.from)}</del> → <ins>${esc(rv.to)}</ins></div>`).join('')}</div>` : '<p class="small muted" style="margin:0">收录以来条款没有变化。</p>'}</div>
+      <div class="card"><h3>状态时间轴</h3><ul class="tl">${hist.map(([t, s], i) => `<li class="${i ? '' : 'hot'}"><time>${md(dayAt(Math.floor(t)))}</time>${esc(s)}</li>`).join('')}</ul></div>
+    </div>
+  </div>
+  ${same.length ? `<section>${secH(`${esc(o.plat.name)} 的其他羊毛`)}${ocards(same)}</section>` : ''}`;
+  const col = typeColor(o.ty);
+  chart('#cRadar', {
+    tooltip: { trigger: 'item' },
+    radar: { indicator: DIMS.map(n => ({ name: n, max: 100 })), radius: '66%', center: ['50%', '54%'], splitNumber: 4, axisName: { color: TK.ink2, fontSize: 12 }, splitLine: { lineStyle: { color: TK.line2 } }, splitArea: { areaStyle: { color: [TK.surface, TK.surface2] } }, axisLine: { lineStyle: { color: TK.line2 } } },
+    series: [{ type: 'radar', data: [{ value: d, name: o.t, areaStyle: { color: col, opacity: 0.25 }, lineStyle: { color: col, width: 2 }, itemStyle: { color: col }, symbolSize: 5 }] }],
+  });
+}
+
+/* ---------- 我的 ---------- */
+function condForm() {
+  return `<label class="tog"><span>只看我能薅的<small>全站只显示你满足门槛的羊毛</small></span><input type="checkbox" data-c="only" ${C.only ? 'checked' : ''}></label>
+  ${COND_ITEMS.map(([k, l]) => `<label class="tog"><span>${l}</span><input type="checkbox" data-c="${k}" ${C[k] ? 'checked' : ''}></label>`).join('')}
+  <div class="small muted" style="margin:14px 0 6px">我已有的会员</div>
+  <div class="chips">${MEMBERS.map(m => `<button class="btn sm" type="button" data-mem="${esc(m)}" aria-pressed="${C.members.includes(m)}">${esc(m)}</button>`).join('')}</div>
+  <p class="small muted" style="margin:12px 0 0">只保存在这台设备的浏览器里，不会上传。</p>`;
+}
+function pMine() {
+  const pool = OFFERS.filter(o => claimable(o) && eligible(o));
+  const got = MINE.got.map(id => OMAP[id]).filter(Boolean), want = MINE.want.map(id => OMAP[id]).filter(Boolean);
+  const gv = sum(got, o => o.usd), pv = sum(pool, o => o.usd);
+  main().innerHTML = ribbon() + ph('我的', '你的条件决定全站显示什么；想领和已领的清单只存在这台设备上。') + `
+  <section class="grid g2" style="margin-top:0">
+    <div class="card"><h3>本月薅羊毛进度</h3><p class="sub">已领的折合美元 / 按你的条件现在能领的总价值</p>
+      <div class="prog">${ringSvg(pv ? gv / pv : 0, 132, 'var(--s3)', 12)}<div class="kv"><span class="small muted">已薅</span><b>${money(gv)}</b><span class="small muted">共可薅 ${money(pv)} · ${pool.length} 条</span></div></div></div>
+    <div class="card"><h3>我的条件</h3>${condForm()}</div>
+  </section>
+  <section>${secH(`想领（${want.length}）`)}${want.length ? `<div class="rows">${want.map(o => orow(o, leftText(o))).join('')}</div>` : emptySheep('在详情页点"想领"，会出现在这里。')}</section>
+  <section>${secH(`已领（${got.length}）`)}${got.length ? `<div class="rows">${got.map(o => orow(o, '已领')).join('')}</div>` : emptySheep('在详情页点"已领"，会计入本月进度。')}</section>`;
+}
+
+/* ---------- 覆盖范围 ---------- */
+function pCoverage() {
+  const rows = [
+    ['官网公告 / 帮助文档', '自动抓取，每 6 小时', '96 个页面', 'good'], ['RSS / JSON 接口', '自动抓取，每 6 小时', '21 个', 'good'],
+    ['AIHOT 公开接口', '线索 + Codex 重置', '2 个接口', 'good'], ['订阅邮箱', '厂商 newsletter 自动解析', '18 家', 'good'],
+    ['补录', '后台粘贴或转发给 Telegram 机器人', '手动', 'good'], ['Hacker News', '官方搜索接口，关键词粗筛，只作线索', '每 6 小时', 'good'],
+    ['Reddit', '子版块公开 RSS，关键词粗筛，只作线索', '9 个子版块', 'good'], ['周六发现扫描', '找新平台、新活动，全部进待审', '每周一次', 'good'],
+  ];
+  const gaps = [
+    ['微信公众号', '没有自动抓取；靠官网同步公告、补录和周六扫描。本月漏报 2 次，满 3 次再考虑开付费接口。', 'warn'],
+    ['X（推特）', '只覆盖 AIHOT 已跟踪的账号和官网同步公告。本月漏报 1 次。', 'warn'],
+    ['Discord', '计划中：自建服务器关注 Midjourney、Suno、Pika、Luma 等官方公告频道，由机器人读取。不抓取他人服务器。', 'critical'], ['产品内通知 / 私信邮件', '只覆盖订阅邮箱能收到的部分。', 'warn'],
+  ];
+  main().innerHTML = ribbon() + ph('覆盖范围', '我们在看哪些地方、还有哪些看不到。只收能追到官方出处的羊毛，不保证覆盖全球所有活动，也不保证抓到所有短时福利。') + `
+  <section class="kpis" style="margin-top:0">
+    <div class="kpi"><span class="k-l">已准入平台</span><span class="k-v">${PLATFORMS.length}<small>个</small></span></div>
+    <div class="kpi"><span class="k-l">监控信源</span><span class="k-v">147<small>个</small></span></div>
+    <div class="kpi"><span class="k-l">最近成功采集</span><span class="k-v">${hm(LAST_OK)}</span></div>
+    <div class="kpi"><span class="k-l">采集频率</span><span class="k-v">6<small>小时一次</small></span></div>
+  </section>
+  <section>${secH('正在监控')}<div class="card tbl" style="padding:4px 8px"><table><thead><tr><th>渠道</th><th>方式</th><th>规模</th><th>状态</th></tr></thead><tbody>${rows.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${stBadge('good', '✓', '正常')}</td></tr>`).join('')}</tbody></table></div></section>
+  <section>${secH('已知缺口')}<div class="rows">${gaps.map(g => `<div class="orow" style="grid-template-columns:auto minmax(0,1fr)">${stBadge(g[2], g[2] === 'critical' ? '✕' : '!', g[2] === 'critical' ? '不覆盖' : '部分覆盖')}<span class="t">${g[0]}<small>${g[1]}</small></span></div>`).join('')}</div></section>
+  <section>${secH('平台白名单')}<div class="chips">${PLATFORMS.map(p => `<a class="chip" href="#platform-${p.id}">${etagSvg(ptypeColor(p.type)).replace('<svg ', '<svg style="width:10px;height:12px" ')}${esc(p.name)}</a>`).join('')}</div></section>`;
+}
+
+/* ---------- 后台 ---------- */
+let QSTATE = QUEUE.map(q => Object.assign({}, q));
+function pAdmin() {
+  main().innerHTML = ribbon() + ph('后台', '原型演示：正式版需要用 GitHub 账号登录（Cloudflare Access），这里的按钮只改动本页。') + `
+  <section style="margin-top:0" class="grid g2">
+    <div class="card"><h3>待审队列</h3><p class="sub" id="qCount"></p><div id="queue"></div></div>
+    <div class="card"><h3>补录</h3><p class="sub">粘贴公众号文章、推文或官网链接，系统会抓取并抽取字段，然后进待审。也可以直接把链接转发给 Telegram 机器人。</p>
+      <form id="addForm" class="row" style="flex-wrap:nowrap"><input type="url" id="addUrl" placeholder="https://mp.weixin.qq.com/s/…" required style="flex:1"><button class="btn pri" type="submit">补录</button></form>
+      <h3 style="margin-top:18px">模型预算</h3><p class="sub">主用免费档；只有切到付费备用模型才会产生费用</p>
+      <div class="rows"><div class="row small" style="gap:10px;padding:4px 0"><span style="width:92px">今日 token</span><span class="meter" style="flex:1"><i style="width:9%"></i></span><span class="num">18,420 / 200,000</span></div>
+      <div class="row small" style="gap:10px;padding:4px 0"><span style="width:92px">本月费用</span><span class="meter" style="flex:1"><i style="width:0%"></i></span><span class="num">¥0.00 / ¥10</span></div></div>
+      <h3 style="margin-top:18px">付费数据源</h3><p class="sub">按漏报数据决定是否开启（每月漏报满 3 次）</p>
+      <div class="rows"><div class="row small" style="justify-content:space-between;padding:4px 0"><span>SocialData（X）</span><span class="row" style="gap:8px"><span class="pips">${[1, 2, 3].map(i => `<i class="${i <= 1 ? 'on' : ''}"></i>`).join('')}</span>漏报 1/3 · 未开启</span></div>
+      <div class="row small" style="justify-content:space-between;padding:4px 0"><span>极致了（公众号）</span><span class="row" style="gap:8px"><span class="pips">${[1, 2, 3].map(i => `<i class="${i <= 2 ? 'on' : ''}"></i>`).join('')}</span>漏报 2/3 · 未开启</span></div></div>
+    </div>
+  </section>
+  <section>${secH('自动上架放权', '同一信源连续 5 条被原样通过，系统才会提议放开；员工账号永远人工审')}
+    <div class="card tbl" style="padding:4px 8px"><table><thead><tr><th>平台</th><th>信源</th><th>连续原样通过</th><th>自动上架</th></tr></thead><tbody>
+    ${AUTOPUB.map((a, i) => `<tr><td>${a.pl}</td><td>${a.src}</td><td><span class="pips">${[1, 2, 3, 4, 5].map(k => `<i class="${k <= a.n ? 'on' : ''}"></i>`).join('')}</span> <span class="small muted">${a.n}/5</span>${a.n >= 5 && !a.on ? ' <span class="st warn"><b>!</b>建议放开</span>' : ''}</td><td>${a.never ? '<span class="small muted">永远人工</span>' : `<label class="tog" style="border:0;padding:0;justify-content:flex-start"><input type="checkbox" data-ap="${i}" ${a.on ? 'checked' : ''} ${a.n < 5 ? 'disabled' : ''} aria-label="${a.pl} ${a.src} 自动上架"></label>`}</td></tr>`).join('')}
+    </tbody></table></div></section>
+  <section class="grid g2">
+    <div class="card"><h3>放权进度</h3><p class="sub">每周自动上架的比例</p><div class="chart" id="cAuto" style="height:240px"></div></div>
+    <div class="card"><h3>审核漏斗</h3><p class="sub">最近 30 天</p><div class="chart" id="cFunnel" style="height:240px"></div></div>
+  </section>
+  <section>${secH('信源心电图', '最近 30 次抓取，绿色是成功，红色是失败；连续失败会在 Telegram 告警')}
+    <div class="card tbl" style="padding:4px 8px"><table><thead><tr><th>信源</th><th>类型</th><th>最近 30 次</th><th>状态</th></tr></thead><tbody>
+    ${SOURCES.map(s => { const tail = s.h.slice(-3), bad = tail.every(x => !x), warn = s.h.slice(-8).some(x => !x); return `<tr><td>${esc(s.n)}</td><td class="small muted">${s.kind}</td><td>${ecg(s.h)}</td><td>${bad ? stBadge('critical', '✕', '连续失败 3 次') : warn ? stBadge('warn', '!', '偶发失败') : stBadge('good', '✓', '正常')}</td></tr>`; }).join('')}
+    </tbody></table></div></section>`;
+  const drawQ = () => {
+    $('#qCount').textContent = `${QSTATE.length} 条等你处理`;
+    $('#queue').innerHTML = QSTATE.length ? QSTATE.map(q => `<div class="qitem"><div style="min-width:0"><div class="t">${esc(q.t)}</div><div class="m">${esc(q.src)} · ${esc(q.tier)}</div><div class="m">${esc(q.note)}</div></div><div class="row" style="gap:6px"><button class="btn sm good" type="button" data-q="ok:${q.id}">✓ 通过</button><button class="btn sm bad" type="button" data-q="no:${q.id}">✕ 拒绝</button></div></div>`).join('') : emptySheep('待审队列清空了。');
+    $$('[data-q]').forEach(b => b.addEventListener('click', () => { const [act, qid] = b.dataset.q.split(':'); QSTATE = QSTATE.filter(x => x.id !== qid); toast(act === 'ok' ? '已通过：写入通知台账，明早日报会带上' : '已拒绝：保留记录，用于去重'); drawQ(); }));
+  };
+  drawQ();
+  $('#addForm').addEventListener('submit', e => {
+    e.preventDefault(); const url = $('#addUrl').value.trim(); if (!url) return;
+    const id = 'm' + Date.now();
+    QSTATE.unshift({ id, t: '补录链接，正在抓取和抽取…', src: url, tier: '补录', note: '抽取完成后会显示权益、资格、领取方式和有效期' });
+    $('#addUrl').value = ''; drawQ();
+    setTimeout(() => { const q = QSTATE.find(x => x.id === id); if (q) { q.t = '补录：抽取完成，等你审核'; q.note = '四项证据里缺"有效期"，需要你补充'; drawQ(); } }, 1400);
+  });
+  $$('[data-ap]').forEach(cb => cb.addEventListener('change', () => { AUTOPUB[+cb.dataset.ap].on = cb.checked; toast(cb.checked ? '已放开自动上架' : '已改回人工审核'); }));
+  chart('#cAuto', {
+    grid: { left: 8, right: 40, top: 10, bottom: 6, containLabel: true },
+    tooltip: { trigger: 'axis', valueFormatter: v => v + '%' },
+    xAxis: Object.assign(axisCommon(), { type: 'category', boundaryGap: false, data: ['第1周', '第2周', '第3周', '第4周', '第5周', '第6周', '第7周', '本周'] }),
+    yAxis: Object.assign(axisCommon(), { type: 'value', max: 100, axisLabel: { color: TK.muted, formatter: '{value}%' } }),
+    series: [{ type: 'line', data: [0, 0, 0, 8, 15, 22, 31, 38], smooth: 0.3, symbol: 'circle', symbolSize: 5, showSymbol: false, lineStyle: { width: 2, color: TK.s[0] }, itemStyle: { color: TK.s[0] }, areaStyle: { color: TK.s[0], opacity: 0.1 }, endLabel: { show: true, formatter: '{c}%', color: TK.ink2, fontFamily: FONT } }],
+  });
+  const fcol = ['#86b6ef', '#5598e7', '#2a78d6', '#1c5cab'];
+  chart('#cFunnel', {
+    tooltip: { trigger: 'item', formatter: p => `${p.name}：<b>${p.value}</b> 条` },
+    series: [{ type: 'funnel', left: '6%', right: '6%', top: 6, bottom: 6, minSize: '18%', gap: 3, sort: 'descending', itemStyle: { borderWidth: 0, borderRadius: 4 }, label: { show: true, position: 'inside', fontFamily: FONT, formatter: p => `${p.name} ${p.value}` }, data: [['线索', 312], ['待审', 86], ['上架', 49], ['已结束', 12]].map(([n, v], i) => ({ name: n, value: v, itemStyle: { color: fcol[i] }, label: { color: onColor(fcol[i]) } })) }],
+  });
+}
+function ecg(h) {
+  let s = '';
+  h.forEach((ok, i) => {
+    const x = 2 + i * 5.2;
+    s += ok ? `<path d="M${x.toFixed(1)},14 h1 l1,-8 l1.2,13 l1,-5 h1" style="fill:none;stroke:var(--good);stroke-width:1.3;stroke-linejoin:round"/>` : `<path d="M${x.toFixed(1)},14 h5.2" style="stroke:var(--critical);stroke-width:2"/><circle cx="${(x + 2.6).toFixed(1)}" cy="14" r="1.8" style="fill:var(--critical)"/>`;
+  });
+  return `<svg class="ecg" viewBox="0 0 160 26" aria-label="最近 30 次抓取，失败 ${h.filter(x => !x).length} 次">${s}</svg>`;
+}
+
+/* ============================================================
+ * 外壳：导航、条件面板、对比、路由
+ * ============================================================ */
+const PAGES = { today: pToday, calendar: pCalendar, timeline: pTimeline, insights: pInsights, all: pAll, library: pLibrary, apply: pApply, models: pModels, mine: pMine, coverage: pCoverage, admin: pAdmin };
+const NAVS = [
+  ['逛牧场', [['today', '今天'], ['calendar', '日历'], ['timeline', '时间线'], ['insights', '洞察']]],
+  ['找羊毛', [['all', '全部羊毛'], ['library', '常驻额度库'], ['apply', '申请制'], ['models', '按模型找']]],
+  ['我', [['mine', '我的']]],
+  ['关于', [['coverage', '覆盖范围'], ['admin', '后台']]],
+];
+const TITLES = Object.fromEntries(NAVS.flatMap(g => g[1]));
+function drawShell() {
+  $$('[data-brand]').forEach(el => { el.innerHTML = BRAND; });
+  $('#sideNav').innerHTML = NAVS.map(([g, items]) => `<div class="nav-sep">${g}</div>${items.map(([k, l]) => `<a href="#${k}" data-nav="${k}">${ICON[k]}${l}</a>`).join('')}`).join('');
+  $('#tabbar').innerHTML = [['today', '今天'], ['calendar', '日历'], ['timeline', '时间线'], ['insights', '洞察']].map(([k, l]) => `<a href="#${k}" data-nav="${k}">${ICON[k]}<span>${l}</span></a>`).join('') + `<button type="button" data-more>${ICON.more}<span>更多</span></button>`;
+  $('#sideFoot').innerHTML = `<span class="live"><i></i>最近更新 ${hm(LAST_OK)}</span><span>RSS 订阅（上线后可用）</span><a href="#coverage" style="text-decoration:underline">只收能追到官方出处的羊毛，不保证覆盖所有活动</a>`;
+  drawCondBtn();
+}
+function drawCondBtn() {
+  const n = COND_ITEMS.filter(([k]) => !['realname', 'pay'].includes(k) && C[k]).length + C.members.length;
+  $$('[data-open-cond]').forEach(b => { if (b.classList.contains('cond-btn')) b.innerHTML = `我的条件${n ? `<span class="badge">${n}</span>` : ''}${C.only ? ' · 只看能薅' : ''}`; });
+}
+function markNav(name) {
+  $$('[data-nav]').forEach(a => { const on = a.dataset.nav === name; a.classList.toggle('on', on); if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+  const moreOn = !['today', 'calendar', 'timeline', 'insights'].includes(name);
+  const mb = $('[data-more]'); if (mb) mb.classList.toggle('on', moreOn);
+}
+let SHEET_CHARTS = new Set();
+function openSheet(title, html, after) {
+  $('#sheetPanel').innerHTML = `<div class="sheet-head"><h2 id="sheetTitle">${title}</h2><button class="btn sm" type="button" data-close>关闭</button></div>${html}`;
+  $('#sheet').hidden = false;
+  document.body.style.overflow = 'hidden';
+  after && after();
+  const f = $('#sheetPanel [data-close]'); f && f.focus();
+}
+function closeSheet() {
+  SHEET_CHARTS.forEach(c => c.dispose()); SHEET_CHARTS.clear();
+  $('#sheet').hidden = true; document.body.style.overflow = '';
+}
+function openCond() { openSheet('我的条件', condForm()); }
+function openMore() {
+  const items = [['all', '全部羊毛'], ['library', '常驻额度库'], ['apply', '申请制'], ['models', '按模型找'], ['mine', '我的'], ['coverage', '覆盖范围'], ['admin', '后台']];
+  openSheet('更多', `<div class="more-nav">${items.map(([k, l]) => `<a href="#${k}" data-close>${ICON[k]}${l}</a>`).join('')}</div>`);
+}
+function drawTray() {
+  const t = $('#tray');
+  if (!CMP.length) { t.hidden = true; return; }
+  t.hidden = false;
+  t.innerHTML = `<span>已选 ${CMP.length} 条对比（最多 3 条）</span><button class="btn sm" type="button" data-cmp-open>开始对比</button><button class="btn sm" type="button" data-cmp-clear style="background:transparent;color:var(--bg);border-color:transparent">清空</button>`;
+}
+function openCompare() {
+  const list = CMP.map(id => OMAP[id]);
+  const rowsDef = [['额度', o => valLabel(o).replace(/<[^>]+>/g, ' ')], ['薅度分', o => score(o)], ['类型', o => TYPES[o.ty].l], ['门槛', o => o.r.map(reqLabel).join('、')], ['领取截止', o => o.ek === 'date' ? md(dayAt(o.e)) : o.ek === 'unknown' ? '截止未知' : '长期'], ['额度有效期', o => o.val]];
+  openSheet('对比', `<div class="chart" id="cCmp" style="height:300px"></div><div class="tbl"><table><thead><tr><th></th>${list.map((o, i) => `<th><span class="row" style="gap:6px;flex-wrap:nowrap"><i class="sw" style="background:var(--s${i + 1})"></i>${esc(o.plat.name)}</span></th>`).join('')}</tr></thead><tbody>${rowsDef.map(([k, f]) => `<tr><td class="muted">${k}</td>${list.map(o => `<td style="white-space:normal;min-width:120px">${esc(f(o))}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`, () => {
+    chart('#cCmp', {
+      legend: Object.assign(legendCommon(), { bottom: 0, data: list.map(o => o.t.length > 14 ? o.t.slice(0, 13) + '…' : o.t) }),
+      tooltip: { trigger: 'item' },
+      radar: { indicator: DIMS.map(n => ({ name: n, max: 100 })), radius: '60%', center: ['50%', '46%'], splitNumber: 4, axisName: { color: TK.ink2, fontSize: 12 }, splitLine: { lineStyle: { color: TK.line2 } }, splitArea: { areaStyle: { color: [TK.surface, TK.surface2] } }, axisLine: { lineStyle: { color: TK.line2 } } },
+      series: [{ type: 'radar', data: list.map((o, i) => ({ value: dims(o), name: o.t.length > 14 ? o.t.slice(0, 13) + '…' : o.t, lineStyle: { color: TK.s[i], width: 2 }, itemStyle: { color: TK.s[i] }, areaStyle: { color: TK.s[i], opacity: 0.12 }, symbolSize: 5 })) }],
+    }, SHEET_CHARTS);
+  });
+}
+
+function route() {
+  const h = decodeURIComponent(location.hash.slice(1)) || 'today';
+  if (h.startsWith('offer-')) return ['offer', h.slice(6)];
+  if (h.startsWith('platform-')) return ['platform', h.slice(9)];
+  return [PAGES[h] ? h : 'today', null];
+}
+function render(keepScroll) {
+  TK = tk();
+  const [name, arg] = route();
+  CHARTS.forEach(c => c.dispose()); CHARTS.clear(); hideTip();
+  const y = window.scrollY;
+  if (name === 'offer') pOffer(arg); else if (name === 'platform') pPlatform(arg); else PAGES[name]();
+  markNav(name === 'offer' || name === 'platform' ? '' : name);
+  document.title = name === 'offer' && OMAP[arg] ? `${OMAP[arg].t} · AI 羊毛牧场` : name === 'platform' && PMAP[arg] ? `${PMAP[arg].name} · AI 羊毛牧场` : `${TITLES[name] || '今天'} · AI 羊毛牧场`;
+  drawTray();
+  if (keepScroll) window.scrollTo(0, y); else window.scrollTo(0, 0);
+}
+
+/* ---------- 全局事件 ---------- */
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-open-cond],[data-more],[data-close],[data-cmp],[data-cmp-open],[data-cmp-clear],[data-want],[data-got],[data-mem],tr[data-href]');
+  if (!t) return;
+  if (t.matches('[data-open-cond]')) { e.preventDefault(); openCond(); return; }
+  if (t.matches('[data-more]')) { openMore(); return; }
+  if (t.matches('[data-close]')) { closeSheet(); return; }
+  if (t.matches('tr[data-href]')) { location.hash = t.dataset.href.slice(1); return; }
+  if (t.matches('[data-cmp]')) {
+    e.preventDefault(); const id = t.dataset.cmp;
+    if (CMP.includes(id)) CMP = CMP.filter(x => x !== id);
+    else { if (CMP.length >= 3) { toast('最多对比 3 条，先去掉一条'); return; } CMP.push(id); }
+    $$(`[data-cmp="${id}"]`).forEach(b => b.setAttribute('aria-pressed', CMP.includes(id)));
+    drawTray(); return;
+  }
+  if (t.matches('[data-cmp-open]')) { openCompare(); return; }
+  if (t.matches('[data-cmp-clear]')) { CMP = []; $$('[data-cmp]').forEach(b => b.setAttribute('aria-pressed', 'false')); drawTray(); return; }
+  if (t.matches('[data-want]') || t.matches('[data-got]')) {
+    const key = t.matches('[data-want]') ? 'want' : 'got', id = t.dataset[key];
+    MINE[key] = MINE[key].includes(id) ? MINE[key].filter(x => x !== id) : [...MINE[key], id];
+    LS.set('ym-mine', MINE); toast(MINE[key].includes(id) ? (key === 'want' ? '已加入想领' : '已记为已领') : '已取消'); render(true); return;
+  }
+  if (t.matches('[data-mem]')) {
+    const m = t.dataset.mem;
+    C.members = C.members.includes(m) ? C.members.filter(x => x !== m) : [...C.members, m];
+    t.setAttribute('aria-pressed', C.members.includes(m));
+    LS.set('ym-cond', C); drawCondBtn(); render(true);
+  }
+});
+document.addEventListener('change', e => {
+  const t = e.target.closest('[data-c]'); if (!t) return;
+  C[t.dataset.c] = t.checked; LS.set('ym-cond', C); drawCondBtn();
+  $$(`[data-c="${t.dataset.c}"]`).forEach(x => { x.checked = t.checked; });
+  render(true);
+});
+$('#sheet').addEventListener('click', e => { if (e.target.id === 'sheet') closeSheet(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#sheet').hidden) closeSheet(); });
+window.addEventListener('hashchange', () => { closeSheet(); render(false); });
+let rsT;
+window.addEventListener('resize', () => {
+  clearTimeout(rsT);
+  rsT = setTimeout(() => {
+    CHARTS.forEach(c => c.resize()); SHEET_CHARTS.forEach(c => c.resize());
+    const f = $('#flock'); if (f && Math.abs((+f.dataset.w || 0) - f.clientWidth) > 40) buildFlock(f, view(OFFERS.filter(activeLimited)), weatherNow());
+  }, 180);
+});
+setInterval(() => {
+  const now = Date.now();
+  $$('[data-end]').forEach(el => { el.textContent = cdText(+el.dataset.end - now); });
+  $$('[data-since]').forEach(el => { el.textContent = cdText(now - +el.dataset.since); });
+}, 1000);
+const reTheme = () => render(true);
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', reTheme);
+new MutationObserver(reTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+drawShell();
+if (window.echarts) render(false);
+else main().innerHTML = ribbon() + emptySheep('图表库没有加载成功，请检查网络后刷新。');
+</script>

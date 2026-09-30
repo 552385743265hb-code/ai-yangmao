@@ -1,0 +1,8 @@
+node_modules/
+.wrangler/
+.dev.vars
+public/
+prototype/dist/preview.html
+.DS_Store
+*.log
+.prod.secrets

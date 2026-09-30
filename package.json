@@ -1,0 +1,30 @@
+{
+  "name": "ai-yangmao",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:web": "bash prototype/build.sh && mkdir -p public && cp prototype/dist/preview.html public/index.html && cp web/_headers public/_headers",
+    "dev": "npm run build:web && wrangler dev",
+    "deploy": "npm run build:web && wrangler deploy",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate:local": "wrangler d1 migrations apply ai-yangmao --local",
+    "db:migrate": "wrangler d1 migrations apply ai-yangmao --remote",
+    "seed:sql": "node scripts/gen-seed.ts > seed/seed.sql",
+    "seed:local": "npm run seed:sql && wrangler d1 execute ai-yangmao --local --file seed/seed.sql",
+    "seed": "npm run seed:sql && wrangler d1 execute ai-yangmao --remote --file seed/seed.sql",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.45.3",
+    "hono": "^4.13.11",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260929.1",
+    "drizzle-kit": "^0.31.11",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.2",
+    "wrangler": "^4.144.0"
+  }
+}
