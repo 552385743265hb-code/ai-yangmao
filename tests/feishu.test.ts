@@ -2,7 +2,7 @@ import { createHmac } from 'node:crypto';
 import { readFileSync, readdirSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { buildCards, dispatchCollect, sendFeishu } from '../src/worker/feishu';
+import { buildCards, dispatchCollect, scheduledCollect, sendFeishu } from '../src/worker/feishu';
 import { buildNotice } from '../src/worker/admin';
 import type { Env } from '../src/worker/index';
 
@@ -120,5 +120,16 @@ describe('飞书群日报', () => {
     expect(await dispatchCollect({ ...env, GH_DISPATCH_TOKEN: 'ghp_test' } as Env)).toEqual({ ok: true });
     expect(calls[0].url).toBe('https://api.github.com/repos/accesaver-byte/ai-yangmao/actions/workflows/collect.yml/dispatches');
     expect(calls[0].body).toEqual({ ref: 'main' });
+  });
+
+  it('定时触发采集失败会重试一次，仍失败就记一条失败记录', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{"message":"Bad credentials"}', { status: 401 })));
+    const r = await scheduledCollect({ ...env, GH_DISPATCH_TOKEN: 'ghp_old' } as Env, async () => undefined);
+    expect(r.ok).toBe(false);
+    expect((fetch as unknown as { mock: { calls: unknown[] } }).mock.calls.length).toBe(2);
+    const row = sqlite.prepare("SELECT ok, stats FROM runs WHERE kind='collect'").get() as { ok: number; stats: string };
+    expect(row.ok).toBe(0);
+    expect(JSON.parse(row.stats)).toMatchObject({ stage: 'dispatch' });
+    expect(JSON.parse(row.stats).error).toContain('401');
   });
 });

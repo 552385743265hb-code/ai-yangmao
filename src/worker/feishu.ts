@@ -211,10 +211,26 @@ export async function dispatchCollect(env: Env): Promise<{ ok: boolean; error?: 
   return r.status === 204 ? { ok: true } : { ok: false, error: `GitHub 返回 ${r.status}：${(await r.text()).slice(0, 200)}` };
 }
 
+/**
+ * 定时触发采集：失败隔 20 秒重试一次，仍失败就写一条失败的采集记录，后台“采集健康”能看到原因。
+ * （2026-09-30 12:17 UTC 那次触发失败只写了日志，没有任何人察觉。）
+ */
+export async function scheduledCollect(env: Env, wait = (ms: number) => new Promise(r => setTimeout(r, ms))) {
+  const once = () => dispatchCollect(env).catch(e => ({ ok: false, error: `请求 GitHub 出错：${String(e).slice(0, 200)}` }));
+  let r = await once();
+  if (!r.ok) { await wait(20_000); r = await once(); }
+  if (!r.ok) {
+    const at = new Date().toISOString();
+    await env.DB.prepare("INSERT INTO runs (kind, started_at, finished_at, ok, stats) VALUES ('collect', ?1, ?1, 0, ?2)")
+      .bind(at, JSON.stringify({ stage: 'dispatch', error: r.error })).run();
+  }
+  return r;
+}
+
 export async function runScheduled(cron: string, env: Env) {
   if (cron === CRON.digest) console.log('飞书日报', JSON.stringify(await sendFeishu(env, 'digest')));
   if (cron === CRON.urgent) console.log('飞书加急', JSON.stringify(await sendFeishu(env, 'urgent')));
-  if (cron === CRON.collect) console.log('触发采集', JSON.stringify(await dispatchCollect(env)));
+  if (cron === CRON.collect) console.log('触发采集', JSON.stringify(await scheduledCollect(env)));
 }
 
 /* ---------- 管理接口：预览 / 手动发送 / 手动触发采集（ADMIN_TOKEN） ---------- */

@@ -496,8 +496,11 @@ admin.get('/health', async c => {
     .from(s.deliveries).where(inArray(s.deliveries.status, ['unknown', 'pending']));
   const needsVerification = (await d.select().from(s.offers).where(eq(s.offers.reviewState, 'approved')))
     .filter(offer => liveStatus(offer) === 'stale').map(offer => ({ id: offer.id, title: offer.title, evidenceUrl: offer.evidence.url }));
+  const dispatchFailures = (await c.env.DB.prepare("SELECT started_at AS at, stats FROM runs WHERE kind='collect' AND ok=0 AND started_at >= ?1 ORDER BY started_at DESC LIMIT 5")
+    .bind(new Date(Date.now() - 48 * 3600_000).toISOString()).all<{ at: string; stats: string }>()).results
+    .map(r => ({ at: r.at, ...(JSON.parse(r.stats || '{}') as { stage?: string; error?: string }) })).filter(r => r.stage === 'dispatch');
   return c.json({ tokensToday: b?.t ?? 0, tokenCap: Number(c.env.DAILY_TOKEN_CAP ?? 0), costMonthCny: b?.c ?? 0, coverageDegraded: !!lastOk?.stats?.coverageDegraded, sources: allSources, lastSuccessfulCollect: lastOk?.finishedAt ?? null,
-    hoursSince: hours, collectStale: hours === null || hours > 8, failingSources: failing, uncertainDeliveries, needsVerification });
+    hoursSince: hours, collectStale: hours === null || hours > 8, failingSources: failing, uncertainDeliveries, needsVerification, dispatchFailures });
 });
 
 export const offerIsClaimable = (o: OfferRow) => isClaimable(liveStatus(o));
