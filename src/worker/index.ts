@@ -6,11 +6,13 @@ import { z } from 'zod';
 import * as s from '../db/schema';
 import { leadIn, offerIn, runIn } from '../shared/ingest';
 import { activeOnDate, isClaimable, liveStatus, missingEvidence } from '../shared/lifecycle';
+import { admin } from './admin';
 
 export interface Env {
   DB: D1Database;
   ASSETS: Fetcher;
   INGEST_TOKEN: string;
+  ADMIN_TOKEN: string;
 }
 
 const app = new Hono<{ Bindings: Env }>();
@@ -203,6 +205,7 @@ ingest.post('/runs', async c => {
 });
 
 app.route('/api/ingest', ingest);
+app.route('/api/admin', admin);
 app.all('/api/*', c => c.json({ error: '没有这个接口' }, 404));
 
 export default {
