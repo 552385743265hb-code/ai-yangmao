@@ -13,3 +13,12 @@ describe('羊毛关键词', () => {
     for (const s of ['即梦每日登录送66积分', '硅基流动实名认证送16元代金券', 'Dreamina 90% off first month', '邀请好友双方各得250积分']) expect(isLead(s), s).toBe(true);
   });
 });
+
+import { parseModelJson } from '../pipeline/llm';
+describe('模型输出的 JSON', () => {
+  it('后面多吐内容、末尾多逗号、带代码块标记都能解析', () => {
+    expect(parseModelJson('{"offers":[]}\n以上是结果')).toEqual({ offers: [] });
+    expect(parseModelJson('```json\n{"offers":[{"a":1,},]}\n```')).toEqual({ offers: [{ a: 1 }] });
+    expect(parseModelJson('{"offers":[{"t":"含 } 括号"}]}{"extra":1}')).toEqual({ offers: [{ t: '含 } 括号' }] });
+  });
+});

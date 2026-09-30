@@ -123,6 +123,27 @@ let nextCall = 0;
 async function pace() { const start = Math.max(Date.now(), nextCall); nextCall = start + MIN_GAP; const wait = start - Date.now(); if (wait > 0) await new Promise(r => setTimeout(r, wait)); }
 export const paidAvailable = () => providers().some(p => p.paid);
 
+/**
+ * 宽容地解析模型输出的 JSON：去掉代码块标记，只取第一个完整的 {...}（模型偶尔在后面多吐内容），
+ * 仍解析不了再去掉对象和数组末尾多余的逗号。2026-10-01 批量抓取时 Gemini 多次因此失败，整个信源被推迟。
+ */
+export function parseModelJson(out: string): unknown {
+  const s = out.replace(/^\s*```(?:json)?/i, '').replace(/```\s*$/, '').trim();
+  try { return JSON.parse(s); } catch { /* 继续尝试 */ }
+  const start = s.indexOf('{');
+  if (start < 0) throw new Error('模型输出里没有 JSON 对象');
+  let depth = 0, inStr = false, esc = false, end = -1;
+  for (let i = start; i < s.length; i++) {
+    const ch = s[i];
+    if (inStr) { if (esc) esc = false; else if (ch === '\\') esc = true; else if (ch === '"') inStr = false; continue; }
+    if (ch === '"') inStr = true;
+    else if (ch === '{') depth++;
+    else if (ch === '}' && --depth === 0) { end = i; break; }
+  }
+  const body = end > 0 ? s.slice(start, end + 1) : s.slice(start);
+  try { return JSON.parse(body); } catch { return JSON.parse(body.replace(/,\s*([}\]])/g, '$1')); }
+}
+
 /** 摘录必须能在原文里逐字找到（忽略空白和大小写），找不到的清空。 */
 export function keepVerbatim(ex: Extracted['excerpts'], source: string): Extracted['excerpts'] {
   const hay = norm(source);
@@ -200,7 +221,7 @@ export async function extract(platformName: string, url: string, text: string, l
         }
       }
       const { text: out, tokens, costCny = 0 } = res!;
-      const json = JSON.parse(out.replace(/^```(json)?|```$/g, '').trim()) as { offers?: Extracted[] };
+      const json = parseModelJson(out) as { offers?: Extracted[] };
       const offers = (Array.isArray(json.offers) ? json.offers : []).map(o => ({ ...tidy(o), excerpts: keepVerbatim(o.excerpts, text) }));
       return { offers, tokens, costCny, provider: p.name };
     } catch (e) {
