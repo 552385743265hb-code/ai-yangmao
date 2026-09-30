@@ -38,7 +38,9 @@ function toOffer(src: Source, e: Extracted & { fixedId?: string }, url: string, 
     id: e.fixedId ?? `${src.platformId}-${slug(e.key)}`.slice(0, 80), platformId: src.platformId!, sourceId: src.id || undefined,
     title: e.title, type: e.type, modalities: e.modalities as OfferIn['modalities'], claimMethod: e.claimMethod as OfferIn['claimMethod'],
     requirements: e.requirements?.length ? e.requirements : ['unknown'], audience: e.audience ?? 'unclear', valueText: e.valueText,
-    usdEstimate: e.usdEstimate ?? null, claimStart: e.claimStart ?? null, claimEnd: e.claimEnd ?? null, endKind: e.endKind,
+    usdEstimate: e.usdEstimate ?? null, claimStart: e.claimStart ?? null, claimEnd: e.claimEnd ?? null,
+    // 模型说有截止日期却给不出具体日期（如“免费 7 天”但没写从哪天起）：按截止未知保留，交给人工审核，而不是整条丢弃
+    endKind: e.endKind === 'date' && !e.claimEnd ? 'unknown' : e.endKind,
     creditValidity: e.creditValidity ?? null, sourceTz: e.sourceTz || 'UTC', steps: (e.steps ?? []).slice(0, 4), firstChannel: src.kind,
     evidence: { url, tier: (src.tier === 'lead' ? 'site' : src.tier) as OfferIn['evidence']['tier'], capturedAt: new Date().toISOString(), pageHash: sha256(text), excerpts: e.excerpts },
   };
