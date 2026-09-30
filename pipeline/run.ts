@@ -152,6 +152,9 @@ async function triageLeads(plats: Plat[]) {
   const { leads } = await api<{ leads: Lead[] }>(`/leads?limit=${LEAD_LIMIT}`);
   if (!leads.length) return;
   const list = plats.map(p => `${p.id}=${p.name}`).join('；');
+  const { offers: known } = await api<{ offers: { id: string; platformId: string; title: string; valueText: string }[] }>('/offers-index');
+  const knownIds = new Set(known.map(k => k.id));
+  const existing = known.map(k => `${k.id}｜${k.title}｜${k.valueText.slice(0, 40)}`).join('\n');
   const pmap = new Map(plats.map(p => [p.id, p]));
   log(`研判线索 ${leads.length} 条`);
   for (const l of leads) {
@@ -160,7 +163,7 @@ async function triageLeads(plats: Plat[]) {
     let text = `${l.title ?? ''}\n${l.raw ?? ''}`;
     try { const pg = await fetchPage(l.url); text = `${l.title ?? ''}\n${pg.text}`.slice(0, 14000); } catch { /* 原文抓不到就用线索自带的摘要 */ }
     let r;
-    try { r = await extract('（见平台白名单）', l.url, text, log, { platformList: list }); }
+    try { r = await extract('（见平台白名单）', l.url, text, log, { platformList: list, existing }); }
     catch (e) { log(`  #${l.id} 抽取失败：${(e as Error).message.slice(0, 80)}`); continue; }
     tokensLeft -= r.tokens; stats.tokens += r.tokens; stats.costCny += r.costCny;
     const valid: OfferIn[] = [];
@@ -176,6 +179,11 @@ async function triageLeads(plats: Plat[]) {
       const tier = tierOf(l.url, p);
       const o = toOffer({ id: `lead-${l.origin}`, kind: l.origin, platformId: p.id, tier } as unknown as Source, e, l.url);
       o.evidence.tier = tier; o.leadId = l.id; o.sourceId = undefined; o.firstChannel = l.origin;
+      // 同一个活动：沿用已有条目的 id（写入接口会按修订处理，不会新开一条）
+      if (e.sameAs && knownIds.has(e.sameAs)) {
+        const prev = known.find(k => k.id === e.sameAs)!;
+        if (prev.platformId === p.id) { o.id = prev.id; log(`  #${l.id} 与已有条目 ${prev.id} 是同一活动，合并`); }
+      }
       if (e.officialUrl && tier === 'media') o.steps = [...(o.steps ?? []), `官方出处：${e.officialUrl}`].slice(0, 6);
       const v = offerIn.safeParse(o);
       if (v.success) valid.push(v.data); else log(`  #${l.id} 丢弃「${e.title}」：${v.error.issues.map(i => i.path.join('.') + ' ' + i.message).join('；').slice(0, 120)}`);

@@ -28,6 +28,7 @@ const PROMPT = `你是"AI 羊毛牧场"的信息抽取器。下面是某个 AI �
 - 付费套餐本身包含的额度（例如 PRO 会员每月自带的 credits）；但会员的"额外"加赠、额度重置、限时翻倍要抽
 - 不是 AI 使用额度的权益（协作功能、工作区、存储空间、席位等）；只收 token、请求次数、生成积分、会员时长、API 余额
 - 不属于"平台："那一家的权益：原文里提到的其他公司产品（合作方、客户案例）不要算在这个平台头上
+- 同一页面列出多个同类免费模型或同类权益时，合并成一条（valueText 里列出模型名），不要每个模型各出一条
 拿不准就不要输出。
 
 每条输出字段：
@@ -56,6 +57,7 @@ const TRIAGE = `\n\n补充规则（本文可能是媒体报道、社区帖子或
 - 中转站、号池、账号买卖、"公益站"、低价 API 转售、非 AI 的福利（打车、外卖、门票、云手机、代理、eSIM 等）一律不输出。
 - 中文社区黑话：「鸡蛋」= 厂商送的免费额度 / token；「臭鸡蛋」通常指智谱（GLM / ZCode）送的 token；「蚊子腿」= 小额福利；「白嫖」= 免费用；「DSH」= DeepSeek Harness。这些都算 AI 羊毛，要按规则抽取。
 - platformId 必须原样使用白名单里等号左边的 id（全小写），例如 deepseek、zhipu。
+- 再加一个字段 sameAs：如果这条和下面"已收录条目"里的某条是同一个活动（同一平台、同一权益，只是说法不同），填那条的 id；否则 null。
 平台白名单（id=名称）：`;
 
 interface Provider { name: string; paid?: boolean; call: (sys: string, user: string) => Promise<{ text: string; tokens: number; costCny?: number }> }
@@ -145,9 +147,9 @@ function tidy(o: Extracted): Extracted {
 /** 免费模型都不可用时抛出，调用方把这个页面推迟到下一轮。 */
 export class DeferError extends Error {}
 
-export async function extract(platformName: string, url: string, text: string, log: (...a: unknown[]) => void = () => undefined, opts: { allowPaid?: boolean; platformList?: string } = {}): Promise<{ offers: (Extracted & { platformId?: string; officialUrl?: string | null })[]; tokens: number; costCny: number; provider: string }> {
+export async function extract(platformName: string, url: string, text: string, log: (...a: unknown[]) => void = () => undefined, opts: { allowPaid?: boolean; platformList?: string; existing?: string } = {}): Promise<{ offers: (Extracted & { platformId?: string; officialUrl?: string | null; sameAs?: string | null })[]; tokens: number; costCny: number; provider: string }> {
   const user = `平台：${platformName}\n来源：${url}\n\n---- 原文 ----\n${text}`;
-  const sys = opts.platformList ? PROMPT + TRIAGE + opts.platformList : PROMPT;
+  const sys = opts.platformList ? PROMPT + TRIAGE + opts.platformList + (opts.existing ? `\n已收录条目（id｜标题｜额度）：\n${opts.existing}` : '') : PROMPT;
   let lastErr: unknown;
   const all = providers();
   const free = all.filter(p => !p.paid), paid = all.filter(p => p.paid);

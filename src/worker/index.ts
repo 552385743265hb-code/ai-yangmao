@@ -1,5 +1,5 @@
 // Cloudflare Worker 入口：/api/* 走这里，其余由静态资源（网站页面）处理。
-import { and, desc, eq, inArray, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray, sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
 import { Hono } from 'hono';
 import { z } from 'zod';
@@ -220,6 +220,14 @@ ingest.post('/leads/:id/status', async c => {
   const raw = b.data.note ? `${lead.raw ?? ''}\n[研判] ${b.data.note}`.slice(-20000) : lead.raw;
   await db(c.env).update(s.leads).set({ status: b.data.status, offerId: b.data.offerId ?? lead.offerId, raw }).where(eq(s.leads.id, lead.id));
   return c.json({ ok: true });
+});
+
+/** 近 60 天没被拒绝的条目索引，研判时用来判断"是不是同一个活动"。 */
+ingest.get('/offers-index', async c => {
+  const since = new Date(Date.now() - 60 * 86400_000).toISOString();
+  const rows = await db(c.env).select({ id: s.offers.id, platformId: s.offers.platformId, title: s.offers.title, valueText: s.offers.valueText })
+    .from(s.offers).where(and(inArray(s.offers.reviewState, ['pending', 'approved']), gte(s.offers.discoveredAt, since)));
+  return c.json({ offers: rows });
 });
 
 /** 模型预算：今日 token、本月费用。 */
