@@ -229,7 +229,7 @@ ingest.post('/leads/:id/status', async c => {
 ingest.get('/corrections', async c => {
   const platform = c.req.query('platform') ?? '', source = c.req.query('source') ?? '', limit = Math.min(100, Number(c.req.query('limit') ?? 10));
   const since = new Date(Date.now() - Number(c.req.query('days') ?? 3650) * 86400_000).toISOString();
-  const edits = await c.env.DB.prepare(`SELECT o.platform_id p, o.source_id src, o.title t, v.diff d, (SELECT reason FROM reviews r WHERE r.offer_id = o.id AND r.action = 'edit' ORDER BY r.id DESC LIMIT 1) reason, v.at at
+  const edits = await c.env.DB.prepare(`SELECT o.platform_id p, o.source_id src, o.title t, v.diff d, (SELECT reason FROM reviews r WHERE r.offer_id = o.id AND r.action = 'edit' ORDER BY abs(julianday(r.at) - julianday(v.at)) LIMIT 1) reason, v.at at
     FROM offer_revisions v JOIN offers o ON o.id = v.offer_id WHERE v.author = 'admin' AND v.at >= ?1 ORDER BY v.id DESC LIMIT 200`).bind(since).all<{ p: string; src: string | null; t: string; d: string; reason: string | null; at: string }>();
   const rejects = await c.env.DB.prepare(`SELECT o.platform_id p, o.source_id src, o.title t, o.value_text v, r.reason reason, r.reason_code code, r.at at
     FROM reviews r JOIN offers o ON o.id = r.offer_id WHERE r.action = 'reject' AND COALESCE(r.reviewer,'') <> 'system' AND (r.reason IS NOT NULL OR r.reason_code IS NOT NULL) AND r.at >= ?1 ORDER BY r.id DESC LIMIT 200`).bind(since).all<{ p: string; src: string | null; t: string; v: string; reason: string | null; code: string | null; at: string }>();

@@ -32,9 +32,9 @@ async function postLeads(leads: LeadIn[]) {
   }
 }
 
-function toOffer(src: Source, e: Extracted, url: string): OfferIn {
+function toOffer(src: Source, e: Extracted & { fixedId?: string }, url: string): OfferIn {
   return {
-    id: `${src.platformId}-${slug(e.key)}`.slice(0, 80), platformId: src.platformId!, sourceId: src.id,
+    id: e.fixedId ?? `${src.platformId}-${slug(e.key)}`.slice(0, 80), platformId: src.platformId!, sourceId: src.id,
     title: e.title, type: e.type, modalities: e.modalities as OfferIn['modalities'], claimMethod: e.claimMethod as OfferIn['claimMethod'],
     requirements: e.requirements?.length ? e.requirements : ['none'], audience: e.audience ?? 'unclear', valueText: e.valueText,
     usdEstimate: e.usdEstimate ?? null, claimStart: e.claimStart ?? null, claimEnd: e.claimEnd ?? null, endKind: e.endKind,
@@ -53,8 +53,13 @@ async function extractAndPost(src: Source, url: string, text: string): Promise<b
   if (estimate > tokensLeft) { stats.extractSkipped++; log(`  今日模型预算不足（剩 ${tokensLeft}），留到下次`); return false; }
   const deferCount = Number((src.config as { deferCount?: number } | undefined)?.deferCount ?? 0);
   const allowPaid = paidAvailable() && deferCount >= 1 && costLeft > 0.05;
-  let r;
-  try { r = await extract(src.platform?.name ?? src.platformId ?? '', url, text, log, { allowPaid }); }
+  let r: Awaited<ReturnType<typeof extract>>;
+  try {
+    const idx = (await offerIndex()).filter(k => k.platformId === src.platformId);
+    r = await extract(src.platform?.name ?? src.platformId ?? '', url, text, log, { allowPaid, corrections: await correctionsFor(src.platformId, src.id), existing: idx.map(k => `${k.id}｜${k.title}｜${k.valueText.slice(0, 40)}`).join('\n') || undefined });
+    // 同一个权益沿用已有 id，避免模型换个说法就生成重复条目
+    for (const e of r.offers as (Extracted & { sameAs?: string | null; fixedId?: string })[]) { const hit = idx.find(k => k.id === e.sameAs); if (hit) e.fixedId = hit.id; }
+  }
   catch (e) {
     if (!(e instanceof DeferError)) throw e;
     stats.deferred++; log(`  ${e.message}`);
@@ -72,7 +77,7 @@ async function extractAndPost(src: Source, url: string, text: string): Promise<b
     else { const why = v.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('；'); stats.errors.push(`${src.id}/${e.key}: ${why}`); log(`  丢弃「${e.title}」：${why}`); }
   }
   if (!offers.length) return true;
-  if (DRY) { offers.forEach(o => log('  羊毛', o.id, o.title, JSON.stringify(o.evidence.excerpts))); stats.offers += offers.length; return true; }
+  if (DRY) { offers.forEach(o => log('  羊毛', o.id, o.title, `类型=${o.type} 对象=${o.audience} 门槛=${o.requirements.join(',')} 额度=${o.valueText}`)); stats.offers += offers.length; return true; }
   const res = await api<{ results: { id: string; error?: string; reviewState?: string; unchanged?: boolean }[] }>('/offers', offers);
   for (const x of res.results) {
     if (x.error) stats.errors.push(`${x.id}: ${x.error}`);
@@ -129,6 +134,12 @@ async function runSource(src: Source) {
     log(`  失败：${msg}`);
     await report(src, false, { error: msg.slice(0, 500) }).catch(() => undefined);
   }
+}
+
+let idxCache: { id: string; platformId: string; title: string; valueText: string }[] | null = null;
+async function offerIndex() {
+  if (!idxCache) { try { idxCache = (await api<{ offers: { id: string; platformId: string; title: string; valueText: string }[] }>('/offers-index')).offers; } catch { idxCache = []; } }
+  return idxCache;
 }
 
 /* ---------- 第一层反馈：抽取时附上管理员最近的纠正 ---------- */

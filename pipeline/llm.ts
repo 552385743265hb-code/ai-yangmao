@@ -159,7 +159,9 @@ export class DeferError extends Error {}
 export async function extract(platformName: string, url: string, text: string, log: (...a: unknown[]) => void = () => undefined, opts: { allowPaid?: boolean; platformList?: string; existing?: string; corrections?: string[] } = {}): Promise<{ offers: (Extracted & { platformId?: string; officialUrl?: string | null; sameAs?: string | null })[]; tokens: number; costCny: number; provider: string }> {
   const user = `平台：${platformName}\n来源：${url}\n\n---- 原文 ----\n${text}`;
   const base = PROMPT + LEARNED + (opts.corrections?.length ? `\n\n管理员最近的纠正（照这些改正方向抽取，同类错误不要再犯）：\n${opts.corrections.map(x => '- ' + x).join('\n')}` : '');
-  const sys = opts.platformList ? base + TRIAGE + opts.platformList + (opts.existing ? `\n已收录条目（id｜标题｜额度）：\n${opts.existing}` : '') : base;
+  const known = opts.existing ? `\n已收录条目（id｜标题｜额度）：\n${opts.existing}` : '';
+  const same = opts.existing && !opts.platformList ? `\n\n每条再加一个字段 sameAs：如果和下面"已收录条目"里的某条是同一个权益（说法不同也算），填那条的 id，否则 null。` : '';
+  const sys = opts.platformList ? base + TRIAGE + opts.platformList + known : base + same + known;
   let lastErr: unknown;
   const all = providers();
   const free = all.filter(p => !p.paid), paid = all.filter(p => p.paid);
