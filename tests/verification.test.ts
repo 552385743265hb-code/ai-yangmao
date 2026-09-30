@@ -97,6 +97,13 @@ describe('official evidence verification', () => {
 });
 
 describe('review gates and preserved public version', () => {
+  it('管理员人工核对后可以填写模型读不到的有效期（如公众号图片里的），不被原文摘录门槛挡住', async () => {
+    await call('ingest/offers', [{ ...offer, evidence: { ...evidence, excerpts: { benefit: evidence.excerpts.benefit } } }]);
+    const edited = await call('admin/offers/vendor-free/edit', { fields: { creditValidity: '1 个月', audience: 'old' }, approve: true, reason: '有效期在公众号图片里' }, 'admin');
+    expect(edited.status, JSON.stringify(edited.body)).toBe(200);
+    expect(sqlite.prepare("SELECT review_state, credit_validity FROM offers WHERE id='vendor-free'").get()).toEqual({ review_state: 'approved', credit_validity: '1 个月' });
+  });
+
   it('blocks unapproved platforms and media-only proof, then permits corrected official proof', async () => {
     sqlite.prepare("UPDATE platforms SET status='pending' WHERE id='vendor'").run();
     await call('ingest/offers', [{ ...offer, evidence: { ...evidence, tier: 'media', excerpts: {} } }]);

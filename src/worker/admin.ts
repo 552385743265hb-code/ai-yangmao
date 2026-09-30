@@ -72,7 +72,7 @@ const validateStoredOffer = (offer: OfferRow) => offerIn.safeParse({
   ...offer, firstChannel: offer.firstChannel ?? undefined, sourceId: offer.sourceId ?? undefined,
 });
 
-/** 管理员也必须确认平台和当前证据，不能靠 reviewState 绕过准入。 */
+/** 管理员通过时的门槛：平台已准入、证据是该平台的官方出处。不能靠 reviewState 绕过准入。 */
 async function publicationError(env: Env, offer: OfferRow): Promise<string | null> {
   const valid = validateStoredOffer(offer);
   if (!valid.success) return '活动字段或日期不符合共享校验规则';
@@ -81,10 +81,8 @@ async function publicationError(env: Env, offer: OfferRow): Promise<string | nul
   if (!platform || platform.status !== 'approved') return '平台尚未准入';
   if (offer.evidence.tier === 'media') return '媒体或社区转述不能作为上架证据，请先补齐官方出处';
   if (offer.requirements.includes('unknown')) return '领取门槛尚未明确，先核对官方原文';
-  const excerpts = offer.evidence.excerpts;
-  if (!excerpts.benefit?.trim()) return '缺少官方原文中的权益说明';
-  if (offer.audience !== 'unclear' && !excerpts.eligibility?.trim()) return '已指定领取对象，但缺少官方资格原文';
-  if ((offer.endKind === 'date' || offer.creditValidity) && !excerpts.validity?.trim()) return '已指定有效期，但缺少官方有效期原文';
+  // 不检查原文摘录：摘录门槛是防模型编造的（自动上架仍要求三项齐全，见 missingEvidence）。
+  // 管理员人工核对过官方页面，内容可能来自图片、视频等模型读不到的地方，以管理员为准（2026-09-30 管理员决定）。
   let url: URL;
   try { url = new URL(offer.evidence.url); } catch { return '官方证据链接无效'; }
   if (!['https:', 'http:'].includes(url.protocol)) return '官方证据必须是网页链接';
