@@ -342,8 +342,11 @@ async function buildNotice(env: Env, kind: NoticeKind, channel: NoticeChannel) {
   const suggestAutoPublish = kind === 'digest' && channel === 'telegram'
     ? (await d.select().from(s.sources).where(and(gte(s.sources.cleanStreak, 5), eq(s.sources.autoPublish, false))))
       .filter(source => source.enabled && ['site', 'docs', 'official'].includes(source.tier) && !!source.platformId && approvedPlatforms.has(source.platformId)).map(x => x.id) : [];
-  const empty = !marks.length && (kind === 'urgent' || channel !== 'telegram' || (!pendingCount && !suggestAutoPublish.length && !needsVerificationCount));
-  return { kind, channel, items: out, marks, pendingCount, suggestAutoPublish, needsVerificationCount, empty, blockedCount: blocked.size };
+  const [lastCollect] = kind === 'digest' && channel === 'telegram'
+    ? await d.select({ stats: s.runs.stats }).from(s.runs).where(eq(s.runs.kind, 'collect')).orderBy(desc(s.runs.startedAt)).limit(1) : [];
+  const coverageDegraded = !!lastCollect?.stats?.coverageDegraded;
+  const empty = !marks.length && (kind === 'urgent' || channel !== 'telegram' || (!pendingCount && !suggestAutoPublish.length && !needsVerificationCount && !coverageDegraded));
+  return { kind, channel, items: out, marks, pendingCount, suggestAutoPublish, needsVerificationCount, coverageDegraded, empty, blockedCount: blocked.size };
 }
 
 /** 预览是纯读取，不能仅凭获取消息就把内容记为已发送。 */
@@ -362,7 +365,7 @@ admin.post('/notify/claim', async c => {
   const day = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
   const content = notice.marks.length
     ? JSON.stringify({ kind: notice.kind, channel: notice.channel, marks: notice.marks })
-    : JSON.stringify({ kind: notice.kind, channel: notice.channel, day, pendingCount: notice.pendingCount, suggestAutoPublish: notice.suggestAutoPublish, needsVerificationCount: notice.needsVerificationCount });
+    : JSON.stringify({ kind: notice.kind, channel: notice.channel, day, pendingCount: notice.pendingCount, suggestAutoPublish: notice.suggestAutoPublish, needsVerificationCount: notice.needsVerificationCount, coverageDegraded: notice.coverageDegraded });
   const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(content));
   const fingerprint = [...new Uint8Array(hash)].map(x => x.toString(16).padStart(2, '0')).join('');
   const id = crypto.randomUUID();
@@ -441,7 +444,7 @@ admin.get('/health', async c => {
     .from(s.deliveries).where(inArray(s.deliveries.status, ['unknown', 'pending']));
   const needsVerification = (await d.select().from(s.offers).where(eq(s.offers.reviewState, 'approved')))
     .filter(offer => liveStatus(offer) === 'stale').map(offer => ({ id: offer.id, title: offer.title, evidenceUrl: offer.evidence.url }));
-  return c.json({ tokensToday: b?.t ?? 0, costMonthCny: b?.c ?? 0, sources: allSources, lastSuccessfulCollect: lastOk?.finishedAt ?? null,
+  return c.json({ tokensToday: b?.t ?? 0, tokenCap: Number(c.env.DAILY_TOKEN_CAP ?? 0), costMonthCny: b?.c ?? 0, coverageDegraded: !!lastOk?.stats?.coverageDegraded, sources: allSources, lastSuccessfulCollect: lastOk?.finishedAt ?? null,
     hoursSince: hours, collectStale: hours === null || hours > 8, failingSources: failing, uncertainDeliveries, needsVerification });
 });
 

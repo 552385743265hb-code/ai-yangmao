@@ -34,7 +34,7 @@ app.get('/api/health', c => c.json({ ok: true, time: new Date().toISOString() })
 
 app.get('/api/meta', async c => {
   const [lastOk] = await db(c.env).select().from(s.runs).where(and(eq(s.runs.kind, 'collect'), eq(s.runs.ok, true))).orderBy(desc(s.runs.finishedAt)).limit(1);
-  return c.json({ lastSuccessfulCollect: lastOk?.finishedAt ?? null });
+  return c.json({ lastSuccessfulCollect: lastOk?.finishedAt ?? null, coverageDegraded: !!lastOk?.stats?.coverageDegraded });
 });
 
 /** 覆盖范围页：监控了哪些渠道、健康状况。不含任何密钥或内部地址以外的信息。 */
@@ -49,7 +49,9 @@ app.get('/api/coverage', async c => {
     const k = (byKind[x.kind] ??= { total: 0, enabled: 0, failing: 0 });
     k.total++; if (x.enabled) k.enabled++; if (x.enabled && unhealthy(x)) k.failing++;
   }
-  return c.json({ platforms, sources: srcs.filter(x => x.enabled).length, byKind, lastSuccessfulCollect: lastOk?.finishedAt ?? null, officialPages: srcs.filter(x => x.enabled && x.platformId).map(x => ({ platformId: x.platformId, url: x.url, kind: x.kind, healthy: !unhealthy(x) })) });
+  return c.json({ platforms, sources: srcs.filter(x => x.enabled).length, byKind, lastSuccessfulCollect: lastOk?.finishedAt ?? null,
+    coverageDegraded: !!lastOk?.stats?.coverageDegraded,
+    officialPages: srcs.filter(x => x.enabled && x.platformId).map(x => ({ platformId: x.platformId, url: x.url, kind: x.kind, healthy: !unhealthy(x) })) });
 });
 
 const listQuery = z.object({
@@ -356,13 +358,13 @@ ingest.post('/model-budget/reserve', async c => {
   const body = z.object({ provider: z.string().max(40), tokens: z.number().int().positive().max(400000), costCny: z.number().nonnegative().max(1000) })
     .safeParse(await c.req.json().catch(() => null));
   if (!body.success) return c.json({ error: '预算预留参数不正确' }, 400);
-  const tokenCap = Number(c.env.DAILY_TOKEN_CAP ?? 200000), costCap = Number(c.env.MONTHLY_COST_CAP_CNY ?? 10);
-  if (!Number.isFinite(tokenCap) || !Number.isFinite(costCap) || tokenCap <= 0 || costCap < 0) return c.json({ error: '服务端预算配置不正确' }, 503);
+  const tokenCap = Number(c.env.DAILY_TOKEN_CAP ?? 0), costCap = Number(c.env.MONTHLY_COST_CAP_CNY ?? 10);
+  if (!Number.isFinite(tokenCap) || !Number.isFinite(costCap) || tokenCap < 0 || costCap < 0) return c.json({ error: '服务端预算配置不正确' }, 503);
   const nowIso = new Date().toISOString(), today = nowIso.slice(0, 10), month = nowIso.slice(0, 7);
   // 一条 INSERT ... WHERE 同时判定与占用余额，多个并发采集任务也不能越过上限。
   const reserved = await c.env.DB.prepare(`INSERT INTO runs (kind,started_at,finished_at,ok,stats,tokens,cost_cny)
     SELECT 'model', ?1, ?1, 0, ?2, ?3, ?4
-    WHERE (SELECT COALESCE(SUM(tokens),0) FROM runs WHERE substr(started_at,1,10)=?5) + ?3 <= ?6
+    WHERE (?6 = 0 OR (SELECT COALESCE(SUM(tokens),0) FROM runs WHERE substr(started_at,1,10)=?5) + ?3 <= ?6)
       AND (SELECT COALESCE(SUM(cost_cny),0) FROM runs WHERE substr(started_at,1,7)=?7) + ?4 <= ?8
     RETURNING id`).bind(nowIso, JSON.stringify({ state: 'reserved', provider: body.data.provider }), body.data.tokens,
     body.data.costCny, today, tokenCap, month, costCap).first<{ id: number }>();

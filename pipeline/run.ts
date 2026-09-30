@@ -6,7 +6,7 @@ import { DeferError, extract, llmAvailable, paidAvailable, type Extracted } from
 import { BudgetExhaustedError, modelBudget } from './budget';
 import { offerIn, type LeadIn, type OfferIn } from '../src/shared/ingest';
 
-const DAILY_TOKEN_CAP = Number(process.env.DAILY_TOKEN_CAP ?? 200000);
+const DAILY_TOKEN_CAP = Number(process.env.DAILY_TOKEN_CAP ?? 0); // 0 = 调试阶段不设每日 token 总上限
 const MONTHLY_COST_CAP = Number(process.env.MONTHLY_COST_CAP_CNY ?? 10);
 let costLeft = MONTHLY_COST_CAP;
 const DRY = process.env.DRY_RUN === '1';
@@ -14,8 +14,8 @@ const FORCE = process.env.FORCE === '1'; // 忽略上次的哈希，强制重新
 const LEAD_LIMIT = Number(process.env.LEAD_LIMIT ?? 25);
 const onlyList = (process.env.ONLY_SOURCES ?? '').split(',').map(s => s.trim()).filter(Boolean);
 const only = onlyList.length ? onlyList : null; // 留空 = 全部信源
-const stats = { leadsTriaged: 0, leadOffers: 0, costCny: 0, deferred: 0, sources: 0, ok: 0, failed: 0, changed: 0, leads: 0, offers: 0, pending: 0, extractSkipped: 0, tokens: 0, errors: [] as string[] };
-let tokensLeft = DAILY_TOKEN_CAP;
+const stats = { leadsTriaged: 0, leadOffers: 0, costCny: 0, deferred: 0, sources: 0, ok: 0, failed: 0, changed: 0, leads: 0, offers: 0, pending: 0, extractSkipped: 0, tokens: 0, coverageDegraded: false, errors: [] as string[] };
+let tokensLeft = DAILY_TOKEN_CAP > 0 ? DAILY_TOKEN_CAP : Infinity;
 
 const log = (...a: unknown[]) => console.log(new Date().toISOString().slice(11, 19), ...a);
 
@@ -304,13 +304,13 @@ async function main() {
   const startedAt = new Date().toISOString();
   if (!DRY) {
     const b = await api<{ tokensToday: number; costMonthCny: number }>('/budget');
-    tokensLeft = Math.max(0, DAILY_TOKEN_CAP - b.tokensToday);
+    tokensLeft = DAILY_TOKEN_CAP > 0 ? Math.max(0, DAILY_TOKEN_CAP - b.tokensToday) : Infinity;
     costLeft = Math.max(0, MONTHLY_COST_CAP - b.costMonthCny);
   }
   const { sources } = await api<{ sources: Source[] }>('/sources');
   // config.relay 表示由别的机器负责（例如 Reddit 由常开 Mac 中继），云端跳过
   const list = sources.filter(s => (!only || only.includes(s.id)) && !(s.config as { relay?: string } | undefined)?.relay);
-  log(`共 ${list.length} 个信源；今日模型预算剩 ${tokensLeft} tokens，本月付费兜底剩 ¥${costLeft.toFixed(2)}${DRY ? '；演练模式，不写入' : ''}`);
+  log(`共 ${list.length} 个信源；今日 token ${Number.isFinite(tokensLeft) ? `剩 ${tokensLeft}` : '不设总上限'}，本月付费兜底剩 ¥${costLeft.toFixed(2)}${DRY ? '；演练模式，不写入权益' : ''}`);
   const queue = [...list];
   await Promise.all(Array.from({ length: 4 }, async () => { while (queue.length) await runSource(queue.shift()!); }));
   await verifyExistingOffers(sources);
@@ -318,8 +318,8 @@ async function main() {
     const { platforms } = await fetch(`${(process.env.API_BASE ?? 'https://ai-yangmao.com').replace(/\/$/, '')}/api/platforms`).then(r => r.json()) as { platforms: Plat[] };
     await triageLeads(platforms);
   } catch (e) { stats.errors.push(`线索研判：${(e as Error).message}`); log('线索研判出错', (e as Error).message); }
-  const ok = !only && stats.sources > 0 && stats.failed === 0 && stats.ok === stats.sources && stats.deferred === 0 && stats.extractSkipped === 0
-    && !list.some(source => source.deferThisRun);
+  const ok = !only && stats.sources > 0 && stats.failed === 0 && stats.ok === stats.sources;
+  stats.coverageDegraded = stats.deferred > 0 || stats.extractSkipped > 0 || list.some(source => source.deferThisRun);
   log('完成', JSON.stringify(stats));
   // 模型调用逐次在 runs(kind=model) 预留并结算；汇总行不能再次计费。
   if (!DRY) await api('/runs', { kind: 'collect', startedAt, finishedAt: new Date().toISOString(), ok, stats, tokens: 0, costCny: 0 });

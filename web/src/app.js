@@ -403,7 +403,7 @@ const ph = (title, desc = '', extra = '') => `<div class="ph"><div><h1>${title}<
 const secH = (title, hint = '') => `<div class="sec-h"><h2>${title}</h2>${hint ? `<span class="hint">${hint}</span>` : ''}</div>`;
 function ribbon() {
   const ago2 = LAST_OK ? Math.max(0, Math.round((NOW - LAST_OK) / 3600000)) : null;
-  return `<div class="ribbon"><span class="live"><i></i>最近成功更新：<b>${LAST_OK ? `${ago2 < 1 ? '1 小时内' : ago2 + ' 小时前'}（${hm(LAST_OK)}）` : '—'}</b></span><span>只收能追到官方出处的羊毛，每条都附官方原文</span></div>`;
+  return `<div class="ribbon"><span class="live"><i></i>最近成功抓取：<b>${LAST_OK ? `${ago2 < 1 ? '1 小时内' : ago2 + ' 小时前'}（${hm(LAST_OK)}）` : '—'}</b></span><span>${META.coverageDegraded ? '部分新增内容待抽取；现有权益仍按官方证据复核' : '只收能追到官方出处的羊毛，每条都附官方原文'}</span></div>`;
 }
 function ocard(o) {
   const [frac, col] = barOf(o);
@@ -1183,7 +1183,7 @@ async function admHealth() {
   $('#admBody').innerHTML = `<section class="kpis" style="margin-top:0">
       <div class="kpi"><span class="k-l">最近成功采集</span><span class="k-v">${h.hoursSince == null ? '—' : h.hoursSince.toFixed(1)}<small>小时前</small></span></div>
       <div class="kpi"><span class="k-l">连续失败的信源</span><span class="k-v">${h.failingSources.length}<small>个</small></span></div>
-      <div class="kpi"><span class="k-l">今日模型 token</span><span class="k-v">${Math.round(h.tokensToday / 1000)}<small>k / 200k</small></span></div>
+      <div class="kpi"><span class="k-l">今日模型 token</span><span class="k-v">${Math.round(h.tokensToday / 1000)}<small>k${h.tokenCap ? ` / ${Math.round(h.tokenCap / 1000)}k` : ' · 调试期不设总上限'}</small></span></div>
       <div class="kpi"><span class="k-l">本月付费兜底</span><span class="k-v">¥${h.costMonthCny.toFixed(2)}<small>/ ¥10</small></span></div></section>
     ${h.uncertainDeliveries?.length ? `<section>${secH('投递结果需核对', '先到 Telegram 核对是否收到，再选择结果')}${h.uncertainDeliveries.map(x => `<div class="card" data-delivery="${esc(x.id)}" style="margin-bottom:8px"><b>${esc(x.kind)} · ${esc(x.status)}</b><p class="small muted">${esc(x.id)} · ${esc(x.createdAt)} ${x.error ? `· ${esc(x.error)}` : ''}</p><input type="text" placeholder="填写人工核对依据（至少 4 字）" data-reason style="width:100%;margin-bottom:8px"><div class="row"><button class="btn sm good" data-outcome="delivered">确认已收到</button><button class="btn sm bad" data-outcome="not_delivered">确认没收到，可重试</button></div></div>`).join('')}</section>` : ''}
     <div class="card tbl" style="padding:4px 8px"><table><thead><tr><th>信源</th><th>类型</th><th>最近成功</th><th>状态</th><th>放权</th></tr></thead><tbody>${h.sources.filter(x => x.enabled).map(x => { const stale = !x.lastOkAt || Date.now() - Date.parse(x.lastOkAt) > 12 * 3600_000; return `<tr><td title="${esc(x.url)}">${esc(x.id)}</td><td class="small muted">${x.kind}</td><td class="small">${x.lastOkAt ? esc(x.lastOkAt.slice(5, 16).replace('T', ' ')) : '—'}</td><td>${x.failStreak >= 3 ? stBadge('critical', '✕', `连续失败 ${x.failStreak} 次`) : stale ? stBadge('warn', '!', '超过 12 小时未成功') : x.failStreak ? stBadge('warn', '!', '偶发失败') : stBadge('good', '✓', '正常')}</td><td class="small">${x.autoPublish ? '自动上架' : `人工（${x.cleanStreak}/5）`}</td></tr>`; }).join('')}</tbody></table></div>`;

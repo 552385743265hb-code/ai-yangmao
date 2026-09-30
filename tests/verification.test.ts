@@ -231,6 +231,14 @@ describe('durable model budget', () => {
     expect((await call('ingest/budget')).body).toMatchObject({ tokensToday: 1000, costMonthCny: 0.2 });
     expect((await call('ingest/model-budget/reserve', request)).status).toBe(200);
   });
+  it('allows unlimited daily free-model tokens in debug mode while keeping the monthly paid ceiling', async () => {
+    env.DAILY_TOKEN_CAP = '0';
+    env.MONTHLY_COST_CAP_CNY = '1';
+    for (let i = 0; i < 3; i++) expect((await call('ingest/model-budget/reserve', { provider: 'free-model', tokens: 300000, costCny: 0 })).status).toBe(200);
+    expect((await call('ingest/budget')).body.tokensToday).toBe(900000);
+    expect((await call('ingest/model-budget/reserve', { provider: 'paid-model', tokens: 10000, costCny: 0.7 })).status).toBe(200);
+    expect((await call('ingest/model-budget/reserve', { provider: 'paid-model', tokens: 10000, costCny: 0.4 })).status).toBe(429);
+  });
 });
 
 describe('public status and subscriptions', () => {
