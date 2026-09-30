@@ -104,6 +104,10 @@ async function publicationError(env: Env, offer: OfferRow): Promise<string | nul
     const officialHost = new URL(platform.site).hostname.toLowerCase();
     if (host === officialHost || host.endsWith('.' + officialHost)) return null;
   }
+  // 平台已登记的任一官方信源的域名也算官方出处（如 MiniMax 官网是 minimaxi.com，文档在 platform.minimax.cn）。
+  // 之前只认这条福利自己的来源信源，管理员手动补录的条目没有来源信源，会被误拦（2026-10-01）
+  const official = await db(env).select({ url: s.sources.url, tier: s.sources.tier }).from(s.sources).where(eq(s.sources.platformId, platform.id));
+  if (official.some(x => ['site', 'docs', 'official'].includes(x.tier) && (() => { try { return new URL(x.url).hostname.toLowerCase() === host; } catch { return false; } })())) return null;
   return '证据链接不属于该平台的官网或已登记官方信源';
 }
 

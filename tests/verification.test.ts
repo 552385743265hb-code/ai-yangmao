@@ -97,6 +97,13 @@ describe('official evidence verification', () => {
 });
 
 describe('review gates and preserved public version', () => {
+  it('证据链接在平台已登记官方信源的域名下（不同于官网域名）也能通过', async () => {
+    sqlite.prepare("INSERT INTO sources (id,platform_id,kind,url,tier,config) VALUES ('vendor-docs','vendor','web_list','https://docs.vendor-other.example/pricing','docs','{}')").run();
+    await call('ingest/offers', [{ ...offer, sourceId: undefined, evidence: { ...evidence, url: 'https://docs.vendor-other.example/announcements' } }]);
+    const r = await call('admin/offers/vendor-free/approve', {}, 'admin');
+    expect(r.status, JSON.stringify(r.body)).toBe(200);
+  });
+
   it('内部核验记录只给管理员看，公开接口不输出', async () => {
     await call('ingest/offers', [offer]);
     await call('admin/offers/vendor-free/approve', {}, 'admin');

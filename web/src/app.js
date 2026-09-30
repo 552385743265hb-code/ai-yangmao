@@ -1158,13 +1158,15 @@ async function admQueue() {
   const done = (el, msg) => { el.style.opacity = .45; el.querySelectorAll('button,input,select').forEach(x => { x.disabled = true; }); toast(msg); };
   $$('[data-code]', box).forEach(el => {
     const code = el.dataset.code, o = q.pending.find(x => x.code === code);
-    el.querySelector('[data-act="approve"]')?.addEventListener('click', async () => { try { const r = await adm(`/offers/${code}/approve`, {}); done(el, `已通过：${r.title}`); } catch (e) { toast(e.message); } });
+    // 失败原因显示在按钮旁边，不只在顶部闪一下
+    const actMsg = (msg, bad = true) => { let m = el.querySelector('[data-actmsg]'); if (!m) { m = document.createElement('p'); m.dataset.actmsg = ''; m.className = 'small'; m.style.cssText = 'margin:0;font-weight:600'; el.querySelector('[data-act]').closest('.row').after(m); } m.style.color = bad ? 'var(--critical-ink)' : ''; m.textContent = msg; };
+    el.querySelector('[data-act="approve"]')?.addEventListener('click', async () => { try { const r = await adm(`/offers/${code}/approve`, {}); done(el, `已通过：${r.title}`); } catch (e) { actMsg('没有通过：' + e.message); } });
     // 社区传闻 → 管理员实测 → 通过：证据级别改为“管理员实测”，链接和摘录保持原样
     el.querySelector('[data-act="tested"]')?.addEventListener('click', async () => {
       try {
         await adm(`/offers/${code}/edit`, { fields: { evidence: { url: o.evidenceUrl, tier: 'tested', capturedAt: new Date().toISOString(), excerpts: o.excerpts } }, approve: true, reason: '社区转述，管理员亲自领到过', reasonCode: 'wrong_field' });
         done(el, `已按管理员实测通过：${o.title}`);
-      } catch (e) { toast('没有通过：' + e.message); }
+      } catch (e) { actMsg('没有通过：' + e.message); }
     });
     el.querySelector('[data-act="note"]').addEventListener('click', async () => { try { await adm(`/offers/${code}/note`, { note: el.querySelector('[data-note]').value }); toast('心得已保存'); } catch (e) { toast('没有保存：' + e.message); } });
     const rb = el.querySelector('[data-rejectbox]');
