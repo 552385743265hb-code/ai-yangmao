@@ -1,6 +1,6 @@
 // 各类信源的采集器。线索类（AIHOT / HN / Reddit）只产出线索，官方页面才会交给模型抽取成羊毛。
 import { XMLParser } from 'fast-xml-parser';
-import { UA, fetchRetry, fetchText, isLead, sleep } from './lib';
+import { BROWSER_UA, UA, fetchRetry, fetchText, isLead, sleep } from './lib';
 import type { LeadIn } from '../src/shared/ingest';
 
 export interface Source { id: string; kind: string; url: string; tier: string; platformId: string | null; lastHash: string | null; lastText?: string | null; lastOkAt?: string | null; config?: Record<string, unknown>; deferThisRun?: boolean; platform: { id: string; name: string; status: string } | null; autoPublish: boolean }
@@ -104,9 +104,22 @@ async function redditOnce(src: Source): Promise<LeadIn[]> {
 }
 
 /** 第三方 RSS 线索（LINUX DO 福利羊毛、IT之家 等）。config.filter = "all" 时整版都算线索（版块本身就是羊毛区）。 */
+/**
+ * 本地中继（Mac）用 curl 抓社区 RSS：LINUX DO 前面的 Cloudflare 会按 Node 请求特征和频率间歇性发人机验证（403），
+ * 换 UA 也不稳定，curl 在同一台机器上稳定返回 200（2026-10-01 排查）。
+ */
+async function curlText(url: string): Promise<string> {
+  const { execFile } = await import('node:child_process');
+  const out = await new Promise<string>((resolve, reject) => execFile('curl', ['-sL', '--max-time', '30', '-A', BROWSER_UA, '-H', 'Accept: application/rss+xml,application/xml;q=0.9,*/*;q=0.8', '-w', '\n%{http_code}', url],
+    { maxBuffer: 20 * 1024 * 1024 }, (err, stdout) => (err ? reject(err) : resolve(stdout))));
+  const cut = out.lastIndexOf('\n'), code = Number(out.slice(cut + 1));
+  if (code !== 200) throw new Error(`HTTP ${code}`);
+  return out.slice(0, cut);
+}
+
 export async function feed(src: Source): Promise<LeadIn[]> {
-  const cfg = (src.config ?? {}) as { origin?: LeadIn['origin']; filter?: 'all' | 'lead' };
-  const items = parseFeed(await fetchText(src.url, { accept: 'application/rss+xml' }));
+  const cfg = (src.config ?? {}) as { origin?: LeadIn['origin']; filter?: 'all' | 'lead'; relay?: string };
+  const items = parseFeed(cfg.relay === 'mac' ? await curlText(src.url) : await fetchText(src.url, { accept: 'application/rss+xml' }));
   return items
     .filter(i => i.link && (cfg.filter === 'all' || isLead(`${i.title} ${i.summary.slice(0, 300)}`)))
     .map(i => ({ origin: cfg.origin ?? 'media', url: i.link, title: i.title.slice(0, 300), raw: i.summary.slice(0, 4000) }));

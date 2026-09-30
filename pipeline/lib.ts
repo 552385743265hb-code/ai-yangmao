@@ -34,6 +34,8 @@ export async function fetchText(url: string, opts: { accept?: string; timeoutMs?
   return (await fetchTextWithUrl(url, opts)).text;
 }
 
+// 本地中继用 curl 抓社区站时使用的浏览器 UA（见 collectors.ts curlText）
+export const BROWSER_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0 Safari/537.36';
 async function fetchTextWithUrl(url: string, opts: { accept?: string; timeoutMs?: number } = {}): Promise<{ text: string; finalUrl: string }> {
   const res = await fetchRetry(url, { headers: { 'User-Agent': UA, Accept: opts.accept ?? '*/*', 'Accept-Language': 'en-US,en;q=0.9,zh-CN;q=0.8' }, signal: AbortSignal.timeout(opts.timeoutMs ?? 30000) });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);

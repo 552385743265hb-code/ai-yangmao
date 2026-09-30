@@ -14,7 +14,16 @@ const mine = sources.filter(s => (s.config as { relay?: string } | undefined)?.r
 let created = 0, failed = 0;
 for (const src of mine) {
   try {
-    const leads = src.kind === 'feed' ? await feed(src) : await reddit(src);
+    // LINUX DO 前面的 Cloudflare 会按频率间歇性返回 403：等 1 分钟重试，最多 2 次（2026-10-01 连续两轮 403）
+    const once = () => (src.kind === 'feed' ? feed(src) : reddit(src));
+    let leads: Awaited<ReturnType<typeof once>> | undefined;
+    for (let attempt = 0; ; attempt++) {
+      try { leads = await once(); break; } catch (e) {
+        if (attempt >= 2 || !/HTTP (403|429)/.test(String(e))) throw e;
+        console.log(new Date().toISOString(), src.id, `被拦截，60 秒后第 ${attempt + 1} 次重试`);
+        await new Promise(r => setTimeout(r, 60_000));
+      }
+    }
     for (let i = 0; i < leads.length; i += 100) created += (await api<{ created: number }>('/leads', leads.slice(i, i + 100))).created;
     await api('/snapshots', { sourceId: src.id, url: src.url, ok: true });
     console.log(new Date().toISOString(), src.id, `线索 ${leads.length} 条`);
