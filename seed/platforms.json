@@ -611,9 +611,9 @@
   },
   {
    "id": "liblibtv",
-   "name": "LibTV（LiblibAI 视频）",
+   "name": "LiblibAI（含 LibTV）",
    "type": "tool",
-   "site": "https://www.liblib.tv",
+   "site": "https://www.liblib.art",
    "x": []
   },
   {
@@ -774,13 +774,6 @@
    "name": "Lovart",
    "type": "tool",
    "site": "https://www.lovart.ai",
-   "x": []
-  },
-  {
-   "id": "liblib",
-   "name": "LiblibAI（哩布哩布）",
-   "type": "tool",
-   "site": "https://www.liblib.art",
    "x": []
   },
   {
@@ -2043,7 +2036,7 @@
   },
   {
    "id": "liblib-home",
-   "platform": "liblib",
+   "platform": "liblibtv",
    "kind": "web_list",
    "url": "https://www.liblib.art/",
    "tier": "site"

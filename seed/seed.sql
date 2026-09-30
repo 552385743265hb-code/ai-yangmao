@@ -151,7 +151,7 @@ INSERT INTO platforms (id, name, type, site, x_handles, staff_handles) VALUES ('
   ON CONFLICT(id) DO UPDATE SET name=excluded.name, type=excluded.type, site=excluded.site, x_handles=excluded.x_handles, staff_handles=excluded.staff_handles, updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now');
 INSERT INTO platforms (id, name, type, site, x_handles, staff_handles) VALUES ('genspark', 'Genspark', 'tool', 'https://www.genspark.ai', '[]', '[]')
   ON CONFLICT(id) DO UPDATE SET name=excluded.name, type=excluded.type, site=excluded.site, x_handles=excluded.x_handles, staff_handles=excluded.staff_handles, updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now');
-INSERT INTO platforms (id, name, type, site, x_handles, staff_handles) VALUES ('liblibtv', 'LibTV（LiblibAI 视频）', 'tool', 'https://www.liblib.tv', '[]', '[]')
+INSERT INTO platforms (id, name, type, site, x_handles, staff_handles) VALUES ('liblibtv', 'LiblibAI（含 LibTV）', 'tool', 'https://www.liblib.art', '[]', '[]')
   ON CONFLICT(id) DO UPDATE SET name=excluded.name, type=excluded.type, site=excluded.site, x_handles=excluded.x_handles, staff_handles=excluded.staff_handles, updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now');
 INSERT INTO platforms (id, name, type, site, x_handles, staff_handles) VALUES ('lovable', 'Lovable', 'tool', 'https://lovable.dev', '[]', '[]')
   ON CONFLICT(id) DO UPDATE SET name=excluded.name, type=excluded.type, site=excluded.site, x_handles=excluded.x_handles, staff_handles=excluded.staff_handles, updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now');
@@ -196,8 +196,6 @@ INSERT INTO platforms (id, name, type, site, x_handles, staff_handles) VALUES ('
 INSERT INTO platforms (id, name, type, site, x_handles, staff_handles) VALUES ('dreamina', 'Dreamina（CapCut 国际版即梦）', 'tool', 'https://dreamina.capcut.com', '[]', '[]')
   ON CONFLICT(id) DO UPDATE SET name=excluded.name, type=excluded.type, site=excluded.site, x_handles=excluded.x_handles, staff_handles=excluded.staff_handles, updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now');
 INSERT INTO platforms (id, name, type, site, x_handles, staff_handles) VALUES ('lovart', 'Lovart', 'tool', 'https://www.lovart.ai', '[]', '[]')
-  ON CONFLICT(id) DO UPDATE SET name=excluded.name, type=excluded.type, site=excluded.site, x_handles=excluded.x_handles, staff_handles=excluded.staff_handles, updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now');
-INSERT INTO platforms (id, name, type, site, x_handles, staff_handles) VALUES ('liblib', 'LiblibAI（哩布哩布）', 'tool', 'https://www.liblib.art', '[]', '[]')
   ON CONFLICT(id) DO UPDATE SET name=excluded.name, type=excluded.type, site=excluded.site, x_handles=excluded.x_handles, staff_handles=excluded.staff_handles, updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now');
 INSERT INTO platforms (id, name, type, site, x_handles, staff_handles) VALUES ('adobe-firefly', 'Adobe Firefly', 'tool', 'https://firefly.adobe.com', '[]', '[]')
   ON CONFLICT(id) DO UPDATE SET name=excluded.name, type=excluded.type, site=excluded.site, x_handles=excluded.x_handles, staff_handles=excluded.staff_handles, updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now');
@@ -553,7 +551,7 @@ INSERT INTO sources (id, platform_id, kind, url, tier, config) VALUES ('dreamina
   ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
 INSERT INTO sources (id, platform_id, kind, url, tier, config) VALUES ('lovart-pricing', 'lovart', 'web_list', 'https://www.lovart.ai/pricing', 'site', '{}')
   ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
-INSERT INTO sources (id, platform_id, kind, url, tier, config) VALUES ('liblib-home', 'liblib', 'web_list', 'https://www.liblib.art/', 'site', '{}')
+INSERT INTO sources (id, platform_id, kind, url, tier, config) VALUES ('liblib-home', 'liblibtv', 'web_list', 'https://www.liblib.art/', 'site', '{}')
   ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
 INSERT INTO sources (id, platform_id, kind, url, tier, config) VALUES ('adobe-firefly-credits-faq', 'adobe-firefly', 'web_list', 'https://helpx.adobe.com/creative-cloud/apps/generative-ai/generative-credits-faq.html', 'docs', '{}')
   ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
