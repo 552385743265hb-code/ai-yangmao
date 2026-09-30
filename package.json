@@ -12,8 +12,9 @@
     "seed:sql": "node scripts/gen-seed.ts > seed/seed.sql",
     "seed:local": "npm run seed:sql && wrangler d1 execute ai-yangmao --local --file seed/seed.sql",
     "seed": "npm run seed:sql && wrangler d1 execute ai-yangmao --remote --file seed/seed.sql",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.node.json",
+    "test": "vitest run",
+    "collect": "tsx pipeline/run.ts"
   },
   "dependencies": {
     "drizzle-orm": "^0.45.3",
@@ -22,7 +23,12 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260929.1",
+    "@mozilla/readability": "^0.6.0",
+    "@types/node": "^26.6.3",
     "drizzle-kit": "^0.31.11",
+    "fast-xml-parser": "^5.11.2",
+    "linkedom": "^0.18.13",
+    "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "vitest": "^5.0.2",
     "wrangler": "^4.144.0"

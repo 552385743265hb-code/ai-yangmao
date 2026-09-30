@@ -169,12 +169,6 @@ INSERT INTO platforms (id, name, type, site, x_handles, staff_handles) VALUES ('
   ON CONFLICT(id) DO UPDATE SET name=excluded.name, type=excluded.type, site=excluded.site, x_handles=excluded.x_handles, staff_handles=excluded.staff_handles, updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now');
 INSERT INTO platforms (id, name, type, site, x_handles, staff_handles) VALUES ('otter', 'Otter.ai', 'tool', 'https://otter.ai', '[]', '[]')
   ON CONFLICT(id) DO UPDATE SET name=excluded.name, type=excluded.type, site=excluded.site, x_handles=excluded.x_handles, staff_handles=excluded.staff_handles, updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now');
-INSERT INTO platforms (id, name, type, site, x_handles, staff_handles) VALUES ('palantir', 'Palantir（AIP）', 'tool', 'https://www.palantir.com', '[]', '[]')
-  ON CONFLICT(id) DO UPDATE SET name=excluded.name, type=excluded.type, site=excluded.site, x_handles=excluded.x_handles, staff_handles=excluded.staff_handles, updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now');
-INSERT INTO platforms (id, name, type, site, x_handles, staff_handles) VALUES ('harvey', 'Harvey', 'tool', 'https://www.harvey.ai', '[]', '[]')
-  ON CONFLICT(id) DO UPDATE SET name=excluded.name, type=excluded.type, site=excluded.site, x_handles=excluded.x_handles, staff_handles=excluded.staff_handles, updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now');
-INSERT INTO platforms (id, name, type, site, x_handles, staff_handles) VALUES ('pixiebrix', 'PixieBrix', 'tool', 'https://www.pixiebrix.com', '[]', '[]')
-  ON CONFLICT(id) DO UPDATE SET name=excluded.name, type=excluded.type, site=excluded.site, x_handles=excluded.x_handles, staff_handles=excluded.staff_handles, updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now');
 INSERT INTO platforms (id, name, type, site, x_handles, staff_handles) VALUES ('n8n', 'n8n', 'tool', 'https://n8n.io', '[]', '[]')
   ON CONFLICT(id) DO UPDATE SET name=excluded.name, type=excluded.type, site=excluded.site, x_handles=excluded.x_handles, staff_handles=excluded.staff_handles, updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now');
 INSERT INTO platforms (id, name, type, site, x_handles, staff_handles) VALUES ('typesafe', 'TypeSafe · Jev', 'new', NULL, '["@typesafeai"]', '[]')
@@ -208,4 +202,38 @@ INSERT INTO sources (id, platform_id, kind, url, tier) VALUES ('reddit-localllam
 INSERT INTO sources (id, platform_id, kind, url, tier) VALUES ('reddit-claudeai', NULL, 'reddit', 'https://www.reddit.com/r/ClaudeAI/new/.rss', 'lead')
   ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier;
 INSERT INTO sources (id, platform_id, kind, url, tier) VALUES ('reddit-singularity', NULL, 'reddit', 'https://www.reddit.com/r/singularity/new/.rss', 'lead')
+  ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier;
+INSERT INTO sources (id, platform_id, kind, url, tier) VALUES ('google-gemini-pricing', 'google', 'web_list', 'https://ai.google.dev/gemini-api/docs/pricing', 'docs')
+  ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier;
+INSERT INTO sources (id, platform_id, kind, url, tier) VALUES ('google-gemini-limits', 'google', 'web_list', 'https://ai.google.dev/gemini-api/docs/rate-limits', 'docs')
+  ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier;
+INSERT INTO sources (id, platform_id, kind, url, tier) VALUES ('google-gemini-cli', 'google', 'web_list', 'https://github.com/google-gemini/gemini-cli', 'docs')
+  ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier;
+INSERT INTO sources (id, platform_id, kind, url, tier) VALUES ('qwen-code-readme', 'qwen', 'web_list', 'https://github.com/QwenLM/qwen-code', 'docs')
+  ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier;
+INSERT INTO sources (id, platform_id, kind, url, tier) VALUES ('aliyun-free-quota', 'aliyun', 'web_list', 'https://help.aliyun.com/zh/model-studio/new-free-quota', 'docs')
+  ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier;
+INSERT INTO sources (id, platform_id, kind, url, tier) VALUES ('opencode-zen', 'opencode', 'web_list', 'https://opencode.ai/docs/zen/', 'docs')
+  ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier;
+INSERT INTO sources (id, platform_id, kind, url, tier) VALUES ('cloudflare-ai-pricing', 'cloudflare', 'web_list', 'https://developers.cloudflare.com/workers-ai/platform/pricing/', 'docs')
+  ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier;
+INSERT INTO sources (id, platform_id, kind, url, tier) VALUES ('vercel-gateway-pricing', 'vercel', 'web_list', 'https://vercel.com/docs/ai-gateway/pricing', 'docs')
+  ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier;
+INSERT INTO sources (id, platform_id, kind, url, tier) VALUES ('groq-limits', 'groq', 'web_list', 'https://console.groq.com/docs/rate-limits', 'docs')
+  ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier;
+INSERT INTO sources (id, platform_id, kind, url, tier) VALUES ('cerebras-limits', 'cerebras', 'web_list', 'https://inference-docs.cerebras.ai/support/rate-limits', 'docs')
+  ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier;
+INSERT INTO sources (id, platform_id, kind, url, tier) VALUES ('hf-inference-pricing', 'hf', 'web_list', 'https://huggingface.co/docs/inference-providers/pricing', 'docs')
+  ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier;
+INSERT INTO sources (id, platform_id, kind, url, tier) VALUES ('kiro-pricing', 'kiro', 'web_list', 'https://kiro.dev/pricing/', 'site')
+  ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier;
+INSERT INTO sources (id, platform_id, kind, url, tier) VALUES ('moonshot-limits', 'moonshot', 'web_list', 'https://platform.moonshot.cn/docs/pricing/limits', 'docs')
+  ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier;
+INSERT INTO sources (id, platform_id, kind, url, tier) VALUES ('zhipu-models', 'zhipu', 'web_list', 'https://docs.bigmodel.cn/cn/guide/start/model-overview', 'docs')
+  ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier;
+INSERT INTO sources (id, platform_id, kind, url, tier) VALUES ('deepseek-pricing', 'deepseek', 'web_list', 'https://api-docs.deepseek.com/zh-cn/quick_start/pricing', 'docs')
+  ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier;
+INSERT INTO sources (id, platform_id, kind, url, tier) VALUES ('cursor-changelog', 'cursor', 'web_list', 'https://cursor.com/changelog', 'site')
+  ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier;
+INSERT INTO sources (id, platform_id, kind, url, tier) VALUES ('openai-news-rss', 'openai', 'rss', 'https://openai.com/news/rss.xml', 'site')
   ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier;

@@ -796,6 +796,125 @@
       "kind": "reddit",
       "url": "https://www.reddit.com/r/singularity/new/.rss",
       "tier": "lead"
+    },
+    {
+      "id": "google-gemini-pricing",
+      "platform": "google",
+      "kind": "web_list",
+      "url": "https://ai.google.dev/gemini-api/docs/pricing",
+      "tier": "docs"
+    },
+    {
+      "id": "google-gemini-limits",
+      "platform": "google",
+      "kind": "web_list",
+      "url": "https://ai.google.dev/gemini-api/docs/rate-limits",
+      "tier": "docs"
+    },
+    {
+      "id": "google-gemini-cli",
+      "platform": "google",
+      "kind": "web_list",
+      "url": "https://github.com/google-gemini/gemini-cli",
+      "tier": "docs"
+    },
+    {
+      "id": "qwen-code-readme",
+      "platform": "qwen",
+      "kind": "web_list",
+      "url": "https://github.com/QwenLM/qwen-code",
+      "tier": "docs"
+    },
+    {
+      "id": "aliyun-free-quota",
+      "platform": "aliyun",
+      "kind": "web_list",
+      "url": "https://help.aliyun.com/zh/model-studio/new-free-quota",
+      "tier": "docs"
+    },
+    {
+      "id": "opencode-zen",
+      "platform": "opencode",
+      "kind": "web_list",
+      "url": "https://opencode.ai/docs/zen/",
+      "tier": "docs"
+    },
+    {
+      "id": "cloudflare-ai-pricing",
+      "platform": "cloudflare",
+      "kind": "web_list",
+      "url": "https://developers.cloudflare.com/workers-ai/platform/pricing/",
+      "tier": "docs"
+    },
+    {
+      "id": "vercel-gateway-pricing",
+      "platform": "vercel",
+      "kind": "web_list",
+      "url": "https://vercel.com/docs/ai-gateway/pricing",
+      "tier": "docs"
+    },
+    {
+      "id": "groq-limits",
+      "platform": "groq",
+      "kind": "web_list",
+      "url": "https://console.groq.com/docs/rate-limits",
+      "tier": "docs"
+    },
+    {
+      "id": "cerebras-limits",
+      "platform": "cerebras",
+      "kind": "web_list",
+      "url": "https://inference-docs.cerebras.ai/support/rate-limits",
+      "tier": "docs"
+    },
+    {
+      "id": "hf-inference-pricing",
+      "platform": "hf",
+      "kind": "web_list",
+      "url": "https://huggingface.co/docs/inference-providers/pricing",
+      "tier": "docs"
+    },
+    {
+      "id": "kiro-pricing",
+      "platform": "kiro",
+      "kind": "web_list",
+      "url": "https://kiro.dev/pricing/",
+      "tier": "site"
+    },
+    {
+      "id": "moonshot-limits",
+      "platform": "moonshot",
+      "kind": "web_list",
+      "url": "https://platform.moonshot.cn/docs/pricing/limits",
+      "tier": "docs"
+    },
+    {
+      "id": "zhipu-models",
+      "platform": "zhipu",
+      "kind": "web_list",
+      "url": "https://docs.bigmodel.cn/cn/guide/start/model-overview",
+      "tier": "docs"
+    },
+    {
+      "id": "deepseek-pricing",
+      "platform": "deepseek",
+      "kind": "web_list",
+      "url": "https://api-docs.deepseek.com/zh-cn/quick_start/pricing",
+      "tier": "docs"
+    },
+    {
+      "id": "cursor-changelog",
+      "platform": "cursor",
+      "kind": "web_list",
+      "url": "https://cursor.com/changelog",
+      "tier": "site"
+    },
+    {
+      "id": "openai-news-rss",
+      "platform": "openai",
+      "kind": "rss",
+      "url": "https://openai.com/news/rss.xml",
+      "tier": "site"
     }
   ]
 }

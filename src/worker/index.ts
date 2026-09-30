@@ -144,6 +144,49 @@ ingest.post('/offers', async c => {
   return c.json({ results });
 });
 
+/** 管线取待抓的信源，附带上次的内容哈希，用于判断有没有变化。 */
+ingest.get('/sources', async c => {
+  const d = db(c.env);
+  const rows = await d.select().from(s.sources).where(eq(s.sources.enabled, true));
+  const last = await c.env.DB.prepare(
+    'SELECT source_id, hash, text FROM snapshots WHERE id IN (SELECT MAX(id) FROM snapshots GROUP BY source_id)',
+  ).all<{ source_id: string; hash: string; text: string | null }>();
+  const snap = Object.fromEntries(last.results.map(r => [r.source_id, r]));
+  const plats = await d.select({ id: s.platforms.id, name: s.platforms.name, status: s.platforms.status }).from(s.platforms);
+  return c.json({ sources: rows.map(r => ({ ...r, lastHash: snap[r.id]?.hash ?? null, lastText: r.kind === 'rss' ? snap[r.id]?.text ?? null : null, platform: plats.find(p => p.id === r.platformId) ?? null })) });
+});
+
+/** 一次抓取的结果：成功时记录内容哈希（变化才存快照），失败时累计连续失败次数。 */
+ingest.post('/snapshots', async c => {
+  const body = z.object({
+    sourceId: z.string(), url: z.string(), ok: z.boolean(),
+    hash: z.string().optional(), text: z.string().max(60000).optional(), error: z.string().max(500).optional(),
+  }).safeParse(await c.req.json().catch(() => null));
+  if (!body.success) return c.json({ error: '数据格式不正确', issues: body.error.issues }, 400);
+  const b = body.data, d = db(c.env), nowIso = new Date().toISOString();
+  const [src] = await d.select().from(s.sources).where(eq(s.sources.id, b.sourceId));
+  if (!src) return c.json({ error: '没有这个信源' }, 404);
+  if (!b.ok) {
+    await d.update(s.sources).set({ failStreak: src.failStreak + 1, lastError: b.error ?? '抓取失败' }).where(eq(s.sources.id, b.sourceId));
+    return c.json({ failStreak: src.failStreak + 1 });
+  }
+  await d.update(s.sources).set({ failStreak: 0, lastError: null, lastOkAt: nowIso }).where(eq(s.sources.id, b.sourceId));
+  if (!b.hash) return c.json({ changed: false });
+  const [prev] = await d.select({ hash: s.snapshots.hash }).from(s.snapshots).where(eq(s.snapshots.sourceId, b.sourceId)).orderBy(desc(s.snapshots.id)).limit(1);
+  if (prev?.hash === b.hash) return c.json({ changed: false });
+  await d.insert(s.snapshots).values({ sourceId: b.sourceId, url: b.url, hash: b.hash, text: b.text ?? null });
+  return c.json({ changed: true });
+});
+
+/** 模型预算：今日 token、本月费用。 */
+ingest.get('/budget', async c => {
+  const today = new Date().toISOString().slice(0, 10), month = today.slice(0, 7);
+  const r = await c.env.DB.prepare(
+    "SELECT COALESCE(SUM(CASE WHEN substr(started_at,1,10)=?1 THEN tokens END),0) AS tokens_today, COALESCE(SUM(CASE WHEN substr(started_at,1,7)=?2 THEN cost_cny END),0) AS cost_month FROM runs",
+  ).bind(today, month).first<{ tokens_today: number; cost_month: number }>();
+  return c.json({ tokensToday: r?.tokens_today ?? 0, costMonthCny: r?.cost_month ?? 0 });
+});
+
 ingest.post('/runs', async c => {
   const body = runIn.safeParse(await c.req.json().catch(() => null));
   if (!body.success) return c.json({ error: '数据格式不正确', issues: body.error.issues }, 400);
