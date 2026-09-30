@@ -6,6 +6,7 @@
 
 const TYPES = {
   new:      { l: '注册新人礼',   slot: 1 },
+  trial:    { l: '应用尝鲜',     slot: 8 },
   free:     { l: '限时免费开放', slot: 2 },
   perk:     { l: '会员福利',     slot: 3 },
   topup:    { l: '充值赠送',     slot: 4 },

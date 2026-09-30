@@ -39,7 +39,7 @@ export const offers = sqliteTable('offers', {
   id: text('id').primaryKey(),
   platformId: text('platform_id').notNull().references(() => platforms.id),
   title: text('title').notNull(),
-  type: text('type', { enum: ['new', 'free', 'perk', 'topup', 'gift', 'standing', 'apply'] }).notNull(),
+  type: text('type', { enum: ['new', 'trial', 'free', 'perk', 'topup', 'gift', 'standing', 'apply'] }).notNull(),
   modalities: text('modalities', { mode: 'json' }).$type<string[]>().notNull(),
   claimMethod: text('claim_method', { enum: ['auto', 'signup', 'app', 'form', 'topup', 'member', 'code'] }).notNull(),
   requirements: text('requirements', { mode: 'json' }).$type<string[]>().notNull(),

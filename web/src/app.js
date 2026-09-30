@@ -47,7 +47,7 @@ function tk() {
   return {
     bg: g('--bg'), surface: g('--surface'), surface2: g('--surface-2'), ink: g('--ink'), ink2: g('--ink-2'), muted: g('--muted'),
     line: g('--line'), line2: g('--line-2'), tag: g('--tag'), tagSoft: g('--tag-soft'), good: g('--good'), warn: g('--warn'), serious: g('--serious'), critical: g('--critical'),
-    s: [1, 2, 3, 4, 5, 6, 7].map(i => g('--s' + i)), q: [0, 1, 2, 3, 4, 5, 6, 7].map(i => g('--q' + i)),
+    s: [1, 2, 3, 4, 5, 6, 7, 8].map(i => g('--s' + i)), q: [0, 1, 2, 3, 4, 5, 6, 7].map(i => g('--q' + i)),
   };
 }
 let TK = tk();

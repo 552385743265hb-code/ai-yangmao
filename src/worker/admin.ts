@@ -19,7 +19,7 @@ export function shortCode(id: string): string {
   return (h >>> 0).toString(36).padStart(4, '0').slice(-4);
 }
 
-const TYPE_L: Record<string, string> = { new: '注册新人礼', free: '限时免费开放', perk: '会员福利', topup: '充值赠送', gift: '会员免费送', standing: '常驻免费额度', apply: '申请制' };
+const TYPE_L: Record<string, string> = { new: '注册新人礼', trial: '应用尝鲜', free: '限时免费开放', perk: '会员福利', topup: '充值赠送', gift: '会员免费送', standing: '常驻免费额度', apply: '申请制' };
 const md = (d: string) => `${Number(d.slice(5, 7))}月${Number(d.slice(8, 10))}日`;
 const endText = (o: OfferRow) => (o.endKind === 'date' && o.claimEnd ? `${md(o.claimEnd)}截止` : o.endKind === 'unknown' ? '截止未知' : '常驻');
 

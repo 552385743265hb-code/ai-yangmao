@@ -1,7 +1,7 @@
 // 羊毛的时间与状态规则。网站接口、采集管线、推送共用这一份，保证三处判断一致。
 // 规则来源：docs/design.md §6。
 
-export const OFFER_TYPES = ['new', 'free', 'perk', 'topup', 'gift', 'standing', 'apply'] as const;
+export const OFFER_TYPES = ['new', 'trial', 'free', 'perk', 'topup', 'gift', 'standing', 'apply'] as const;
 export type OfferType = (typeof OFFER_TYPES)[number];
 export type EndKind = 'date' | 'unknown' | 'standing';
 export type LiveStatus = 'upcoming' | 'active' | 'ending' | 'ended' | 'standing' | 'stale' | 'open';
