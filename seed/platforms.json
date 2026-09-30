@@ -1,951 +1,2073 @@
 {
-  "_note": "种子白名单草稿（Claude 起草，待管理员审核）。x 只填在 AIHOT 真实数据里出现过的官方账号；staff 是候选员工账号，进白名单前需要确认。官网为首页级链接，具体公告页在第 3 阶段逐个核实后加入 sources。 2026-09-30 管理员已审核：全部准入；主要面向企业、不给个人免费额度的平台（Palantir、Harvey、PixieBrix）不收。",
-  "platforms": [
-    {
-      "id": "openai",
-      "name": "OpenAI",
-      "type": "lab",
-      "site": "https://openai.com",
-      "x": [
-        "@OpenAI",
-        "@OpenAIDevs",
-        "@ChatGPT"
-      ],
-      "staff": [
-        "@thsottiaux"
-      ]
-    },
-    {
-      "id": "anthropic",
-      "name": "Anthropic",
-      "type": "lab",
-      "site": "https://www.anthropic.com",
-      "x": [
-        "@AnthropicAI",
-        "@claudeai",
-        "@ClaudeDevs"
-      ],
-      "staff": [
-        "@bcherny",
-        "@trq212",
-        "@noahzweben"
-      ]
-    },
-    {
-      "id": "google",
-      "name": "Google AI（Gemini / AI Studio）",
-      "type": "lab",
-      "site": "https://ai.google.dev",
-      "x": [
-        "@GeminiApp",
-        "@GoogleAI"
-      ],
-      "staff": [
-        "@OfficialLoganK"
-      ]
-    },
-    {
-      "id": "deepseek",
-      "name": "DeepSeek",
-      "type": "lab",
-      "site": "https://www.deepseek.com",
-      "x": []
-    },
-    {
-      "id": "moonshot",
-      "name": "Kimi 开放平台（月之暗面）",
-      "type": "lab",
-      "site": "https://platform.moonshot.cn",
-      "x": []
-    },
-    {
-      "id": "zhipu",
-      "name": "智谱 Z.ai",
-      "type": "lab",
-      "site": "https://bigmodel.cn",
-      "x": []
-    },
-    {
-      "id": "minimax",
-      "name": "MiniMax",
-      "type": "lab",
-      "site": "https://www.minimaxi.com",
-      "x": [
-        "@MiniMax_AI"
-      ]
-    },
-    {
-      "id": "stepfun",
-      "name": "阶跃星辰",
-      "type": "lab",
-      "site": "https://www.stepfun.com",
-      "x": [
-        "@StepFun_ai"
-      ]
-    },
-    {
-      "id": "xai",
-      "name": "xAI",
-      "type": "lab",
-      "site": "https://x.ai",
-      "x": [
-        "@grok"
-      ]
-    },
-    {
-      "id": "mistral",
-      "name": "Mistral AI",
-      "type": "lab",
-      "site": "https://mistral.ai",
-      "x": []
-    },
-    {
-      "id": "meta",
-      "name": "Meta Llama",
-      "type": "lab",
-      "site": "https://www.llama.com",
-      "x": [
-        "@AIatMeta"
-      ]
-    },
-    {
-      "id": "cohere",
-      "name": "Cohere",
-      "type": "lab",
-      "site": "https://cohere.com",
-      "x": [
-        "@cohere"
-      ]
-    },
-    {
-      "id": "meituan",
-      "name": "美团 LongCat",
-      "type": "lab",
-      "site": null,
-      "x": [
-        "@Meituan_LongCat"
-      ]
-    },
-    {
-      "id": "baichuan",
-      "name": "百川智能",
-      "type": "lab",
-      "site": "https://www.baichuan-ai.com",
-      "x": []
-    },
-    {
-      "id": "qwen",
-      "name": "阿里 Qwen（通义千问 App / Qwen Code）",
-      "type": "lab",
-      "site": "https://qwen.ai",
-      "x": [
-        "@Alibaba_Qwen"
-      ]
-    },
-    {
-      "id": "doubao",
-      "name": "字节跳动 豆包 Doubao",
-      "type": "lab",
-      "site": "https://www.doubao.com",
-      "x": []
-    },
-    {
-      "id": "tencent-hy",
-      "name": "腾讯混元 HY（含 WorkBuddy）",
-      "type": "lab",
-      "site": "https://hunyuan.tencent.com",
-      "x": [
-        "@TencentHunyuan",
-        "@WorkBuddy_AI"
-      ]
-    },
-    {
-      "id": "microsoft-ai",
-      "name": "Microsoft AI（Copilot）",
-      "type": "lab",
-      "site": "https://microsoft.ai",
-      "x": []
-    },
-    {
-      "id": "xiaomi-mimo",
-      "name": "小米 MiMo",
-      "type": "lab",
-      "site": null,
-      "x": []
-    },
-    {
-      "id": "sakana",
-      "name": "Sakana AI（Fugu）",
-      "type": "lab",
-      "site": "https://sakana.ai",
-      "x": []
-    },
-    {
-      "id": "nex-agi",
-      "name": "Nex AGI",
-      "type": "lab",
-      "site": null,
-      "x": []
-    },
-    {
-      "id": "aliyun",
-      "name": "阿里云百炼",
-      "type": "cloud",
-      "site": "https://bailian.console.aliyun.com",
-      "x": []
-    },
-    {
-      "id": "volc",
-      "name": "火山方舟",
-      "type": "cloud",
-      "site": "https://www.volcengine.com/product/ark",
-      "x": []
-    },
-    {
-      "id": "tencent",
-      "name": "腾讯云",
-      "type": "cloud",
-      "site": "https://cloud.tencent.com",
-      "x": []
-    },
-    {
-      "id": "baidu",
-      "name": "百度千帆",
-      "type": "cloud",
-      "site": "https://cloud.baidu.com",
-      "x": [
-        "@Baidu_Inc"
-      ]
-    },
-    {
-      "id": "huaweicloud",
-      "name": "华为云",
-      "type": "cloud",
-      "site": "https://www.huaweicloud.com",
-      "x": [
-        "@HuaweiCloud1"
-      ]
-    },
-    {
-      "id": "aws",
-      "name": "AWS",
-      "type": "cloud",
-      "site": "https://aws.amazon.com",
-      "x": []
-    },
-    {
-      "id": "gcloud",
-      "name": "Google Cloud",
-      "type": "cloud",
-      "site": "https://cloud.google.com",
-      "x": []
-    },
-    {
-      "id": "azure",
-      "name": "Microsoft Azure",
-      "type": "cloud",
-      "site": "https://azure.microsoft.com",
-      "x": []
-    },
-    {
-      "id": "openrouter",
-      "name": "OpenRouter",
-      "type": "infra",
-      "site": "https://openrouter.ai",
-      "x": [
-        "@OpenRouter"
-      ]
-    },
-    {
-      "id": "opencode",
-      "name": "OpenCode（Zen / Go）",
-      "type": "infra",
-      "site": "https://opencode.ai",
-      "x": [
-        "@opencode"
-      ]
-    },
-    {
-      "id": "vercel",
-      "name": "Vercel AI Gateway",
-      "type": "infra",
-      "site": "https://vercel.com/ai-gateway",
-      "x": []
-    },
-    {
-      "id": "cloudflare",
-      "name": "Cloudflare Workers AI",
-      "type": "infra",
-      "site": "https://developers.cloudflare.com/workers-ai/",
-      "x": []
-    },
-    {
-      "id": "github",
-      "name": "GitHub Models",
-      "type": "infra",
-      "site": "https://github.com/marketplace/models",
-      "x": []
-    },
-    {
-      "id": "hf",
-      "name": "Hugging Face",
-      "type": "infra",
-      "site": "https://huggingface.co",
-      "x": []
-    },
-    {
-      "id": "groq",
-      "name": "Groq",
-      "type": "infra",
-      "site": "https://groq.com",
-      "x": []
-    },
-    {
-      "id": "cerebras",
-      "name": "Cerebras",
-      "type": "infra",
-      "site": "https://www.cerebras.ai",
-      "x": []
-    },
-    {
-      "id": "together",
-      "name": "Together AI",
-      "type": "infra",
-      "site": "https://www.together.ai",
-      "x": []
-    },
-    {
-      "id": "fireworks",
-      "name": "Fireworks AI",
-      "type": "infra",
-      "site": "https://fireworks.ai",
-      "x": []
-    },
-    {
-      "id": "sambanova",
-      "name": "SambaNova",
-      "type": "infra",
-      "site": "https://sambanova.ai",
-      "x": []
-    },
-    {
-      "id": "nvidia",
-      "name": "NVIDIA NIM",
-      "type": "infra",
-      "site": "https://build.nvidia.com",
-      "x": []
-    },
-    {
-      "id": "deepinfra",
-      "name": "DeepInfra",
-      "type": "infra",
-      "site": "https://deepinfra.com",
-      "x": []
-    },
-    {
-      "id": "siliconflow",
-      "name": "硅基流动",
-      "type": "infra",
-      "site": "https://siliconflow.cn",
-      "x": [
-        "@SiliconFlowAI"
-      ]
-    },
-    {
-      "id": "modelscope",
-      "name": "魔搭 ModelScope",
-      "type": "infra",
-      "site": "https://modelscope.cn",
-      "x": []
-    },
-    {
-      "id": "ppio",
-      "name": "PPIO 派欧云",
-      "type": "infra",
-      "site": "https://ppio.com",
-      "x": []
-    },
-    {
-      "id": "novita",
-      "name": "Novita AI",
-      "type": "infra",
-      "site": "https://novita.ai",
-      "x": []
-    },
-    {
-      "id": "qiniu",
-      "name": "七牛云 AI",
-      "type": "infra",
-      "site": "https://www.qiniu.com",
-      "x": []
-    },
-    {
-      "id": "ucloud",
-      "name": "UCloud 星图",
-      "type": "infra",
-      "site": "https://www.ucloud.cn",
-      "x": []
-    },
-    {
-      "id": "moark",
-      "name": "模力方舟",
-      "type": "infra",
-      "site": null,
-      "x": []
-    },
-    {
-      "id": "cursor",
-      "name": "Cursor（Anysphere）",
-      "type": "tool",
-      "site": "https://cursor.com",
-      "x": [],
-      "staff": [
-        "@ericzakariasson"
-      ]
-    },
-    {
-      "id": "windsurf",
-      "name": "Windsurf",
-      "type": "tool",
-      "site": "https://windsurf.com",
-      "x": []
-    },
-    {
-      "id": "kiro",
-      "name": "Kiro",
-      "type": "tool",
-      "site": "https://kiro.dev",
-      "x": []
-    },
-    {
-      "id": "trae",
-      "name": "Trae",
-      "type": "tool",
-      "site": "https://www.trae.ai",
-      "x": []
-    },
-    {
-      "id": "copilot",
-      "name": "GitHub Copilot",
-      "type": "tool",
-      "site": "https://github.com/features/copilot",
-      "x": []
-    },
-    {
-      "id": "replit",
-      "name": "Replit",
-      "type": "tool",
-      "site": "https://replit.com",
-      "x": [
-        "@Replit"
-      ]
-    },
-    {
-      "id": "perplexity",
-      "name": "Perplexity",
-      "type": "tool",
-      "site": "https://www.perplexity.ai",
-      "x": [
-        "@perplexity_ai"
-      ]
-    },
-    {
-      "id": "manus",
-      "name": "Manus",
-      "type": "tool",
-      "site": "https://manus.im",
-      "x": [
-        "@ManusAI"
-      ]
-    },
-    {
-      "id": "poe",
-      "name": "Poe",
-      "type": "tool",
-      "site": "https://poe.com",
-      "x": []
-    },
-    {
-      "id": "kling",
-      "name": "可灵 AI",
-      "type": "tool",
-      "site": "https://klingai.com",
-      "x": [
-        "@Kling_ai"
-      ]
-    },
-    {
-      "id": "jimeng",
-      "name": "即梦",
-      "type": "tool",
-      "site": "https://jimeng.jianying.com",
-      "x": []
-    },
-    {
-      "id": "hailuo",
-      "name": "海螺 AI（MiniMax）",
-      "type": "tool",
-      "site": "https://hailuoai.com",
-      "x": [
-        "@Hailuo_AI"
-      ]
-    },
-    {
-      "id": "vidu",
-      "name": "Vidu",
-      "type": "tool",
-      "site": "https://www.vidu.com",
-      "x": []
-    },
-    {
-      "id": "runway",
-      "name": "Runway",
-      "type": "tool",
-      "site": "https://runwayml.com",
-      "x": [
-        "@runwayml"
-      ]
-    },
-    {
-      "id": "pika",
-      "name": "Pika",
-      "type": "tool",
-      "site": "https://pika.art",
-      "x": []
-    },
-    {
-      "id": "luma",
-      "name": "Luma AI",
-      "type": "tool",
-      "site": "https://lumalabs.ai",
-      "x": [
-        "@LumaLabsAI"
-      ]
-    },
-    {
-      "id": "pixverse",
-      "name": "PixVerse",
-      "type": "tool",
-      "site": "https://pixverse.ai",
-      "x": [
-        "@PixVerse"
-      ]
-    },
-    {
-      "id": "midjourney",
-      "name": "Midjourney",
-      "type": "tool",
-      "site": "https://www.midjourney.com",
-      "x": [
-        "@midjourney"
-      ]
-    },
-    {
-      "id": "ideogram",
-      "name": "Ideogram",
-      "type": "tool",
-      "site": "https://ideogram.ai",
-      "x": []
-    },
-    {
-      "id": "krea",
-      "name": "Krea",
-      "type": "tool",
-      "site": "https://www.krea.ai",
-      "x": [
-        "@krea_ai"
-      ]
-    },
-    {
-      "id": "higgsfield",
-      "name": "Higgsfield",
-      "type": "tool",
-      "site": "https://higgsfield.ai",
-      "x": []
-    },
-    {
-      "id": "leonardo",
-      "name": "Leonardo.Ai",
-      "type": "tool",
-      "site": "https://leonardo.ai",
-      "x": []
-    },
-    {
-      "id": "suno",
-      "name": "Suno",
-      "type": "tool",
-      "site": "https://suno.com",
-      "x": [
-        "@suno"
-      ]
-    },
-    {
-      "id": "elevenlabs",
-      "name": "ElevenLabs",
-      "type": "tool",
-      "site": "https://elevenlabs.io",
-      "x": []
-    },
-    {
-      "id": "meshy",
-      "name": "Meshy",
-      "type": "tool",
-      "site": "https://www.meshy.ai",
-      "x": [
-        "@MeshyAI"
-      ]
-    },
-    {
-      "id": "tripo",
-      "name": "Tripo",
-      "type": "tool",
-      "site": "https://www.tripo3d.ai",
-      "x": []
-    },
-    {
-      "id": "genspark",
-      "name": "Genspark",
-      "type": "tool",
-      "site": "https://www.genspark.ai",
-      "x": []
-    },
-    {
-      "id": "liblibtv",
-      "name": "LiblibTV",
-      "type": "tool",
-      "site": null,
-      "x": []
-    },
-    {
-      "id": "lovable",
-      "name": "Lovable",
-      "type": "tool",
-      "site": "https://lovable.dev",
-      "x": []
-    },
-    {
-      "id": "niteshift",
-      "name": "Niteshift",
-      "type": "tool",
-      "site": null,
-      "x": []
-    },
-    {
-      "id": "devin",
-      "name": "Devin（Cognition）",
-      "type": "tool",
-      "site": "https://devin.ai",
-      "x": []
-    },
-    {
-      "id": "magnific",
-      "name": "Magnific",
-      "type": "tool",
-      "site": "https://magnific.ai",
-      "x": []
-    },
-    {
-      "id": "seaart",
-      "name": "SeaArt",
-      "type": "tool",
-      "site": "https://www.seaart.ai",
-      "x": []
-    },
-    {
-      "id": "pollo",
-      "name": "Pollo AI",
-      "type": "tool",
-      "site": "https://pollo.ai",
-      "x": []
-    },
-    {
-      "id": "gamma",
-      "name": "Gamma",
-      "type": "tool",
-      "site": "https://gamma.app",
-      "x": []
-    },
-    {
-      "id": "otter",
-      "name": "Otter.ai",
-      "type": "tool",
-      "site": "https://otter.ai",
-      "x": []
-    },
-    {
-      "id": "n8n",
-      "name": "n8n",
-      "type": "tool",
-      "site": "https://n8n.io",
-      "x": []
-    },
-    {
-      "id": "typesafe",
-      "name": "TypeSafe · Jev",
-      "type": "new",
-      "site": null,
-      "x": [
-        "@typesafeai"
-      ]
-    },
-    {
-      "id": "ssi",
-      "name": "Safe Superintelligence（SSI，Ilya Sutskever）",
-      "type": "new",
-      "site": "https://ssi.inc",
-      "x": []
-    },
-    {
-      "id": "worldlabs",
-      "name": "World Labs（李飞飞）",
-      "type": "new",
-      "site": "https://www.worldlabs.ai",
-      "x": [
-        "@theworldlabs"
-      ]
-    },
-    {
-      "id": "ami-labs",
-      "name": "AMI Labs（Yann LeCun）",
-      "type": "new",
-      "site": null,
-      "x": []
-    },
-    {
-      "id": "thinking-machines",
-      "name": "Thinking Machines Lab（Mira Murati）",
-      "type": "new",
-      "site": "https://thinkingmachines.ai",
-      "x": []
-    },
-    {
-      "id": "reflection",
-      "name": "Reflection AI",
-      "type": "new",
-      "site": "https://reflection.ai",
-      "x": []
-    },
-    {
-      "id": "periodic",
-      "name": "Periodic Labs",
-      "type": "new",
-      "site": null,
-      "x": []
-    },
-    {
-      "id": "physical-intelligence",
-      "name": "Physical Intelligence",
-      "type": "new",
-      "site": null,
-      "x": []
-    },
-    {
-      "id": "nous",
-      "name": "Nous Research",
-      "type": "new",
-      "site": "https://nousresearch.com",
-      "x": []
-    },
-    {
-      "id": "prime-intellect",
-      "name": "Prime Intellect",
-      "type": "new",
-      "site": "https://www.primeintellect.ai",
-      "x": []
-    }
-  ],
-  "sources": [
-    {
-      "id": "aihot-resets",
-      "platform": null,
-      "kind": "aihot",
-      "url": "https://aihot.news/api/v1/codex-resets",
-      "tier": "lead"
-    },
-    {
-      "id": "aihot-items",
-      "platform": null,
-      "kind": "aihot",
-      "url": "https://aihot.news/api/v1/items?mode=all&window=7d&limit=100",
-      "tier": "lead"
-    },
-    {
-      "id": "hn-search",
-      "platform": null,
-      "kind": "hn",
-      "url": "https://hn.algolia.com/api/v1/search_by_date?tags=story",
-      "tier": "lead"
-    },
-    {
-      "id": "reddit-localllama",
-      "platform": null,
-      "kind": "reddit",
-      "url": "https://www.reddit.com/r/LocalLLaMA/new/.rss",
-      "tier": "lead",
-      "config": {
-        "relay": "mac"
-      }
-    },
-    {
-      "id": "reddit-claudeai",
-      "platform": null,
-      "kind": "reddit",
-      "url": "https://www.reddit.com/r/ClaudeAI/new/.rss",
-      "tier": "lead",
-      "config": {
-        "relay": "mac"
-      }
-    },
-    {
-      "id": "reddit-singularity",
-      "platform": null,
-      "kind": "reddit",
-      "url": "https://www.reddit.com/r/singularity/new/.rss",
-      "tier": "lead",
-      "config": {
-        "relay": "mac"
-      }
-    },
-    {
-      "id": "google-gemini-pricing",
-      "platform": "google",
-      "kind": "web_list",
-      "url": "https://ai.google.dev/gemini-api/docs/pricing",
-      "tier": "docs"
-    },
-    {
-      "id": "google-gemini-limits",
-      "platform": "google",
-      "kind": "web_list",
-      "url": "https://ai.google.dev/gemini-api/docs/rate-limits",
-      "tier": "docs"
-    },
-    {
-      "id": "google-gemini-cli",
-      "platform": "google",
-      "kind": "web_list",
-      "url": "https://github.com/google-gemini/gemini-cli",
-      "tier": "docs"
-    },
-    {
-      "id": "qwen-code-readme",
-      "platform": "qwen",
-      "kind": "web_list",
-      "url": "https://github.com/QwenLM/qwen-code",
-      "tier": "docs"
-    },
-    {
-      "id": "aliyun-free-quota",
-      "platform": "aliyun",
-      "kind": "web_list",
-      "url": "https://help.aliyun.com/zh/model-studio/new-free-quota",
-      "tier": "docs"
-    },
-    {
-      "id": "opencode-zen",
-      "platform": "opencode",
-      "kind": "web_list",
-      "url": "https://opencode.ai/docs/zen/",
-      "tier": "docs"
-    },
-    {
-      "id": "cloudflare-ai-pricing",
-      "platform": "cloudflare",
-      "kind": "web_list",
-      "url": "https://developers.cloudflare.com/workers-ai/platform/pricing/",
-      "tier": "docs"
-    },
-    {
-      "id": "vercel-gateway-pricing",
-      "platform": "vercel",
-      "kind": "web_list",
-      "url": "https://vercel.com/docs/ai-gateway/pricing",
-      "tier": "docs"
-    },
-    {
-      "id": "groq-limits",
-      "platform": "groq",
-      "kind": "web_list",
-      "url": "https://console.groq.com/docs/rate-limits",
-      "tier": "docs"
-    },
-    {
-      "id": "cerebras-limits",
-      "platform": "cerebras",
-      "kind": "web_list",
-      "url": "https://inference-docs.cerebras.ai/support/rate-limits",
-      "tier": "docs"
-    },
-    {
-      "id": "hf-inference-pricing",
-      "platform": "hf",
-      "kind": "web_list",
-      "url": "https://huggingface.co/docs/inference-providers/pricing",
-      "tier": "docs"
-    },
-    {
-      "id": "kiro-pricing",
-      "platform": "kiro",
-      "kind": "web_list",
-      "url": "https://kiro.dev/pricing/",
-      "tier": "site"
-    },
-    {
-      "id": "moonshot-limits",
-      "platform": "moonshot",
-      "kind": "web_list",
-      "url": "https://platform.moonshot.cn/docs/pricing/limits",
-      "tier": "docs"
-    },
-    {
-      "id": "zhipu-models",
-      "platform": "zhipu",
-      "kind": "web_list",
-      "url": "https://docs.bigmodel.cn/cn/guide/start/model-overview",
-      "tier": "docs"
-    },
-    {
-      "id": "deepseek-pricing",
-      "platform": "deepseek",
-      "kind": "web_list",
-      "url": "https://api-docs.deepseek.com/zh-cn/quick_start/pricing",
-      "tier": "docs"
-    },
-    {
-      "id": "cursor-changelog",
-      "platform": "cursor",
-      "kind": "web_list",
-      "url": "https://cursor.com/changelog",
-      "tier": "site"
-    },
-    {
-      "id": "openai-news-rss",
-      "platform": "openai",
-      "kind": "rss",
-      "url": "https://openai.com/news/rss.xml",
-      "tier": "site"
-    },
-    {
-      "id": "linuxdo-welfare",
-      "platform": null,
-      "kind": "feed",
-      "url": "https://linux.do/c/welfare/36.rss",
-      "tier": "lead",
-      "config": {
-        "origin": "linuxdo",
-        "filter": "all"
-      }
-    },
-    {
-      "id": "ithome-rss",
-      "platform": null,
-      "kind": "feed",
-      "url": "https://www.ithome.com/rss/",
-      "tier": "lead",
-      "config": {
-        "origin": "ithome",
-        "filter": "lead"
-      }
-    }
-  ]
+ "_note": "种子白名单草稿（Claude 起草，待管理员审核）。x 只填在 AIHOT 真实数据里出现过的官方账号；staff 是候选员工账号，进白名单前需要确认。官网为首页级链接，具体公告页在第 3 阶段逐个核实后加入 sources。 2026-09-30 管理员已审核：全部准入；主要面向企业、不给个人免费额度的平台（Palantir、Harvey、PixieBrix）不收。",
+ "platforms": [
+  {
+   "id": "openai",
+   "name": "OpenAI",
+   "type": "lab",
+   "site": "https://openai.com",
+   "x": [
+    "@OpenAI",
+    "@OpenAIDevs",
+    "@ChatGPT"
+   ],
+   "staff": [
+    "@thsottiaux"
+   ]
+  },
+  {
+   "id": "anthropic",
+   "name": "Anthropic",
+   "type": "lab",
+   "site": "https://www.anthropic.com",
+   "x": [
+    "@AnthropicAI",
+    "@claudeai",
+    "@ClaudeDevs"
+   ],
+   "staff": [
+    "@bcherny",
+    "@trq212",
+    "@noahzweben"
+   ]
+  },
+  {
+   "id": "google",
+   "name": "Google AI（Gemini / AI Studio）",
+   "type": "lab",
+   "site": "https://ai.google.dev",
+   "x": [
+    "@GeminiApp",
+    "@GoogleAI"
+   ],
+   "staff": [
+    "@OfficialLoganK"
+   ]
+  },
+  {
+   "id": "deepseek",
+   "name": "DeepSeek",
+   "type": "lab",
+   "site": "https://www.deepseek.com",
+   "x": []
+  },
+  {
+   "id": "moonshot",
+   "name": "Kimi 开放平台（月之暗面）",
+   "type": "lab",
+   "site": "https://platform.moonshot.cn",
+   "x": []
+  },
+  {
+   "id": "zhipu",
+   "name": "智谱 Z.ai",
+   "type": "lab",
+   "site": "https://bigmodel.cn",
+   "x": []
+  },
+  {
+   "id": "minimax",
+   "name": "MiniMax",
+   "type": "lab",
+   "site": "https://www.minimaxi.com",
+   "x": [
+    "@MiniMax_AI"
+   ]
+  },
+  {
+   "id": "stepfun",
+   "name": "阶跃星辰",
+   "type": "lab",
+   "site": "https://www.stepfun.com",
+   "x": [
+    "@StepFun_ai"
+   ]
+  },
+  {
+   "id": "xai",
+   "name": "xAI",
+   "type": "lab",
+   "site": "https://x.ai",
+   "x": [
+    "@grok"
+   ]
+  },
+  {
+   "id": "mistral",
+   "name": "Mistral AI",
+   "type": "lab",
+   "site": "https://mistral.ai",
+   "x": []
+  },
+  {
+   "id": "meta",
+   "name": "Meta Llama",
+   "type": "lab",
+   "site": "https://www.llama.com",
+   "x": [
+    "@AIatMeta"
+   ]
+  },
+  {
+   "id": "cohere",
+   "name": "Cohere",
+   "type": "lab",
+   "site": "https://cohere.com",
+   "x": [
+    "@cohere"
+   ]
+  },
+  {
+   "id": "meituan",
+   "name": "美团 LongCat",
+   "type": "lab",
+   "site": "https://longcat.chat",
+   "x": [
+    "@Meituan_LongCat"
+   ]
+  },
+  {
+   "id": "baichuan",
+   "name": "百川智能",
+   "type": "lab",
+   "site": "https://www.baichuan-ai.com",
+   "x": []
+  },
+  {
+   "id": "qwen",
+   "name": "阿里 Qwen（通义千问 App / Qwen Code）",
+   "type": "lab",
+   "site": "https://qwen.ai",
+   "x": [
+    "@Alibaba_Qwen"
+   ]
+  },
+  {
+   "id": "doubao",
+   "name": "字节跳动 豆包 Doubao",
+   "type": "lab",
+   "site": "https://www.doubao.com",
+   "x": []
+  },
+  {
+   "id": "tencent-hy",
+   "name": "腾讯混元 HY（含 WorkBuddy）",
+   "type": "lab",
+   "site": "https://hunyuan.tencent.com",
+   "x": [
+    "@TencentHunyuan",
+    "@WorkBuddy_AI"
+   ]
+  },
+  {
+   "id": "microsoft-ai",
+   "name": "Microsoft AI（Copilot）",
+   "type": "lab",
+   "site": "https://microsoft.ai",
+   "x": []
+  },
+  {
+   "id": "xiaomi-mimo",
+   "name": "小米 MiMo",
+   "type": "lab",
+   "site": "https://mimo.mi.com",
+   "x": []
+  },
+  {
+   "id": "sakana",
+   "name": "Sakana AI（Fugu）",
+   "type": "lab",
+   "site": "https://sakana.ai",
+   "x": []
+  },
+  {
+   "id": "nex-agi",
+   "name": "Nex AGI",
+   "type": "lab",
+   "site": "https://nex.sii.edu.cn",
+   "x": []
+  },
+  {
+   "id": "aliyun",
+   "name": "阿里云百炼",
+   "type": "cloud",
+   "site": "https://bailian.console.aliyun.com",
+   "x": []
+  },
+  {
+   "id": "volc",
+   "name": "火山方舟",
+   "type": "cloud",
+   "site": "https://www.volcengine.com/product/ark",
+   "x": []
+  },
+  {
+   "id": "tencent",
+   "name": "腾讯云",
+   "type": "cloud",
+   "site": "https://cloud.tencent.com",
+   "x": []
+  },
+  {
+   "id": "baidu",
+   "name": "百度千帆",
+   "type": "cloud",
+   "site": "https://cloud.baidu.com",
+   "x": [
+    "@Baidu_Inc"
+   ]
+  },
+  {
+   "id": "huaweicloud",
+   "name": "华为云",
+   "type": "cloud",
+   "site": "https://www.huaweicloud.com",
+   "x": [
+    "@HuaweiCloud1"
+   ]
+  },
+  {
+   "id": "aws",
+   "name": "AWS",
+   "type": "cloud",
+   "site": "https://aws.amazon.com",
+   "x": []
+  },
+  {
+   "id": "gcloud",
+   "name": "Google Cloud",
+   "type": "cloud",
+   "site": "https://cloud.google.com",
+   "x": []
+  },
+  {
+   "id": "azure",
+   "name": "Microsoft Azure",
+   "type": "cloud",
+   "site": "https://azure.microsoft.com",
+   "x": []
+  },
+  {
+   "id": "openrouter",
+   "name": "OpenRouter",
+   "type": "infra",
+   "site": "https://openrouter.ai",
+   "x": [
+    "@OpenRouter"
+   ]
+  },
+  {
+   "id": "opencode",
+   "name": "OpenCode（Zen / Go）",
+   "type": "infra",
+   "site": "https://opencode.ai",
+   "x": [
+    "@opencode"
+   ]
+  },
+  {
+   "id": "vercel",
+   "name": "Vercel AI Gateway",
+   "type": "infra",
+   "site": "https://vercel.com/ai-gateway",
+   "x": []
+  },
+  {
+   "id": "cloudflare",
+   "name": "Cloudflare Workers AI",
+   "type": "infra",
+   "site": "https://developers.cloudflare.com/workers-ai/",
+   "x": []
+  },
+  {
+   "id": "github",
+   "name": "GitHub Models",
+   "type": "infra",
+   "site": "https://github.com/marketplace/models",
+   "x": []
+  },
+  {
+   "id": "hf",
+   "name": "Hugging Face",
+   "type": "infra",
+   "site": "https://huggingface.co",
+   "x": []
+  },
+  {
+   "id": "groq",
+   "name": "Groq",
+   "type": "infra",
+   "site": "https://groq.com",
+   "x": []
+  },
+  {
+   "id": "cerebras",
+   "name": "Cerebras",
+   "type": "infra",
+   "site": "https://www.cerebras.ai",
+   "x": []
+  },
+  {
+   "id": "together",
+   "name": "Together AI",
+   "type": "infra",
+   "site": "https://www.together.ai",
+   "x": []
+  },
+  {
+   "id": "fireworks",
+   "name": "Fireworks AI",
+   "type": "infra",
+   "site": "https://fireworks.ai",
+   "x": []
+  },
+  {
+   "id": "sambanova",
+   "name": "SambaNova",
+   "type": "infra",
+   "site": "https://sambanova.ai",
+   "x": []
+  },
+  {
+   "id": "nvidia",
+   "name": "NVIDIA NIM",
+   "type": "infra",
+   "site": "https://build.nvidia.com",
+   "x": []
+  },
+  {
+   "id": "deepinfra",
+   "name": "DeepInfra",
+   "type": "infra",
+   "site": "https://deepinfra.com",
+   "x": []
+  },
+  {
+   "id": "siliconflow",
+   "name": "硅基流动",
+   "type": "infra",
+   "site": "https://siliconflow.cn",
+   "x": [
+    "@SiliconFlowAI"
+   ]
+  },
+  {
+   "id": "modelscope",
+   "name": "魔搭 ModelScope",
+   "type": "infra",
+   "site": "https://modelscope.cn",
+   "x": []
+  },
+  {
+   "id": "ppio",
+   "name": "PPIO 派欧云",
+   "type": "infra",
+   "site": "https://ppio.com",
+   "x": []
+  },
+  {
+   "id": "novita",
+   "name": "Novita AI",
+   "type": "infra",
+   "site": "https://novita.ai",
+   "x": []
+  },
+  {
+   "id": "qiniu",
+   "name": "七牛云 AI",
+   "type": "infra",
+   "site": "https://www.qiniu.com",
+   "x": []
+  },
+  {
+   "id": "ucloud",
+   "name": "UCloud 星图",
+   "type": "infra",
+   "site": "https://www.ucloud.cn",
+   "x": []
+  },
+  {
+   "id": "moark",
+   "name": "模力方舟",
+   "type": "infra",
+   "site": "https://ai.gitee.com",
+   "x": []
+  },
+  {
+   "id": "cursor",
+   "name": "Cursor（Anysphere）",
+   "type": "tool",
+   "site": "https://cursor.com",
+   "x": [],
+   "staff": [
+    "@ericzakariasson"
+   ]
+  },
+  {
+   "id": "windsurf",
+   "name": "Windsurf",
+   "type": "tool",
+   "site": "https://windsurf.com",
+   "x": []
+  },
+  {
+   "id": "kiro",
+   "name": "Kiro",
+   "type": "tool",
+   "site": "https://kiro.dev",
+   "x": []
+  },
+  {
+   "id": "trae",
+   "name": "Trae",
+   "type": "tool",
+   "site": "https://www.trae.ai",
+   "x": []
+  },
+  {
+   "id": "copilot",
+   "name": "GitHub Copilot",
+   "type": "tool",
+   "site": "https://github.com/features/copilot",
+   "x": []
+  },
+  {
+   "id": "replit",
+   "name": "Replit",
+   "type": "tool",
+   "site": "https://replit.com",
+   "x": [
+    "@Replit"
+   ]
+  },
+  {
+   "id": "perplexity",
+   "name": "Perplexity",
+   "type": "tool",
+   "site": "https://www.perplexity.ai",
+   "x": [
+    "@perplexity_ai"
+   ]
+  },
+  {
+   "id": "manus",
+   "name": "Manus",
+   "type": "tool",
+   "site": "https://manus.im",
+   "x": [
+    "@ManusAI"
+   ]
+  },
+  {
+   "id": "poe",
+   "name": "Poe",
+   "type": "tool",
+   "site": "https://poe.com",
+   "x": []
+  },
+  {
+   "id": "kling",
+   "name": "可灵 AI",
+   "type": "tool",
+   "site": "https://klingai.com",
+   "x": [
+    "@Kling_ai"
+   ]
+  },
+  {
+   "id": "jimeng",
+   "name": "即梦",
+   "type": "tool",
+   "site": "https://jimeng.jianying.com",
+   "x": []
+  },
+  {
+   "id": "hailuo",
+   "name": "海螺 AI（MiniMax）",
+   "type": "tool",
+   "site": "https://hailuoai.com",
+   "x": [
+    "@Hailuo_AI"
+   ]
+  },
+  {
+   "id": "vidu",
+   "name": "Vidu",
+   "type": "tool",
+   "site": "https://www.vidu.com",
+   "x": []
+  },
+  {
+   "id": "runway",
+   "name": "Runway",
+   "type": "tool",
+   "site": "https://runwayml.com",
+   "x": [
+    "@runwayml"
+   ]
+  },
+  {
+   "id": "pika",
+   "name": "Pika",
+   "type": "tool",
+   "site": "https://pika.art",
+   "x": []
+  },
+  {
+   "id": "luma",
+   "name": "Luma AI",
+   "type": "tool",
+   "site": "https://lumalabs.ai",
+   "x": [
+    "@LumaLabsAI"
+   ]
+  },
+  {
+   "id": "pixverse",
+   "name": "PixVerse",
+   "type": "tool",
+   "site": "https://pixverse.ai",
+   "x": [
+    "@PixVerse"
+   ]
+  },
+  {
+   "id": "midjourney",
+   "name": "Midjourney",
+   "type": "tool",
+   "site": "https://www.midjourney.com",
+   "x": [
+    "@midjourney"
+   ]
+  },
+  {
+   "id": "ideogram",
+   "name": "Ideogram",
+   "type": "tool",
+   "site": "https://ideogram.ai",
+   "x": []
+  },
+  {
+   "id": "krea",
+   "name": "Krea",
+   "type": "tool",
+   "site": "https://www.krea.ai",
+   "x": [
+    "@krea_ai"
+   ]
+  },
+  {
+   "id": "higgsfield",
+   "name": "Higgsfield",
+   "type": "tool",
+   "site": "https://higgsfield.ai",
+   "x": []
+  },
+  {
+   "id": "leonardo",
+   "name": "Leonardo.Ai",
+   "type": "tool",
+   "site": "https://leonardo.ai",
+   "x": []
+  },
+  {
+   "id": "suno",
+   "name": "Suno",
+   "type": "tool",
+   "site": "https://suno.com",
+   "x": [
+    "@suno"
+   ]
+  },
+  {
+   "id": "elevenlabs",
+   "name": "ElevenLabs",
+   "type": "tool",
+   "site": "https://elevenlabs.io",
+   "x": []
+  },
+  {
+   "id": "meshy",
+   "name": "Meshy",
+   "type": "tool",
+   "site": "https://www.meshy.ai",
+   "x": [
+    "@MeshyAI"
+   ]
+  },
+  {
+   "id": "tripo",
+   "name": "Tripo",
+   "type": "tool",
+   "site": "https://www.tripo3d.ai",
+   "x": []
+  },
+  {
+   "id": "genspark",
+   "name": "Genspark",
+   "type": "tool",
+   "site": "https://www.genspark.ai",
+   "x": []
+  },
+  {
+   "id": "liblibtv",
+   "name": "LibTV（LiblibAI 视频）",
+   "type": "tool",
+   "site": "https://www.liblib.tv",
+   "x": []
+  },
+  {
+   "id": "lovable",
+   "name": "Lovable",
+   "type": "tool",
+   "site": "https://lovable.dev",
+   "x": []
+  },
+  {
+   "id": "niteshift",
+   "name": "Niteshift",
+   "type": "tool",
+   "site": "https://niteshift.dev",
+   "x": []
+  },
+  {
+   "id": "devin",
+   "name": "Devin（Cognition）",
+   "type": "tool",
+   "site": "https://devin.ai",
+   "x": []
+  },
+  {
+   "id": "magnific",
+   "name": "Magnific",
+   "type": "tool",
+   "site": "https://magnific.ai",
+   "x": []
+  },
+  {
+   "id": "seaart",
+   "name": "SeaArt",
+   "type": "tool",
+   "site": "https://www.seaart.ai",
+   "x": []
+  },
+  {
+   "id": "pollo",
+   "name": "Pollo AI",
+   "type": "tool",
+   "site": "https://pollo.ai",
+   "x": []
+  },
+  {
+   "id": "gamma",
+   "name": "Gamma",
+   "type": "tool",
+   "site": "https://gamma.app",
+   "x": []
+  },
+  {
+   "id": "otter",
+   "name": "Otter.ai",
+   "type": "tool",
+   "site": "https://otter.ai",
+   "x": []
+  },
+  {
+   "id": "n8n",
+   "name": "n8n",
+   "type": "tool",
+   "site": "https://n8n.io",
+   "x": []
+  },
+  {
+   "id": "typesafe",
+   "name": "TypeSafe · Jev",
+   "type": "new",
+   "site": "https://typesafe.ai",
+   "x": [
+    "@typesafeai"
+   ]
+  },
+  {
+   "id": "ssi",
+   "name": "Safe Superintelligence（SSI，Ilya Sutskever）",
+   "type": "new",
+   "site": "https://ssi.inc",
+   "x": []
+  },
+  {
+   "id": "worldlabs",
+   "name": "World Labs（李飞飞）",
+   "type": "new",
+   "site": "https://www.worldlabs.ai",
+   "x": [
+    "@theworldlabs"
+   ]
+  },
+  {
+   "id": "ami-labs",
+   "name": "AMI Labs（Yann LeCun）",
+   "type": "new",
+   "site": "https://amilabs.xyz",
+   "x": []
+  },
+  {
+   "id": "thinking-machines",
+   "name": "Thinking Machines Lab（Mira Murati）",
+   "type": "new",
+   "site": "https://thinkingmachines.ai",
+   "x": []
+  },
+  {
+   "id": "reflection",
+   "name": "Reflection AI",
+   "type": "new",
+   "site": "https://reflection.ai",
+   "x": []
+  },
+  {
+   "id": "periodic",
+   "name": "Periodic Labs",
+   "type": "new",
+   "site": "https://periodic.com",
+   "x": []
+  },
+  {
+   "id": "physical-intelligence",
+   "name": "Physical Intelligence",
+   "type": "new",
+   "site": "https://www.pi.website",
+   "x": []
+  },
+  {
+   "id": "nous",
+   "name": "Nous Research",
+   "type": "new",
+   "site": "https://nousresearch.com",
+   "x": []
+  },
+  {
+   "id": "prime-intellect",
+   "name": "Prime Intellect",
+   "type": "new",
+   "site": "https://www.primeintellect.ai",
+   "x": []
+  },
+  {
+   "id": "gmi",
+   "name": "GMI Cloud",
+   "type": "infra",
+   "site": "https://www.gmicloud.ai",
+   "x": [
+    "@gmi_cloud"
+   ]
+  },
+  {
+   "id": "dreamina",
+   "name": "Dreamina（CapCut 国际版即梦）",
+   "type": "tool",
+   "site": "https://dreamina.capcut.com",
+   "x": []
+  },
+  {
+   "id": "lovart",
+   "name": "Lovart",
+   "type": "tool",
+   "site": "https://www.lovart.ai",
+   "x": []
+  },
+  {
+   "id": "liblib",
+   "name": "LiblibAI（哩布哩布）",
+   "type": "tool",
+   "site": "https://www.liblib.art",
+   "x": []
+  },
+  {
+   "id": "adobe-firefly",
+   "name": "Adobe Firefly",
+   "type": "tool",
+   "site": "https://firefly.adobe.com",
+   "x": []
+  },
+  {
+   "id": "tapnow",
+   "name": "TapNow",
+   "type": "tool",
+   "site": "https://www.tapnow.ai",
+   "x": []
+  }
+ ],
+ "sources": [
+  {
+   "id": "aihot-resets",
+   "platform": null,
+   "kind": "aihot",
+   "url": "https://aihot.news/api/v1/codex-resets",
+   "tier": "lead"
+  },
+  {
+   "id": "aihot-items",
+   "platform": null,
+   "kind": "aihot",
+   "url": "https://aihot.news/api/v1/items?mode=all&window=7d&limit=100",
+   "tier": "lead"
+  },
+  {
+   "id": "hn-search",
+   "platform": null,
+   "kind": "hn",
+   "url": "https://hn.algolia.com/api/v1/search_by_date?tags=story",
+   "tier": "lead"
+  },
+  {
+   "id": "reddit-localllama",
+   "platform": null,
+   "kind": "reddit",
+   "url": "https://www.reddit.com/r/LocalLLaMA/new/.rss",
+   "tier": "lead",
+   "config": {
+    "relay": "mac"
+   }
+  },
+  {
+   "id": "reddit-claudeai",
+   "platform": null,
+   "kind": "reddit",
+   "url": "https://www.reddit.com/r/ClaudeAI/new/.rss",
+   "tier": "lead",
+   "config": {
+    "relay": "mac"
+   }
+  },
+  {
+   "id": "reddit-singularity",
+   "platform": null,
+   "kind": "reddit",
+   "url": "https://www.reddit.com/r/singularity/new/.rss",
+   "tier": "lead",
+   "config": {
+    "relay": "mac"
+   }
+  },
+  {
+   "id": "google-gemini-pricing",
+   "platform": "google",
+   "kind": "web_list",
+   "url": "https://ai.google.dev/gemini-api/docs/pricing",
+   "tier": "docs"
+  },
+  {
+   "id": "google-gemini-limits",
+   "platform": "google",
+   "kind": "web_list",
+   "url": "https://ai.google.dev/gemini-api/docs/rate-limits",
+   "tier": "docs"
+  },
+  {
+   "id": "google-gemini-cli",
+   "platform": "google",
+   "kind": "web_list",
+   "url": "https://github.com/google-gemini/gemini-cli",
+   "tier": "docs"
+  },
+  {
+   "id": "qwen-code-readme",
+   "platform": "qwen",
+   "kind": "web_list",
+   "url": "https://github.com/QwenLM/qwen-code",
+   "tier": "docs"
+  },
+  {
+   "id": "aliyun-free-quota",
+   "platform": "aliyun",
+   "kind": "web_list",
+   "url": "https://help.aliyun.com/zh/model-studio/new-free-quota",
+   "tier": "docs"
+  },
+  {
+   "id": "opencode-zen",
+   "platform": "opencode",
+   "kind": "web_list",
+   "url": "https://opencode.ai/docs/zen/",
+   "tier": "docs"
+  },
+  {
+   "id": "cloudflare-ai-pricing",
+   "platform": "cloudflare",
+   "kind": "web_list",
+   "url": "https://developers.cloudflare.com/workers-ai/platform/pricing/",
+   "tier": "docs"
+  },
+  {
+   "id": "vercel-gateway-pricing",
+   "platform": "vercel",
+   "kind": "web_list",
+   "url": "https://vercel.com/docs/ai-gateway/pricing",
+   "tier": "docs"
+  },
+  {
+   "id": "groq-limits",
+   "platform": "groq",
+   "kind": "web_list",
+   "url": "https://console.groq.com/docs/rate-limits",
+   "tier": "docs"
+  },
+  {
+   "id": "cerebras-limits",
+   "platform": "cerebras",
+   "kind": "web_list",
+   "url": "https://inference-docs.cerebras.ai/support/rate-limits",
+   "tier": "docs"
+  },
+  {
+   "id": "hf-inference-pricing",
+   "platform": "hf",
+   "kind": "web_list",
+   "url": "https://huggingface.co/docs/inference-providers/pricing",
+   "tier": "docs"
+  },
+  {
+   "id": "kiro-pricing",
+   "platform": "kiro",
+   "kind": "web_list",
+   "url": "https://kiro.dev/pricing/",
+   "tier": "site"
+  },
+  {
+   "id": "moonshot-limits",
+   "platform": "moonshot",
+   "kind": "web_list",
+   "url": "https://platform.moonshot.cn/docs/pricing/limits",
+   "tier": "docs"
+  },
+  {
+   "id": "zhipu-models",
+   "platform": "zhipu",
+   "kind": "web_list",
+   "url": "https://docs.bigmodel.cn/cn/guide/start/model-overview",
+   "tier": "docs"
+  },
+  {
+   "id": "deepseek-pricing",
+   "platform": "deepseek",
+   "kind": "web_list",
+   "url": "https://api-docs.deepseek.com/zh-cn/quick_start/pricing",
+   "tier": "docs"
+  },
+  {
+   "id": "cursor-changelog",
+   "platform": "cursor",
+   "kind": "web_list",
+   "url": "https://cursor.com/changelog",
+   "tier": "site"
+  },
+  {
+   "id": "openai-news-rss",
+   "platform": "openai",
+   "kind": "rss",
+   "url": "https://openai.com/news/rss.xml",
+   "tier": "site"
+  },
+  {
+   "id": "linuxdo-welfare",
+   "platform": null,
+   "kind": "feed",
+   "url": "https://linux.do/c/welfare/36.rss",
+   "tier": "lead",
+   "config": {
+    "origin": "linuxdo",
+    "filter": "all"
+   }
+  },
+  {
+   "id": "ithome-rss",
+   "platform": null,
+   "kind": "feed",
+   "url": "https://www.ithome.com/rss/",
+   "tier": "lead",
+   "config": {
+    "origin": "ithome",
+    "filter": "lead"
+   }
+  },
+  {
+   "id": "gmi-blog",
+   "platform": "gmi",
+   "kind": "web_list",
+   "url": "https://www.gmicloud.ai/en/blog",
+   "tier": "site"
+  },
+  {
+   "id": "gmi-pricing",
+   "platform": "gmi",
+   "kind": "web_list",
+   "url": "https://www.gmicloud.ai/en/pricing",
+   "tier": "site"
+  },
+  {
+   "id": "anthropic-pricing",
+   "platform": "anthropic",
+   "kind": "web_list",
+   "url": "https://claude.com/pricing",
+   "tier": "site"
+  },
+  {
+   "id": "anthropic-news",
+   "platform": "anthropic",
+   "kind": "web_list",
+   "url": "https://www.anthropic.com/news",
+   "tier": "site"
+  },
+  {
+   "id": "minimax-pricing-cn",
+   "platform": "minimax",
+   "kind": "web_list",
+   "url": "https://platform.minimax.cn/docs/pricing/overview",
+   "tier": "docs"
+  },
+  {
+   "id": "minimax-pricing-intl",
+   "platform": "minimax",
+   "kind": "web_list",
+   "url": "https://platform.minimax.io/docs/pricing/overview",
+   "tier": "docs"
+  },
+  {
+   "id": "minimax-blog",
+   "platform": "minimax",
+   "kind": "web_list",
+   "url": "https://www.minimax.cn/blog",
+   "tier": "site"
+  },
+  {
+   "id": "xai-news",
+   "platform": "xai",
+   "kind": "web_list",
+   "url": "https://x.ai/news",
+   "tier": "site"
+  },
+  {
+   "id": "xai-pricing",
+   "platform": "xai",
+   "kind": "web_list",
+   "url": "https://x.ai/pricing",
+   "tier": "site"
+  },
+  {
+   "id": "mistral-pricing",
+   "platform": "mistral",
+   "kind": "web_list",
+   "url": "https://mistral.ai/pricing/",
+   "tier": "site"
+  },
+  {
+   "id": "mistral-news-rss",
+   "platform": "mistral",
+   "kind": "rss",
+   "url": "https://mistral.ai/news/rss",
+   "tier": "site"
+  },
+  {
+   "id": "cohere-pricing",
+   "platform": "cohere",
+   "kind": "web_list",
+   "url": "https://cohere.com/pricing",
+   "tier": "site"
+  },
+  {
+   "id": "cohere-blog",
+   "platform": "cohere",
+   "kind": "web_list",
+   "url": "https://cohere.com/blog",
+   "tier": "site"
+  },
+  {
+   "id": "baidu-home",
+   "platform": "baidu",
+   "kind": "web_list",
+   "url": "https://cloud.baidu.com",
+   "tier": "site"
+  },
+  {
+   "id": "baidu-news-rss",
+   "platform": "baidu",
+   "kind": "rss",
+   "url": "https://cloud.baidu.com/news/rss.xml",
+   "tier": "site"
+  },
+  {
+   "id": "huaweicloud-home",
+   "platform": "huaweicloud",
+   "kind": "web_list",
+   "url": "https://www.huaweicloud.com",
+   "tier": "site"
+  },
+  {
+   "id": "huaweicloud-news",
+   "platform": "huaweicloud",
+   "kind": "web_list",
+   "url": "https://www.huaweicloud.com/news",
+   "tier": "site"
+  },
+  {
+   "id": "aws-free",
+   "platform": "aws",
+   "kind": "web_list",
+   "url": "https://aws.amazon.com/cn/free/",
+   "tier": "site"
+  },
+  {
+   "id": "aws-free-ai",
+   "platform": "aws",
+   "kind": "web_list",
+   "url": "https://aws.amazon.com/cn/free/ai/",
+   "tier": "site"
+  },
+  {
+   "id": "aws-credits",
+   "platform": "aws",
+   "kind": "web_list",
+   "url": "https://aws.amazon.com/cn/awscredits/",
+   "tier": "site"
+  },
+  {
+   "id": "gcloud-free",
+   "platform": "gcloud",
+   "kind": "web_list",
+   "url": "https://cloud.google.com/free",
+   "tier": "site"
+  },
+  {
+   "id": "gcloud-blog-rss",
+   "platform": "gcloud",
+   "kind": "rss",
+   "url": "https://cloud.google.com/blog/rss.xml",
+   "tier": "site"
+  },
+  {
+   "id": "azure-free",
+   "platform": "azure",
+   "kind": "web_list",
+   "url": "https://azure.microsoft.com/en-us/pricing/purchase-options/azure-account",
+   "tier": "site"
+  },
+  {
+   "id": "azure-blog-rss",
+   "platform": "azure",
+   "kind": "rss",
+   "url": "https://azure.microsoft.com/en-us/blog/feed/",
+   "tier": "site"
+  },
+  {
+   "id": "openrouter-pricing",
+   "platform": "openrouter",
+   "kind": "web_list",
+   "url": "https://openrouter.ai/pricing",
+   "tier": "site"
+  },
+  {
+   "id": "openrouter-free-router",
+   "platform": "openrouter",
+   "kind": "web_list",
+   "url": "https://openrouter.ai/openrouter/free",
+   "tier": "site"
+  },
+  {
+   "id": "github-pricing",
+   "platform": "github",
+   "kind": "web_list",
+   "url": "https://github.com/pricing",
+   "tier": "site"
+  },
+  {
+   "id": "github-blog",
+   "platform": "github",
+   "kind": "web_list",
+   "url": "https://github.blog/",
+   "tier": "site"
+  },
+  {
+   "id": "copilot-features",
+   "platform": "copilot",
+   "kind": "web_list",
+   "url": "https://github.com/features/copilot/plans",
+   "tier": "site"
+  },
+  {
+   "id": "together-pricing",
+   "platform": "together",
+   "kind": "web_list",
+   "url": "https://www.together.ai/pricing",
+   "tier": "site"
+  },
+  {
+   "id": "together-blog-rss",
+   "platform": "together",
+   "kind": "rss",
+   "url": "https://www.together.ai/blog/rss.xml",
+   "tier": "site"
+  },
+  {
+   "id": "fireworks-pricing",
+   "platform": "fireworks",
+   "kind": "web_list",
+   "url": "https://fireworks.ai/pricing",
+   "tier": "site"
+  },
+  {
+   "id": "fireworks-blog",
+   "platform": "fireworks",
+   "kind": "web_list",
+   "url": "https://fireworks.ai/blog",
+   "tier": "site"
+  },
+  {
+   "id": "sambanova-pricing",
+   "platform": "sambanova",
+   "kind": "web_list",
+   "url": "https://cloud.sambanova.ai/plans",
+   "tier": "site"
+  },
+  {
+   "id": "sambanova-blog-rss",
+   "platform": "sambanova",
+   "kind": "rss",
+   "url": "https://sambanova.ai/blog/rss.xml",
+   "tier": "site"
+  },
+  {
+   "id": "sambanova-news-rss",
+   "platform": "sambanova",
+   "kind": "rss",
+   "url": "https://sambanova.ai/news/rss.xml",
+   "tier": "site"
+  },
+  {
+   "id": "deepinfra-pricing",
+   "platform": "deepinfra",
+   "kind": "web_list",
+   "url": "https://deepinfra.com/pricing",
+   "tier": "site"
+  },
+  {
+   "id": "deepinfra-blog",
+   "platform": "deepinfra",
+   "kind": "web_list",
+   "url": "https://deepinfra.com/blog",
+   "tier": "site"
+  },
+  {
+   "id": "siliconflow-pricing",
+   "platform": "siliconflow",
+   "kind": "web_list",
+   "url": "https://www.siliconflow.cn/pricing",
+   "tier": "site"
+  },
+  {
+   "id": "siliconflow-news",
+   "platform": "siliconflow",
+   "kind": "web_list",
+   "url": "https://www.siliconflow.cn/news",
+   "tier": "site"
+  },
+  {
+   "id": "siliconflow-referral",
+   "platform": "siliconflow",
+   "kind": "web_list",
+   "url": "https://www.siliconflow.cn/news/od7wj9rr23p95uhihmhrombp",
+   "tier": "site"
+  },
+  {
+   "id": "ppio-pricing",
+   "platform": "ppio",
+   "kind": "web_list",
+   "url": "https://ppio.com/pricing",
+   "tier": "site"
+  },
+  {
+   "id": "ppio-news",
+   "platform": "ppio",
+   "kind": "web_list",
+   "url": "https://ppio.com/news",
+   "tier": "site"
+  },
+  {
+   "id": "ppio-model-faq",
+   "platform": "ppio",
+   "kind": "web_list",
+   "url": "https://ppio.com/docs/model/FAQs",
+   "tier": "docs"
+  },
+  {
+   "id": "windsurf-pricing",
+   "platform": "windsurf",
+   "kind": "web_list",
+   "url": "https://windsurf.com/pricing",
+   "tier": "site"
+  },
+  {
+   "id": "windsurf-feed",
+   "platform": "windsurf",
+   "kind": "rss",
+   "url": "https://windsurf.com/feed.xml",
+   "tier": "site"
+  },
+  {
+   "id": "trae-pricing",
+   "platform": "trae",
+   "kind": "web_list",
+   "url": "https://www.trae.ai/pricing",
+   "tier": "site"
+  },
+  {
+   "id": "trae-blog",
+   "platform": "trae",
+   "kind": "web_list",
+   "url": "https://www.trae.ai/blog",
+   "tier": "site"
+  },
+  {
+   "id": "trae-promo",
+   "platform": "trae",
+   "kind": "web_list",
+   "url": "https://www.trae.ai/promo-code",
+   "tier": "site"
+  },
+  {
+   "id": "replit-pricing",
+   "platform": "replit",
+   "kind": "web_list",
+   "url": "https://replit.com/pricing",
+   "tier": "site"
+  },
+  {
+   "id": "replit-blog",
+   "platform": "replit",
+   "kind": "web_list",
+   "url": "https://replit.com/blog",
+   "tier": "site"
+  },
+  {
+   "id": "manus-pricing",
+   "platform": "manus",
+   "kind": "web_list",
+   "url": "https://manus.im/en/pricing",
+   "tier": "site"
+  },
+  {
+   "id": "kling-intl-home",
+   "platform": "kling",
+   "kind": "web_list",
+   "url": "https://kling.ai/",
+   "tier": "site"
+  },
+  {
+   "id": "vidu-pricing",
+   "platform": "vidu",
+   "kind": "web_list",
+   "url": "https://www.vidu.com/pricing",
+   "tier": "site"
+  },
+  {
+   "id": "vidu-pricing-zh",
+   "platform": "vidu",
+   "kind": "web_list",
+   "url": "https://www.vidu.com/zh/pricing",
+   "tier": "site"
+  },
+  {
+   "id": "runway-pricing",
+   "platform": "runway",
+   "kind": "web_list",
+   "url": "https://runway.com/pricing",
+   "tier": "site"
+  },
+  {
+   "id": "runway-changelog",
+   "platform": "runway",
+   "kind": "web_list",
+   "url": "https://runway.com/changelog",
+   "tier": "site"
+  },
+  {
+   "id": "pika-pricing",
+   "platform": "pika",
+   "kind": "web_list",
+   "url": "https://pika.art/pricing",
+   "tier": "site"
+  },
+  {
+   "id": "pika-faq",
+   "platform": "pika",
+   "kind": "web_list",
+   "url": "https://pika.art/faq",
+   "tier": "site"
+  },
+  {
+   "id": "pika-blog",
+   "platform": "pika",
+   "kind": "web_list",
+   "url": "https://pika.art/blog",
+   "tier": "site"
+  },
+  {
+   "id": "luma-pricing",
+   "platform": "luma",
+   "kind": "web_list",
+   "url": "https://lumalabs.ai/pricing",
+   "tier": "site"
+  },
+  {
+   "id": "luma-changelog",
+   "platform": "luma",
+   "kind": "web_list",
+   "url": "https://lumalabs.ai/changelog",
+   "tier": "site"
+  },
+  {
+   "id": "pixverse-blog-zh",
+   "platform": "pixverse",
+   "kind": "web_list",
+   "url": "https://pixverse.ai/zh/blog",
+   "tier": "site"
+  },
+  {
+   "id": "pixverse-blog-en",
+   "platform": "pixverse",
+   "kind": "web_list",
+   "url": "https://pixverse.ai/en/blog",
+   "tier": "site"
+  },
+  {
+   "id": "ideogram-blog",
+   "platform": "ideogram",
+   "kind": "web_list",
+   "url": "https://ideogram.ai/blog/",
+   "tier": "site"
+  },
+  {
+   "id": "ideogram-pricing",
+   "platform": "ideogram",
+   "kind": "web_list",
+   "url": "https://ideogram.ai/pricing/",
+   "tier": "site"
+  },
+  {
+   "id": "krea-pricing",
+   "platform": "krea",
+   "kind": "web_list",
+   "url": "https://www.krea.ai/pricing",
+   "tier": "site"
+  },
+  {
+   "id": "krea-changelog",
+   "platform": "krea",
+   "kind": "web_list",
+   "url": "https://www.krea.ai/docs/changelog",
+   "tier": "docs"
+  },
+  {
+   "id": "higgsfield-changelog",
+   "platform": "higgsfield",
+   "kind": "web_list",
+   "url": "https://higgsfield.ai/creator-hub/changelog",
+   "tier": "site"
+  },
+  {
+   "id": "higgsfield-blog-rss",
+   "platform": "higgsfield",
+   "kind": "rss",
+   "url": "https://higgsfield.ai/blog/rss.xml",
+   "tier": "site"
+  },
+  {
+   "id": "suno-pricing",
+   "platform": "suno",
+   "kind": "web_list",
+   "url": "https://suno.com/pricing",
+   "tier": "site"
+  },
+  {
+   "id": "suno-help-free-plan",
+   "platform": "suno",
+   "kind": "web_list",
+   "url": "https://help.suno.com/en/articles/9601601",
+   "tier": "docs"
+  },
+  {
+   "id": "suno-help-credit-reset",
+   "platform": "suno",
+   "kind": "web_list",
+   "url": "https://help.suno.com/en/articles/2524993",
+   "tier": "docs"
+  },
+  {
+   "id": "suno-blog",
+   "platform": "suno",
+   "kind": "web_list",
+   "url": "https://suno.com/blog",
+   "tier": "site"
+  },
+  {
+   "id": "elevenlabs-pricing",
+   "platform": "elevenlabs",
+   "kind": "web_list",
+   "url": "https://elevenlabs.io/pricing",
+   "tier": "site"
+  },
+  {
+   "id": "elevenlabs-pricing-api",
+   "platform": "elevenlabs",
+   "kind": "web_list",
+   "url": "https://elevenlabs.io/pricing/api",
+   "tier": "site"
+  },
+  {
+   "id": "elevenlabs-blog-rss",
+   "platform": "elevenlabs",
+   "kind": "rss",
+   "url": "https://elevenlabs.io/rss.xml",
+   "tier": "site"
+  },
+  {
+   "id": "meshy-pricing",
+   "platform": "meshy",
+   "kind": "web_list",
+   "url": "https://www.meshy.ai/pricing",
+   "tier": "site"
+  },
+  {
+   "id": "meshy-blog",
+   "platform": "meshy",
+   "kind": "web_list",
+   "url": "https://www.meshy.ai/blog",
+   "tier": "site"
+  },
+  {
+   "id": "tripo-pricing",
+   "platform": "tripo",
+   "kind": "web_list",
+   "url": "https://www.tripo3d.ai/pricing",
+   "tier": "site"
+  },
+  {
+   "id": "tripo-pricing-zh",
+   "platform": "tripo",
+   "kind": "web_list",
+   "url": "https://www.tripo3d.ai/zh/pricing",
+   "tier": "site"
+  },
+  {
+   "id": "tripo-blog",
+   "platform": "tripo",
+   "kind": "web_list",
+   "url": "https://www.tripo3d.ai/blog",
+   "tier": "site"
+  },
+  {
+   "id": "microsoft-ai-blog",
+   "platform": "microsoft-ai",
+   "kind": "web_list",
+   "url": "https://microsoft.ai/blog/",
+   "tier": "site"
+  },
+  {
+   "id": "sakana-feed",
+   "platform": "sakana",
+   "kind": "rss",
+   "url": "https://sakana.ai/feed",
+   "tier": "site"
+  },
+  {
+   "id": "novita-pricing",
+   "platform": "novita",
+   "kind": "web_list",
+   "url": "https://novita.ai/pricing",
+   "tier": "site"
+  },
+  {
+   "id": "novita-blog",
+   "platform": "novita",
+   "kind": "web_list",
+   "url": "https://novita.ai/blog/",
+   "tier": "site"
+  },
+  {
+   "id": "qiniu-ai-plan",
+   "platform": "qiniu",
+   "kind": "web_list",
+   "url": "https://www.qiniu.com/ai/plan",
+   "tier": "site"
+  },
+  {
+   "id": "qiniu-activity",
+   "platform": "qiniu",
+   "kind": "web_list",
+   "url": "https://www.qiniu.com/activity",
+   "tier": "site"
+  },
+  {
+   "id": "qiniu-news",
+   "platform": "qiniu",
+   "kind": "web_list",
+   "url": "https://www.qiniu.com/news",
+   "tier": "site"
+  },
+  {
+   "id": "genspark-credits-guide",
+   "platform": "genspark",
+   "kind": "web_list",
+   "url": "https://www.genspark.ai/helpcenter/credits-guide",
+   "tier": "docs"
+  },
+  {
+   "id": "genspark-membership",
+   "platform": "genspark",
+   "kind": "web_list",
+   "url": "https://www.genspark.ai/helpcenter/membership-plans",
+   "tier": "docs"
+  },
+  {
+   "id": "genspark-blog",
+   "platform": "genspark",
+   "kind": "web_list",
+   "url": "https://www.genspark.ai/blog",
+   "tier": "site"
+  },
+  {
+   "id": "lovable-pricing",
+   "platform": "lovable",
+   "kind": "web_list",
+   "url": "https://lovable.dev/pricing",
+   "tier": "site"
+  },
+  {
+   "id": "lovable-blog-rss",
+   "platform": "lovable",
+   "kind": "rss",
+   "url": "https://lovable.dev/blog/rss.xml",
+   "tier": "site"
+  },
+  {
+   "id": "lovable-changelog",
+   "platform": "lovable",
+   "kind": "web_list",
+   "url": "https://docs.lovable.dev/changelog",
+   "tier": "docs"
+  },
+  {
+   "id": "devin-pricing",
+   "platform": "devin",
+   "kind": "web_list",
+   "url": "https://devin.ai/pricing",
+   "tier": "site"
+  },
+  {
+   "id": "devin-feed",
+   "platform": "devin",
+   "kind": "rss",
+   "url": "https://devin.ai/rss.xml",
+   "tier": "site"
+  },
+  {
+   "id": "magnific-pricing",
+   "platform": "magnific",
+   "kind": "web_list",
+   "url": "https://www.magnific.com/pricing",
+   "tier": "site"
+  },
+  {
+   "id": "seaart-blog",
+   "platform": "seaart",
+   "kind": "web_list",
+   "url": "https://www.seaart.ai/blog",
+   "tier": "site"
+  },
+  {
+   "id": "seaart-news",
+   "platform": "seaart",
+   "kind": "web_list",
+   "url": "https://www.seaart.ai/news",
+   "tier": "site"
+  },
+  {
+   "id": "pollo-pricing",
+   "platform": "pollo",
+   "kind": "web_list",
+   "url": "https://pollo.ai/pricing",
+   "tier": "site"
+  },
+  {
+   "id": "pollo-faqs",
+   "platform": "pollo",
+   "kind": "web_list",
+   "url": "https://pollo.ai/faqs",
+   "tier": "site"
+  },
+  {
+   "id": "otter-pricing",
+   "platform": "otter",
+   "kind": "web_list",
+   "url": "https://otter.ai/pricing",
+   "tier": "site"
+  },
+  {
+   "id": "otter-referral",
+   "platform": "otter",
+   "kind": "web_list",
+   "url": "https://otter.ai/referral-terms",
+   "tier": "site"
+  },
+  {
+   "id": "n8n-pricing",
+   "platform": "n8n",
+   "kind": "web_list",
+   "url": "https://n8n.io/pricing/",
+   "tier": "site"
+  },
+  {
+   "id": "n8n-blog-rss",
+   "platform": "n8n",
+   "kind": "rss",
+   "url": "https://blog.n8n.io/rss/",
+   "tier": "site"
+  },
+  {
+   "id": "ssi-updates",
+   "platform": "ssi",
+   "kind": "web_list",
+   "url": "https://ssi.inc/updates",
+   "tier": "site"
+  },
+  {
+   "id": "worldlabs-blog",
+   "platform": "worldlabs",
+   "kind": "web_list",
+   "url": "https://www.worldlabs.ai/blog",
+   "tier": "site"
+  },
+  {
+   "id": "thinking-machines-news",
+   "platform": "thinking-machines",
+   "kind": "web_list",
+   "url": "https://thinkingmachines.ai/news/",
+   "tier": "site"
+  },
+  {
+   "id": "thinking-machines-blog",
+   "platform": "thinking-machines",
+   "kind": "web_list",
+   "url": "https://thinkingmachines.ai/blog/",
+   "tier": "site"
+  },
+  {
+   "id": "reflection-news",
+   "platform": "reflection",
+   "kind": "web_list",
+   "url": "https://reflection.ai/news",
+   "tier": "site"
+  },
+  {
+   "id": "nous-blog",
+   "platform": "nous",
+   "kind": "web_list",
+   "url": "https://nousresearch.com/blog",
+   "tier": "site"
+  },
+  {
+   "id": "nous-releases",
+   "platform": "nous",
+   "kind": "web_list",
+   "url": "https://nousresearch.com/releases",
+   "tier": "site"
+  },
+  {
+   "id": "prime-intellect-blog",
+   "platform": "prime-intellect",
+   "kind": "web_list",
+   "url": "https://www.primeintellect.ai/blog",
+   "tier": "site"
+  },
+  {
+   "id": "stepfun-platform",
+   "platform": "stepfun",
+   "kind": "web_list",
+   "url": "https://platform.stepfun.com/",
+   "tier": "site"
+  },
+  {
+   "id": "stepfun-step-plan",
+   "platform": "stepfun",
+   "kind": "web_list",
+   "url": "https://platform.stepfun.com/step-plan",
+   "tier": "site"
+  },
+  {
+   "id": "meta-llama-api",
+   "platform": "meta",
+   "kind": "web_list",
+   "url": "https://www.llama.com/products/llama-api/",
+   "tier": "site"
+  },
+  {
+   "id": "meituan-longcat-docs",
+   "platform": "meituan",
+   "kind": "web_list",
+   "url": "https://longcat.chat/platform/docs/zh/",
+   "tier": "docs"
+  },
+  {
+   "id": "volc-free-quota",
+   "platform": "volc",
+   "kind": "web_list",
+   "url": "https://www.volcengine.com/docs/82379/1544106",
+   "tier": "docs"
+  },
+  {
+   "id": "volc-activity",
+   "platform": "volc",
+   "kind": "web_list",
+   "url": "https://www.volcengine.com/activity/ark",
+   "tier": "site"
+  },
+  {
+   "id": "tencent-free",
+   "platform": "tencent",
+   "kind": "web_list",
+   "url": "https://cloud.tencent.com/act/free",
+   "tier": "site"
+  },
+  {
+   "id": "tencent-hy-pricing",
+   "platform": "tencent-hy",
+   "kind": "web_list",
+   "url": "https://cloud.tencent.com/document/product/1729/97731",
+   "tier": "docs"
+  },
+  {
+   "id": "nvidia-build",
+   "platform": "nvidia",
+   "kind": "web_list",
+   "url": "https://build.nvidia.com/explore/discover",
+   "tier": "site"
+  },
+  {
+   "id": "modelscope-api-inference",
+   "platform": "modelscope",
+   "kind": "web_list",
+   "url": "https://modelscope.cn/docs/model-service/API-Inference/intro",
+   "tier": "docs"
+  },
+  {
+   "id": "perplexity-api-pricing",
+   "platform": "perplexity",
+   "kind": "web_list",
+   "url": "https://docs.perplexity.ai/getting-started/pricing",
+   "tier": "docs"
+  },
+  {
+   "id": "poe-about",
+   "platform": "poe",
+   "kind": "web_list",
+   "url": "https://poe.com/about",
+   "tier": "site"
+  },
+  {
+   "id": "hailuo-home",
+   "platform": "hailuo",
+   "kind": "web_list",
+   "url": "https://hailuoai.com/",
+   "tier": "site"
+  },
+  {
+   "id": "midjourney-plans",
+   "platform": "midjourney",
+   "kind": "web_list",
+   "url": "https://docs.midjourney.com/hc/en-us/articles/27870484040333-Comparing-Midjourney-Plans",
+   "tier": "docs"
+  },
+  {
+   "id": "leonardo-api-pricing",
+   "platform": "leonardo",
+   "kind": "web_list",
+   "url": "https://docs.leonardo.ai/docs/plan-with-the-pricing-calculator",
+   "tier": "docs"
+  },
+  {
+   "id": "leonardo-tokens-help",
+   "platform": "leonardo",
+   "kind": "web_list",
+   "url": "https://intercom.help/leonardo-ai/en/articles/8044018-what-are-tokens-and-how-do-they-work",
+   "tier": "docs"
+  },
+  {
+   "id": "doubao-seed-blog",
+   "platform": "doubao",
+   "kind": "web_list",
+   "url": "https://team.doubao.com/zh/blog",
+   "tier": "site"
+  },
+  {
+   "id": "jimeng-home",
+   "platform": "jimeng",
+   "kind": "web_list",
+   "url": "https://jimeng.jianying.com/ai-tool/home",
+   "tier": "site"
+  },
+  {
+   "id": "gamma-pricing",
+   "platform": "gamma",
+   "kind": "web_list",
+   "url": "https://gamma.app/pricing",
+   "tier": "site"
+  },
+  {
+   "id": "ucloud-modelverse-price",
+   "platform": "ucloud",
+   "kind": "web_list",
+   "url": "https://astraflow.ucloud.cn/docs/modelverse/price",
+   "tier": "docs"
+  },
+  {
+   "id": "ucloud-activity",
+   "platform": "ucloud",
+   "kind": "web_list",
+   "url": "https://www.ucloud.cn/site/active/agi.html",
+   "tier": "site"
+  },
+  {
+   "id": "baichuan-price",
+   "platform": "baichuan",
+   "kind": "web_list",
+   "url": "https://platform.baichuan-ai.com/docs/price",
+   "tier": "docs"
+  },
+  {
+   "id": "baichuan-home",
+   "platform": "baichuan",
+   "kind": "web_list",
+   "url": "https://www.baichuan-ai.com/home",
+   "tier": "site"
+  },
+  {
+   "id": "xiaomi-mimo-home",
+   "platform": "xiaomi-mimo",
+   "kind": "web_list",
+   "url": "https://mimo.mi.com/",
+   "tier": "site"
+  },
+  {
+   "id": "xiaomi-mimo-platform",
+   "platform": "xiaomi-mimo",
+   "kind": "web_list",
+   "url": "https://platform.xiaomimimo.com/",
+   "tier": "site"
+  },
+  {
+   "id": "moark-getting-started",
+   "platform": "moark",
+   "kind": "web_list",
+   "url": "https://ai.gitee.com/docs/getting-started",
+   "tier": "docs"
+  },
+  {
+   "id": "liblibtv-home",
+   "platform": "liblibtv",
+   "kind": "web_list",
+   "url": "https://www.liblib.tv/",
+   "tier": "site"
+  },
+  {
+   "id": "nex-agi-home",
+   "platform": "nex-agi",
+   "kind": "web_list",
+   "url": "https://nex.sii.edu.cn",
+   "tier": "site"
+  },
+  {
+   "id": "niteshift-pricing",
+   "platform": "niteshift",
+   "kind": "web_list",
+   "url": "https://niteshift.dev/pricing",
+   "tier": "site"
+  },
+  {
+   "id": "typesafe-home",
+   "platform": "typesafe",
+   "kind": "web_list",
+   "url": "https://typesafe.ai/",
+   "tier": "site"
+  },
+  {
+   "id": "ami-labs-home",
+   "platform": "ami-labs",
+   "kind": "web_list",
+   "url": "https://amilabs.xyz/",
+   "tier": "site"
+  },
+  {
+   "id": "periodic-home",
+   "platform": "periodic",
+   "kind": "web_list",
+   "url": "https://periodic.com/",
+   "tier": "site"
+  },
+  {
+   "id": "physical-intelligence-home",
+   "platform": "physical-intelligence",
+   "kind": "web_list",
+   "url": "https://www.pi.website/",
+   "tier": "site"
+  },
+  {
+   "id": "dreamina-home",
+   "platform": "dreamina",
+   "kind": "web_list",
+   "url": "https://dreamina.capcut.com/",
+   "tier": "site"
+  },
+  {
+   "id": "dreamina-sept-offer-faq",
+   "platform": "dreamina",
+   "kind": "web_list",
+   "url": "https://dreamina.capcut.com/resource/dreamina-september-offer-faq-2026",
+   "tier": "site"
+  },
+  {
+   "id": "lovart-pricing",
+   "platform": "lovart",
+   "kind": "web_list",
+   "url": "https://www.lovart.ai/pricing",
+   "tier": "site"
+  },
+  {
+   "id": "liblib-home",
+   "platform": "liblib",
+   "kind": "web_list",
+   "url": "https://www.liblib.art/",
+   "tier": "site"
+  },
+  {
+   "id": "adobe-firefly-credits-faq",
+   "platform": "adobe-firefly",
+   "kind": "web_list",
+   "url": "https://helpx.adobe.com/creative-cloud/apps/generative-ai/generative-credits-faq.html",
+   "tier": "docs"
+  },
+  {
+   "id": "adobe-firefly-plans",
+   "platform": "adobe-firefly",
+   "kind": "web_list",
+   "url": "https://www.adobe.com/products/firefly/plans.html",
+   "tier": "site"
+  },
+  {
+   "id": "tapnow-terms",
+   "platform": "tapnow",
+   "kind": "web_list",
+   "url": "https://www.tapnow.ai/terms-of-service",
+   "tier": "site"
+  }
+ ]
 }
