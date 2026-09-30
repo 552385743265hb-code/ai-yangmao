@@ -53,7 +53,9 @@ const PROMPT = `你是"AI 羊毛牧场"的信息抽取器。下面是某个 AI �
 const TRIAGE = `\n\n补充规则（本文可能是媒体报道、社区帖子或推文）：
 - 每条再加一个字段 platformId：从下面的平台白名单里选最匹配的 id；都不匹配就用 "unknown"。
 - 再加一个字段 officialUrl：文中出现的、指向该平台官网 / 官方公告 / 官方账号的链接，没有就 null。
-- 中转站、号池、账号买卖、非 AI 的福利（打车、外卖、云手机、代理等）一律不输出。
+- 中转站、号池、账号买卖、"公益站"、低价 API 转售、非 AI 的福利（打车、外卖、门票、云手机、代理、eSIM 等）一律不输出。
+- 中文社区黑话：「鸡蛋」= 厂商送的免费额度 / token；「臭鸡蛋」通常指智谱（GLM / ZCode）送的 token；「蚊子腿」= 小额福利；「白嫖」= 免费用；「DSH」= DeepSeek Harness。这些都算 AI 羊毛，要按规则抽取。
+- platformId 必须原样使用白名单里等号左边的 id（全小写），例如 deepseek、zhipu。
 平台白名单（id=名称）：`;
 
 interface Provider { name: string; paid?: boolean; call: (sys: string, user: string) => Promise<{ text: string; tokens: number; costCny?: number }> }

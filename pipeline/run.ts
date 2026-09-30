@@ -165,8 +165,13 @@ async function triageLeads(plats: Plat[]) {
     tokensLeft -= r.tokens; stats.tokens += r.tokens; stats.costCny += r.costCny;
     const valid: OfferIn[] = [];
     const unknown: string[] = [];
+    const findPlat = (x: string | undefined) => {
+      if (!x) return undefined;
+      const k = x.trim().toLowerCase();
+      return pmap.get(k) ?? plats.find(p => p.name.toLowerCase() === k || p.name.toLowerCase().includes(k) || k.includes(p.id));
+    };
     for (const e of r.offers) {
-      const p = pmap.get(e.platformId ?? '');
+      const p = findPlat(e.platformId);
       if (!p) { unknown.push(e.title); continue; }
       const tier = tierOf(l.url, p);
       const o = toOffer({ id: `lead-${l.origin}`, kind: l.origin, platformId: p.id, tier } as unknown as Source, e, l.url);
