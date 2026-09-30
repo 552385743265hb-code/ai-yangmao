@@ -1090,10 +1090,10 @@
    "tier": "site"
   },
   {
-   "id": "baidu-news-rss",
+   "id": "baidu-news",
    "platform": "baidu",
-   "kind": "rss",
-   "url": "https://cloud.baidu.com/news/rss.xml",
+   "kind": "web_list",
+   "url": "https://cloud.baidu.com/news",
    "tier": "site"
   },
   {
@@ -1142,7 +1142,7 @@
    "id": "gcloud-blog-rss",
    "platform": "gcloud",
    "kind": "rss",
-   "url": "https://cloud.google.com/blog/rss.xml",
+   "url": "https://cloudblog.withgoogle.com/rss/",
    "tier": "site"
   },
   {
@@ -1524,10 +1524,10 @@
    "tier": "site"
   },
   {
-   "id": "elevenlabs-blog-rss",
+   "id": "elevenlabs-blog",
    "platform": "elevenlabs",
-   "kind": "rss",
-   "url": "https://elevenlabs.io/rss.xml",
+   "kind": "web_list",
+   "url": "https://elevenlabs.io/blog",
    "tier": "site"
   },
   {

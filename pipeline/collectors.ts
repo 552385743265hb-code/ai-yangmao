@@ -51,9 +51,11 @@ export async function hn(src: Source): Promise<LeadIn[]> {
   return [...out.values()];
 }
 
-const xml = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: '' });
+// 正文字段里常是整段 HTML，不当 XML 往下解析，否则层级太深会报“Maximum nested tags exceeded”（2026-10-01 ElevenLabs 博客 RSS）
+const xml = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: '', stopNodes: ['*.content:encoded', '*.description', '*.content', '*.summary'] });
 interface FeedItem { title: string; link: string; summary: string }
 export function parseFeed(body: string): FeedItem[] {
+  if (/^\s*(<!doctype html|<html)/i.test(body)) throw new Error('这个 RSS 地址返回的是网页不是 RSS，请改成网页列表信源');
   const d = xml.parse(body);
   const arr = <T>(x: T | T[] | undefined): T[] => (x == null ? [] : Array.isArray(x) ? x : [x]);
   const text = (x: unknown): string => (typeof x === 'string' ? x : x && typeof x === 'object' && '#text' in x ? String((x as { '#text': unknown })['#text']) : '');

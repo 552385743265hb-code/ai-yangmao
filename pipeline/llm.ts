@@ -36,7 +36,7 @@ const PROMPT = `你是"AI 羊毛牧场"的信息抽取器。下面是某个 AI �
 - key：稳定的英文短标识，只描述"产品+权益"，不含日期，例如 gemini-api-free-tier
 - title：中文标题，20 字以内，保留原始品牌和权益名称
 - type：new 注册新人礼（只给新注册的账号）/ trial 应用尝鲜（首次使用某个应用、客户端或新功能就送，新老用户都能领，如“首次登录桌面端送 6 元”）/ free 限时免费开放 / perk 会员福利（重置、加赠）/ topup 充值赠送 / gift 会员免费送 / standing 常驻免费额度 / apply 申请制
-- modalities：text / code / image / video / audio 的子集
+- modalities：text / code / image / video / audio 的子集（3D 模型生成算 image）
 - claimMethod：auto / signup / app（下载应用并登录，含 App、桌面端、命令行工具）/ form / topup / member / code。官方一般不专门写怎么领，按常识推断：应用的福利＝下载应用并登录（app）；云厂商或模型的福利＝开通并使用服务（signup 或 auto）；会员的福利＝充值开会员（member 或 topup）
 - requirements：none / unknown（官方条件未明确）/ phone（海外手机号）/ card（海外信用卡）/ net（海外网络）/ realname / biz / student / invite / targeted / "pay:金额" / "member:会员名"
 - audience：new / old / all / unclear（原文没写清楚就用 unclear）
@@ -176,7 +176,8 @@ function tidy(o: Extracted): Extracted {
     type: low(o.type) as Extracted['type'], claimMethod: low(o.claimMethod) as string, audience: (low(o.audience) || 'unclear') as Extracted['audience'],
     // 类型和截止方式要配套：常驻/申请制一定是 standing；其他类型没截止日期时算"截止未知"
     endKind: (['standing', 'apply'].includes(String(low(o.type))) ? 'standing' : low(o.endKind) === 'standing' ? 'unknown' : low(o.endKind)) as Extracted['endKind'],
-    modalities: toList(o.modalities).map(x => x.toLowerCase()),
+    // 模态只认五种；3D 生成归到图像，其他不认识的去掉，全去掉了按文本。之前模型写了“3d”整条被丢（2026-10-01 Meshy）
+    modalities: (() => { const m = [...new Set(toList(o.modalities).map(x => x.toLowerCase()).map(x => (/^3d|3d$|mesh|model3d/.test(x) ? 'image' : x)).filter(x => ['text', 'code', 'image', 'video', 'audio'].includes(x)))]; return m.length ? m : ['text']; })(),
     // 模型偶尔只写 member / pay 不带内容，补成可读的占位，交给审核时修正
     requirements: normalizeRequirements(o.requirements),
     steps: toList(o.steps).length && Array.isArray(o.steps) ? o.steps : typeof o.steps === 'string' ? [o.steps] : [],

@@ -281,7 +281,7 @@ INSERT INTO sources (id, platform_id, kind, url, tier, config) VALUES ('cohere-b
   ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
 INSERT INTO sources (id, platform_id, kind, url, tier, config) VALUES ('baidu-home', 'baidu', 'web_list', 'https://cloud.baidu.com', 'site', '{}')
   ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
-INSERT INTO sources (id, platform_id, kind, url, tier, config) VALUES ('baidu-news-rss', 'baidu', 'rss', 'https://cloud.baidu.com/news/rss.xml', 'site', '{}')
+INSERT INTO sources (id, platform_id, kind, url, tier, config) VALUES ('baidu-news', 'baidu', 'web_list', 'https://cloud.baidu.com/news', 'site', '{}')
   ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
 INSERT INTO sources (id, platform_id, kind, url, tier, config) VALUES ('huaweicloud-home', 'huaweicloud', 'web_list', 'https://www.huaweicloud.com', 'site', '{}')
   ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
@@ -295,7 +295,7 @@ INSERT INTO sources (id, platform_id, kind, url, tier, config) VALUES ('aws-cred
   ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
 INSERT INTO sources (id, platform_id, kind, url, tier, config) VALUES ('gcloud-free', 'gcloud', 'web_list', 'https://cloud.google.com/free', 'site', '{}')
   ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
-INSERT INTO sources (id, platform_id, kind, url, tier, config) VALUES ('gcloud-blog-rss', 'gcloud', 'rss', 'https://cloud.google.com/blog/rss.xml', 'site', '{}')
+INSERT INTO sources (id, platform_id, kind, url, tier, config) VALUES ('gcloud-blog-rss', 'gcloud', 'rss', 'https://cloudblog.withgoogle.com/rss/', 'site', '{}')
   ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
 INSERT INTO sources (id, platform_id, kind, url, tier, config) VALUES ('azure-free', 'azure', 'web_list', 'https://azure.microsoft.com/en-us/pricing/purchase-options/azure-account', 'site', '{}')
   ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
@@ -405,7 +405,7 @@ INSERT INTO sources (id, platform_id, kind, url, tier, config) VALUES ('elevenla
   ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
 INSERT INTO sources (id, platform_id, kind, url, tier, config) VALUES ('elevenlabs-pricing-api', 'elevenlabs', 'web_list', 'https://elevenlabs.io/pricing/api', 'site', '{}')
   ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
-INSERT INTO sources (id, platform_id, kind, url, tier, config) VALUES ('elevenlabs-blog-rss', 'elevenlabs', 'rss', 'https://elevenlabs.io/rss.xml', 'site', '{}')
+INSERT INTO sources (id, platform_id, kind, url, tier, config) VALUES ('elevenlabs-blog', 'elevenlabs', 'web_list', 'https://elevenlabs.io/blog', 'site', '{}')
   ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
 INSERT INTO sources (id, platform_id, kind, url, tier, config) VALUES ('meshy-pricing', 'meshy', 'web_list', 'https://www.meshy.ai/pricing', 'site', '{}')
   ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
