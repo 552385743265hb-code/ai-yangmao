@@ -1057,7 +1057,7 @@ async function adm(path, body) {
   const r = await fetch('/api/admin' + path, { method: body === undefined ? 'GET' : 'POST', headers: { Authorization: 'Bearer ' + ADM.token, 'Content-Type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) });
   const j = await r.json().catch(() => ({}));
   if (r.status === 401) { ADM.token = ''; throw new Error('管理员密钥不正确，请重新登录'); }
-  if (!r.ok) throw new Error(j.error || ('请求失败 ' + r.status));
+  if (!r.ok) throw new Error((j.error || ('请求失败 ' + r.status)) + (Array.isArray(j.issues) && j.issues.length ? '：' + j.issues.map(i => `${FIELD_L[i.path?.[0]] || i.path?.join('.') || ''} ${i.message}`.trim()).join('；') : ''));
   return j;
 }
 const TIER_L = { site: '官网', docs: '官方文档', official: '官方账号', staff: '员工账号', media: '媒体 / 社区转述' };
@@ -1109,7 +1109,7 @@ async function admQueue() {
       <label class="field">平台<select name="platformId">${PLATFORMS.map(p => `<option value="${esc(p.id)}" ${o.platformId === p.id || (!o.platformId && o.platform === p.name) ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select></label>
       <label class="field">适用对象<select name="audience">${Object.entries(AUD).map(([k, l]) => `<option value="${k}" ${o.audience === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
       <label class="field" style="grid-column:1/-1">为什么这样改（可选，但强烈建议写）<input type="text" name="__reason" placeholder="例如：要先付费升级才送，属于充值赠送"></label>
-      <div class="row" style="align-self:end"><button class="btn sm pri" type="submit">保存并通过</button></div>
+      <div class="row" style="grid-column:1/-1;align-items:center"><button class="btn sm pri" type="submit">保存并通过</button><span data-formmsg role="alert" class="small" style="font-weight:600"></span></div>
     </form>
   </article>`;
   box.innerHTML = `<p class="small muted">待审 ${q.pending.length} 条 · 新线索 ${q.newLeads} 条</p>
@@ -1133,6 +1133,8 @@ async function admQueue() {
     el.querySelector('[data-act="edit"]').addEventListener('click', () => { const f = el.querySelector('[data-editform]'); f.hidden = !f.hidden; });
     el.querySelector('[data-editform]').addEventListener('submit', async e => {
       e.preventDefault(); const form = e.currentTarget; const fd = Object.fromEntries(new FormData(form));
+      const msg = form.querySelector('[data-formmsg]'), btn = form.querySelector('button[type="submit"]');
+      msg.style.color = ''; msg.textContent = '保存中…'; btn.disabled = true;
       try {
       const reason = String(fd.__reason || '').trim(); delete fd.__reason;
       const newEvidence = { url: String(fd.evidenceUrl).trim(), tier: String(fd.evidenceTier), capturedAt: new Date().toISOString(), excerpts: {} };
@@ -1142,7 +1144,8 @@ async function admQueue() {
       if (newEvidence.url !== o.evidenceUrl || newEvidence.tier !== o.evidenceTier || EX_L.some(([key]) => newEvidence.excerpts[key] !== (o.excerpts[key] || ''))) fields.evidence = newEvidence;
       ['claimStart', 'claimEnd', 'creditValidity'].forEach(k => { if (!fields[k]) fields[k] = null; });
       const r = await adm(`/offers/${code}/edit`, { fields, approve: true, reason: reason || undefined, reasonCode: fields.type !== undefined && Object.keys(TYPES).find(k => TYPES[k].l === el.dataset.type) !== fields.type ? 'wrong_type' : 'wrong_field' }); done(el, r.changed.length ? `已修改 ${r.changed.map(f => FIELD_L[f] || f).join('、')} 并通过` : '没有改动，已通过');
-      } catch (err) { toast('没有保存：' + err.message); }
+      msg.textContent = '';
+      } catch (err) { btn.disabled = false; msg.style.color = 'var(--critical-ink)'; msg.textContent = '没有保存：' + err.message; console.error('[admin] 保存并通过失败', err); }
     });
   });
   $$('[data-plat]', box).forEach(b => b.addEventListener('click', async () => { const [id, act] = b.dataset.plat.split(':'); await adm(`/platforms/${id}/${act}`, {}); toast('已处理'); admQueue(); }));
