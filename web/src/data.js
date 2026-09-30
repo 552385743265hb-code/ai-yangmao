@@ -15,7 +15,7 @@ const TYPES = {
   apply:    { l: '申请制',       slot: 7 },
 };
 const MODAL = { text: '文本', code: '编程', image: '图像', video: '视频', audio: '音乐·语音' };
-const CLAIM = { auto: '自动到账', signup: '注册即送', app: '下载 App', form: '邮件或表单申请', topup: '充值触发', member: '会员自动生效', code: '兑换码' };
+const CLAIM = { auto: '自动到账', signup: '注册即送', app: '下载应用并登录', form: '邮件或表单申请', topup: '充值触发', member: '会员自动生效', code: '兑换码' };
 const REQ = {
   none: '零门槛', unknown: '领取条件待确认', pay: '需充值', member: '需会员', phone: '需海外手机号', card: '需海外信用卡', net: '需海外网络',
   realname: '需实名', biz: '需企业认证', student: '需学生认证', invite: '需邀请码', targeted: '定向发放',

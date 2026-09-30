@@ -37,7 +37,7 @@ const PROMPT = `你是"AI 羊毛牧场"的信息抽取器。下面是某个 AI �
 - title：中文标题，20 字以内，保留原始品牌和权益名称
 - type：new 注册新人礼（只给新注册的账号）/ trial 应用尝鲜（首次使用某个应用、客户端或新功能就送，新老用户都能领，如“首次登录桌面端送 6 元”）/ free 限时免费开放 / perk 会员福利（重置、加赠）/ topup 充值赠送 / gift 会员免费送 / standing 常驻免费额度 / apply 申请制
 - modalities：text / code / image / video / audio 的子集
-- claimMethod：auto / signup / app / form / topup / member / code。官方一般不专门写怎么领，按常识推断：应用的福利＝下载应用并登录（app）；云厂商或模型的福利＝开通并使用服务（signup 或 auto）；会员的福利＝充值开会员（member 或 topup）
+- claimMethod：auto / signup / app（下载应用并登录，含 App、桌面端、命令行工具）/ form / topup / member / code。官方一般不专门写怎么领，按常识推断：应用的福利＝下载应用并登录（app）；云厂商或模型的福利＝开通并使用服务（signup 或 auto）；会员的福利＝充值开会员（member 或 topup）
 - requirements：none / unknown（官方条件未明确）/ phone（海外手机号）/ card（海外信用卡）/ net（海外网络）/ realname / biz / student / invite / targeted / "pay:金额" / "member:会员名"
 - audience：new / old / all / unclear（原文没写清楚就用 unclear）
 - valueText：必须写出具体数量和单位（如"每天 1000 次请求""新用户 2000 万 tokens""6 元赠金""$5/月"），数字从原文来。原文没有给出任何具体数量时，写"官方未写明具体额度："加原文说法。原文写了能用哪些模型（包括脚注、常见问题里的说明），要把模型名写进 valueText，如"每月 50 credits，可用 Claude Sonnet 4.5 及开源模型 Qwen3 Coder Next、DeepSeek 3.2"；写了速率限制或只能在某个客户端使用，也一并写上
