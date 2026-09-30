@@ -36,7 +36,7 @@ const PROMPT = `你是"AI 羊毛牧场"的信息抽取器。下面是某个 AI �
 - valueText：原文里的额度说法（如"每天 1000 次请求"）
 - usdEstimate：折合美元的粗估（常驻额度按每月），估不出就 null
 - claimStart / claimEnd：官方时区下的日期 YYYY-MM-DD，没写就 null
-- endKind：有明确截止日期用 date；限时但没写截止用 unknown；常驻额度和申请制用 standing
+- endKind：有明确截止日期用 date；没写截止日期的活动（包括长期有效的新人礼、充值赠送）用 unknown；只有 type 为 standing 或 apply 时才用 standing
 - creditValidity：领取后额度多久失效，没写就 null
 - sourceTz：官方使用的 IANA 时区（中国厂商一般 Asia/Shanghai，美国厂商 America/Los_Angeles），拿不准用 UTC
 - steps：领取步骤，最多 4 条
@@ -106,7 +106,8 @@ function tidy(o: Extracted): Extracted {
   return {
     ...o,
     type: low(o.type) as Extracted['type'], claimMethod: low(o.claimMethod) as string, audience: (low(o.audience) || 'unclear') as Extracted['audience'],
-    endKind: low(o.endKind) as Extracted['endKind'],
+    // 类型和截止方式要配套：常驻/申请制一定是 standing；其他类型没截止日期时算"截止未知"
+    endKind: (['standing', 'apply'].includes(String(low(o.type))) ? 'standing' : low(o.endKind) === 'standing' ? 'unknown' : low(o.endKind)) as Extracted['endKind'],
     modalities: toList(o.modalities).map(x => x.toLowerCase()),
     requirements: toList(o.requirements).map(x => (x.includes(':') ? x : x.toLowerCase())),
     steps: toList(o.steps).length && Array.isArray(o.steps) ? o.steps : typeof o.steps === 'string' ? [o.steps] : [],
