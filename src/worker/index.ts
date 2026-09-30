@@ -160,6 +160,7 @@ ingest.post('/offers', async c => {
   for (const o of body.data) {
     const plat = plats.find(p => p.id === o.platformId);
     if (!plat) { results.push({ id: o.id, error: `平台 ${o.platformId} 不在白名单里，先建平台` }); continue; }
+    if (o.evidence.tier === 'tested') { results.push({ id: o.id, error: '“管理员实测”只能在后台人工设置' }); continue; }
     const src = srcs.find(x => x.id === o.sourceId);
     const missing = missingEvidence(o.evidence.excerpts);
     const sameOfficialHost = src && (() => { try { return new URL(src.url).hostname.toLowerCase() === new URL(o.evidence.url).hostname.toLowerCase(); } catch { return false; } })();
@@ -253,6 +254,7 @@ ingest.get('/verification-queue', async c => {
   const proposals = rows.length ? await db(c.env).select().from(s.offerProposals).where(inArray(s.offerProposals.offerId, rows.map(o => o.id))) : [];
   return c.json({ offers: rows.filter(o => {
     if (o.withdrawnAt || (o.endKind === 'date' && liveStatus(o, new Date(now)) === 'ended')) return false;
+    if (o.evidence.tier === 'tested') return false; // 管理员实测的条目没有可抓取的官方原文，不做自动复核
     if (forced) return true;
     const age = o.lastVerifiedAt ? now - Date.parse(o.lastVerifiedAt) : Infinity;
     return age >= (o.type === 'standing' || o.type === 'apply' ? 7 : 1) * 86400_000;

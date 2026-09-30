@@ -97,6 +97,16 @@ describe('official evidence verification', () => {
 });
 
 describe('review gates and preserved public version', () => {
+  it('管理员实测：社区转述的条目改成“管理员实测”即可通过；采集管线不能自称管理员实测', async () => {
+    await call('ingest/offers', [{ ...offer, evidence: { ...evidence, url: 'https://forum.example/t/1', tier: 'media' } }]);
+    expect((await call('admin/offers/vendor-free/approve', {}, 'admin')).status).toBe(400);
+    const edited = await call('admin/offers/vendor-free/edit', { fields: { evidence: { ...evidence, url: 'https://forum.example/t/1', tier: 'tested' } }, approve: true, reason: '我亲自领到了' }, 'admin');
+    expect(edited.status, JSON.stringify(edited.body)).toBe(200);
+    expect((await call('ingest/verification-queue')).body.offers).toEqual([]);
+    const piped = await call('ingest/offers', [{ ...offer, id: 'vendor-other', evidence: { ...evidence, tier: 'tested' } }]);
+    expect(JSON.stringify(piped.body)).toContain('只能在后台人工设置');
+  });
+
   it('管理员人工核对后可以填写模型读不到的有效期（如公众号图片里的），不被原文摘录门槛挡住', async () => {
     await call('ingest/offers', [{ ...offer, evidence: { ...evidence, excerpts: { benefit: evidence.excerpts.benefit } } }]);
     const edited = await call('admin/offers/vendor-free/edit', { fields: { creditValidity: '1 个月', audience: 'old' }, approve: true, reason: '有效期在公众号图片里' }, 'admin');

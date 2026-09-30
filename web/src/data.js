@@ -19,7 +19,7 @@ const REQ = {
   none: '零门槛', unknown: '领取条件待确认', pay: '需充值', member: '需会员', phone: '需海外手机号', card: '需海外信用卡', net: '需海外网络',
   realname: '需实名', biz: '需企业认证', student: '需学生认证', invite: '需邀请码', targeted: '定向发放',
 };
-const SRC = { site: '官网公告', docs: '帮助文档', official: '官方账号', staff: '员工账号', media: '媒体转述（人工审核）' };
+const SRC = { site: '官网公告', docs: '帮助文档', official: '官方账号', staff: '员工账号', media: '媒体转述（人工审核）', tested: '管理员亲测可领' };
 const PTYPE = { lab: { l: '模型厂商', slot: 1 }, cloud: { l: '云厂商', slot: 2 }, infra: { l: '推理平台', slot: 3 }, tool: { l: 'AI 工具', slot: 4 }, new: { l: '新玩家', slot: 5 } };
 const TZ = { 'Asia/Shanghai': '北京时间', 'America/Los_Angeles': '美西时间（PT）', 'America/New_York': '美东时间（ET）', 'UTC': 'UTC' };
 const AUD = { new: '新用户', old: '老用户', all: '全部用户', unclear: '资格未明确' };

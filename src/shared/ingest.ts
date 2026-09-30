@@ -40,7 +40,8 @@ export const offerIn = z.object({
   evidence: z.object({
     url: z.url(),
     // media：媒体或社区转述，永远需要人工核对官方原文
-    tier: z.enum(['site', 'docs', 'official', 'staff', 'media']),
+    // tested：管理员亲自领到过（官方只在客户端里提示、网上没有公告时用），只能在后台人工设置，采集管线不能写入
+    tier: z.enum(['site', 'docs', 'official', 'staff', 'media', 'tested']),
     capturedAt: z.string(),
     pageHash: z.string().regex(/^[a-f0-9]{64}$/).optional(),
     excerpts: z.object({ benefit: z.string().optional(), eligibility: z.string().optional(), claim: z.string().optional(), validity: z.string().optional() }),

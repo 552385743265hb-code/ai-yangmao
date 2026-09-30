@@ -86,6 +86,8 @@ async function publicationError(env: Env, offer: OfferRow): Promise<string | nul
   let url: URL;
   try { url = new URL(offer.evidence.url); } catch { return '官方证据链接无效'; }
   if (!['https:', 'http:'].includes(url.protocol)) return '官方证据必须是网页链接';
+  // 管理员亲自领到过：链接可以是官网下载页或社区帖子，不要求属于平台官方出处
+  if (offer.evidence.tier === 'tested') return null;
   const host = url.hostname.toLowerCase();
   const handles = offer.evidence.tier === 'staff' ? platform.staffHandles : platform.xHandles;
   if (offer.evidence.tier === 'staff' || (offer.evidence.tier === 'official' && ['x.com', 'twitter.com'].includes(host))) {

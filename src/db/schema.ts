@@ -68,7 +68,7 @@ export const offers = sqliteTable('offers', {
 
 export interface Evidence {
   url: string;
-  tier: 'site' | 'docs' | 'official' | 'staff' | 'media';
+  tier: 'site' | 'docs' | 'official' | 'staff' | 'media' | 'tested';
   capturedAt: string;
   pageHash?: string;
   excerpts: { benefit?: string; eligibility?: string; claim?: string; validity?: string };

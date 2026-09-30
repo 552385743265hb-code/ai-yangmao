@@ -1060,7 +1060,7 @@ async function adm(path, body) {
   if (!r.ok) throw new Error((j.error || ('请求失败 ' + r.status)) + (Array.isArray(j.issues) && j.issues.length ? '：' + j.issues.map(i => `${FIELD_L[i.path?.[0]] || i.path?.join('.') || ''} ${i.message}`.trim()).join('；') : ''));
   return j;
 }
-const TIER_L = { site: '官网', docs: '官方文档', official: '官方账号', staff: '员工账号', media: '媒体 / 社区转述' };
+const TIER_L = { site: '官网', docs: '官方文档', official: '官方账号', staff: '员工账号', media: '媒体 / 社区转述', tested: '管理员实测（我亲自领到过）' };
 const EX_L = [['benefit', '权益'], ['eligibility', '资格'], ['claim', '领取方式'], ['validity', '有效期']];
 const RC = [['paid_bundle', '付费套餐自带'], ['not_ai', '不是 AI 额度'], ['wrong_platform', '平台归错'], ['duplicate', '重复'], ['expired', '已过期'], ['vague', '额度不明'], ['wrong_type', '分类错']];
 const FIELD_L = { title: '标题', type: '类型', valueText: '额度', usdEstimate: '折合美元', claimStart: '开始', claimEnd: '截止', endKind: '截止方式', creditValidity: '有效期', audience: '适用对象', requirements: '门槛', modalities: '模态', platformId: '平台', sourceTz: '时区', claimMethod: '领取方式' };
