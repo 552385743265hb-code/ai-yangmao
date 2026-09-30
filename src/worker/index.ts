@@ -207,7 +207,9 @@ ingest.post('/snapshots', async c => {
 /** 线索研判：取待处理的线索、回写处理结果。 */
 ingest.get('/leads', async c => {
   const limit = Math.min(50, Number(c.req.query('limit') ?? 20));
-  const rows = await db(c.env).select().from(s.leads).where(eq(s.leads.status, 'new')).orderBy(desc(s.leads.id)).limit(limit);
+  // 社区和媒体线索优先（信号密度高），同类里由新到旧
+  const rows = await db(c.env).select().from(s.leads).where(eq(s.leads.status, 'new'))
+    .orderBy(sql`CASE WHEN ${s.leads.origin} IN ('telegram','manual') THEN 0 WHEN ${s.leads.origin} IN ('linuxdo','ithome','v2ex','hn','reddit') THEN 1 ELSE 2 END`, desc(s.leads.id)).limit(limit);
   return c.json({ leads: rows });
 });
 ingest.post('/leads/:id/status', async c => {

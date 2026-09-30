@@ -13,8 +13,11 @@ export async function aihot(src: Source): Promise<LeadIn[]> {
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const j = await res.json() as Record<string, unknown>;
   if (Array.isArray(j.events)) {
-    return (j.events as { title?: string; displayLabel?: string; occurredOn?: string; posts?: { url?: string; text?: string; originalText?: string }[] }[])
-      .flatMap(e => (e.posts ?? []).filter(p => p.url).map(p => ({
+    // 只收最近 7 天的重置；同一次重置只取最新的一条原帖，避免重复
+    const since = Date.now() - 7 * 86400_000;
+    return (j.events as { title?: string; displayLabel?: string; occurredOn?: string; createdAt?: string; posts?: { url?: string; text?: string; originalText?: string }[] }[])
+      .filter(e => Date.parse(e.occurredOn ?? e.createdAt ?? '') >= since)
+      .flatMap(e => (e.posts ?? []).filter(p => p.url).slice(0, 1).map(p => ({
         origin: 'aihot' as const, url: p.url!, title: `Codex ${e.displayLabel ?? ''}：${e.title ?? ''}${e.occurredOn ? `（${e.occurredOn}）` : ''}`.slice(0, 300),
         raw: [p.text, p.originalText].filter(Boolean).join('\n').slice(0, 4000),
       })));

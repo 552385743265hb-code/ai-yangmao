@@ -100,6 +100,10 @@ function providers(): Provider[] {
 }
 
 export const llmAvailable = () => providers().length > 0;
+// 免费档有每分钟请求数限制：两次调用至少间隔 MIN_GAP 毫秒
+const MIN_GAP = Number(process.env.LLM_MIN_GAP_MS ?? 4500);
+let lastCall = 0;
+async function pace() { const wait = lastCall + MIN_GAP - Date.now(); if (wait > 0) await new Promise(r => setTimeout(r, wait)); lastCall = Date.now(); }
 export const paidAvailable = () => providers().some(p => p.paid);
 
 /** 摘录必须能在原文里逐字找到（忽略空白和大小写），找不到的清空。 */
@@ -127,7 +131,9 @@ function tidy(o: Extracted): Extracted {
     // 类型和截止方式要配套：常驻/申请制一定是 standing；其他类型没截止日期时算"截止未知"
     endKind: (['standing', 'apply'].includes(String(low(o.type))) ? 'standing' : low(o.endKind) === 'standing' ? 'unknown' : low(o.endKind)) as Extracted['endKind'],
     modalities: toList(o.modalities).map(x => x.toLowerCase()),
-    requirements: toList(o.requirements).map(x => (x.includes(':') ? x : x.toLowerCase())),
+    // 模型偶尔只写 member / pay 不带内容，补成可读的占位，交给审核时修正
+    requirements: toList(o.requirements).map(x => (x.includes(':') ? x : x.toLowerCase())).map(x => (x === 'member' ? 'member:付费会员' : x === 'pay' ? 'pay:金额未写明' : x))
+      .filter(x => /^(none|phone|card|net|realname|biz|student|invite|targeted|pay:.+|member:.+)$/.test(x)),
     steps: toList(o.steps).length && Array.isArray(o.steps) ? o.steps : typeof o.steps === 'string' ? [o.steps] : [],
     usdEstimate: typeof o.usdEstimate === 'number' ? o.usdEstimate : Number(o.usdEstimate) || null,
     claimStart: o.claimStart || null, claimEnd: o.claimEnd || null, creditValidity: o.creditValidity || null,
@@ -148,11 +154,12 @@ export async function extract(platformName: string, url: string, text: string, l
     try {
       let res: { text: string; tokens: number; costCny?: number } | null = null;
       for (let i = 0; i < 3 && !res; i++) {
-        try { res = await p.call(sys, user); }
+        try { await pace(); res = await p.call(sys, user); }
         catch (e) {
           if (!(e as { retryable?: boolean }).retryable || i === 2) throw e;
-          log(`  ${p.name} 临时出错，${3 * (i + 1)} 秒后重试：${(e as Error).message.slice(0, 80)}`);
-          await new Promise(r => setTimeout(r, 3000 * (i + 1)));
+          const wait = /429/.test((e as Error).message) ? 20000 * (i + 1) : 3000 * (i + 1);
+          log(`  ${p.name} 临时出错，${wait / 1000} 秒后重试：${(e as Error).message.slice(0, 80)}`);
+          await new Promise(r => setTimeout(r, wait));
         }
       }
       const { text: out, tokens, costCny = 0 } = res!;
