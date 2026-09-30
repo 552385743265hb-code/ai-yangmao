@@ -106,7 +106,7 @@ function itemBlock(it: Item, n: number, tr: Map<string, string>, section: string
   if (benefit && section !== 'changed') lines.push(`📄 **${official ? '官方原文' : '原文（媒体 / 社区转述）'}**：“${safe(zh(tr, benefit))}”`);
   if (it.adminNote) lines.push(`💬 **牧场心得**：${safe(it.adminNote.replace(/\s*\n+\s*/g, ' '))}`);
   lines.push(`📥 **怎么领**：${CLAIM[it.claimMethod] ?? it.claimMethod}`);
-  (it.steps ?? []).filter(x => !/^官方出处：/.test(x)).slice(0, 5).forEach((st, i) => lines.push(`　${i + 1}. ${safe(zh(tr, st))}`));
+  (it.steps ?? []).filter(x => !/^官方出处：/.test(x)).slice(0, 8).forEach((st, i) => lines.push(`　${i + 1}. ${safe(zh(tr, st))}`));
   const eligibility = it.excerpts?.eligibility;
   lines.push(`✅ **条件**：${it.requirements.map(reqText).join('、')}；适用：${AUD[it.audience] ?? it.audience}`);
   if (eligibility) lines.push(`　${official ? '官方说明' : '转述说明'}：“${safe(zh(tr, eligibility))}”`);
