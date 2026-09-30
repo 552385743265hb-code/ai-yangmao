@@ -91,3 +91,12 @@ async function redditOnce(src: Source): Promise<LeadIn[]> {
   const items = parseFeed(body);
   return items.filter(i => i.link && isLead(i.title)).map(i => ({ origin: 'reddit' as const, url: i.link, title: i.title.slice(0, 300), raw: i.summary.slice(0, 4000) }));
 }
+
+/** 第三方 RSS 线索（LINUX DO 福利羊毛、IT之家 等）。config.filter = "all" 时整版都算线索（版块本身就是羊毛区）。 */
+export async function feed(src: Source): Promise<LeadIn[]> {
+  const cfg = (src.config ?? {}) as { origin?: LeadIn['origin']; filter?: 'all' | 'lead' };
+  const items = parseFeed(await fetchText(src.url, { accept: 'application/rss+xml' }));
+  return items
+    .filter(i => i.link && (cfg.filter === 'all' || isLead(`${i.title} ${i.summary.slice(0, 300)}`)))
+    .map(i => ({ origin: cfg.origin ?? 'media', url: i.link, title: i.title.slice(0, 300), raw: i.summary.slice(0, 4000) }));
+}

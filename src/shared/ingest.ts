@@ -6,7 +6,7 @@ const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, '日期格式应为 YYYY
 const REQ = /^(none|phone|card|net|realname|biz|student|invite|targeted|pay:.+|member:.+)$/;
 
 export const leadIn = z.object({
-  origin: z.enum(['aihot', 'email', 'sweep', 'manual', 'telegram', 'hn', 'reddit', 'discord', 'media']),
+  origin: z.enum(['aihot', 'email', 'sweep', 'manual', 'telegram', 'hn', 'reddit', 'discord', 'media', 'linuxdo', 'ithome', 'v2ex']),
   url: z.url(),
   title: z.string().max(300).optional(),
   raw: z.string().max(20000).optional(),
@@ -31,10 +31,12 @@ export const offerIn = z.object({
   sourceTz: z.string().refine(tz => { try { new Intl.DateTimeFormat('en', { timeZone: tz }); return true; } catch { return false; } }, '无效的时区'),
   publishedAt: z.string().nullable().optional(),
   firstChannel: z.string().max(40).optional(),
+  leadId: z.number().int().optional(),
   steps: z.array(z.string().max(200)).max(10).default([]),
   evidence: z.object({
     url: z.url(),
-    tier: z.enum(['site', 'docs', 'official', 'staff']),
+    // media：媒体或社区转述，永远需要人工核对官方原文
+    tier: z.enum(['site', 'docs', 'official', 'staff', 'media']),
     capturedAt: z.string(),
     excerpts: z.object({ benefit: z.string().optional(), eligibility: z.string().optional(), claim: z.string().optional(), validity: z.string().optional() }),
   }),

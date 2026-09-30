@@ -137,16 +137,18 @@ ingest.post('/offers', async c => {
     if (!plat) { results.push({ id: o.id, error: `平台 ${o.platformId} 不在白名单里，先建平台` }); continue; }
     const src = srcs.find(x => x.id === o.sourceId);
     const missing = missingEvidence(o.evidence.excerpts);
-    const auto = plat.status === 'approved' && !!src?.autoPublish && o.evidence.tier !== 'staff' && missing.length === 0;
+    const auto = plat.status === 'approved' && !!src?.autoPublish && !['staff', 'media'].includes(o.evidence.tier) && missing.length === 0 && !/未写明|不明确/.test(o.valueText);
     const [prev] = await d.select().from(s.offers).where(eq(s.offers.id, o.id));
     const nowIso = new Date().toISOString();
+    const { leadId, ...od } = o;
     const row = {
-      ...o, usdEstimate: o.usdEstimate ?? null, claimStart: o.claimStart ?? null, claimEnd: o.claimEnd ?? null,
+      ...od, usdEstimate: o.usdEstimate ?? null, claimStart: o.claimStart ?? null, claimEnd: o.claimEnd ?? null,
       creditValidity: o.creditValidity ?? null, publishedAt: o.publishedAt ?? null, sourceId: o.sourceId ?? null,
       lastVerifiedAt: nowIso, verifyResult: '官方页面可以打开，已抽取字段', updatedAt: nowIso,
     };
     if (!prev) {
       await d.insert(s.offers).values({ ...row, reviewState: auto ? 'approved' : 'pending' });
+      if (leadId) await d.update(s.leads).set({ status: 'linked', offerId: o.id }).where(eq(s.leads.id, leadId));
       results.push({ id: o.id, created: true, reviewState: auto ? 'approved' : 'pending', missingEvidence: missing });
       continue;
     }
@@ -200,6 +202,22 @@ ingest.post('/snapshots', async c => {
   if (prev?.hash === b.hash) return c.json({ changed: false });
   await d.insert(s.snapshots).values({ sourceId: b.sourceId, url: b.url, hash: b.hash, text: b.text ?? null });
   return c.json({ changed: true });
+});
+
+/** 线索研判：取待处理的线索、回写处理结果。 */
+ingest.get('/leads', async c => {
+  const limit = Math.min(50, Number(c.req.query('limit') ?? 20));
+  const rows = await db(c.env).select().from(s.leads).where(eq(s.leads.status, 'new')).orderBy(desc(s.leads.id)).limit(limit);
+  return c.json({ leads: rows });
+});
+ingest.post('/leads/:id/status', async c => {
+  const b = z.object({ status: z.enum(['linked', 'rejected', 'reviewing']), offerId: z.string().optional(), note: z.string().max(500).optional() }).safeParse(await c.req.json().catch(() => null));
+  if (!b.success) return c.json({ error: '数据格式不正确' }, 400);
+  const [lead] = await db(c.env).select().from(s.leads).where(eq(s.leads.id, Number(c.req.param('id'))));
+  if (!lead) return c.json({ error: '没有这条线索' }, 404);
+  const raw = b.data.note ? `${lead.raw ?? ''}\n[研判] ${b.data.note}`.slice(-20000) : lead.raw;
+  await db(c.env).update(s.leads).set({ status: b.data.status, offerId: b.data.offerId ?? lead.offerId, raw }).where(eq(s.leads.id, lead.id));
+  return c.json({ ok: true });
 });
 
 /** 模型预算：今日 token、本月费用。 */

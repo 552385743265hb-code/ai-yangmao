@@ -1,6 +1,6 @@
 // 采集管线入口：GitHub Actions 每 6 小时运行一次，也可以手动触发补跑。
 // 流程：取信源 → 抓取 → 只保留和羊毛相关的句子 → 与上次比对 → 有变化才调用模型抽取 → 写入网站（默认进待审）。
-import { aihot, hn, parseFeed, reddit, type Source } from './collectors';
+import { aihot, feed, hn, parseFeed, reddit, type Source } from './collectors';
 import { api, fetchPage, fetchText, isFreebie, relevantText, sha256, slug } from './lib';
 import { DeferError, extract, llmAvailable, paidAvailable, type Extracted } from './llm';
 import { offerIn, type LeadIn, type OfferIn } from '../src/shared/ingest';
@@ -9,9 +9,11 @@ const DAILY_TOKEN_CAP = Number(process.env.DAILY_TOKEN_CAP ?? 200000);
 const MONTHLY_COST_CAP = Number(process.env.MONTHLY_COST_CAP_CNY ?? 10);
 let costLeft = MONTHLY_COST_CAP;
 const DRY = process.env.DRY_RUN === '1';
+const FORCE = process.env.FORCE === '1'; // 忽略上次的哈希，强制重新抽取（提示词改进后补跑）
+const LEAD_LIMIT = Number(process.env.LEAD_LIMIT ?? 25);
 const onlyList = (process.env.ONLY_SOURCES ?? '').split(',').map(s => s.trim()).filter(Boolean);
 const only = onlyList.length ? onlyList : null; // 留空 = 全部信源
-const stats = { costCny: 0, deferred: 0, sources: 0, ok: 0, failed: 0, changed: 0, leads: 0, offers: 0, pending: 0, extractSkipped: 0, tokens: 0, errors: [] as string[] };
+const stats = { leadsTriaged: 0, leadOffers: 0, costCny: 0, deferred: 0, sources: 0, ok: 0, failed: 0, changed: 0, leads: 0, offers: 0, pending: 0, extractSkipped: 0, tokens: 0, errors: [] as string[] };
 let tokensLeft = DAILY_TOKEN_CAP;
 
 const log = (...a: unknown[]) => console.log(new Date().toISOString().slice(11, 19), ...a);
@@ -83,7 +85,7 @@ async function officialPage(src: Source) {
   const { text, via } = await fetchPage(src.url);
   const rel = relevantText(text);
   const hash = sha256(rel);
-  if (hash === src.lastHash) { await report(src, true); log(`  无变化（${via}）`); return; }
+  if (hash === src.lastHash && !FORCE) { await report(src, true); log(`  无变化（${via}）`); return; }
   stats.changed++;
   log(`  有变化（${via}，相关文本 ${rel.length} 字）`);
   const done = rel.length ? await extractAndPost(src, src.url, rel) : true;
@@ -115,6 +117,7 @@ async function runSource(src: Source) {
     if (src.kind === 'aihot') { await postLeads(await aihot(src)); await report(src, true); }
     else if (src.kind === 'hn') { await postLeads(await hn(src)); await report(src, true); }
     else if (src.kind === 'reddit') { await postLeads(await reddit(src)); await report(src, true); }
+    else if (src.kind === 'feed') { await postLeads(await feed(src)); await report(src, true); }
     else if (src.kind === 'rss' && src.platformId) await officialFeed(src);
     else if ((src.kind === 'web_list' || src.kind === 'json') && src.platformId) await officialPage(src);
     else { log('  暂不支持这种信源，跳过'); return; }
@@ -125,6 +128,62 @@ async function runSource(src: Source) {
     stats.errors.push(`${src.id}: ${msg}`);
     log(`  失败：${msg}`);
     await report(src, false, { error: msg.slice(0, 500) }).catch(() => undefined);
+  }
+}
+
+/* ---------- 线索研判：把线索变成待审羊毛 ---------- */
+interface Plat { id: string; name: string; site: string | null; xHandles: string[]; staffHandles: string[] }
+interface Lead { id: number; origin: string; url: string; title: string | null; raw: string | null }
+const host = (u: string) => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return ''; } };
+/** 证据级别：平台官网域名 → site；白名单里的官方 X 账号 → official；员工账号 → staff；其余（媒体、社区、公众号转载）→ media。 */
+function tierOf(url: string, p: Plat | undefined): OfferIn['evidence']['tier'] {
+  if (!p) return 'media';
+  const h = host(url);
+  if (p.site && h && (h === host(p.site) || h.endsWith('.' + host(p.site)))) return 'site';
+  if (h === 'x.com' || h === 'twitter.com') {
+    const handle = '@' + (new URL(url).pathname.split('/')[1] ?? '').toLowerCase();
+    if (p.xHandles.some(x => x.toLowerCase() === handle)) return 'official';
+    if (p.staffHandles.some(x => x.toLowerCase() === handle)) return 'staff';
+  }
+  return 'media';
+}
+async function triageLeads(plats: Plat[]) {
+  if (!llmAvailable()) return;
+  const { leads } = await api<{ leads: Lead[] }>(`/leads?limit=${LEAD_LIMIT}`);
+  if (!leads.length) return;
+  const list = plats.map(p => `${p.id}=${p.name}`).join('；');
+  const pmap = new Map(plats.map(p => [p.id, p]));
+  log(`研判线索 ${leads.length} 条`);
+  for (const l of leads) {
+    if (tokensLeft < 8000) { log('  今日模型预算不足，剩余线索留到下次'); break; }
+    stats.leadsTriaged++;
+    let text = `${l.title ?? ''}\n${l.raw ?? ''}`;
+    try { const pg = await fetchPage(l.url); text = `${l.title ?? ''}\n${pg.text}`.slice(0, 14000); } catch { /* 原文抓不到就用线索自带的摘要 */ }
+    let r;
+    try { r = await extract('（见平台白名单）', l.url, text, log, { platformList: list }); }
+    catch (e) { log(`  #${l.id} 抽取失败：${(e as Error).message.slice(0, 80)}`); continue; }
+    tokensLeft -= r.tokens; stats.tokens += r.tokens; stats.costCny += r.costCny;
+    const valid: OfferIn[] = [];
+    const unknown: string[] = [];
+    for (const e of r.offers) {
+      const p = pmap.get(e.platformId ?? '');
+      if (!p) { unknown.push(e.title); continue; }
+      const tier = tierOf(l.url, p);
+      const o = toOffer({ id: `lead-${l.origin}`, kind: l.origin, platformId: p.id, tier } as unknown as Source, e, l.url);
+      o.evidence.tier = tier; o.leadId = l.id; o.sourceId = undefined; o.firstChannel = l.origin;
+      if (e.officialUrl && tier === 'media') o.steps = [...(o.steps ?? []), `官方出处：${e.officialUrl}`].slice(0, 6);
+      const v = offerIn.safeParse(o);
+      if (v.success) valid.push(v.data); else log(`  #${l.id} 丢弃「${e.title}」：${v.error.issues.map(i => i.path.join('.') + ' ' + i.message).join('；').slice(0, 120)}`);
+    }
+    if (DRY) { log(`  #${l.id} ${l.title?.slice(0, 40)} → ${valid.map(v => `${v.platformId}:${v.title}`).join('、') || '无'}${unknown.length ? `；白名单外：${unknown.join('、')}` : ''}`); continue; }
+    if (valid.length) {
+      const res = await api<{ results: { id: string; error?: string; unchanged?: boolean }[] }>('/offers', valid);
+      stats.leadOffers += res.results.filter(x => !x.error && !x.unchanged).length;
+      log(`  #${l.id} → ${valid.map(v => v.title).join('、')}`);
+      await api(`/leads/${l.id}/status`, { status: 'linked', offerId: valid[0].id });
+    } else {
+      await api(`/leads/${l.id}/status`, { status: unknown.length ? 'reviewing' : 'rejected', note: unknown.length ? `白名单外的平台：${unknown.join('、')}` : '模型判断不是 AI 羊毛' });
+    }
   }
 }
 
@@ -141,6 +200,10 @@ async function main() {
   log(`共 ${list.length} 个信源；今日模型预算剩 ${tokensLeft} tokens，本月付费兜底剩 ¥${costLeft.toFixed(2)}${DRY ? '；演练模式，不写入' : ''}`);
   const queue = [...list];
   await Promise.all(Array.from({ length: 4 }, async () => { while (queue.length) await runSource(queue.shift()!); }));
+  try {
+    const { platforms } = await fetch(`${(process.env.API_BASE ?? 'https://ai-yangmao.com').replace(/\/$/, '')}/api/platforms`).then(r => r.json()) as { platforms: Plat[] };
+    await triageLeads(platforms);
+  } catch (e) { stats.errors.push(`线索研判：${(e as Error).message}`); log('线索研判出错', (e as Error).message); }
   const ok = stats.ok > 0 && stats.failed <= stats.ok;
   log('完成', JSON.stringify(stats));
   if (!DRY) await api('/runs', { kind: 'collect', startedAt, finishedAt: new Date().toISOString(), ok, stats, tokens: stats.tokens, costCny: stats.costCny });

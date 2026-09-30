@@ -38,7 +38,7 @@ const PROMPT = `你是"AI 羊毛牧场"的信息抽取器。下面是某个 AI �
 - claimMethod：auto / signup / app / form / topup / member / code
 - requirements：none / phone（海外手机号）/ card（海外信用卡）/ net（海外网络）/ realname / biz / student / invite / targeted / "pay:金额" / "member:会员名"
 - audience：new / old / all / unclear（原文没写清楚就用 unclear）
-- valueText：原文里的额度说法（如"每天 1000 次请求"）
+- valueText：必须写出具体数量和单位（如"每天 1000 次请求""新用户 2000 万 tokens""6 元赠金""$5/月"），数字从原文来。原文没有给出任何具体数量时，写"官方未写明具体额度："加原文说法
 - usdEstimate：折合美元的粗估（常驻额度按每月），估不出就 null
 - claimStart / claimEnd：官方时区下的日期 YYYY-MM-DD，没写就 null
 - endKind：有明确截止日期用 date；没写截止日期的活动（包括长期有效的新人礼、充值赠送）用 unknown；只有 type 为 standing 或 apply 时才用 standing
@@ -48,6 +48,13 @@ const PROMPT = `你是"AI 羊毛牧场"的信息抽取器。下面是某个 AI �
 - excerpts：从原文逐字复制的句子，分别支撑 benefit（赠送内容）/ eligibility（资格）/ claim（领取方式）/ validity（有效期或截止）。原文没有就留空字符串，绝对不要改写或编造。
 
 只输出 JSON：{"offers":[...]}，没有符合条件的就输出 {"offers":[]}。`;
+
+/** 线索研判：文章可能来自媒体或社区，需要先判断属于白名单里哪个平台。 */
+const TRIAGE = `\n\n补充规则（本文可能是媒体报道、社区帖子或推文）：
+- 每条再加一个字段 platformId：从下面的平台白名单里选最匹配的 id；都不匹配就用 "unknown"。
+- 再加一个字段 officialUrl：文中出现的、指向该平台官网 / 官方公告 / 官方账号的链接，没有就 null。
+- 中转站、号池、账号买卖、非 AI 的福利（打车、外卖、云手机、代理等）一律不输出。
+平台白名单（id=名称）：`;
 
 interface Provider { name: string; paid?: boolean; call: (sys: string, user: string) => Promise<{ text: string; tokens: number; costCny?: number }> }
 
@@ -130,8 +137,9 @@ function tidy(o: Extracted): Extracted {
 /** 免费模型都不可用时抛出，调用方把这个页面推迟到下一轮。 */
 export class DeferError extends Error {}
 
-export async function extract(platformName: string, url: string, text: string, log: (...a: unknown[]) => void = () => undefined, opts: { allowPaid?: boolean } = {}): Promise<{ offers: Extracted[]; tokens: number; costCny: number; provider: string }> {
+export async function extract(platformName: string, url: string, text: string, log: (...a: unknown[]) => void = () => undefined, opts: { allowPaid?: boolean; platformList?: string } = {}): Promise<{ offers: (Extracted & { platformId?: string; officialUrl?: string | null })[]; tokens: number; costCny: number; provider: string }> {
   const user = `平台：${platformName}\n来源：${url}\n\n---- 原文 ----\n${text}`;
+  const sys = opts.platformList ? PROMPT + TRIAGE + opts.platformList : PROMPT;
   let lastErr: unknown;
   const all = providers();
   const free = all.filter(p => !p.paid), paid = all.filter(p => p.paid);
@@ -140,7 +148,7 @@ export async function extract(platformName: string, url: string, text: string, l
     try {
       let res: { text: string; tokens: number; costCny?: number } | null = null;
       for (let i = 0; i < 3 && !res; i++) {
-        try { res = await p.call(PROMPT, user); }
+        try { res = await p.call(sys, user); }
         catch (e) {
           if (!(e as { retryable?: boolean }).retryable || i === 2) throw e;
           log(`  ${p.name} 临时出错，${3 * (i + 1)} 秒后重试：${(e as Error).message.slice(0, 80)}`);

@@ -52,7 +52,11 @@ switch (cmd) {
     const q = await call('/queue');
     if (!q.pending.length && !q.pendingPlatforms.length && !q.suggestAutoPublish.length) { console.log(`待审队列是空的。新线索 ${q.newLeads} 条。`); break; }
     console.log(`待审 ${q.pending.length} 条（新线索 ${q.newLeads} 条）`);
-    for (const o of q.pending) console.log(`${line(o)}\n     证据缺：${o.missingEvidence.join('、') || '无'} · 门槛：${req(o.requirements)}`);
+    const TIER: Record<string, string> = { site: '官网', docs: '官方文档', official: '官方账号', staff: '员工账号', media: '媒体/社区转述，需核对官方' };
+    for (const o of q.pending) console.log(`${line(o)}
+     门槛：${req(o.requirements)} · 证据：${TIER[o.evidenceTier] ?? o.evidenceTier}${o.missingEvidence.length ? `（缺 ${o.missingEvidence.join('、')}）` : ''}
+     原文：${o.excerpts.benefit ? `「${o.excerpts.benefit.slice(0, 80)}」` : '—'}
+     来源：${o.evidenceUrl}`);
     if (q.pendingPlatforms.length) console.log(`\n新平台待准入：${q.pendingPlatforms.map((p: any) => `${p.name}（${p.id}）`).join('、')}`);
     for (const s of q.suggestAutoPublish) console.log(`\n建议放开自动上架：${s.id}（已连续原样通过 ${s.cleanStreak} 条）→ ym auto-publish ${s.id} on`);
     break;

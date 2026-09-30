@@ -81,7 +81,7 @@ export async function fetchPage(url: string): Promise<{ text: string; via: 'read
 // FREEBIE 用于官方页面里挑相关句子，宽一点，单独的 free 也算；
 // LEAD 用于第三方线索（AIHOT / HN / Reddit）的标题，要求明确的搭配，避免 credit agreement 这类误判。
 export const FREEBIE = /(免费|赠送|额度|限免|重置|体验金|代金券|优惠券|新人|新用户|充值.{0,6}送|福利|\bfree\b|credits?\b|bonus|reset|promo|giveaway|unlimited|no\s+(additional\s+)?(cost|charge)|at\s+no\s+charge|allocation|rate\s+limits?|quota|trial)/i;
-export const LEAD = /(免费|赠送|送.{0,6}(额度|token|积分|会员|体验金|代金券)|限免|限时免费|额度重置|重置卡|体验金|代金券|充值.{0,6}送|free\s+(tier|credits?|tokens?|trial|access|usage|quota|plan|month|week|for\s+(everyone|all|free\s+users))|\$\s?\d[\d,]*\s+(in\s+)?(free\s+)?(api\s+)?credits?|credits?\s+(grant|giveaway|bonus)|rate\s+limits?\s+(reset|doubled|increased)|resets?\s+(rate|usage|limits)|giveaway|promo\s+code|unlimited\s+(usage|generations?|access))/i;
+export const LEAD = /(免费|赠送|赠金|送\s*[\d一二三四五六七八九十百千万亿¥￥$]|送.{0,6}(额度|token|积分|会员|体验金|代金券|重置卡)|领.{0,6}(额度|赠金|代金券|体验金|会员|token)|限免|限时免费|额度(重置|回满|翻倍|永久)|重置卡|体验金|代金券|羊毛|鸡蛋|充值.{0,6}送|\$\s?\d[\d,]*\s*(美元)?\s*(额度|credits?)|\d+\s*(元|美元|刀)\s*(额度|赠金|代金券|体验金)|free\s+(tier|credits?|tokens?|trial|access|usage|quota|plan|month|week|for\s+(everyone|all|free\s+users))|\$\s?\d[\d,]*\s+(in\s+)?(free\s+)?(api\s+)?credits?|credits?\s+(grant|giveaway|bonus)|rate\s+limits?\s+(reset|doubled|increased)|resets?\s+(rate|usage|limits)|giveaway|promo\s+code|unlimited\s+(usage|generations?|access))/i;
 export const isFreebie = (s: string) => FREEBIE.test(s);
 export const isLead = (s: string) => LEAD.test(s);
 export const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));

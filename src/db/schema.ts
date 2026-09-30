@@ -22,7 +22,7 @@ export const platforms = sqliteTable('platforms', {
 export const sources = sqliteTable('sources', {
   id: text('id').primaryKey(),
   platformId: text('platform_id').references(() => platforms.id),
-  kind: text('kind', { enum: ['rss', 'web_list', 'json', 'aihot', 'email', 'manual', 'sweep', 'hn', 'reddit', 'discord'] }).notNull(),
+  kind: text('kind', { enum: ['rss', 'web_list', 'json', 'aihot', 'email', 'manual', 'sweep', 'hn', 'reddit', 'discord', 'feed'] }).notNull(),
   url: text('url').notNull(),
   tier: text('tier', { enum: ['site', 'docs', 'official', 'staff', 'lead'] }).notNull(),
   config: text('config', { mode: 'json' }).$type<Record<string, unknown>>().notNull().default(sql`'{}'`),
@@ -68,7 +68,7 @@ export const offers = sqliteTable('offers', {
 
 export interface Evidence {
   url: string;
-  tier: 'site' | 'docs' | 'official' | 'staff';
+  tier: 'site' | 'docs' | 'official' | 'staff' | 'media';
   capturedAt: string;
   excerpts: { benefit?: string; eligibility?: string; claim?: string; validity?: string };
 }
@@ -84,7 +84,7 @@ export const snapshots = sqliteTable('snapshots', {
 
 export const leads = sqliteTable('leads', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  origin: text('origin', { enum: ['aihot', 'email', 'sweep', 'manual', 'telegram', 'hn', 'reddit', 'discord', 'media'] }).notNull(),
+  origin: text('origin', { enum: ['aihot', 'email', 'sweep', 'manual', 'telegram', 'hn', 'reddit', 'discord', 'media', 'linuxdo', 'ithome', 'v2ex'] }).notNull(),
   url: text('url').notNull(),
   title: text('title'),
   raw: text('raw'),

@@ -199,7 +199,10 @@ admin.get('/health', async c => {
   const [lastOk] = await d.select().from(s.runs).where(and(eq(s.runs.kind, 'collect'), eq(s.runs.ok, true))).orderBy(desc(s.runs.finishedAt)).limit(1);
   const failing = await d.select({ id: s.sources.id, failStreak: s.sources.failStreak, lastError: s.sources.lastError, lastOkAt: s.sources.lastOkAt }).from(s.sources).where(and(eq(s.sources.enabled, true), gte(s.sources.failStreak, 3)));
   const hours = lastOk?.finishedAt ? (Date.now() - Date.parse(lastOk.finishedAt)) / 3600_000 : null;
-  return c.json({ lastSuccessfulCollect: lastOk?.finishedAt ?? null, hoursSince: hours, collectStale: hours === null || hours > 8, failingSources: failing });
+  const today = new Date().toISOString().slice(0, 10);
+  const b = await c.env.DB.prepare("SELECT COALESCE(SUM(CASE WHEN substr(started_at,1,10)=?1 THEN tokens END),0) AS t, COALESCE(SUM(CASE WHEN substr(started_at,1,7)=?2 THEN cost_cny END),0) AS c FROM runs").bind(today, today.slice(0, 7)).first<{ t: number; c: number }>();
+  const srcs = await d.select({ id: s.sources.id, kind: s.sources.kind, url: s.sources.url, failStreak: s.sources.failStreak, lastOkAt: s.sources.lastOkAt, lastError: s.sources.lastError, autoPublish: s.sources.autoPublish, cleanStreak: s.sources.cleanStreak, enabled: s.sources.enabled }).from(s.sources);
+  return c.json({ tokensToday: b?.t ?? 0, costMonthCny: b?.c ?? 0, sources: srcs, lastSuccessfulCollect: lastOk?.finishedAt ?? null, hoursSince: hours, collectStale: hours === null || hours > 8, failingSources: failing });
 });
 
 export const offerIsClaimable = (o: OfferRow) => isClaimable(liveStatus(o));
