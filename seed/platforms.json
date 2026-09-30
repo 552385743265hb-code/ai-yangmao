@@ -2068,6 +2068,69 @@
    "kind": "web_list",
    "url": "https://www.tapnow.ai/terms-of-service",
    "tier": "site"
+  },
+  {
+   "id": "volc-free-inference-quota",
+   "platform": "volc",
+   "kind": "web_list",
+   "url": "https://www.volcengine.com/docs/ark/free-inference-quota?lang=zh",
+   "tier": "docs"
+  },
+  {
+   "id": "moonshot-api-free-trial",
+   "platform": "moonshot",
+   "kind": "web_list",
+   "url": "https://www.kimi.com/zh-cn/help/kimi-api/api-free-trial",
+   "tier": "docs"
+  },
+  {
+   "id": "moonshot-promotion",
+   "platform": "moonshot",
+   "kind": "web_list",
+   "url": "https://platform.kimi.com/docs/pricing/promotion",
+   "tier": "docs"
+  },
+  {
+   "id": "baidu-qianfan-free-notice",
+   "platform": "baidu",
+   "kind": "web_list",
+   "url": "https://cloud.baidu.com/news/notice_c7a145b9-5c99-4870-939f-e09ba506aab3",
+   "tier": "site"
+  },
+  {
+   "id": "leonardo-token-usage",
+   "platform": "leonardo",
+   "kind": "web_list",
+   "url": "https://intercom.help/leonardo-ai/en/articles/8044033-token-usage",
+   "tier": "docs"
+  },
+  {
+   "id": "modelscope-learn-free-models",
+   "platform": "modelscope",
+   "kind": "web_list",
+   "url": "https://modelscope.cn/learn/2022",
+   "tier": "site"
+  },
+  {
+   "id": "stepfun-step-plan-docs",
+   "platform": "stepfun",
+   "kind": "web_list",
+   "url": "https://platform.stepfun.com/docs/zh/step-plan/overview",
+   "tier": "docs"
+  },
+  {
+   "id": "cursor-pricing",
+   "platform": "cursor",
+   "kind": "web_list",
+   "url": "https://cursor.com/pricing",
+   "tier": "site"
+  },
+  {
+   "id": "qwen-code-auth-docs",
+   "platform": "qwen",
+   "kind": "web_list",
+   "url": "https://qwenlm.github.io/qwen-code-docs/zh/users/configuration/auth/",
+   "tier": "docs"
   }
  ]
 }

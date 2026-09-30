@@ -561,3 +561,21 @@ INSERT INTO sources (id, platform_id, kind, url, tier, config) VALUES ('adobe-fi
   ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
 INSERT INTO sources (id, platform_id, kind, url, tier, config) VALUES ('tapnow-terms', 'tapnow', 'web_list', 'https://www.tapnow.ai/terms-of-service', 'site', '{}')
   ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
+INSERT INTO sources (id, platform_id, kind, url, tier, config) VALUES ('volc-free-inference-quota', 'volc', 'web_list', 'https://www.volcengine.com/docs/ark/free-inference-quota?lang=zh', 'docs', '{}')
+  ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
+INSERT INTO sources (id, platform_id, kind, url, tier, config) VALUES ('moonshot-api-free-trial', 'moonshot', 'web_list', 'https://www.kimi.com/zh-cn/help/kimi-api/api-free-trial', 'docs', '{}')
+  ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
+INSERT INTO sources (id, platform_id, kind, url, tier, config) VALUES ('moonshot-promotion', 'moonshot', 'web_list', 'https://platform.kimi.com/docs/pricing/promotion', 'docs', '{}')
+  ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
+INSERT INTO sources (id, platform_id, kind, url, tier, config) VALUES ('baidu-qianfan-free-notice', 'baidu', 'web_list', 'https://cloud.baidu.com/news/notice_c7a145b9-5c99-4870-939f-e09ba506aab3', 'site', '{}')
+  ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
+INSERT INTO sources (id, platform_id, kind, url, tier, config) VALUES ('leonardo-token-usage', 'leonardo', 'web_list', 'https://intercom.help/leonardo-ai/en/articles/8044033-token-usage', 'docs', '{}')
+  ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
+INSERT INTO sources (id, platform_id, kind, url, tier, config) VALUES ('modelscope-learn-free-models', 'modelscope', 'web_list', 'https://modelscope.cn/learn/2022', 'site', '{}')
+  ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
+INSERT INTO sources (id, platform_id, kind, url, tier, config) VALUES ('stepfun-step-plan-docs', 'stepfun', 'web_list', 'https://platform.stepfun.com/docs/zh/step-plan/overview', 'docs', '{}')
+  ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
+INSERT INTO sources (id, platform_id, kind, url, tier, config) VALUES ('cursor-pricing', 'cursor', 'web_list', 'https://cursor.com/pricing', 'site', '{}')
+  ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
+INSERT INTO sources (id, platform_id, kind, url, tier, config) VALUES ('qwen-code-auth-docs', 'qwen', 'web_list', 'https://qwenlm.github.io/qwen-code-docs/zh/users/configuration/auth/', 'docs', '{}')
+  ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
