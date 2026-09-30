@@ -7,7 +7,8 @@ import type { LeadIn, OfferIn } from '../src/shared/ingest';
 
 const DAILY_TOKEN_CAP = Number(process.env.DAILY_TOKEN_CAP ?? 200000);
 const DRY = process.env.DRY_RUN === '1';
-const only = process.env.ONLY_SOURCES?.split(',').map(s => s.trim()).filter(Boolean);
+const onlyList = (process.env.ONLY_SOURCES ?? '').split(',').map(s => s.trim()).filter(Boolean);
+const only = onlyList.length ? onlyList : null; // 留空 = 全部信源
 const stats = { sources: 0, ok: 0, failed: 0, changed: 0, leads: 0, offers: 0, pending: 0, extractSkipped: 0, tokens: 0, errors: [] as string[] };
 let tokensLeft = DAILY_TOKEN_CAP;
 
