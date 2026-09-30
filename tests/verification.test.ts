@@ -207,6 +207,17 @@ describe('notification delivery receipts', () => {
     expect(digest.body.empty).toBe(false);
   });
 
+  it('does not repeat the same pending summary after an event digest was delivered today', async () => {
+    await call('ingest/offers', [offer, { ...offer, id: 'vendor-pending', title: 'Another pending offer' }]);
+    await call('admin/offers/vendor-free/approve', {}, 'admin');
+    const first = await call('admin/notify/claim', { kind: 'digest', channel: 'telegram' }, 'admin');
+    expect(first.body.pendingCount).toBe(1);
+    await call(`admin/notify/${first.body.deliveryId}/ack`, { status: 'sent' }, 'admin');
+    const second = await call('admin/notify/claim', { kind: 'digest', channel: 'telegram' }, 'admin');
+    expect(second.body.empty).toBe(true);
+    expect(second.body.deliveryId).toBeUndefined();
+  });
+
   it('never sends an urgent notice for an offer whose evidence is stale', async () => {
     const tomorrow = new Date(Date.now() + 86400_000).toISOString().slice(0, 10);
     await call('ingest/offers', [{ ...offer, claimEnd: tomorrow, endKind: 'date' }]);

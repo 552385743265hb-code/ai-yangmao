@@ -337,11 +337,22 @@ async function buildNotice(env: Env, kind: NoticeKind, channel: NoticeChannel) {
   for (const stage of Object.keys(out) as NoticeStage[]) out[stage] = out[stage].filter(item => marks.some(mark => mark.offerId === item.id && mark.stage === stage));
   const pendingOffers = (await d.select({ n: sql<number>`count(*)` }).from(s.offers).where(eq(s.offers.reviewState, 'pending')))[0].n;
   const pendingProposals = (await d.select({ n: sql<number>`count(*)` }).from(s.offerProposals))[0].n;
-  const pendingCount = pendingOffers + pendingProposals;
-  const needsVerificationCount = approved.filter(o => liveStatus(o, now) === 'stale').length;
-  const suggestAutoPublish = kind === 'digest' && channel === 'telegram'
+  let pendingCount = pendingOffers + pendingProposals;
+  let needsVerificationCount = approved.filter(o => liveStatus(o, now) === 'stale').length;
+  let suggestAutoPublish = kind === 'digest' && channel === 'telegram'
     ? (await d.select().from(s.sources).where(and(gte(s.sources.cleanStreak, 5), eq(s.sources.autoPublish, false))))
       .filter(source => source.enabled && ['site', 'docs', 'official'].includes(source.tier) && !!source.platformId && approvedPlatforms.has(source.platformId)).map(x => x.id) : [];
+  if (kind === 'digest' && channel === 'telegram') {
+    const tokyoDay = (date: Date) => new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(date);
+    const sentToday = (await d.select({ payload: s.deliveries.payload, createdAt: s.deliveries.createdAt }).from(s.deliveries)
+      .where(and(eq(s.deliveries.kind, 'digest'), eq(s.deliveries.channel, 'telegram'), eq(s.deliveries.status, 'sent')))
+      .orderBy(desc(s.deliveries.createdAt)).limit(40)).filter(delivery => tokyoDay(new Date(delivery.createdAt)) === tokyoDay(now));
+    const summaries = sentToday.map(delivery => delivery.payload as { pendingCount?: number; needsVerificationCount?: number; suggestAutoPublish?: string[] });
+    if (pendingCount <= Math.max(0, ...summaries.map(summary => summary.pendingCount ?? 0))) pendingCount = 0;
+    if (needsVerificationCount <= Math.max(0, ...summaries.map(summary => summary.needsVerificationCount ?? 0))) needsVerificationCount = 0;
+    const alreadySuggested = new Set(summaries.flatMap(summary => summary.suggestAutoPublish ?? []));
+    suggestAutoPublish = suggestAutoPublish.filter(id => !alreadySuggested.has(id));
+  }
   const [lastCollect] = kind === 'digest' && channel === 'telegram'
     ? await d.select({ stats: s.runs.stats }).from(s.runs).where(eq(s.runs.kind, 'collect')).orderBy(desc(s.runs.startedAt)).limit(1) : [];
   const coverageDegraded = !!lastCollect?.stats?.coverageDegraded;
