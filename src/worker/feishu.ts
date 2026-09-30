@@ -101,12 +101,14 @@ function itemBlock(it: Item, n: number, tr: Map<string, string>, section: string
   if (section === 'changed') lines.push(`🔄 **有变化**：${safe(zh(tr, it.value))}`);
   else lines.push(`🎁 **福利**：${safe(zh(tr, it.value))}${it.usdEstimate != null ? `（约 $${it.usdEstimate}）` : ''}`);
   const benefit = it.excerpts?.benefit;
-  if (benefit && section !== 'changed') lines.push(`📄 **官方原文**：“${safe(zh(tr, benefit))}”`);
+  // 管理员实测、媒体转述的摘录不是官方原话，不能标成“官方原文”
+  const official = !['media', 'tested'].includes(it.evidenceTier);
+  if (benefit && section !== 'changed') lines.push(`📄 **${official ? '官方原文' : '原文（媒体 / 社区转述）'}**：“${safe(zh(tr, benefit))}”`);
   lines.push(`📥 **怎么领**：${CLAIM[it.claimMethod] ?? it.claimMethod}`);
   (it.steps ?? []).filter(x => !/^官方出处：/.test(x)).slice(0, 5).forEach((st, i) => lines.push(`　${i + 1}. ${safe(zh(tr, st))}`));
   const eligibility = it.excerpts?.eligibility;
   lines.push(`✅ **条件**：${it.requirements.map(reqText).join('、')}；适用：${AUD[it.audience] ?? it.audience}`);
-  if (eligibility) lines.push(`　官方说明：“${safe(zh(tr, eligibility))}”`);
+  if (eligibility) lines.push(`　${official ? '官方说明' : '转述说明'}：“${safe(zh(tr, eligibility))}”`);
   lines.push(`⏰ **截止**：${startText(it)}${deadline(it)}`);
   lines.push(`⌛ **额度有效期**：${it.creditValidity ? safe(zh(tr, it.creditValidity)) : '官方未写明'}`);
   lines.push(`🔎 **信源**：${TIER[it.evidenceTier] ?? it.evidenceTier}`);
