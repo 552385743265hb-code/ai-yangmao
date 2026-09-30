@@ -158,7 +158,9 @@ function money(u) {
   if (u >= 1) return '$' + Math.round(u).toLocaleString('en-US');
   return '$' + u.toFixed(2);
 }
-const valLabel = o => o.noUsd ? `<span style="font-size:.72em">${esc(o.v.length > 22 ? o.v.slice(0, 21) + '…' : o.v)}</span>` : o.ty === 'standing' ? `≈ ${money(o.usd)}<small>每月</small>` : o.ty === 'apply' ? `最高 ${money(o.usd)}` : `≈ ${money(o.usd)}`;
+// 价值是范围时显示“$10–60”，排序和图表用保守的下限 o.usd
+const usdText = o => o.usdMax != null && o.usdMax > o.usd ? `${money(o.usd)}–${money(o.usdMax).replace(/^\$/, '')}` : money(o.usd);
+const valLabel = o => o.noUsd ? `<span style="font-size:.72em">${esc(o.v.length > 22 ? o.v.slice(0, 21) + '…' : o.v)}</span>` : o.ty === 'standing' ? `≈ ${usdText(o)}<small>每月</small>` : o.ty === 'apply' ? `最高 ${money(o.usdMax ?? o.usd)}` : `≈ ${usdText(o)}`;
 function leftText(o) {
   const st = statusOf(o);
   if (st === 'upcoming') return o.s === 1 ? '明天开始' : `${o.s} 天后开始`;

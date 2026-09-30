@@ -86,10 +86,11 @@ describe('飞书群日报', () => {
   it('卡片写全福利、领取方式、条件、截止（换算北京时间）、有效期和可点击的链接，英文翻译成中文并缓存', async () => {
     const calls = stubFetch(() => ({ code: 0 }));
     sqlite.prepare("UPDATE offers SET admin_note='升级后才到账，\n注意先绑卡' WHERE id='kiro-bonus'").run();
+    sqlite.prepare("UPDATE offers SET usd_max=40 WHERE id='kiro-bonus'").run();
     const notice = await buildNotice(env, 'digest', 'feishu');
     const [card] = await buildCards(env, notice) as { elements: { tag: string; text?: { content: string }; actions?: { url: string }[] }[] }[];
     const text = card.elements.filter(e => e.tag === 'div').map(e => e.text!.content).join('\n');
-    expect(text).toContain('🎁 **福利**：【译】$20 credited toward your subscription（约 $20）');
+    expect(text).toContain('🎁 **福利**：【译】$20 credited toward your subscription（约 $20–40）');
     expect(text).toContain('📥 **怎么领**：充值后赠送');
     expect(text).toContain('💬 **牧场心得**：升级后才到账， 注意先绑卡');
     expect(text).toContain('　1. 【译】Sign in with social login or AWS Builder ID');

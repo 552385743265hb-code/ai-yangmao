@@ -99,7 +99,7 @@ function itemBlock(it: Item, n: number, tr: Map<string, string>, section: string
   lines.push(`**${n}. ${safe(zh(tr, it.title))}**`);
   lines.push(`<font color='grey'>${safe(it.platform)} · ${it.type}${it.modalities?.length ? ` · ${it.modalities.map(m => MODAL[m] ?? m).join(' / ')}` : ''}</font>`);
   if (section === 'changed') lines.push(`🔄 **有变化**：${safe(zh(tr, it.value))}`);
-  else lines.push(`🎁 **福利**：${safe(zh(tr, it.value))}${it.usdEstimate != null ? `（约 $${it.usdEstimate}）` : ''}`);
+  else lines.push(`🎁 **福利**：${safe(zh(tr, it.value))}${it.usdEstimate != null ? `（约 $${it.usdEstimate}${it.usdMax != null && it.usdMax > it.usdEstimate ? `–${it.usdMax}` : ''}）` : ''}`);
   const benefit = it.excerpts?.benefit;
   // 管理员实测、媒体转述的摘录不是官方原话，不能标成“官方原文”
   const official = !['media', 'tested'].includes(it.evidenceTier);

@@ -28,6 +28,7 @@ export const offerIn = z.object({
   audience: z.enum(['new', 'old', 'all', 'unclear']).default('unclear'),
   valueText: z.string().min(1).max(200),
   usdEstimate: z.number().nonnegative().nullable().optional(),
+  usdMax: z.number().nonnegative().nullable().optional(),
   claimStart: isoDate.nullable().optional(),
   claimEnd: isoDate.nullable().optional(),
   endKind: z.enum(['date', 'unknown', 'standing']),
@@ -47,6 +48,7 @@ export const offerIn = z.object({
     excerpts: z.object({ benefit: z.string().optional(), eligibility: z.string().optional(), claim: z.string().optional(), validity: z.string().optional() }),
   }),
 }).refine(o => o.endKind !== 'date' || !!o.claimEnd, { message: 'endKind=date 时必须有 claimEnd', path: ['claimEnd'] })
+  .refine(o => o.usdMax == null || (o.usdEstimate != null && o.usdMax >= o.usdEstimate), { message: '价值上限必须不小于保守估值', path: ['usdMax'] })
   .refine(o => !o.claimStart || !o.claimEnd || o.claimStart <= o.claimEnd, { message: '领取开始日期不能晚于截止日期', path: ['claimEnd'] })
   .refine(o => (o.type === 'standing' || o.type === 'apply') === (o.endKind === 'standing'), { message: '常驻额度和申请制的 endKind 必须为 standing，其他类型不能是 standing', path: ['endKind'] });
 

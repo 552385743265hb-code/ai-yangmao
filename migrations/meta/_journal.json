@@ -50,6 +50,13 @@
       "when": 1790773322593,
       "tag": "0006_admin_note",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1790777165393,
+      "tag": "0007_usd_max",
+      "breakpoints": true
     }
   ]
 }

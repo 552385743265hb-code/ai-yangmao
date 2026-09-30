@@ -46,6 +46,8 @@ export const offers = sqliteTable('offers', {
   audience: text('audience', { enum: ['new', 'old', 'all', 'unclear'] }).notNull().default('unclear'),
   valueText: text('value_text').notNull(),
   usdEstimate: real('usd_estimate'),
+  // 价值是一个范围时的上限（如 OpenCode Go $10–60、按套餐档位不同的重置卡）；排序和图表仍用保守的 usdEstimate
+  usdMax: real('usd_max'),
   claimStart: text('claim_start'),
   claimEnd: text('claim_end'),
   endKind: text('end_kind', { enum: ['date', 'unknown', 'standing'] }).notNull(),

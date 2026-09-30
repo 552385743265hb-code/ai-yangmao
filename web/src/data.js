@@ -54,7 +54,7 @@ async function loadData() {
     const overseas = o.requirements.some(r => ['phone', 'card', 'net'].includes(r.split(':')[0]));
     return {
       id: o.id, p: o.platformId, t: o.title, ty: o.type, m: o.modalities, c: o.claimMethod, r: o.requirements.length ? o.requirements : ['none'],
-      v: o.valueText, usd: o.usdEstimate ?? 0, noUsd: o.usdEstimate == null,
+      v: o.valueText, usd: o.usdEstimate ?? 0, usdMax: o.usdMax ?? null, noUsd: o.usdEstimate == null,
       s: rel(o.claimStart), e: o.endKind === 'date' ? rel(o.claimEnd) : null, ek: o.endKind,
       vf: o.lastVerifiedAt ? -(now - Date.parse(o.lastVerifiedAt)) / DAYMS : -99,
       vfDay: o.lastVerifiedAt ? dayIdx(new Date(o.lastVerifiedAt)) : null,
