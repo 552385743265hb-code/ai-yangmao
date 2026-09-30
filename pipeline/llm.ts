@@ -173,20 +173,40 @@ function normalizeRequirements(value: unknown): string[] {
   const unique = [...new Set(requirements)];
   return unique.length > 1 ? unique.filter(x => x !== 'none') : unique.length ? unique : ['unknown'];
 }
-function tidy(o: Extracted): Extracted {
+/**
+ * 枚举字段遇到不认识的值：映射到最接近的合法值，或退回“待确认”的默认值，绝不让整条羊毛因校验失败被丢弃。
+ * 2026-10-01 批量抓取时先后因模态写“3d”、额度超长、领取方式写了不认识的值丢掉了 Meshy、AWS、硅基流动、百川各一条。
+ */
+const TYPE_OK = ['new', 'trial', 'free', 'perk', 'topup', 'gift', 'standing', 'apply'];
+const TYPE_ALIAS: [RegExp, string][] = [[/sign.?up|new.?user|新人|注册/, 'new'], [/first.?use|app.?trial|尝鲜/, 'trial'], [/member|subscri|会员/, 'perk'], [/top.?up|recharge|充值|discount|折扣/, 'topup'], [/permanent|always|standing|常驻|free.?tier/, 'standing'], [/apply|application|grant|program|申请/, 'apply']];
+const CLAIM_OK = ['auto', 'signup', 'app', 'form', 'topup', 'member', 'code'];
+const CLAIM_ALIAS: [RegExp, string][] = [[/apply|application|form|waitlist|申请|表单|邮件/, 'form'], [/download|app|client|desktop|cli|客户端|下载/, 'app'], [/sign.?up|register|login|log.?in|注册|登录/, 'signup'], [/subscri|member|会员|订阅/, 'member'], [/top.?up|recharge|pay|purchase|upgrade|充值|购买|升级/, 'topup'], [/code|coupon|invite|referral|兑换|邀请/, 'code']];
+const pick = (v: unknown, ok: string[], alias: [RegExp, string][], fallback: string) => {
+  const s = typeof v === 'string' ? v.trim().toLowerCase() : '';
+  if (ok.includes(s)) return s;
+  return alias.find(([re]) => re.test(s))?.[1] ?? fallback;
+};
+const validTz = (tz: unknown) => { try { if (typeof tz === 'string' && tz) { new Intl.DateTimeFormat('en', { timeZone: tz }); return tz; } } catch { /* 无效时区 */ } return 'UTC'; };
+const isoOrNull = (d: unknown) => (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d.trim()) ? d.trim() : null);
+
+export function tidy(o: Extracted): Extracted {
   const low = (v: unknown) => (typeof v === 'string' ? v.trim().toLowerCase() : v);
+  const type = pick(o.type, TYPE_OK, TYPE_ALIAS, 'free');
+  const claimEnd = isoOrNull(o.claimEnd);
   return {
     ...o,
-    type: low(o.type) as Extracted['type'], claimMethod: low(o.claimMethod) as string, audience: (low(o.audience) || 'unclear') as Extracted['audience'],
+    type: type as Extracted['type'], claimMethod: pick(o.claimMethod, CLAIM_OK, CLAIM_ALIAS, 'auto'),
+    audience: (['new', 'old', 'all', 'unclear'].includes(String(low(o.audience))) ? low(o.audience) : 'unclear') as Extracted['audience'],
+    sourceTz: validTz(o.sourceTz),
     // 类型和截止方式要配套：常驻/申请制一定是 standing；其他类型没截止日期时算"截止未知"
-    endKind: (['standing', 'apply'].includes(String(low(o.type))) ? 'standing' : low(o.endKind) === 'standing' ? 'unknown' : low(o.endKind)) as Extracted['endKind'],
+    endKind: (['standing', 'apply'].includes(type) ? 'standing' : low(o.endKind) === 'date' && claimEnd ? 'date' : 'unknown') as Extracted['endKind'],
     // 模态只认五种；3D 生成归到图像，其他不认识的去掉，全去掉了按文本。之前模型写了“3d”整条被丢（2026-10-01 Meshy）
     modalities: (() => { const m = [...new Set(toList(o.modalities).map(x => x.toLowerCase()).map(x => (/^3d|3d$|mesh|model3d/.test(x) ? 'image' : x)).filter(x => ['text', 'code', 'image', 'video', 'audio'].includes(x)))]; return m.length ? m : ['text']; })(),
     // 模型偶尔只写 member / pay 不带内容，补成可读的占位，交给审核时修正
     requirements: normalizeRequirements(o.requirements),
     steps: toList(o.steps).length && Array.isArray(o.steps) ? o.steps : typeof o.steps === 'string' ? [o.steps] : [],
     usdEstimate: typeof o.usdEstimate === 'number' ? o.usdEstimate : Number(o.usdEstimate) || null,
-    claimStart: o.claimStart || null, claimEnd: o.claimEnd || null, creditValidity: o.creditValidity || null,
+    claimStart: isoOrNull(o.claimStart), claimEnd, creditValidity: o.creditValidity || null,
   };
 }
 

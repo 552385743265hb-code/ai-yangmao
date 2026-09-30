@@ -28,3 +28,13 @@ describe('模型输出的 JSON（jsonrepair 兜底）', () => {
     expect(parseModelJson("{\n  // 结果\n  'offers': [\n  {title: '免费额度'}\n]}")).toEqual({ offers: [{ title: '免费额度' }] });
   });
 });
+
+import { tidy } from '../pipeline/llm';
+describe('模型字段取值不合规时不丢整条', () => {
+  it('不认识的领取方式、类型、时区、日期都会被规整成合法值', () => {
+    const o = tidy({ type: 'Free API program', claimMethod: 'apply via website', audience: 'everyone', sourceTz: 'Beijing', endKind: 'date', claimEnd: '10月7日', claimStart: '2026-09-28', modalities: ['3D', 'text'], requirements: [], steps: [], excerpts: {} } as never);
+    expect(o).toMatchObject({ type: 'apply', claimMethod: 'form', audience: 'unclear', sourceTz: 'UTC', endKind: 'standing', claimEnd: null, claimStart: '2026-09-28', modalities: ['image', 'text'] });
+    expect(tidy({ type: 'signup bonus', claimMethod: 'download the desktop client', endKind: 'date', claimEnd: '2026-10-06', sourceTz: 'Asia/Shanghai', modalities: [], requirements: [], steps: [], excerpts: {} } as never))
+      .toMatchObject({ type: 'new', claimMethod: 'app', endKind: 'date', claimEnd: '2026-10-06', sourceTz: 'Asia/Shanghai', modalities: ['text'] });
+  });
+});
