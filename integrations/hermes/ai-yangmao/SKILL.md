@@ -25,8 +25,8 @@ cd /Volumes/AI/MyWorkspace/AI_Freebies && ./node_modules/.bin/tsx scripts/ym.ts 
 | 看待审 / 有什么要审的 | `ym queue` |
 | 看一下 a3f9 / a3f9 详情 | `ym show a3f9` |
 | 通过 a3f9（可以一次多个：通过 a3f9 kesd） | 逐个 `ym approve <短码>` |
-| 拒绝 a3f9 [理由] | `ym reject a3f9 <理由>` |
-| 改 a3f9 的截止日期为 10-31 并通过 | `ym edit a3f9 claimEnd=2026-10-31 endKind=date --approve` |
+| 拒绝 a3f9 [理由] | `ym reject a3f9 <理由>`。理由尽量以这些词开头，便于统计：付费套餐 / 非AI / 平台错 / 重复 / 过期 / 额度不明 / 分类错 |
+| 改 a3f9 的截止日期为 10-31 并通过 | `ym edit a3f9 claimEnd=2026-10-31 endKind=date --approve --reason <用户说的原因>` |
 | 看线索 / 有什么新线索 | `ym leads` |
 | 忽略线索 #12 | `ym dismiss 12` |
 | 补录 <链接> [备注] / 转发来一个链接说"收一下" | `ym add <链接> <备注>` |
@@ -49,6 +49,12 @@ cd /Volumes/AI/MyWorkspace/AI_Freebies && ./node_modules/.bin/tsx scripts/ym.ts 
 - **该改**：类型、截止日期、门槛明显不对的，用 `edit` 改完再通过。
 - **证据缺项**多的（缺 2 项以上），提醒用户先 `show` 看原文再决定。
 - 员工账号来源的（如 Codex 重置），提醒用户核对原帖。
+
+## 让模型越来越准
+
+用户的每次修改和拒绝都会被当成纠错样本喂给抽取模型，所以：
+- 拒绝或修改时，**一定把用户说的原因原样带上**（`--reason` 或拒绝理由）；用户没说原因、原因又不明显时，问一句"为什么？我记下来让模型以后别再犯"。
+- 用户问"最近准确率怎么样"，告诉他网页后台的"准确率"页：https://ai-yangmao.com/#admin
 
 ## 回复风格
 

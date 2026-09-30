@@ -82,10 +82,10 @@ admin.post('/offers/:ref/:action{approve|reject}', async c => {
   const o = await findOffer(c.env, c.req.param('ref'));
   if (!o) return c.json({ error: '找不到这条羊毛' }, 404);
   const action = c.req.param('action') as 'approve' | 'reject';
-  const body = await c.req.json().catch(() => ({})) as { reason?: string; reviewer?: string };
+  const body = await c.req.json().catch(() => ({})) as { reason?: string; reasonCode?: string; reviewer?: string };
   const d = db(c.env);
   await d.update(s.offers).set({ reviewState: action === 'approve' ? 'approved' : 'rejected', updatedAt: new Date().toISOString() }).where(eq(s.offers.id, o.id));
-  await d.insert(s.reviews).values({ offerId: o.id, action, reviewer: body.reviewer ?? 'hermes', editedFields: body.reason ? [`理由：${body.reason}`] : [] });
+  await d.insert(s.reviews).values({ offerId: o.id, action, reviewer: body.reviewer ?? 'admin', reason: body.reason ?? null, reasonCode: body.reasonCode ?? null });
   let streak: number | null = null;
   if (o.sourceId) {
     const [src] = await d.select().from(s.sources).where(eq(s.sources.id, o.sourceId));
@@ -110,17 +110,17 @@ const editable = z.object({
 admin.post('/offers/:ref/edit', async c => {
   const o = await findOffer(c.env, c.req.param('ref'));
   if (!o) return c.json({ error: '找不到这条羊毛' }, 404);
-  const body = await c.req.json().catch(() => null) as { fields?: unknown; approve?: boolean } | null;
+  const body = await c.req.json().catch(() => null) as { fields?: unknown; approve?: boolean; reason?: string; reasonCode?: string } | null;
   const parsed = editable.safeParse(body?.fields);
   if (!parsed.success) return c.json({ error: '字段不正确', issues: parsed.error.issues }, 400);
   const f = parsed.data, d = db(c.env);
-  const diff = Object.entries(f).map(([k, v]) => ({ field: k, from: (o as Record<string, unknown>)[k], to: v }));
+  const diff = Object.entries(f).filter(([k, v]) => JSON.stringify((o as Record<string, unknown>)[k] ?? null) !== JSON.stringify(v ?? null)).map(([k, v]) => ({ field: k, from: (o as Record<string, unknown>)[k], to: v }));
   if (!diff.length) return c.json({ error: '没有要改的字段' }, 400);
   await d.update(s.offers).set({ ...f, ...(body?.approve ? { reviewState: 'approved' as const } : {}), updatedAt: new Date().toISOString() }).where(eq(s.offers.id, o.id));
-  await d.insert(s.offerRevisions).values({ offerId: o.id, diff });
-  await d.insert(s.reviews).values({ offerId: o.id, action: 'edit', editedFields: Object.keys(f), reviewer: 'hermes' });
+  await d.insert(s.offerRevisions).values({ offerId: o.id, diff, author: 'admin' });
+  await d.insert(s.reviews).values({ offerId: o.id, action: 'edit', editedFields: diff.map(x => x.field), reviewer: 'admin', reason: body?.reason ?? null, reasonCode: body?.reasonCode ?? 'wrong_field' });
   if (o.sourceId) await d.update(s.sources).set({ cleanStreak: 0 }).where(eq(s.sources.id, o.sourceId));
-  return c.json({ ok: true, code: shortCode(o.id), changed: Object.keys(f), approved: !!body?.approve });
+  return c.json({ ok: true, code: shortCode(o.id), changed: diff.map(x => x.field), approved: !!body?.approve });
 });
 
 admin.get('/leads', async c => {
@@ -191,6 +191,22 @@ admin.get('/notify', async c => {
     }
   }
   return c.json({ kind, channel, items: out, pendingCount, empty: Object.values(out).every(a => !a.length) });
+});
+
+/** 抽取准确率：每个字段被人工修改的比例、拒绝理由分布、各信源原样通过率。 */
+admin.get('/quality', async c => {
+  const since = new Date(Date.now() - Number(c.req.query('days') ?? 30) * 86400_000).toISOString();
+  const rv = await c.env.DB.prepare(`SELECT r.action, r.edited_fields, r.reason_code, o.source_id, o.first_channel FROM reviews r JOIN offers o ON o.id = r.offer_id WHERE r.at >= ?1 AND COALESCE(r.reviewer,'') <> 'system'`).bind(since).all<{ action: string; edited_fields: string; reason_code: string | null; source_id: string | null; first_channel: string | null }>();
+  const rows = rv.results;
+  const reviewed = rows.length;
+  const fields: Record<string, number> = {}, reasons: Record<string, number> = {}, bySource: Record<string, { total: number; clean: number }> = {};
+  for (const r of rows) {
+    if (r.action === 'edit') for (const f of JSON.parse(r.edited_fields || '[]') as string[]) fields[f] = (fields[f] ?? 0) + 1;
+    if (r.reason_code) reasons[r.reason_code] = (reasons[r.reason_code] ?? 0) + 1;
+    const k = r.source_id ?? `线索:${r.first_channel ?? '?'}`;
+    const b = (bySource[k] ??= { total: 0, clean: 0 }); b.total++; if (r.action === 'approve') b.clean++;
+  }
+  return c.json({ reviewed, approvedClean: rows.filter(r => r.action === 'approve').length, edits: rows.filter(r => r.action === 'edit').length, rejects: rows.filter(r => r.action === 'reject').length, fields, reasons, bySource });
 });
 
 /** 健康检查：最近一次成功采集距今多久、连续失败的信源、预算。 */

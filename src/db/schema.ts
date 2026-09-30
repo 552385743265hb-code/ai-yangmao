@@ -99,6 +99,8 @@ export const offerRevisions = sqliteTable('offer_revisions', {
   at: text('at').notNull().default(now),
   diff: text('diff', { mode: 'json' }).$type<{ field: string; from: unknown; to: unknown }[]>().notNull(),
   evidenceHash: text('evidence_hash'),
+  // pipeline：官方页面变化引起；admin：管理员人工修改（用作模型的纠错样本）
+  author: text('author', { enum: ['pipeline', 'admin'] }).notNull().default('pipeline'),
 }, t => [index('revisions_offer_idx').on(t.offerId)]);
 
 export const reviews = sqliteTable('reviews', {
@@ -107,6 +109,9 @@ export const reviews = sqliteTable('reviews', {
   action: text('action', { enum: ['approve', 'reject', 'edit'] }).notNull(),
   editedFields: text('edited_fields', { mode: 'json' }).$type<string[]>().notNull().default(sql`'[]'`),
   reviewer: text('reviewer'),
+  reason: text('reason'),
+  // 拒绝 / 修改的快捷理由，便于统计：paid_bundle 付费套餐自带、not_ai 不是 AI 额度、wrong_platform 平台归错、duplicate 重复、expired 已过期、vague 额度不明、wrong_type 分类错、wrong_field 字段错、other 其他
+  reasonCode: text('reason_code'),
   at: text('at').notNull().default(now),
 });
 

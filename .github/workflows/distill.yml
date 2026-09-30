@@ -1,0 +1,41 @@
+name: 纠正归纳
+
+on:
+  schedule:
+    - cron: '0 1 * * 6' # 每周六 10:00（东京时间）
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  distill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: 归纳本周的人工纠正
+        run: npx tsx pipeline/distill.ts | tee /tmp/distill.md
+        env:
+          API_BASE: ${{ secrets.API_BASE }}
+          INGEST_TOKEN: ${{ secrets.INGEST_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+      - name: 有新规则就提交 PR 等你批准
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if git diff --quiet pipeline/learned-rules.md; then echo "没有新规则"; exit 0; fi
+          branch="rules/$(date +%Y%m%d)"
+          git config user.name "ai-yangmao-bot"
+          git config user.email "bot@ai-yangmao.com"
+          git checkout -b "$branch"
+          git commit -am "rules: 本周纠正归纳出的抽取规则（待批准）"
+          git push -f origin "$branch"
+          gh pr create --title "抽取规则提议 $(date +%m-%d)" --body-file /tmp/distill.md --head "$branch" --base main || gh pr edit "$branch" --body-file /tmp/distill.md

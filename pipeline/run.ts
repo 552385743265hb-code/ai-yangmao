@@ -131,6 +131,17 @@ async function runSource(src: Source) {
   }
 }
 
+/* ---------- 第一层反馈：抽取时附上管理员最近的纠正 ---------- */
+const corrCache = new Map<string, string[]>();
+async function correctionsFor(platform: string | null, source: string | null): Promise<string[]> {
+  const key = `${platform ?? ''}|${source ?? ''}`;
+  if (!corrCache.has(key)) {
+    try { corrCache.set(key, (await api<{ corrections: string[] }>(`/corrections?limit=10&platform=${encodeURIComponent(platform ?? '')}&source=${encodeURIComponent(source ?? '')}`)).corrections); }
+    catch { corrCache.set(key, []); }
+  }
+  return corrCache.get(key)!;
+}
+
 /* ---------- 线索研判：把线索变成待审羊毛 ---------- */
 interface Plat { id: string; name: string; site: string | null; xHandles: string[]; staffHandles: string[] }
 interface Lead { id: number; origin: string; url: string; title: string | null; raw: string | null }
@@ -163,7 +174,7 @@ async function triageLeads(plats: Plat[]) {
     let text = `${l.title ?? ''}\n${l.raw ?? ''}`;
     try { const pg = await fetchPage(l.url); text = `${l.title ?? ''}\n${pg.text}`.slice(0, 14000); } catch { /* 原文抓不到就用线索自带的摘要 */ }
     let r;
-    try { r = await extract('（见平台白名单）', l.url, text, log, { platformList: list, existing }); }
+    try { r = await extract('（见平台白名单）', l.url, text, log, { platformList: list, existing, corrections: await correctionsFor(null, null) }); }
     catch (e) { log(`  #${l.id} 抽取失败：${(e as Error).message.slice(0, 80)}`); continue; }
     tokensLeft -= r.tokens; stats.tokens += r.tokens; stats.costCny += r.costCny;
     const valid: OfferIn[] = [];

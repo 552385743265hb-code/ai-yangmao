@@ -222,6 +222,27 @@ ingest.post('/leads/:id/status', async c => {
   return c.json({ ok: true });
 });
 
+/**
+ * 最近的人工纠正（修改字段、拒绝理由），给模型当"过去的纠正"参考。
+ * 优先同一信源，其次同一平台，再其次全局最近；最多 limit 条，每条一行中文。
+ */
+ingest.get('/corrections', async c => {
+  const platform = c.req.query('platform') ?? '', source = c.req.query('source') ?? '', limit = Math.min(100, Number(c.req.query('limit') ?? 10));
+  const since = new Date(Date.now() - Number(c.req.query('days') ?? 3650) * 86400_000).toISOString();
+  const edits = await c.env.DB.prepare(`SELECT o.platform_id p, o.source_id src, o.title t, v.diff d, (SELECT reason FROM reviews r WHERE r.offer_id = o.id AND r.action = 'edit' ORDER BY r.id DESC LIMIT 1) reason, v.at at
+    FROM offer_revisions v JOIN offers o ON o.id = v.offer_id WHERE v.author = 'admin' AND v.at >= ?1 ORDER BY v.id DESC LIMIT 200`).bind(since).all<{ p: string; src: string | null; t: string; d: string; reason: string | null; at: string }>();
+  const rejects = await c.env.DB.prepare(`SELECT o.platform_id p, o.source_id src, o.title t, o.value_text v, r.reason reason, r.reason_code code, r.at at
+    FROM reviews r JOIN offers o ON o.id = r.offer_id WHERE r.action = 'reject' AND COALESCE(r.reviewer,'') <> 'system' AND (r.reason IS NOT NULL OR r.reason_code IS NOT NULL) AND r.at >= ?1 ORDER BY r.id DESC LIMIT 200`).bind(since).all<{ p: string; src: string | null; t: string; v: string; reason: string | null; code: string | null; at: string }>();
+  const CODE: Record<string, string> = { paid_bundle: '付费套餐自带的额度', not_ai: '不是 AI 使用额度', wrong_platform: '平台归错', duplicate: '重复', expired: '已过期', vague: '额度不明确', wrong_type: '分类错', wrong_field: '字段错', other: '其他' };
+  const items = [
+    ...edits.results.map(e => ({ p: e.p, src: e.src, at: e.at, line: `「${e.t}」人工修改：${(JSON.parse(e.d) as { field: string; from: unknown; to: unknown }[]).filter(x => JSON.stringify(x.from) !== JSON.stringify(x.to)).map(x => `${x.field} ${JSON.stringify(x.from)} → ${JSON.stringify(x.to)}`).join('；')}${e.reason ? `（理由：${e.reason}）` : ''}` })),
+    ...rejects.results.map(r => ({ p: r.p, src: r.src, at: r.at, line: `「${r.t}」（${r.v.slice(0, 40)}）被拒绝：${[r.code ? CODE[r.code] ?? r.code : '', r.reason ?? ''].filter(Boolean).join('，')}` })),
+  ];
+  const rank = (x: { p: string; src: string | null }) => (source && x.src === source ? 0 : platform && x.p === platform ? 1 : 2);
+  items.sort((a, b) => rank(a) - rank(b) || (a.at < b.at ? 1 : -1));
+  return c.json({ corrections: items.slice(0, limit).map(x => x.line), total: items.length });
+});
+
 /** 近 60 天没被拒绝的条目索引，研判时用来判断"是不是同一个活动"。 */
 ingest.get('/offers-index', async c => {
   const since = new Date(Date.now() - 60 * 86400_000).toISOString();

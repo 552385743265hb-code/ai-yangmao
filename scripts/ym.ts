@@ -30,8 +30,8 @@ const HELP = `用法：ym <命令>
   queue                 看待审（羊毛、新平台、可放开自动上架的信源）
   show <短码>           看一条羊毛的全部字段和官方证据
   approve <短码>        通过
-  reject <短码> [理由]  拒绝
-  edit <短码> 字段=值 … [--approve]  修改字段（可同时通过）。字段：title type valueText usdEstimate claimStart claimEnd endKind creditValidity audience requirements modalities platformId sourceTz claimMethod
+  reject <短码> [理由]  拒绝。理由开头可加快捷分类：付费套餐 / 非AI / 平台错 / 重复 / 过期 / 额度不明 / 分类错
+  edit <短码> 字段=值 … [--approve] [--reason 理由]  修改字段（可同时通过）；写上理由，模型以后学得更快。字段：title type valueText usdEstimate claimStart claimEnd endKind creditValidity audience requirements modalities platformId sourceTz claimMethod
   leads [数量]          看最新线索
   dismiss <线索id>      忽略线索
   add <链接> [备注]     补录链接（下一轮采集抓取并抽取，进待审）
@@ -77,18 +77,23 @@ ${revisions.length ? `修订：${revisions.map((r: any) => r.diff.map((x: any) =
     break;
   }
   case 'approve': case 'reject': {
-    const r = await call(`/offers/${rest[0]}/${cmd}`, { reason: rest.slice(1).join(' ') || undefined });
+    const text = rest.slice(1).join(' ');
+    const CODES: [RegExp, string][] = [[/付费套餐|套餐自带/, 'paid_bundle'], [/非\s*AI|不是\s*AI/, 'not_ai'], [/平台(错|归属)/, 'wrong_platform'], [/重复/, 'duplicate'], [/过期|已结束/, 'expired'], [/额度不明|没写额度/, 'vague'], [/分类错|类型错/, 'wrong_type']];
+    const reasonCode = cmd === 'reject' ? (CODES.find(([re]) => re.test(text))?.[1] ?? (text ? 'other' : undefined)) : undefined;
+    const r = await call(`/offers/${rest[0]}/${cmd}`, { reason: text || undefined, reasonCode });
     console.log(`${cmd === 'approve' ? '已通过' : '已拒绝'}：[${r.code}] ${r.title}${r.sourceCleanStreak != null ? `（该信源连续原样通过 ${r.sourceCleanStreak} 条）` : ''}${r.urgent ? '\n⚠️ 48 小时内截止，下一次整点检查会发加急提醒' : ''}`);
     break;
   }
   case 'edit': {
     const fields: Record<string, unknown> = {};
-    for (const kv of rest.slice(1)) {
+    const ri = args.indexOf('--reason');
+    const reason = ri >= 0 ? args.slice(ri + 1).filter(a => !a.startsWith('--')).join(' ') : undefined;
+    for (const kv of rest.slice(1).filter(a => !(reason && reason.split(' ').includes(a)))) {
       const i = kv.indexOf('='); if (i < 0) continue;
       const k = kv.slice(0, i), v = kv.slice(i + 1);
       fields[k] = ['requirements', 'modalities'].includes(k) ? v.split(',') : k === 'usdEstimate' ? (v === 'null' ? null : Number(v)) : v === 'null' ? null : v;
     }
-    const r = await call(`/offers/${rest[0]}/edit`, { fields, approve: flag('--approve') });
+    const r = await call(`/offers/${rest[0]}/edit`, { fields, approve: flag('--approve'), reason, reasonCode: Object.keys(fields).includes('type') ? 'wrong_type' : 'wrong_field' });
     console.log(`已修改 [${r.code}]：${r.changed.join('、')}${r.approved ? '，并已通过' : ''}`);
     break;
   }

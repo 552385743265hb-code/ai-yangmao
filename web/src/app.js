@@ -1047,6 +1047,8 @@ async function adm(path, body) {
 }
 const TIER_L = { site: '官网', docs: '官方文档', official: '官方账号', staff: '员工账号', media: '媒体 / 社区转述' };
 const EX_L = [['benefit', '权益'], ['eligibility', '资格'], ['claim', '领取方式'], ['validity', '有效期']];
+const RC = [['paid_bundle', '付费套餐自带'], ['not_ai', '不是 AI 额度'], ['wrong_platform', '平台归错'], ['duplicate', '重复'], ['expired', '已过期'], ['vague', '额度不明'], ['wrong_type', '分类错']];
+const FIELD_L = { title: '标题', type: '类型', valueText: '额度', usdEstimate: '折合美元', claimStart: '开始', claimEnd: '截止', endKind: '截止方式', creditValidity: '有效期', audience: '适用对象', requirements: '门槛', modalities: '模态', platformId: '平台', sourceTz: '时区', claimMethod: '领取方式' };
 function pAdmin() {
   if (!ADM.token) {
     main().innerHTML = ribbon() + ph('后台', '用管理员密钥登录。密钥只保存在这台设备的浏览器里。') + `
@@ -1060,28 +1062,33 @@ function pAdmin() {
     });
     return;
   }
-  const tabs = [['queue', '待审'], ['leads', '线索'], ['manual', '补录'], ['health', '采集健康']];
+  const tabs = [['queue', '待审'], ['quality', '准确率'], ['leads', '线索'], ['manual', '补录'], ['health', '采集健康']];
   main().innerHTML = ribbon() + ph('后台', '审核、编辑、补录。每条都附来源链接和官方原文，点链接核对后再决定。', `<button class="btn sm" type="button" id="admOut">退出登录</button>`) + `
   <div class="seg" role="tablist" style="margin-bottom:14px">${tabs.map(([k, l]) => `<button type="button" data-admtab="${k}" aria-pressed="${ADM.tab === k}">${l}</button>`).join('')}</div>
   <div id="admBody">${emptySheep('加载中…')}</div>`;
   $('#admOut').addEventListener('click', () => { ADM.token = ''; LS.set('ym-admin', ''); render(true); });
   $$('[data-admtab]').forEach(b => b.addEventListener('click', () => { ADM.tab = b.dataset.admtab; render(true); }));
-  ({ queue: admQueue, leads: admLeads, manual: admManual, health: admHealth })[ADM.tab]().catch(err => { $('#admBody').innerHTML = `<div class="card"><p>${esc(err.message)}</p></div>`; if (!ADM.token) render(true); });
+  ({ queue: admQueue, quality: admQuality, leads: admLeads, manual: admManual, health: admHealth })[ADM.tab]().catch(err => { $('#admBody').innerHTML = `<div class="card"><p>${esc(err.message)}</p></div>`; if (!ADM.token) render(true); });
 }
 async function admQueue() {
   const q = await adm('/queue');
   const box = $('#admBody');
-  const card = o => `<article class="card" data-code="${o.code}" style="display:flex;flex-direction:column;gap:10px">
+ const card = o => `<article class="card" data-code="${o.code}" data-type="${esc(o.type)}" style="display:flex;flex-direction:column;gap:10px">
     <div class="row" style="justify-content:space-between"><span class="row" style="gap:8px">${TYPES[Object.keys(TYPES).find(k => TYPES[k].l === o.type)] ? etag(Object.keys(TYPES).find(k => TYPES[k].l === o.type)) : esc(o.type)}<span class="chip">${esc(o.platform)}</span><span class="st ${o.evidenceTier === 'media' ? 'warn' : 'good'}"><b>${o.evidenceTier === 'media' ? '!' : '✓'}</b>${TIER_L[o.evidenceTier] || o.evidenceTier}</span></span><span class="small muted num">${o.code}</span></div>
     <div><div style="font-weight:600;font-size:16px">${esc(o.title)}</div><div class="${/未写明|不明确/.test(o.value) ? 'st warn' : ''}" style="margin-top:4px">${esc(o.value)}</div><div class="small muted" style="margin-top:4px">${esc(o.end)} · 额度有效期：${esc(o.creditValidity || '未写')} · 门槛：${o.requirements.map(r => esc(reqLabel(r))).join('、')} · 对象：${AUD[o.audience] || o.audience}</div></div>
     <div class="rows">${EX_L.map(([k, l]) => `<div class="orow" style="grid-template-columns:auto minmax(0,1fr);padding:6px 2px">${o.excerpts[k] ? `<span class="st good"><b>✓</b>${l}</span>` : `<span class="st warn"><b>!</b>${l}</span>`}<span class="t" style="font-weight:400;font-size:13.5px">${o.excerpts[k] ? '「' + esc(o.excerpts[k]) + '」' : '原文里没有找到'}</span></div>`).join('')}</div>
     <div class="small" style="word-break:break-all">来源：<a href="${esc(o.evidenceUrl)}" target="_blank" rel="noopener" style="text-decoration:underline">${esc(o.evidenceUrl)}</a></div>
-    <div class="row"><button class="btn sm good" type="button" data-act="approve">✓ 通过</button><input type="text" placeholder="拒绝理由（可选）" data-reason style="flex:1;min-width:140px;max-width:260px;padding:5px 10px"><button class="btn sm bad" type="button" data-act="reject">✕ 拒绝</button><button class="btn sm" type="button" data-act="edit">修改</button></div>
+    <div class="row"><button class="btn sm good" type="button" data-act="approve">✓ 通过</button><button class="btn sm" type="button" data-act="edit">修改</button><button class="btn sm bad" type="button" data-act="rejectopen">✕ 拒绝…</button></div>
+    <div data-rejectbox hidden style="display:flex;flex-direction:column;gap:8px">
+      <div class="chips">${RC.map(([k, l]) => `<button class="btn sm" type="button" data-rc="${k}" aria-pressed="false">${l}</button>`).join('')}</div>
+      <div class="row"><input type="text" placeholder="补充理由（写清楚，模型以后学得更快）" data-reason style="flex:1;min-width:160px;padding:6px 10px"><button class="btn sm bad" type="button" data-act="reject">确认拒绝</button></div>
+    </div>
     <form data-editform hidden class="filters" style="margin:0">
       ${[['title', '标题', o.title], ['valueText', '额度', o.value], ['claimStart', '开始 YYYY-MM-DD', o.claimStart || ''], ['claimEnd', '截止 YYYY-MM-DD', o.claimEnd || ''], ['creditValidity', '额度有效期', o.creditValidity || ''], ['requirements', '门槛（逗号分隔）', o.requirements.join(',')]].map(([k, l, v]) => `<label class="field">${l}<input type="text" name="${k}" value="${esc(v)}"></label>`).join('')}
       <label class="field">类型<select name="type">${Object.entries(TYPES).map(([k, v]) => `<option value="${k}" ${v.l === o.type ? 'selected' : ''}>${v.l}</option>`).join('')}</select></label>
       <label class="field">截止方式<select name="endKind">${[['date', '有截止日期'], ['unknown', '截止未知'], ['standing', '常驻 / 申请制']].map(([k, l]) => `<option value="${k}" ${o.endKind === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
       <label class="field">适用对象<select name="audience">${Object.entries(AUD).map(([k, l]) => `<option value="${k}" ${o.audience === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+      <label class="field" style="grid-column:1/-1">为什么这样改（可选，但强烈建议写）<input type="text" name="__reason" placeholder="例如：要先付费升级才送，属于充值赠送"></label>
       <div class="row" style="align-self:end"><button class="btn sm pri" type="submit">保存并通过</button></div>
     </form>
   </article>`;
@@ -1093,17 +1100,45 @@ async function admQueue() {
   $$('[data-code]', box).forEach(el => {
     const code = el.dataset.code;
     el.querySelector('[data-act="approve"]').addEventListener('click', async () => { try { const r = await adm(`/offers/${code}/approve`, {}); done(el, `已通过：${r.title}`); } catch (e) { toast(e.message); } });
-    el.querySelector('[data-act="reject"]').addEventListener('click', async () => { try { const r = await adm(`/offers/${code}/reject`, { reason: el.querySelector('[data-reason]').value || undefined }); done(el, `已拒绝：${r.title}`); } catch (e) { toast(e.message); } });
+    const rb = el.querySelector('[data-rejectbox]');
+    el.querySelector('[data-act="rejectopen"]').addEventListener('click', () => { rb.hidden = !rb.hidden; });
+    let rc = null;
+    rb.querySelectorAll('[data-rc]').forEach(b => b.addEventListener('click', () => { rc = rc === b.dataset.rc ? null : b.dataset.rc; rb.querySelectorAll('[data-rc]').forEach(x => x.setAttribute('aria-pressed', x.dataset.rc === rc)); }));
+    el.querySelector('[data-act="reject"]').addEventListener('click', async () => {
+      const reason = el.querySelector('[data-reason]').value.trim();
+      if (!rc && !reason) { toast('选一个理由或写一句说明，模型才能从这次拒绝里学到东西'); return; }
+      try { const r = await adm(`/offers/${code}/reject`, { reason: reason || undefined, reasonCode: rc || 'other' }); done(el, `已拒绝：${r.title}`); } catch (e) { toast(e.message); }
+    });
     el.querySelector('[data-act="edit"]').addEventListener('click', () => { const f = el.querySelector('[data-editform]'); f.hidden = !f.hidden; });
     el.querySelector('[data-editform]').addEventListener('submit', async e => {
       e.preventDefault(); const fd = Object.fromEntries(new FormData(e.currentTarget));
+      const reason = String(fd.__reason || '').trim(); delete fd.__reason;
       const fields = { ...fd, requirements: String(fd.requirements).split(/[,，]/).map(x => x.trim()).filter(Boolean) };
       ['claimStart', 'claimEnd', 'creditValidity'].forEach(k => { if (!fields[k]) fields[k] = null; });
-      try { await adm(`/offers/${code}/edit`, { fields, approve: true }); done(el, '已修改并通过'); } catch (err) { toast(err.message); }
+      try { const r = await adm(`/offers/${code}/edit`, { fields, approve: true, reason: reason || undefined, reasonCode: fields.type !== undefined && Object.keys(TYPES).find(k => TYPES[k].l === el.dataset.type) !== fields.type ? 'wrong_type' : 'wrong_field' }); done(el, r.changed.length ? `已修改 ${r.changed.map(f => FIELD_L[f] || f).join('、')} 并通过` : '没有改动，已通过'); } catch (err) { toast(err.message); }
     });
   });
   $$('[data-plat]', box).forEach(b => b.addEventListener('click', async () => { const [id, act] = b.dataset.plat.split(':'); await adm(`/platforms/${id}/${act}`, {}); toast('已处理'); admQueue(); }));
   $$('[data-autopub]', box).forEach(b => b.addEventListener('click', async () => { await adm(`/sources/${b.dataset.autopub}/auto-publish`, { on: true }); toast('已放开自动上架'); admQueue(); }));
+}
+async function admQuality() {
+  const q = await adm('/quality?days=30');
+  const pct = (a, b) => b ? Math.round(a / b * 100) + '%' : '—';
+  const RCL = Object.fromEntries(RC.concat([['wrong_field', '字段错'], ['other', '其他']]));
+  const fields = Object.entries(q.fields).sort((a, b) => b[1] - a[1]);
+  const reasons = Object.entries(q.reasons).sort((a, b) => b[1] - a[1]);
+  const srcs = Object.entries(q.bySource).sort((a, b) => b[1].total - a[1].total);
+  $('#admBody').innerHTML = `<p class="small muted">最近 30 天你的审核（不含系统自动去重）。原样通过率越高，说明抽取越准；某个字段修改得多，就是模型最该改进的地方。你的修改和拒绝理由会在下一轮采集时附给模型参考，每周六再归纳成规则等你批准。</p>
+    <section class="kpis" style="margin-top:0">
+      <div class="kpi"><span class="k-l">已审核</span><span class="k-v">${q.reviewed}<small>条</small></span></div>
+      <div class="kpi"><span class="k-l">原样通过</span><span class="k-v">${pct(q.approvedClean, q.reviewed)}</span></div>
+      <div class="kpi"><span class="k-l">修改后通过</span><span class="k-v">${q.edits}<small>条</small></span></div>
+      <div class="kpi"><span class="k-l">拒绝</span><span class="k-v">${q.rejects}<small>条</small></span></div></section>
+    <div class="grid g2">
+      <div class="card"><h3>最常被改的字段</h3>${fields.length ? `<div class="rows">${fields.map(([f, n]) => `<div class="row small" style="gap:10px;padding:4px 0"><span style="width:72px">${FIELD_L[f] || f}</span><span class="meter" style="flex:1"><i style="width:${Math.round(n / fields[0][1] * 100)}%"></i></span><span class="num">${n}</span></div>`).join('')}</div>` : '<p class="small muted">还没有修改记录。</p>'}</div>
+      <div class="card"><h3>拒绝理由</h3>${reasons.length ? `<div class="rows">${reasons.map(([k, n]) => `<div class="row small" style="gap:10px;padding:4px 0"><span style="width:92px">${RCL[k] || k}</span><span class="meter" style="flex:1"><i style="width:${Math.round(n / reasons[0][1] * 100)}%;background:var(--critical)"></i></span><span class="num">${n}</span></div>`).join('')}</div>` : '<p class="small muted">还没有拒绝记录。</p>'}</div>
+    </div>
+    <section>${secH('各信源的原样通过率', '连续原样通过 5 条的信源会被提议放开自动上架')}<div class="card tbl" style="padding:4px 8px"><table><thead><tr><th>信源</th><th>审核数</th><th>原样通过率</th></tr></thead><tbody>${srcs.map(([k, v]) => `<tr><td>${esc(k)}</td><td class="n">${v.total}</td><td class="n">${pct(v.clean, v.total)}</td></tr>`).join('') || '<tr><td colspan="3" class="muted">暂无</td></tr>'}</tbody></table></div></section>`;
 }
 async function admLeads() {
   const { leads } = await adm('/leads?limit=60');

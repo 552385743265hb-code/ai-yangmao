@@ -50,6 +50,15 @@ const PROMPT = `你是"AI 羊毛牧场"的信息抽取器。下面是某个 AI �
 
 只输出 JSON：{"offers":[...]}，没有符合条件的就输出 {"offers":[]}。`;
 
+/** 第二层：由每周纠正归纳、经管理员批准的规则（pipeline/learned-rules.md）。 */
+import { readFileSync } from 'node:fs';
+const LEARNED = (() => {
+  try {
+    const rules = readFileSync(new URL('./learned-rules.md', import.meta.url), 'utf8').split('\n').filter(l => /^\s*-\s+/.test(l)).join('\n');
+    return rules ? `\n\n已确认的抽取规则（来自管理员的历次纠正）：\n${rules}` : '';
+  } catch { return ''; }
+})();
+
 /** 线索研判：文章可能来自媒体或社区，需要先判断属于白名单里哪个平台。 */
 const TRIAGE = `\n\n补充规则（本文可能是媒体报道、社区帖子或推文）：
 - 每条再加一个字段 platformId：从下面的平台白名单里选最匹配的 id；都不匹配就用 "unknown"。
@@ -147,9 +156,10 @@ function tidy(o: Extracted): Extracted {
 /** 免费模型都不可用时抛出，调用方把这个页面推迟到下一轮。 */
 export class DeferError extends Error {}
 
-export async function extract(platformName: string, url: string, text: string, log: (...a: unknown[]) => void = () => undefined, opts: { allowPaid?: boolean; platformList?: string; existing?: string } = {}): Promise<{ offers: (Extracted & { platformId?: string; officialUrl?: string | null; sameAs?: string | null })[]; tokens: number; costCny: number; provider: string }> {
+export async function extract(platformName: string, url: string, text: string, log: (...a: unknown[]) => void = () => undefined, opts: { allowPaid?: boolean; platformList?: string; existing?: string; corrections?: string[] } = {}): Promise<{ offers: (Extracted & { platformId?: string; officialUrl?: string | null; sameAs?: string | null })[]; tokens: number; costCny: number; provider: string }> {
   const user = `平台：${platformName}\n来源：${url}\n\n---- 原文 ----\n${text}`;
-  const sys = opts.platformList ? PROMPT + TRIAGE + opts.platformList + (opts.existing ? `\n已收录条目（id｜标题｜额度）：\n${opts.existing}` : '') : PROMPT;
+  const base = PROMPT + LEARNED + (opts.corrections?.length ? `\n\n管理员最近的纠正（照这些改正方向抽取，同类错误不要再犯）：\n${opts.corrections.map(x => '- ' + x).join('\n')}` : '');
+  const sys = opts.platformList ? base + TRIAGE + opts.platformList + (opts.existing ? `\n已收录条目（id｜标题｜额度）：\n${opts.existing}` : '') : base;
   let lastErr: unknown;
   const all = providers();
   const free = all.filter(p => !p.paid), paid = all.filter(p => p.paid);
