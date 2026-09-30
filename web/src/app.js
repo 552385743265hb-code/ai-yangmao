@@ -985,7 +985,7 @@ function pOffer(id) {
     <div style="display:flex;flex-direction:column;gap:14px;min-width:0">
       <div class="card"><h3>薅度雷达</h3><p class="sub">六项按规则计算，合成薅度分 ${sc}</p><div class="chart" id="cRadar" style="height:280px"></div>
         <div class="rows">${DIMS.map((n, i) => `<div class="row small" style="gap:10px;padding:3px 0"><span style="width:64px;color:var(--ink-2)">${n}</span><span class="meter" style="flex:1"><i style="width:${d[i]}%;background:${typeVar(o.ty)}"></i></span><span class="num tnum" style="width:28px;text-align:right">${d[i]}</span></div>`).join('')}</div></div>
-      <div class="card" id="revBox"><h3>条款修订记录</h3>${(o.rev || []).length ? `<div class="diff">${o.rev.map(rv => `<div><span class="small muted">${md(dayAt(rv.at))}</span><br><del>${esc(rv.from)}</del> → <ins>${esc(rv.to)}</ins></div>`).join('')}</div>` : '<p class="small muted" style="margin:0">收录以来条款没有变化。</p>'}</div>
+      ${ADM.token ? `<div class="card" id="revBox"><h3>条款修订记录</h3>${(o.rev || []).length ? `<div class="diff">${o.rev.map(rv => `<div><span class="small muted">${md(dayAt(rv.at))}</span><br><del>${esc(rv.from)}</del> → <ins>${esc(rv.to)}</ins></div>`).join('')}</div>` : '<p class="small muted" style="margin:0">收录以来条款没有变化。</p>'}</div>` : ''}
       <div class="card"><h3>状态时间轴</h3><ul class="tl">${hist.map(([t, s], i) => `<li class="${i ? '' : 'hot'}"><time>${md(dayAt(t))}</time>${esc(s)}</li>`).join('')}</ul></div>
     </div>
   </div>
@@ -1000,8 +1000,27 @@ function pOffer(id) {
   const revisionBox = $('#revBox');
   fetch(`/api/offers/${encodeURIComponent(o.id)}`).then(r => r.ok ? r.json() : null).then(j => {
     const box = revisionBox; if (!box?.isConnected || route()[1] !== o.id || !j?.revisions?.length) return;
-    const F = { valueText: '额度', claimEnd: '截止', claimStart: '开始', requirements: '门槛', usdEstimate: '折合美元', title: '标题', creditValidity: '有效期', endKind: '截止类型', type: '类型', audience: '适用对象' };
-    box.innerHTML = `<h3>条款修订记录</h3><div class="diff">${j.revisions.map(rv => `<div><span class="small muted">${esc(rv.at.slice(0, 10))}</span>${rv.diff.map(x => `<br>${F[x.field] || x.field}：<del>${esc(JSON.stringify(x.from))}</del> → <ins>${esc(JSON.stringify(x.to))}</ins>`).join('')}</div>`).join('')}</div>`;
+    const F = { valueText: '额度', claimEnd: '截止', claimStart: '开始', requirements: '门槛', usdEstimate: '折合美元', usdMax: '价值上限', title: '标题', creditValidity: '有效期', endKind: '截止类型', type: '类型', audience: '适用对象', steps: '领取步骤', claimMethod: '领取方式', modalities: '模态', platformId: '平台', sourceTz: '时区', evidence: '官方证据' };
+    // 修订内容转成人能读的文字：枚举用中文名，列表逐条，证据只说明链接和级别变化
+    const say = (field, v) => {
+      if (v == null || v === '') return '（空）';
+      if (field === 'type') return TYPES[v]?.l || v;
+      if (field === 'claimMethod') return CLAIM[v] || v;
+      if (field === 'audience') return AUD[v] || v;
+      if (field === 'requirements') return v.map(r => reqLabel(r)).join('、');
+      if (field === 'modalities') return v.map(m => MODAL[m] || m).join('、');
+      if (Array.isArray(v)) return v.join('；');
+      return String(v);
+    };
+    const line = x => {
+      if (x.field !== 'evidence') return `${F[x.field] || x.field}：<del>${esc(say(x.field, x.from))}</del> → <ins>${esc(say(x.field, x.to))}</ins>`;
+      const a = x.from || {}, b = x.to || {}, parts = [];
+      if (a.tier !== b.tier) parts.push(`级别 <del>${esc(SRC[a.tier] || a.tier || '（空）')}</del> → <ins>${esc(SRC[b.tier] || b.tier)}</ins>`);
+      if (a.url !== b.url) parts.push(`链接换成 <ins>${esc(b.url || '')}</ins>`);
+      if (JSON.stringify(a.excerpts) !== JSON.stringify(b.excerpts)) parts.push('原文摘录已更新');
+      return `官方证据：${parts.join('；') || '重新抓取'}`;
+    };
+    box.innerHTML = `<h3>条款修订记录</h3><div class="diff">${j.revisions.map(rv => `<div><span class="small muted">${esc(rv.at.slice(0, 10))}</span>${rv.diff.map(x => `<br>${line(x)}`).join('')}</div>`).join('')}</div>`;
   }).catch(() => undefined);
   const col = typeColor(o.ty);
   chart('#cRadar', {
