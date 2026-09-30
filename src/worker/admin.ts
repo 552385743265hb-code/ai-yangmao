@@ -325,7 +325,11 @@ async function buildNotice(env: Env, kind: NoticeKind, channel: NoticeChannel) {
     if (!has(o.id, 'new') && !has(o.id, 'urgent') && isClaimable(st)) { out.new.push(v); marks.push({ offerId: o.id, stage: 'new' }); continue; }
     const lastRev = revs.filter(r => r.offerId === o.id).sort((a, b) => b.id - a.id)[0];
     const ch = has(o.id, 'changed');
-    if (lastRev && (!ch || Number(ch.messageId ?? 0) < lastRev.id)) { out.changed.push({ ...v, value: lastRev.diff.map(x => `${FIELD_NAME[x.field] ?? x.field}：${showValue(x.from)} → ${showValue(x.to)}`).join('；') }); marks.push({ offerId: o.id, stage: 'changed', messageId: String(lastRev.id) }); }
+    const firstAnnouncedAt = has(o.id, 'new')?.sentAt ?? has(o.id, 'urgent')?.sentAt;
+    if (lastRev && firstAnnouncedAt && Date.parse(lastRev.at) > Date.parse(firstAnnouncedAt) && (!ch || Number(ch.messageId ?? 0) < lastRev.id)) {
+      out.changed.push({ ...v, value: lastRev.diff.map(x => `${FIELD_NAME[x.field] ?? x.field}：${showValue(x.from)} → ${showValue(x.to)}`).join('；') });
+      marks.push({ offerId: o.id, stage: 'changed', messageId: String(lastRev.id) });
+    }
     if (st === 'ending' && !has(o.id, 'ending') && !has(o.id, 'urgent')) { out.ending.push(v); marks.push({ offerId: o.id, stage: 'ending' }); }
     if (st === 'ended' && !has(o.id, 'ended') && (!end || now.getTime() - end.getTime() < 7 * 86400_000)) { out.ended.push(v); marks.push({ offerId: o.id, stage: 'ended' }); }
   }

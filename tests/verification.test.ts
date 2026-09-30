@@ -218,6 +218,20 @@ describe('notification delivery receipts', () => {
     expect(second.body.deliveryId).toBeUndefined();
   });
 
+  it('does not announce a revision that predates the first new-offer message', async () => {
+    await call('ingest/offers', [offer]);
+    await call('admin/offers/vendor-free/approve', {}, 'admin');
+    await call('ingest/offers', [{ ...offer, valueText: '200 tokens' }]);
+    await call('admin/offers/vendor-free/approve', {}, 'admin');
+    const first = await call('admin/notify/claim', { kind: 'digest', channel: 'telegram' }, 'admin');
+    expect((first.body.items as { new: unknown[]; changed: unknown[] }).new).toHaveLength(1);
+    await new Promise(resolve => setTimeout(resolve, 5));
+    await call(`admin/notify/${first.body.deliveryId}/ack`, { status: 'sent' }, 'admin');
+    const next = await call('admin/notify?kind=digest', undefined, 'admin');
+    expect((next.body.items as { changed: unknown[] }).changed).toEqual([]);
+    expect(next.body.empty).toBe(true);
+  });
+
   it('never sends an urgent notice for an offer whose evidence is stale', async () => {
     const tomorrow = new Date(Date.now() + 86400_000).toISOString().slice(0, 10);
     await call('ingest/offers', [{ ...offer, claimEnd: tomorrow, endKind: 'date' }]);
