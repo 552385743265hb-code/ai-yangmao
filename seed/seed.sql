@@ -579,3 +579,25 @@ INSERT INTO sources (id, platform_id, kind, url, tier, config) VALUES ('cursor-p
   ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
 INSERT INTO sources (id, platform_id, kind, url, tier, config) VALUES ('qwen-code-auth-docs', 'qwen', 'web_list', 'https://qwenlm.github.io/qwen-code-docs/zh/users/configuration/auth/', 'docs', '{}')
   ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
+INSERT INTO sources (id, platform_id, kind, url, tier, config) VALUES ('manus-help-membership', 'manus', 'web_list', 'https://help.manus.im/en/articles/11711111-what-is-the-current-membership-pricing-for-manus', 'docs', '{}')
+  ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
+INSERT INTO sources (id, platform_id, kind, url, tier, config) VALUES ('manus-help-offers', 'manus', 'web_list', 'https://help.manus.im/en/articles/11813668-are-there-any-discounts-or-special-offers', 'docs', '{}')
+  ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
+INSERT INTO sources (id, platform_id, kind, url, tier, config) VALUES ('seaart-mall', 'seaart', 'web_list', 'https://www.seaart.ai/mall', 'site', '{}')
+  ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
+INSERT INTO sources (id, platform_id, kind, url, tier, config) VALUES ('worldlabs-marble-pricing', 'worldlabs', 'web_list', 'https://marble.worldlabs.ai/pricing', 'site', '{}')
+  ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
+INSERT INTO sources (id, platform_id, kind, url, tier, config) VALUES ('adobe-firefly-credits-access', 'adobe-firefly', 'web_list', 'https://helpx.adobe.com/creative-cloud/apps/generative-ai/generative-credits-access-and-use.html', 'docs', '{}')
+  ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
+INSERT INTO sources (id, platform_id, kind, url, tier, config) VALUES ('thinking-machines-tinker-grants', 'thinking-machines', 'web_list', 'https://thinkingmachines.ai/news/tinker-research-and-teaching-grants/', 'site', '{}')
+  ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
+INSERT INTO sources (id, platform_id, kind, url, tier, config) VALUES ('thinking-machines-tinker', 'thinking-machines', 'web_list', 'https://thinkingmachines.ai/tinker/', 'site', '{}')
+  ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
+INSERT INTO sources (id, platform_id, kind, url, tier, config) VALUES ('nous-portal-plans', 'nous', 'web_list', 'https://portal.nousresearch.com/manage-subscription', 'site', '{}')
+  ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
+INSERT INTO sources (id, platform_id, kind, url, tier, config) VALUES ('pixverse-subscribe', 'pixverse', 'web_list', 'https://app.pixverse.ai/subscribe', 'site', '{}')
+  ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
+INSERT INTO sources (id, platform_id, kind, url, tier, config) VALUES ('meituan-longcat-faq', 'meituan', 'web_list', 'https://longcat.chat/platform/docs/zh/faq', 'docs', '{}')
+  ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
+INSERT INTO sources (id, platform_id, kind, url, tier, config) VALUES ('meituan-longcat-changelog', 'meituan', 'web_list', 'https://longcat.chat/platform/docs/zh/change-log', 'docs', '{}')
+  ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);

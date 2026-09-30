@@ -2131,6 +2131,83 @@
    "kind": "web_list",
    "url": "https://qwenlm.github.io/qwen-code-docs/zh/users/configuration/auth/",
    "tier": "docs"
+  },
+  {
+   "id": "manus-help-membership",
+   "platform": "manus",
+   "kind": "web_list",
+   "url": "https://help.manus.im/en/articles/11711111-what-is-the-current-membership-pricing-for-manus",
+   "tier": "docs"
+  },
+  {
+   "id": "manus-help-offers",
+   "platform": "manus",
+   "kind": "web_list",
+   "url": "https://help.manus.im/en/articles/11813668-are-there-any-discounts-or-special-offers",
+   "tier": "docs"
+  },
+  {
+   "id": "seaart-mall",
+   "platform": "seaart",
+   "kind": "web_list",
+   "url": "https://www.seaart.ai/mall",
+   "tier": "site"
+  },
+  {
+   "id": "worldlabs-marble-pricing",
+   "platform": "worldlabs",
+   "kind": "web_list",
+   "url": "https://marble.worldlabs.ai/pricing",
+   "tier": "site"
+  },
+  {
+   "id": "adobe-firefly-credits-access",
+   "platform": "adobe-firefly",
+   "kind": "web_list",
+   "url": "https://helpx.adobe.com/creative-cloud/apps/generative-ai/generative-credits-access-and-use.html",
+   "tier": "docs"
+  },
+  {
+   "id": "thinking-machines-tinker-grants",
+   "platform": "thinking-machines",
+   "kind": "web_list",
+   "url": "https://thinkingmachines.ai/news/tinker-research-and-teaching-grants/",
+   "tier": "site"
+  },
+  {
+   "id": "thinking-machines-tinker",
+   "platform": "thinking-machines",
+   "kind": "web_list",
+   "url": "https://thinkingmachines.ai/tinker/",
+   "tier": "site"
+  },
+  {
+   "id": "nous-portal-plans",
+   "platform": "nous",
+   "kind": "web_list",
+   "url": "https://portal.nousresearch.com/manage-subscription",
+   "tier": "site"
+  },
+  {
+   "id": "pixverse-subscribe",
+   "platform": "pixverse",
+   "kind": "web_list",
+   "url": "https://app.pixverse.ai/subscribe",
+   "tier": "site"
+  },
+  {
+   "id": "meituan-longcat-faq",
+   "platform": "meituan",
+   "kind": "web_list",
+   "url": "https://longcat.chat/platform/docs/zh/faq",
+   "tier": "docs"
+  },
+  {
+   "id": "meituan-longcat-changelog",
+   "platform": "meituan",
+   "kind": "web_list",
+   "url": "https://longcat.chat/platform/docs/zh/change-log",
+   "tier": "docs"
   }
  ]
 }
