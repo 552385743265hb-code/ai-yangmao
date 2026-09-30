@@ -23,7 +23,12 @@ export interface Extracted {
 
 const PROMPT = `你是"AI 羊毛牧场"的信息抽取器。下面是某个 AI 平台官方页面里和额度、赠送相关的文字。
 只抽取"用户可以免费拿到的 AI 额度或权益"，包括：免费额度/免费层、注册赠送、限时免费开放、充值赠送、会员额外额度或额度重置、会员免费送、需要申请的 credits。
-不要抽取：新模型发布、功能更新、单纯降价或打折（没有额外赠送）、付费套餐本身的额度。拿不准就不要输出。
+不要抽取：
+- 新模型发布、功能更新、单纯降价或打折（没有额外赠送）
+- 付费套餐本身包含的额度（例如 PRO 会员每月自带的 credits）；但会员的"额外"加赠、额度重置、限时翻倍要抽
+- 不是 AI 使用额度的权益（协作功能、工作区、存储空间、席位等）；只收 token、请求次数、生成积分、会员时长、API 余额
+- 不属于"平台："那一家的权益：原文里提到的其他公司产品（合作方、客户案例）不要算在这个平台头上
+拿不准就不要输出。
 
 每条输出字段：
 - key：稳定的英文短标识，只描述"产品+权益"，不含日期，例如 gemini-api-free-tier
@@ -44,7 +49,7 @@ const PROMPT = `你是"AI 羊毛牧场"的信息抽取器。下面是某个 AI �
 
 只输出 JSON：{"offers":[...]}，没有符合条件的就输出 {"offers":[]}。`;
 
-interface Provider { name: string; call: (sys: string, user: string) => Promise<{ text: string; tokens: number }> }
+interface Provider { name: string; paid?: boolean; call: (sys: string, user: string) => Promise<{ text: string; tokens: number; costCny?: number }> }
 
 function providers(): Provider[] {
   const list: Provider[] = [];
@@ -62,9 +67,9 @@ function providers(): Provider[] {
       return { text: j.candidates?.[0]?.content?.parts?.map(p => p.text ?? '').join('') ?? '', tokens: j.usageMetadata?.totalTokenCount ?? 0 };
     },
   });
-  const openaiLike = (name: string, url: string, key: string | undefined, model: string | undefined) => {
+  const openaiLike = (name: string, url: string, key: string | undefined, model: string | undefined, price?: { in: number; out: number }) => {
     if (key && model) list.push({
-      name,
+      name, paid: !!price,
       call: async (sys, user) => {
         const r = await fetch(url, {
           method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
@@ -72,17 +77,23 @@ function providers(): Provider[] {
           signal: AbortSignal.timeout(90000),
         });
         if (!r.ok) throw new Error(`${name} ${r.status}: ${(await r.text()).slice(0, 200)}`);
-        const j = await r.json() as { choices?: { message?: { content?: string } }[]; usage?: { total_tokens?: number } };
-        return { text: j.choices?.[0]?.message?.content ?? '', tokens: j.usage?.total_tokens ?? 0 };
+        const j = await r.json() as { choices?: { message?: { content?: string } }[]; usage?: { total_tokens?: number; prompt_tokens?: number; completion_tokens?: number } };
+        const costCny = price ? ((j.usage?.prompt_tokens ?? 0) * price.in + (j.usage?.completion_tokens ?? 0) * price.out) / 1e6 : 0;
+        return { text: j.choices?.[0]?.message?.content ?? '', tokens: j.usage?.total_tokens ?? 0, costCny };
       },
     });
   };
-  openaiLike('glm', 'https://open.bigmodel.cn/api/paas/v4/chat/completions', process.env.GLM_API_KEY, process.env.GLM_MODEL ?? 'glm-4-flash');
+  // 免费备用：OpenRouter 免费模型。GLM-4-Flash 质量不够，默认不用（设 USE_GLM=1 才启用）
   openaiLike('openrouter', 'https://openrouter.ai/api/v1/chat/completions', process.env.OPENROUTER_API_KEY, process.env.OPENROUTER_MODEL);
+  if (process.env.USE_GLM === '1') openaiLike('glm', 'https://open.bigmodel.cn/api/paas/v4/chat/completions', process.env.GLM_API_KEY, process.env.GLM_MODEL ?? 'glm-4-flash');
+  // 最后一级：DeepSeek 付费。价格按元 / 百万 tokens，可用变量覆盖
+  openaiLike('deepseek', 'https://api.deepseek.com/chat/completions', process.env.DEEPSEEK_API_KEY, process.env.DEEPSEEK_MODEL ?? 'deepseek-chat',
+    { in: Number(process.env.DEEPSEEK_PRICE_IN ?? 2), out: Number(process.env.DEEPSEEK_PRICE_OUT ?? 3) });
   return list;
 }
 
 export const llmAvailable = () => providers().length > 0;
+export const paidAvailable = () => providers().some(p => p.paid);
 
 /** 摘录必须能在原文里逐字找到（忽略空白和大小写），找不到的清空。 */
 export function keepVerbatim(ex: Extracted['excerpts'], source: string): Extracted['excerpts'] {
@@ -116,12 +127,18 @@ function tidy(o: Extracted): Extracted {
   };
 }
 
-export async function extract(platformName: string, url: string, text: string, log: (...a: unknown[]) => void = () => undefined): Promise<{ offers: Extracted[]; tokens: number; provider: string }> {
+/** 免费模型都不可用时抛出，调用方把这个页面推迟到下一轮。 */
+export class DeferError extends Error {}
+
+export async function extract(platformName: string, url: string, text: string, log: (...a: unknown[]) => void = () => undefined, opts: { allowPaid?: boolean } = {}): Promise<{ offers: Extracted[]; tokens: number; costCny: number; provider: string }> {
   const user = `平台：${platformName}\n来源：${url}\n\n---- 原文 ----\n${text}`;
   let lastErr: unknown;
-  for (const p of providers()) {
+  const all = providers();
+  const free = all.filter(p => !p.paid), paid = all.filter(p => p.paid);
+  const chain = opts.allowPaid ? [...free, ...paid] : free;
+  for (const p of chain) {
     try {
-      let res: { text: string; tokens: number } | null = null;
+      let res: { text: string; tokens: number; costCny?: number } | null = null;
       for (let i = 0; i < 3 && !res; i++) {
         try { res = await p.call(PROMPT, user); }
         catch (e) {
@@ -130,11 +147,12 @@ export async function extract(platformName: string, url: string, text: string, l
           await new Promise(r => setTimeout(r, 3000 * (i + 1)));
         }
       }
-      const { text: out, tokens } = res!;
+      const { text: out, tokens, costCny = 0 } = res!;
       const json = JSON.parse(out.replace(/^```(json)?|```$/g, '').trim()) as { offers?: Extracted[] };
       const offers = (Array.isArray(json.offers) ? json.offers : []).map(o => ({ ...tidy(o), excerpts: keepVerbatim(o.excerpts, text) }));
-      return { offers, tokens, provider: p.name };
+      return { offers, tokens, costCny, provider: p.name };
     } catch (e) { lastErr = e; log(`  ${p.name} 失败，换下一个模型：${(e as Error).message.slice(0, 120)}`); }
   }
+  if (!opts.allowPaid && paid.length) throw new DeferError(`免费模型都不可用，推迟到下一轮：${(lastErr as Error)?.message?.slice(0, 80) ?? ''}`);
   throw lastErr ?? new Error('没有可用的模型（未配置任何 API key）');
 }

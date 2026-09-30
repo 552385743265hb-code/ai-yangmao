@@ -3,7 +3,7 @@ import { XMLParser } from 'fast-xml-parser';
 import { UA, fetchRetry, fetchText, isLead, sleep } from './lib';
 import type { LeadIn } from '../src/shared/ingest';
 
-export interface Source { id: string; kind: string; url: string; tier: string; platformId: string | null; lastHash: string | null; lastText?: string | null; platform: { id: string; name: string; status: string } | null; autoPublish: boolean }
+export interface Source { id: string; kind: string; url: string; tier: string; platformId: string | null; lastHash: string | null; lastText?: string | null; config?: Record<string, unknown>; deferThisRun?: boolean; platform: { id: string; name: string; status: string } | null; autoPublish: boolean }
 
 const AIHOT_UA = { 'User-Agent': UA, Accept: 'application/json' };
 
@@ -59,11 +59,11 @@ export function parseFeed(body: string): FeedItem[] {
 }
 
 /** Reddit：子版块 RSS，标题命中羊毛关键词的帖子作为线索。 */
-// Reddit 对同一来源的连续请求很敏感：串行、间隔 4 秒，遇到 429 等 20 秒重试一次。
+// Reddit 对同一来源的连续请求很敏感：串行、间隔 10 秒，遇到 429 等 60 秒重试一次。
 let redditChain: Promise<unknown> = Promise.resolve();
 export function reddit(src: Source): Promise<LeadIn[]> {
   const job = redditChain.then(() => redditOnce(src));
-  redditChain = job.catch(() => undefined).then(() => sleep(4000));
+  redditChain = job.catch(() => undefined).then(() => sleep(10000));
   return job;
 }
 /** 配置了 Reddit 应用（免费）就走官方 API：云服务器的 IP 直接读 RSS 常被限流。 */
@@ -87,7 +87,7 @@ async function redditOnce(src: Source): Promise<LeadIn[]> {
   if (process.env.REDDIT_CLIENT_ID && process.env.REDDIT_CLIENT_SECRET) return redditApi(src);
   let body: string;
   try { body = await fetchText(src.url, { accept: 'application/atom+xml' }); }
-  catch (e) { if (!String(e).includes('429')) throw e; await sleep(20000); body = await fetchText(src.url, { accept: 'application/atom+xml' }); }
+  catch (e) { if (!String(e).includes('429')) throw e; await sleep(60000); body = await fetchText(src.url, { accept: 'application/atom+xml' }); }
   const items = parseFeed(body);
   return items.filter(i => i.link && isLead(i.title)).map(i => ({ origin: 'reddit' as const, url: i.link, title: i.title.slice(0, 300), raw: i.summary.slice(0, 4000) }));
 }

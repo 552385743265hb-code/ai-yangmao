@@ -164,7 +164,7 @@ ingest.get('/sources', async c => {
 /** 一次抓取的结果：成功时记录内容哈希（变化才存快照），失败时累计连续失败次数。 */
 ingest.post('/snapshots', async c => {
   const body = z.object({
-    sourceId: z.string(), url: z.string(), ok: z.boolean(),
+    sourceId: z.string(), url: z.string(), ok: z.boolean(), deferred: z.boolean().optional(),
     hash: z.string().optional(), text: z.string().max(60000).optional(), error: z.string().max(500).optional(),
   }).safeParse(await c.req.json().catch(() => null));
   if (!body.success) return c.json({ error: '数据格式不正确', issues: body.error.issues }, 400);
@@ -175,8 +175,11 @@ ingest.post('/snapshots', async c => {
     await d.update(s.sources).set({ failStreak: src.failStreak + 1, lastError: b.error ?? '抓取失败' }).where(eq(s.sources.id, b.sourceId));
     return c.json({ failStreak: src.failStreak + 1 });
   }
-  await d.update(s.sources).set({ failStreak: 0, lastError: null, lastOkAt: nowIso }).where(eq(s.sources.id, b.sourceId));
-  if (!b.hash) return c.json({ changed: false });
+  // deferCount：内容有变化但这一轮没能抽取（免费模型都不可用）的连续次数，用来决定是否动用付费兜底
+  const cfg = { ...(src.config ?? {}) } as Record<string, unknown>;
+  cfg.deferCount = b.deferred ? Number(cfg.deferCount ?? 0) + 1 : b.hash ? 0 : Number(cfg.deferCount ?? 0);
+  await d.update(s.sources).set({ failStreak: 0, lastError: null, lastOkAt: nowIso, config: cfg }).where(eq(s.sources.id, b.sourceId));
+  if (!b.hash) return c.json({ changed: false, deferCount: cfg.deferCount });
   const [prev] = await d.select({ hash: s.snapshots.hash }).from(s.snapshots).where(eq(s.snapshots.sourceId, b.sourceId)).orderBy(desc(s.snapshots.id)).limit(1);
   if (prev?.hash === b.hash) return c.json({ changed: false });
   await d.insert(s.snapshots).values({ sourceId: b.sourceId, url: b.url, hash: b.hash, text: b.text ?? null });

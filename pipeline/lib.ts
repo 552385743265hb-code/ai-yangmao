@@ -4,13 +4,12 @@ import { Readability } from '@mozilla/readability';
 import { parseHTML } from 'linkedom';
 
 export const UA = 'Mozilla/5.0 (compatible; ai-yangmao-bot/0.1; +https://ai-yangmao.com)';
-const API = (process.env.API_BASE ?? 'https://ai-yangmao.com').replace(/\/$/, '');
-const TOKEN = process.env.INGEST_TOKEN ?? '';
-
 export async function api<T = unknown>(path: string, body?: unknown): Promise<T> {
-  const res = await fetch(`${API}/api/ingest${path}`, {
+  // 每次调用时再读环境变量：中继脚本会在启动后才加载密钥
+  const base = (process.env.API_BASE ?? 'https://ai-yangmao.com').replace(/\/$/, '');
+  const res = await fetch(`${base}/api/ingest${path}`, {
     method: body === undefined ? 'GET' : 'POST',
-    headers: { Authorization: `Bearer ${TOKEN}`, 'Content-Type': 'application/json' },
+    headers: { Authorization: `Bearer ${process.env.INGEST_TOKEN ?? ''}`, 'Content-Type': 'application/json' },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   const text = await res.text();
