@@ -1,6 +1,6 @@
 // 各类信源的采集器。线索类（AIHOT / HN / Reddit）只产出线索，官方页面才会交给模型抽取成羊毛。
 import { XMLParser } from 'fast-xml-parser';
-import { UA, fetchText, isLead, sleep } from './lib';
+import { UA, fetchRetry, fetchText, isLead, sleep } from './lib';
 import type { LeadIn } from '../src/shared/ingest';
 
 export interface Source { id: string; kind: string; url: string; tier: string; platformId: string | null; lastHash: string | null; lastText?: string | null; platform: { id: string; name: string; status: string } | null; autoPublish: boolean }
@@ -9,7 +9,7 @@ const AIHOT_UA = { 'User-Agent': UA, Accept: 'application/json' };
 
 /** AIHOT：Codex 重置接口 → 每条员工原帖一条线索；全部动态 → 命中羊毛关键词的条目。 */
 export async function aihot(src: Source): Promise<LeadIn[]> {
-  const res = await fetch(src.url, { headers: AIHOT_UA, signal: AbortSignal.timeout(30000) });
+  const res = await fetchRetry(src.url, { headers: AIHOT_UA, signal: AbortSignal.timeout(30000) });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const j = await res.json() as Record<string, unknown>;
   if (Array.isArray(j.events)) {

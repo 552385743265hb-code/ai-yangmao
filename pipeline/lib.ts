@@ -18,8 +18,19 @@ export async function api<T = unknown>(path: string, body?: unknown): Promise<T>
   return JSON.parse(text) as T;
 }
 
+/** 网络层出错（不是 HTTP 错误码）时隔几秒重试，最多 2 次。 */
+export async function fetchRetry(url: string, init: RequestInit, tries = 3): Promise<Response> {
+  for (let i = 1; ; i++) {
+    try { return await fetch(url, init); }
+    catch (e) {
+      if (i >= tries) throw new Error(`网络错误（已重试 ${tries - 1} 次）：${(e as Error & { cause?: { code?: string } }).cause?.code ?? (e as Error).message}`);
+      await new Promise(r => setTimeout(r, 3000 * i));
+    }
+  }
+}
+
 export async function fetchText(url: string, opts: { accept?: string; timeoutMs?: number } = {}): Promise<string> {
-  const res = await fetch(url, { headers: { 'User-Agent': UA, Accept: opts.accept ?? '*/*', 'Accept-Language': 'en-US,en;q=0.9,zh-CN;q=0.8' }, signal: AbortSignal.timeout(opts.timeoutMs ?? 30000) });
+  const res = await fetchRetry(url, { headers: { 'User-Agent': UA, Accept: opts.accept ?? '*/*', 'Accept-Language': 'en-US,en;q=0.9,zh-CN;q=0.8' }, signal: AbortSignal.timeout(opts.timeoutMs ?? 30000) });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.text();
 }
