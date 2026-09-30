@@ -238,7 +238,7 @@ flowchart LR
 
 1. **原型**（v1 已完成：`prototype/`）：单文件网页 + 示例数据，所有页面和图表可点，定视觉。
 2. **数据底座**（已完成 2026-09-30）：D1 表结构（`src/db/schema.ts`）、时间与状态规则及测试（`src/shared/lifecycle.ts`）、Hono 接口与写入接口（`src/worker/index.ts`）、种子白名单 65 个平台（`seed/platforms.json`，待管理员审核）。原型已部署到 https://ai-yangmao.com（noindex）。
-3. **管线 v1**：官方信源抓取 + 比对 + 抽取 + 待审；AIHOT 线索接入。
+3. **管线 v1**（已上线 2026-09-30，等模型 key 开启抽取）：`pipeline/`，GitHub Actions 每 6 小时运行，可手动补跑。线索：AIHOT（含 Codex 重置）、HN、Reddit（云端 IP 会被 Reddit 限流，需配置免费的 Reddit 应用走官方 API）。17 个官方页面 / RSS：只保留羊毛相关句子后比对哈希，有变化才抽取；正文抽取参考 AIHOT（Readability 与整页纯文本择优，不足时用 Jina Reader）；模型给出的摘录必须能在原文逐字找到。
 4. **推送**：Telegram 机器人（日报、审核按钮、查询命令、转发补录）+ 飞书群机器人。
 5. **网站 v1**：按原型实现，接真实数据。
 6. **补全**：订阅邮箱、HN 与 Reddit 线索源、周六发现扫描、覆盖范围页、健康告警。
