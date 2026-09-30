@@ -97,6 +97,14 @@ describe('official evidence verification', () => {
 });
 
 describe('review gates and preserved public version', () => {
+  it('管理员心得：写入后公开显示，采集更新不会覆盖', async () => {
+    await call('ingest/offers', [offer]);
+    expect((await call('admin/offers/vendor-free/note', { note: '速度慢，适合做翻译' }, 'admin')).status).toBe(200);
+    await call('ingest/offers', [{ ...offer, valueText: offer.valueText + '（更新）' }]);
+    expect(sqlite.prepare("SELECT admin_note FROM offers WHERE id='vendor-free'").get()).toEqual({ admin_note: '速度慢，适合做翻译' });
+    expect((await call('admin/offers/vendor-free/note', { note: '' }, 'admin')).body.adminNote).toBeNull();
+  });
+
   it('管理员实测：社区转述的条目改成“管理员实测”即可通过；采集管线不能自称管理员实测', async () => {
     await call('ingest/offers', [{ ...offer, evidence: { ...evidence, url: 'https://forum.example/t/1', tier: 'media' } }]);
     expect((await call('admin/offers/vendor-free/approve', {}, 'admin')).status).toBe(400);

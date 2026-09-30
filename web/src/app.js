@@ -972,6 +972,7 @@ function pOffer(id) {
         <div class="fact"><div class="l">适用对象</div><div class="v">${AUD[o.aud]}</div></div>
         <div class="fact"><div class="l">模态</div><div class="v">${o.m.map(m => MODAL[m]).join('、')}</div></div>
       </div>
+      ${o.note || ADM.token ? `<div class="card" id="noteBox"><h3>💬 牧场心得</h3>${o.note ? `<p style="margin:0;white-space:pre-wrap">${esc(o.note)}</p>` : '<p class="small muted" style="margin:0">还没有心得。</p>'}${ADM.token ? `<form id="noteForm" style="display:flex;flex-direction:column;gap:8px;margin-top:10px"><textarea name="note" rows="3" maxlength="500" placeholder="实际用下来怎么样？比如：速度慢、容易限流、适合做翻译…（公开显示，最多 500 字）">${esc(o.note)}</textarea><div class="row" style="align-items:center"><button class="btn sm pri" type="submit">保存心得</button><span data-notemsg class="small" style="font-weight:600"></span></div></form>` : ''}</div>` : ''}
       <div class="card"><h3>适用资格</h3><p class="sub">${miss.length ? `按你的条件，还差 ${miss.length} 项` : '按你的条件，全部满足'} · <a href="#" data-open-cond style="text-decoration:underline">修改我的条件</a></p>${reqChips(o, true)}${o.r.includes('targeted') ? '<p class="small muted" style="margin:8px 0 0">定向发放：只有部分账号收到，能不能领要看你的账号。</p>' : ''}${o.aud === 'unclear' ? '<p class="small muted" style="margin:8px 0 0">官方没写清楚谁能领，这里不宣称人人可领。</p>' : ''}</div>
       <div class="card"><h3>领取步骤</h3><ol class="steps">${((o.steps && o.steps.length) ? o.steps : (STEPS[o.c] || [])).map(s => `<li>${esc(s)}</li>`).join('')}</ol></div>
       <div class="card"><h3>官方证据</h3><p class="sub">信源：${SRC[o.st]}${o.st === 'staff' ? '（白名单内的在职员工账号）' : ''} · ${verify}</p>
@@ -987,6 +988,12 @@ function pOffer(id) {
     </div>
   </div>
   ${same.length ? `<section>${secH(`${esc(o.plat.name)} 的其他羊毛`)}${ocards(same)}</section>` : ''}`;
+  $('#noteForm')?.addEventListener('submit', async e => {
+    e.preventDefault(); const f = e.currentTarget, msg = f.querySelector('[data-notemsg]');
+    msg.style.color = ''; msg.textContent = '保存中…';
+    try { const r = await adm(`/offers/${encodeURIComponent(o.id)}/note`, { note: f.note.value }); o.note = r.adminNote || ''; msg.textContent = '已保存'; }
+    catch (err) { msg.style.color = 'var(--critical-ink)'; msg.textContent = '没有保存：' + err.message; }
+  });
   // 修订记录按需读取
   const revisionBox = $('#revBox');
   fetch(`/api/offers/${encodeURIComponent(o.id)}`).then(r => r.ok ? r.json() : null).then(j => {
@@ -1102,6 +1109,7 @@ async function admQueue() {
     <div class="rows">${EX_L.filter(([k]) => k !== 'claim' || o.excerpts[k]).map(([k, l]) => `<div class="orow" style="grid-template-columns:auto minmax(0,1fr);padding:6px 2px">${o.excerpts[k] ? `<span class="st good"><b>✓</b>${l}</span>` : `<span class="st warn"><b>!</b>${l}</span>`}<span class="t" style="font-weight:400;font-size:13.5px">${o.excerpts[k] ? '「' + esc(o.excerpts[k]) + '」' : '原文里没有找到'}</span></div>`).join('')}</div>
     <div class="small" style="word-break:break-all">来源：<a href="${esc(o.evidenceUrl)}" target="_blank" rel="noopener" style="text-decoration:underline">${esc(o.evidenceUrl)}</a></div>
     <div class="row">${o.evidenceTier === 'media' ? '<button class="btn sm good" type="button" data-act="tested" title="社区转述、官方没有文字公告，但你亲自领到过">✓ 我已实测，通过</button>' : '<button class="btn sm good" type="button" data-act="approve">✓ 通过</button>'}<button class="btn sm" type="button" data-act="edit">修改</button><button class="btn sm bad" type="button" data-act="rejectopen">✕ 拒绝…</button></div>
+    <details><summary class="small" style="cursor:pointer">💬 牧场心得${o.adminNote ? '（已写）' : '（可选，公开显示）'}</summary><div class="row" style="margin-top:6px;align-items:flex-start"><textarea data-note rows="2" maxlength="500" style="flex:1;min-width:160px" placeholder="实际用下来怎么样？比如：免费模型速度慢、容易限流">${esc(o.adminNote || '')}</textarea><button class="btn sm" type="button" data-act="note">保存心得</button></div></details>
     <div data-rejectbox hidden style="display:flex;flex-direction:column;gap:8px">
       <div class="chips">${RC.map(([k, l]) => `<button class="btn sm" type="button" data-rc="${k}" aria-pressed="false">${l}</button>`).join('')}</div>
       <div class="row"><input type="text" placeholder="补充理由（写清楚，模型以后学得更快）" data-reason style="flex:1;min-width:160px;padding:6px 10px"><button class="btn sm bad" type="button" data-act="reject">确认拒绝</button></div>
@@ -1136,6 +1144,7 @@ async function admQueue() {
         done(el, `已按管理员实测通过：${o.title}`);
       } catch (e) { toast('没有通过：' + e.message); }
     });
+    el.querySelector('[data-act="note"]').addEventListener('click', async () => { try { await adm(`/offers/${code}/note`, { note: el.querySelector('[data-note]').value }); toast('心得已保存'); } catch (e) { toast('没有保存：' + e.message); } });
     const rb = el.querySelector('[data-rejectbox]');
     el.querySelector('[data-act="rejectopen"]').addEventListener('click', () => { rb.hidden = !rb.hidden; });
     let rc = null;

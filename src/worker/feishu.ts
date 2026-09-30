@@ -104,6 +104,7 @@ function itemBlock(it: Item, n: number, tr: Map<string, string>, section: string
   // 管理员实测、媒体转述的摘录不是官方原话，不能标成“官方原文”
   const official = !['media', 'tested'].includes(it.evidenceTier);
   if (benefit && section !== 'changed') lines.push(`📄 **${official ? '官方原文' : '原文（媒体 / 社区转述）'}**：“${safe(zh(tr, benefit))}”`);
+  if (it.adminNote) lines.push(`💬 **牧场心得**：${safe(it.adminNote.replace(/\s*\n+\s*/g, ' '))}`);
   lines.push(`📥 **怎么领**：${CLAIM[it.claimMethod] ?? it.claimMethod}`);
   (it.steps ?? []).filter(x => !/^官方出处：/.test(x)).slice(0, 5).forEach((st, i) => lines.push(`　${i + 1}. ${safe(zh(tr, st))}`));
   const eligibility = it.excerpts?.eligibility;

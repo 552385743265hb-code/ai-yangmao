@@ -62,7 +62,7 @@ async function loadData() {
       verifiedAt: o.lastVerifiedAt, withdrawnAt: o.withdrawnAt,
       st: o.evidence.tier, tz: o.sourceTz, val: o.creditValidity || '官方未写明', aud: o.audience,
       cn: !overseas, early: CHANNEL[o.firstChannel] || o.firstChannel || '官方页面', why: o.withdrawnReason || '',
-      steps: o.steps || [], evidence: o.evidence, verify: o.verifyResult || '', apiStatus: o.status,
+      steps: o.steps || [], evidence: o.evidence, note: o.adminNote || '', verify: o.verifyResult || '', apiStatus: o.status,
     };
   });
   META = meta;
