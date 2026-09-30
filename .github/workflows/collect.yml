@@ -40,6 +40,8 @@ jobs:
           OPENROUTER_MODEL: ${{ vars.OPENROUTER_MODEL }}
           GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
           JINA_API_KEY: ${{ secrets.JINA_API_KEY }}
+          REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
+          REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
           DAILY_TOKEN_CAP: ${{ vars.DAILY_TOKEN_CAP || '200000' }}
           DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
           ONLY_SOURCES: ${{ inputs.only_sources }}

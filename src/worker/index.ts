@@ -93,8 +93,13 @@ ingest.post('/leads', async c => {
   const body = z.array(leadIn).max(100).safeParse(await c.req.json().catch(() => null));
   if (!body.success) return c.json({ error: '数据格式不正确', issues: body.error.issues }, 400);
   if (!body.data.length) return c.json({ created: 0 });
-  const res = await db(c.env).insert(s.leads).values(body.data).onConflictDoNothing().returning({ id: s.leads.id });
-  return c.json({ created: res.length, skipped: body.data.length - res.length });
+  // D1 单条语句最多 100 个绑定参数，线索每行 4 列，按 20 行一批插入
+  let created = 0;
+  for (let i = 0; i < body.data.length; i += 20) {
+    const res = await db(c.env).insert(s.leads).values(body.data.slice(i, i + 20)).onConflictDoNothing().returning({ id: s.leads.id });
+    created += res.length;
+  }
+  return c.json({ created, skipped: body.data.length - created });
 });
 
 /**

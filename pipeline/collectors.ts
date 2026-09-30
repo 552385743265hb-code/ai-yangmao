@@ -66,7 +66,25 @@ export function reddit(src: Source): Promise<LeadIn[]> {
   redditChain = job.catch(() => undefined).then(() => sleep(4000));
   return job;
 }
+/** 配置了 Reddit 应用（免费）就走官方 API：云服务器的 IP 直接读 RSS 常被限流。 */
+let redditToken: string | null = null;
+async function redditApi(src: Source): Promise<LeadIn[]> {
+  const sub = src.url.match(/\/r\/([^/]+)/)?.[1];
+  if (!sub) throw new Error('信源地址里找不到子版块名');
+  if (!redditToken) {
+    const auth = Buffer.from(`${process.env.REDDIT_CLIENT_ID}:${process.env.REDDIT_CLIENT_SECRET}`).toString('base64');
+    const r = await fetch('https://www.reddit.com/api/v1/access_token', { method: 'POST', headers: { Authorization: `Basic ${auth}`, 'User-Agent': UA, 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'grant_type=client_credentials' });
+    if (!r.ok) throw new Error(`Reddit 授权失败 HTTP ${r.status}`);
+    redditToken = (await r.json() as { access_token: string }).access_token;
+  }
+  const r = await fetch(`https://oauth.reddit.com/r/${sub}/new?limit=50&raw_json=1`, { headers: { Authorization: `Bearer ${redditToken}`, 'User-Agent': UA } });
+  if (!r.ok) throw new Error(`Reddit API HTTP ${r.status}`);
+  const j = await r.json() as { data: { children: { data: { title: string; permalink: string; url?: string; selftext?: string } }[] } };
+  return j.data.children.map(c => c.data).filter(d => isLead(d.title))
+    .map(d => ({ origin: 'reddit' as const, url: `https://www.reddit.com${d.permalink}`, title: d.title.slice(0, 300), raw: `${d.url ?? ''}\n${d.selftext ?? ''}`.slice(0, 4000) }));
+}
 async function redditOnce(src: Source): Promise<LeadIn[]> {
+  if (process.env.REDDIT_CLIENT_ID && process.env.REDDIT_CLIENT_SECRET) return redditApi(src);
   let body: string;
   try { body = await fetchText(src.url, { accept: 'application/atom+xml' }); }
   catch (e) { if (!String(e).includes('429')) throw e; await sleep(20000); body = await fetchText(src.url, { accept: 'application/atom+xml' }); }
