@@ -1105,6 +1105,8 @@ async function admQueue() {
       ${EX_L.map(([key, name]) => `<label class="field" style="grid-column:1/-1">${name}原文摘录<textarea name="excerpt_${key}" rows="3">${esc(o.excerpts[key] || '')}</textarea></label>`).join('')}
       <label class="field">类型<select name="type">${Object.entries(TYPES).map(([k, v]) => `<option value="${k}" ${v.l === o.type ? 'selected' : ''}>${v.l}</option>`).join('')}</select></label>
       <label class="field">截止方式<select name="endKind">${[['date', '有截止日期'], ['unknown', '截止未知'], ['standing', '常驻 / 申请制']].map(([k, l]) => `<option value="${k}" ${o.endKind === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+      <label class="field">领取方式<select name="claimMethod">${Object.entries(CLAIM).map(([k, l]) => `<option value="${k}" ${o.claimMethod === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+      <label class="field">平台<select name="platformId">${PLATFORMS.map(p => `<option value="${esc(p.id)}" ${o.platformId === p.id || (!o.platformId && o.platform === p.name) ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select></label>
       <label class="field">适用对象<select name="audience">${Object.entries(AUD).map(([k, l]) => `<option value="${k}" ${o.audience === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
       <label class="field" style="grid-column:1/-1">为什么这样改（可选，但强烈建议写）<input type="text" name="__reason" placeholder="例如：要先付费升级才送，属于充值赠送"></label>
       <div class="row" style="align-self:end"><button class="btn sm pri" type="submit">保存并通过</button></div>
@@ -1117,7 +1119,7 @@ async function admQueue() {
     <div class="grid g2">${q.pending.map(card).join('') || emptySheep('待审队列是空的。')}</div>`;
   const done = (el, msg) => { el.style.opacity = .45; el.querySelectorAll('button,input,select').forEach(x => { x.disabled = true; }); toast(msg); };
   $$('[data-code]', box).forEach(el => {
-    const code = el.dataset.code;
+    const code = el.dataset.code, o = q.pending.find(x => x.code === code);
     el.querySelector('[data-act="approve"]').addEventListener('click', async () => { try { const r = await adm(`/offers/${code}/approve`, {}); done(el, `已通过：${r.title}`); } catch (e) { toast(e.message); } });
     const rb = el.querySelector('[data-rejectbox]');
     el.querySelector('[data-act="rejectopen"]').addEventListener('click', () => { rb.hidden = !rb.hidden; });
@@ -1131,6 +1133,7 @@ async function admQueue() {
     el.querySelector('[data-act="edit"]').addEventListener('click', () => { const f = el.querySelector('[data-editform]'); f.hidden = !f.hidden; });
     el.querySelector('[data-editform]').addEventListener('submit', async e => {
       e.preventDefault(); const form = e.currentTarget; const fd = Object.fromEntries(new FormData(form));
+      try {
       const reason = String(fd.__reason || '').trim(); delete fd.__reason;
       const newEvidence = { url: String(fd.evidenceUrl).trim(), tier: String(fd.evidenceTier), capturedAt: new Date().toISOString(), excerpts: {} };
       for (const [key] of EX_L) { newEvidence.excerpts[key] = String(fd[`excerpt_${key}`] || '').trim(); delete fd[`excerpt_${key}`]; }
@@ -1138,7 +1141,8 @@ async function admQueue() {
       const fields = { ...fd, requirements: String(fd.requirements).split(/[,，]/).map(x => x.trim()).filter(Boolean) };
       if (newEvidence.url !== o.evidenceUrl || newEvidence.tier !== o.evidenceTier || EX_L.some(([key]) => newEvidence.excerpts[key] !== (o.excerpts[key] || ''))) fields.evidence = newEvidence;
       ['claimStart', 'claimEnd', 'creditValidity'].forEach(k => { if (!fields[k]) fields[k] = null; });
-      try { const r = await adm(`/offers/${code}/edit`, { fields, approve: true, reason: reason || undefined, reasonCode: fields.type !== undefined && Object.keys(TYPES).find(k => TYPES[k].l === el.dataset.type) !== fields.type ? 'wrong_type' : 'wrong_field' }); done(el, r.changed.length ? `已修改 ${r.changed.map(f => FIELD_L[f] || f).join('、')} 并通过` : '没有改动，已通过'); } catch (err) { toast(err.message); }
+      const r = await adm(`/offers/${code}/edit`, { fields, approve: true, reason: reason || undefined, reasonCode: fields.type !== undefined && Object.keys(TYPES).find(k => TYPES[k].l === el.dataset.type) !== fields.type ? 'wrong_type' : 'wrong_field' }); done(el, r.changed.length ? `已修改 ${r.changed.map(f => FIELD_L[f] || f).join('、')} 并通过` : '没有改动，已通过');
+      } catch (err) { toast('没有保存：' + err.message); }
     });
   });
   $$('[data-plat]', box).forEach(b => b.addEventListener('click', async () => { const [id, act] = b.dataset.plat.split(':'); await adm(`/platforms/${id}/${act}`, {}); toast('已处理'); admQueue(); }));

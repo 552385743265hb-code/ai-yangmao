@@ -25,7 +25,7 @@ const endText = (o: OfferRow) => (o.endKind === 'date' && o.claimEnd ? `${md(o.c
 
 function view(o: OfferRow, platformName: string, now = new Date()) {
   return {
-    code: shortCode(o.id), id: o.id, platform: platformName, title: o.title, type: TYPE_L[o.type] ?? o.type,
+    code: shortCode(o.id), id: o.id, platformId: o.platformId, platform: platformName, title: o.title, type: TYPE_L[o.type] ?? o.type,
     value: o.valueText, usd: o.usdEstimate, end: endText(o), status: liveStatus(o, now), reviewState: o.reviewState,
     requirements: o.requirements, audience: o.audience, claimMethod: o.claimMethod, creditValidity: o.creditValidity,
     sourceTz: o.sourceTz, claimStart: o.claimStart, claimEnd: o.claimEnd, endKind: o.endKind,
