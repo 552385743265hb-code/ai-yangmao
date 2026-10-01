@@ -2,7 +2,7 @@
 import { readFileSync } from 'node:fs';
 
 interface P { id: string; name: string; type: string; site: string | null; x: string[]; staff?: string[] }
-interface S { id: string; platform: string | null; kind: string; url: string; tier: string; config?: Record<string, unknown> }
+interface S { id: string; platform: string | null; kind: string; url: string; tier: string; config?: Record<string, unknown>; enabled?: boolean }
 const data = JSON.parse(readFileSync(new URL('../seed/platforms.json', import.meta.url), 'utf8')) as { platforms: P[]; sources: S[] };
 
 const q = (v: string | null) => (v == null ? 'NULL' : `'${v.replaceAll("'", "''")}'`);
@@ -14,7 +14,7 @@ for (const p of data.platforms) {
 for (const s of data.sources) {
   const cfg = q(JSON.stringify(s.config ?? {}));
   // config 只在新建时写入，已有信源保留运行中累积的状态（如 deferCount），但合并种子里声明的键
-  out.push(`INSERT INTO sources (id, platform_id, kind, url, tier, config) VALUES (${q(s.id)}, ${q(s.platform)}, ${q(s.kind)}, ${q(s.url)}, ${q(s.tier)}, ${cfg})
+  out.push(`INSERT INTO sources (id, platform_id, kind, url, tier, config, enabled) VALUES (${q(s.id)}, ${q(s.platform)}, ${q(s.kind)}, ${q(s.url)}, ${q(s.tier)}, ${cfg}, ${s.enabled === false ? 0 : 1})
   ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);`);
 }
 console.log(out.join('\n'));

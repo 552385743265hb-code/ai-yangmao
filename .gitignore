@@ -8,3 +8,5 @@ prototype/dist/preview.html
 .prod.secrets
 logs/
 .claude/skills/yangmao-review-workspace/
+.codex/
+.grok/

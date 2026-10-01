@@ -789,6 +789,69 @@
    "type": "tool",
    "site": "https://www.tapnow.ai",
    "x": []
+  },
+  {
+   "id": "inception",
+   "name": "Inception",
+   "type": "lab",
+   "site": "https://www.inceptionlabs.ai",
+   "x": []
+  },
+  {
+   "id": "browser-use",
+   "name": "Browser Use",
+   "type": "tool",
+   "site": "https://browser-use.com",
+   "x": []
+  },
+  {
+   "id": "hume",
+   "name": "Hume AI",
+   "type": "lab",
+   "site": "https://www.hume.ai",
+   "x": []
+  },
+  {
+   "id": "free-ai",
+   "name": "Free.ai",
+   "type": "tool",
+   "site": "https://free.ai",
+   "x": []
+  },
+  {
+   "id": "qwenwork",
+   "name": "千问办公",
+   "type": "tool",
+   "site": "https://qwenwork.cn",
+   "x": []
+  },
+  {
+   "id": "doubao-work",
+   "name": "豆包工作",
+   "type": "tool",
+   "site": "https://www.doubao.com/work",
+   "x": []
+  },
+  {
+   "id": "coze",
+   "name": "扣子",
+   "type": "tool",
+   "site": "https://www.coze.cn",
+   "x": []
+  },
+  {
+   "id": "lingxi",
+   "name": "WPS 灵犀",
+   "type": "tool",
+   "site": "https://www.lingxi.cn",
+   "x": []
+  },
+  {
+   "id": "workbuddy",
+   "name": "WorkBuddy",
+   "type": "tool",
+   "site": "https://www.workbuddy.cn",
+   "x": []
   }
  ],
  "sources": [
@@ -2208,6 +2271,177 @@
    "kind": "web_list",
    "url": "https://platform.minimax.cn/docs/token-plan/announcements",
    "tier": "docs"
+  },
+  {
+   "id": "inception-free-plans",
+   "platform": "inception",
+   "url": "https://www.inceptionlabs.ai/models",
+   "tier": "site",
+   "kind": "web_list",
+   "config": {}
+  },
+  {
+   "id": "browser-use-pricing",
+   "platform": "browser-use",
+   "url": "https://browser-use.com/pricing.md",
+   "tier": "docs",
+   "kind": "web_list",
+   "config": {}
+  },
+  {
+   "id": "hume-billing",
+   "platform": "hume",
+   "url": "https://dev.hume.ai/docs/resources/billing",
+   "tier": "docs",
+   "kind": "web_list",
+   "config": {}
+  },
+  {
+   "id": "free-ai-startup",
+   "platform": "free-ai",
+   "url": "https://free.ai/startup/",
+   "tier": "site",
+   "kind": "web_list",
+   "config": {}
+  },
+  {
+   "id": "qwenwork-pricing",
+   "platform": "qwenwork",
+   "url": "https://qwenwork.cn/pricing",
+   "tier": "site",
+   "kind": "web_list",
+   "config": {}
+  },
+  {
+   "id": "qwenwork-launch-benefits",
+   "platform": "qwenwork",
+   "url": "https://help.aliyun.com/zh/qwenwork/qwenwork-is-live",
+   "tier": "docs",
+   "kind": "web_list",
+   "config": {}
+  },
+  {
+   "id": "doubao-work-home",
+   "platform": "doubao-work",
+   "url": "https://www.doubao.com/work",
+   "tier": "site",
+   "kind": "web_list",
+   "config": {}
+  },
+  {
+   "id": "coze-free-benefits",
+   "platform": "coze",
+   "url": "https://docs.coze.cn/guides_20260119_coze_premium_upgraded",
+   "tier": "docs",
+   "kind": "web_list",
+   "config": {}
+  },
+  {
+   "id": "lingxi-benefits",
+   "platform": "lingxi",
+   "url": "https://www.lingxi.cn/docs",
+   "tier": "docs",
+   "kind": "web_list",
+   "config": {}
+  },
+  {
+   "id": "workbuddy-campus",
+   "platform": "workbuddy",
+   "url": "https://www.workbuddy.cn/events/campus-freshman/",
+   "tier": "site",
+   "kind": "web_list",
+   "config": {}
+  },
+  {
+   "id": "workbuddy-pricing",
+   "platform": "workbuddy",
+   "url": "https://www.workbuddy.cn/docs/workbuddy/Pricing",
+   "tier": "docs",
+   "kind": "web_list",
+   "config": {}
+  },
+  {
+   "id": "kiro-students",
+   "platform": "kiro",
+   "url": "https://kiro.dev/students/",
+   "tier": "site",
+   "kind": "web_list",
+   "config": {}
+  },
+  {
+   "id": "community-reset-radar",
+   "platform": null,
+   "url": "https://resetradar.com/feed.xml",
+   "tier": "lead",
+   "kind": "feed",
+   "config": {
+    "origin": "media",
+    "filter": "lead",
+    "reviewRequired": true
+   }
+  },
+  {
+   "id": "community-agentdeals",
+   "platform": null,
+   "url": "https://agentdeals.dev/feed.xml",
+   "tier": "lead",
+   "kind": "feed",
+   "config": {
+    "origin": "media",
+    "filter": "lead",
+    "reviewRequired": true
+   }
+  },
+  {
+   "id": "community-v2ex-deals",
+   "platform": null,
+   "url": "https://www.v2ex.com/feed/deals.xml",
+   "tier": "lead",
+   "kind": "feed",
+   "config": {
+    "origin": "v2ex",
+    "filter": "lead",
+    "reviewRequired": true
+   }
+  },
+  {
+   "id": "community-aifree",
+   "platform": null,
+   "url": "https://aifree.dev/offers",
+   "tier": "lead",
+   "kind": "web_list",
+   "config": {
+    "reviewRequired": true,
+    "manualDiscovery": true,
+    "disabledReason": "已登记白名单；现有采集器尚不支持无平台的网页/JSON目录，保持停用，避免空跑"
+   },
+   "enabled": false
+  },
+  {
+   "id": "community-buildaicurrent",
+   "platform": null,
+   "url": "https://buildaicurrent.com/credits.json",
+   "tier": "lead",
+   "kind": "json",
+   "config": {
+    "reviewRequired": true,
+    "manualDiscovery": true,
+    "disabledReason": "已登记白名单；现有采集器尚不支持无平台的网页/JSON目录，保持停用，避免空跑"
+   },
+   "enabled": false
+  },
+  {
+   "id": "community-aitujian",
+   "platform": null,
+   "url": "https://aitujian.cn/api/deals",
+   "tier": "lead",
+   "kind": "json",
+   "config": {
+    "reviewRequired": true,
+    "manualDiscovery": true,
+    "disabledReason": "已登记白名单；现有采集器尚不支持无平台的网页/JSON目录，保持停用，避免空跑"
+   },
+   "enabled": false
   }
  ]
 }
