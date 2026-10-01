@@ -9,6 +9,7 @@ import * as s from '../db/schema';
 import { claimEndAt, isClaimable, liveStatus, missingEvidence } from '../shared/lifecycle';
 import { offerIn } from '../shared/ingest';
 import { SECTIONS, blocking, checkOffer } from '../shared/spec';
+import { haoScore } from '../shared/score';
 import type { Env } from './index';
 
 type OfferRow = typeof s.offers.$inferSelect;
@@ -383,6 +384,7 @@ admin.post('/sources/:id/auto-publish', async c => {
 });
 
 type NoticeKind = 'digest' | 'urgent';
+const DIGEST_TOP = 10; // 飞书日报每天最多推几条
 type NoticeChannel = 'telegram' | 'feishu';
 type NoticeStage = 'new' | 'changed' | 'ending' | 'ended' | 'urgent';
 type NoticeMark = { offerId: string; stage: NoticeStage; messageId?: string };
@@ -395,7 +397,7 @@ export async function buildNotice(env: Env, kind: NoticeKind, channel: NoticeCha
   const approved = (await d.select().from(s.offers).where(eq(s.offers.reviewState, 'approved'))).filter(o => approvedPlatforms.has(o.platformId));
   const sent = await d.select().from(s.notifications).where(eq(s.notifications.channel, channel));
   const has = (id: string, stage: string) => sent.find(n => n.offerId === id && n.stage === stage);
-  const out: Record<string, ReturnType<typeof view>[]> = { new: [], changed: [], ending: [], ended: [], urgent: [] };
+  const out: Record<string, (ReturnType<typeof view> & { score?: number })[]> = { new: [], changed: [], ending: [], ended: [], urgent: [] };
   let marks: NoticeMark[] = [];
   const revs = approved.length ? await d.select().from(s.offerRevisions).where(and(inArray(s.offerRevisions.offerId, approved.map(o => o.id)), eq(s.offerRevisions.author, 'pipeline'))) : [];
   for (const o of approved) {
@@ -427,6 +429,18 @@ export async function buildNotice(env: Env, kind: NoticeKind, channel: NoticeCha
   const blocked = new Set(inFlight.flatMap(delivery => ((delivery.payload as { marks?: NoticeMark[] }).marks ?? []).map(key)));
   marks = marks.filter(mark => !blocked.has(key(mark))).sort((a, b) => key(a).localeCompare(key(b)));
   for (const stage of Object.keys(out) as NoticeStage[]) out[stage] = out[stage].filter(item => marks.some(mark => mark.offerId === item.id && mark.stage === stage));
+  // 飞书日报：新上架、3 天内结束、条款变化按薅度分只推前 DIGEST_TOP 条；没选上的不记为已推送，之后还有机会。已结束的另列，不占名额。
+  let moreCount = 0;
+  if (kind === 'digest' && String(channel).startsWith('feishu')) {
+    const byId = new Map(approved.map(o => [o.id, o]));
+    const pool = (['new', 'ending', 'changed'] as const).flatMap(stage => out[stage].map(item => ({ stage, item, score: haoScore(byId.get(item.id)!, now) })));
+    const best = new Map<string, number>();
+    for (const x of pool) best.set(x.item.id, Math.max(best.get(x.item.id) ?? 0, x.score));
+    const keep = new Set([...best.entries()].sort((a, b) => b[1] - a[1]).slice(0, DIGEST_TOP).map(([id]) => id));
+    moreCount = best.size - keep.size;
+    for (const stage of ['new', 'ending', 'changed'] as const) out[stage] = out[stage].filter(item => keep.has(item.id)).map(item => ({ ...item, score: best.get(item.id) })).sort((x, y) => (y.score ?? 0) - (x.score ?? 0));
+    marks = marks.filter(mark => !['new', 'ending', 'changed'].includes(mark.stage) || keep.has(mark.offerId));
+  }
   const pendingOffers = (await d.select({ n: sql<number>`count(*)` }).from(s.offers).where(eq(s.offers.reviewState, 'pending')))[0].n;
   const pendingProposals = (await d.select({ diff: s.offerProposals.diff }).from(s.offerProposals))
     .filter(proposal => proposal.diff.some(change => isReviewField(change.field))).length;
@@ -450,7 +464,7 @@ export async function buildNotice(env: Env, kind: NoticeKind, channel: NoticeCha
     ? await d.select({ stats: s.runs.stats }).from(s.runs).where(eq(s.runs.kind, 'collect')).orderBy(desc(s.runs.startedAt)).limit(1) : [];
   const coverageDegraded = !!lastCollect?.stats?.coverageDegraded;
   const empty = !marks.length && (kind === 'urgent' || channel !== 'telegram' || (!pendingCount && !suggestAutoPublish.length && !needsVerificationCount && !coverageDegraded));
-  return { kind, channel, items: out, marks, pendingCount, suggestAutoPublish, needsVerificationCount, coverageDegraded, empty, blockedCount: blocked.size };
+  return { kind, channel, items: out, marks, moreCount, pendingCount, suggestAutoPublish, needsVerificationCount, coverageDegraded, empty, blockedCount: blocked.size };
 }
 
 /** 预览是纯读取，不能仅凭获取消息就把内容记为已发送。 */
