@@ -4,6 +4,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { buildCards, dispatchCollect, scheduledCollect, sendFeishu } from '../src/worker/feishu';
 import { buildNotice } from '../src/worker/admin';
+import worker from '../src/worker/index';
 import type { Env } from '../src/worker/index';
 
 let sqlite: DatabaseSync;
@@ -131,6 +132,18 @@ describe('飞书群日报', () => {
     expect(row.ok).toBe(0);
     expect(JSON.parse(row.stats)).toMatchObject({ stage: 'dispatch' });
     expect(JSON.parse(row.stats).error).toContain('401');
+  });
+
+  it('纠正记录接口：带上人工修改（含理由）和拒绝理由', async () => {
+    sqlite.prepare("INSERT INTO offer_revisions (offer_id, diff, author) VALUES ('kiro-bonus', ?, 'admin')").run(JSON.stringify([{ field: 'requirements', from: ['phone'], to: ['realname'] }]));
+    sqlite.prepare("INSERT INTO reviews (offer_id, action, reviewer, reason) VALUES ('kiro-bonus','edit','admin','phone 指海外手机号')").run();
+    sqlite.prepare("INSERT INTO reviews (offer_id, action, reviewer, reason, reason_code) VALUES ('kiro-bonus','reject','reviewer1','套餐自带','paid_bundle')").run();
+    sqlite.prepare("INSERT INTO reviews (offer_id, action, reviewer, reason_code) VALUES ('kiro-bonus','reject','system','duplicate')").run();
+    const r = await worker.fetch!(new Request('https://x/api/ingest/corrections?platform=kiro', { headers: { Authorization: 'Bearer ' + 'x'.repeat(20) } }) as never, env, { waitUntil() {}, passThroughOnException() {} } as never);
+    const { corrections } = await r.json() as { corrections: string[] };
+    expect(corrections.some(x => x.includes('requirements') && x.includes('理由：phone 指海外手机号'))).toBe(true);
+    expect(corrections.some(x => x.includes('被拒绝：付费套餐自带的额度，套餐自带'))).toBe(true);
+    expect(corrections.length).toBe(2);
   });
 
   it('飞书日报分三个榜：常驻榜、新星榜、末班车榜', async () => {

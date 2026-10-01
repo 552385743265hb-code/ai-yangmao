@@ -569,6 +569,21 @@ admin.get('/quality', async c => {
 });
 
 /** 健康检查：最近一次成功采集距今多久、连续失败的信源、预算。 */
+/** 今天（UTC）整个账号的 D1 读写行数；D1 免费版每天读 500 万行、写 10 万行，超了全站查询都会失败。需要 CF_ANALYTICS_TOKEN（账户分析只读）。 */
+export const D1_LIMITS = { rowsRead: 5_000_000, rowsWritten: 100_000 };
+async function d1Usage(env: Env): Promise<{ configured: boolean; rowsRead?: number; rowsWritten?: number; limits: typeof D1_LIMITS; error?: string }> {
+  if (!env.CF_ANALYTICS_TOKEN) return { configured: false, limits: D1_LIMITS };
+  const day = new Date().toISOString().slice(0, 10);
+  try {
+    const r = await fetch('https://api.cloudflare.com/client/v4/graphql', { method: 'POST', headers: { Authorization: `Bearer ${env.CF_ANALYTICS_TOKEN}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: 'query($a:String!,$d:Date!){viewer{accounts(filter:{accountTag:$a}){d1AnalyticsAdaptiveGroups(limit:10000,filter:{date_geq:$d,date_leq:$d}){sum{rowsRead rowsWritten}}}}}', variables: { a: env.CF_ACCOUNT_ID ?? '25c6294320af71adb8ec4b3a90427ce9', d: day } }) });
+    const j = await r.json() as { data?: { viewer: { accounts: { d1AnalyticsAdaptiveGroups: { sum: { rowsRead: number; rowsWritten: number } }[] }[] } }; errors?: { message: string }[] };
+    if (!j.data) return { configured: true, limits: D1_LIMITS, error: j.errors?.[0]?.message ?? `HTTP ${r.status}` };
+    const groups = j.data.viewer.accounts[0]?.d1AnalyticsAdaptiveGroups ?? [];
+    return { configured: true, limits: D1_LIMITS, rowsRead: groups.reduce((a, g) => a + g.sum.rowsRead, 0), rowsWritten: groups.reduce((a, g) => a + g.sum.rowsWritten, 0) };
+  } catch (e) { return { configured: true, limits: D1_LIMITS, error: String(e) }; }
+}
+
 admin.get('/health', async c => {
   const d = db(c.env);
   const [lastOk] = await d.select().from(s.runs).where(and(eq(s.runs.kind, 'collect'), eq(s.runs.ok, true))).orderBy(desc(s.runs.finishedAt)).limit(1);
@@ -586,7 +601,7 @@ admin.get('/health', async c => {
     .bind(new Date(Date.now() - 48 * 3600_000).toISOString()).all<{ at: string; stats: string }>()).results
     .map(r => ({ at: r.at, ...(JSON.parse(r.stats || '{}') as { stage?: string; error?: string }) })).filter(r => r.stage === 'dispatch');
   return c.json({ tokensToday: b?.t ?? 0, tokenCap: Number(c.env.DAILY_TOKEN_CAP ?? 0), costMonthCny: b?.c ?? 0, coverageDegraded: !!lastOk?.stats?.coverageDegraded, sources: allSources, lastSuccessfulCollect: lastOk?.finishedAt ?? null,
-    hoursSince: hours, collectStale: hours === null || hours > 8, failingSources: failing, uncertainDeliveries, needsVerification, dispatchFailures });
+    hoursSince: hours, collectStale: hours === null || hours > 8, failingSources: failing, uncertainDeliveries, needsVerification, dispatchFailures, d1Usage: await d1Usage(c.env) });
 });
 
 export const offerIsClaimable = (o: OfferRow) => isClaimable(liveStatus(o));

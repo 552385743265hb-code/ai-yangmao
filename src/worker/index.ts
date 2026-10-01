@@ -15,6 +15,8 @@ export interface Env {
   ASSETS: Fetcher;
   INGEST_TOKEN: string;
   ADMIN_TOKEN: string;
+  CF_ANALYTICS_TOKEN?: string; // Cloudflare 账户分析只读令牌，采集健康页显示今日 D1 读取量
+  CF_ACCOUNT_ID?: string;
   REVIEWER_TOKENS?: string; // 审核员密钥，格式 名字:密钥,名字:密钥；只能审核、补录、补信源
   DAILY_TOKEN_CAP?: string;
   MONTHLY_COST_CAP_CNY?: string;
@@ -35,6 +37,21 @@ app.use('/api/*', async (c, next) => {
   await next();
   c.header('X-Robots-Tag', 'noindex');
   if (c.req.method === 'GET' && !c.res.headers.get('Cache-Control')) c.header('Cache-Control', 'public, max-age=60');
+});
+
+// 公开的羊毛和平台列表在 Cloudflare 边缘缓存 5 分钟：访客再多，数据库每 5 分钟每个地址只查一次（D1 免费版每天限读 500 万行）。
+// 审核通过后最多 5 分钟出现在网站上。
+const EDGE_TTL = 300;
+for (const path of ['/api/offers', '/api/platforms']) app.use(path, async (c, next) => {
+  if (c.req.method !== 'GET' || typeof caches === 'undefined') return next();
+  const key = new Request(c.req.url, { method: 'GET' });
+  const hit = await caches.default.match(key);
+  if (hit) return new Response(hit.body, hit);
+  await next();
+  if (c.res.status !== 200) return;
+  const res = new Response(c.res.clone().body, c.res);
+  res.headers.set('Cache-Control', `public, max-age=60, s-maxage=${EDGE_TTL}`);
+  c.executionCtx.waitUntil(caches.default.put(key, res));
 });
 
 // 公开接口不输出内部核验记录
