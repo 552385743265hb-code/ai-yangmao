@@ -83,6 +83,10 @@
 - 官网和帮助中心对爬虫不可读，每日积分只能管理员实测。
 
 ## adobe-firefly
+- CC Pro 与 Firefly 付费个人套餐的月积分以官方 FAQ 的 monthly-generative-credits 表为准：CC Pro 4,000；Firefly Standard 2,000、Pro 4,000、Pro Plus 10,000、Premium 50,000（2026-10-01 核验）。不要混入 CC Standard、单应用、团队、企业和教育档，它们的额度与标准功能权限不同。
+- 会员权益用 perk、claimMethod=member，新老订阅用户均可；门槛写完整套餐名和地区价格，不能截成 member:Creative 或保留 unknown。积分在账单日按月重置、不结转；多订阅积分叠加，重置日以最早订阅为准。
+- 标准生成功能不限次不等于全部模型不限次：伙伴模型、Firefly Image 4 Ultra、Image 5 属高级功能，通常扣积分；Firefly Graph 内标准功能仍计费。Premium 的视频特权、指定模型首年促销单独核实，不能泛化到所有档位；功能级权益没有具体模型版本依据时不猜 models。
+- 美元价值仅按同额度官方加购包替代成本比较有限积分：2,000/$9.99、7,000/$29.99、10,000/$49.99、50,000/$199.99 每月（https://www.adobe.com/ai/overview/generative-credits.html，2026-10-01）。不限次部分不编造生成次数或美元估值；合并多档条目写清价值范围与对应档位。
 - 免费账号在限定模型上有“每日免费生成次数”，官方不写具体数量；不要估算张数，也不要把所有下拉模型都当免费。
 
 ## meituan
