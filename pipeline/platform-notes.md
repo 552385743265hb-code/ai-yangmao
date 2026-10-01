@@ -88,3 +88,9 @@
 ## meituan
 - 截至 2026-10-01，LongCat 现行模型是 LongCat-2.5-Preview，官网没有免费额度公告，现行文档只有按量付费和 Token 资源包。
 - 更新日志里的旧内测额度（如 2026 年 3 月 LongCat-2.0-Preview 每天 500 万 Token）早已结束，不要输出；只有更新日志里新出现、写明当前模型和日期的免费活动才算。
+
+## nous
+- Nous Portal Free 免费层需要注册登录；管理员在 2026-10-01 确认开户流程需要绑定信用卡或支付方式，不能写成零门槛。通用 Terms 的免费试用条款不能替代 Free 层实际开户流程。
+- 免费模型以 https://portal.nousresearch.com/ 当前模型目录中整体标价 $0 的版本为准；同名付费版本不能算免费，仅输入零价而输出收费也不算。2026-10-01 快照为 Ling 3.0 Flash Fin、Ling 3.0 Flash Sante (free)、LongCat 2.0、LongCat 2.5 Preview、Laguna S 2.1、Laguna XS 2.1、Space Bunny Alpha、Step 3.7 Flash、Solar Pro 4；名单会调整，后续以当轮官方目录为准。
+- Free 的“$0 monthly credits”是不赠现金余额，不是模型价值为零；没有公布可用于折算的速率上限时 usdEstimate 留空，不编造每月重置。付费工具与 Hermes Cloud 托管不属于免费模型权益。
+- 只有管理员明确确认亲自使用或领取，才能标记 tested；可由官方公开目录证实的权益用 site，并把仅由管理员确认的登录后门槛写入内部核验记录。
