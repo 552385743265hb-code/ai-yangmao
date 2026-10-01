@@ -8,7 +8,7 @@ import { offerIn, type LeadIn, type OfferIn } from '../src/shared/ingest';
 import { claimEndAt } from '../src/shared/lifecycle';
 
 /** 官方截止时间（按官方时区当天 23:59:59）已过的活动不入库：过期新闻不收（2026-10-01 待审里混进 5 条已过期活动） */
-const alreadyEnded = (o: OfferIn) => { const end = claimEndAt({ ...o, lastVerifiedAt: null }); return !!end && end.getTime() < Date.now(); };
+const alreadyEnded = (o: OfferIn) => { const end = claimEndAt({ type: o.type, claimStart: o.claimStart ?? null, claimEnd: o.claimEnd ?? null, endKind: o.endKind, sourceTz: o.sourceTz, lastVerifiedAt: null }); return !!end && end.getTime() < Date.now(); };
 
 const DAILY_TOKEN_CAP = Number(process.env.DAILY_TOKEN_CAP ?? 0); // 0 = 调试阶段不设每日 token 总上限
 const MONTHLY_COST_CAP = Number(process.env.MONTHLY_COST_CAP_CNY ?? 10);
