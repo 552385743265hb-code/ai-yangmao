@@ -370,10 +370,18 @@ ingest.post('/leads/:id/status', async c => {
 ingest.get('/corrections', async c => {
   const platform = c.req.query('platform') ?? '', source = c.req.query('source') ?? '', limit = Math.min(100, Number(c.req.query('limit') ?? 10));
   const since = new Date(Date.now() - Number(c.req.query('days') ?? 3650) * 86400_000).toISOString();
-  const edits = await c.env.DB.prepare(`SELECT o.platform_id p, o.source_id src, o.title t, v.diff d, (SELECT reason FROM reviews r WHERE r.offer_id = o.id AND r.action = 'edit' ORDER BY abs(julianday(r.at) - julianday(v.at)) LIMIT 1) reason, v.at at
-    FROM offer_revisions v JOIN offers o ON o.id = v.offer_id WHERE v.author = 'admin' AND v.at >= ?1 ORDER BY v.id DESC LIMIT 200`).bind(since).all<{ p: string; src: string | null; t: string; d: string; reason: string | null; at: string }>();
-  const rejects = await c.env.DB.prepare(`SELECT o.platform_id p, o.source_id src, o.title t, o.value_text v, r.reason reason, r.reason_code code, r.at at
-    FROM reviews r JOIN offers o ON o.id = r.offer_id WHERE r.action = 'reject' AND COALESCE(r.reviewer,'') <> 'system' AND (r.reason IS NOT NULL OR r.reason_code IS NOT NULL) AND r.at >= ?1 ORDER BY r.id DESC LIMIT 200`).bind(since).all<{ p: string; src: string | null; t: string; v: string; reason: string | null; code: string | null; at: string }>();
+  // 只取最近的记录（按主键倒序，读行数有上限）。旧写法对每条修订做相关子查询，单次读几万行，采集时每个信源调一次，曾经用光 D1 每日免费读额度。
+  const recentRevs = await c.env.DB.prepare(`SELECT v.offer_id oid, v.diff d, v.at at, v.author author FROM offer_revisions v ORDER BY v.id DESC LIMIT 400`).all<{ oid: string; d: string; at: string; author: string }>();
+  const recentRevs2 = recentRevs.results.filter(v => v.author === 'admin' && v.at >= since).slice(0, 200);
+  const recentReviews = await c.env.DB.prepare(`SELECT offer_id oid, action, reason, reason_code code, reviewer, at FROM reviews ORDER BY id DESC LIMIT 600`).all<{ oid: string; action: string; reason: string | null; code: string | null; reviewer: string | null; at: string }>();
+  const ids = [...new Set([...recentRevs2.map(v => v.oid), ...recentReviews.results.map(r => r.oid)])];
+  const offerRows = ids.length ? (await c.env.DB.prepare(`SELECT id, platform_id p, source_id src, title t, value_text v FROM offers WHERE id IN (SELECT value FROM json_each(?1))`).bind(JSON.stringify(ids)).all<{ id: string; p: string; src: string | null; t: string; v: string }>()).results : [];
+  const offerById = new Map(offerRows.map(o => [o.id, o]));
+  const editReason = (oid: string, at: string) => recentReviews.results.filter(r => r.oid === oid && r.action === 'edit')
+    .sort((a, b) => Math.abs(Date.parse(a.at) - Date.parse(at)) - Math.abs(Date.parse(b.at) - Date.parse(at)))[0]?.reason ?? null;
+  const edits = { results: recentRevs2.filter(v => offerById.has(v.oid)).map(v => { const o = offerById.get(v.oid)!; return { p: o.p, src: o.src, t: o.t, d: v.d, reason: editReason(v.oid, v.at), at: v.at }; }) };
+  const rejects = { results: recentReviews.results.filter(r => r.action === 'reject' && (r.reviewer ?? '') !== 'system' && (r.reason || r.code) && r.at >= since && offerById.has(r.oid))
+    .slice(0, 200).map(r => { const o = offerById.get(r.oid)!; return { p: o.p, src: o.src, t: o.t, v: o.v, reason: r.reason, code: r.code, at: r.at }; }) };
   const CODE: Record<string, string> = { paid_bundle: '付费套餐自带的额度', not_ai: '不是 AI 使用额度', wrong_platform: '平台归错', duplicate: '重复', expired: '已过期', vague: '额度不明确', wrong_type: '分类错', wrong_field: '字段错', other: '其他' };
   const items = [
     ...edits.results.map(e => ({ p: e.p, src: e.src, at: e.at, line: `「${e.t}」人工修改：${(JSON.parse(e.d) as { field: string; from: unknown; to: unknown }[]).filter(x => JSON.stringify(x.from) !== JSON.stringify(x.to)).map(x => `${x.field} ${JSON.stringify(x.from)} → ${JSON.stringify(x.to)}`).join('；')}${e.reason ? `（理由：${e.reason}）` : ''}` })),
