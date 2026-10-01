@@ -133,12 +133,22 @@ describe('飞书群日报', () => {
     expect(JSON.parse(row.stats).error).toContain('401');
   });
 
+  it('飞书日报分三个榜：常驻榜、新星榜、末班车榜', async () => {
+    const n = await buildNotice(env, 'digest', 'feishu');
+    expect(n.items.standing.length).toBeLessThanOrEqual(5);
+    expect(n.items.rising.length).toBeLessThanOrEqual(3);
+    expect(n.items.lastcall.length).toBeLessThanOrEqual(3);
+    expect(n.items.ended).toEqual([]);
+    const ids = [...n.items.standing, ...n.items.rising, ...n.items.lastcall].map(x => x.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
   it('作为历史数据补录的已结束活动不推送“已结束”；推送过上架的才推送', async () => {
     stubFetch(() => ({ code: 0 }));
     const yesterday = new Date(Date.now() - 2 * 86400_000).toISOString().slice(0, 10);
     sqlite.prepare("UPDATE offers SET claim_start='2026-09-01', claim_end=?, source_tz='UTC'").run(yesterday);
-    expect((await buildNotice(env, 'digest', 'feishu')).items.ended).toEqual([]);
-    sqlite.prepare("INSERT INTO notifications (offer_id, channel, stage, sent_at) VALUES ('kiro-bonus','feishu','new',?)").run(new Date(Date.now() - 5 * 86400_000).toISOString());
-    expect((await buildNotice(env, 'digest', 'feishu')).items.ended.map(x => x.id)).toEqual(['kiro-bonus']);
+    expect((await buildNotice(env, 'digest', 'telegram')).items.ended).toEqual([]);
+    sqlite.prepare("INSERT INTO notifications (offer_id, channel, stage, sent_at) VALUES ('kiro-bonus','telegram','new',?)").run(new Date(Date.now() - 5 * 86400_000).toISOString());
+    expect((await buildNotice(env, 'digest', 'telegram')).items.ended.map(x => x.id)).toEqual(['kiro-bonus']);
   });
 });

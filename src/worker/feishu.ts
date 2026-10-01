@@ -97,7 +97,7 @@ const zh = (tr: Map<string, string>, t?: string | null) => (t ? (tr.get(t.trim()
 function itemBlock(it: Item, n: number, tr: Map<string, string>, section: string) {
   const lines: string[] = [];
   lines.push(`**${n}. ${safe(zh(tr, it.title))}**`);
-  lines.push(`<font color='grey'>${it.score != null ? `薅度分 ${it.score} · ${STAGE_TAG[section] ?? ''}` : ''}${safe(it.platform)} · ${it.type}${it.modalities?.length ? ` · ${it.modalities.map(m => MODAL[m] ?? m).join(' / ')}` : ''}</font>`);
+  lines.push(`<font color='grey'>${it.score != null ? `薅度分 ${it.score} · ` : ''}${safe(it.platform)} · ${it.type}${it.modalities?.length ? ` · ${it.modalities.map(m => MODAL[m] ?? m).join(' / ')}` : ''}</font>`);
   if (section === 'changed') lines.push(`🔄 **有变化**：${safe(zh(tr, it.value))}`);
   else lines.push(`🎁 **福利**：${safe(zh(tr, it.value))}${it.usdEstimate != null ? `（约 $${it.usdEstimate}${it.usdMax != null && it.usdMax > it.usdEstimate ? `–${it.usdMax}` : ''}）` : ''}`);
   const benefit = it.excerpts?.benefit;
@@ -124,16 +124,16 @@ function itemBlock(it: Item, n: number, tr: Map<string, string>, section: string
 }
 
 const SECTIONS: [keyof ClaimedNotice['items'], string][] = [['urgent', '⚡ 48 小时内截止'], ['new', '🆕 新上架'], ['ending', '⏰ 3 天内结束'], ['changed', '🔄 条款变化'], ['ended', '❌ 已结束']];
-const STAGE_TAG: Record<string, string> = { new: '新上架 · ', ending: '3 天内结束 · ', changed: '条款变化 · ' };
+
 const PER_CARD = 6; // 每张卡片最多几条，避免超过飞书卡片大小上限
 
 /** 把一次通知排成若干张飞书卡片（每张最多 PER_CARD 条羊毛）。 */
 export async function buildCards(env: Env, notice: Pick<ClaimedNotice, 'kind' | 'items'>, now = new Date()) {
-  // 日报（飞书）按薅度分排成一张榜：新上架、3 天内结束、条款变化混排，已结束的放最后
-  const ranked = notice.kind === 'digest' && (['new', 'ending', 'changed'] as const).some(k => (notice.items[k] ?? []).some(it => it.score != null));
+  // 飞书日报：常驻榜、新星榜、末班车榜（admin.ts buildNotice 已按薅度分挑好）
+  const BOARDS: [string, string][] = [['standing', '🏆 常驻榜 · 一直能薅的'], ['rising', '🌟 新星榜 · 新上架'], ['lastcall', '🚌 末班车榜 · 3 天内结束']];
+  const ranked = notice.kind === 'digest' && BOARDS.some(([k]) => (notice.items[k as keyof typeof notice.items] ?? []).length);
   const all = ranked
-    ? [...(['new', 'ending', 'changed'] as const).flatMap(k => (notice.items[k] ?? []).map(it => ({ it, k: k as string, label: '🏆 今日精选（按薅度分排序）' }))).sort((a, b) => (b.it.score ?? 0) - (a.it.score ?? 0)),
-      ...(notice.items.ended ?? []).map(it => ({ it, k: 'ended', label: '❌ 已结束' }))]
+    ? BOARDS.flatMap(([k, label]) => (notice.items[k as keyof typeof notice.items] ?? []).map(it => ({ it, k, label })))
     : SECTIONS.flatMap(([k, label]) => (notice.items[k] ?? []).map(it => ({ it, k, label })));
   if (!all.length) return [];
   const texts = all.flatMap(({ it }) => [it.title, it.value, it.creditValidity, it.excerpts?.benefit, it.excerpts?.eligibility, ...(it.steps ?? [])]);
@@ -147,7 +147,7 @@ export async function buildCards(env: Env, notice: Pick<ClaimedNotice, 'kind' | 
     if (p === 0) {
       const counts = SECTIONS.map(([k, label]) => [label, (notice.items[k] ?? []).length] as const).filter(([, c]) => c).map(([l, c]) => `${l} ${c} 条`).join('　');
       const more = (notice as { moreCount?: number }).moreCount ?? 0;
-      elements.push(md(`${ranked ? `今天挑出薅度分最高的 ${all.filter(x => x.k !== 'ended').length} 条${more ? `，另有 ${more} 条新动态在网站上` : ''}` : counts}\n<font color='grey'>薅度分综合价值、门槛、领取难度、剩余时间、信源和国内能否直领。每条都附官方原文和链接；英文内容已翻译成中文，以官方页面为准。</font>`), { tag: 'hr' });
+      elements.push(md(`${ranked ? `常驻榜 ${notice.items.standing?.length ?? 0} 条 · 新星榜 ${notice.items.rising?.length ?? 0} 条 · 末班车榜 ${notice.items.lastcall?.length ?? 0} 条${more ? `\n另有 ${more} 条新上架没进榜，在网站上看` : ''}` : counts}\n<font color='grey'>薅度分综合价值、门槛、领取难度、剩余时间、信源和国内能否直领。每条都附官方原文和链接；英文内容已翻译成中文，以官方页面为准。</font>`), { tag: 'hr' });
     }
     let current = '';
     slice.forEach(({ it, k, label }, i) => {
