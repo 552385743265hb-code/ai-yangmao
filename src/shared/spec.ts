@@ -100,6 +100,7 @@ export function checkOffer(o: SpecInput, now = new Date()): SpecIssue[] {
   if (freeKind && !(o.models?.length) && MODEL_NAME.test(`${o.title} ${o.valueText}`)) add('models', '免费模型', 'warn', '额度里提到了具体模型，但没有填免费模型，“按模型找”里看不到', ['models']);
   if (tags.includes('reset') && !o.publishedAt) add('publishedAt', '发布时间', 'warn', '额度重置要填官方发布时间（精确到时刻），重置时钟才能统计', ['resetClock']);
   if (o.audience === 'unclear') add('audience', '适用对象', 'warn', '没写清谁能领，详情页和推送会写“官方未写明适用对象”', ['detail', 'push']);
+  if (o.evidence.tier === 'media') add('evidence', '证据级别', 'block', '证据是媒体或社区转述，不能上架：核实发放方官方页面后改成官方级别，或亲测后用“管理员实测”', ['detail', 'score', 'push']);
   if (o.evidence.tier !== 'tested' && !o.evidence.excerpts?.benefit?.trim()) add('evidence', '官方原文', 'warn', '没有权益原文摘录，详情页和推送少了“官方原文”', ['detail', 'push']);
   if (!o.creditValidity && o.type !== 'standing' && o.type !== 'apply') add('creditValidity', '额度有效期', 'info', '领取后多久失效没写，显示“官方未写明”', ['detail', 'push']);
   if (!(o.steps?.length)) add('steps', '领取步骤', 'info', '没写领取步骤，按领取方式显示通用步骤', ['detail', 'push']);

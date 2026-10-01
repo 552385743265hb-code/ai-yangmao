@@ -40,3 +40,10 @@ describe('管理员实测条目的状态', () => {
     expect(liveStatus({ ...t, claimEnd: null, endKind: 'unknown' }, now)).toBe('stale');
   });
 });
+
+describe('evidence tier', () => {
+  it('blocks media evidence in the checklist', () => {
+    const issues = checkOffer({ ...base, evidence: { tier: 'media', excerpts: { benefit: 'x' } } } as any);
+    expect(blocking(issues).some(i => i.field === 'evidence')).toBe(true);
+  });
+});
