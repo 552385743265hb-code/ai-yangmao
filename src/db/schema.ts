@@ -40,6 +40,8 @@ export const offers = sqliteTable('offers', {
   platformId: text('platform_id').notNull().references(() => platforms.id),
   title: text('title').notNull(),
   type: text('type', { enum: ['new', 'trial', 'free', 'perk', 'topup', 'gift', 'standing', 'apply'] }).notNull(),
+  // 标签（受控词表，见 src/shared/spec.ts TAGS）：额度重置、邀请奖励、首月折扣、每日刷新等；重置时钟等栏目按它取数
+  tags: text('tags', { mode: 'json' }).$type<string[]>().notNull().default(sql`'[]'`),
   // 这条福利里免费可用的具体模型（“按模型找”按它汇总：某个模型在哪些平台免费）
   models: text('models', { mode: 'json' }).$type<string[]>().notNull().default(sql`'[]'`),
   modalities: text('modalities', { mode: 'json' }).$type<string[]>().notNull(),

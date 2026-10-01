@@ -132,4 +132,13 @@ describe('飞书群日报', () => {
     expect(JSON.parse(row.stats)).toMatchObject({ stage: 'dispatch' });
     expect(JSON.parse(row.stats).error).toContain('401');
   });
+
+  it('作为历史数据补录的已结束活动不推送“已结束”；推送过上架的才推送', async () => {
+    stubFetch(() => ({ code: 0 }));
+    const yesterday = new Date(Date.now() - 2 * 86400_000).toISOString().slice(0, 10);
+    sqlite.prepare("UPDATE offers SET claim_start='2026-09-01', claim_end=?, source_tz='UTC'").run(yesterday);
+    expect((await buildNotice(env, 'digest', 'feishu')).items.ended).toEqual([]);
+    sqlite.prepare("INSERT INTO notifications (offer_id, channel, stage, sent_at) VALUES ('kiro-bonus','feishu','new',?)").run(new Date(Date.now() - 5 * 86400_000).toISOString());
+    expect((await buildNotice(env, 'digest', 'feishu')).items.ended.map(x => x.id)).toEqual(['kiro-bonus']);
+  });
 });

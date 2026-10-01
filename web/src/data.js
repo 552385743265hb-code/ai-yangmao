@@ -58,10 +58,13 @@ async function loadData() {
       vf: o.lastVerifiedAt ? -(now - Date.parse(o.lastVerifiedAt)) / DAYMS : -99,
       vfDay: o.lastVerifiedAt ? dayIdx(new Date(o.lastVerifiedAt)) : null,
       fs: dayIdx(new Date(o.discoveredAt)), discoveredAt: o.discoveredAt,
+      // 活动出现的日子：官方开始日 → 官方发布日 → 系统发现日。“新增”类统计都按它算，补录的历史活动不会算成本周新增
+      pub: o.publishedAt ? dayIdx(new Date(o.publishedAt)) : null, publishedAt: o.publishedAt || null,
+      since: o.claimStart ? rel(o.claimStart) : o.publishedAt ? dayIdx(new Date(o.publishedAt)) : dayIdx(new Date(o.discoveredAt)),
       verifiedAt: o.lastVerifiedAt, withdrawnAt: o.withdrawnAt,
       st: o.evidence.tier, tz: o.sourceTz, val: o.creditValidity || '官方未写明', aud: o.audience,
       cn: !overseas, early: CHANNEL[o.firstChannel] || o.firstChannel || '官方页面', why: o.withdrawnReason || '',
-      steps: o.steps || [], models: o.models || [], evidence: o.evidence, note: o.adminNote || '', verify: o.verifyResult || '', apiStatus: o.status,
+      steps: o.steps || [], models: o.models || [], tags: o.tags || [], evidence: o.evidence, note: o.adminNote || '', verify: o.verifyResult || '', apiStatus: o.status,
     };
   });
   META = meta;

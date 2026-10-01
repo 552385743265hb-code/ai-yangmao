@@ -1,0 +1,1 @@
+ALTER TABLE `offers` ADD `tags` text DEFAULT '[]' NOT NULL;

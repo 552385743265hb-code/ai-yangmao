@@ -97,6 +97,20 @@ describe('official evidence verification', () => {
 });
 
 describe('review gates and preserved public version', () => {
+  it('审批页：待审条目带上架前检查；已上架但缺字段的进入“已上架、字段待补”；复测仍有效会更新核验时间', async () => {
+    await call('ingest/offers', [{ ...offer, usdEstimate: null }]);
+    const q1 = await call('admin/queue', undefined, 'admin');
+    const pending = (q1.body.pending as { id: string; checks: { field: string; sections: string[] }[] }[]).find(o => o.id === 'vendor-free')!;
+    expect(pending.checks.map(c => c.field)).toContain('usdEstimate');
+    expect(pending.checks.find(c => c.field === 'usdEstimate')!.sections.length).toBeGreaterThan(0);
+    await call('admin/offers/vendor-free/approve', {}, 'admin');
+    const q2 = await call('admin/queue', undefined, 'admin');
+    expect((q2.body.incomplete as { id: string }[]).map(o => o.id)).toContain('vendor-free');
+    const r = await call('admin/offers/vendor-free/retested', {}, 'admin');
+    expect(r.status).toBe(200);
+    expect((sqlite.prepare("SELECT verify_result FROM offers WHERE id='vendor-free'").get() as { verify_result: string }).verify_result).toBe('管理员复测仍有效');
+  });
+
   it('证据链接在平台已登记官方信源的域名下（不同于官网域名）也能通过', async () => {
     sqlite.prepare("INSERT INTO sources (id,platform_id,kind,url,tier,config) VALUES ('vendor-docs','vendor','web_list','https://docs.vendor-other.example/pricing','docs','{}')").run();
     await call('ingest/offers', [{ ...offer, sourceId: undefined, evidence: { ...evidence, url: 'https://docs.vendor-other.example/announcements' } }]);

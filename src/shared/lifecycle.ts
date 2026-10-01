@@ -16,6 +16,7 @@ export interface OfferTiming {
   discoveredAt?: string | null; // 官方未写开始时间时，不能推断系统发现之前也有效
   verifyResult?: string | null; // evidence_missing 表示刚检查的证据页已不再支持原条款
   withdrawnAt?: string | null; // 官方撤回
+  evidence?: { tier?: string } | null; // tested（管理员实测）没有可自动复核的页面，按管理员复测时间判断
 }
 
 const HOUR = 3600_000;
@@ -23,6 +24,8 @@ const DAY = 24 * HOUR;
 export const ENDING_WINDOW = 3 * DAY;
 export const STANDING_STALE_AFTER = 14 * DAY;
 export const LIMITED_STALE_AFTER = 48 * HOUR;
+// 管理员实测、没有截止日期的限时活动：7 天内要复测一次（有截止日期的到截止前一直有效）
+export const TESTED_STALE_AFTER = 7 * DAY;
 
 /** 某个时区的偏移（分钟，东区为正）。 */
 export function tzOffsetMinutes(tz: string, at: Date): number {
@@ -63,7 +66,8 @@ export function liveStatus(o: OfferTiming, now: Date = new Date()): LiveStatus {
   if (o.type === 'apply') return verifiedAge >= STANDING_STALE_AFTER ? 'stale' : 'open';
   const start = claimStartAt(o);
   if (start && start.getTime() > t) return 'upcoming';
-  if (verifiedAge > LIMITED_STALE_AFTER) return 'stale';
+  const tested = o.evidence?.tier === 'tested';
+  if (verifiedAge > (tested ? (end ? Infinity : TESTED_STALE_AFTER) : LIMITED_STALE_AFTER)) return 'stale';
   if (end && end.getTime() - t <= ENDING_WINDOW) return 'ending';
   return 'active';
 }

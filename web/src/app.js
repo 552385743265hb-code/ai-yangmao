@@ -66,6 +66,19 @@ function prepare() {
   MEMBERS = uniq(OFFERS.flatMap(o => o.r.filter(r => r.startsWith('member:')).map(r => r.slice(7))));
   LAST_OK = META.lastSuccessfulCollect ? new Date(META.lastSuccessfulCollect) : null;
   RACE = computeRace(); TREND = computeTrend();
+  HOLIDAYS.forEach(h => { h.past = holidayPast(h); });
+}
+/** 往年同一节日前后 7 天内有效过的活动，按平台列出（只用已收录的历史数据推算）。 */
+function holidayPast(h) {
+  const [y, m, d] = h.d.split('-').map(Number), names = [];
+  for (let back = 1; back <= 3; back++) {
+    const c = dayIdx(new Date(y - back, m - 1, d)), from = c - 7, to = c + 7;
+    OFFERS.forEach(o => {
+      const end = o.ek === 'date' ? o.e : o.withdrawnAt ? dayIdx(new Date(o.withdrawnAt)) : o.since;
+      if (isLimited(o) && o.since <= to && end >= from) names.push(`${o.plat.name}（${y - back}）`);
+    });
+  }
+  return uniq(names).join('、');
 }
 const isLimited = o => o.ty !== 'standing' && o.ty !== 'apply';
 function statusOf(o, k = 0) {
@@ -77,7 +90,8 @@ function statusOf(o, k = 0) {
   if (o.ty === 'standing') return age >= 14 * DAY ? 'stale' : 'standing';
   if (o.ty === 'apply') return age >= 14 * DAY ? 'stale' : 'open';
   if (o.s != null && startInstant(o).getTime() > at.getTime()) return 'upcoming';
-  if (age > 48 * 3600_000) return 'stale';
+  // 与 src/shared/lifecycle.ts 一致：管理员实测的限时活动，有截止日期就到截止前一直有效，否则 7 天内要复测
+  if (age > (o.st === 'tested' ? (o.ek === 'date' ? Infinity : 7 * DAY) : 48 * 3600_000)) return 'stale';
   if (o.ek === 'date' && endInstant(o).getTime() - at.getTime() <= 3 * DAY) return 'ending';
   return 'active';
 }
@@ -134,7 +148,7 @@ function reqChips(o, mark = false) {
 /* ---------- 薅度雷达（全部按规则算，不调用模型） ---------- */
 const REQ_PEN = { pay: 30, member: 35, phone: 25, card: 25, net: 10, realname: 5, biz: 40, student: 30, invite: 25, targeted: 30, unknown: 50 };
 const EASE = { auto: 100, member: 90, signup: 80, code: 70, app: 65, topup: 50, form: 30 };
-const SRCV = { site: 100, docs: 100, official: 85, staff: 70, media: 30 };
+const SRCV = { site: 100, docs: 100, official: 85, staff: 70, tested: 80, media: 30 };
 const DIMS = ['价值', '门槛低', '好领取', '剩余时间', '信源可信', '国内直领'];
 const WEIGHTS = [0.25, 0.2, 0.15, 0.15, 0.1, 0.15];
 function dims(o) {
@@ -382,7 +396,7 @@ function buildFlock(el, list, wx) {
 /* ---------- 羊毛天气 ---------- */
 function weatherNow() {
   const act = view(OFFERS.filter(activeLimited));
-  const fresh = view(OFFERS.filter(o => o.fs >= -7 && claimable(o))).length;
+  const fresh = view(OFFERS.filter(o => o.since >= -7 && claimable(o))).length;
   const ending = act.filter(o => statusOf(o) === 'ending').length;
   const val = sum(act, o => o.usd);
   const i = clamp(Math.round(18 + fresh * 4 + Math.log10(1 + val) * 11 - ending * 2), 5, 99);
@@ -456,9 +470,9 @@ function pToday() {
   </div>
   <section class="kpis">
     ${kpi('进行中', act.length, '条', daily((o, k) => activeOn(o, k) && statusOf(o, k) !== 'upcoming'))}
-    ${kpi('本周新增', wx.fresh, '条', daily((o, k) => o.fs <= k && o.fs > k - 7))}
+    ${kpi('本周新增', wx.fresh, '条', daily((o, k) => o.since <= k && o.since > k - 7))}
     ${kpi('3 天内结束', ending.length, '条', daily((o, k) => activeOn(o, k) && o.ek === 'date' && o.e - k <= 3), 'var(--serious)')}
-    ${kpi('常驻额度', stand.length, '项', daily((o, k) => o.ty === 'standing' && o.fs <= k), 'var(--s6)')}
+    ${kpi('常驻额度', stand.length, '项', daily((o, k) => o.ty === 'standing' && o.since <= k), 'var(--s6)')}
   </section>
   <section>${secH('倒计时', '最快结束的 5 条，按官方时区换算成你的本地时间')}
     <div class="clocks">${soon.map(o => {
@@ -577,25 +591,28 @@ function renderDayList() {
 
 /* ---------- 时间线（甘特图） ---------- */
 function pTimeline() {
-  const lo = -30, hi = 45;
-  const items = view(OFFERS.filter(o => isLimited(o) && (o.ek !== 'date' || o.e >= lo) && (o.s == null || o.s <= hi)));
+  // 默认显示前 30 天到后 45 天；数据包含全部历史活动，拖动下方滑块可以往前看
+  const viewLo = -30, hi = 45;
+  const all = view(OFFERS.filter(o => isLimited(o) && (o.s == null || o.s <= hi)));
+  const lo = Math.max(-730, Math.min(viewLo, ...all.map(o => o.since)));
+  const items = all;
   const rowsIds = uniq(items.slice().sort((a, b) => (a.ek === 'date' ? a.e : 999) - (b.ek === 'date' ? b.e : 999)).map(o => o.p));
   const rows = rowsIds.map(id => PMAP[id].name);
   const h = rows.length * 34 + 90;
-  main().innerHTML = ribbon() + ph('时间线', '每个平台一行，横条是活动的起止时间。竖线是今天，描边的是 3 天内结束的活动。') +
+  main().innerHTML = ribbon() + ph('时间线', '每个平台一行，横条是活动的起止时间。竖线是今天，描边的是 3 天内结束的活动。往前拖动可以看历史活动。') +
     `<div class="legend" style="margin-bottom:10px">${Object.keys(TYPES).filter(isTypeLimited).map(t => `<span><i class="sw" style="background:${typeVar(t)}"></i>${TYPES[t].l}</span>`).join('')}<span><i class="sw" style="background:linear-gradient(90deg,var(--muted),transparent)"></i>截止未知</span></div>
     <div class="card" style="padding:10px 6px"><div class="chart" id="cGantt" style="height:${h}px"></div></div>
     <p class="small muted">可以拖动下方滑块或用触控板缩放时间范围。点横条看详情。</p>`;
   const data = items.map(o => {
-    const s = o.s == null ? lo : Math.max(lo, o.s), e = o.ek === 'date' ? o.e + 1 : hi;
+    const s = Math.max(lo, o.since), e = o.ek === 'date' ? o.e + 1 : o.withdrawnAt ? dayIdx(new Date(o.withdrawnAt)) + 1 : hi;
     return { value: [rowsIds.indexOf(o.p), dayAt(s).getTime(), dayAt(e).getTime()], o };
   });
   const c = chart('#cGantt', {
     grid: { left: 8, right: 16, top: 26, bottom: 46, containLabel: true },
-    tooltip: { trigger: 'item', formatter: p => { const o = p.data.o; return `<b>${esc(o.t)}</b>${esc(o.plat.name)} · ${TYPES[o.ty].l}<br>${o.s != null ? md(dayAt(o.s)) : '早已开始'} → ${o.ek === 'date' ? md(dayAt(o.e)) : '截止未知'}<br>${leftText(o)}`; } },
+    tooltip: { trigger: 'item', formatter: p => { const o = p.data.o; return `<b>${esc(o.t)}</b>${esc(o.plat.name)} · ${TYPES[o.ty].l}<br>${o.s != null ? md(dayAt(o.s)) : `${md(dayAt(o.since))}起（官方未写开始日）`} → ${o.ek === 'date' ? md(dayAt(o.e)) : '截止未知'}<br>${leftText(o)}`; } },
     xAxis: Object.assign(axisCommon(), { type: 'time', min: dayAt(lo).getTime(), max: dayAt(hi).getTime(), position: 'top', axisLabel: { color: TK.muted, fontSize: 11, formatter: v => { const d = new Date(v); return `${d.getMonth() + 1}/${d.getDate()}`; } }, splitLine: { show: true, lineStyle: { color: TK.line } } }),
     yAxis: Object.assign(axisCommon(), { type: 'category', data: rows, inverse: true, axisLabel: { color: TK.ink2, fontSize: 12 }, splitLine: { show: false } }),
-    dataZoom: [{ type: 'inside', xAxisIndex: 0, filterMode: 'weakFilter' }, { type: 'slider', xAxisIndex: 0, height: 18, bottom: 10, filterMode: 'weakFilter', borderColor: TK.line, fillerColor: TK.tagSoft, handleStyle: { color: TK.surface, borderColor: TK.line2 }, textStyle: { color: TK.muted }, dataBackground: { lineStyle: { color: TK.line2 }, areaStyle: { color: TK.surface2 } } }],
+    dataZoom: [{ type: 'inside', xAxisIndex: 0, filterMode: 'weakFilter', startValue: dayAt(viewLo).getTime(), endValue: dayAt(hi).getTime() }, { type: 'slider', xAxisIndex: 0, height: 18, bottom: 10, filterMode: 'weakFilter', startValue: dayAt(viewLo).getTime(), endValue: dayAt(hi).getTime(), borderColor: TK.line, fillerColor: TK.tagSoft, handleStyle: { color: TK.surface, borderColor: TK.line2 }, textStyle: { color: TK.muted }, dataBackground: { lineStyle: { color: TK.line2 }, areaStyle: { color: TK.surface2 } } }],
     series: [{
       type: 'custom', encode: { x: [1, 2], y: 0 }, data,
       renderItem: (params, api) => {
@@ -757,18 +774,18 @@ function pModels() {
 /* ---------- 洞察 ---------- */
 const RESETS = []; // Codex 重置记录：等我们自己的重置条目积累起来再展示
 let RACE = { months: [], series: [] }, TREND = { labels: [], nw: [], ed: [], by: {} };
-/** 大方榜：近 6 个月各平台累计收录的羊毛价值（按发现时间，不含申请制）。 */
+/** 大方榜：近 6 个月各平台累计发放的羊毛价值（按活动出现的日子，不含申请制）。 */
 function computeRace() {
   const months = [...Array(6)].map((_, i) => new Date(T0.getFullYear(), T0.getMonth() - 5 + i, 1));
-  const mi = o => { const d = dayAt(Math.floor(o.fs)); return months.findIndex((m, i) => d >= m && (i === 5 || d < months[i + 1])); };
+  const mi = o => { const d = dayAt(Math.floor(o.since)); return months.findIndex((m, i) => d >= m && (i === 5 || d < months[i + 1])); };
   const pool = view(OFFERS.filter(o => o.ty !== 'apply' && !o.noUsd));
   const ids = uniq(pool.map(o => o.p)).sort((a, b) => sum(pool.filter(o => o.p === b), o => o.usd) - sum(pool.filter(o => o.p === a), o => o.usd)).slice(0, 12);
   return {
     months: months.map(d => `${d.getFullYear()}年${d.getMonth() + 1}月`),
-    series: ids.map(id => { let acc = 0; return { id, vals: months.map((_, i) => (acc += sum(pool.filter(o => o.p === id && (mi(o) === i || (i === 0 && mi(o) < 0 && o.fs < 0 && dayAt(Math.floor(o.fs)) < months[0]))), o => o.usd))) }; }),
+    series: ids.map(id => { let acc = 0; return { id, vals: months.map((_, i) => (acc += sum(pool.filter(o => o.p === id && (mi(o) === i || (i === 0 && mi(o) < 0 && o.since < 0 && dayAt(Math.floor(o.since)) < months[0]))), o => o.usd))) }; }),
   };
 }
-/** 最近 12 周：每周新增（按发现时间）与结束（按截止日），以及新增的类型构成。 */
+/** 最近 12 周：每周新增（按活动出现的日子）与结束（按截止日），以及新增的类型构成。 */
 function computeTrend() {
   const labels = [], nw = [], ed = [], by = {};
   Object.keys(TYPES).forEach(t => { by[t] = []; });
@@ -776,7 +793,7 @@ function computeTrend() {
   for (let w = 11; w >= 0; w--) {
     const a = dayIdx(new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() - w * 7)), b = a + 7;
     labels.push(w === 0 ? '本周' : `${dayAt(a).getMonth() + 1}/${dayAt(a).getDate()}`);
-    const fresh = view(OFFERS.filter(o => o.fs >= a && o.fs < b));
+    const fresh = view(OFFERS.filter(o => o.since >= a && o.since < b));
     nw.push(fresh.length); ed.push(view(OFFERS.filter(o => o.ek === 'date' && o.e >= a && o.e < b && o.e < 0)).length);
     Object.keys(TYPES).forEach(t => by[t].push(fresh.filter(o => o.ty === t).length));
   }
@@ -784,23 +801,24 @@ function computeTrend() {
 }
 function pInsights() {
   if (!OFFERS.length) { main().innerHTML = ribbon() + ph('洞察', '把整片牧场放在一起看：哪里该先薅、谁最大方、羊毛从哪来。') + emptySheep('第一批羊毛审核通过后，这里会出现图表。'); return; }
-  const ended = view(OFFERS.filter(o => statusOf(o) === 'ended')).sort((a, b) => b.e - a.e);
+  const ended = view(OFFERS.filter(o => statusOf(o) === 'ended')).sort((a, b) => (b.e ?? 0) - (a.e ?? 0));
   main().innerHTML = ribbon() + ph('洞察', '把整片牧场放在一起看：哪里该先薅、谁最大方、羊毛从哪来、什么时候会重置。') + `
   <section style="margin-top:0"><div class="card"><h3>薅羊毛四象限</h3><p class="sub">横轴是门槛难度，纵轴是价值（对数刻度）；限时活动的气泡越大，剩余时间越多。左上角最值得先薅。</p><div class="chart" id="cQuad" style="height:400px"></div></div></section>
   <section><div class="card"><h3>羊毛从哪来、怎么到你手里</h3><p class="sub">平台类型 → 羊毛类型 → 领取方式 → 主要门槛</p><div class="hscroll"><div class="chart" id="cSankey" style="height:470px"></div></div></div></section>
   <section class="grid g2">
     <div class="card"><h3>谁最大方</h3><p class="sub">面积 = 这个平台所有羊毛的折合美元（不含申请制）</p><div class="chart" id="cTree" style="height:360px"></div><div class="legend">${Object.entries(PTYPE).map(([k, v]) => `<span><i class="sw" style="background:var(--s${v.slot})"></i>${v.l}</span>`).join('')}</div></div>
-    <div class="card"><div class="row" style="justify-content:space-between"><div><h3>大方榜</h3><p class="sub" style="margin:0">近 6 个月累计发放价值（示例）</p></div><button class="btn sm pri" type="button" id="racePlay">▶ 回放</button></div><div class="chart" id="cRace" style="height:340px"></div></div>
+    <div class="card"><div class="row" style="justify-content:space-between"><div><h3>大方榜</h3><p class="sub" style="margin:0">近 6 个月累计发放价值（按活动开始的月份）</p></div><button class="btn sm pri" type="button" id="racePlay">▶ 回放</button></div><div class="chart" id="cRace" style="height:340px"></div></div>
   </section>
-  <section><div class="card"><h3>重置时钟</h3><p class="sub">Codex、Claude Code 等额度重置的历史分布。重置类羊毛审核通过并积累一段时间后显示；只展示历史，不预测下一次。</p>${emptySheep('数据积累中')}</div></section>
+  <section><div class="card" id="resetBox"><h3>重置时钟</h3><p class="sub">Codex、Claude Code 等额度重置的历史分布（按官方发布时间，换算成你的本地时间）。只展示历史，不预测下一次。</p>${resetBlock()}</div></section>
   <section class="grid g2">
     <div class="card"><h3>每周新增与结束</h3><p class="sub">最近 12 周</p><div class="chart" id="cTrend" style="height:280px"></div></div>
     <div class="card"><h3>新增羊毛的类型构成</h3><p class="sub">最近 12 周，按周堆叠</p><div class="chart" id="cStack" style="height:280px"></div></div>
   </section>
   <section>${secH('羊毛墓地', '已经结束的羊毛。点墓碑看它活了多久、平台过去的发放规律。')}
-    <div class="graves">${ended.map(o => { const life = o.e - o.s + 1; return `<a class="grave" href="#offer-${o.id}"><span class="rip">R.I.P.</span><b>${esc(o.t)}</b><span>${esc(o.plat.name)}</span><span>存活 <span class="age">${life}</span> 天</span><span class="muted">${md(dayAt(o.s))} – ${md(dayAt(o.e))}</span>${o.why ? `<span class="chip">${esc(o.why)}</span>` : ''}</a>`; }).join('')}</div>
+    <div class="graves">${ended.map(o => { const end = o.ek === 'date' ? o.e : o.withdrawnAt ? dayIdx(new Date(o.withdrawnAt)) : 0; const life = Math.max(1, end - o.since + 1); return `<a class="grave" href="#offer-${o.id}"><span class="rip">R.I.P.</span><b>${esc(o.t)}</b><span>${esc(o.plat.name)}</span><span>存活 <span class="age">${life}</span> 天</span><span class="muted">${md(dayAt(o.since))} – ${md(dayAt(end))}</span>${o.why ? `<span class="chip">${esc(o.why)}</span>` : ''}</a>`; }).join('')}</div>
   </section>`;
 
+  drawResetClock();
   // 四象限
   const groups = [['限时活动', o => isLimited(o)], ['常驻额度', o => o.ty === 'standing'], ['申请制', o => o.ty === 'apply']];
   const live = view(OFFERS.filter(o => !['ended'].includes(statusOf(o))));
@@ -894,11 +912,43 @@ function pInsights() {
   });
 }
 
+/* ---------- 重置时钟 ---------- */
+// 带“额度重置”标签的条目；有官方发布时间（精确到时刻）的才参与星期 × 时段分布
+const resetList = () => OFFERS.filter(o => (o.tags || []).includes('reset')).map(o => ({ o, at: o.publishedAt ? new Date(o.publishedAt) : startInstant(o), exact: !!o.publishedAt })).sort((a, b) => b.at - a.at);
+function resetBlock() {
+  const list = resetList();
+  if (list.length < 3) return emptySheep(list.length ? `已收录 ${list.length} 次重置，满 3 次后显示分布。` : '还没有收录到额度重置。');
+  const ts = list.map(x => x.at.getTime()).sort((a, b) => a - b);
+  const gaps = ts.slice(1).map((t, i) => (t - ts[i]) / DAY), avg = gaps.length ? sum(gaps, g => g) / gaps.length : 0;
+  const last = list[0], plats = uniq(list.map(x => x.o.plat.name));
+  return `<section class="kpis" style="margin-top:6px">
+      <div class="kpi"><span class="k-l">已收录重置</span><span class="k-v">${list.length}<small>次 · ${plats.length} 个平台</small></span></div>
+      <div class="kpi"><span class="k-l">平均间隔</span><span class="k-v">${avg.toFixed(1)}<small>天</small></span></div>
+      <div class="kpi"><span class="k-l">最近一次</span><span class="k-v">${Math.max(0, Math.round((NOW - last.at) / DAY))}<small>天前 · ${esc(last.o.plat.name)}</small></span></div>
+    </section>
+    <div class="chart" id="cReset" style="height:260px"></div>
+    <div class="rows" style="margin-top:8px">${list.slice(0, 8).map(x => orow(x.o, `${md(x.at)}${x.exact ? ' ' + hm(x.at) : ''}`)).join('')}</div>`;
+}
+function drawResetClock() {
+  const list = resetList().filter(x => x.exact);
+  if (!$('#cReset') || !list.length) return;
+  const cnt = {};
+  list.forEach(x => { const k = `${(x.at.getDay() + 6) % 7}-${x.at.getHours()}`; (cnt[k] = cnt[k] || []).push(x); });
+  const data = Object.entries(cnt).map(([k, xs]) => { const [d, h] = k.split('-').map(Number); return { value: [h, d, xs.length], xs }; });
+  chart('#cReset', {
+    grid: { left: 8, right: 16, top: 10, bottom: 24, containLabel: true },
+    tooltip: { trigger: 'item', formatter: p => `周${WD[(p.data.value[1] + 1) % 7]} ${pad(p.data.value[0])}:00 前后 · ${p.data.value[2]} 次<br>${p.data.xs.map(x => `${md(x.at)} ${esc(x.o.t)}`).join('<br>')}` },
+    xAxis: Object.assign(axisCommon(), { type: 'value', min: 0, max: 23, interval: 3, axisLabel: { color: TK.muted, formatter: v => `${v}:00` } }),
+    yAxis: Object.assign(axisCommon(), { type: 'category', inverse: true, data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'], axisLabel: { color: TK.ink2 } }),
+    series: [{ type: 'scatter', data, symbolSize: v => 10 + v[2] * 7, itemStyle: { color: TK.s[0], opacity: 0.85, borderColor: TK.surface, borderWidth: 2 } }],
+  });
+}
+
 /* ---------- 平台页 ---------- */
 function pPlatform(id) {
   const p = PMAP[id];
   if (!p) { main().innerHTML = ribbon() + emptySheep('没找到这个平台。<a href="#today">回到今天</a>'); return; }
-  const list = view(OFFERS.filter(o => o.p === id)).sort((a, b) => (b.s ?? b.fs) - (a.s ?? a.fs));
+  const list = view(OFFERS.filter(o => o.p === id)).sort((a, b) => b.since - a.since);
   const live = list.filter(o => statusOf(o) !== 'ended');
   const avg = i => list.length ? Math.round(sum(list, o => dims(o)[i]) / list.length) : 0;
   const pd = [clamp(list.length * 22, 10, 100), avg(0), avg(1), avg(5), avg(4), list.some(o => o.ty === 'standing') ? 100 : 30];
@@ -920,8 +970,8 @@ function pPlatform(id) {
     radar: { indicator: ['发放频率', '平均价值', '门槛友好', '国内可用', '信源透明', '常驻额度'].map(n => ({ name: n, max: 100 })), radius: '64%', center: ['50%', '54%'], splitNumber: 4, axisName: { color: TK.ink2, fontSize: 12 }, splitLine: { lineStyle: { color: TK.line2 } }, splitArea: { areaStyle: { color: [TK.surface, TK.surface2] } }, axisLine: { lineStyle: { color: TK.line2 } } },
     series: [{ type: 'radar', data: [{ value: pd, name: p.name, areaStyle: { color: col, opacity: 0.25 }, lineStyle: { color: col, width: 2 }, itemStyle: { color: col }, symbolSize: 5 }] }],
   });
-  const lo = Math.max(-150, Math.min(-60, ...list.map(o => o.s ?? o.fs))), hi = Math.max(20, ...list.map(o => o.ek === 'date' ? o.e + 1 : 0));
-  const hd = list.map((o, i) => ({ value: [i, dayAt(Math.max(lo, o.s ?? o.fs)).getTime(), dayAt(o.ek === 'date' ? o.e + 1 : 0.2).getTime()], o }));
+  const lo = Math.max(-400, Math.min(-60, ...list.map(o => o.since))), hi = Math.max(20, ...list.map(o => o.ek === 'date' ? o.e + 1 : 0));
+  const hd = list.map((o, i) => ({ value: [i, dayAt(Math.max(lo, o.since)).getTime(), dayAt(o.ek === 'date' ? o.e + 1 : 0.2).getTime()], o }));
   const ch = chart('#cPHist', {
     grid: { left: 8, right: 16, top: 24, bottom: 8, containLabel: true },
     tooltip: { trigger: 'item', formatter: q => `<b>${esc(q.data.o.t)}</b>${leftText(q.data.o)}` },
@@ -970,7 +1020,8 @@ function pOffer(id) {
   const officialUrl = (o.evidence && o.evidence.url) || o.plat.site;
   const hist = [];
   hist.push([o.fs, `系统发现（最早出现在：${o.early}）`]);
-  if (o.s != null && o.s <= 0 && o.s > o.fs) hist.push([o.s, '活动开始（按官方公布时间）']);
+  if (o.pub != null && o.pub !== o.s) hist.push([o.pub, '官方发布']);
+  if (o.s != null && o.s <= 0) hist.push([o.s, '活动开始（按官方公布时间）']);
   (o.rev || []).forEach(rv => hist.push([rv.at, `条款修订：${rv.from} → ${rv.to}`]));
   if (st === 'ended') hist.push([o.withdrawnAt ? dayIdx(new Date(o.withdrawnAt)) : o.e, o.withdrawnAt ? `官方撤回${o.why ? `（${o.why}）` : ''}` : '已到官方公布的领取截止时间']);
   if (o.vfDay != null) hist.push([o.vfDay, '最近一次成功核验']);
@@ -1120,8 +1171,15 @@ async function adm(path, body) {
 }
 const TIER_L = { site: '官网', docs: '官方文档', official: '官方账号', staff: '员工账号', media: '媒体 / 社区转述', tested: '管理员实测（我亲自领到过）' };
 const EX_L = [['benefit', '权益'], ['eligibility', '资格'], ['claim', '领取方式'], ['validity', '有效期']];
-const RC = [['paid_bundle', '付费套餐自带'], ['not_ai', '不是 AI 额度'], ['wrong_platform', '平台归错'], ['duplicate', '重复'], ['expired', '已过期'], ['vague', '额度不明'], ['wrong_type', '分类错']];
-const FIELD_L = { models: '免费模型', title: '标题', type: '类型', valueText: '额度', usdEstimate: '折合美元', claimStart: '开始', claimEnd: '截止', endKind: '截止方式', creditValidity: '有效期', audience: '适用对象', requirements: '门槛', modalities: '模态', platformId: '平台', sourceTz: '时区', claimMethod: '领取方式' };
+const TAG_L = { reset: '额度重置', referral: '邀请奖励', discount: '首月 / 限时折扣', daily: '每日刷新' }; // 与 src/shared/spec.ts TAGS 一致
+/** 上架前检查：服务器按 src/shared/spec.ts 算好，这里只负责显示。 */
+function checksBlock(o) {
+  const main = (o.checks || []).filter(i => i.level !== 'info'), info = (o.checks || []).filter(i => i.level === 'info');
+  const line = i => `<div class="orow" style="grid-template-columns:auto minmax(0,1fr);padding:5px 2px">${i.level === 'block' ? stBadge('critical', '✕', '必须补') : stBadge('warn', '!', '建议补')}<span class="t" style="font-weight:400;font-size:13px">${esc(i.label)}：${esc(i.problem)}<small>影响：${esc(i.sections.join('、'))}</small></span></div>`;
+  return `<div class="card" style="padding:8px 10px;background:var(--surface-2)"><div class="small" style="font-weight:600;margin-bottom:2px">上架前检查</div>${main.length ? `<div class="rows">${main.map(line).join('')}</div>` : '<div class="small" style="color:var(--good-ink)">✓ 字段齐全，网站所有栏目和推送都能正确显示</div>'}${info.length ? `<div class="small muted" style="margin-top:4px">可选：${info.map(i => esc(i.label)).join('、')}</div>` : ''}</div>`;
+}
+const RC = [['paid_bundle', '付费套餐自带'], ['not_ai', '不是 AI 额度'], ['wrong_platform', '平台归错'], ['duplicate', '重复'], ['expired', '旧活动 · 日期查不到'], ['vague', '额度不明'], ['wrong_type', '分类错']];
+const FIELD_L = { models: '免费模型', tags: '标签', publishedAt: '发布时间', usdMax: '价值上限', steps: '领取步骤', sourceTz: '官方时区', modalities: '模态', title: '标题', type: '类型', valueText: '额度', usdEstimate: '折合美元', claimStart: '开始', claimEnd: '截止', endKind: '截止方式', creditValidity: '有效期', audience: '适用对象', requirements: '门槛', modalities: '模态', platformId: '平台', sourceTz: '时区', claimMethod: '领取方式' };
 function pAdmin() {
   if (!ADM.token) {
     main().innerHTML = ribbon() + ph('后台', '用管理员密钥登录。刷新页面不用重新输入，关掉标签页后需要重新登录；勾选“记住”则一直保留，直到退出登录。') + `
@@ -1147,20 +1205,30 @@ function pAdmin() {
 async function admQueue() {
   const q = await adm('/queue');
   const box = $('#admBody');
- const card = o => `<article class="card" data-code="${o.code}" data-type="${esc(o.type)}" style="display:flex;flex-direction:column;gap:10px">
+  // live：已上架的条目（字段待补），只显示修改，不显示通过和拒绝
+  const card = (o, live = false) => `<article class="card" data-code="${o.code}" data-type="${esc(o.type)}" style="display:flex;flex-direction:column;gap:10px">
     <div class="row" style="justify-content:space-between"><span class="row" style="gap:8px">${TYPES[Object.keys(TYPES).find(k => TYPES[k].l === o.type)] ? etag(Object.keys(TYPES).find(k => TYPES[k].l === o.type)) : esc(o.type)}<span class="chip">${esc(o.platform)}</span><span class="st ${o.evidenceTier === 'media' ? 'warn' : 'good'}"><b>${o.evidenceTier === 'media' ? '!' : '✓'}</b>${TIER_L[o.evidenceTier] || o.evidenceTier}</span>${o.pendingUpdate ? '<span class="st warn"><b>!</b>条款更新待审，旧版仍公开</span>' : ''}${o.status === 'ended' ? '<span class="st"><b>⌛</b>已结束，通过后计入历史</span>' : ''}</span><span class="small muted num">${esc(o.code)}</span></div>
     <div><div style="font-weight:600;font-size:16px">${esc(o.title)}</div><div class="${/未写明|不明确/.test(o.value) ? 'warn-note' : ''}" style="margin-top:4px">${esc(o.value)}</div><div class="small muted" style="margin-top:4px">${esc(o.end)} · 额度有效期：${esc(o.creditValidity || '未写')} · 门槛：${o.requirements.map(r => esc(reqLabel(r))).join('、')} · 对象：${AUD[o.audience] || o.audience}</div></div>
+    ${checksBlock(o)}
     <div class="rows">${EX_L.filter(([k]) => k !== 'claim' || o.excerpts[k]).map(([k, l]) => `<div class="orow" style="grid-template-columns:auto minmax(0,1fr);padding:6px 2px">${o.excerpts[k] ? `<span class="st good"><b>✓</b>${l}</span>` : `<span class="st warn"><b>!</b>${l}</span>`}<span class="t" style="font-weight:400;font-size:13.5px">${o.excerpts[k] ? '「' + esc(o.excerpts[k]) + '」' : '原文里没有找到'}</span></div>`).join('')}</div>
     <div class="small" style="word-break:break-all">来源：<a href="${esc(o.evidenceUrl)}" target="_blank" rel="noopener" style="text-decoration:underline">${esc(o.evidenceUrl)}</a></div>
-    <div class="row">${o.evidenceTier === 'media' ? '<button class="btn sm good" type="button" data-act="tested" title="社区转述、官方没有文字公告，但你亲自领到过">✓ 我已实测，通过</button>' : '<button class="btn sm good" type="button" data-act="approve">✓ 通过</button>'}<button class="btn sm" type="button" data-act="edit">修改</button><button class="btn sm bad" type="button" data-act="rejectopen">✕ 拒绝…</button></div>
+    <div class="row">${live ? '<span class="st good"><b>✓</b>已上架</span><button class="btn sm" type="button" data-act="edit">补字段</button>' : `${(o.checks || []).some(i => i.level === 'block') ? `<button class="btn sm good" type="button" disabled title="先点“修改”补齐标红的字段">${o.evidenceTier === 'media' ? '✓ 我已实测，通过' : '✓ 通过'}</button><span class="small" style="color:var(--critical-ink)">先点“修改”补齐“必须补”的字段</span>` : o.evidenceTier === 'media' ? '<button class="btn sm good" type="button" data-act="tested" title="社区转述、官方没有文字公告，但你亲自领到过">✓ 我已实测，通过</button>' : '<button class="btn sm good" type="button" data-act="approve">✓ 通过</button>'}<button class="btn sm" type="button" data-act="edit">修改</button><button class="btn sm bad" type="button" data-act="rejectopen">✕ 拒绝…</button>`}</div>
     ${o.reviewMemo ? `<details open class="small"><summary style="cursor:pointer;font-weight:600">🔍 核验记录（仅管理员可见）</summary><div style="white-space:pre-wrap;margin-top:6px;color:var(--ink-2)">${esc(o.reviewMemo)}</div></details>` : ''}
     <details><summary class="small" style="cursor:pointer">💬 牧场心得${o.adminNote ? '（已写）' : '（可选，公开显示）'}</summary><div class="row" style="margin-top:6px;align-items:flex-start"><textarea data-note rows="2" maxlength="500" style="flex:1;min-width:160px" placeholder="实际用下来怎么样？比如：免费模型速度慢、容易限流">${esc(o.adminNote || '')}</textarea><button class="btn sm" type="button" data-act="note">保存心得</button></div></details>
     <div data-rejectbox hidden style="display:flex;flex-direction:column;gap:8px">
+      <p class="small muted" style="margin:0">已结束但属实的活动不要拒绝：点“修改”补全开始和截止日期后通过，会进入时间线、日历和羊毛墓场。拒绝的条目只进入“准确率”统计，不出现在任何公开栏目。</p>
       <div class="chips">${RC.map(([k, l]) => `<button class="btn sm" type="button" data-rc="${k}" aria-pressed="false">${l}</button>`).join('')}</div>
       <div class="row"><input type="text" placeholder="补充理由（写清楚，模型以后学得更快）" data-reason style="flex:1;min-width:160px;padding:6px 10px"><button class="btn sm bad" type="button" data-act="reject">确认拒绝</button></div>
     </div>
     <form data-editform hidden class="filters" style="margin:0">
       ${[['title', '标题', o.title], ['valueText', '额度', o.value], ['claimStart', '开始 YYYY-MM-DD', o.claimStart || ''], ['claimEnd', '截止 YYYY-MM-DD', o.claimEnd || ''], ['creditValidity', '额度有效期', o.creditValidity || ''], ['requirements', '门槛（逗号分隔）', o.requirements.join(',')]].map(([k, l, v]) => `<label class="field">${l}<input type="text" name="${k}" value="${esc(v)}"></label>`).join('')}
+      <label class="field">折合美元（下限，可空）<input type="number" step="any" min="0" name="usdEstimate" value="${o.usdEstimate ?? ''}"></label>
+      <label class="field">价值上限（是范围时填，可空）<input type="number" step="any" min="0" name="usdMax" value="${o.usdMax ?? ''}"></label>
+      <label class="field">官方时区<input type="text" name="sourceTz" value="${esc(o.sourceTz || 'UTC')}" placeholder="Asia/Shanghai、America/Los_Angeles、UTC"></label>
+      <label class="field">官方发布时间（可空；额度重置要精确到时刻）<input type="text" name="publishedAt" value="${esc(o.publishedAt || '')}" placeholder="如 2026-07-14T19:34Z"></label>
+      <div class="field" style="grid-column:1/-1">模态<div class="chips">${Object.entries(MODAL).map(([k, l]) => `<label class="chip"><input type="checkbox" name="modalities" value="${k}" ${(o.modalities || []).includes(k) ? 'checked' : ''}> ${l}</label>`).join('')}</div></div>
+      <div class="field" style="grid-column:1/-1">标签<div class="chips">${Object.entries(TAG_L).map(([k, l]) => `<label class="chip"><input type="checkbox" name="tags" value="${k}" ${(o.tags || []).includes(k) ? 'checked' : ''}> ${l}</label>`).join('')}</div></div>
+      <label class="field" style="grid-column:1/-1">领取步骤（一行一步）<textarea name="steps" rows="3">${esc((o.steps || []).join('\n'))}</textarea></label>
       <label class="field" style="grid-column:1/-1">免费模型（逗号分隔，按官方写法；用于“按模型找”）<input type="text" name="models" value="${esc((o.models || []).join('，'))}" placeholder="如：Gemini 3.8 Flash，GLM-4.7-Flash"></label>
       <label class="field" style="grid-column:1/-1">官方证据链接<input type="url" name="evidenceUrl" value="${esc(o.evidenceUrl)}"></label>
       <label class="field">证据级别<select name="evidenceTier">${Object.entries(TIER_L).map(([key, name]) => `<option value="${key}" ${o.evidenceTier === key ? 'selected' : ''}>${name}</option>`).join('')}</select></label>
@@ -1171,17 +1239,18 @@ async function admQueue() {
       <label class="field">平台<select name="platformId">${PLATFORMS.map(p => `<option value="${esc(p.id)}" ${o.platformId === p.id || (!o.platformId && o.platform === p.name) ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select></label>
       <label class="field">适用对象<select name="audience">${Object.entries(AUD).map(([k, l]) => `<option value="${k}" ${o.audience === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
       <label class="field" style="grid-column:1/-1">为什么这样改（可选，但强烈建议写）<input type="text" name="__reason" placeholder="例如：要先付费升级才送，属于充值赠送"></label>
-      <div class="row" style="grid-column:1/-1;align-items:center"><button class="btn sm pri" type="submit">保存并通过</button><span data-formmsg role="alert" class="small" style="font-weight:600"></span></div>
+      <div class="row" style="grid-column:1/-1;align-items:center"><button class="btn sm pri" type="submit">${live ? '保存' : '保存并通过'}</button><span data-formmsg role="alert" class="small" style="font-weight:600"></span></div>
     </form>
   </article>`;
   box.innerHTML = `<p class="small muted">待审 ${q.pending.length} 条 · 新线索 ${q.newLeads} 条</p>
     ${q.pendingPlatforms.length ? `<div class="card" style="margin-bottom:12px"><h3>新平台待准入</h3>${q.pendingPlatforms.map(p => `<div class="row" style="justify-content:space-between;padding:6px 0"><span>${esc(p.name)}（${esc(p.id)}）${p.site ? ` · <a href="${esc(p.site)}" target="_blank" rel="noopener">官网</a>` : ''}</span><span class="row"><button class="btn sm good" data-plat="${p.id}:approve">准入</button><button class="btn sm bad" data-plat="${p.id}:reject">拒绝</button></span></div>`).join('')}</div>` : ''}
     ${q.suggestAutoPublish.map(x => `<div class="card" style="margin-bottom:12px"><span class="st warn"><b>!</b>建议放开</span> 信源 ${esc(x.id)} 已连续原样通过 ${x.cleanStreak} 条 <button class="btn sm" data-autopub="${x.id}">放开自动上架</button></div>`).join('')}
-    ${q.needsVerification?.length ? `<section>${secH('证据待核验', '旧版已退出当前可领；核对官方页面后才能确认结束或恢复')}${q.needsVerification.map(o => `<form class="card" data-withdraw="${esc(o.code)}" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px"><b>${esc(o.title)}</b><a href="${esc(o.evidenceUrl)}" target="_blank" rel="noopener">打开当前证据 ↗</a><label class="field">官方撤回链接<input type="url" name="evidenceUrl" value="${esc(o.evidenceUrl)}" required></label><label class="field">官方撤回说明<input name="reason" required minlength="4" placeholder="请引用官方明确撤回或停止发放的文字"></label><button class="btn sm bad" type="submit">核实后结束</button></form>`).join('')}</section>` : ''}
-    <div class="grid g2">${q.pending.map(card).join('') || emptySheep('待审队列是空的。')}</div>`;
+    ${q.needsVerification?.length ? `<section>${secH('证据待核验', '旧版已退出当前可领；核对官方页面后才能确认结束或恢复')}${q.needsVerification.map(o => `<form class="card" data-withdraw="${esc(o.code)}" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px"><b>${esc(o.title)}</b><a href="${esc(o.evidenceUrl)}" target="_blank" rel="noopener">打开当前证据 ↗</a><label class="field">官方撤回链接<input type="url" name="evidenceUrl" value="${esc(o.evidenceUrl)}" required></label><label class="field">官方撤回说明<input name="reason" required minlength="4" placeholder="请引用官方明确撤回或停止发放的文字"></label><div class="row"><button class="btn sm good" type="button" data-retest="${esc(o.code)}">我核对过，仍有效</button><button class="btn sm bad" type="submit">核实后结束</button></div></form>`).join('')}</section>` : ''}
+    <div class="grid g2">${q.pending.map(o => card(o)).join('') || emptySheep('待审队列是空的。')}</div>
+    ${q.incomplete?.length ? `<section><details><summary style="cursor:pointer">${secH('已上架、字段待补', `${q.incomplete.length} 条：补齐后日历、时间线、按模型找、价值统计等栏目才完整`)}</summary><div class="grid g2">${q.incomplete.map(o => card(o, true)).join('')}</div></details></section>` : ''}`;
   const done = (el, msg) => { el.style.opacity = .45; el.querySelectorAll('button,input,select').forEach(x => { x.disabled = true; }); toast(msg); };
   $$('[data-code]', box).forEach(el => {
-    const code = el.dataset.code, o = q.pending.find(x => x.code === code);
+    const code = el.dataset.code, o = [...q.pending, ...(q.incomplete || [])].find(x => x.code === code);
     // 失败原因显示在按钮旁边，不只在顶部闪一下
     const actMsg = (msg, bad = true) => { let m = el.querySelector('[data-actmsg]'); if (!m) { m = document.createElement('p'); m.dataset.actmsg = ''; m.className = 'small'; m.style.cssText = 'margin:0;font-weight:600'; el.querySelector('[data-act]').closest('.row').after(m); } m.style.color = bad ? 'var(--critical-ink)' : ''; m.textContent = msg; };
     el.querySelector('[data-act="approve"]')?.addEventListener('click', async () => { try { const r = await adm(`/offers/${code}/approve`, {}); done(el, `已通过：${r.title}`); } catch (e) { actMsg('没有通过：' + e.message); } });
@@ -1192,12 +1261,12 @@ async function admQueue() {
         done(el, `已按管理员实测通过：${o.title}`);
       } catch (e) { actMsg('没有通过：' + e.message); }
     });
-    el.querySelector('[data-act="note"]').addEventListener('click', async () => { try { await adm(`/offers/${code}/note`, { note: el.querySelector('[data-note]').value }); toast('心得已保存'); } catch (e) { toast('没有保存：' + e.message); } });
+    el.querySelector('[data-act="note"]')?.addEventListener('click', async () => { try { await adm(`/offers/${code}/note`, { note: el.querySelector('[data-note]').value }); toast('心得已保存'); } catch (e) { toast('没有保存：' + e.message); } });
     const rb = el.querySelector('[data-rejectbox]');
-    el.querySelector('[data-act="rejectopen"]').addEventListener('click', () => { rb.hidden = !rb.hidden; });
+    el.querySelector('[data-act="rejectopen"]')?.addEventListener('click', () => { rb.hidden = !rb.hidden; });
     let rc = null;
     rb.querySelectorAll('[data-rc]').forEach(b => b.addEventListener('click', () => { rc = rc === b.dataset.rc ? null : b.dataset.rc; rb.querySelectorAll('[data-rc]').forEach(x => x.setAttribute('aria-pressed', x.dataset.rc === rc)); }));
-    el.querySelector('[data-act="reject"]').addEventListener('click', async () => {
+    el.querySelector('[data-act="reject"]')?.addEventListener('click', async () => {
       const reason = el.querySelector('[data-reason]').value.trim();
       if (!rc && !reason) { toast('选一个理由或写一句说明，模型才能从这次拒绝里学到东西'); return; }
       try { const r = await adm(`/offers/${code}/reject`, { reason: reason || undefined, reasonCode: rc || 'other' }); done(el, `已拒绝：${r.title}`); } catch (e) { toast(e.message); }
@@ -1212,7 +1281,14 @@ async function admQueue() {
       const newEvidence = { url: String(fd.evidenceUrl).trim(), tier: String(fd.evidenceTier), capturedAt: new Date().toISOString(), excerpts: {} };
       for (const [key] of EX_L) { newEvidence.excerpts[key] = String(fd[`excerpt_${key}`] || '').trim(); delete fd[`excerpt_${key}`]; }
       delete fd.evidenceUrl; delete fd.evidenceTier;
-      const fields = { ...fd, requirements: String(fd.requirements).split(/[,，]/).map(x => x.trim()).filter(Boolean), models: [...new Set(String(fd.models || '').split(/[,，、;；]/).map(x => x.trim()).filter(Boolean))] };
+      const num = v => (String(v ?? '').trim() === '' ? null : Number(v));
+      const checked = name => [...form.querySelectorAll(`input[name="${name}"]:checked`)].map(x => x.value);
+      const pub = String(fd.publishedAt || '').trim();
+      if (pub && Number.isNaN(Date.parse(pub))) throw new Error('官方发布时间格式不对，例：2026-07-14T19:34Z');
+      if (!checked('modalities').length) throw new Error('至少选一个模态');
+      const fields = { ...fd, requirements: String(fd.requirements).split(/[,，]/).map(x => x.trim()).filter(Boolean), models: [...new Set(String(fd.models || '').split(/[,，、;；]/).map(x => x.trim()).filter(Boolean))],
+        usdEstimate: num(fd.usdEstimate), usdMax: num(fd.usdMax), modalities: checked('modalities'), tags: checked('tags'), publishedAt: pub ? new Date(pub).toISOString() : null,
+        steps: String(fd.steps || '').split('\n').map(x => x.trim()).filter(Boolean).slice(0, 10), sourceTz: String(fd.sourceTz || 'UTC').trim() };
       if (newEvidence.url !== o.evidenceUrl || newEvidence.tier !== o.evidenceTier || EX_L.some(([key]) => newEvidence.excerpts[key] !== (o.excerpts[key] || ''))) fields.evidence = newEvidence;
       ['claimStart', 'claimEnd', 'creditValidity'].forEach(k => { if (!fields[k]) fields[k] = null; });
       const r = await adm(`/offers/${code}/edit`, { fields, approve: true, reason: reason || undefined, reasonCode: fields.type !== undefined && Object.keys(TYPES).find(k => TYPES[k].l === el.dataset.type) !== fields.type ? 'wrong_type' : 'wrong_field' }); done(el, r.changed.length ? `已修改 ${r.changed.map(f => FIELD_L[f] || f).join('、')} 并通过` : '没有改动，已通过');
@@ -1222,6 +1298,7 @@ async function admQueue() {
   });
   $$('[data-plat]', box).forEach(b => b.addEventListener('click', async () => { const [id, act] = b.dataset.plat.split(':'); await adm(`/platforms/${id}/${act}`, {}); toast('已处理'); admQueue(); }));
   $$('[data-autopub]', box).forEach(b => b.addEventListener('click', async () => { await adm(`/sources/${b.dataset.autopub}/auto-publish`, { on: true }); toast('已放开自动上架'); admQueue(); }));
+  $$('[data-retest]', box).forEach(b => b.addEventListener('click', async () => { try { await adm(`/offers/${b.dataset.retest}/retested`, {}); toast('已记录：管理员核对仍有效'); admQueue(); } catch (err) { toast(err.message); } }));
   $$('[data-withdraw]', box).forEach(form => form.addEventListener('submit', async e => { e.preventDefault(); const values = Object.fromEntries(new FormData(form)); try { await adm(`/offers/${form.dataset.withdraw}/withdraw`, values); toast('已记录官方撤回并结束活动'); admQueue(); } catch (err) { toast(err.message); } }));
 }
 async function admQuality() {

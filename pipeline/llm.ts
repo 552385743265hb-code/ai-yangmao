@@ -10,6 +10,8 @@ export interface Extracted {
   type: 'new' | 'free' | 'perk' | 'topup' | 'gift' | 'standing' | 'apply';
   modalities: string[];
   models?: string[];
+  tags?: string[];
+  publishedAt?: string | null;
   claimMethod: string;
   requirements: string[];
   audience: 'new' | 'old' | 'all' | 'unclear';
@@ -39,9 +41,13 @@ const PROMPT = `你是"AI 羊毛牧场"的信息抽取器。下面是某个 AI �
 - title：中文标题，20 字以内，保留原始品牌和权益名称
 - type：new 注册新人礼（只给新注册的账号）/ trial 应用尝鲜（首次使用某个应用、客户端或新功能就送，新老用户都能领，如“首次登录桌面端送 6 元”）/ free 限时免费开放 / perk 会员福利（重置、加赠）/ topup 充值赠送 / gift 会员免费送 / standing 常驻免费额度 / apply 申请制
 - modalities：text / code / image / video / audio 的子集（3D 模型生成算 image）
+- tags：从 reset（额度重置）/ referral（邀请奖励）/ discount（首月或限时折扣）/ daily（每日刷新或每日登录送）里选适用的，可多选，没有就空数组
+- claimStart / claimEnd 务必尽量填：原文写了活动时间就照写；只写了“发布即开始”的，用发布日期当 claimStart。已经结束的活动也要写准起止日期（会作为历史数据进入时间线、日历和羊毛墓场）
+- publishedAt：官方发布这条活动的时间，ISO 格式，能精确到时刻就精确到时刻（推文、公告时间），不知道就 null；额度重置一定要填
 - models：这条福利里能免费用的具体模型名，按官方写法逐个列出（如 ["Gemini 3.8 Flash", "GLM-4.7-Flash", "Big Pickle"]）；只是平台通用额度、没点名具体模型就给空数组。不要写“等”“系列”这类泛称
 - claimMethod：auto / signup / app（下载应用并登录，含 App、桌面端、命令行工具）/ form / topup / member / code。官方一般不专门写怎么领，按常识推断：应用的福利＝下载应用并登录（app）；云厂商或模型的福利＝开通并使用服务（signup 或 auto）；会员的福利＝充值开会员（member 或 topup）
 - requirements：none / unknown（官方条件未明确）/ phone（海外手机号）/ card（海外信用卡）/ net（海外网络）/ realname / biz / student / invite / targeted / "pay:金额" / "member:会员名"
+  - 门槛写法：原文说人人可用、注册即可、免费版直接用，就写 ["none"]；需要付费订阅写 member:套餐名；只有原文完全没提谁能领、也没法从产品形态判断时才写 unknown（unknown 的条目审核时会被拦下，必须人工补）
 - audience：new / old / all / unclear（原文没写清楚就用 unclear）
 - valueText：必须写出具体数量和单位（如"每天 1000 次请求""新用户 2000 万 tokens""6 元赠金""$5/月"），数字从原文来。原文没有给出任何具体数量时，写"官方未写明具体额度："加原文说法。原文写了能用哪些模型（包括脚注、常见问题里的说明），要把模型名写进 valueText，如"每月 50 credits，可用 Claude Sonnet 4.5 及开源模型 Qwen3 Coder Next、DeepSeek 3.2"；写了速率限制或只能在某个客户端使用，也一并写上
 - usdEstimate：折合美元（常驻额度按每月）。平台自有单位（credits、Neurons、Token、次数等）必须用同一平台官方公布的单价折算成美元，人民币按 7.1 折算；valueText 里在原单位后面括号写出折算依据，如"每天 10,000 Neurons（官方单价 $0.011/千 Neurons，约 $3.3/月）"。按 Token 折算时用官方输入价保守估算。只限速率的免费模型：按主力模型（该额度里最好的那个，如 Gemini 3.8 Flash）的官方输入价，乘以官方速率上限推出的每月最多 Token：每天最多 Token = min（每天请求数 × 单次最多 Token，每分钟 Token 数 × 1440），再 × 30。官方没公开速率上限就填 null，不要自己假设次数或每次 Token 数。价值有明显区间时（如分套餐档位、订阅价到最高额度）usdEstimate 填保守下限，usdMax 填上限。实在找不到任何官方单价才用 null，不要编单价
@@ -226,6 +232,8 @@ export function tidy(o: Extracted): Extracted {
     // 模型偶尔只写 member / pay 不带内容，补成可读的占位，交给审核时修正
     requirements: normalizeRequirements(o.requirements),
     // 模型名里有空格（如 Gemini 3.8 Flash），字符串只按逗号、顿号、分号拆
+    tags: [...new Set(toList(o.tags ?? []).map(x => x.toLowerCase()).filter(x => ['reset', 'referral', 'discount', 'daily'].includes(x)))],
+    publishedAt: typeof o.publishedAt === 'string' && !Number.isNaN(Date.parse(o.publishedAt)) ? new Date(o.publishedAt).toISOString() : null,
     models: [...new Set((Array.isArray(o.models) ? o.models.map(String) : typeof o.models === 'string' ? (o.models as string).split(/[,，、;；]+/) : []).map(x => x.trim()).filter(x => x && x.length <= 80 && !/^(等|系列|and more|etc\.?)$/i.test(x)))].slice(0, 80),
     steps: toList(o.steps).length && Array.isArray(o.steps) ? o.steps : typeof o.steps === 'string' ? [o.steps] : [],
     usdEstimate: typeof o.usdEstimate === 'number' ? o.usdEstimate : Number(o.usdEstimate) || null,

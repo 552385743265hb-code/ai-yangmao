@@ -7,6 +7,7 @@ import { z } from 'zod';
 import * as s from '../db/schema';
 import { claimEndAt, isClaimable, liveStatus, missingEvidence } from '../shared/lifecycle';
 import { offerIn } from '../shared/ingest';
+import { SECTIONS, blocking, checkOffer } from '../shared/spec';
 import type { Env } from './index';
 
 type OfferRow = typeof s.offers.$inferSelect;
@@ -30,7 +31,9 @@ function view(o: OfferRow, platformName: string, now = new Date()) {
     requirements: o.requirements, audience: o.audience, claimMethod: o.claimMethod, creditValidity: o.creditValidity,
     sourceTz: o.sourceTz, claimStart: o.claimStart, claimEnd: o.claimEnd, endKind: o.endKind,
     evidenceUrl: o.evidence.url, evidenceTier: o.evidence.tier, excerpts: o.evidence.excerpts, missingEvidence: missingEvidence(o.evidence.excerpts),
-    steps: o.steps, models: o.models ?? [], modalities: o.modalities, usdEstimate: o.usdEstimate, usdMax: o.usdMax ?? null, adminNote: o.adminNote ?? null, reviewMemo: o.reviewMemo ?? null,
+    steps: o.steps, models: o.models ?? [], tags: o.tags ?? [], publishedAt: o.publishedAt ?? null, modalities: o.modalities, usdEstimate: o.usdEstimate, usdMax: o.usdMax ?? null, adminNote: o.adminNote ?? null, reviewMemo: o.reviewMemo ?? null,
+    // 上架前检查：缺了哪些字段、影响哪些栏目（规格见 src/shared/spec.ts）
+    checks: checkOffer(o, now).map(i => ({ ...i, sections: i.sections.map(k => SECTIONS[k]) })),
     link: `https://ai-yangmao.com/#offer-${o.id}`,
   };
 }
@@ -80,7 +83,8 @@ async function publicationError(env: Env, offer: OfferRow): Promise<string | nul
   const [platform] = await db(env).select().from(s.platforms).where(eq(s.platforms.id, offer.platformId));
   if (!platform || platform.status !== 'approved') return '平台尚未准入';
   if (offer.evidence.tier === 'media') return '媒体或社区转述不能作为上架证据，请先补齐官方出处';
-  if (offer.requirements.includes('unknown')) return '领取门槛尚未明确，先核对官方原文';
+  const block = blocking(checkOffer(offer));
+  if (block.length) return block.map(i => `${i.label}：${i.problem}`).join('；');
   // 不检查原文摘录：摘录门槛是防模型编造的（自动上架仍要求三项齐全，见 missingEvidence）。
   // 管理员人工核对过官方页面，内容可能来自图片、视频等模型读不到的地方，以管理员为准（2026-09-30 管理员决定）。
   let url: URL;
@@ -123,8 +127,10 @@ admin.get('/queue', async c => {
   const pendingPlatforms = await d.select().from(s.platforms).where(eq(s.platforms.status, 'pending'));
   const suggest = (await d.select().from(s.sources).where(and(gte(s.sources.cleanStreak, 5), eq(s.sources.autoPublish, false))))
     .filter(source => source.enabled && ['site', 'docs', 'official'].includes(source.tier));
-  const needsVerification = (await d.select().from(s.offers).where(eq(s.offers.reviewState, 'approved')))
-    .filter(o => liveStatus(o, now) === 'stale');
+  const approvedRows = await d.select().from(s.offers).where(eq(s.offers.reviewState, 'approved'));
+  const needsVerification = approvedRows.filter(o => liveStatus(o, now) === 'stale');
+  // 已上架但字段不全：和待审用同一份检查，补齐后各栏目才完整
+  const incomplete = approvedRows.filter(o => checkOffer(o, now).some(i => i.level !== 'info'));
   return c.json({
     pending: [
       ...pending.map(queueView),
@@ -133,7 +139,7 @@ admin.get('/queue', async c => {
         return original ? [{ ...queueView({ ...original, ...p.candidate } as OfferRow), pendingUpdate: true, changedFields: p.diff.map(x => x.field) }] : [];
       }),
     ],
-    newLeads, needsVerification: needsVerification.map(queueView), pendingPlatforms: pendingPlatforms.map(p => ({ id: p.id, name: p.name, type: p.type, site: p.site })),
+    newLeads, needsVerification: needsVerification.map(queueView), incomplete: incomplete.map(queueView), pendingPlatforms: pendingPlatforms.map(p => ({ id: p.id, name: p.name, type: p.type, site: p.site })),
     suggestAutoPublish: suggest.map(x => ({ id: x.id, platformId: x.platformId, url: x.url, cleanStreak: x.cleanStreak })),
   });
 });
@@ -207,7 +213,7 @@ admin.post('/offers/:ref/:action{approve|reject}', async c => {
 });
 
 /** 补丁只允许编辑业务字段；补丁合并后仍由 offerIn 校验完整活动。 */
-const EDITABLE_FIELDS = new Set(['title', 'type', 'valueText', 'usdEstimate', 'usdMax', 'models', 'claimStart', 'claimEnd', 'endKind', 'creditValidity',
+const EDITABLE_FIELDS = new Set(['title', 'type', 'valueText', 'usdEstimate', 'usdMax', 'models', 'tags', 'claimStart', 'claimEnd', 'endKind', 'creditValidity',
   'audience', 'requirements', 'modalities', 'platformId', 'sourceTz', 'claimMethod', 'steps', 'evidence', 'publishedAt', 'sourceId']);
 admin.post('/offers/:ref/edit', async c => {
   const o = await findOffer(c.env, c.req.param('ref'));
@@ -253,6 +259,15 @@ admin.post('/offers/:ref/edit', async c => {
   await d.insert(s.reviews).values({ offerId: o.id, action: 'edit', editedFields: diff.map(x => x.field), reviewer: 'admin', reason: body?.reason ?? null, reasonCode: body?.reasonCode ?? 'wrong_field' });
   if (o.sourceId && diff.length) await d.update(s.sources).set({ cleanStreak: 0 }).where(eq(s.sources.id, o.sourceId));
   return c.json({ ok: true, code: shortCode(o.id), changed: diff.map(x => x.field), approved: !!body?.approve });
+});
+
+/** 管理员复测仍有效：更新最近核验时间（管理员实测的条目没有可自动复核的页面，靠这个保持有效）。 */
+admin.post('/offers/:ref/retested', async c => {
+  const o = await findOffer(c.env, c.req.param('ref'));
+  if (!o) return c.json({ error: '找不到这条羊毛' }, 404);
+  const at = new Date().toISOString();
+  await db(c.env).update(s.offers).set({ lastVerifiedAt: at, verifyResult: '管理员复测仍有效', updatedAt: at }).where(eq(s.offers.id, o.id));
+  return c.json({ ok: true, code: shortCode(o.id), lastVerifiedAt: at, status: liveStatus({ ...o, lastVerifiedAt: at, verifyResult: '管理员复测仍有效' }) });
 });
 
 /** 内部核验记录：只给管理员看，不公开、不触发审核。 */
@@ -331,7 +346,7 @@ type NoticeKind = 'digest' | 'urgent';
 type NoticeChannel = 'telegram' | 'feishu';
 type NoticeStage = 'new' | 'changed' | 'ending' | 'ended' | 'urgent';
 type NoticeMark = { offerId: string; stage: NoticeStage; messageId?: string };
-const FIELD_NAME: Record<string, string> = { title: '标题', type: '类型', modalities: '模态', claimMethod: '领取方式', requirements: '门槛', audience: '适用对象', valueText: '额度', usdEstimate: '价值估算', usdMax: '价值上限', models: '免费模型', claimStart: '领取开始', claimEnd: '领取截止', endKind: '截止方式', creditValidity: '额度有效期', sourceTz: '官方时区', steps: '领取步骤', evidence: '官方证据' };
+const FIELD_NAME: Record<string, string> = { title: '标题', type: '类型', modalities: '模态', claimMethod: '领取方式', requirements: '门槛', audience: '适用对象', valueText: '额度', usdEstimate: '价值估算', usdMax: '价值上限', models: '免费模型', tags: '标签', publishedAt: '发布时间', claimStart: '领取开始', claimEnd: '领取截止', endKind: '截止方式', creditValidity: '额度有效期', sourceTz: '官方时区', steps: '领取步骤', evidence: '官方证据' };
 const showValue = (value: unknown) => value == null ? '未写明' : Array.isArray(value) ? value.join('、') : typeof value === 'object' ? '已更新' : String(value);
 
 export async function buildNotice(env: Env, kind: NoticeKind, channel: NoticeChannel) {
@@ -363,7 +378,8 @@ export async function buildNotice(env: Env, kind: NoticeKind, channel: NoticeCha
       marks.push({ offerId: o.id, stage: 'changed', messageId: String(lastRev.id) });
     }
     if (st === 'ending' && !has(o.id, 'ending') && !has(o.id, 'urgent')) { out.ending.push(v); marks.push({ offerId: o.id, stage: 'ending' }); }
-    if (st === 'ended' && !has(o.id, 'ended') && (!end || now.getTime() - end.getTime() < 7 * 86400_000)) { out.ended.push(v); marks.push({ offerId: o.id, stage: 'ended' }); }
+    // 只通知推送过“上架”的条目；作为历史数据补录的已结束活动不推送
+    if (st === 'ended' && !has(o.id, 'ended') && (has(o.id, 'new') || has(o.id, 'urgent')) && (!end || now.getTime() - end.getTime() < 7 * 86400_000)) { out.ended.push(v); marks.push({ offerId: o.id, stage: 'ended' }); }
   }
   const inFlight = (await d.select({ payload: s.deliveries.payload, channel: s.deliveries.channel, status: s.deliveries.status }).from(s.deliveries)
     .where(inArray(s.deliveries.status, ['pending', 'unknown']))).filter(delivery => delivery.channel === channel);

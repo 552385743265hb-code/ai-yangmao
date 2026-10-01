@@ -71,6 +71,13 @@
       "when": 1790813373441,
       "tag": "0009_offer_models",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1790814381690,
+      "tag": "0010_offer_tags",
+      "breakpoints": true
     }
   ]
 }
