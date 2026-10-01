@@ -22,7 +22,7 @@ const REQ: Record<string, string> = {
 const reqText = (r: string) => (r.startsWith('pay:') ? `需充值（${r.slice(4)}）` : r.startsWith('member:') ? `需会员（${r.slice(7)}）` : REQ[r] ?? r);
 const AUD: Record<string, string> = { new: '新用户', old: '老用户', all: '所有用户', unclear: '官方未写明适用对象' };
 const CLAIM: Record<string, string> = { auto: '自动到账，无需操作', signup: '注册即送', app: '下载应用并登录（App / 桌面端 / 命令行工具）', form: '邮件或表单申请', topup: '充值后赠送', member: '会员自动生效', code: '兑换码 / 邀请链接' };
-const MODAL: Record<string, string> = { text: '文本', code: '编程', image: '图像', video: '视频', audio: '音乐·语音' };
+const MODAL: Record<string, string> = { text: '文本·编程', code: '文本·编程', image: '图像', video: '视频', audio: '音乐·语音' };
 const TIER: Record<string, string> = { site: '官网', docs: '官方文档', official: '官方账号', staff: '官方员工账号', media: '媒体 / 社区转述，请以官方为准', tested: '管理员亲测可领（官方未公开发布文字公告）' };
 const TZ: Record<string, string> = { 'Asia/Shanghai': '北京时间', 'America/Los_Angeles': '美西时间', 'America/New_York': '美东时间', UTC: 'UTC', 'Asia/Tokyo': '东京时间' };
 

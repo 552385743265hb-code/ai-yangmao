@@ -14,7 +14,7 @@ const TYPES = {
   standing: { l: '常驻免费额度', slot: 6 },
   apply:    { l: '申请制',       slot: 7 },
 };
-const MODAL = { text: '文本', code: '编程', image: '图像', video: '视频', audio: '音乐·语音' };
+const MODAL = { text: '文本·编程', image: '图像', video: '视频', audio: '音乐·语音' };
 const CLAIM = { auto: '自动到账', signup: '注册即送', app: '下载应用并登录', form: '邮件或表单申请', topup: '充值触发', member: '会员自动生效', code: '兑换码' };
 const REQ = {
   none: '零门槛', unknown: '领取条件待确认', pay: '需充值', member: '需会员', phone: '需海外手机号', card: '需海外信用卡', net: '需海外网络',
@@ -52,7 +52,7 @@ async function loadData() {
   OFFERS = of.offers.map(o => {
     const overseas = o.requirements.some(r => ['phone', 'card', 'net'].includes(r.split(':')[0]));
     return {
-      id: o.id, p: o.platformId, t: o.title, ty: o.type, m: o.modalities, c: o.claimMethod, r: o.requirements.length ? o.requirements : ['none'],
+      id: o.id, p: o.platformId, t: o.title, ty: o.type, m: [...new Set(o.modalities.map(x => x === 'code' ? 'text' : x))], c: o.claimMethod, r: o.requirements.length ? o.requirements : ['none'],
       v: o.valueText, usd: o.usdEstimate ?? 0, usdMax: o.usdMax ?? null, noUsd: o.usdEstimate == null,
       s: rel(o.claimStart), e: o.endKind === 'date' ? rel(o.claimEnd) : null, ek: o.endKind,
       vf: o.lastVerifiedAt ? -(now - Date.parse(o.lastVerifiedAt)) / DAYMS : -99,

@@ -22,7 +22,8 @@ export const offerIn = z.object({
   sourceId: z.string().optional(),
   title: z.string().min(2).max(120),
   type: z.enum(OFFER_TYPES),
-  modalities: z.array(z.enum(['text', 'code', 'image', 'video', 'audio'])).min(1),
+  // 文本和编程不再区分（2026-10-01）：旧值 code 并入 text
+  modalities: z.array(z.enum(['text', 'code', 'image', 'video', 'audio'])).min(1).transform(m => [...new Set(m.map(x => (x === 'code' ? 'text' : x)))] as ('text' | 'image' | 'video' | 'audio')[]),
   tags: z.array(z.enum(['reset', 'referral', 'discount', 'daily'])).max(8).default([]),
   // 免费可用的具体模型名（官方写法），没有就空数组
   models: z.array(z.string().trim().min(1).max(80)).max(80).default([]),

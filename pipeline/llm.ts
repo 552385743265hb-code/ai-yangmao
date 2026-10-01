@@ -40,7 +40,7 @@ const PROMPT = `你是"AI 羊毛牧场"的信息抽取器。下面是某个 AI �
 - key：稳定的英文短标识，只描述"产品+权益"，不含日期，例如 gemini-api-free-tier
 - title：中文标题，20 字以内，保留原始品牌和权益名称
 - type：new 注册新人礼（只给新注册的账号）/ trial 应用尝鲜（首次使用某个应用、客户端或新功能就送，新老用户都能领，如“首次登录桌面端送 6 元”）/ free 限时免费开放 / perk 会员福利（重置、加赠）/ topup 充值赠送 / gift 会员免费送 / standing 常驻免费额度 / apply 申请制
-- modalities：text / code / image / video / audio 的子集（3D 模型生成算 image）
+- modalities：text / image / video / audio 的子集（文本和编程都算 text；3D 模型生成算 image）
 - tags：从 reset（额度重置）/ referral（邀请奖励）/ discount（首月或限时折扣）/ daily（每日刷新或每日登录送）里选适用的，可多选，没有就空数组
 - claimStart / claimEnd 务必尽量填：原文写了活动时间就照写；只写了“发布即开始”的，用发布日期当 claimStart。已经结束的活动也要写准起止日期（会作为历史数据进入时间线、日历和羊毛墓场）
 - publishedAt：官方发布这条活动的时间，ISO 格式，能精确到时刻就精确到时刻（推文、公告时间），不知道就 null；额度重置一定要填
@@ -228,7 +228,7 @@ export function tidy(o: Extracted): Extracted {
     // 类型和截止方式要配套：常驻/申请制一定是 standing；其他类型没截止日期时算"截止未知"
     endKind: (['standing', 'apply'].includes(type) ? 'standing' : low(o.endKind) === 'date' && claimEnd ? 'date' : 'unknown') as Extracted['endKind'],
     // 模态只认五种；3D 生成归到图像，其他不认识的去掉，全去掉了按文本。之前模型写了“3d”整条被丢（2026-10-01 Meshy）
-    modalities: (() => { const m = [...new Set(toList(o.modalities).map(x => x.toLowerCase()).map(x => (/^3d|3d$|mesh|model3d/.test(x) ? 'image' : x)).filter(x => ['text', 'code', 'image', 'video', 'audio'].includes(x)))]; return m.length ? m : ['text']; })(),
+    modalities: (() => { const m = [...new Set(toList(o.modalities).map(x => x.toLowerCase()).map(x => (/^3d|3d$|mesh|model3d/.test(x) ? 'image' : x === 'code' ? 'text' : x)).filter(x => ['text', 'image', 'video', 'audio'].includes(x)))]; return m.length ? m : ['text']; })(),
     // 模型偶尔只写 member / pay 不带内容，补成可读的占位，交给审核时修正
     requirements: normalizeRequirements(o.requirements),
     // 模型名里有空格（如 Gemini 3.8 Flash），字符串只按逗号、顿号、分号拆
