@@ -1,3 +1,4 @@
+import { isReviewField, reviewChanges } from '../shared/spec';
 // Cloudflare Worker 入口：/api/* 走这里，其余由静态资源（网站页面）处理。
 import { and, desc, eq, gte, inArray, sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
@@ -178,7 +179,6 @@ ingest.post('/offers', async c => {
       lastVerifiedAt: nowIso, verifyResult: '官方页面可以打开，已抽取字段', updatedAt: nowIso,
     };
     // 人工改过的字段是已经核准的事实，后续模型提案不得静默覆盖。
-    let protectedEvidenceChanged = false;
     if (prev) {
       const adminRevisions = await d.select({ diff: s.offerRevisions.diff }).from(s.offerRevisions)
         .where(and(eq(s.offerRevisions.offerId, prev.id), eq(s.offerRevisions.author, 'admin')));
@@ -186,8 +186,14 @@ ingest.post('/offers', async c => {
         ...adminRevisions.flatMap(revision => revision.diff.map(change => change.field)),
         ...(existingProposal?.manualFields ?? []),
       ]);
+      const excerptChanged = (['benefit', 'eligibility', 'validity'] as const).some(key => {
+        const before = prev.evidence.excerpts[key]?.replace(/\s+/g, ' ').trim();
+        const after = o.evidence.excerpts[key]?.replace(/\s+/g, ' ').trim();
+        return !!before && !!after && before !== after;
+      });
       for (const field of protectedFields) {
-        if (field === 'evidence' && JSON.stringify(prev.evidence.excerpts) !== JSON.stringify(o.evidence.excerpts)) protectedEvidenceChanged = true;
+        // 有新的条款原文支撑时，人工修正过的必要字段也可提出变化，仍不得直接覆盖。
+        if (prev.reviewState === 'approved' && isReviewField(field) && excerptChanged && !existingProposal?.manualFields.includes(field)) continue;
         if (field in row) (row as Record<string, unknown>)[field] = existingProposal?.manualFields.includes(field)
           ? existingProposal.candidate[field] : (prev as Record<string, unknown>)[field];
       }
@@ -198,15 +204,36 @@ ingest.post('/offers', async c => {
       results.push({ id: o.id, created: true, reviewState: auto ? 'approved' : 'pending', missingEvidence: missing });
       continue;
     }
-    const tracked = ['platformId', 'title', 'type', 'modalities', 'claimMethod', 'requirements', 'audience', 'valueText', 'usdEstimate', 'claimStart', 'claimEnd', 'endKind', 'creditValidity', 'sourceTz', 'publishedAt', 'sourceId', 'steps', 'evidence'] as const;
-    const comparable = (key: string, value: unknown) => key === 'evidence' && value && typeof value === 'object'
-      ? { url: (value as typeof o.evidence).url, tier: (value as typeof o.evidence).tier, excerpts: (value as typeof o.evidence).excerpts } : value ?? null;
-    const diff = tracked.filter(k => JSON.stringify(comparable(k, prev[k])) !== JSON.stringify(comparable(k, row[k]))).map(k => ({ field: k, from: prev[k], to: row[k] }));
+    if (prev.reviewState === 'approved') {
+      // 未抽到的可空字段不是官方取消：保留已审核的值，不制造“丢字段”提案。
+      for (const field of ['usdEstimate', 'usdMax', 'claimStart', 'claimEnd', 'publishedAt'] as const) {
+        if (row[field] == null && prev[field] != null) (row as Record<string, unknown>)[field] = prev[field];
+      }
+      if (!o.claimEnd && o.endKind === 'unknown' && o.type === prev.type && prev.endKind === 'date') row.endKind = prev.endKind;
+      if (row.audience === 'unclear') row.audience = prev.audience;
+      if (row.requirements.includes('unknown')) row.requirements = prev.requirements;
+      row.steps = prev.steps;
+      row.creditValidity = prev.creditValidity;
+      row.sourceId = prev.sourceId;
+      // 新提案也不能因模型漏摘录丢掉已审核证据。
+      if (row.evidence.url === prev.evidence.url) {
+        const excerpts = { ...prev.evidence.excerpts };
+        for (const key of ['benefit', 'eligibility', 'claim', 'validity'] as const) {
+          const quote = row.evidence.excerpts[key];
+          if (quote?.trim()) excerpts[key] = quote;
+        }
+        row.evidence = { ...row.evidence, excerpts };
+      }
+    }
+    const diff = reviewChanges(prev, row);
     if (!diff.length) {
       if (existingProposal) await d.delete(s.offerProposals).where(eq(s.offerProposals.offerId, o.id));
-      await d.update(s.offers).set(protectedEvidenceChanged
-        ? { verifyResult: 'evidence_missing', updatedAt: nowIso }
-        : { lastVerifiedAt: nowIso, verifyResult: '官方页面可以打开，条款没有变化', evidence: row.evidence, updatedAt: nowIso }).where(eq(s.offers.id, o.id));
+      // 只刷新自动核验元数据，保留已审核文案、摘录及可选字段，模型漏摘录不能清空它们。
+      const sameEvidencePage = prev.evidence.url === o.evidence.url && prev.evidence.tier !== 'tested';
+      if (prev.reviewState === 'approved' && sameEvidencePage) {
+        await d.update(s.offers).set({ lastVerifiedAt: nowIso, verifyResult: '必要业务字段没有变化',
+          evidence: { ...prev.evidence, capturedAt: nowIso, pageHash: o.evidence.pageHash ?? prev.evidence.pageHash }, updatedAt: nowIso }).where(eq(s.offers.id, o.id));
+      }
       results.push({ id: o.id, unchanged: true });
       continue;
     }
@@ -214,7 +241,7 @@ ingest.post('/offers', async c => {
       results.push({ id: o.id, unchanged: true, reviewState: 'rejected' });
       continue;
     }
-    if (prev.reviewState === 'approved' && !auto) {
+    if (prev.reviewState === 'approved') {
       // 公开的已审核版本在提案通过前仍保持不变。
       await d.insert(s.offerProposals).values({ offerId: o.id, candidate: row, diff, manualFields: existingProposal?.manualFields ?? [] })
         .onConflictDoUpdate({ target: s.offerProposals.offerId, set: { candidate: row, diff, manualFields: existingProposal?.manualFields ?? [], updatedAt: nowIso } });
@@ -224,9 +251,6 @@ ingest.post('/offers', async c => {
     const reviewState = auto ? 'approved' : 'pending';
     await d.update(s.offers).set({ ...row, reviewState }).where(eq(s.offers.id, o.id));
     if (existingProposal) await d.delete(s.offerProposals).where(eq(s.offerProposals.offerId, o.id));
-    if (prev.reviewState === 'approved') {
-      await d.insert(s.offerRevisions).values({ offerId: o.id, diff, evidenceBefore: prev.evidence, evidenceAfter: row.evidence });
-    }
     results.push({ id: o.id, changed: diff.map(x => x.field), reviewState, missingEvidence: missing });
   }
   return c.json({ results });
@@ -280,13 +304,16 @@ ingest.post('/verify', async c => {
   const current = normalize(body.data.text);
   const quotes = Object.values(o.evidence.excerpts).filter((value): value is string => typeof value === 'string' && !!value.trim());
   const unprocessedChange = !!body.data.pageHash && body.data.pageHash !== o.evidence.pageHash && !body.data.processedChange;
-  const verified = !unprocessedChange && quotes.length > 0 && quotes.every(quote => current.includes(normalize(quote)));
+  const quotesMatch = quotes.length > 0 && quotes.every(quote => current.includes(normalize(quote)));
   const [proposal] = await d.select().from(s.offerProposals).where(eq(s.offerProposals.offerId, o.id));
-  const evidence = body.data.processedChange && body.data.pageHash && !proposal
+  const unchangedTerms = !!body.data.pageHash && body.data.processedChange === true
+    && o.evidence.pageHash === body.data.pageHash && !proposal;
+  const verified = !unprocessedChange && (quotesMatch || unchangedTerms);
+  const evidence = verified && body.data.processedChange && body.data.pageHash && !proposal
     ? { ...o.evidence, pageHash: body.data.pageHash } : o.evidence;
   const nowIso = new Date().toISOString();
   await d.update(s.offers).set(verified
-    ? { lastVerifiedAt: nowIso, verifyResult: '官方证据原文仍在当前页面', evidence, updatedAt: nowIso }
+    ? { lastVerifiedAt: nowIso, verifyResult: unchangedTerms ? '必要业务字段没有变化' : '官方证据原文仍在当前页面', evidence, updatedAt: nowIso }
     : { verifyResult: 'evidence_missing', evidence, updatedAt: nowIso })
     .where(eq(s.offers.id, o.id));
   return c.json({ verified, matchedExcerpts: verified ? quotes.length : 0 });

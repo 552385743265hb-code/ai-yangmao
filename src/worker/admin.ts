@@ -1,3 +1,4 @@
+import { isReviewField } from '../shared/spec';
 // 管理接口（Bearer ADMIN_TOKEN）：审核、编辑、补录、日报、健康检查。
 // 调用方：Hermes Agent 的"AI 羊毛牧场"技能（scripts/ym.ts），以后还有网页后台。
 import { and, desc, eq, gte, inArray, sql } from 'drizzle-orm';
@@ -118,7 +119,8 @@ async function publicationError(env: Env, offer: OfferRow): Promise<string | nul
 admin.get('/queue', async c => {
   const d = db(c.env), names = await platformNames(c.env), now = new Date();
   const pending = await d.select().from(s.offers).where(eq(s.offers.reviewState, 'pending')).orderBy(desc(s.offers.discoveredAt));
-  const proposals = await d.select().from(s.offerProposals).orderBy(desc(s.offerProposals.updatedAt));
+  const proposals = (await d.select().from(s.offerProposals).orderBy(desc(s.offerProposals.updatedAt)))
+    .filter(proposal => proposal.diff.some(change => isReviewField(change.field)));
   const originals = proposals.length ? await d.select().from(s.offers).where(inArray(s.offers.id, proposals.map(p => p.offerId))) : [];
   const codeCounts = new Map<string, number>();
   for (const { id } of await d.select({ id: s.offers.id }).from(s.offers)) codeCounts.set(shortCode(id), (codeCounts.get(shortCode(id)) ?? 0) + 1);
@@ -128,7 +130,8 @@ admin.get('/queue', async c => {
   const suggest = (await d.select().from(s.sources).where(and(gte(s.sources.cleanStreak, 5), eq(s.sources.autoPublish, false))))
     .filter(source => source.enabled && ['site', 'docs', 'official'].includes(source.tier));
   const approvedRows = await d.select().from(s.offers).where(eq(s.offers.reviewState, 'approved'));
-  const needsVerification = approvedRows.filter(o => liveStatus(o, now) === 'stale');
+  // 抓取/证据匹配失败留在健康页自动重试，不转成人工审批任务。
+  const needsVerification: OfferRow[] = [];
   // 已上架但字段不全：和待审用同一份检查，补齐后各栏目才完整
   const incomplete = approvedRows.filter(o => checkOffer(o, now).some(i => i.level !== 'info'));
   return c.json({
@@ -388,9 +391,10 @@ export async function buildNotice(env: Env, kind: NoticeKind, channel: NoticeCha
   marks = marks.filter(mark => !blocked.has(key(mark))).sort((a, b) => key(a).localeCompare(key(b)));
   for (const stage of Object.keys(out) as NoticeStage[]) out[stage] = out[stage].filter(item => marks.some(mark => mark.offerId === item.id && mark.stage === stage));
   const pendingOffers = (await d.select({ n: sql<number>`count(*)` }).from(s.offers).where(eq(s.offers.reviewState, 'pending')))[0].n;
-  const pendingProposals = (await d.select({ n: sql<number>`count(*)` }).from(s.offerProposals))[0].n;
+  const pendingProposals = (await d.select({ diff: s.offerProposals.diff }).from(s.offerProposals))
+    .filter(proposal => proposal.diff.some(change => isReviewField(change.field))).length;
   let pendingCount = pendingOffers + pendingProposals;
-  let needsVerificationCount = approved.filter(o => liveStatus(o, now) === 'stale').length;
+  let needsVerificationCount = 0; // 自动核验故障由健康监控处理，不要求管理员每天确认。
   let suggestAutoPublish = kind === 'digest' && channel === 'telegram'
     ? (await d.select().from(s.sources).where(and(gte(s.sources.cleanStreak, 5), eq(s.sources.autoPublish, false))))
       .filter(source => source.enabled && ['site', 'docs', 'official'].includes(source.tier) && !!source.platformId && approvedPlatforms.has(source.platformId)).map(x => x.id) : [];

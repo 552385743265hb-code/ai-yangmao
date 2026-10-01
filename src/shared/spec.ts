@@ -107,3 +107,22 @@ export function checkOffer(o: SpecInput, now = new Date()): SpecIssue[] {
 }
 
 export const blocking = (issues: SpecIssue[]) => issues.filter(i => i.level === 'block');
+
+/** 已通过条目只有这些业务字段变化才需要复核；见 data-contract.md 第二节。 */
+export const REVIEW_FIELDS = [
+  'platformId', 'title', 'type', 'valueText', 'requirements', 'usdEstimate', 'usdMax',
+  'claimStart', 'claimEnd', 'endKind', 'sourceTz', 'models', 'tags', 'publishedAt',
+  'modalities', 'claimMethod', 'audience',
+] as const;
+export const isReviewField = (field: string) => (REVIEW_FIELDS as readonly string[]).includes(field);
+
+const normalizeReviewValue = (value: unknown): unknown => {
+  if (typeof value === 'string') return value.normalize('NFKC').replace(/\s+/g, ' ').trim();
+  if (Array.isArray(value)) return [...new Set(value.map(normalizeReviewValue))].sort();
+  return value ?? null;
+};
+export function reviewChanges(before: object, after: object) {
+  const previous = before as Record<string, unknown>, next = after as Record<string, unknown>;
+  return REVIEW_FIELDS.filter(field => JSON.stringify(normalizeReviewValue(previous[field])) !== JSON.stringify(normalizeReviewValue(next[field])))
+    .map(field => ({ field, from: previous[field] ?? null, to: next[field] ?? null }));
+}

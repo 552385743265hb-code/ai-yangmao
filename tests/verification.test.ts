@@ -85,8 +85,8 @@ describe('official evidence verification', () => {
     const missing = await call('ingest/verify', { offerId: 'vendor-free', url: evidence.url, text: 'The benefit has been discontinued.' });
     expect(missing.body.verified).toBe(false);
     expect((await call('offers?view=claimable')).body.count).toBe(0);
-    expect((await call('admin/notify?kind=digest', undefined, 'admin')).body).toMatchObject({ needsVerificationCount: 1, empty: false });
-    expect((await call('admin/queue', undefined, 'admin')).body.needsVerification).toHaveLength(1);
+    expect((await call('admin/notify?kind=digest', undefined, 'admin')).body).toMatchObject({ needsVerificationCount: 0 });
+    expect((await call('admin/queue', undefined, 'admin')).body.needsVerification).toHaveLength(0);
     const withdrawn = await call('admin/offers/vendor-free/withdraw', { reason: 'The vendor ended its free allowance', evidenceUrl: 'https://vendor.example/withdrawal' }, 'admin');
     expect(withdrawn.body.status).toBe('ended');
     expect((await call('admin/queue', undefined, 'admin')).body.needsVerification).toHaveLength(0);
@@ -188,17 +188,95 @@ describe('review gates and preserved public version', () => {
     expect(current).toMatchObject({ value_text: '200 tokens', audience: 'old', review_state: 'approved' });
   });
 
-  it('stages evidence-only changes and preserves both evidence versions after approval', async () => {
+  it('does not ask for review when extraction loses evidence or changes optional presentation', async () => {
     await call('ingest/offers', [offer]);
-    const firstApproval = await call('admin/offers/vendor-free/approve', {}, 'admin');
-    expect(firstApproval.status, JSON.stringify(firstApproval.body)).toBe(200);
-    const updatedEvidence = { ...evidence, excerpts: { ...evidence.excerpts, benefit: 'Free 200 tokens' } };
-    const changed = await call('ingest/offers', [{ ...offer, evidence: updatedEvidence }]);
+    await call('admin/offers/vendor-free/approve', {}, 'admin');
+    const changed = await call('ingest/offers', [{ ...offer, sourceId: undefined,
+      steps: ['Open the app'], creditValidity: 'Not stated',
+      evidence: { ...evidence, excerpts: {}, capturedAt: new Date().toISOString() } }]);
+    expect((changed.body.results as { unchanged: boolean }[])[0].unchanged).toBe(true);
+    expect((await call('admin/queue', undefined, 'admin')).body.pending).toEqual([]);
+    const saved = sqlite.prepare("SELECT evidence,verify_result FROM offers WHERE id='vendor-free'").get() as { evidence: string; verify_result: string };
+    expect(JSON.parse(saved.evidence).excerpts).toEqual(evidence.excerpts);
+    expect(saved.verify_result).not.toBe('evidence_missing');
+  });
+
+  it('processed extraction with unchanged terms verifies even when saved quotes were paraphrased', async () => {
+    await call('ingest/offers', [offer]);
+    await call('admin/offers/vendor-free/approve', {}, 'admin');
+    const hash = 'a'.repeat(64);
+    await call('ingest/offers', [{ ...offer, evidence: { ...evidence, pageHash: hash, excerpts: {} } }]);
+    const verified = await call('ingest/verify', { offerId: offer.id, url: evidence.url,
+      text: 'All members can receive one hundred tokens when they register.', pageHash: hash, processedChange: true });
+    expect(verified.body.verified).toBe(true);
+    expect((await call('admin/queue', undefined, 'admin')).body.needsVerification).toEqual([]);
+  });
+
+  it.each([
+    ['models', ['Model A']], ['tags', ['daily']], ['usdMax', 10],
+    ['valueText', '200 tokens'], ['requirements', ['card']], ['claimEnd', '2099-12-31'],
+  ])('requires review for necessary field %s and preserves the published version', async (field, value) => {
+    await call('ingest/offers', [offer]);
+    await call('admin/offers/vendor-free/approve', {}, 'admin');
+    const changed = await call('ingest/offers', [{ ...offer, [field]: value,
+      ...(field === 'claimEnd' ? { endKind: 'date' } : {}),
+      ...(field === 'usdMax' ? { usdEstimate: 1 } : {}) }]);
     expect((changed.body.results as { reviewState: string }[])[0].reviewState).toBe('pending_update');
-    expect((await call('admin/offers/vendor-free/approve', {}, 'admin')).status).toBe(200);
-    const revision = sqlite.prepare("SELECT evidence_before,evidence_after FROM offer_revisions WHERE offer_id='vendor-free' AND author='pipeline' ORDER BY id DESC LIMIT 1").get() as { evidence_before: string; evidence_after: string };
-    expect(JSON.parse(revision.evidence_before).excerpts.benefit).toBe('Free 100 tokens');
-    expect(JSON.parse(revision.evidence_after).excerpts.benefit).toBe('Free 200 tokens');
+    const pending = (await call('admin/queue', undefined, 'admin')).body.pending as { changedFields: string[] }[];
+    expect(pending[0].changedFields).toContain(field);
+    expect(sqlite.prepare("SELECT value_text,review_state FROM offers WHERE id='vendor-free'").get())
+      .toEqual({ value_text: '100 tokens', review_state: 'approved' });
+  });
+
+  it('ignores ordering and whitespace and discards legacy evidence-only proposals', async () => {
+    const initial = { ...offer, models: ['A', 'B'], modalities: ['text', 'code'] };
+    await call('ingest/offers', [initial]);
+    await call('admin/offers/vendor-free/approve', {}, 'admin');
+    sqlite.prepare("INSERT INTO offer_proposals (offer_id,candidate,diff) VALUES (?,?,?)")
+      .run(offer.id, JSON.stringify(initial), JSON.stringify([{ field: 'evidence', from: evidence, to: { ...evidence, excerpts: {} } }]));
+    expect((await call('admin/queue', undefined, 'admin')).body.pending).toEqual([]);
+    const changed = await call('ingest/offers', [{ ...initial, models: ['B', 'A'], modalities: ['code', 'text'], valueText: '  100   tokens  ' }]);
+    expect((changed.body.results as { unchanged: boolean }[])[0].unchanged).toBe(true);
+    expect(sqlite.prepare('SELECT count(*) AS n FROM offer_proposals').get()).toEqual({ n: 0 });
+  });
+
+  it('requires review of real changes even for sources allowed to auto-publish', async () => {
+    sqlite.prepare("UPDATE sources SET auto_publish=1 WHERE id='source'").run();
+    await call('ingest/offers', [offer]);
+    expect(sqlite.prepare('SELECT review_state FROM offers').get()).toEqual({ review_state: 'approved' });
+    const result = await call('ingest/offers', [{ ...offer, valueText: '200 tokens', evidence: { ...evidence, excerpts: {} } }]);
+    expect((result.body.results as { reviewState: string }[])[0].reviewState).toBe('pending_update');
+    expect(sqlite.prepare('SELECT value_text FROM offers').get()).toEqual({ value_text: '100 tokens' });
+    const candidate = JSON.parse((sqlite.prepare('SELECT candidate FROM offer_proposals').get() as { candidate: string }).candidate);
+    expect(candidate.evidence.excerpts).toEqual(evidence.excerpts);
+  });
+
+  it('proposes a necessary change supported by new terms even after an administrator correction', async () => {
+    await call('ingest/offers', [offer]);
+    await call('admin/offers/vendor-free/approve', {}, 'admin');
+    await call('admin/offers/vendor-free/edit', { fields: { valueText: '100 tokens corrected' } }, 'admin');
+    const result = await call('ingest/offers', [{ ...offer, valueText: '200 tokens',
+      evidence: { ...evidence, excerpts: { ...evidence.excerpts, benefit: 'Free 200 tokens' } } }]);
+    expect((result.body.results as { reviewState: string }[])[0].reviewState).toBe('pending_update');
+    expect(sqlite.prepare('SELECT value_text FROM offers').get()).toEqual({ value_text: '100 tokens corrected' });
+  });
+
+  it('does not bless a failed quotation check by storing its hash and retrying', async () => {
+    await call('ingest/offers', [offer]);
+    await call('admin/offers/vendor-free/approve', {}, 'admin');
+    const body = { offerId: offer.id, url: evidence.url, text: 'Unrelated page', pageHash: 'b'.repeat(64), processedChange: true };
+    expect((await call('ingest/verify', body)).body.verified).toBe(false);
+    expect((await call('ingest/verify', body)).body.verified).toBe(false);
+    expect((await call('admin/queue', undefined, 'admin')).body.needsVerification).toEqual([]);
+  });
+
+  it('keeps known dates and valuations when a later extraction omits them', async () => {
+    await call('ingest/offers', [{ ...offer, usdEstimate: 1, usdMax: 10, claimStart: '2026-01-01', claimEnd: '2099-12-31', endKind: 'date' }]);
+    await call('admin/offers/vendor-free/approve', {}, 'admin');
+    const result = await call('ingest/offers', [{ ...offer, audience: 'unclear', requirements: ['unknown'] }]);
+    expect((result.body.results as { unchanged: boolean }[])[0].unchanged).toBe(true);
+    expect((await call('admin/queue', undefined, 'admin')).body.pending).toEqual([]);
+    expect(sqlite.prepare('SELECT usd_max,claim_end FROM offers').get()).toEqual({ usd_max: 10, claim_end: '2099-12-31' });
   });
 
   it('does not let a disabled staff source auto-publish with a forged payload tier', async () => {
