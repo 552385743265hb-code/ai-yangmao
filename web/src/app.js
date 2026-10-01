@@ -1224,11 +1224,15 @@ async function admQueue() {
       <div class="row"><input type="text" placeholder="补充理由（写清楚，模型以后学得更快）" data-reason style="flex:1;min-width:160px;padding:6px 10px"><button class="btn sm bad" type="button" data-act="reject">确认拒绝</button></div>
     </div>
     <form data-editform hidden class="filters" style="margin:0">
-      ${[['title', '标题', o.title], ['valueText', '额度', o.value], ['claimStart', '开始 YYYY-MM-DD', o.claimStart || ''], ['claimEnd', '截止 YYYY-MM-DD', o.claimEnd || ''], ['creditValidity', '额度有效期', o.creditValidity || ''], ['requirements', '门槛（逗号分隔）', o.requirements.join(',')]].map(([k, l, v]) => `<label class="field">${l}<input type="text" name="${k}" value="${esc(v)}"></label>`).join('')}
+      ${[['title', '标题', o.title], ['valueText', '额度', o.value], ['claimStart', '开始 YYYY-MM-DD', o.claimStart || ''], ['claimEnd', '截止 YYYY-MM-DD', o.claimEnd || ''], ['creditValidity', '额度有效期', o.creditValidity || '']].map(([k, l, v]) => `<label class="field">${l}<input type="text" name="${k}" value="${esc(v)}"></label>`).join('')}
       <label class="field">折合美元（下限，可空）<input type="number" step="any" min="0" name="usdEstimate" value="${o.usdEstimate ?? ''}"></label>
       <label class="field">价值上限（是范围时填，可空）<input type="number" step="any" min="0" name="usdMax" value="${o.usdMax ?? ''}"></label>
       <label class="field">官方时区<input type="text" name="sourceTz" value="${esc(o.sourceTz || 'UTC')}" placeholder="Asia/Shanghai、America/Los_Angeles、UTC"></label>
       <label class="field">官方发布时间（可空；额度重置要精确到时刻）<input type="text" name="publishedAt" value="${esc(o.publishedAt || '')}" placeholder="如 2026-07-14T19:34Z"></label>
+      ${(() => { const rq = o.requirements || [], val = k => (rq.find(r => r.startsWith(k + ':')) || '').slice(k.length + 1);
+        return `<div class="field" style="grid-column:1/-1">门槛（领之前必须满足的条件，可多选；手机号、信用卡、网络只指海外）<div class="chips">${['none', 'realname', 'phone', 'card', 'net', 'biz', 'student', 'invite', 'targeted'].map(k => `<label class="chip"><input type="checkbox" name="req" value="${k}" ${rq.includes(k) ? 'checked' : ''}> ${REQ[k]}${k === 'student' ? '（含教师）' : ''}</label>`).join('')}</div>
+        <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:6px"><label class="chip"><input type="checkbox" name="req" value="member" ${val('member') ? 'checked' : ''}> 需会员</label><input type="text" name="reqMember" value="${esc(val('member'))}" placeholder="哪个会员，如 Pro（$20/月）" style="flex:1;min-width:160px">
+        <label class="chip"><input type="checkbox" name="req" value="pay" ${val('pay') ? 'checked' : ''}> 需充值</label><input type="text" name="reqPay" value="${esc(val('pay'))}" placeholder="充多少，如 首充 10 元" style="flex:1;min-width:160px"></div></div>`; })()}
       <div class="field" style="grid-column:1/-1">模态<div class="chips">${Object.entries(MODAL).map(([k, l]) => `<label class="chip"><input type="checkbox" name="modalities" value="${k}" ${(o.modalities || []).includes(k) ? 'checked' : ''}> ${l}</label>`).join('')}</div></div>
       <div class="field" style="grid-column:1/-1">标签<div class="chips">${Object.entries(TAG_L).map(([k, l]) => `<label class="chip"><input type="checkbox" name="tags" value="${k}" ${(o.tags || []).includes(k) ? 'checked' : ''}> ${l}</label>`).join('')}</div></div>
       <label class="field" style="grid-column:1/-1">领取步骤（一行一步）<textarea name="steps" rows="3">${esc((o.steps || []).join('\n'))}</textarea></label>
@@ -1289,7 +1293,11 @@ async function admQueue() {
       const pub = String(fd.publishedAt || '').trim();
       if (pub && Number.isNaN(Date.parse(pub))) throw new Error('官方发布时间格式不对，例：2026-07-14T19:34Z');
       if (!checked('modalities').length) throw new Error('至少选一个模态');
-      const fields = { ...fd, requirements: String(fd.requirements).split(/[,，]/).map(x => x.trim()).filter(Boolean), models: [...new Set(String(fd.models || '').split(/[,，、;；]/).map(x => x.trim()).filter(Boolean))],
+      const req = checked('req').map(k => k === 'member' ? `member:${String(fd.reqMember || '').trim() || '会员'}` : k === 'pay' ? `pay:${String(fd.reqPay || '').trim() || '充值'}` : k);
+      if (!req.length) throw new Error('门槛至少勾一项；没有任何条件就勾“零门槛”');
+      if (req.includes('none') && req.length > 1) throw new Error('勾了“零门槛”就不能再勾其他门槛');
+      delete fd.req; delete fd.reqMember; delete fd.reqPay;
+      const fields = { ...fd, requirements: req, models: [...new Set(String(fd.models || '').split(/[,，、;；]/).map(x => x.trim()).filter(Boolean))],
         usdEstimate: num(fd.usdEstimate), usdMax: num(fd.usdMax), modalities: checked('modalities'), tags: checked('tags'), publishedAt: pub ? new Date(pub).toISOString() : null,
         steps: String(fd.steps || '').split('\n').map(x => x.trim()).filter(Boolean).slice(0, 10), sourceTz: String(fd.sourceTz || 'UTC').trim() };
       if (newEvidence.url !== o.evidenceUrl || newEvidence.tier !== o.evidenceTier || EX_L.some(([key]) => newEvidence.excerpts[key] !== (o.excerpts[key] || ''))) fields.evidence = newEvidence;
