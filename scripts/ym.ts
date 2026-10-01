@@ -136,9 +136,10 @@ ${revisions.length ? `修订：${revisions.map((r: any) => r.diff.map((x: any) =
     if (r.empty) break; // 没有变化不输出 → Hermes 定时任务不发空消息
     const d = new Intl.DateTimeFormat('zh-CN', { timeZone: 'Asia/Tokyo', month: 'numeric', day: 'numeric' }).format(new Date());
     const sec = (t: string, a: any[]) => a.length ? `\n${t}（${a.length}）\n${a.map(line).join('\n')}\n` : '';
-    const message = kind === 'urgent'
-      ? `⚡ 加急：48 小时内截止\n${r.items.urgent.map(line).join('\n')}`
-      : `🐑 AI 羊毛牧场日报 · ${d}\n${sec('🆕 新上架', r.items.new)}${sec('⏰ 3 天内结束', r.items.ending)}${sec('🔄 条款变化', r.items.changed)}${sec('❌ 已结束', r.items.ended)}${r.pendingCount ? `\n📝 待审 ${r.pendingCount} 条，回复"看待审"处理` : ''}${r.needsVerificationCount ? `\n⚠️ ${r.needsVerificationCount} 条权益证据待核验，回复"看待审"处理` : ''}${r.coverageDegraded ? '\n⚠️ 本轮抓取完成，但部分新增条款因模型额度或模型故障尚未抽取；下一轮会重试' : ''}${r.suggestAutoPublish?.length ? `\n🔓 建议审核自动上架信源：${r.suggestAutoPublish.join('、')}` : ''}\n\n网页：https://ai-yangmao.com`;
+    const alert = r.d1Alert ? `🚨 数据库读取已用 ${Math.round(r.d1Alert.rowsRead / 10000)} 万 / ${r.d1Alert.limit / 10000} 万行（免费额度 ${Math.round(r.d1Alert.rowsRead / r.d1Alert.limit * 100)}%）。用满后全站无法加载，到东京 9 点才恢复。先停手动采集和批量操作，或在 Cloudflare 升级 Workers 付费版。\n` : '';
+    const message = alert + (kind === 'urgent'
+      ? (r.items.urgent.length ? `⚡ 加急：48 小时内截止\n${r.items.urgent.map(line).join('\n')}` : '')
+      : `🐑 AI 羊毛牧场日报 · ${d}\n${sec('🆕 新上架', r.items.new)}${sec('⏰ 3 天内结束', r.items.ending)}${sec('🔄 条款变化', r.items.changed)}${sec('❌ 已结束', r.items.ended)}${r.pendingCount ? `\n📝 待审 ${r.pendingCount} 条，回复"看待审"处理` : ''}${r.needsVerificationCount ? `\n⚠️ ${r.needsVerificationCount} 条权益证据待核验，回复"看待审"处理` : ''}${r.coverageDegraded ? '\n⚠️ 本轮抓取完成，但部分新增条款因模型额度或模型故障尚未抽取；下一轮会重试' : ''}${r.suggestAutoPublish?.length ? `\n🔓 建议审核自动上架信源：${r.suggestAutoPublish.join('、')}` : ''}\n\n网页：https://ai-yangmao.com`);
     if (cmd !== 'dispatch') { console.log(message); break; }
     const { spawnSync } = await import('node:child_process');
     const sent = spawnSync('hermes', ['send', '--to', 'telegram', '--quiet', '--file', '-'], { input: message, encoding: 'utf8', timeout: 30000 });

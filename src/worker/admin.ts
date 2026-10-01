@@ -474,8 +474,20 @@ export async function buildNotice(env: Env, kind: NoticeKind, channel: NoticeCha
   const [lastCollect] = kind === 'digest' && channel === 'telegram'
     ? await d.select({ stats: s.runs.stats }).from(s.runs).where(eq(s.runs.kind, 'collect')).orderBy(desc(s.runs.startedAt)).limit(1) : [];
   const coverageDegraded = !!lastCollect?.stats?.coverageDegraded;
-  const empty = !marks.length && !out.standing.length && !out.rising.length && !out.lastcall.length && (kind === 'urgent' || channel !== 'telegram' || (!pendingCount && !suggestAutoPublish.length && !needsVerificationCount && !coverageDegraded));
-  return { kind, channel, items: out, marks, moreCount, pendingCount, suggestAutoPublish, needsVerificationCount, coverageDegraded, empty, blockedCount: blocked.size };
+  // D1 读取超过免费额度 70%：推给 Telegram（每小时检查，UTC 同一天只推一次）
+  let d1Alert: { rowsRead: number; limit: number } | null = null;
+  if (channel === 'telegram') {
+    const u = await d1Usage(env);
+    if (u.rowsRead != null && u.rowsRead > u.limits.rowsRead * 0.7) {
+      const today = now.toISOString().slice(0, 10);
+      const sentToday = (await d.select({ payload: s.deliveries.payload, createdAt: s.deliveries.createdAt }).from(s.deliveries)
+        .where(and(eq(s.deliveries.channel, 'telegram'), inArray(s.deliveries.status, ['sent', 'pending', 'unknown']))).orderBy(desc(s.deliveries.createdAt)).limit(60))
+        .filter(x => x.createdAt.slice(0, 10) === today && (x.payload as { d1Alert?: unknown }).d1Alert);
+      if (!sentToday.length) d1Alert = { rowsRead: u.rowsRead, limit: u.limits.rowsRead };
+    }
+  }
+  const empty = !d1Alert && !marks.length && !out.standing.length && !out.rising.length && !out.lastcall.length && (kind === 'urgent' || channel !== 'telegram' || (!pendingCount && !suggestAutoPublish.length && !needsVerificationCount && !coverageDegraded));
+  return { kind, channel, items: out, marks, moreCount, d1Alert, pendingCount, suggestAutoPublish, needsVerificationCount, coverageDegraded, empty, blockedCount: blocked.size };
 }
 
 /** 预览是纯读取，不能仅凭获取消息就把内容记为已发送。 */
