@@ -39,13 +39,50 @@ function view(o: OfferRow, platformName: string, now = new Date()) {
   };
 }
 
-export const admin = new Hono<{ Bindings: Env }>();
+export const admin = new Hono<{ Bindings: Env; Variables: { role: 'admin' | 'reviewer'; who: string } }>();
+
+/** 审核员能用的接口：看待审、通过、拒绝、修改、核验记录、线索、补录、补信源、送交平台准入。 */
+const REVIEWER_ALLOWED: [string, RegExp][] = [
+  ['GET', /^\/(whoami|queue|leads)$/], ['GET', /^\/offers\/[^/]+$/],
+  ['POST', /^\/offers\/[^/]+\/(approve|reject|edit|memo|note|retested)$/],
+  ['POST', /^\/leads\/\d+\/(dismiss|reviewing|retry)$/], ['POST', /^\/(manual|sources|platforms)$/],
+];
+export function reviewerFor(env: Env, token: string | undefined): string | null {
+  if (!token || token.length < 16) return null;
+  for (const pair of (env.REVIEWER_TOKENS ?? '').split(',')) {
+    const i = pair.indexOf(':');
+    if (i > 0 && pair.slice(i + 1).trim().length >= 16 && pair.slice(i + 1).trim() === token) return pair.slice(0, i).trim();
+  }
+  return null;
+}
 
 admin.use('*', async (c, next) => {
   const token = c.req.header('Authorization')?.replace(/^Bearer\s+/i, '');
-  if (!c.env.ADMIN_TOKEN || c.env.ADMIN_TOKEN.length < 16 || token !== c.env.ADMIN_TOKEN) return c.json({ error: '管理员密钥不正确' }, 401);
   c.header('Cache-Control', 'no-store');
+  if (c.env.ADMIN_TOKEN && c.env.ADMIN_TOKEN.length >= 16 && token === c.env.ADMIN_TOKEN) { c.set('role', 'admin'); c.set('who', 'admin'); return next(); }
+  const who = reviewerFor(c.env, token);
+  if (!who) return c.json({ error: '管理员密钥不正确' }, 401);
+  const path = c.req.path.replace(/^.*\/api\/admin/, '');
+  if (!REVIEWER_ALLOWED.some(([m, re]) => m === c.req.method && re.test(path))) return c.json({ error: '审核员没有这个权限' }, 403);
+  c.set('role', 'reviewer'); c.set('who', who);
   await next();
+});
+
+admin.get('/whoami', c => c.json({ role: c.get('role'), who: c.get('who') }));
+
+/** 补信源：给已登记平台加一个官方信源，下一轮采集开始抓取；不会打开自动上架。 */
+admin.post('/sources', async c => {
+  const body = z.object({ platformId: z.string().min(1), url: z.url().refine(u => /^https:\/\//.test(u), '只收 https 链接'),
+    kind: z.enum(['web_list', 'rss', 'json']), tier: z.enum(['site', 'docs', 'official', 'staff']) }).safeParse(await c.req.json().catch(() => null));
+  if (!body.success) return c.json({ error: '信源资料不正确', issues: body.error.issues }, 400);
+  const d = db(c.env);
+  const [platform] = await d.select({ id: s.platforms.id }).from(s.platforms).where(eq(s.platforms.id, body.data.platformId));
+  if (!platform) return c.json({ error: '没有这个平台，先送交平台准入' }, 404);
+  const [dup] = await d.select({ id: s.sources.id }).from(s.sources).where(eq(s.sources.url, body.data.url));
+  if (dup) return c.json({ error: `这个链接已经是信源 ${dup.id}` }, 409);
+  const id = `${body.data.platformId}-${c.get('who') === 'admin' ? 'add' : 'rv'}-${Date.now().toString(36)}`;
+  await d.insert(s.sources).values({ id, ...body.data, config: { addedBy: c.get('who') }, enabled: true, autoPublish: false });
+  return c.json({ id }, 201);
 });
 
 async function platformNames(env: Env) {
@@ -201,7 +238,7 @@ admin.post('/offers/:ref/:action{approve|reject}', async c => {
   } else {
     await d.update(s.offers).set({ reviewState: action === 'approve' ? 'approved' : 'rejected', updatedAt: nowIso }).where(and(eq(s.offers.id, o.id), eq(s.offers.reviewState, 'pending')));
   }
-  await d.insert(s.reviews).values({ offerId: o.id, action, reviewer: body.reviewer ?? 'admin', reason: body.reason ?? null, reasonCode: body.reasonCode ?? null });
+  await d.insert(s.reviews).values({ offerId: o.id, action, reviewer: c.get('who'), reason: body.reason ?? null, reasonCode: body.reasonCode ?? null });
   let streak: number | null = null;
   if (o.sourceId) {
     const [src] = await d.select().from(s.sources).where(eq(s.sources.id, o.sourceId));
@@ -259,7 +296,7 @@ admin.post('/offers/:ref/edit', async c => {
     await d.update(s.offers).set({ ...valid.data, ...(body?.approve ? { reviewState: 'approved' as const } : {}), updatedAt: nowIso }).where(eq(s.offers.id, o.id));
     if (diff.length) await d.insert(s.offerRevisions).values({ offerId: o.id, diff, author: 'admin', evidenceBefore: o.evidence, evidenceAfter: candidate.evidence });
   }
-  await d.insert(s.reviews).values({ offerId: o.id, action: 'edit', editedFields: diff.map(x => x.field), reviewer: 'admin', reason: body?.reason ?? null, reasonCode: body?.reasonCode ?? 'wrong_field' });
+  await d.insert(s.reviews).values({ offerId: o.id, action: 'edit', editedFields: diff.map(x => x.field), reviewer: c.get('who'), reason: body?.reason ?? null, reasonCode: body?.reasonCode ?? 'wrong_field' });
   if (o.sourceId && diff.length) await d.update(s.sources).set({ cleanStreak: 0 }).where(eq(s.sources.id, o.sourceId));
   return c.json({ ok: true, code: shortCode(o.id), changed: diff.map(x => x.field), approved: !!body?.approve });
 });

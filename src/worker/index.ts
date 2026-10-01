@@ -15,6 +15,7 @@ export interface Env {
   ASSETS: Fetcher;
   INGEST_TOKEN: string;
   ADMIN_TOKEN: string;
+  REVIEWER_TOKENS?: string; // 审核员密钥，格式 名字:密钥,名字:密钥；只能审核、补录、补信源
   DAILY_TOKEN_CAP?: string;
   MONTHLY_COST_CAP_CNY?: string;
   FEISHU_WEBHOOK?: string; // 飞书群自定义机器人

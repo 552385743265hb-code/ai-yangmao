@@ -1165,7 +1165,7 @@ const ADM = { token: admStore.load(), tab: 'queue' };
 async function adm(path, body) {
   const r = await fetch('/api/admin' + path, { method: body === undefined ? 'GET' : 'POST', headers: { Authorization: 'Bearer ' + ADM.token, 'Content-Type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) });
   const j = await r.json().catch(() => ({}));
-  if (r.status === 401) { ADM.token = ''; admStore.clear(); throw new Error('管理员密钥不正确，请重新登录'); }
+  if (r.status === 401) { ADM.token = ''; ADM.role = ''; admStore.clear(); throw new Error('管理员密钥不正确，请重新登录'); }
   if (!r.ok) throw new Error((j.error || ('请求失败 ' + r.status)) + (Array.isArray(j.issues) && j.issues.length ? '：' + j.issues.map(i => `${FIELD_L[i.path?.[0]] || i.path?.join('.') || ''} ${i.message}`.trim()).join('；') : ''));
   return j;
 }
@@ -1190,15 +1190,18 @@ function pAdmin() {
     </form>`;
     $('#admLogin').addEventListener('submit', async e => {
       e.preventDefault(); ADM.token = $('#admTok').value.trim();
-      try { await adm('/health'); admStore.save(ADM.token, $('#admRemember').checked); render(true); } catch (err) { $('#admErr').textContent = err.message; }
+      try { const me = await adm('/whoami'); ADM.role = me.role; ADM.who = me.who; admStore.save(ADM.token, $('#admRemember').checked); render(true); } catch (err) { $('#admErr').textContent = err.message; }
     });
     return;
   }
-  const tabs = [['queue', '待审'], ['quality', '准确率'], ['leads', '线索'], ['manual', '补录'], ['health', '采集健康']];
-  main().innerHTML = ribbon() + ph('后台', '审核、编辑、补录。每条都附来源链接和官方原文，点链接核对后再决定。', `<button class="btn sm" type="button" id="admOut">退出登录</button>`) + `
+  if (!ADM.role) { adm('/whoami').then(me => { ADM.role = me.role; ADM.who = me.who; render(true); }).catch(err => { main().innerHTML = `<div class="card"><p>${esc(err.message)}</p></div>`; }); main().innerHTML = emptySheep('加载中…'); return; }
+  const reviewer = ADM.role === 'reviewer';
+  const tabs = reviewer ? [['queue', '待审'], ['leads', '线索'], ['manual', '补录']] : [['queue', '待审'], ['quality', '准确率'], ['leads', '线索'], ['manual', '补录'], ['health', '采集健康']];
+  if (!tabs.some(([k]) => k === ADM.tab)) ADM.tab = 'queue';
+  main().innerHTML = ribbon() + ph('后台', `${reviewer ? `审核员：${esc(ADM.who)}。` : ''}审核、编辑、补录。每条都附来源链接和官方原文，点链接核对后再决定。`, `<button class="btn sm" type="button" id="admOut">退出登录</button>`) + `
   <div class="seg" role="tablist" style="margin-bottom:14px">${tabs.map(([k, l]) => `<button type="button" data-admtab="${k}" aria-pressed="${ADM.tab === k}">${l}</button>`).join('')}</div>
   <div id="admBody">${emptySheep('加载中…')}</div>`;
-  $('#admOut').addEventListener('click', () => { ADM.token = ''; admStore.clear(); render(true); });
+  $('#admOut').addEventListener('click', () => { ADM.token = ''; ADM.role = ''; ADM.who = ''; admStore.clear(); render(true); });
   $$('[data-admtab]').forEach(b => b.addEventListener('click', () => { ADM.tab = b.dataset.admtab; render(true); }));
   ({ queue: admQueue, quality: admQuality, leads: admLeads, manual: admManual, health: admHealth })[ADM.tab]().catch(err => { $('#admBody').innerHTML = `<div class="card"><p>${esc(err.message)}</p></div>`; if (!ADM.token) render(true); });
 }
@@ -1296,6 +1299,7 @@ async function admQueue() {
       } catch (err) { btn.disabled = false; msg.style.color = 'var(--critical-ink)'; msg.textContent = '没有保存：' + err.message; console.error('[admin] 保存并通过失败', err); }
     });
   });
+  if (ADM.role === 'reviewer') $$('[data-plat],[data-autopub],[data-withdraw]', box).forEach(x => x.remove());
   $$('[data-plat]', box).forEach(b => b.addEventListener('click', async () => { const [id, act] = b.dataset.plat.split(':'); await adm(`/platforms/${id}/${act}`, {}); toast('已处理'); admQueue(); }));
   $$('[data-autopub]', box).forEach(b => b.addEventListener('click', async () => { await adm(`/sources/${b.dataset.autopub}/auto-publish`, { on: true }); toast('已放开自动上架'); admQueue(); }));
   $$('[data-retest]', box).forEach(b => b.addEventListener('click', async () => { try { await adm(`/offers/${b.dataset.retest}/retested`, {}); toast('已记录：管理员核对仍有效'); admQueue(); } catch (err) { toast(err.message); } }));
@@ -1331,7 +1335,12 @@ async function admLeads() {
 }
 async function admManual() {
   $('#admBody').innerHTML = `<form id="admAdd" class="card" style="display:flex;flex-direction:column;gap:10px;max-width:640px"><p class="sub" style="margin:0">粘贴官网公告、公众号文章、推文或新闻链接。下一轮采集（最多 6 小时，也可以在 GitHub 手动触发）会抓取并研判，结果进待审。</p>
-    <label class="field">链接<input type="url" name="url" required placeholder="https://"></label><label class="field">备注（可选）<input type="text" name="note" placeholder="比如：DeepSeek 桌面版送 6 元"></label><button class="btn pri" type="submit">补录</button></form>`;
+    <label class="field">链接<input type="url" name="url" required placeholder="https://"></label><label class="field">备注（可选）<input type="text" name="note" placeholder="比如：DeepSeek 桌面版送 6 元"></label><button class="btn pri" type="submit">补录</button></form>
+    <form id="admSrc" class="card" style="display:flex;flex-direction:column;gap:10px;max-width:640px;margin-top:12px"><p class="sub" style="margin:0">补信源：给已登记的平台加一个官方页面（福利页、价格页、帮助文档、博客或 RSS），之后每轮采集都会抓它。只收发放方自己的官方页面。</p>
+    <label class="field">平台 ID<input type="text" name="platformId" required placeholder="如 kiro、moonshot"></label><label class="field">官方链接<input type="url" name="url" required placeholder="https://"></label>
+    <label class="field">类型<select name="kind"><option value="web_list">网页</option><option value="rss">RSS</option><option value="json">官方接口</option></select></label>
+    <label class="field">级别<select name="tier"><option value="site">官网页面</option><option value="docs">官方文档</option><option value="official">官方账号（博客、公众号、X）</option><option value="staff">员工账号</option></select></label><button class="btn pri" type="submit">加入信源</button></form>`;
+  $('#admSrc').addEventListener('submit', async e => { e.preventDefault(); const form = e.currentTarget; try { const r = await adm('/sources', Object.fromEntries(new FormData(form))); toast(`已加入信源 ${r.id}，下一轮采集开始抓取`); form.reset(); } catch (err) { toast(err.message); } });
   $('#admAdd').addEventListener('submit', async e => { e.preventDefault(); const form = e.currentTarget; const fd = Object.fromEntries(new FormData(form)); try { const r = await adm('/manual', { url: fd.url, note: fd.note || undefined }); toast(`已补录（线索 #${r.leadId}）`); form.reset(); } catch (err) { toast(err.message); } });
 }
 async function admHealth() {

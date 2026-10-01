@@ -2,7 +2,7 @@
 // 发送沿用通知台账：先占位（claimNotice），飞书返回成功后才记为已发送（ackDelivery）。
 import { eq, inArray } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
-import { Hono } from 'hono';
+import { Hono, type Context, type Next } from 'hono';
 import * as s from '../db/schema';
 import { zonedTime } from '../shared/lifecycle';
 import { ackDelivery, buildNotice, claimNotice, type ClaimedNotice } from './admin';
@@ -235,12 +235,15 @@ export async function runScheduled(cron: string, env: Env) {
 
 /* ---------- 管理接口：预览 / 手动发送 / 手动触发采集（ADMIN_TOKEN） ---------- */
 export const feishuAdmin = new Hono<{ Bindings: Env }>();
-feishuAdmin.use('*', async (c, next) => {
+// 只管自己的路径；其余 /api/admin/* 交给 admin.ts（那里区分管理员和审核员）
+const adminOnly = async (c: Context<{ Bindings: Env }>, next: Next) => {
   const token = c.req.header('Authorization')?.replace(/^Bearer\s+/i, '');
   if (!c.env.ADMIN_TOKEN || c.env.ADMIN_TOKEN.length < 16 || token !== c.env.ADMIN_TOKEN) return c.json({ error: '管理员密钥不正确' }, 401);
   c.header('Cache-Control', 'no-store');
   await next();
-});
+};
+feishuAdmin.use('/feishu/*', adminOnly);
+feishuAdmin.use('/collect/*', adminOnly);
 /** 预览：只读，不占位、不发送。all=1 时把所有已上架羊毛当作新上架来排版，方便看效果。 */
 feishuAdmin.get('/feishu/preview', async c => {
   const kind = c.req.query('kind') === 'urgent' ? 'urgent' : 'digest';
