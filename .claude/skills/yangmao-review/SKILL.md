@@ -45,7 +45,7 @@ npx tsx $S approve <短码> | retest <短码> | reject <短码> --code <代码> 
 
 | 字段 | 怎么判断 |
 |---|---|
-| 类型 type | 注册新人礼只给新注册账号；“首次使用某个应用/客户端就送、新老用户都行”是应用尝鲜 trial；常驻免费是 standing；限时开放是 free；会员额外加赠或重置是 perk；首次充值或升级才送是 topup；需要提交申请是 apply。类型和截止方式要配套（standing / apply ↔ endKind standing）。 |
+| 类型 type | 注册新人礼只给新注册账号；“首次使用某个应用/客户端就送、新老用户都行”是应用尝鲜 trial；常驻免费是 standing；限时开放是 free；会员额外加赠或重置是 perk；首次充值或升级才送是 topup；需要提交申请是 apply。类型和截止方式要配套（standing / apply ↔ endKind standing）。学生、教师认证不是申请制：送会员一段时间是 gift，认证后按月给额度（如 Kiro 学生一年）是 standing，个人有效期写进额度有效期；整个计划有截止才是 free；门槛 student（教师也用它）。apply 只给要交材料、人工审批、额度为“最高可申请”的资助。模态只有文本·编程（text）/ 图像 / 视频 / 音频，文本和编程不区分。 |
 | 领取方式 claimMethod | 官方很少专门写，按常识推断：应用的福利＝下载应用并登录（app，含桌面端和命令行工具）；云和模型平台＝注册开通使用（signup / auto）；会员福利＝member；充值触发＝topup；邀请链接或兑换码＝code。 |
 | 门槛 requirements | 人人可用就写 `none`；付费订阅写 `member:套餐名（月费）`；首充写 `pay:...`；海外手机号、信用卡、网络分别是 phone / card / net；实名、企业、学生、邀请码、定向发放各有代码。`unknown` 会被拦下，必须按原文写清。phone / card / net 只表示“海外”手机号、信用卡、网络；国内手机号或国内支付不能用它们（写进额度和步骤即可）。 |
 | 适用对象 audience | new / old / all；官方确实没写才用 unclear。 |
