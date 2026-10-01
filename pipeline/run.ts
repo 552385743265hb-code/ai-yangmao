@@ -5,6 +5,10 @@ import { api, fetchPage, fetchText, isFreebie, norm, relevantText, sha256, slug 
 import { DeferError, extract, llmAvailable, paidAvailable, type Extracted } from './llm';
 import { BudgetExhaustedError, modelBudget } from './budget';
 import { offerIn, type LeadIn, type OfferIn } from '../src/shared/ingest';
+import { claimEndAt } from '../src/shared/lifecycle';
+
+/** 官方截止时间（按官方时区当天 23:59:59）已过的活动不入库：过期新闻不收（2026-10-01 待审里混进 5 条已过期活动） */
+const alreadyEnded = (o: OfferIn) => { const end = claimEndAt({ ...o, lastVerifiedAt: null }); return !!end && end.getTime() < Date.now(); };
 
 const DAILY_TOKEN_CAP = Number(process.env.DAILY_TOKEN_CAP ?? 0); // 0 = 调试阶段不设每日 token 总上限
 const MONTHLY_COST_CAP = Number(process.env.MONTHLY_COST_CAP_CNY ?? 10);
@@ -91,6 +95,7 @@ async function extractAndPostUnlocked(src: Source, url: string, text: string): P
   let invalidCount = 0;
   for (const e of r.offers) {
     const v = offerIn.safeParse(toOffer(src, e, url, text));
+    if (v.success && alreadyEnded(v.data)) { log(`  跳过「${e.title}」：官方截止日 ${v.data.claimEnd} 已过`); continue; }
     if (v.success) {
       const candidate = v.data;
       const identity = [candidate.platformId, candidate.type, candidate.claimMethod, norm(candidate.title), norm(candidate.valueText), candidate.claimStart, candidate.claimEnd].join('|');
@@ -285,6 +290,7 @@ async function triageLeads(plats: Plat[]) {
       }
       if (e.officialUrl && tier === 'media') o.steps = [...(o.steps ?? []), `官方出处：${e.officialUrl}`].slice(0, 6);
       const v = offerIn.safeParse(o);
+      if (v.success && alreadyEnded(v.data)) { log(`  #${l.id} 跳过「${e.title}」：官方截止日 ${v.data.claimEnd} 已过`); continue; }
       if (v.success) valid.push(v.data); else log(`  #${l.id} 丢弃「${e.title}」：${v.error.issues.map(i => i.path.join('.') + ' ' + i.message).join('；').slice(0, 120)}`);
     }
     if (DRY) { log(`  #${l.id} ${l.title?.slice(0, 40)} → ${valid.map(v => `${v.platformId}:${v.title}`).join('、') || '无'}${unknown.length ? `；白名单外：${unknown.join('、')}` : ''}`); continue; }
