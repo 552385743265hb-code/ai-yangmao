@@ -726,9 +726,32 @@ function pApply() {
 }
 
 /* ---------- 按模型找 ---------- */
-let MODEL_SEL = MODELS[0]?.id ?? null;
+/** 模型名归一：忽略大小写、空格、连字符和末尾的 Free，方便把各平台的不同写法归到同一个模型。 */
+const modelKey = m => m.toLowerCase().replace(/\(.*?\)|（.*?）/g, '').replace(/\bfree\b/g, '').replace(/[\s\-_.·]+/g, '');
+function modelIndex() {
+  const idx = new Map();
+  OFFERS.filter(o => statusOf(o) !== 'ended').forEach(o => (o.models || []).forEach(name => {
+    const k = modelKey(name); if (!k) return;
+    if (!idx.has(k)) idx.set(k, { name, offers: [] });
+    const e = idx.get(k); if (!e.offers.includes(o)) e.offers.push(o);
+  }));
+  return [...idx.values()].map(e => ({ ...e, plats: uniq(e.offers.map(o => o.p)).length }))
+    .sort((a, b) => b.plats - a.plats || b.offers.length - a.offers.length || a.name.localeCompare(b.name));
+}
+let MODEL_Q = '';
 function pModels() {
-  main().innerHTML = ribbon() + ph('按模型找', '同一个模型，在哪些平台能免费用？') + `<div class="card">${emptySheep('数据积累中。等推理平台的免费模型清单接入后，这里会画出"模型 ↔ 平台"关系图。')}</div>`;
+  const all = modelIndex();
+  const q = MODEL_Q.trim().toLowerCase();
+  const list = q ? all.filter(m => m.name.toLowerCase().includes(q) || modelKey(m.name).includes(modelKey(q))) : all;
+  const limited = o => o.ty !== 'standing' && o.ty !== 'apply';
+  const row = o => `<a class="orow" href="#offer-${o.id}" style="grid-template-columns:auto minmax(0,1fr) auto"><span>${etag(o.ty)}</span><span class="t">${esc(o.plat.name)}<small>${esc(o.t)}</small></span>${stChip(o)}</a>`;
+  main().innerHTML = ribbon() + ph('按模型找', '同一个模型，在哪些平台能免费用？限时免费会标出截止时间。') + `
+    <div class="row" style="margin-bottom:12px;gap:10px;flex-wrap:wrap"><input type="search" id="modelQ" value="${esc(MODEL_Q)}" placeholder="搜模型，如 GLM、Gemini、DeepSeek" style="flex:1;min-width:200px;padding:8px 12px"><span class="small muted">${all.length} 个模型 · ${uniq(all.flatMap(m => m.offers.map(o => o.p))).length} 个平台</span></div>
+    ${list.length ? `<div class="grid g2">${list.map(m => `<div class="card"><div class="row" style="justify-content:space-between;align-items:baseline;gap:8px"><h3 style="margin:0">${esc(m.name)}</h3><span class="small muted">${m.plats} 个平台${m.offers.some(limited) ? ' · 含限时' : ''}</span></div>
+      <div class="rows" style="margin-top:8px">${m.offers.map(row).join('')}</div></div>`).join('')}</div>`
+      : `<div class="card">${emptySheep(all.length ? '没有找到这个模型。' : '还没有记录到具体的免费模型。')}</div>`}`;
+  const inp = $('#modelQ');
+  inp.addEventListener('input', () => { MODEL_Q = inp.value; const pos = inp.selectionStart; pModels(); const n = $('#modelQ'); n.focus(); n.setSelectionRange(pos, pos); });
 }
 
 /* ---------- 洞察 ---------- */
@@ -1098,7 +1121,7 @@ async function adm(path, body) {
 const TIER_L = { site: '官网', docs: '官方文档', official: '官方账号', staff: '员工账号', media: '媒体 / 社区转述', tested: '管理员实测（我亲自领到过）' };
 const EX_L = [['benefit', '权益'], ['eligibility', '资格'], ['claim', '领取方式'], ['validity', '有效期']];
 const RC = [['paid_bundle', '付费套餐自带'], ['not_ai', '不是 AI 额度'], ['wrong_platform', '平台归错'], ['duplicate', '重复'], ['expired', '已过期'], ['vague', '额度不明'], ['wrong_type', '分类错']];
-const FIELD_L = { title: '标题', type: '类型', valueText: '额度', usdEstimate: '折合美元', claimStart: '开始', claimEnd: '截止', endKind: '截止方式', creditValidity: '有效期', audience: '适用对象', requirements: '门槛', modalities: '模态', platformId: '平台', sourceTz: '时区', claimMethod: '领取方式' };
+const FIELD_L = { models: '免费模型', title: '标题', type: '类型', valueText: '额度', usdEstimate: '折合美元', claimStart: '开始', claimEnd: '截止', endKind: '截止方式', creditValidity: '有效期', audience: '适用对象', requirements: '门槛', modalities: '模态', platformId: '平台', sourceTz: '时区', claimMethod: '领取方式' };
 function pAdmin() {
   if (!ADM.token) {
     main().innerHTML = ribbon() + ph('后台', '用管理员密钥登录。刷新页面不用重新输入，关掉标签页后需要重新登录；勾选“记住”则一直保留，直到退出登录。') + `
@@ -1138,6 +1161,7 @@ async function admQueue() {
     </div>
     <form data-editform hidden class="filters" style="margin:0">
       ${[['title', '标题', o.title], ['valueText', '额度', o.value], ['claimStart', '开始 YYYY-MM-DD', o.claimStart || ''], ['claimEnd', '截止 YYYY-MM-DD', o.claimEnd || ''], ['creditValidity', '额度有效期', o.creditValidity || ''], ['requirements', '门槛（逗号分隔）', o.requirements.join(',')]].map(([k, l, v]) => `<label class="field">${l}<input type="text" name="${k}" value="${esc(v)}"></label>`).join('')}
+      <label class="field" style="grid-column:1/-1">免费模型（逗号分隔，按官方写法；用于“按模型找”）<input type="text" name="models" value="${esc((o.models || []).join('，'))}" placeholder="如：Gemini 3.8 Flash，GLM-4.7-Flash"></label>
       <label class="field" style="grid-column:1/-1">官方证据链接<input type="url" name="evidenceUrl" value="${esc(o.evidenceUrl)}"></label>
       <label class="field">证据级别<select name="evidenceTier">${Object.entries(TIER_L).map(([key, name]) => `<option value="${key}" ${o.evidenceTier === key ? 'selected' : ''}>${name}</option>`).join('')}</select></label>
       ${EX_L.map(([key, name]) => `<label class="field" style="grid-column:1/-1">${name}原文摘录<textarea name="excerpt_${key}" rows="3">${esc(o.excerpts[key] || '')}</textarea></label>`).join('')}
@@ -1188,7 +1212,7 @@ async function admQueue() {
       const newEvidence = { url: String(fd.evidenceUrl).trim(), tier: String(fd.evidenceTier), capturedAt: new Date().toISOString(), excerpts: {} };
       for (const [key] of EX_L) { newEvidence.excerpts[key] = String(fd[`excerpt_${key}`] || '').trim(); delete fd[`excerpt_${key}`]; }
       delete fd.evidenceUrl; delete fd.evidenceTier;
-      const fields = { ...fd, requirements: String(fd.requirements).split(/[,，]/).map(x => x.trim()).filter(Boolean) };
+      const fields = { ...fd, requirements: String(fd.requirements).split(/[,，]/).map(x => x.trim()).filter(Boolean), models: [...new Set(String(fd.models || '').split(/[,，、;；]/).map(x => x.trim()).filter(Boolean))] };
       if (newEvidence.url !== o.evidenceUrl || newEvidence.tier !== o.evidenceTier || EX_L.some(([key]) => newEvidence.excerpts[key] !== (o.excerpts[key] || ''))) fields.evidence = newEvidence;
       ['claimStart', 'claimEnd', 'creditValidity'].forEach(k => { if (!fields[k]) fields[k] = null; });
       const r = await adm(`/offers/${code}/edit`, { fields, approve: true, reason: reason || undefined, reasonCode: fields.type !== undefined && Object.keys(TYPES).find(k => TYPES[k].l === el.dataset.type) !== fields.type ? 'wrong_type' : 'wrong_field' }); done(el, r.changed.length ? `已修改 ${r.changed.map(f => FIELD_L[f] || f).join('、')} 并通过` : '没有改动，已通过');

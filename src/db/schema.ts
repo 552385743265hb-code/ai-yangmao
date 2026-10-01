@@ -40,6 +40,8 @@ export const offers = sqliteTable('offers', {
   platformId: text('platform_id').notNull().references(() => platforms.id),
   title: text('title').notNull(),
   type: text('type', { enum: ['new', 'trial', 'free', 'perk', 'topup', 'gift', 'standing', 'apply'] }).notNull(),
+  // 这条福利里免费可用的具体模型（“按模型找”按它汇总：某个模型在哪些平台免费）
+  models: text('models', { mode: 'json' }).$type<string[]>().notNull().default(sql`'[]'`),
   modalities: text('modalities', { mode: 'json' }).$type<string[]>().notNull(),
   claimMethod: text('claim_method', { enum: ['auto', 'signup', 'app', 'form', 'topup', 'member', 'code'] }).notNull(),
   requirements: text('requirements', { mode: 'json' }).$type<string[]>().notNull(),

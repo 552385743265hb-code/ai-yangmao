@@ -38,7 +38,7 @@ const clip = (v: string, n: number) => (v && v.length > n ? v.slice(0, n - 1) + 
 function toOffer(src: Source, e: Extracted & { fixedId?: string }, url: string, text: string): OfferIn {
   return {
     id: e.fixedId ?? `${src.platformId}-${slug(e.key)}`.slice(0, 80), platformId: src.platformId!, sourceId: src.id || undefined,
-    title: clip(e.title, 120), type: e.type, modalities: e.modalities as OfferIn['modalities'], claimMethod: e.claimMethod as OfferIn['claimMethod'],
+    title: clip(e.title, 120), type: e.type, modalities: e.modalities as OfferIn['modalities'], models: e.models ?? [], claimMethod: e.claimMethod as OfferIn['claimMethod'],
     // 超过长度上限的字段截短保留，不再让整条羊毛因校验失败被丢弃（2026-10-01 批量抓取时 AWS、硅基流动两条因额度描述超长被丢）
     requirements: e.requirements?.length ? e.requirements : ['unknown'], audience: e.audience ?? 'unclear', valueText: clip(e.valueText, 200),
     usdEstimate: e.usdEstimate ?? null, claimStart: e.claimStart ?? null, claimEnd: e.claimEnd ?? null,

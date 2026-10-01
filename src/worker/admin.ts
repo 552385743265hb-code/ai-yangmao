@@ -30,7 +30,7 @@ function view(o: OfferRow, platformName: string, now = new Date()) {
     requirements: o.requirements, audience: o.audience, claimMethod: o.claimMethod, creditValidity: o.creditValidity,
     sourceTz: o.sourceTz, claimStart: o.claimStart, claimEnd: o.claimEnd, endKind: o.endKind,
     evidenceUrl: o.evidence.url, evidenceTier: o.evidence.tier, excerpts: o.evidence.excerpts, missingEvidence: missingEvidence(o.evidence.excerpts),
-    steps: o.steps, modalities: o.modalities, usdEstimate: o.usdEstimate, usdMax: o.usdMax ?? null, adminNote: o.adminNote ?? null, reviewMemo: o.reviewMemo ?? null,
+    steps: o.steps, models: o.models ?? [], modalities: o.modalities, usdEstimate: o.usdEstimate, usdMax: o.usdMax ?? null, adminNote: o.adminNote ?? null, reviewMemo: o.reviewMemo ?? null,
     link: `https://ai-yangmao.com/#offer-${o.id}`,
   };
 }
@@ -207,7 +207,7 @@ admin.post('/offers/:ref/:action{approve|reject}', async c => {
 });
 
 /** 补丁只允许编辑业务字段；补丁合并后仍由 offerIn 校验完整活动。 */
-const EDITABLE_FIELDS = new Set(['title', 'type', 'valueText', 'usdEstimate', 'usdMax', 'claimStart', 'claimEnd', 'endKind', 'creditValidity',
+const EDITABLE_FIELDS = new Set(['title', 'type', 'valueText', 'usdEstimate', 'usdMax', 'models', 'claimStart', 'claimEnd', 'endKind', 'creditValidity',
   'audience', 'requirements', 'modalities', 'platformId', 'sourceTz', 'claimMethod', 'steps', 'evidence', 'publishedAt', 'sourceId']);
 admin.post('/offers/:ref/edit', async c => {
   const o = await findOffer(c.env, c.req.param('ref'));
@@ -331,7 +331,7 @@ type NoticeKind = 'digest' | 'urgent';
 type NoticeChannel = 'telegram' | 'feishu';
 type NoticeStage = 'new' | 'changed' | 'ending' | 'ended' | 'urgent';
 type NoticeMark = { offerId: string; stage: NoticeStage; messageId?: string };
-const FIELD_NAME: Record<string, string> = { title: '标题', type: '类型', modalities: '模态', claimMethod: '领取方式', requirements: '门槛', audience: '适用对象', valueText: '额度', usdEstimate: '价值估算', usdMax: '价值上限', claimStart: '领取开始', claimEnd: '领取截止', endKind: '截止方式', creditValidity: '额度有效期', sourceTz: '官方时区', steps: '领取步骤', evidence: '官方证据' };
+const FIELD_NAME: Record<string, string> = { title: '标题', type: '类型', modalities: '模态', claimMethod: '领取方式', requirements: '门槛', audience: '适用对象', valueText: '额度', usdEstimate: '价值估算', usdMax: '价值上限', models: '免费模型', claimStart: '领取开始', claimEnd: '领取截止', endKind: '截止方式', creditValidity: '额度有效期', sourceTz: '官方时区', steps: '领取步骤', evidence: '官方证据' };
 const showValue = (value: unknown) => value == null ? '未写明' : Array.isArray(value) ? value.join('、') : typeof value === 'object' ? '已更新' : String(value);
 
 export async function buildNotice(env: Env, kind: NoticeKind, channel: NoticeChannel) {

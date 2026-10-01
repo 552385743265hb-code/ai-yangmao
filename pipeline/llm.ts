@@ -9,6 +9,7 @@ export interface Extracted {
   title: string;
   type: 'new' | 'free' | 'perk' | 'topup' | 'gift' | 'standing' | 'apply';
   modalities: string[];
+  models?: string[];
   claimMethod: string;
   requirements: string[];
   audience: 'new' | 'old' | 'all' | 'unclear';
@@ -38,6 +39,7 @@ const PROMPT = `你是"AI 羊毛牧场"的信息抽取器。下面是某个 AI �
 - title：中文标题，20 字以内，保留原始品牌和权益名称
 - type：new 注册新人礼（只给新注册的账号）/ trial 应用尝鲜（首次使用某个应用、客户端或新功能就送，新老用户都能领，如“首次登录桌面端送 6 元”）/ free 限时免费开放 / perk 会员福利（重置、加赠）/ topup 充值赠送 / gift 会员免费送 / standing 常驻免费额度 / apply 申请制
 - modalities：text / code / image / video / audio 的子集（3D 模型生成算 image）
+- models：这条福利里能免费用的具体模型名，按官方写法逐个列出（如 ["Gemini 3.8 Flash", "GLM-4.7-Flash", "Big Pickle"]）；只是平台通用额度、没点名具体模型就给空数组。不要写“等”“系列”这类泛称
 - claimMethod：auto / signup / app（下载应用并登录，含 App、桌面端、命令行工具）/ form / topup / member / code。官方一般不专门写怎么领，按常识推断：应用的福利＝下载应用并登录（app）；云厂商或模型的福利＝开通并使用服务（signup 或 auto）；会员的福利＝充值开会员（member 或 topup）
 - requirements：none / unknown（官方条件未明确）/ phone（海外手机号）/ card（海外信用卡）/ net（海外网络）/ realname / biz / student / invite / targeted / "pay:金额" / "member:会员名"
 - audience：new / old / all / unclear（原文没写清楚就用 unclear）
@@ -223,6 +225,8 @@ export function tidy(o: Extracted): Extracted {
     modalities: (() => { const m = [...new Set(toList(o.modalities).map(x => x.toLowerCase()).map(x => (/^3d|3d$|mesh|model3d/.test(x) ? 'image' : x)).filter(x => ['text', 'code', 'image', 'video', 'audio'].includes(x)))]; return m.length ? m : ['text']; })(),
     // 模型偶尔只写 member / pay 不带内容，补成可读的占位，交给审核时修正
     requirements: normalizeRequirements(o.requirements),
+    // 模型名里有空格（如 Gemini 3.8 Flash），字符串只按逗号、顿号、分号拆
+    models: [...new Set((Array.isArray(o.models) ? o.models.map(String) : typeof o.models === 'string' ? (o.models as string).split(/[,，、;；]+/) : []).map(x => x.trim()).filter(x => x && x.length <= 80 && !/^(等|系列|and more|etc\.?)$/i.test(x)))].slice(0, 80),
     steps: toList(o.steps).length && Array.isArray(o.steps) ? o.steps : typeof o.steps === 'string' ? [o.steps] : [],
     usdEstimate: typeof o.usdEstimate === 'number' ? o.usdEstimate : Number(o.usdEstimate) || null,
     claimStart: isoOrNull(o.claimStart), claimEnd, creditValidity: o.creditValidity || null,

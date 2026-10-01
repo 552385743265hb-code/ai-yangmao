@@ -41,7 +41,6 @@ let PLATFORMS = [];
 let OFFERS = [];
 let META = { lastSuccessfulCollect: null };
 let COVERAGE = null;
-const MODELS = []; // 按模型找：数据积累中
 
 async function loadData() {
   const get = async p => { const r = await fetch(p, { headers: { Accept: 'application/json' } }); if (!r.ok) throw new Error(`${p} ${r.status}`); return r.json(); };
@@ -62,7 +61,7 @@ async function loadData() {
       verifiedAt: o.lastVerifiedAt, withdrawnAt: o.withdrawnAt,
       st: o.evidence.tier, tz: o.sourceTz, val: o.creditValidity || '官方未写明', aud: o.audience,
       cn: !overseas, early: CHANNEL[o.firstChannel] || o.firstChannel || '官方页面', why: o.withdrawnReason || '',
-      steps: o.steps || [], evidence: o.evidence, note: o.adminNote || '', verify: o.verifyResult || '', apiStatus: o.status,
+      steps: o.steps || [], models: o.models || [], evidence: o.evidence, note: o.adminNote || '', verify: o.verifyResult || '', apiStatus: o.status,
     };
   });
   META = meta;

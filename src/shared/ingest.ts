@@ -23,6 +23,8 @@ export const offerIn = z.object({
   title: z.string().min(2).max(120),
   type: z.enum(OFFER_TYPES),
   modalities: z.array(z.enum(['text', 'code', 'image', 'video', 'audio'])).min(1),
+  // 免费可用的具体模型名（官方写法），没有就空数组
+  models: z.array(z.string().trim().min(1).max(80)).max(80).default([]),
   claimMethod: z.enum(['auto', 'signup', 'app', 'form', 'topup', 'member', 'code']),
   requirements: z.array(z.string().regex(REQ)).min(1),
   audience: z.enum(['new', 'old', 'all', 'unclear']).default('unclear'),
