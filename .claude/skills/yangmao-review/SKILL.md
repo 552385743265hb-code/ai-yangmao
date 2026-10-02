@@ -24,6 +24,7 @@ npx tsx $S plan <短码> patch.json         # 试算改后的检查结果，不�
 npx tsx $S apply <短码> patch.json --reason "理由" [--code wrong_field] [--approve] [--dry-run]
 npx tsx $S memo <短码> memo.txt           # 内部核验记录（仅管理员可见）
 npx tsx $S approve <短码> | retest <短码> | reject <短码> --code <代码> --reason "理由"
+npx tsx $S suggest <短码> approve|history|reject|judge [--code 代码] --reason "理由"   # 只给审批卡片标建议，不改状态（批量预审用）
 ```
 
 `patch.json` 只写要改的字段（字段名见 data-contract 第二节）；`evidence` 可以只写要改的部分，比如 `{"evidence":{"tier":"tested"}}`，脚本会和现有证据合并。

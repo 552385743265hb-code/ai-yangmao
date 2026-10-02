@@ -1180,6 +1180,14 @@ function checksBlock(o) {
 }
 const RC = [['paid_bundle', '付费套餐自带'], ['not_ai', '不是 AI 额度'], ['wrong_platform', '平台归错'], ['duplicate', '重复'], ['expired', '旧活动 · 日期查不到'], ['vague', '额度不明'], ['wrong_type', '分类错']];
 const FIELD_L = { models: '免费模型', tags: '标签', publishedAt: '发布时间', usdMax: '价值上限', steps: '领取步骤', sourceTz: '官方时区', modalities: '模态', title: '标题', type: '类型', valueText: '额度', usdEstimate: '折合美元', claimStart: '开始', claimEnd: '截止', endKind: '截止方式', creditValidity: '有效期', audience: '适用对象', requirements: '门槛', modalities: '模态', platformId: '平台', sourceTz: '时区', claimMethod: '领取方式' };
+const SUG = { approve: ['good', '✓', '建议通过'], history: ['good', '⌛', '建议作为历史上架'], reject: ['bad', '✕', '建议拒绝'], judge: ['warn', '?', '需要你判断'] };
+const RCL_ALL = { paid_bundle: '付费套餐自带', not_ai: '不是 AI 额度', wrong_platform: '平台归错', duplicate: '重复', expired: '旧活动 · 日期查不到', vague: '额度不明', wrong_type: '分类错', wrong_field: '字段错', other: '其他' };
+function sugBlock(o) {
+  const g = o.suggestion; if (!g) return '';
+  const [tone, icon, label] = SUG[g.verdict] || SUG.judge;
+  const color = tone === 'bad' ? 'var(--critical-ink)' : tone === 'warn' ? 'var(--warning-ink, #b26a00)' : 'var(--good-ink, #2e7d32)';
+  return `<div class="card" style="padding:8px 10px;border-left:4px solid ${color};margin:0"><div class="row" style="gap:8px;flex-wrap:wrap"><b style="color:${color}">${icon} ${label}</b>${g.code ? `<span class="chip">${esc(RCL_ALL[g.code] || g.code)}</span>` : ''}<span class="small muted">${esc(g.by || '')}${g.at ? ' · ' + esc(g.at.slice(0, 10)) : ''}</span></div><div class="small warn-note" style="margin-top:4px;color:var(--ink)">${esc(g.reason || '')}</div></div>`;
+}
 function pAdmin() {
   if (!ADM.token) {
     main().innerHTML = ribbon() + ph('后台', '用管理员密钥登录。刷新页面不用重新输入，关掉标签页后需要重新登录；勾选“记住”则一直保留，直到退出登录。') + `
@@ -1209,9 +1217,10 @@ async function admQueue() {
   const q = await adm('/queue');
   const box = $('#admBody');
   // live：已上架的条目（字段待补），只显示修改，不显示通过和拒绝
-  const card = (o, live = false) => `<article class="card" data-code="${o.code}" data-type="${esc(o.type)}" style="display:flex;flex-direction:column;gap:10px">
+  const card = (o, live = false) => `<article class="card" data-code="${o.code}" data-type="${esc(o.type)}" data-sug="${o.suggestion?.verdict || 'none'}" style="display:flex;flex-direction:column;gap:10px">
     <div class="row" style="justify-content:space-between"><span class="row" style="gap:8px">${TYPES[Object.keys(TYPES).find(k => TYPES[k].l === o.type)] ? etag(Object.keys(TYPES).find(k => TYPES[k].l === o.type)) : esc(o.type)}<span class="chip">${esc(o.platform)}</span><span class="st ${o.evidenceTier === 'media' ? 'warn' : 'good'}"><b>${o.evidenceTier === 'media' ? '!' : '✓'}</b>${TIER_L[o.evidenceTier] || o.evidenceTier}</span>${o.pendingUpdate ? '<span class="st warn"><b>!</b>条款更新待审，旧版仍公开</span>' : ''}${o.status === 'ended' ? '<span class="st"><b>⌛</b>已结束，通过后计入历史</span>' : ''}</span><span class="small muted num">${esc(o.code)}</span></div>
     <div><div style="font-weight:600;font-size:16px">${esc(o.title)}</div><div class="${/未写明|不明确/.test(o.value) ? 'warn-note' : ''}" style="margin-top:4px">${esc(o.value)}</div><div class="small muted" style="margin-top:4px">${esc(o.end)} · 额度有效期：${esc(o.creditValidity || '未写')} · 门槛：${o.requirements.map(r => esc(reqLabel(r))).join('、')} · 对象：${AUD[o.audience] || o.audience}</div></div>
+    ${sugBlock(o)}
     ${checksBlock(o)}
     <div class="rows">${EX_L.filter(([k]) => k !== 'claim' || o.excerpts[k]).map(([k, l]) => `<div class="orow" style="grid-template-columns:auto minmax(0,1fr);padding:6px 2px">${o.excerpts[k] ? `<span class="st good"><b>✓</b>${l}</span>` : `<span class="st warn"><b>!</b>${l}</span>`}<span class="t" style="font-weight:400;font-size:13.5px">${o.excerpts[k] ? '「' + esc(o.excerpts[k]) + '」' : '原文里没有找到'}</span></div>`).join('')}</div>
     <div class="small" style="word-break:break-all">来源：<a href="${esc(o.evidenceUrl)}" target="_blank" rel="noopener" style="text-decoration:underline">${esc(o.evidenceUrl)}</a></div>
@@ -1251,12 +1260,18 @@ async function admQueue() {
       <div class="row" style="grid-column:1/-1;align-items:center"><button class="btn sm pri" type="submit">${live ? '保存' : '保存并通过'}</button><span data-formmsg role="alert" class="small" style="font-weight:600"></span></div>
     </form>
   </article>`;
+  const sugCount = k => q.pending.filter(o => (o.suggestion?.verdict || 'none') === k).length;
+  const sugTabs = [['all', '全部', q.pending.length], ['approve', '建议通过', sugCount('approve')], ['history', '建议作为历史', sugCount('history')], ['reject', '建议拒绝', sugCount('reject')], ['judge', '需要你判断', sugCount('judge')], ['none', '未标注', sugCount('none')]].filter(([k, , n]) => k === 'all' || n);
   box.innerHTML = `<p class="small muted">待审 ${q.pending.length} 条 · 新线索 ${q.newLeads} 条</p>
+    ${sugTabs.length > 2 ? `<div class="seg" role="tablist" style="margin-bottom:12px;flex-wrap:wrap">${sugTabs.map(([k, l, n]) => `<button type="button" data-sugtab="${k}" aria-pressed="${(ADM.sug || 'all') === k}">${l} ${n}</button>`).join('')}</div>` : ''}
     ${q.pendingPlatforms.length ? `<div class="card" style="margin-bottom:12px"><h3>新平台待准入</h3>${q.pendingPlatforms.map(p => `<div class="row" style="justify-content:space-between;padding:6px 0"><span>${esc(p.name)}（${esc(p.id)}）${p.site ? ` · <a href="${esc(p.site)}" target="_blank" rel="noopener">官网</a>` : ''}</span><span class="row"><button class="btn sm good" data-plat="${p.id}:approve">准入</button><button class="btn sm bad" data-plat="${p.id}:reject">拒绝</button></span></div>`).join('')}</div>` : ''}
     ${q.suggestAutoPublish.map(x => `<div class="card" style="margin-bottom:12px"><span class="st warn"><b>!</b>建议放开</span> 信源 ${esc(x.id)} 已连续原样通过 ${x.cleanStreak} 条 <button class="btn sm" data-autopub="${x.id}">放开自动上架</button></div>`).join('')}
     ${q.needsVerification?.length ? `<section>${secH('证据待核验', '旧版已退出当前可领；核对官方页面后才能确认结束或恢复')}${q.needsVerification.map(o => `<form class="card" data-withdraw="${esc(o.code)}" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px"><b>${esc(o.title)}</b><a href="${esc(o.evidenceUrl)}" target="_blank" rel="noopener">打开当前证据 ↗</a><label class="field">官方撤回链接<input type="url" name="evidenceUrl" value="${esc(o.evidenceUrl)}" required></label><label class="field">官方撤回说明<input name="reason" required minlength="4" placeholder="请引用官方明确撤回或停止发放的文字"></label><div class="row"><button class="btn sm good" type="button" data-retest="${esc(o.code)}">我核对过，仍有效</button><button class="btn sm bad" type="submit">核实后结束</button></div></form>`).join('')}</section>` : ''}
     <div class="grid g2">${q.pending.map(o => card(o)).join('') || emptySheep('待审队列是空的。')}</div>
     ${q.incomplete?.length ? `<section><details><summary style="cursor:pointer">${secH('已上架、字段待补', `${q.incomplete.length} 条：补齐后日历、时间线、按模型找、价值统计等栏目才完整`)}</summary><div class="grid g2">${q.incomplete.map(o => card(o, true)).join('')}</div></details></section>` : ''}`;
+  const applySug = () => $$('[data-sug]', box).forEach(el => { if (el.closest('details')) return; el.style.display = !ADM.sug || ADM.sug === 'all' || el.dataset.sug === ADM.sug ? '' : 'none'; });
+  $$('[data-sugtab]', box).forEach(b => b.addEventListener('click', () => { ADM.sug = b.dataset.sugtab; $$('[data-sugtab]', box).forEach(x => x.setAttribute('aria-pressed', x === b)); applySug(); }));
+  applySug();
   const done = (el, msg) => { el.style.opacity = .45; el.querySelectorAll('button,input,select').forEach(x => { x.disabled = true; }); toast(msg); };
   $$('[data-code]', box).forEach(el => {
     const code = el.dataset.code, o = [...q.pending, ...(q.incomplete || [])].find(x => x.code === code);
@@ -1272,8 +1287,16 @@ async function admQueue() {
     });
     el.querySelector('[data-act="note"]')?.addEventListener('click', async () => { try { await adm(`/offers/${code}/note`, { note: el.querySelector('[data-note]').value }); toast('心得已保存'); } catch (e) { toast('没有保存：' + e.message); } });
     const rb = el.querySelector('[data-rejectbox]');
-    el.querySelector('[data-act="rejectopen"]')?.addEventListener('click', () => { rb.hidden = !rb.hidden; });
     let rc = null;
+    el.querySelector('[data-act="rejectopen"]')?.addEventListener('click', () => {
+      rb.hidden = !rb.hidden;
+      // 有“建议拒绝”时自动填好理由代码和理由，确认即可
+      const g = o?.suggestion;
+      if (!rb.hidden && g?.verdict === 'reject' && !rc && !el.querySelector('[data-reason]').value) {
+        rc = g.code || 'other'; el.querySelector('[data-reason]').value = g.reason || '';
+        rb.querySelectorAll('[data-rc]').forEach(x => x.setAttribute('aria-pressed', x.dataset.rc === rc));
+      }
+    });
     rb.querySelectorAll('[data-rc]').forEach(b => b.addEventListener('click', () => { rc = rc === b.dataset.rc ? null : b.dataset.rc; rb.querySelectorAll('[data-rc]').forEach(x => x.setAttribute('aria-pressed', x.dataset.rc === rc)); }));
     el.querySelector('[data-act="reject"]')?.addEventListener('click', async () => {
       const reason = el.querySelector('[data-reason]').value.trim();

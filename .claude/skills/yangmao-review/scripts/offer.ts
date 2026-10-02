@@ -8,6 +8,7 @@
 //   approve <短码或ID> [--dry-run]
 //   reject <短码或ID> --code <理由代码> --reason "理由" [--dry-run]
 //   retest <短码或ID> [--dry-run]                管理员核对仍有效（更新核验时间）
+//   suggest <短码或ID> approve|history|reject|judge|clear [--code 理由代码] --reason "理由"   给审批卡片标审核建议（不改状态）
 // 管理员密钥从 .prod.secrets 读取，不会打印。写入命令加 --dry-run 只打印请求内容。
 import { readFileSync, existsSync } from 'node:fs';
 
@@ -152,6 +153,12 @@ async function main() {
     const { offer: v } = await call<{ offer: View }>(`/offers/${encodeURIComponent(ref)}`);
     const fields = mergePatch(v, JSON.parse(readFileSync(positional[2], 'utf8')));
     await write(`/offers/${encodeURIComponent(ref)}/edit`, { fields, approve: flag('--approve'), reason, reasonCode: code });
+    return;
+  }
+  if (cmd === 'suggest') {
+    const verdict = positional[2];
+    if (!['approve', 'history', 'reject', 'judge', 'clear'].includes(verdict)) throw new Error('suggest <短码> approve|history|reject|judge|clear [--code 理由代码] --reason "理由"');
+    await write(`/offers/${encodeURIComponent(ref)}/suggest`, verdict === 'clear' ? { verdict: null } : { verdict, code: opt('--code') ?? null, reason: opt('--reason') ?? '' });
     return;
   }
   if (cmd === 'memo') { await write(`/offers/${encodeURIComponent(ref)}/memo`, { memo: readFileSync(positional[2], 'utf8') }); return; }

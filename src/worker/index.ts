@@ -56,7 +56,7 @@ for (const path of ['/api/offers', '/api/platforms']) app.use(path, async (c, ne
 });
 
 // 公开接口不输出内部核验记录
-const withStatus = (o: OfferRow, now: Date) => { const { reviewMemo: _memo, ...pub } = o; return { ...pub, status: liveStatus(o, now), missingEvidence: missingEvidence(o.evidence.excerpts) }; };
+const withStatus = (o: OfferRow, now: Date) => { const { reviewMemo: _memo, reviewSuggestion: _suggestion, ...pub } = o; return { ...pub, status: liveStatus(o, now), missingEvidence: missingEvidence(o.evidence.excerpts) }; };
 
 app.get('/api/health', c => c.json({ ok: true, time: new Date().toISOString() }));
 

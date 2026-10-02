@@ -34,7 +34,7 @@ function view(o: OfferRow, platformName: string, now = new Date()) {
     requirements: o.requirements, audience: o.audience, claimMethod: o.claimMethod, creditValidity: o.creditValidity,
     sourceTz: o.sourceTz, claimStart: o.claimStart, claimEnd: o.claimEnd, endKind: o.endKind,
     evidenceUrl: o.evidence.url, evidenceTier: o.evidence.tier, excerpts: o.evidence.excerpts, missingEvidence: missingEvidence(o.evidence.excerpts),
-    steps: o.steps, models: o.models ?? [], tags: o.tags ?? [], publishedAt: o.publishedAt ?? null, modalities: o.modalities, usdEstimate: o.usdEstimate, usdMax: o.usdMax ?? null, adminNote: o.adminNote ?? null, reviewMemo: o.reviewMemo ?? null,
+    steps: o.steps, models: o.models ?? [], tags: o.tags ?? [], publishedAt: o.publishedAt ?? null, modalities: o.modalities, usdEstimate: o.usdEstimate, usdMax: o.usdMax ?? null, adminNote: o.adminNote ?? null, reviewMemo: o.reviewMemo ?? null, suggestion: o.reviewSuggestion ?? null,
     // 上架前检查：缺了哪些字段、影响哪些栏目（规格见 src/shared/spec.ts）
     checks: checkOffer(o, now).map(i => ({ ...i, sections: i.sections.map(k => SECTIONS[k]) })),
     link: `https://ai-yangmao.com/#offer-${o.id}`,
@@ -46,7 +46,7 @@ export const admin = new Hono<{ Bindings: Env; Variables: { role: 'admin' | 'rev
 /** 审核员能用的接口：看待审、通过、拒绝、修改、核验记录、线索、补录、补信源、送交平台准入。 */
 const REVIEWER_ALLOWED: [string, RegExp][] = [
   ['GET', /^\/(whoami|queue|leads)$/], ['GET', /^\/offers\/[^/]+$/],
-  ['POST', /^\/offers\/[^/]+\/(approve|reject|edit|memo|note|retested)$/],
+  ['POST', /^\/offers\/[^/]+\/(approve|reject|edit|memo|note|retested|suggest)$/],
   ['POST', /^\/leads\/\d+\/(dismiss|reviewing|retry)$/], ['POST', /^\/(manual|sources|platforms)$/],
 ];
 export function reviewerFor(env: Env, token: string | undefined): string | null {
@@ -321,6 +321,18 @@ admin.post('/offers/:ref/memo', async c => {
   const memo = body.data.memo.trim() || null;
   await db(c.env).update(s.offers).set({ reviewMemo: memo }).where(eq(s.offers.id, o.id));
   return c.json({ ok: true, code: shortCode(o.id), reviewMemo: memo });
+});
+
+/** 审核建议：给审批卡片标“建议通过 / 作为历史 / 建议拒绝 / 需要你判断”和理由；不改条款、不改审核状态。 */
+admin.post('/offers/:ref/suggest', async c => {
+  const o = await findOffer(c.env, c.req.param('ref'));
+  if (!o) return c.json({ error: '找不到这条羊毛' }, 404);
+  const body = z.object({ verdict: z.enum(['approve', 'history', 'reject', 'judge']).nullable(), code: z.string().max(40).nullish(), reason: z.string().max(500).default('') })
+    .safeParse(await c.req.json().catch(() => null));
+  if (!body.success) return c.json({ error: '建议格式不正确', issues: body.error.issues }, 400);
+  const suggestion = body.data.verdict ? { verdict: body.data.verdict, code: body.data.code ?? null, reason: body.data.reason.trim(), by: c.get('who'), at: new Date().toISOString() } : null;
+  await db(c.env).update(s.offers).set({ reviewSuggestion: suggestion }).where(eq(s.offers.id, o.id));
+  return c.json({ ok: true, code: shortCode(o.id), suggestion });
 });
 
 /** 管理员使用心得：不改条款、不影响审核状态，写了立即公开；空字符串表示删除。 */

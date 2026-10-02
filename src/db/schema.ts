@@ -67,6 +67,8 @@ export const offers = sqliteTable('offers', {
   adminNote: text('admin_note'),
   // 内部核验记录（漏抓原因、核验程度、证据截图位置），只给管理员看，公开接口会去掉
   reviewMemo: text('review_memo'),
+  // 审核建议（仅管理员可见）：审批卡片顶部显示“建议通过 / 作为历史 / 建议拒绝 / 需要你判断”和理由
+  reviewSuggestion: text('review_suggestion', { mode: 'json' }).$type<{ verdict: 'approve' | 'history' | 'reject' | 'judge'; code?: string | null; reason: string; by?: string; at?: string } | null>(),
   reviewState: text('review_state', { enum: ['pending', 'approved', 'rejected'] }).notNull().default('pending'),
   evidence: text('evidence', { mode: 'json' }).$type<Evidence>().notNull(),
   steps: text('steps', { mode: 'json' }).$type<string[]>().notNull().default(sql`'[]'`),
