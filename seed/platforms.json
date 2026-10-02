@@ -2463,6 +2463,13 @@
    "kind": "web_list",
    "url": "https://www.sensenova.cn/token-plan",
    "tier": "site"
+  },
+  {
+   "id": "windsurf-add-muq8txob",
+   "platform": "windsurf",
+   "kind": "web_list",
+   "url": "https://devin.ai/blog",
+   "tier": "official"
   }
  ]
 }
