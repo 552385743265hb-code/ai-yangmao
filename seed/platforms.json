@@ -2472,6 +2472,13 @@
    "kind": "web_list",
    "url": "https://devin.ai/blog",
    "tier": "official"
+  },
+  {
+   "id": "workbuddy-add-mur5td02",
+   "platform": "workbuddy",
+   "kind": "web_list",
+   "url": "https://www.workbuddy.cn/events/invite/",
+   "tier": "site"
   }
  ]
 }

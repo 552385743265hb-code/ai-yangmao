@@ -663,3 +663,5 @@ INSERT INTO sources (id, platform_id, kind, url, tier, config, enabled) VALUES (
   ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
 INSERT INTO sources (id, platform_id, kind, url, tier, config, enabled) VALUES ('windsurf-add-muq8txob', 'windsurf', 'web_list', 'https://devin.ai/blog', 'official', '{}', 1)
   ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
+INSERT INTO sources (id, platform_id, kind, url, tier, config, enabled) VALUES ('workbuddy-add-mur5td02', 'workbuddy', 'web_list', 'https://www.workbuddy.cn/events/invite/', 'site', '{}', 1)
+  ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
