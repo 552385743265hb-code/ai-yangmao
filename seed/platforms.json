@@ -63,7 +63,8 @@
    "name": "智谱 Z.ai",
    "type": "lab",
    "site": "https://bigmodel.cn",
-   "x": []
+   "x": [],
+   "wechat": "ZCode（gh_035653357d11）"
   },
   {
    "id": "minimax",
@@ -851,7 +852,8 @@
    "name": "WorkBuddy",
    "type": "tool",
    "site": "https://www.workbuddy.cn",
-   "x": []
+   "x": [],
+   "wechat": "腾讯WorkBuddy"
   },
   {
    "id": "sensenova",
