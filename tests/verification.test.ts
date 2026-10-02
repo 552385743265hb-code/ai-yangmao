@@ -228,6 +228,14 @@ describe('review gates and preserved public version', () => {
       .toEqual({ value_text: '100 tokens', review_state: 'approved' });
   });
 
+  it('does not propose cosmetic drift (title wording, modalities, timezone, claim method) on approved offers', async () => {
+    await call('ingest/offers', [offer]);
+    await call('admin/offers/vendor-free/approve', {}, 'admin');
+    const r = await call('ingest/offers', [{ ...offer, title: offer.title + ' (reworded)', modalities: ['text', 'image'], sourceTz: 'Asia/Tokyo', claimMethod: 'auto',
+      evidence: { ...evidence, excerpts: { ...evidence.excerpts, benefit: 'Another sentence about the same 100 tokens' } } }]);
+    expect((await call('admin/queue', undefined, 'admin')).body.pending).toEqual([]);
+  });
+
   it('ignores ordering and whitespace and discards legacy evidence-only proposals', async () => {
     const initial = { ...offer, models: ['A', 'B'], modalities: ['text', 'code'] };
     await call('ingest/offers', [initial]);

@@ -215,14 +215,17 @@ ingest.post('/offers', async c => {
         ...adminRevisions.flatMap(revision => revision.diff.map(change => change.field)),
         ...(existingProposal?.manualFields ?? []),
       ]);
+      // 人工改过的字段一律保留（2026-10-03）：原先“摘录变了就放开”的例外让模型每次换一句摘录就能改掉管理员确认过的内容。
+      // 官方条款真变了，由日期、类型、门槛、美元、免费模型或额度数字的变化触发提案，管理员再改。
+      const factNumbers = (t: string) => (t.normalize('NFKC').match(/\d[\d,.]*/g) ?? []).map(x => x.replace(/,/g, '')).sort().join('|');
       const excerptChanged = (['benefit', 'eligibility', 'validity'] as const).some(key => {
         const before = prev.evidence.excerpts[key]?.replace(/\s+/g, ' ').trim();
         const after = o.evidence.excerpts[key]?.replace(/\s+/g, ' ').trim();
         return !!before && !!after && before !== after;
       });
       for (const field of protectedFields) {
-        // 有新的条款原文支撑时，人工修正过的必要字段也可提出变化，仍不得直接覆盖。
-        if (prev.reviewState === 'approved' && isReviewField(field) && excerptChanged && !existingProposal?.manualFields.includes(field)) continue;
+        // 唯一例外：官方原文变了、额度里的数字也变了，额度文字可以进提案（仍不直接覆盖）
+        if (prev.reviewState === 'approved' && field === 'valueText' && excerptChanged && factNumbers(o.valueText) !== factNumbers(prev.valueText) && !existingProposal?.manualFields.includes(field)) continue;
         if (field in row) (row as Record<string, unknown>)[field] = existingProposal?.manualFields.includes(field)
           ? existingProposal.candidate[field] : (prev as Record<string, unknown>)[field];
       }
@@ -243,6 +246,12 @@ ingest.post('/offers', async c => {
       if (row.requirements.includes('unknown')) row.requirements = prev.requirements;
       row.steps = prev.steps;
       row.creditValidity = prev.creditValidity;
+      // 已审核条目的展示性字段不随模型措辞漂移（2026-10-03：一轮采集对刚审过的 16 条提出了只改标题措辞、按输入能力加模态、把文档日期当发布时间的提案）
+      row.title = prev.title; row.modalities = prev.modalities as typeof row.modalities; row.sourceTz = prev.sourceTz;
+      row.claimMethod = prev.claimMethod; row.audience = prev.audience;
+      if (prev.publishedAt) row.publishedAt = prev.publishedAt;
+      const numbers = (t: string) => (t.normalize('NFKC').match(/\d[\d,.]*/g) ?? []).map(x => x.replace(/,/g, '')).sort().join('|');
+      if (numbers(row.valueText) === numbers(prev.valueText)) row.valueText = prev.valueText;
       row.sourceId = prev.sourceId;
       // 新提案也不能因模型漏摘录丢掉已审核证据。
       if (row.evidence.url === prev.evidence.url) {
