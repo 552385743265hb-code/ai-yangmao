@@ -157,7 +157,8 @@ async function publicationError(env: Env, offer: OfferRow): Promise<string | nul
 
 admin.get('/queue', async c => {
   const d = db(c.env), names = await platformNames(c.env), now = new Date();
-  const pending = await d.select().from(s.offers).where(eq(s.offers.reviewState, 'pending')).orderBy(desc(s.offers.discoveredAt));
+  // 先抓到的在前，新抓取的排在最后（管理员按顺序审，新来的不打乱已预审的条目，2026-10-03）
+  const pending = await d.select().from(s.offers).where(eq(s.offers.reviewState, 'pending')).orderBy(s.offers.discoveredAt, s.offers.id);
   const proposals = (await d.select().from(s.offerProposals).orderBy(desc(s.offerProposals.updatedAt)))
     .filter(proposal => proposal.diff.some(change => isReviewField(change.field)));
   const originals = proposals.length ? await d.select().from(s.offers).where(inArray(s.offers.id, proposals.map(p => p.offerId))) : [];
