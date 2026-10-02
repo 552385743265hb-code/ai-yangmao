@@ -1515,6 +1515,8 @@ window.addEventListener('resize', () => {
   }, 180);
 });
 let refreshInFlight = false, lastRefreshAt = Date.now();
+// 后台页、或者正在填表时不自动重画：重画会清空正在修改的表单（2026-10-03 管理员反馈）。后台的数据点“待审”标签或刷新浏览器即可更新。
+const keepPage = () => route()[0] === 'admin' || !!document.activeElement?.closest?.('form, textarea, input, select') || $$('[data-editform]:not([hidden])').length > 0;
 async function refreshPage() {
   if (refreshInFlight) return;
   refreshInFlight = true;
@@ -1530,9 +1532,9 @@ setInterval(() => {
   $$('[data-end]').forEach(el => { el.textContent = cdText(+el.dataset.end - now); });
   $$('[data-since]').forEach(el => { el.textContent = cdText(now - +el.dataset.since); });
   const endedOrStarted = $$('[data-end]').some(el => +el.dataset.end <= now);
-  if (!refreshInFlight && (ymd(new Date()) !== ymd(T0) || now - lastRefreshAt >= 5 * 60_000 || (endedOrStarted && now - lastRefreshAt >= 10_000))) refreshPage();
+  if (!refreshInFlight && !keepPage() && (ymd(new Date()) !== ymd(T0) || now - lastRefreshAt >= 5 * 60_000 || (endedOrStarted && now - lastRefreshAt >= 10_000))) refreshPage();
 }, 1000);
-const reTheme = () => render(true);
+const reTheme = () => { if (!keepPage()) render(true); }; // 深色模式按时切换时，后台只换配色（CSS 变量），不重画
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', reTheme);
 new MutationObserver(reTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
