@@ -381,6 +381,7 @@
 - 本批核验入口：https://otter.ai/referral-terms；https://otter.ai/pricing。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## mistral
+- 只收免费计划每月 $10 API credits（价格页），Le Chat / Vibe 免费版的有限聊天、搜索、生图不收。Studio 文档原文“Free mode: API access is enabled by default with no credit card required”，门槛 none。学生 Pro 折扣不收。（2026-10-03 管理员确认）
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - 教育优惠$5.99/月（原$14.99），须认证高等教育学生且此前未用Vibe/Le Chat，最多12个月、未含税；折扣美元为节省$9而非费用$5.99。
 - Free计划现行价格页含$10/月API credits。官方Free mode开通API无需信用卡，并以mistral-small-latest示例验证；其它免费模型需核对Studio权限，不能把整个模型目录当免费。

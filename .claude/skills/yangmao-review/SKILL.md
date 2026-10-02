@@ -24,6 +24,7 @@ npx tsx $S plan <短码> patch.json         # 试算改后的检查结果，不�
 npx tsx $S apply <短码> patch.json --reason "理由" [--code wrong_field] [--approve] [--dry-run]
 npx tsx $S memo <短码> memo.txt           # 内部核验记录（仅管理员可见）
 npx tsx $S approve <短码> | retest <短码> | reject <短码> --code <代码> --reason "理由"
+npx tsx $S unpublish <短码> --code <代码> --reason "理由"   # 撤下已上架但不该收的条目（对已上架条目用 reject 只会丢弃更新提案）
 npx tsx $S suggest <短码> approve|history|reject|judge [--code 代码] --reason "理由"   # 只给审批卡片标建议，不改状态（批量预审用）
 ```
 
@@ -69,6 +70,7 @@ npx tsx $S suggest <短码> approve|history|reject|judge [--code 代码] --reaso
 - **已结束但属实 → 作为历史上架**：补准开始和截止日期后通过，它会进入时间线、日历、羊毛墓场、重置时钟和节日往年记录。管理员要靠这些历史数据，不能拒掉让数据从零开始。
 - **拒绝**：不属实、不在收录范围（非 AI 额度、订阅附带且不以额度为卖点、单纯定价或打折）、重复、平台归错且无法改正。理由代码选准，理由写清楚，模型会从拒绝理由里学习。“旧活动 · 日期查不到”（expired）只用于日期实在无法确认的。
 - **会员档位本身的权益不是羊毛**：价格页里各订阅档“每月多少积分、可用哪些模型、无限量”都是买套餐买到的，按“付费套餐自带”（paid_bundle）拒绝。算会员福利的只有：免费档本身的权益；订阅档额外的额度重置；常规套餐之外的加赠（如智谱加赠的重置卡、多送的 Token、限时翻倍）。几个档位有同一种加赠时合成一条，美元写范围。
+- **免费套餐本身不收**：模型公司和 AI 产品免费版的有限聊天、搜索、生图（只写 limited / generous limits）是价目里的 Free 档，不是羊毛；只收免费档里附带的可量化额度（如 Mistral 每月 $10 API credits）。门槛按“要用上这份额度必须做什么”写，要先绑卡充值 API 的写 card + pay。
 - **首月优惠不收**：首月几折、新用户首月半价这类订阅折扣很常见，不是免费额度，按 other 拒绝；例外是首月实付不超过 $1（约 ¥7）、基本等于免费的（如 ElevenLabs Starter 首月 $1），保留并打 discount 标签。价目表上“充值多送”的常设阶梯价也不收。
 - **不是 AI 额度**：云厂商的数据库、容器、BI、云服务器、直播点播、API 网关等产品试用按 not_ai 拒绝。付费档的 Relax / Explore / 无限量模式、常设的“订阅多送 X%”按 paid_bundle 拒绝。
 - **多档位折美元**取最低的“套餐价 ÷ 积分”费率，有加量包单价优先用；reset 标签只给订阅额度重置事件，每月固定次数不打。

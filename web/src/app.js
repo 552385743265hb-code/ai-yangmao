@@ -1217,20 +1217,20 @@ async function admQueue() {
   const q = await adm('/queue');
   const box = $('#admBody');
   // live：已上架的条目（字段待补），只显示修改，不显示通过和拒绝
-  const card = (o, live = false) => `<article class="card" data-code="${o.code}" data-type="${esc(o.type)}" data-sug="${o.suggestion?.verdict || 'none'}" style="display:flex;flex-direction:column;gap:10px">
+  const card = (o, live = false) => `<article class="card" data-code="${o.code}" data-live="${live ? 1 : ''}" data-type="${esc(o.type)}" data-sug="${o.suggestion?.verdict || 'none'}" style="display:flex;flex-direction:column;gap:10px">
     <div class="row" style="justify-content:space-between"><span class="row" style="gap:8px">${TYPES[Object.keys(TYPES).find(k => TYPES[k].l === o.type)] ? etag(Object.keys(TYPES).find(k => TYPES[k].l === o.type)) : esc(o.type)}<span class="chip">${esc(o.platform)}</span><span class="st ${o.evidenceTier === 'media' ? 'warn' : 'good'}"><b>${o.evidenceTier === 'media' ? '!' : '✓'}</b>${TIER_L[o.evidenceTier] || o.evidenceTier}</span>${o.pendingUpdate ? '<span class="st warn"><b>!</b>条款更新待审，旧版仍公开</span>' : ''}${o.status === 'ended' ? '<span class="st"><b>⌛</b>已结束，通过后计入历史</span>' : ''}</span><span class="small muted num">${esc(o.code)}</span></div>
     <div><div style="font-weight:600;font-size:16px">${esc(o.title)}</div><div class="${/未写明|不明确/.test(o.value) ? 'warn-note' : ''}" style="margin-top:4px">${esc(o.value)}</div><div class="small muted" style="margin-top:4px">${esc(o.end)} · 额度有效期：${esc(o.creditValidity || '未写')} · 门槛：${o.requirements.map(r => esc(reqLabel(r))).join('、')} · 对象：${AUD[o.audience] || o.audience}</div></div>
     ${sugBlock(o)}
     ${checksBlock(o)}
     <div class="rows">${EX_L.filter(([k]) => k !== 'claim' || o.excerpts[k]).map(([k, l]) => `<div class="orow" style="grid-template-columns:auto minmax(0,1fr);padding:6px 2px">${o.excerpts[k] ? `<span class="st good"><b>✓</b>${l}</span>` : `<span class="st warn"><b>!</b>${l}</span>`}<span class="t" style="font-weight:400;font-size:13.5px">${o.excerpts[k] ? '「' + esc(o.excerpts[k]) + '」' : '原文里没有找到'}</span></div>`).join('')}</div>
     <div class="small" style="word-break:break-all">来源：<a href="${esc(o.evidenceUrl)}" target="_blank" rel="noopener" style="text-decoration:underline">${esc(o.evidenceUrl)}</a></div>
-    <div class="row">${live ? '<span class="st good"><b>✓</b>已上架</span><button class="btn sm" type="button" data-act="edit">补字段</button>' : `${(o.checks || []).some(i => i.level === 'block') ? `<button class="btn sm good" type="button" disabled title="先点“修改”补齐标红的字段">${o.evidenceTier === 'media' ? '✓ 我已实测，通过' : '✓ 通过'}</button><span class="small" style="color:var(--critical-ink)">先点“修改”补齐“必须补”的字段</span>` : o.evidenceTier === 'media' ? '<button class="btn sm good" type="button" data-act="tested" title="社区转述、官方没有文字公告，但你亲自领到过">✓ 我已实测，通过</button>' : '<button class="btn sm good" type="button" data-act="approve">✓ 通过</button>'}<button class="btn sm" type="button" data-act="edit">修改</button><button class="btn sm bad" type="button" data-act="rejectopen">✕ 拒绝…</button>`}</div>
+    <div class="row">${live ? '<span class="st good"><b>✓</b>已上架</span><button class="btn sm" type="button" data-act="edit">补字段</button>' + (ADM.role === 'reviewer' ? '' : '<button class="btn sm bad" type="button" data-act="rejectopen">下架…</button>') : `${(o.checks || []).some(i => i.level === 'block') ? `<button class="btn sm good" type="button" disabled title="先点“修改”补齐标红的字段">${o.evidenceTier === 'media' ? '✓ 我已实测，通过' : '✓ 通过'}</button><span class="small" style="color:var(--critical-ink)">先点“修改”补齐“必须补”的字段</span>` : o.evidenceTier === 'media' ? '<button class="btn sm good" type="button" data-act="tested" title="社区转述、官方没有文字公告，但你亲自领到过">✓ 我已实测，通过</button>' : '<button class="btn sm good" type="button" data-act="approve">✓ 通过</button>'}<button class="btn sm" type="button" data-act="edit">修改</button><button class="btn sm bad" type="button" data-act="rejectopen">${o.pendingUpdate ? '✕ 不接受更新，保留原版…' : '✕ 拒绝…'}</button>`}</div>
     ${o.reviewMemo ? `<details open class="small"><summary style="cursor:pointer;font-weight:600">🔍 核验记录（仅管理员可见）</summary><div style="white-space:pre-wrap;margin-top:6px;color:var(--ink-2)">${esc(o.reviewMemo)}</div></details>` : ''}
     <details><summary class="small" style="cursor:pointer">💬 牧场心得${o.adminNote ? '（已写）' : '（可选，公开显示）'}</summary><div class="row" style="margin-top:6px;align-items:flex-start"><textarea data-note rows="2" maxlength="500" style="flex:1;min-width:160px" placeholder="实际用下来怎么样？比如：免费模型速度慢、容易限流">${esc(o.adminNote || '')}</textarea><button class="btn sm" type="button" data-act="note">保存心得</button></div></details>
     <div data-rejectbox hidden style="display:flex;flex-direction:column;gap:8px">
       <p class="small muted" style="margin:0">已结束但属实的活动不要拒绝：点“修改”补全开始和截止日期后通过，会进入时间线、日历和羊毛墓场。拒绝的条目只进入“准确率”统计，不出现在任何公开栏目。</p>
       <div class="chips">${RC.map(([k, l]) => `<button class="btn sm" type="button" data-rc="${k}" aria-pressed="false">${l}</button>`).join('')}</div>
-      <div class="row"><input type="text" placeholder="补充理由（写清楚，模型以后学得更快）" data-reason style="flex:1;min-width:160px;padding:6px 10px"><button class="btn sm bad" type="button" data-act="reject">确认拒绝</button></div>
+      <div class="row"><input type="text" placeholder="补充理由（写清楚，模型以后学得更快）" data-reason style="flex:1;min-width:160px;padding:6px 10px"><button class="btn sm bad" type="button" data-act="reject">${live ? '确认下架' : o.pendingUpdate ? '确认保留原版' : '确认拒绝'}</button></div>
     </div>
     <form data-editform hidden class="filters" style="margin:0">
       ${[['title', '标题', o.title], ['valueText', '额度', o.value], ['creditValidity', '额度有效期', o.creditValidity || '']].map(([k, l, v]) => `<label class="field">${l}<input type="text" name="${k}" value="${esc(v)}"></label>`).join('')}
@@ -1301,7 +1301,11 @@ async function admQueue() {
     el.querySelector('[data-act="reject"]')?.addEventListener('click', async () => {
       const reason = el.querySelector('[data-reason]').value.trim();
       if (!rc && !reason) { toast('选一个理由或写一句说明，模型才能从这次拒绝里学到东西'); return; }
-      try { const r = await adm(`/offers/${code}/reject`, { reason: reason || undefined, reasonCode: rc || 'other' }); done(el, `已拒绝：${r.title}`); } catch (e) { toast(e.message); }
+      try {
+        // 已上架的卡片：下架（对已上架条目调用 reject 只会丢弃更新提案，不会撤下）
+        if (el.dataset.live) { if (!reason) { toast('写一句下架理由'); return; } const r = await adm(`/offers/${code}/unpublish`, { reason, reasonCode: rc || 'other' }); done(el, `已下架：${r.title}`); return; }
+        const r = await adm(`/offers/${code}/reject`, { reason: reason || undefined, reasonCode: rc || 'other' }); done(el, o?.pendingUpdate ? `已保留原版，丢弃更新：${r.title}` : `已拒绝：${r.title}`);
+      } catch (e) { toast(e.message); }
     });
     el.querySelector('[data-act="edit"]').addEventListener('click', () => { const f = el.querySelector('[data-editform]'); f.hidden = !f.hidden; });
     el.querySelector('[data-editform]').addEventListener('submit', async e => {

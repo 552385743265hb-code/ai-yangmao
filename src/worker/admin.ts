@@ -324,6 +324,20 @@ admin.post('/offers/:ref/memo', async c => {
   return c.json({ ok: true, code: shortCode(o.id), reviewMemo: memo });
 });
 
+/** 下架：把已上架但不该收的条目撤下（按新标准不收、错收等），不同于“官方撤回”（withdraw，算活动结束、进墓场）。只给管理员。 */
+admin.post('/offers/:ref/unpublish', async c => {
+  const o = await findOffer(c.env, c.req.param('ref'));
+  if (!o) return c.json({ error: '找不到这条羊毛' }, 404);
+  if (o.reviewState !== 'approved') return c.json({ error: '这条目前没有上架' }, 409);
+  const body = z.object({ reasonCode: z.string().max(40).default('other'), reason: z.string().min(2).max(500) }).safeParse(await c.req.json().catch(() => null));
+  if (!body.success) return c.json({ error: '请写明下架理由' }, 400);
+  const d = db(c.env);
+  await d.delete(s.offerProposals).where(eq(s.offerProposals.offerId, o.id));
+  await d.update(s.offers).set({ reviewState: 'rejected', updatedAt: new Date().toISOString() }).where(eq(s.offers.id, o.id));
+  await d.insert(s.reviews).values({ offerId: o.id, action: 'reject', reviewer: c.get('who'), reason: `下架：${body.data.reason}`, reasonCode: body.data.reasonCode });
+  return c.json({ ok: true, code: shortCode(o.id), title: o.title, reviewState: 'rejected' });
+});
+
 /** 审核建议：给审批卡片标“建议通过 / 作为历史 / 建议拒绝 / 需要你判断”和理由；不改条款、不改审核状态。 */
 admin.post('/offers/:ref/suggest', async c => {
   const o = await findOffer(c.env, c.req.param('ref'));
