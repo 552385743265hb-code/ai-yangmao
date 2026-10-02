@@ -564,3 +564,7 @@
 - 商汤 SenseNova TokenPlan 由商汤自己发放，不要挂到火山方舟等其他平台；社区帖只当线索，以 https://platform.sensenova.cn/docs “积分”一节和 https://www.sensenova.cn/token-plan 为准。
 - 2026-08-28 起为积分制：通用积分池与 Flash-Lite 专属积分池各滚动 5 小时 60,000、每周 600,000 积分；Flash-Lite 消费 1:1 返赠通用积分，30 天有效。公测期 ¥0/月，无截止日期（endKind unknown）。
 - 免费模型只列订阅页 Free 档点名的（目前 SenseNova 6.8 Flash Lite、SenseNova U1 Fast）；模型总览里的第三方模型未写入免费档，不列。积分无官方换算，美元留空。规则改动看文档“积分”一节，旧的“每 5 小时 N 次”是 7 月规则。（2026-10-02 管理员确认）
+
+## windsurf
+- Windsurf 是 Cognition 旗下产品，但它的福利归 windsurf 平台，不要挂到 devin；Windsurf 的公告现在发在 devin.ai/blog（以及 windsurf.com），两处都算官方出处。
+- Windsurf 博客里“新模型上线限时 N 倍积分优惠”多数是旧文的发布价，先看文章日期：已过期的作为历史，打折不是免费的按 discount 标签处理。（2026-10-02）

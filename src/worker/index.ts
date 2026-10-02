@@ -6,6 +6,7 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import * as s from '../db/schema';
 import { isoDate, leadIn, offerIn, runIn } from '../shared/ingest';
+import { findDuplicate } from '../shared/dedupe';
 import { activeOnDate, isClaimable, liveStatus, missingEvidence } from '../shared/lifecycle';
 import { admin } from './admin';
 import { feishuAdmin, runScheduled } from './feishu';
@@ -177,8 +178,18 @@ ingest.post('/offers', async c => {
   const sids = [...new Set(body.data.map(o => o.sourceId).filter((x): x is string => !!x))];
   const srcs = sids.length ? await d.select().from(s.sources).where(inArray(s.sources.id, sids)) : [];
   const results = [];
+  // 硬性去重的比对范围：这些平台下的全部条目（含已拒绝，避免拒掉的换个 ID 又回来）
+  const peers = pids.length ? (await d.select({ id: s.offers.id, platformId: s.offers.platformId, title: s.offers.title, valueText: s.offers.valueText, evidence: s.offers.evidence, reviewState: s.offers.reviewState })
+    .from(s.offers).where(inArray(s.offers.platformId, pids))).map(x => ({ ...x, evidenceUrl: x.evidence.url })) : [];
   for (const o of body.data) {
     const plat = plats.find(p => p.id === o.platformId);
+    if (!peers.some(x => x.id === o.id)) {
+      const dup = findDuplicate({ platformId: o.platformId, title: o.title, valueText: o.valueText, evidenceUrl: o.evidence.url }, peers);
+      if (dup?.reviewState === 'rejected') { results.push({ id: o.id, skipped: `与已拒绝的 ${dup.id} 重复` }); continue; }
+      if (dup) o.id = dup.id; // 并入已有条目，走正常的更新和人工字段保护
+    }
+    // 同一批里后面的条目也要和前面的比
+    if (!peers.some(x => x.id === o.id)) peers.push({ id: o.id, platformId: o.platformId, title: o.title, valueText: o.valueText, evidence: o.evidence as never, reviewState: 'pending', evidenceUrl: o.evidence.url });
     if (!plat) { results.push({ id: o.id, error: `平台 ${o.platformId} 不在白名单里，先建平台` }); continue; }
     if (o.evidence.tier === 'tested') { results.push({ id: o.id, error: '“管理员实测”只能在后台人工设置' }); continue; }
     const src = srcs.find(x => x.id === o.sourceId);

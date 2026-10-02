@@ -286,7 +286,7 @@ describe('review gates and preserved public version', () => {
   });
 
   it('refuses ambiguous short codes and gives both records their full IDs in the queue', async () => {
-    await call('ingest/offers', [{ ...offer, id: 'offer-159' }, { ...offer, id: 'offer-14600' }]);
+    await call('ingest/offers', [{ ...offer, id: 'offer-159', title: 'Short code A 5 credits', valueText: '5 credits' }, { ...offer, id: 'offer-14600', title: 'Short code B 9 credits', valueText: '9 credits' }]);
     const ambiguous = await call('admin/offers/etch/approve', {}, 'admin');
     expect(ambiguous.status).toBe(409);
     expect(ambiguous.body.ids).toEqual(['offer-159', 'offer-14600']);
@@ -342,7 +342,7 @@ describe('notification delivery receipts', () => {
   });
 
   it('does not repeat the same pending summary after an event digest was delivered today', async () => {
-    await call('ingest/offers', [offer, { ...offer, id: 'vendor-pending', title: 'Another pending offer' }]);
+    await call('ingest/offers', [offer, { ...offer, id: 'vendor-pending', title: 'Another pending offer', valueText: '7 extra credits' }]);
     await call('admin/offers/vendor-free/approve', {}, 'admin');
     const first = await call('admin/notify/claim', { kind: 'digest', channel: 'telegram' }, 'admin');
     expect(first.body.pendingCount).toBe(1);
