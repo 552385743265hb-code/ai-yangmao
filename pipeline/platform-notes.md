@@ -165,7 +165,8 @@
 - 8/14公告免费试用实际为Seedance2.5 1080p共5次/每次至多20秒/24小时；不是任意模型的5次通用生成。8/22 MCP 3天/100专享credits试用到期未取消自动续订Plus。
 - 官方ai-video-credits-explained给23credits=$1.15等对应关系，可得到$0.05/credit；Basic120=$6、Plus1000=$50、Ultra3000=$150。seedance-2-5-pricing-2026对比用套餐成本$49/1000credits=$0.049/credit，是套餐费率而非统一credit面值；两种口径需注明，不能把套餐含额度当免费赠送。
 - 更新日志 https://higgsfield.ai/creator-hub/changelog 很长，每条都有锚点（如 #free-mode-in-supercomputer-text-generation-at-zero-credits），证据用锚点链接；页面 ld+json 里的 datePublished 是 +05:00 时间，换算成 UTC 作发布时间。Jina 常被 Higgsfield 封，直接 curl 页面 HTML 可读。（2026-10-03）
-- 领取截止未公布，不把个人激活后1/3/7/11/365天权益有效期当整个活动领取截止。旧公告仍需账户页面核现行可领取性。
+- 领取截止未公布，不把个人激活后1/3/7/11/365天权益有效期当整个活动领取截止。
+- 新用户 1 天 All Unlimited 免费试用（2026-07-21 起）只收一条；7/22、7/27 博客写的是它的不同阶段，不要每篇博客建一条。Seedance 无限量促销一波接一波（7/14 邀请、8/2 11 天、8/6 33 天），按波次各一条，过期的作为历史。Ox Alpha（8/24 起 Supercomputer 免费）、Activity Rewards（7/10，限 Pro/Plus 以上做任务送）尚未收录。（2026-10-03）旧公告仍需账户页面核现行可领取性。
 - 本批核验入口：https://higgsfield.ai/blog/higgsfield-all-unlimited-explained；https://higgsfield.ai/blog/seedance-4k-unlimited-11-days；https://higgsfield.ai/blog/annual-unlimited-ai-video-plans；https://higgsfield.ai/blog/ai-video-credits-explained；https://higgsfield.ai/blog/seedance-2-5-pricing-2026；https://higgsfield.ai/blog/best-unlimited-ai-video-generators；https://higgsfield.ai/creator-hub/changelog。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## luma
