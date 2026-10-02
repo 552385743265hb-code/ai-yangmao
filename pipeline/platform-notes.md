@@ -234,6 +234,7 @@
 - 本批核验入口：https://niteshift.dev/pricing。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## pika
+- 现行免费版每月 0 积分、只能购买积分包（packs only），没有免费生成额度，不收录；价格页 Free 档列的“All models / 并行数 / 无水印”是买积分包后的能力。（2026-10-03 管理员实测无法生成）
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - Pika旧FAQ Basic150/月与现行pricing Free0/月冲突；保留历史条目、标主站不适用，不把当前0替换成虚假零权益，也不伪造活动结束日。旧站/iOS需管理员核实。
 - 本批核验入口：https://pika.art/faq；https://pika.art/pricing。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
