@@ -475,6 +475,7 @@
 ## anthropic
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - Claude API代码执行现每组织每月1,550小时免费，超额$0.05/小时/容器，最少5分钟；工具替代价值77.50美元/月。原“每日50小时、网页端运行Python”是错误。来源：https://platform.claude.com/docs/en/agents-and-tools/tool-use/code-execution-tool
+- Claude API 文档里的“per organization”指 Console 计费账户：个人注册 API 也自动有一个组织，不需要企业版；但调用 API 必须绑信用卡并充值，门槛写 card + pay，不是零门槛。Claude.ai 的 Pro/Max 订阅不含 API。（2026-10-03 管理员确认）
 - 请求包含web_search_20260209/web_fetch_20260209及后续版本时，code_execution本身不加收，标准输入输出Token仍收费；这是API工具执行权益不是免费Claude模型或网页会员，models保持空并注明收费门槛。
 - 套餐权益调整、一次性赠送额度以 support.claude.com 帮助中心为准（金额、资格、领取期、失效日期写得最全），@claudeai 推文用来定发布时间；第三方汇总站（如 resetradar.com）只当线索。
 - “某档位开始包含某模型”（如 Max / Team 高级席位内含 Fable 5）是套餐权益，不收；只收一次性赠送的 usage credits（如 2026-07 Fable 5 补偿 Pro $100，7-20~8-02 可领、9-17 失效，已作为历史）。（2026-10-02 管理员确认）
