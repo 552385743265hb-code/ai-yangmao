@@ -202,6 +202,7 @@
 - 本批核验入口：https://www.magnific.com/pricing；https://www.magnific.com/ai/docs/plans-and-pricing。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## openrouter
+- 免费层只收一条：以 docs/api/reference/limits 为准（:free 模型每分钟 20、每天 50 次；累计购买满 10 credits 后每天 1,000 次），openrouter/free 路由并入同一条。价格页的“25+ free models / 4 free providers”是营销数字，官方没列名单，实际提供免费端点的服务商（2026-10-03 查 API 有英伟达、Google AI Studio、Novita、Cohere 等约 10 家）和模型数经常变，都不写具体数字。（2026-10-03 管理员确认）
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - openrouter/free官方路由随机选择当前免费模型且按请求能力筛选，接受text/images，输出text。模型池动态变化，不能固定宣称24个。
 - 本次2026-10-01公开models API核到16个零价:free变体，名单已写入dbbe；未来用官方API复核而非固定博客数字。
