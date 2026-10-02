@@ -852,6 +852,13 @@
    "type": "tool",
    "site": "https://www.workbuddy.cn",
    "x": []
+  },
+  {
+   "id": "sensenova",
+   "name": "商汤 SenseNova（日日新）",
+   "type": "lab",
+   "site": "https://platform.sensenova.cn",
+   "x": []
   }
  ],
  "sources": [
@@ -2442,6 +2449,20 @@
     "disabledReason": "已登记白名单；现有采集器尚不支持无平台的网页/JSON目录，保持停用，避免空跑"
    },
    "enabled": false
+  },
+  {
+   "id": "sensenova-add-muq87mw1",
+   "platform": "sensenova",
+   "kind": "web_list",
+   "url": "https://platform.sensenova.cn/docs",
+   "tier": "docs"
+  },
+  {
+   "id": "sensenova-add-muq87nb0",
+   "platform": "sensenova",
+   "kind": "web_list",
+   "url": "https://www.sensenova.cn/token-plan",
+   "tier": "site"
   }
  ]
 }

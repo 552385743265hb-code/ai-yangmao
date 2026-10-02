@@ -559,3 +559,8 @@
 ## workbuddy
 - 与CodeBuddy同账号积分共享，免费定价列500基础积分/月，不重复加计。学生认证一次1000到2026-10-31，领取后3月，限大陆高校在读+二代身份证+微信小程序验证。
 - 邀请2000、教师礼和企业双倍积分9/30已结束；社区4000万Token是换算，不能写成官方固定Token赠额。
+
+## sensenova
+- 商汤 SenseNova TokenPlan 由商汤自己发放，不要挂到火山方舟等其他平台；社区帖只当线索，以 https://platform.sensenova.cn/docs “积分”一节和 https://www.sensenova.cn/token-plan 为准。
+- 2026-08-28 起为积分制：通用积分池与 Flash-Lite 专属积分池各滚动 5 小时 60,000、每周 600,000 积分；Flash-Lite 消费 1:1 返赠通用积分，30 天有效。公测期 ¥0/月，无截止日期（endKind unknown）。
+- 免费模型只列订阅页 Free 档点名的（目前 SenseNova 6.8 Flash Lite、SenseNova U1 Fast）；模型总览里的第三方模型未写入免费档，不列。积分无官方换算，美元留空。规则改动看文档“积分”一节，旧的“每 5 小时 N 次”是 7 月规则。（2026-10-02 管理员确认）
