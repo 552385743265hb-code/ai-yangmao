@@ -40,6 +40,7 @@
 - “首次登录桌面端送 6 元”新老用户都能领，类型是应用尝鲜（trial），不是注册新人礼。
 
 ## google
+- 学生和设备专享福利以 Google One / Gemini 帮助中心为准：美国大学生 AI Pro 12 个月（support.google.com/googleone/answer/17422238）、美国以外大学生 AI Plus 12 个月（2026-08-19 官方博客，2026-12-31 前领取）、Pixel 10 Pro 系列 12 个月 AI Pro（2025-08-20 至 2026-10-31 购买）、Pixel 11 Pro 系列 6 个月（2027-10-31 前领取），设备优惠表在 support.google.com/gemini/answer/13529884 。每年开学季会更新，届时复查。（2026-10-03）
 - Google AI Studio 免费版按主力模型 Gemini 3.8 Flash 的官方单价和 AI Studio 显示的速率上限（RPM / TPM / RPD）折算；上限未公开时留空，不要假设次数。
 - 要列出免费版可用和不可用的模型（价格页每个模型都写了 Free Tier 是否可用）。
 - Gemini CLI 的领取方式是下载应用并登录（app）；写明每天 1000 次、每分钟 60 次，按 Gemini 3 模型计。
@@ -467,6 +468,7 @@
 - 本批核验入口：https://www.krea.ai/pricing。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## copilot
+- 2026-03-12 起学生改为 Copilot Student 计划（每月 200 AI Credits、补全无限），以 GitHub 官方社区公告 discussions/189268 为准；认证教师和热门开源维护者免费 Copilot Pro（docs 教师页）。免费层 Copilot Free 本身不单独收。（2026-10-03）
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - Free适用于符合资格的个人新老账号，不限新注册，Business/Enterprise已分配席位者不适用。官方Free列当前有36模型，不能只抽前两个Fable；可用模型按入口/功能不同。来源：https://github.com/features/copilot/plans
 - Free每月2,000补全；FAQ仍写50聊天（含Edits），主表现在表述有限Chat/Agent用量和AI Credits，额度以账户最新显示为准，不因付费AI Credit单价自行假设Free金额。
