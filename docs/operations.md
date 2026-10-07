@@ -43,7 +43,7 @@ Worker 的 UTC cron 为 `0 0 * * *` 日报、`7 * * * *` 加急、`17 */6 * * *`
 
 ## 展示与通知
 
-公开 GET 接口有 5 分钟边缘缓存，后台禁止缓存；后台填表不定时重画。内部 reviewMemo、reviewSuggestion 不公开。
+`GET /api/offers` 和 `GET /api/platforms` 有 5 分钟边缘缓存，后台禁止缓存；后台填表不定时重画。内部 reviewMemo、reviewSuggestion 不公开。
 
 飞书日报按薅度分选常驻 5、新星 3、末班车 3，跨榜去重。新星为近 14 天且未通知，末班车截止在 3 天内；日报不含独立的变更/结束榜。UTC 00:00 对应东京 09:00、上海 08:00。
 

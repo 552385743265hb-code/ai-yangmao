@@ -14,4 +14,4 @@
 - 检索优先用 `rg`；具体运维命令见 [operations.md](docs/operations.md)。
 - 收尾区分本地提交、远端推送、部署和线上核验；不要从测试通过推断已上线。
 - 当前发布差异见 [整理凭证](docs/closeout-2026-10-07.md)，发布前实时核对，勿重复使用快照数量。
-- 本项目 Codex skill 链接应指向仓库副本；外部技能库及其他 Agent 平台不自动同步。
+- 本项目 Codex/Grok 的 yangmao-review 链接统一指向仓库副本；外部全局技能库不自动同步。
