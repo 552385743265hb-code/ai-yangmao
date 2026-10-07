@@ -18,8 +18,8 @@
 - Workers AI 免费额度是每天 10,000 Neurons，按官方单价 $0.011/千 Neurons 折算约 $0.11/天、$3.3/月；不要只写 Neurons。
 
 ## hf
-- 不同身份的额度用途不同，必须写明：免费用户每月 $0.10（官方注明可能调整）只能用于 Inference Providers；PRO / Team / Enterprise 每月 $2 是通用算力额度，可用于 Inference Providers、Inference Endpoints、Spaces 升级硬件（含超出配额的 ZeroGPU）和 Jobs。
-- 范围窄的写进标题（如“仅限 Inference Providers”）；免费和 PRO 分两条。
+- 2026-10-07 官方定价表已写 Free Users 的 Monthly Credits 为 None；旧免费每月 $0.10 不能当当前承诺。PRO 每月 $2、Team / Enterprise 每席位每月 $2 是 Included Monthly Credits，官方明确为付费订阅内含通用算力额度，按 paid_bundle 不收；可用于 Inference Providers、Inference Endpoints、Spaces 升级硬件（含超出配额的 ZeroGPU）和 Jobs。来源：https://huggingface.co/docs/inference-providers/pricing
+- 如有独立免费或额外赠送活动，再按领取资格、使用范围分条；不能把付费档内含额度包装成独立福利。
 
 ## replit
 - Free Mode（GPT-5.6 Luna 不扣 credits）是 Core $20/月订阅附带的功能，按“付费套餐自带”不收录。
@@ -40,6 +40,7 @@
 - “首次登录桌面端送 6 元”新老用户都能领，类型是应用尝鲜（trial），不是注册新人礼。
 
 ## google
+- Pixel 9a 送的是 Google One Basic 100 GB 3 个月，Pixel 9 送的是 Google One Premium 2 TB 6 个月，均为存储会员，按 not_ai 不收；不能与 Pixel Pro 系列的 Google AI Pro 试用混同。以官方帮助页各机型的完整 Offer 名称为准：https://support.google.com/gemini/answer/13529884 （2026-10-07）
 - 学生和设备专享福利以 Google One / Gemini 帮助中心为准：美国大学生 AI Pro 12 个月（support.google.com/googleone/answer/17422238）、美国以外大学生 AI Plus 12 个月（2026-08-19 官方博客，2026-12-31 前领取）、Pixel 10 Pro 系列 12 个月 AI Pro（2025-08-20 至 2026-10-31 购买）、Pixel 11 Pro 系列 6 个月（2027-10-31 前领取），设备优惠表在 support.google.com/gemini/answer/13529884 。每年开学季会更新，届时复查。（2026-10-03）
 - Google AI Studio 免费版按主力模型 Gemini 3.8 Flash 的官方单价和 AI Studio 显示的速率上限（RPM / TPM / RPD）折算；上限未公开时留空，不要假设次数。
 - 要列出免费版可用和不可用的模型（价格页每个模型都写了 Free Tier 是否可用）。
@@ -180,7 +181,8 @@
 - 本批核验入口：https://lumalabs.ai/learning-hub/frequently-asked-questions-about-the-new-luma-agents-app。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## runway
-- 更新日志里“free in Explore Mode”是付费档自带的 relaxed 无限生成，按 paid_bundle 不收；只收免费版一次性 125 积分。（2026-10-03 批量审核）
+- 更新日志里“free in Explore Mode”是付费档自带的 relaxed 无限生成，按 paid_bundle 不收；免费版一次性 125 积分可收。独立额外赠送活动另核，不把付费档自带权益当赠送。（2026-10-03 批量审核；2026-10-07 补明确范围）
+- 2026-10-07 “Enterprises get 2 months of usage free. Sign by 10/31.” 的完整条款是额外返赠积分：合同生效后的前 60 天或截至 2026-12-31（取较早者），按该期间消耗的 Annual Included Credits 等额发一次性 bonus credits；上限为合同所购年度积分，失效规则随年度积分。这是独立加赠，不能按普通年付折扣拒绝，也不能写成无需签约的 2 个月免费会员。来源：https://runway.com/enterprise-bonus-terms
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - 当前官方 https://runway.com/pricing 表：Standard625、Pro2250、Max9500credits/mo；月付$15/$35/$95，年付折合$12/$28/$76。Pro和Max都含Unlimited4Kvideo upscaling，非Max独享。只有Max支持未用credits滚动1个月。
 - Max不是无限视频生成；旧Unlimited订阅只针对符合资格的既有用户，官方支持公告已延长至2026-11-30，新用户不可领取。
@@ -374,7 +376,8 @@
 - 本批核验入口：https://docs.lovable.dev/introduction/credits-and-usage；https://docs.lovable.dev/introduction/dashboard-overview。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## otter
-- 邀请送 1 个月 Pro Lite 的条款（2019 起）还在，但 Pro Lite 已不在价格页、每月 300 分钟和免费 Basic 一样，没有额外价值，不收；学生八折是折扣，不收。（2026-10-03 批量审核）
+- 受邀人获得的 1 个月 Pro Lite、每月 300 分钟与 Basic 基础额度相同，不能仅据此认定有额外价值；学生八折仍不收。邀请人奖励须另读条款，不能用受邀人的 300 分钟否定所有邀请奖励。（2026-10-07 修正邀请人/受邀人边界）
+- 2026-10-07 referral-terms 仍明确邀请人可获转写分钟或 Pro Lite，累计上限 10,000 分钟及 12 个月；每次实际奖励由邀请页面/材料决定，不能把累计上限当每次保证额度。Business 不适用，付费邀请须完成首个账单周期，奖励自兑换起 12 个月到期。5sj1 保留待审，需当前邀请页面确认单次奖励后再决定，不因旧 Pro Lite 名称直接拒绝。来源：https://otter.ai/referral-terms
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - Basic免费每月300分钟、单次30分钟、文件导入账号累计3次、最近25条历史；Pro的1200分钟/10次月导入/高级模板不得混入Basic。
 - 学生教师常规20%优惠需.edu邮箱，Pro月付$13.59/年付$79.99，不是免费赠额；折扣美元应记录节省而非套餐售价。2026-08-26另有50%返校促销，不混常规条目。
@@ -413,6 +416,7 @@
 - 本批核验入口：https://pollo.ai/home；https://pollo.ai/whats-new；https://pollo.ai/pricing；https://pollo.ai/de/hub/how-to-get-pollo-ai-free-credits。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## tripo
+- 2026-10-07 官方价格页“年付 50% off 月付”是普通年付定价，按 other 不收；不是身份认证专享五折例外，也没有独立赠送。免费版每月 200 积分是另一项真实可量化额度，仍可收。来源：https://www.tripo3d.ai/zh/pricing
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - Studio 与 API 为独立计费体系，Studio 月度订阅积分不结转，API 购买积分长期有效；不可用 API 的永不过期规则替代 Studio 充值有效期。来源：https://www.tripo3d.ai/help/api-plugins/tripo-studiotripo-api
 - 充值赠送只估额外积分，不包括付款换得的本金积分，也不能把 credits 当模型个数。Studio 同页 $10/1,000 credits：$100+2,000 赠积分约 $20；$500+12,000 赠积分约 $120；$1,000+30,000 赠积分约 $300；中文版 ¥700+2,000 赠积分按 ¥70/1,000、7.1 汇率为 $19.72。来源：https://www.tripo3d.ai/pricing 、https://www.tripo3d.ai/zh/pricing
@@ -422,6 +426,7 @@
 - 本批核验入口：https://www.tripo3d.ai/pricing；https://www.tripo3d.ai/zh/pricing；https://www.tripo3d.ai/help/api-plugins/tripo-studiotripo-api。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## xiaomi-mimo
+- 2026-10-07 年付 12% 与个人首购 12% 都是普通订阅折扣，无独立赠额，不收；Lite 首购实付 $5.28，超过首月不超过 $1 的近免费例外。Claw 免费时长及模型限免另核，不受折扣条目拒绝影响。来源：https://platform.xiaomimimo.com/
 - Claw 免费时长以更新日志 mimo.mi.com/docs/zh-CN/updates/feature/claw 为准（每天 3 小时、单次有算力上限）。MiMo-V2.5-ASR 现按 $0.074/小时收费，旧“免费”线索不收。（2026-10-03 批量审核）
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - Token Plan 首次个人月付购买优惠12%，每账号一次，适用于符合首购条件的新老账号；团队和年付不适用，不能叠加年付优惠。Lite/Standard/Pro/Max 正价$6/$16/$50/$100，首购减免$0.72/$1.92/$6/$12。付费套餐模型不放 models。来源：https://platform.xiaomimimo.com/
