@@ -1182,11 +1182,22 @@ const RC = [['paid_bundle', '付费套餐自带'], ['not_ai', '不是 AI 额度'
 const FIELD_L = { models: '免费模型', tags: '标签', publishedAt: '发布时间', usdMax: '价值上限', steps: '领取步骤', sourceTz: '官方时区', modalities: '模态', title: '标题', type: '类型', valueText: '额度', usdEstimate: '折合美元', claimStart: '开始', claimEnd: '截止', endKind: '截止方式', creditValidity: '有效期', audience: '适用对象', requirements: '门槛', modalities: '模态', platformId: '平台', sourceTz: '时区', claimMethod: '领取方式' };
 const SUG = { approve: ['good', '✓', '建议通过'], history: ['good', '⌛', '建议作为历史上架'], reject: ['bad', '✕', '建议拒绝'], judge: ['warn', '?', '需要你判断'] };
 const RCL_ALL = { paid_bundle: '付费套餐自带', not_ai: '不是 AI 额度', wrong_platform: '平台归错', duplicate: '重复', expired: '旧活动 · 日期查不到', vague: '额度不明', wrong_type: '分类错', wrong_field: '字段错', other: '其他' };
-function sugBlock(o) {
+function sugBlock(o, live = false) {
   const g = o.suggestion; if (!g) return '';
-  const [tone, icon, label] = SUG[g.verdict] || SUG.judge;
+  const [tone, icon, defaultLabel] = SUG[g.verdict] || SUG.judge;
+  const label = g.verdict === 'reject' ? (live ? '建议下架' : o.pendingUpdate ? '建议拒绝本次更新' : '建议拒绝收录')
+    : o.pendingUpdate && g.verdict === 'approve' ? '建议接受更新' : defaultLabel;
+  const rejectLabel = live ? '下架此条目' : o.pendingUpdate ? '拒绝更新，保留已上架内容' : '拒绝收录';
   const color = tone === 'bad' ? 'var(--critical-ink)' : tone === 'warn' ? 'var(--warning-ink, #b26a00)' : 'var(--good-ink, #2e7d32)';
-  return `<div class="card" style="padding:8px 10px;border-left:4px solid ${color};margin:0"><div class="row" style="gap:8px;flex-wrap:wrap"><b style="color:${color}">${icon} ${label}</b>${g.code ? `<span class="chip">${esc(RCL_ALL[g.code] || g.code)}</span>` : ''}<span class="small muted">${esc(g.by || '')}${g.at ? ' · ' + esc(g.at.slice(0, 10)) : ''}</span></div><div class="small warn-note" style="margin-top:4px;color:var(--ink)">${esc(g.reason || '')}</div></div>`;
+  return `<div class="card" style="padding:8px 10px;border-left:4px solid ${color};margin:0"><div class="row" style="gap:8px;flex-wrap:wrap"><b style="color:${color}">${icon} ${label}</b>${g.code ? `<span class="chip">${esc(RCL_ALL[g.code] || g.code)}</span>` : ''}<span class="small muted">${esc(g.by || '')}${g.at ? ' · ' + esc(g.at.slice(0, 10)) : ''}</span></div><div class="small warn-note" style="margin-top:4px;color:var(--ink)">${esc(g.reason || '')}</div>${g.verdict === 'reject' ? `<p class="small" style="margin:6px 0 0">同意此建议：点击下方“${rejectLabel}”，再确认。${o.pendingUpdate && !live ? '已上架内容继续公开。' : ''}</p>` : ''}</div>`;
+}
+function reviewActions(o, live) {
+  const edit = o.pendingUpdate && !live ? '修改更新' : live ? '补字段' : '修改';
+  if (live) return `<div class="row review-actions"><span class="st good"><b>✓</b>已上架</span><button class="btn sm" type="button" data-act="edit">${edit}</button>${ADM.role === 'reviewer' ? '' : '<button class="btn sm bad" type="button" data-act="rejectopen">下架此条目</button>'}</div>`;
+  const accept = o.pendingUpdate ? '接受更新' : o.status === 'ended' ? '通过并收录历史' : '通过并上架';
+  const tested = o.evidenceTier === 'media';
+  const blocked = (o.checks || []).some(i => i.level === 'block');
+  return `<div class="row review-actions"><button class="btn sm good" type="button" ${blocked ? `disabled title="先点“${edit}”补齐标红的字段"` : `data-act="${tested ? 'tested' : 'approve'}"${tested ? ' title="官方没有文字公告，但你亲自领到过"' : ''}`}>✓ ${tested ? '我已实测，' : ''}${accept}</button><button class="btn sm" type="button" data-act="edit">${edit}</button><button class="btn sm bad" type="button" data-act="rejectopen">✕ ${o.pendingUpdate ? '拒绝更新，保留已上架内容' : '拒绝收录'}</button></div>${blocked ? `<p class="small" style="margin:0;color:var(--critical-ink)">先点“${edit}”补齐“必须补”的字段</p>` : ''}${o.pendingUpdate ? '<p class="small muted" style="margin:0">接受更新会替换已上架内容；拒绝更新会保留已上架内容。</p>' : ''}`;
 }
 function pAdmin() {
   if (!ADM.token) {
@@ -1220,17 +1231,17 @@ async function admQueue() {
   const card = (o, live = false) => `<article class="card" data-code="${o.code}" data-live="${live ? 1 : ''}" data-type="${esc(o.type)}" data-sug="${o.suggestion?.verdict || 'none'}" style="display:flex;flex-direction:column;gap:10px">
     <div class="row" style="justify-content:space-between"><span class="row" style="gap:8px">${TYPES[Object.keys(TYPES).find(k => TYPES[k].l === o.type)] ? etag(Object.keys(TYPES).find(k => TYPES[k].l === o.type)) : esc(o.type)}<span class="chip">${esc(o.platform)}</span><span class="st ${o.evidenceTier === 'media' ? 'warn' : 'good'}"><b>${o.evidenceTier === 'media' ? '!' : '✓'}</b>${TIER_L[o.evidenceTier] || o.evidenceTier}</span>${o.pendingUpdate ? '<span class="st warn"><b>!</b>条款更新待审，旧版仍公开</span>' : ''}${o.status === 'ended' ? '<span class="st"><b>⌛</b>已结束，通过后计入历史</span>' : ''}</span><span class="small muted num">${esc(o.code)}</span></div>
     <div><div style="font-weight:600;font-size:16px">${esc(o.title)}</div><div class="${/未写明|不明确/.test(o.value) ? 'warn-note' : ''}" style="margin-top:4px">${esc(o.value)}</div><div class="small muted" style="margin-top:4px">${esc(o.end)} · 额度有效期：${esc(o.creditValidity || '未写')} · 门槛：${o.requirements.map(r => esc(reqLabel(r))).join('、')} · 对象：${AUD[o.audience] || o.audience}</div></div>
-    ${sugBlock(o)}
+    ${sugBlock(o, live)}
     ${checksBlock(o)}
     <div class="rows">${EX_L.filter(([k]) => k !== 'claim' || o.excerpts[k]).map(([k, l]) => `<div class="orow" style="grid-template-columns:auto minmax(0,1fr);padding:6px 2px">${o.excerpts[k] ? `<span class="st good"><b>✓</b>${l}</span>` : `<span class="st warn"><b>!</b>${l}</span>`}<span class="t" style="font-weight:400;font-size:13.5px">${o.excerpts[k] ? '「' + esc(o.excerpts[k]) + '」' : '原文里没有找到'}</span></div>`).join('')}</div>
     <div class="small" style="word-break:break-all">来源：<a href="${esc(o.evidenceUrl)}" target="_blank" rel="noopener" style="text-decoration:underline">${esc(o.evidenceUrl)}</a></div>
-    <div class="row">${live ? '<span class="st good"><b>✓</b>已上架</span><button class="btn sm" type="button" data-act="edit">补字段</button>' + (ADM.role === 'reviewer' ? '' : '<button class="btn sm bad" type="button" data-act="rejectopen">下架…</button>') : `${(o.checks || []).some(i => i.level === 'block') ? `<button class="btn sm good" type="button" disabled title="先点“修改”补齐标红的字段">${o.evidenceTier === 'media' ? '✓ 我已实测，通过' : '✓ 通过'}</button><span class="small" style="color:var(--critical-ink)">先点“修改”补齐“必须补”的字段</span>` : o.evidenceTier === 'media' ? '<button class="btn sm good" type="button" data-act="tested" title="社区转述、官方没有文字公告，但你亲自领到过">✓ 我已实测，通过</button>' : '<button class="btn sm good" type="button" data-act="approve">✓ 通过</button>'}<button class="btn sm" type="button" data-act="edit">修改</button><button class="btn sm bad" type="button" data-act="rejectopen">${o.pendingUpdate ? '✕ 不接受更新，保留原版…' : '✕ 拒绝…'}</button>`}</div>
+    ${reviewActions(o, live)}
     ${o.reviewMemo ? `<details open class="small"><summary style="cursor:pointer;font-weight:600">🔍 核验记录（仅管理员可见）</summary><div style="white-space:pre-wrap;margin-top:6px;color:var(--ink-2)">${esc(o.reviewMemo)}</div></details>` : ''}
     <details><summary class="small" style="cursor:pointer">💬 牧场心得${o.adminNote ? '（已写）' : '（可选，公开显示）'}</summary><div class="row" style="margin-top:6px;align-items:flex-start"><textarea data-note rows="2" maxlength="500" style="flex:1;min-width:160px" placeholder="实际用下来怎么样？比如：免费模型速度慢、容易限流">${esc(o.adminNote || '')}</textarea><button class="btn sm" type="button" data-act="note">保存心得</button></div></details>
     <div data-rejectbox hidden style="display:flex;flex-direction:column;gap:8px">
-      <p class="small muted" style="margin:0">已结束但属实的活动不要拒绝：点“修改”补全开始和截止日期后通过，会进入时间线、日历和羊毛墓场。拒绝的条目只进入“准确率”统计，不出现在任何公开栏目。</p>
+      <p class="small muted" style="margin:0">${live ? '下架后，本条目不再公开显示，审核记录保留。' : o.pendingUpdate ? '确认后仅拒绝本次更新提案，已上架内容保持原样、继续公开。' : '拒绝后，本条目不会上架。已结束但属实的活动请点“修改”补全开始和截止日期，再通过并收录历史。'}</p>
       <div class="chips">${RC.map(([k, l]) => `<button class="btn sm" type="button" data-rc="${k}" aria-pressed="false">${l}</button>`).join('')}</div>
-      <div class="row"><input type="text" placeholder="补充理由（写清楚，模型以后学得更快）" data-reason style="flex:1;min-width:160px;padding:6px 10px"><button class="btn sm bad" type="button" data-act="reject">${live ? '确认下架' : o.pendingUpdate ? '确认保留原版' : '确认拒绝'}</button></div>
+      <div class="row review-actions"><input type="text" placeholder="补充理由（写清楚，模型以后学得更快）" data-reason style="flex:1;min-width:160px;padding:6px 10px"><button class="btn sm bad" type="button" data-act="reject">${live ? '确认下架' : o.pendingUpdate ? '确认拒绝更新，保留已上架内容' : '确认拒绝收录'}</button></div>
     </div>
     <form data-editform hidden class="filters" style="margin:0">
       ${[['title', '标题', o.title], ['valueText', '额度', o.value], ['creditValidity', '额度有效期', o.creditValidity || '']].map(([k, l, v]) => `<label class="field">${l}<input type="text" name="${k}" value="${esc(v)}"></label>`).join('')}
@@ -1257,7 +1268,7 @@ async function admQueue() {
       <label class="field">平台<select name="platformId">${PLATFORMS.map(p => `<option value="${esc(p.id)}" ${o.platformId === p.id || (!o.platformId && o.platform === p.name) ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select></label>
       <label class="field">适用对象<select name="audience">${Object.entries(AUD).map(([k, l]) => `<option value="${k}" ${o.audience === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
       <label class="field" style="grid-column:1/-1">为什么这样改（可选，但强烈建议写）<input type="text" name="__reason" placeholder="例如：要先付费升级才送，属于充值赠送"></label>
-      <div class="row" style="grid-column:1/-1;align-items:center"><button class="btn sm pri" type="submit">${live ? '保存' : '保存并通过'}</button><span data-formmsg role="alert" class="small" style="font-weight:600"></span></div>
+      <div class="row review-actions" style="grid-column:1/-1;align-items:center"><button class="btn sm pri" type="submit">${live ? '保存' : o.pendingUpdate ? '保存并接受更新' : '保存并通过'}</button><span data-formmsg role="alert" class="small" style="font-weight:600"></span></div>
     </form>
   </article>`;
   const sugCount = k => q.pending.filter(o => (o.suggestion?.verdict || 'none') === k).length;
@@ -1274,16 +1285,16 @@ async function admQueue() {
   applySug();
   const done = (el, msg) => { el.style.opacity = .45; el.querySelectorAll('button,input,select').forEach(x => { x.disabled = true; }); toast(msg); };
   $$('[data-code]', box).forEach(el => {
-    const code = el.dataset.code, o = [...q.pending, ...(q.incomplete || [])].find(x => x.code === code);
+    const code = el.dataset.code, live = !!el.dataset.live, o = [...q.pending, ...(q.incomplete || [])].find(x => x.code === code);
     // 失败原因显示在按钮旁边，不只在顶部闪一下
     const actMsg = (msg, bad = true) => { let m = el.querySelector('[data-actmsg]'); if (!m) { m = document.createElement('p'); m.dataset.actmsg = ''; m.className = 'small'; m.style.cssText = 'margin:0;font-weight:600'; el.querySelector('[data-act]').closest('.row').after(m); } m.style.color = bad ? 'var(--critical-ink)' : ''; m.textContent = msg; };
-    el.querySelector('[data-act="approve"]')?.addEventListener('click', async () => { try { const r = await adm(`/offers/${code}/approve`, {}); done(el, `已通过：${r.title}`); } catch (e) { actMsg('没有通过：' + e.message); } });
+    el.querySelector('[data-act="approve"]')?.addEventListener('click', async () => { try { const r = await adm(`/offers/${code}/approve`, {}); done(el, `${o?.pendingUpdate ? '已接受更新' : '已通过'}：${r.title}`); } catch (e) { actMsg((o?.pendingUpdate ? '没有接受更新：' : '没有通过：') + e.message); } });
     // 社区传闻 → 管理员实测 → 通过：证据级别改为“管理员实测”，链接和摘录保持原样
     el.querySelector('[data-act="tested"]')?.addEventListener('click', async () => {
       try {
         await adm(`/offers/${code}/edit`, { fields: { evidence: { url: o.evidenceUrl, tier: 'tested', capturedAt: new Date().toISOString(), excerpts: o.excerpts } }, approve: true, reason: '社区转述，管理员亲自领到过', reasonCode: 'wrong_field' });
-        done(el, `已按管理员实测通过：${o.title}`);
-      } catch (e) { actMsg('没有通过：' + e.message); }
+        done(el, `已按管理员实测${o.pendingUpdate ? '接受更新' : '通过'}：${o.title}`);
+      } catch (e) { actMsg((o.pendingUpdate ? '没有接受更新：' : '没有通过：') + e.message); }
     });
     el.querySelector('[data-act="note"]')?.addEventListener('click', async () => { try { await adm(`/offers/${code}/note`, { note: el.querySelector('[data-note]').value }); toast('心得已保存'); } catch (e) { toast('没有保存：' + e.message); } });
     const rb = el.querySelector('[data-rejectbox]');
@@ -1304,7 +1315,7 @@ async function admQueue() {
       try {
         // 已上架的卡片：下架（对已上架条目调用 reject 只会丢弃更新提案，不会撤下）
         if (el.dataset.live) { if (!reason) { toast('写一句下架理由'); return; } const r = await adm(`/offers/${code}/unpublish`, { reason, reasonCode: rc || 'other' }); done(el, `已下架：${r.title}`); return; }
-        const r = await adm(`/offers/${code}/reject`, { reason: reason || undefined, reasonCode: rc || 'other' }); done(el, o?.pendingUpdate ? `已保留原版，丢弃更新：${r.title}` : `已拒绝：${r.title}`);
+        const r = await adm(`/offers/${code}/reject`, { reason: reason || undefined, reasonCode: rc || 'other' }); done(el, o?.pendingUpdate ? `已拒绝更新，保留已上架内容：${r.title}` : `已拒绝收录：${r.title}`);
       } catch (e) { toast(e.message); }
     });
     el.querySelector('[data-act="edit"]').addEventListener('click', () => { const f = el.querySelector('[data-editform]'); f.hidden = !f.hidden; });
@@ -1331,7 +1342,9 @@ async function admQueue() {
         steps: String(fd.steps || '').split('\n').map(x => x.trim()).filter(Boolean).slice(0, 10), sourceTz: String(fd.sourceTz || 'UTC').trim() };
       if (newEvidence.url !== o.evidenceUrl || newEvidence.tier !== o.evidenceTier || EX_L.some(([key]) => newEvidence.excerpts[key] !== (o.excerpts[key] || ''))) fields.evidence = newEvidence;
       ['claimStart', 'claimEnd', 'creditValidity'].forEach(k => { if (!fields[k]) fields[k] = null; });
-      const r = await adm(`/offers/${code}/edit`, { fields, approve: true, reason: reason || undefined, reasonCode: fields.type !== undefined && Object.keys(TYPES).find(k => TYPES[k].l === el.dataset.type) !== fields.type ? 'wrong_type' : 'wrong_field' }); done(el, r.changed.length ? `已修改 ${r.changed.map(f => FIELD_L[f] || f).join('、')} 并通过` : '没有改动，已通过');
+      const r = await adm(`/offers/${code}/edit`, { fields, approve: true, reason: reason || undefined, reasonCode: fields.type !== undefined && Object.keys(TYPES).find(k => TYPES[k].l === el.dataset.type) !== fields.type ? 'wrong_type' : 'wrong_field' });
+      const result = !live && o.pendingUpdate ? '已接受更新' : live ? '已保存' : '已通过';
+      done(el, r.changed.length ? `已修改 ${r.changed.map(f => FIELD_L[f] || f).join('、')}；${result}` : `没有改动，${result}`);
       msg.textContent = '';
       } catch (err) { btn.disabled = false; msg.style.color = 'var(--critical-ink)'; msg.textContent = '没有保存：' + err.message; console.error('[admin] 保存并通过失败', err); }
     });
