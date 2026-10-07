@@ -161,7 +161,7 @@ admin.get('/queue', async c => {
   const pending = await d.select().from(s.offers).where(eq(s.offers.reviewState, 'pending')).orderBy(s.offers.discoveredAt, s.offers.id);
   const proposals = (await d.select().from(s.offerProposals).orderBy(desc(s.offerProposals.updatedAt)))
     .filter(proposal => proposal.diff.some(change => isReviewField(change.field)));
-  const originals = proposals.length ? await d.select().from(s.offers).where(inArray(s.offers.id, proposals.map(p => p.offerId))) : [];
+  const originals = proposals.length ? await d.select().from(s.offers).where(inArray(s.offers.id, d.select({ id: s.offerProposals.offerId }).from(s.offerProposals))) : [];
   const codeCounts = new Map<string, number>();
   for (const { id } of await d.select({ id: s.offers.id }).from(s.offers)) codeCounts.set(shortCode(id), (codeCounts.get(shortCode(id)) ?? 0) + 1);
   const queueView = (o: OfferRow) => ({ ...view(o, names[o.platformId] ?? o.platformId, now), code: codeCounts.get(shortCode(o.id))! > 1 ? o.id : shortCode(o.id) });
@@ -427,7 +427,7 @@ export async function buildNotice(env: Env, kind: NoticeKind, channel: NoticeCha
   const has = (id: string, stage: string) => sent.find(n => n.offerId === id && n.stage === stage);
   const out: Record<string, (ReturnType<typeof view> & { score?: number })[]> = { new: [], changed: [], ending: [], ended: [], urgent: [], standing: [], rising: [], lastcall: [] };
   let marks: NoticeMark[] = [];
-  const revs = approved.length ? await d.select().from(s.offerRevisions).where(and(inArray(s.offerRevisions.offerId, approved.map(o => o.id)), eq(s.offerRevisions.author, 'pipeline'))) : [];
+  const revs = approved.length ? await d.select().from(s.offerRevisions).where(and(inArray(s.offerRevisions.offerId, d.select({ id: s.offers.id }).from(s.offers).where(eq(s.offers.reviewState, 'approved'))), eq(s.offerRevisions.author, 'pipeline'))) : [];
   for (const o of approved) {
     const st = liveStatus(o, now), v = view(o, names[o.platformId] ?? o.platformId, now), end = claimEndAt(o);
     if (kind === 'urgent') {

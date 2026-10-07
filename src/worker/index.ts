@@ -311,10 +311,14 @@ ingest.get('/verification-queue', async c => {
   const now = Date.now();
   const sourceId = c.req.query('sourceId');
   const forced = c.req.query('force') === '1';
-  const rows = await db(c.env).select().from(s.offers).where(sourceId
+  const d = db(c.env);
+  const approved = sourceId
     ? and(eq(s.offers.reviewState, 'approved'), eq(s.offers.sourceId, sourceId))
-    : eq(s.offers.reviewState, 'approved'));
-  const proposals = rows.length ? await db(c.env).select().from(s.offerProposals).where(inArray(s.offerProposals.offerId, rows.map(o => o.id))) : [];
+    : eq(s.offers.reviewState, 'approved');
+  const rows = await d.select().from(s.offers).where(approved);
+  // Use a subquery: binding every approved ID exceeds D1's 100-parameter limit as the catalogue grows.
+  const proposals = rows.length ? await d.select().from(s.offerProposals).where(inArray(s.offerProposals.offerId,
+    d.select({ id: s.offers.id }).from(s.offers).where(approved))) : [];
   return c.json({ offers: rows.filter(o => {
     if (o.withdrawnAt || (o.endKind === 'date' && liveStatus(o, new Date(now)) === 'ended')) return false;
     if (o.evidence.tier === 'tested') return false; // 管理员实测的条目没有可抓取的官方原文，不做自动复核

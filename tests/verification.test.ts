@@ -2,6 +2,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
 import { beforeEach, afterEach, describe, expect, it } from 'vitest';
 import worker from '../src/worker/index';
+import { buildNotice } from '../src/worker/admin';
 import { offerIn } from '../src/shared/ingest';
 import { liveStatus } from '../src/shared/lifecycle';
 
@@ -13,7 +14,10 @@ function d1(memory: DatabaseSync) {
     prepare(sql: string) {
       let args: unknown[] = [];
       return {
-        bind(...values: unknown[]) { args = values; return this; },
+        bind(...values: unknown[]) {
+          if (values.length > 100) throw new Error('D1_ERROR: too many SQL variables');
+          args = values; return this;
+        },
         async raw() { const statement = memory.prepare(sql); statement.setReturnArrays(true); return statement.all(...args as []); },
         async all() { return { results: memory.prepare(sql).all(...args as []) }; },
         async first() { return memory.prepare(sql).get(...args as []) ?? null; },
@@ -54,6 +58,33 @@ const offer = {
 };
 
 describe('official evidence verification', () => {
+  it('keeps verification, review queue and notices within D1 limits above 100 offers', async () => {
+    await call('ingest/offers', [offer]);
+    sqlite.prepare("UPDATE offers SET review_state='approved',last_verified_at=NULL WHERE id='vendor-free'").run();
+    const columns = (sqlite.prepare('PRAGMA table_info(offers)').all() as { name: string }[]).map(c => c.name);
+    const copy = sqlite.prepare(`INSERT INTO offers (${columns.join(',')}) SELECT ${columns.map(c => c === 'id' ? '?' : c).join(',')} FROM offers WHERE id='vendor-free'`);
+    for (let i = 1; i < 120; i++) copy.run(`vendor-free-${i}`);
+    sqlite.prepare("INSERT INTO offer_proposals (offer_id,candidate,diff,manual_fields,detected_at,updated_at) VALUES (?,?, '[]','[]',?,?)")
+      .run('vendor-free-119', JSON.stringify({ evidence: { pageHash: 'proposal-hash' } }), new Date().toISOString(), new Date().toISOString());
+    for (const suffix of ['', '?sourceId=source&force=1']) {
+      const queue = await call(`ingest/verification-queue${suffix}`);
+      expect(queue.status).toBe(200);
+      const offers = queue.body.offers as { id: string; proposalHash: string | null }[];
+      expect(offers).toHaveLength(120);
+      expect(offers.find(o => o.id === 'vendor-free-119')?.proposalHash).toBe('proposal-hash');
+      expect(offers.find(o => o.id === 'vendor-free')?.proposalHash).toBeNull();
+    }
+    expect((await call('ingest/verification-queue?sourceId=missing')).body.offers).toEqual([]);
+    await expect(buildNotice(env, 'digest', 'telegram')).resolves.toBeDefined();
+    const proposal = sqlite.prepare("INSERT OR REPLACE INTO offer_proposals (offer_id,candidate,diff,manual_fields,detected_at,updated_at) VALUES (?,?,?,'[]',?,?)");
+    for (let i = 0; i < 120; i++) proposal.run(i ? `vendor-free-${i}` : 'vendor-free',
+      JSON.stringify({ valueText: '200 tokens' }), JSON.stringify([{ field: 'valueText', from: '100 tokens', to: '200 tokens' }]),
+      new Date().toISOString(), new Date().toISOString());
+    const review = await call('admin/queue', undefined, 'admin');
+    expect(review.status).toBe(200);
+    expect(review.body.pending).toHaveLength(120);
+  });
+
   it('refreshes an unchanged offer only when its saved quotations still appear', async () => {
     expect((await call('ingest/offers', [offer])).status).toBe(200);
     sqlite.prepare("UPDATE offers SET review_state='approved',last_verified_at='2026-09-27T00:00:00Z' WHERE id='vendor-free'").run();
