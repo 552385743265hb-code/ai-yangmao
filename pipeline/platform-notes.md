@@ -1,6 +1,6 @@
 # 平台抽取要点
 
-管理员在审核中总结出的各平台福利特点。采集抽取某个平台时，把该平台的要点附给模型；社区线索提到哪个平台，也附上对应要点。
+管理员在审核中总结出的各平台福利特点。2026-10-07 已按后续决策消除旧口径冲突；带日期的模型/价格为当日快照，更新仍需读官方原文。通用收录规则优先：免费套餐名/付费档自带权益不因本文件列了价格而变成可收录羊毛。采集抽取某个平台时，把该平台的要点附给模型；社区线索提到哪个平台，也附上对应要点。
 格式：`## 平台 id`（与白名单一致），下面每行 `- ` 开头一条要点。新增或修改直接编辑本文件，下一轮采集生效。
 
 本次补充覆盖 73 个平台，完整待审字段核验及未解决事项见 [批量补字段记录](../docs/pending-field-review-2026-10-01.md)。有官方资料冲突时保留具体缺口，不把旧活动或订阅售价写成现行免费额度。
@@ -26,8 +26,8 @@
 - 条款以 Replit 自己的博客和价格页为准，不要采信 OpenAI 等合作方新闻稿。
 
 ## opencode
-- 分三条，各自列模型：① 应用内免费模型（“Free models provided by OpenCode”，不用绑卡）；② Zen API 免费模型（要登录并绑定信用卡，免费模型按 $0 计费，不扣钱）；③ OpenCode Go 订阅（$10/月，Go Plus $40/月）。
-- Go 是以额度为卖点的超值订阅，收录为会员福利：按官方额度档位（每月 $60 / $30 / $15 / 限时不限量）列全模型，写明 5 小时 20%、每周 50% 的限速，价值记为范围 $10–60/月。
+- 独立免费渠道分两条，各自列模型：① 应用内免费模型（“Free models provided by OpenCode”，不用绑卡）；② Zen API 免费模型（要登录并绑定信用卡，免费模型按 $0 计费，不扣钱）。Go/Go Plus 是付费套餐，不构成第三条福利。
+- Go / Go Plus 的套餐内含额度与不限量模型属于付费套餐自带，不收；只有独立限时额外加赠/重置活动才另核。2026-09-30 的“超值订阅”例外已撤销。
 - 免费模型多数会收集使用数据；实测应用内免费模型常因限流报错。
 
 ## zhipu
@@ -47,7 +47,7 @@
 
 ## minimax
 - MiniMax Code 更新日志 https://agent.minimax.cn/docs/changelog 会写回馈积分的发放时间，建议作为信源。MiniMax Agent 2025-10 发布时的“免费到服务器撑不住”没有截止日，不收。（2026-10-03 批量审核）
-- MiniMax Code（编程客户端）和 M Plan / Token Plan 订阅的福利写在开放平台“订阅套餐产品升级公告”（platform.minimax.cn/docs/token-plan/announcements），常有限时活动：订阅用户不限量、首月折扣、老用户回馈积分、客户端签到双倍积分；每项分开记一条。
+- MiniMax Code 与 M Plan / Token Plan 的公告在开放平台升级公告页；只核独立额外赠额/重置。档位内含不限量与普通首月折扣不收；一篇公告同一优惠的多个模型合一条。
 - 博客列表里的旧文章（如 MiniMax Agent，已改名 Mavis）不是现行福利，要看文章日期。
 - 价格表里要分清模型类型：MiniMax-H3 / H3-Max 是视频生成模型，语音、音乐、图像各有模型。
 - “视频生成-输入素材价格”里的“音频免费、参考图 N 张以内免费”是每次调用的计费规则，不是图像生成额度，也不是“首次”；生成的视频照常按秒收费。
@@ -79,7 +79,7 @@
 - 免费套餐每天补到 50 credits，不累计，仅限个人非商业用途；按最低费率 Premier 年付 $24/月含 10,000 credits 折算（约 $3.6/月），证据用帮助中心 9601601。
 - 邀请奖励（好友创作满 10 首双方各 250 credits）只有 2024-06、2024-10 的旧推文，2026-10 产品里找不到入口，已按旧活动拒绝；除非官方重新公告，不再收录。
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
-- Suno免费当前模型v6-mini，日50 UTC补充、非商业，下载另设限制；邀请250规则只有登录截图，保留既有tested但本轮不冒称到账。
+- Suno免费当前模型v6-mini，日50 UTC补充、非商业，下载另设限制；邀请250为旧活动，后续管理员已按历史失效拒绝；不能从旧截图沿用tested，只有管理员明确确认本人实测才可设置。
 - 本批核验入口：https://suno.com/；https://suno.com/pricing；https://help.suno.com/en/articles/9601601；https://help.suno.com/en/articles/2418177。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## liblibtv
@@ -131,7 +131,7 @@
 ## adobe-firefly
 - helpx.adobe.com 直接抓 403，走 Jina。首年指定模型无限量这类权益不按订阅价折美元。CC Pro / Firefly 各付费档每月积分和标准功能不限次是档位自带，不收。（2026-10-03 批量审核）
 - CC Pro 与 Firefly 付费个人套餐的月积分以官方 FAQ 的 monthly-generative-credits 表为准：CC Pro 4,000；Firefly Standard 2,000、Pro 4,000、Pro Plus 10,000、Premium 50,000（2026-10-01 核验）。不要混入 CC Standard、单应用、团队、企业和教育档，它们的额度与标准功能权限不同。
-- 会员权益用 perk、claimMethod=member，新老订阅用户均可；门槛写完整套餐名和地区价格，不能截成 member:Creative 或保留 unknown。积分在账单日按月重置、不结转；多订阅积分叠加，重置日以最早订阅为准。
+- 仅独立于常规付费档的额外加赠/重置才用 perk、claimMethod=member，新老资格按活动原文；门槛写完整套餐名和地区价格，不能截成 member:Creative 或保留 unknown。积分在账单日按月重置、不结转；多订阅积分叠加，重置日以最早订阅为准。
 - 标准生成功能不限次不等于全部模型不限次：伙伴模型、Firefly Image 4 Ultra、Image 5 属高级功能，通常扣积分；Firefly Graph 内标准功能仍计费。Premium 的视频特权、指定模型首年促销单独核实，不能泛化到所有档位；功能级权益没有具体模型版本依据时不猜 models。
 - 美元价值仅按同额度官方加购包替代成本比较有限积分：2,000/$9.99、7,000/$29.99、10,000/$49.99、50,000/$199.99 每月（https://www.adobe.com/ai/overview/generative-credits.html，2026-10-01）。不限次部分不编造生成次数或美元估值；合并多档条目写清价值范围与对应档位。
 - 免费账号在限定模型上有“每日免费生成次数”，官方不写具体数量；不要估算张数，也不要把所有下拉模型都当免费。
@@ -141,7 +141,7 @@
 - 模型和分辨率逐档不同，Nano Banana2/Flux.2 Pro等Pro可用，更高档有Nano Banana Pro/Kling2.5 Turbo/Veo3.1 Fast等；不得把最高档的19模型整体写成Pro档。完整列表看官方打勾表。
 - 2026-10-01官方报价Pro $19.99/mo；ProPlus与Premium有截至Oct21的首年30%价格优惠，不能把价格优惠截止当首年无限量权益的领取截止。
 - fihl/izr2重复同一首年权益，仍留待审让管理员决定保留一个；两条均不能自动通过。
-- 官方生成积分FAQ在Generative AI access for free users without a plan明确每日限定模型免费生成，免费次数、功能和模型会变化，未公布固定数量与具体完整名单。本轮免费daily条目证据改docs，不使用media/未经生成实测的tested，不改已完善付费ctu2。
+- 官方生成积分FAQ在Generative AI access for free users without a plan明确每日限定模型免费生成，免费次数、功能和模型会变化，未公布固定数量与具体完整名单。本轮免费daily条目证据改docs，不使用media/未经生成实测的tested，原付费ctu2是档位内含权益，后续收录规则不再保留这类条目；此处仅说明免费档证据，不执行数据库审核。
 - 本批核验入口：https://helpx.adobe.com/firefly/web/get-started/learn-the-basics/current-firefly-promotions.html；https://www.adobe.com/products/firefly/plans.html；https://helpx.adobe.com/creative-cloud/apps/generative-ai/generative-credits-faq.html。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## meituan
@@ -329,7 +329,7 @@
 
 ## qiniu
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
-- AI企业订阅2999/4999/9999元（月付），对应官方原价4284/8332/19998元；积分约10.7/20.8/50亿每月、24717/48067/115373万每周。每周刷新且不结转，积分按模型不同倍率扣减，不等于Token；不能直接用0.004元/K Tokens乘积分估值。当前按超值订阅规则采用“订阅实付价÷7.1—官方原价÷7.1”作区间，valueText明示口径。付费套餐包含模型不能填免费models。https://www.qiniu.com/ai/plan
+- AI企业订阅2999/4999/9999元（月付），对应官方原价4284/8332/19998元；积分约10.7/20.8/50亿每月、24717/48067/115373万每周。每周刷新且不结转，积分按模型不同倍率扣减，不等于Token；不能直接用0.004元/K Tokens乘积分估值。2026-10-01 曾按超值订阅例外估值，该口径现已撤销；套餐本身按 paid_bundle 不收，不能把实付价与原价的区间记为赠送价值。付费套餐包含模型不能填免费models。https://www.qiniu.com/ai/plan
 - Jina页HTTP Published Time出现2012年，是网站/响应时间元数据，不能当AI套餐官方发布日期。
 - 本批核验入口：https://www.qiniu.com/ai/plan。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
@@ -495,7 +495,7 @@
 ## pixverse
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - 以 app.pixverse.ai/subscribe 完整 Plans Details 表为准：Basic每天30积分，付费Standard/Pro/Premium/Ultra每天60；月会员积分分别1200/6000/15000/25000，会员按订阅开始的准确时刻每30天刷新，不是UTC月初；日额度UTC00:00刷新，两者均不结转。
-- 官方积分包$5/500、$20/2000、$50/5000、$100/10000，可按$0.01/积分作替代成本估值；免费30积分×30天=$9，付费月额度下限为$12/$60/$150/$250，另每天都领60可多$18/30天，上限不包含无限生成的臆测价值。
+- 官方积分包$5/500、$20/2000、$50/5000、$100/10000，可按$0.01/积分作替代成本估值；免费30积分×30天=$9，付费月额度及付费档日领额度是套餐内含权益，不另收或计为赠送价值；无限生成也不编造美元。
 - 只有 Unlimited Free Image Generations in Relax Mode (365 Days) 表的模型填免费模型。Standard没有；Pro为Qwen-image/Nano Banana 2 Lite；Premium再含Nano Banana 2/Nano Banana/Seedream4.0；Ultra14款依现行表。普通Access to Image/Video Models是可访问付费模型，不能都写免费。
 - 旧$8/$24/$48/$149摘录有20%/40%折扣但没计费周期；本轮公开渲染正文没返回套餐卡价格，先去掉固定月费声明，门槛保留套餐名+结算价周期待确认。
 - 本批核验入口：https://app.pixverse.ai/subscribe。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。

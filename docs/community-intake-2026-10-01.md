@@ -1,5 +1,8 @@
 # 社区补漏入库与白名单登记（2026-10-01）
 
+> 历史快照：记录 2026-10-01 当时的调查/写入与判断，不代表当前审核状态、活动仍有效或现行收录政策。后续提交已修改部分分类、估值、证据和收录决定；当前以 [数据合同](data-contract.md)、[抽取规则](../pipeline/learned-rules.md) 及 [运维说明](operations.md) 为准。原记录保留供复盘。
+
+
 用户授权新增。14条新福利已通过写入接口进入pending，2条未核实的Claude云会话/OpenAI定向赠额只保存为线索。没有执行活动通过或拒绝。
 
 新增平台：Inception、Browser Use、Hume AI、Free.ai、千问办公、豆包工作、扣子、WPS 灵犀、WorkBuddy。
