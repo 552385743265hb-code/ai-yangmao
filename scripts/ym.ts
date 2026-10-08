@@ -1,3 +1,4 @@
+import { adminHttp } from './admin-http';
 // ym：AI 羊毛牧场的命令行工具，给 Hermes Agent 的技能调用（也可以自己在终端用）。
 // 密钥从项目根目录的 .prod.secrets 读取（ADMIN_TOKEN）。输出为适合直接发到 Telegram 的中文纯文本。
 import { readFileSync } from 'node:fs';
@@ -10,13 +11,8 @@ for (const line of readFileSync(new URL('../.prod.secrets', import.meta.url), 'u
 const BASE = (process.env.API_BASE ?? env.API_BASE ?? 'https://ai-yangmao.com').replace(/\/$/, '');
 
 async function call<T = any>(path: string, body?: unknown, admin = true): Promise<T> {
-  const res = await fetch(`${BASE}/api${admin ? '/admin' : ''}${path}`, {
-    method: body === undefined ? 'GET' : 'POST',
-    headers: { Authorization: `Bearer ${env.ADMIN_TOKEN ?? ''}`, 'Content-Type': 'application/json' },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
-  const j = await res.json().catch(() => ({})) as any;
-  if (!res.ok) { console.error(`出错（${res.status}）：${j.error ?? ''}${j.issues ? ' ' + JSON.stringify(j.issues).slice(0, 300) : ''}`); process.exit(1); }
+  const { status, data: j } = adminHttp(`${BASE}/api${admin ? '/admin' : ''}${path}`, env.ADMIN_TOKEN ?? '', body);
+  if (status < 200 || status >= 300) { console.error(`出错（${status}）：${j.error ?? ''}${j.issues ? ' ' + JSON.stringify(j.issues).slice(0, 300) : ''}`); process.exit(1); }
   return j as T;
 }
 

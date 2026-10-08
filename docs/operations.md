@@ -84,3 +84,5 @@ OpenRouter 免费备用配置使用 `OPENROUTER_MODEL=openrouter/free`（2026-10
 Telegram 小时检查和日报均携带按对象去重的审核提醒，每批最多 10 条，余下下轮继续；未研判的重要线索、需人工核验、待审条目和更新提案都可提醒。提醒不是批准，公共列表仍只显示已批准条目。提醒使用现有 delivery claim/ack 协议，送达不明不重发；线索转入人工处理后可以再次提醒。快速运行记录为 runs(kind=sweep)，不冒充全量采集成功；health 返回 leadWorkflow，重要新线索积压超过两小时或快速运行失败会告警。
 
 人工补跑：`gh workflow run collect.yml -f fast_leads=true -f lead_limit=50`。补跑会写线索和待审，不自动批准、不配置自动上架。
+
+本机 Telegram 管理脚本使用 curl，通过 stdin 传入凭据，避免 Node TLS 偶发断连中止日报。写请求不自动重试；仍以 delivery 台账核对不明投递。

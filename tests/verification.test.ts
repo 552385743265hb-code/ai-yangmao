@@ -467,6 +467,7 @@ describe('lead to review workflow', () => {
     for (let i=0;i<60;i++) insert.run('linuxdo',`https://example.org/noise-${i}`,'免费话费游戏','2026-10-01T00:00:00Z');
     insert.run('aihot','https://example.org/max','Anthropic Max 每月赠送 API 额度','2026-10-07T00:00:00Z');
     insert.run('aihot','https://example.org/reset','Codex 重置卡已发放','2026-10-08T00:00:00Z');
+    insert.run('ithome','https://example.org/game','游戏免费更新：AI 敌人等级重置','2026-10-08T01:00:00Z');
     const result = await call('ingest/leads?limit=25');
     const rows = result.body.leads as {title:string}[];
     expect(rows.slice(0,2).map(l=>l.title)).toEqual(['Codex 重置卡已发放','Anthropic Max 每月赠送 API 额度']);
