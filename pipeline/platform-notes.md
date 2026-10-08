@@ -259,6 +259,7 @@
 - 本批核验入口：https://devin.ai/blog/windsurf-pricing-plans。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## aws
+- 2026-10-08 复核 Comprehend：Free Tier 是免费额度体系，Paid plan 是按量计费账户模式，不是固定月费订阅。官方 AI 福利页明确该服务在 Paid plan 有 12 个月免费试用；额度内免费，超额和不含功能可收费。仅启用该计费模式不要求为领取额度先充值，coxm 不标 pay，保留 card，并在额度/步骤完整注明 Paid plan 与收费条件。来源：https://aws.amazon.com/free/ai/；https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/free-tier-plans.html；https://aws.amazon.com/comprehend/pricing/
 - 证据用各服务英文价格页的 Free Tier 段（如 aws.amazon.com/transcribe/pricing/），不要用中文汇总页 /cn/free/ai/（“付费计划”是链接，摘录必跨链接）。单价从 b0.p.awsstatic.com/pricing/2.0/meteredUnitMaps/<服务>/USD/current/<服务>.json 读。Comprehend 新老客户都能用；Q Developer Java 转换超额 $0.003/行；Translate Active Custom 前 2 个月每月 50 万字符免费；HealthLake 存储内含额度是付费自带。（2026-10-03 批量审核）
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - 新版 Free Tier 新账号立即 $100，任务另送最多 $100，usdEstimate=100、usdMax=200；不是注册必得 $200。Free plan 最多6个月/余额先耗尽关闭；抵扣金最长开户12个月，续用需 Paid plan。通用抵扣金不是所有模型免费。
@@ -484,6 +485,9 @@
 - 本批核验入口：https://github.com/features/copilot/plans。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## anthropic
+- 2026-10-08 以 https://claude.com/programs/startups 及其 FAQ 核定创业计划：获批公司得 $1,000 第一方 Claude API 额度（发放后 6 个月有效）；首次使用 Team 的组织另可领最多 5 个 Premium 席位免费一年。按官方扩展公告 $100/席/月年付，5 席一年 $6,000，自有权益估值写 usdEstimate=1000、usdMax=7000。最高 $45,000 Startup Stack 是独立合作方优惠，不是 Anthropic API 赠金，不相加成人人固定 $46,000；VC 网络的最多 $100,000 API 是另一领取渠道，不并入本条估值。https://claude.com/resources/articles/were-expanding-the-claude-startups-program-to-help-founders-build
+- 创业计划须成立 5 年内或近 2 年获融资、Console 账号、与官网同域的公司邮箱、产品简述并经审核；不要求 VC 融资。API 仅用于第一方 Console，不适用 Bedrock/Vertex。官方条款排除在中国等受限地区设立/运营或向当地提供服务的公司，不能用“海外网络”替代公司资格；门槛 biz，具体条件写在额度和步骤。https://www.anthropic.com/startup-program-official-terms
+- 本轮扩展福利有 2026-10-06 官方公告和当日生效的附加权益条款，日期用于本轮新增 Team/合作方权益，不是整个创业计划的最初 Launch 日期。管理员补充 MadRobot 后已追到并通过 Jina 读到 CNBC 原文，CNBC 明确援引 Anthropic 称计划最初在 5 月推出；2026 年报道与官网 earlier this year 限定年份。记录 2026-05 为月份精度，具体日未披露，不猜 5 月 1 日；旧官方条款 May 22, 2025 的编辑日期也不当 Launch。7rs2 标题明确扩展版，步骤同时说明最初推出月份；保留指定条目，将同活动同渠道 ungi 作为重复处理，vmjp $100 未自动改写或拒绝。https://www.anthropic.com/legal/startup-program-addendum；https://madrobot.blog/2026/10/06/anthropic-claude-startups-free-year-claude-team-1000-api-credits/；https://www.cnbc.com/2026/10/06/anthropic-claude-startups-program.html
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - Claude API代码执行现每组织每月1,550小时免费，超额$0.05/小时/容器，最少5分钟；工具替代价值77.50美元/月。原“每日50小时、网页端运行Python”是错误。来源：https://platform.claude.com/docs/en/agents-and-tools/tool-use/code-execution-tool
 - Claude API 文档里的“per organization”指 Console 计费账户：个人注册 API 也自动有一个组织，不需要企业版；但调用 API 必须绑信用卡并充值，门槛写 card + pay，不是零门槛。Claude.ai 的 Pro/Max 订阅不含 API。（2026-10-03 管理员确认）
