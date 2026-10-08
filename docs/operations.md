@@ -65,4 +65,12 @@ npx wrangler deployments list
 
 明确授权发布后，按需要应用迁移 `npm run db:migrate`，再 `npm run deploy`。迁移和生产 seed 都是生产写入，不能当作验证命令；`npm run seed` 不能用于刷新全部现有记录。
 
-发布凭证应包含 Git SHA、部署版本、时间、迁移范围和线上页面/API 验证。当前部署缺 Git marker，单凭时间不能断言提交对应关系。发布前保留上一可用 Worker version ID；Worker 回滚使用 Wrangler 的 rollback 能力，数据库迁移不会自动回滚，需单独准备恢复方案。回滚后重新核对读取、后台和通知台账，未经授权不发送测试消息。
+发布凭证应包含 Git SHA、部署版本、时间、迁移范围和线上页面/API 验证。旧部署缺 Git marker，单凭时间不能断言提交对应关系；2026-10-07 起用 `wrangler deploy --keep-vars --tag <Git短SHA> --message <说明>` 标记版本。发布前保留上一可用 Worker version ID；Worker 回滚使用 Wrangler 的 rollback 能力，数据库迁移不会自动回滚，需单独准备恢复方案。回滚后重新核对读取、后台和通知台账，未经授权不发送测试消息。
+
+## 采集任务失败排查
+
+若日志在 `/verification-queue` 返回 500，应先检查 Worker 查询错误，而不是重试所有模型。2026-10-07 已修复超过 100 条已审核记录时，逐 ID 绑定参数超过 D1 限制的问题；核验、后台提案原条目查询及通知修订查询均改用 SQL 子查询。回归测试以 120 条记录并模拟 100 参数上限覆盖这些路径。
+
+OpenRouter 免费备用配置使用 `OPENROUTER_MODEL=openrouter/free`（2026-10-07 已检查模型目录并实测零费用请求）。固定免费模型若下线会返回 404，应核对可用性，不能把付费版本直接当免费兜底。
+
+数据库迁移列表与实际字段都需核对。若字段曾被手工添加而台账漏记，先检查类型、默认值和完整迁移效果，确认匹配后仅补迁移台账；不要重复 ALTER、删除字段或覆盖业务数据。详见 [2026-10-07 采集失败记录](incident-2026-10-07-collect.md)。
