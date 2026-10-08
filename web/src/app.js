@@ -1237,13 +1237,13 @@ async function admQueue() {
     <div class="small" style="word-break:break-all">来源：<a href="${esc(o.evidenceUrl)}" target="_blank" rel="noopener" style="text-decoration:underline">${esc(o.evidenceUrl)}</a></div>
     ${reviewActions(o, live)}
     ${o.reviewMemo ? `<details open class="small"><summary style="cursor:pointer;font-weight:600">🔍 核验记录（仅管理员可见）</summary><div style="white-space:pre-wrap;margin-top:6px;color:var(--ink-2)">${esc(o.reviewMemo)}</div></details>` : ''}
-    <details><summary class="small" style="cursor:pointer">💬 牧场心得${o.adminNote ? '（已写）' : '（可选，公开显示）'}</summary><div class="row" style="margin-top:6px;align-items:flex-start"><textarea data-note rows="2" maxlength="500" style="flex:1;min-width:160px" placeholder="实际用下来怎么样？比如：免费模型速度慢、容易限流">${esc(o.adminNote || '')}</textarea><button class="btn sm" type="button" data-act="note">保存心得</button></div></details>
+    <details><summary class="small" style="cursor:pointer">💬 牧场心得${o.adminNote ? '（已写）' : '（可选，公开显示）'}</summary><div class="row" style="margin-top:6px;align-items:flex-start"><textarea data-note rows="2" maxlength="500" style="flex:1;min-width:160px" placeholder="实际用下来怎么样？比如：免费模型速度慢、容易限流">${esc(o.adminNote || '')}</textarea><button class="btn sm" type="button" data-act="note">保存心得</button><span data-note-status role="status" class="small" style="align-self:center"></span></div></details>
     <div data-rejectbox hidden style="display:flex;flex-direction:column;gap:8px">
       <p class="small muted" style="margin:0">${live ? '下架后，本条目不再公开显示，审核记录保留。' : o.pendingUpdate ? '确认后仅拒绝本次更新提案，已上架内容保持原样、继续公开。' : '拒绝后，本条目不会上架。已结束但属实的活动请点“修改”补全开始和截止日期，再通过并收录历史。'}</p>
       <div class="chips">${RC.map(([k, l]) => `<button class="btn sm" type="button" data-rc="${k}" aria-pressed="false">${l}</button>`).join('')}</div>
       <div class="row review-actions"><input type="text" placeholder="补充理由（写清楚，模型以后学得更快）" data-reason style="flex:1;min-width:160px;padding:6px 10px"><button class="btn sm bad" type="button" data-act="reject">${live ? '确认下架' : o.pendingUpdate ? '确认拒绝更新，保留已上架内容' : '确认拒绝收录'}</button></div>
     </div>
-    <form data-editform hidden class="filters" style="margin:0">
+    <template data-edittemplate><form data-editform hidden class="filters" style="margin:0">
       ${[['title', '标题', o.title], ['valueText', '额度', o.value], ['creditValidity', '额度有效期', o.creditValidity || '']].map(([k, l, v]) => `<label class="field">${l}<input type="text" name="${k}" value="${esc(v)}"></label>`).join('')}
       <label class="field">领取开始（可空）<input type="date" name="claimStart" value="${esc(o.claimStart || '')}"></label>
       <label class="field">领取截止（可空）<input type="date" name="claimEnd" value="${esc(o.claimEnd || '')}"></label>
@@ -1269,7 +1269,7 @@ async function admQueue() {
       <label class="field">适用对象<select name="audience">${Object.entries(AUD).map(([k, l]) => `<option value="${k}" ${o.audience === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
       <label class="field" style="grid-column:1/-1">为什么这样改（可选，但强烈建议写）<input type="text" name="__reason" placeholder="例如：要先付费升级才送，属于充值赠送"></label>
       <div class="row review-actions" style="grid-column:1/-1;align-items:center"><button class="btn sm pri" type="submit">${live ? '保存' : o.pendingUpdate ? '保存并接受更新' : '保存并通过'}</button><span data-formmsg role="alert" class="small" style="font-weight:600"></span></div>
-    </form>
+    </form></template>
   </article>`;
   const sugCount = k => q.pending.filter(o => (o.suggestion?.verdict || 'none') === k).length;
   const sugTabs = [['all', '全部', q.pending.length], ['approve', '建议通过', sugCount('approve')], ['history', '建议作为历史', sugCount('history')], ['reject', '建议拒绝', sugCount('reject')], ['judge', '需要你判断', sugCount('judge')], ['none', '未标注', sugCount('none')]].filter(([k, , n]) => k === 'all' || n);
@@ -1280,13 +1280,13 @@ async function admQueue() {
     ${q.suggestAutoPublish.map(x => `<div class="card" style="margin-bottom:12px"><span class="st warn"><b>!</b>建议放开</span> 信源 ${esc(x.id)} 已连续原样通过 ${x.cleanStreak} 条 <button class="btn sm" data-autopub="${x.id}">放开自动上架</button></div>`).join('')}
     ${q.needsVerification?.length ? `<section>${secH('证据待核验', '旧版已退出当前可领；核对官方页面后才能确认结束或恢复')}${q.needsVerification.map(o => `<form class="card" data-withdraw="${esc(o.code)}" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px"><b>${esc(o.title)}</b><a href="${esc(o.evidenceUrl)}" target="_blank" rel="noopener">打开当前证据 ↗</a><label class="field">官方撤回链接<input type="url" name="evidenceUrl" value="${esc(o.evidenceUrl)}" required></label><label class="field">官方撤回说明<input name="reason" required minlength="4" placeholder="请引用官方明确撤回或停止发放的文字"></label><div class="row"><button class="btn sm good" type="button" data-retest="${esc(o.code)}">我核对过，仍有效</button><button class="btn sm bad" type="submit">核实后结束</button></div></form>`).join('')}</section>` : ''}
     <div class="grid g2">${q.pending.map(o => card(o)).join('') || emptySheep('待审队列是空的。')}</div>
-    ${q.incomplete?.length ? `<section><details><summary style="cursor:pointer">${secH('已上架、字段待补', `${q.incomplete.length} 条：补齐后日历、时间线、按模型找、价值统计等栏目才完整`)}</summary><div class="grid g2">${q.incomplete.map(o => card(o, true)).join('')}</div></details></section>` : ''}`;
+    ${q.incomplete?.length ? `<section><details data-incomplete><summary style="cursor:pointer">${secH('已上架、字段待补', `${q.incomplete.length} 条：补齐后日历、时间线、按模型找、价值统计等栏目才完整`)}</summary><div class="grid g2" data-incomplete-body></div></details></section>` : ''}`;
   const applySug = () => $$('[data-sug]', box).forEach(el => { if (el.closest('details')) return; el.style.display = !ADM.sug || ADM.sug === 'all' || el.dataset.sug === ADM.sug ? '' : 'none'; });
   $$('[data-sugtab]', box).forEach(b => b.addEventListener('click', () => { ADM.sug = b.dataset.sugtab; $$('[data-sugtab]', box).forEach(x => x.setAttribute('aria-pressed', x === b)); applySug(); }));
   applySug();
   const done = (el, msg) => { el.style.opacity = .45; el.querySelectorAll('button,input,select').forEach(x => { x.disabled = true; }); toast(msg); };
-  $$('[data-code]', box).forEach(el => {
-    const code = el.dataset.code, live = !!el.dataset.live, o = [...q.pending, ...(q.incomplete || [])].find(x => x.code === code);
+  const bindCards = scope => $$('[data-code]', scope).forEach(el => {
+    const code = el.dataset.code, live = el.dataset.live === '1', o = (live ? q.incomplete || [] : q.pending).find(x => x.code === code);
     // 失败原因显示在按钮旁边，不只在顶部闪一下
     const actMsg = (msg, bad = true) => { let m = el.querySelector('[data-actmsg]'); if (!m) { m = document.createElement('p'); m.dataset.actmsg = ''; m.className = 'small'; m.style.cssText = 'margin:0;font-weight:600'; el.querySelector('[data-act]').closest('.row').after(m); } m.style.color = bad ? 'var(--critical-ink)' : ''; m.textContent = msg; };
     el.querySelector('[data-act="approve"]')?.addEventListener('click', async () => { try { const r = await adm(`/offers/${code}/approve`, {}); done(el, `${o?.pendingUpdate ? '已接受更新' : '已通过'}：${r.title}`); } catch (e) { actMsg((o?.pendingUpdate ? '没有接受更新：' : '没有通过：') + e.message); } });
@@ -1297,7 +1297,18 @@ async function admQueue() {
         done(el, `已按管理员实测${o.pendingUpdate ? '接受更新' : '通过'}：${o.title}`);
       } catch (e) { actMsg((o.pendingUpdate ? '没有接受更新：' : '没有通过：') + e.message); }
     });
-    el.querySelector('[data-act="note"]')?.addEventListener('click', async () => { try { await adm(`/offers/${code}/note`, { note: el.querySelector('[data-note]').value }); toast('心得已保存'); } catch (e) { toast('没有保存：' + e.message); } });
+    const noteInput = el.querySelector('[data-note]'), noteButton = el.querySelector('[data-act="note"]'), noteStatus = el.querySelector('[data-note-status]');
+    noteInput.addEventListener('input', () => { if (noteStatus.textContent !== '未保存') noteStatus.textContent = '未保存'; });
+    noteButton.addEventListener('click', async () => {
+      if (noteButton.disabled) return;
+      const note = noteInput.value;
+      noteButton.disabled = true; noteStatus.textContent = '保存中…';
+      try {
+        await adm(`/offers/${code}/note`, { note });
+        noteStatus.textContent = noteInput.value === note ? '已保存' : '当前修改未保存';
+      } catch (e) { noteStatus.textContent = '没有保存：' + e.message; }
+      finally { noteButton.disabled = false; }
+    });
     const rb = el.querySelector('[data-rejectbox]');
     let rc = null;
     el.querySelector('[data-act="rejectopen"]')?.addEventListener('click', () => {
@@ -1315,12 +1326,21 @@ async function admQueue() {
       if (!rc && !reason) { toast('选一个理由或写一句说明，模型才能从这次拒绝里学到东西'); return; }
       try {
         // 已上架的卡片：下架（对已上架条目调用 reject 只会丢弃更新提案，不会撤下）
-        if (el.dataset.live) { if (!reason) { toast('写一句下架理由'); return; } const r = await adm(`/offers/${code}/unpublish`, { reason, reasonCode: rc || 'other' }); done(el, `已下架：${r.title}`); return; }
+        if (live) { if (!reason) { toast('写一句下架理由'); return; } const r = await adm(`/offers/${code}/unpublish`, { reason, reasonCode: rc || 'other' }); done(el, `已下架：${r.title}`); return; }
         const r = await adm(`/offers/${code}/reject`, { reason: reason || undefined, reasonCode: rc || 'other' }); done(el, o?.pendingUpdate ? `已拒绝更新，保留已上架内容：${r.title}` : `已拒绝收录：${r.title}`);
       } catch (e) { toast(e.message); }
     });
-    el.querySelector('[data-act="edit"]').addEventListener('click', () => { const f = el.querySelector('[data-editform]'); f.hidden = !f.hidden; });
-    el.querySelector('[data-editform]').addEventListener('submit', async e => {
+    el.querySelector('[data-act="edit"]').addEventListener('click', () => {
+      let f = el.querySelector('[data-editform]');
+      if (!f) {
+        const template = el.querySelector('[data-edittemplate]');
+        template.replaceWith(template.content.cloneNode(true));
+        f = el.querySelector('[data-editform]');
+        f.addEventListener('submit', submitEdit);
+      }
+      f.hidden = !f.hidden;
+    });
+    const submitEdit = async e => {
       e.preventDefault(); const form = e.currentTarget; const fd = Object.fromEntries(new FormData(form));
       const msg = form.querySelector('[data-formmsg]'), btn = form.querySelector('button[type="submit"]');
       msg.style.color = ''; msg.textContent = '保存中…'; btn.disabled = true;
@@ -1348,7 +1368,16 @@ async function admQueue() {
       done(el, r.changed.length ? `已修改 ${r.changed.map(f => FIELD_L[f] || f).join('、')}；${result}` : `没有改动，${result}`);
       msg.textContent = '';
       } catch (err) { btn.disabled = false; msg.style.color = 'var(--critical-ink)'; msg.textContent = '没有保存：' + err.message; console.error('[admin] 保存并通过失败', err); }
-    });
+    };
+  });
+  bindCards(box);
+  const incomplete = box.querySelector('[data-incomplete]');
+  incomplete?.addEventListener('toggle', () => {
+    if (!incomplete.open || incomplete.dataset.loaded) return;
+    const target = incomplete.querySelector('[data-incomplete-body]');
+    target.innerHTML = q.incomplete.map(o => card(o, true)).join('');
+    incomplete.dataset.loaded = '1';
+    bindCards(target);
   });
   if (ADM.role === 'reviewer') $$('[data-plat],[data-autopub],[data-withdraw]', box).forEach(x => x.remove());
   $$('[data-plat]', box).forEach(b => b.addEventListener('click', async () => { const [id, act] = b.dataset.plat.split(':'); await adm(`/platforms/${id}/${act}`, {}); toast('已处理'); admQueue(); }));
@@ -1564,11 +1593,12 @@ async function refreshPage() {
   lastRefreshAt = Date.now();
   try {
     NOW = new Date(); T0 = new Date(NOW.getFullYear(), NOW.getMonth(), NOW.getDate());
-    await loadData(); prepare(); render(true);
+    await loadData(); if (keepPage()) return; prepare(); render(true);
   } catch (e) { /* 保留已加载页面；下次周期检查会再试 */ }
   finally { refreshInFlight = false; }
 }
 setInterval(() => {
+  if (document.hidden || keepPage()) return;
   const now = Date.now();
   $$('[data-end]').forEach(el => { el.textContent = cdText(+el.dataset.end - now); });
   $$('[data-since]').forEach(el => { el.textContent = cdText(now - +el.dataset.since); });
