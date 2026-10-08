@@ -280,11 +280,14 @@
 - 本批核验入口：https://www.genspark.ai/helpcenter/membership-plans；https://www.genspark.ai/helpcenter/credits-guide。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## vidu
-- 价格页 Free 档只写 Log in to Get Bonus Credits，注册礼和每日登录积分的数量只能登录后看。Ultimate（$79）档的 Off-Peak 每天 200 条、Q2 图像无限量是档位自带，不收。价格页写 Plans will be upgraded on October 6，10-06 后复核。（2026-10-03 批量审核）
-- 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
-- 官网pricing FAQ仅说新注册赠trial积分、每天登录赚积分，未列数量/精确模型/有效期。登录礼不是仅付费会员，按常驻+daily处理。
-- 订阅积分30天、Purchased/Bonus Credits 2年，不能直接套用注册trial积分或登录礼。需要管理员登录核验，不造美元。
-- 本批核验入口：https://www.vidu.com/pricing。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
+- 2026-10-08 管理员明确亲测新人注册获 20 积分，授权更新 ds4t；证据用 tested，截图保存于 [Free 套餐实测截图](../docs/evidence/vidu-2026-10-08/free-plan-admin-tested.png)。20 积分是一次性注册礼，不能写成每月 20 积分，也不能把亲测数量补进官方英文摘录冒充官网原文。
+- 本次官网价格页与截图均确认 Free 为 $0/月，Q4 的 540P 使用费率为 4 credits/sec；20 积分按此费率只可算成 5 秒用量，实际可选视频时长以界面为准。截图只确认 Q4，不把产品导航中的 Q3 自动写入本条免费模型名单；这不是断言 Q3 不可用。
+- “10 references/month” 在官网比较表归 Content Management → Number of My References，是每月 10 个参考素材管理配额，不是每月 10 条免费视频，不能与注册送积分相加或冒估美元价值。
+- 2026-10-08 套餐卡年付 Standard $99/年、800/月；Premium $425/年、3,500/月；Ultimate $2,300/年、限时 20,000/月。同页比较表仍写 Ultimate 8,000/月，采用促销卡 20,000 得到最低单位费率 $2,300/(12×20,000)，20 积分约 $0.19，仅作积分单位单价比价，不表示 Free 用户能购买该档，也不是自由换现或视频实际支付价格。Free Q4 每秒 4 积分、付费档每秒 2 积分，不把相同积分数等同相同生成量。
+- 官网 FAQ 注册礼原文只有“New users receive trial credits upon registering for Vidu.”，每日登录也确有积分奖励，但数量未公开；登录礼不是仅付费会员，rqbg 另按常驻 + daily 核实，本次不改。没有额外“1 free trial”的已核证据。
+- 注册 trial 积分的到期时间仍须账户积分明细，不能套用订阅积分 30 天或 Purchased/Bonus Credits 两年。未公布注册礼的活动起止，不把管理员亲测日期或页面更新日期当领取开始。
+- Ultimate 的 Off-Peak 每天 200 条和付费档内含功能是套餐自带，不作为额外赠送。此前 Ultimate $79 等价格已是旧快照，不能沿用为当前售价。
+- 核验入口：https://www.vidu.com/pricing；本次完整记录见 [Vidu 注册礼核验](../docs/evidence/vidu-2026-10-08/verification.md)。
 
 ## worldlabs
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
