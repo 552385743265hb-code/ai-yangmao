@@ -607,3 +607,20 @@ it('reports the latest incomplete collect rather than masking it with an older s
   const health=await call('admin/health',undefined,'admin');
   expect(health.body.coverageDegraded).toBe(true);
 });
+
+it('lets pending extraction improve fields while preserving fields explicitly edited by a reviewer',async()=>{
+  await call('ingest/offers',[{...offer,title:'粗略标题',audience:'unclear',claimMethod:'auto',steps:[],evidence:{...evidence,tier:'media'}}]);
+  const next={...offer,title:'完整的官方标题',audience:'all',claimMethod:'signup',steps:['注册领取'],creditValidity:'30 天'};
+  await call('ingest/offers',[next]);
+  const detail=await call('admin/offers/vendor-free',undefined,'admin');
+  expect(detail.body.offer).toMatchObject({title:next.title,audience:'all',claimMethod:'signup',steps:['注册领取'],creditValidity:'30 天',evidenceTier:'docs',reviewState:'pending'});
+  await call('admin/offers/vendor-free/edit',{fields:{title:'管理员确认标题'}},'admin');
+  await call('ingest/offers',[{...next,title:'模型换个说法'}]);
+  expect((await call('admin/offers/vendor-free',undefined,'admin')).body.offer).toMatchObject({title:'管理员确认标题'});
+});
+
+it('applies official evidence and missing steps to pending offers even if core terms are unchanged',async()=>{
+  await call('ingest/offers',[{...offer,evidence:{...evidence,tier:'media'}}]);
+  await call('ingest/offers',[{...offer,steps:['注册后领取'],creditValidity:'30 天'}]);
+  expect((await call('admin/offers/vendor-free',undefined,'admin')).body.offer).toMatchObject({evidenceTier:'docs',steps:['注册后领取'],creditValidity:'30 天'});
+});

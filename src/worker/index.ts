@@ -268,7 +268,16 @@ ingest.post('/offers', async c => {
         row.evidence = { ...row.evidence, excerpts };
       }
     }
-    const diff = reviewChanges(prev, row);
+    const diff: {field:string;from:unknown;to:unknown}[] = reviewChanges(prev, row);
+    // 待审草稿还未核准：只补证据、步骤或有效期也必须落库；已审核条目仍按业务字段提案。
+    if (prev.reviewState === 'pending') {
+      const meaningfulEvidence = (e: typeof row.evidence) => [e.url,e.tier,e.excerpts.benefit ?? null,e.excerpts.eligibility ?? null,e.excerpts.claim ?? null,e.excerpts.validity ?? null];
+      for (const field of ['steps','creditValidity','evidence'] as const) {
+        const before = field === 'evidence' ? meaningfulEvidence(prev.evidence) : prev[field];
+        const after = field === 'evidence' ? meaningfulEvidence(row.evidence) : row[field];
+        if (JSON.stringify(before) !== JSON.stringify(after)) diff.push({field,from:prev[field],to:row[field]});
+      }
+    }
     if (!diff.length) {
       if (existingProposal && o.evidence.tier !== 'media') await d.delete(s.offerProposals).where(eq(s.offerProposals.offerId, o.id));
       // 只刷新自动核验元数据，保留已审核文案、摘录及可选字段，模型漏摘录不能清空它们。
