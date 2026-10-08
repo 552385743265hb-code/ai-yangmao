@@ -160,6 +160,7 @@
 - 本批核验入口：https://portal.nousresearch.com/manage-subscription。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## higgsfield
+- 2026-10-08：Discord 200K 视频比赛 q86e 仅前十名获奖者领积分，管理员明确比赛类奖励不收，按 other 拒绝；不得改为会员福利或申请制。电影人申请制资助与比赛分开。
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - 官方 blog 有本平台权益说明也有跨平台比较。后者出现的 Adobe/Luma/Kling/Runway/Vidu/Magnific/Hailuo/Midjourney 福利必须归实际发放方并核发放方原文；不能把 Higgsfield 对比文当它们官方证据。
 - All Unlimited 是23模型短期窗口（11图像/7视频/5音频），与365天基础模型集不同。365天基础集在本次官方年付对比中是6个图像模型（Seedream 5.0 Lite、Flux.2 Pro 1K、Seedream 4.5、Nano Banana、Kling O1 Image、GPT Image），不能写成23模型全年不限量。
