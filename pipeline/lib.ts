@@ -36,8 +36,8 @@ export async function fetchText(url: string, opts: { accept?: string; timeoutMs?
 
 // 本地中继用 curl 抓社区站时使用的浏览器 UA（见 collectors.ts curlText）
 export const BROWSER_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0 Safari/537.36';
-async function fetchTextWithUrl(url: string, opts: { accept?: string; timeoutMs?: number } = {}): Promise<{ text: string; finalUrl: string }> {
-  const res = await fetchRetry(url, { headers: { 'User-Agent': UA, Accept: opts.accept ?? '*/*', 'Accept-Language': 'en-US,en;q=0.9,zh-CN;q=0.8' }, signal: AbortSignal.timeout(opts.timeoutMs ?? 30000) });
+async function fetchTextWithUrl(url: string, opts: { accept?: string; timeoutMs?: number; tries?: number } = {}): Promise<{ text: string; finalUrl: string }> {
+  const res = await fetchRetry(url, { headers: { 'User-Agent': UA, Accept: opts.accept ?? '*/*', 'Accept-Language': 'en-US,en;q=0.9,zh-CN;q=0.8' }, signal: AbortSignal.timeout(opts.timeoutMs ?? 30000) }, opts.tries ?? 3);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return { text: await res.text(), finalUrl: res.url || url };
 }
@@ -68,11 +68,11 @@ export function readableText(html: string, url: string): string {
  * 1. 直接抓取，Readability 正文和整页纯文本里，取羊毛相关内容更多的那个（Readability 有时会丢掉定价说明）；
  * 2. 字数仍然太少（多半是脚本渲染的页面），改用 Jina Reader，要 Markdown 格式以保留表格结构。
  */
-export async function fetchPage(url: string): Promise<{ text: string; via: 'readability' | 'direct' | 'jina'; finalUrl: string }> {
+export async function fetchPage(url: string, opts: { timeoutMs?: number; tries?: number } = {}): Promise<{ text: string; via: 'readability' | 'direct' | 'jina'; finalUrl: string }> {
   assertSafeUrl(url);
   let text = '', via: 'readability' | 'direct' = 'direct', finalUrl = url;
   try {
-    const page = await fetchTextWithUrl(url, { accept: 'text/html' });
+    const page = await fetchTextWithUrl(url, { accept: 'text/html', ...opts });
     const html = page.text; finalUrl = page.finalUrl;
     const full = htmlToText(html), read = readableText(html, url);
     // 哪个版本保留的羊毛相关内容多就用哪个；一样多时用更干净的 Readability
@@ -81,7 +81,7 @@ export async function fetchPage(url: string): Promise<{ text: string; via: 'read
   if (text.length >= 800) return { text, via, finalUrl };
   const headers: Record<string, string> = { 'User-Agent': UA, 'X-Return-Format': 'markdown', Accept: 'text/plain', 'X-Locale': 'en-US' };
   if (process.env.JINA_API_KEY) headers.Authorization = `Bearer ${process.env.JINA_API_KEY}`;
-  const res = await fetch(`https://r.jina.ai/${url}`, { headers, signal: AbortSignal.timeout(60000) });
+  const res = await fetch(`https://r.jina.ai/${url}`, { headers, signal: AbortSignal.timeout(opts.timeoutMs ?? 60000) });
   if (!res.ok) throw new Error(`直接抓取只有 ${text.length} 字，Jina Reader 返回 ${res.status}`);
   const body = (await res.text()).replace(/^[\s\S]*?Markdown Content:\n/, ''); // 去掉 Jina 的元信息头
   return { text: body.replace(/\n\s*\n+/g, '\n').trim(), via: 'jina', finalUrl: url };

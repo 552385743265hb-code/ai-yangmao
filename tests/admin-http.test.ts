@@ -14,6 +14,12 @@ describe('administrator transport',()=>{
     expect(options?.input).toContain('request = "POST"');
     expect(args).not.toContain('--location');
   });
+  it('retries a TLS handshake failure before the HTTP request was sent',()=>{
+    vi.mocked(spawnSync).mockReturnValueOnce({status:35,stdout:'',stderr:'handshake',pid:1,output:[]} as ReturnType<typeof spawnSync>)
+      .mockReturnValueOnce({status:0,stdout:'{"ok":true}\n200',stderr:'',pid:1,output:[]} as ReturnType<typeof spawnSync>);
+    expect(adminHttp('https://local.test/api/admin/notify/claim','fixture-token',{}).data.ok).toBe(true);
+    expect(vi.mocked(spawnSync)).toHaveBeenCalledTimes(2);
+  });
   it('never retries a failed mutation or exposes credential-bearing diagnostics',()=>{
     vi.mocked(spawnSync).mockReturnValue({status:1,stdout:'',stderr:'fixture-token',pid:1,output:[]} as ReturnType<typeof spawnSync>);
     expect(()=>adminHttp('https://local.test/api/admin/notify/claim','fixture-token',{})).toThrow('未自动重试');

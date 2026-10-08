@@ -532,7 +532,7 @@ export async function buildNotice(env: Env, kind: NoticeKind, channel: NoticeCha
     leadBacklog = unresolved.length;
     reviewAlerts = [
       ...awaiting.map(o=>({ key: `offer:${o.id}`, title: `[${shortCode(o.id)}] ${o.title}`, state: '待审', url: `https://ai-yangmao.com/#offer-${o.id}` })),
-      ...proposals.filter(p=>p.diff.some(x=>isReviewField(x.field))).map(p=>({ key: `proposal:${p.offerId}:${p.updatedAt}`, title: String(p.candidate.title ?? p.offerId), state: '条款更新待审', url: `https://ai-yangmao.com/#offer-${p.offerId}` })),
+      ...proposals.filter(p=>p.diff.some(x=>isReviewField(x.field))).map(p=>({ key: `proposal:${p.offerId}:${JSON.stringify(p.diff)}`, title: String(p.candidate.title ?? p.offerId), state: '条款更新待审', url: `https://ai-yangmao.com/#offer-${p.offerId}` })),
       ...unresolved.filter(l=>leadPriority(l)<=1).sort((a,b)=>leadPriority(a)-leadPriority(b)||b.id-a.id).map(l=>({ key: `lead:${l.id}:${l.status}`, title: `#${l.id} ${l.title ?? ''}`, state: l.status==='reviewing' ? '抽取受阻，需人工核验' : '重要线索，尚未研判', url: l.url })),
     ].filter(a=>!announced.has(a.key));
     // 重要线索先提醒，余下待审分批发完；单条失败不堵住其他审核提醒。

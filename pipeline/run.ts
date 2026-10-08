@@ -257,7 +257,7 @@ async function triageLeads(plats: Plat[]) {
     let text = `${l.title ?? ''}\n${l.raw ?? ''}`;
     let fetched = false;
     let effectiveUrl = l.url, indirect = false;
-    try { const pg = await fetchPage(l.url); text = `${l.title ?? ''}\n${pg.text}`.slice(0, 14000); effectiveUrl = pg.finalUrl; indirect = pg.via === 'jina'; fetched = true; }
+    try { const pg = await fetchPage(l.url, { timeoutMs: 10000, tries: 1 }); text = `${l.title ?? ''}\n${pg.text}`.slice(0, 14000); effectiveUrl = pg.finalUrl; indirect = pg.via === 'jina'; fetched = true; }
     catch { if (l.origin === 'manual' || l.origin === 'telegram') { log(`  #${l.id} 原文暂时不可访问，下轮继续抓取`); continue; } }
     let r;
     try { r = await extract('（见平台白名单）', l.url, text, log, { platformList: list, platformIds: mentionedPlatforms(`${l.title ?? ''}\n${text}`), existing, corrections: await correctionsFor(null, null), budget: modelBudget }); }
