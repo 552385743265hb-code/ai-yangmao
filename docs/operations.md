@@ -33,6 +33,10 @@ npx tsx .claude/skills/yangmao-review/scripts/offer.ts plan <短码> patch.json
 
 ## 采集与复核
 
+通用规则和平台要点由 `pipeline/llm.ts` 加入实际模型请求；官方抽取、社区线索研判都会收到通用规则，平台明确或能从文章识别时附相关要点。只改文档而不推送不会更新 GitHub 上的采集代码；Worker 部署也不能代替仓库推送。
+
+经验回归可手动触发工作流“抽取经验回归”（`extraction-lessons.yml`）。`only_cases` 支持 workbuddy、xiaomi-mimo、aws、vidu、anthropic，留空全部。它用合成文本驱动真实 `extract` 和免费供应商，禁止付费兜底，不写权益/线索/审核状态；模型预算仍预留和结算，结果保留为 Actions artifact。失败须检查具体输出，不降低验收标准，也不把合成回归当成全站官网核验。已排除付费档不能连带删掉同页免费额度；已有条目索引也不代表准入。
+
 Worker 的 UTC cron 为 `0 0 * * *` 日报、`7 * * * *` 加急、`17 */6 * * *` 触发全站采集，`27 * * * *` 触发快速线索通道。GitHub collect 工作流为 dispatch 入口；每周 distill 工作流生成纠错规则 PR，需要审核，不是社区发现扫描。邮件接收和 Discord 尚无实现。
 
 采集模型链为 Gemini 免费层、OpenRouter、可选 GLM、受预算限制的付费 DeepSeek，额度不足可延期。仓库配置 `DAILY_TOKEN_CAP=0`、`MONTHLY_COST_CAP_CNY=10`；线上实际覆盖值另行核对。无需为文档整理调用模型或跑全量采集。

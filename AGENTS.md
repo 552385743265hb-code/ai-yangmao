@@ -13,5 +13,5 @@
 - 开发 `npm run dev`；验证 `npm run typecheck`、`npm test`，前端改动加 `npm run build:web`。
 - 检索优先用 `rg`；具体运维命令见 [operations.md](docs/operations.md)。
 - 收尾区分本地提交、远端推送、部署和线上核验；不要从测试通过推断已上线。
-- 当前发布差异见 [整理凭证](docs/closeout-2026-10-07.md)，发布前实时核对，勿重复使用快照数量。
+- 最新抽取规则发布见 [经验发布凭证](docs/extraction-lessons-release-2026-10-08.md)，全链路实现见 [工作流审查](docs/workflow-audit-2026-10-08.md)；发布前实时核对，勿重复使用快照数量。
 - 本项目 Codex/Grok 的 yangmao-review 链接统一指向仓库副本；外部全局技能库不自动同步。

@@ -12,6 +12,7 @@
 | [架构](docs/design.md) | 数据流、系统设计；历史决策已标注 |
 | [运维说明](docs/operations.md) | 命令、角色、定时采集、通知、发布与回滚 |
 | [2026-10-07 整理凭证](docs/closeout-2026-10-07.md) | 本地、远端、生产差异与本次覆盖范围 |
+| [抽取经验发布凭证](docs/extraction-lessons-release-2026-10-08.md) | 近期收录纠正、实际提示词加载、模型回归及发布验证 |
 | [仓库审核 skill](.claude/skills/yangmao-review/SKILL.md) | 单条和批量预审流程 |
 | [Hermes 接入](integrations/hermes/ai-yangmao/SKILL.md) | 查询和管理命令；发消息需要明确授权 |
 
