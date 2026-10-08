@@ -1,0 +1,30 @@
+name: 抽取经验回归
+on:
+  workflow_dispatch:
+concurrency:
+  group: extraction-lessons
+  cancel-in-progress: false
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx tsx scripts/eval-extraction-lessons.ts
+        env:
+          API_BASE: ${{ secrets.API_BASE }}
+          INGEST_TOKEN: ${{ secrets.INGEST_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          OPENROUTER_MODEL: ${{ vars.OPENROUTER_MODEL || 'openrouter/free' }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: extraction-lessons-results
+          path: extraction-lessons-results.json

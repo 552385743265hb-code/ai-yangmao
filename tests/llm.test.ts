@@ -18,6 +18,26 @@ beforeEach(() => {
 afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); vi.unstubAllEnvs(); vi.restoreAllMocks(); });
 
 describe('model result contract', () => {
+  it.each([false, true])('sends current review lessons through the real extraction request (triage=%s)', async triage => {
+    let system = '';
+    vi.stubGlobal('fetch', vi.fn(async (_input, init) => {
+      const body = JSON.parse(String(init?.body));
+      system = body.systemInstruction.parts[0].text;
+      return gemini('{"offers":[]}');
+    }));
+    const { extract } = await import('../pipeline/llm');
+    await extract('WorkBuddy', 'https://www.workbuddy.cn/docs/workbuddy/Pricing', '标准版每月实得4,000积分', undefined,
+      triage ? { platformList: 'workbuddy=WorkBuddy' } : { platformIds: ['workbuddy'] });
+    expect(system).toContain('WorkBuddy 标准/高级/旗舰每月加赠');
+    expect(system).toContain('不因这些字样自动输出');
+    expect(system).toContain('无需先付款');
+    expect(system).toContain('不是 10 条免费视频');
+    expect(system).toContain('第三方合作优惠分别核验与估值');
+    expect(system).toContain('只知道月份不猜月初');
+    expect(system).not.toContain('只输出免费档里可量化的 AI 额度，以及写明');
+    if (!triage) expect(system).toContain('6j7x/lpen/v4sd');
+  });
+
   it.each(['{"error":"could not read source"}', '{"offers":null}', '{"offers":{}}', '{"offers":[null]}', '{"offers":['])
     ('does not turn malformed output %s into a successful empty extraction', async output => {
       vi.stubGlobal('fetch', vi.fn(async () => gemini(output)));
