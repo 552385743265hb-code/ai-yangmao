@@ -498,3 +498,15 @@ it('refuses to consume a lead when its supposed offer did not persist', async ()
   expect((sqlite.prepare('SELECT status FROM leads WHERE id=1').get() as {status:string}).status).toBe('new');
   expect((await call('ingest/leads/1/status',{status:'linked',offerId:'vendor-free'})).status).toBe(200);
 });
+
+
+it('creates a new pending reset event even when the model reuses a historical ID', async () => {
+  const old = {...offer,id:'vendor-reset',title:'Codex 重置卡发放',type:'perk',tags:['reset'],claimStart:'2026-07-13',publishedAt:'2026-07-13T18:00:00Z'};
+  await call('ingest/offers',[old]);
+  sqlite.prepare("UPDATE offers SET review_state='approved' WHERE id='vendor-reset'").run();
+  const next = await call('ingest/offers',[{...old,claimStart:'2026-10-07',publishedAt:'2026-10-07T19:00:00Z',evidence:{...evidence,url:'https://vendor.example/october-reset'}}]);
+  expect((next.body.results as {id:string}[])[0].id).not.toBe('vendor-reset');
+  expect((sqlite.prepare("SELECT count(*) n FROM offers WHERE review_state='pending'").get() as {n:number}).n).toBe(1);
+  expect((sqlite.prepare("SELECT published_at FROM offers WHERE id='vendor-reset'").get() as {published_at:string}).published_at).toBe(old.publishedAt);
+  expect((sqlite.prepare('SELECT count(*) n FROM offer_proposals').get() as {n:number}).n).toBe(0);
+});

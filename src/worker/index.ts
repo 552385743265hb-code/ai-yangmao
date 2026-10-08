@@ -1,3 +1,4 @@
+import { resetEventDay } from '../shared/reset-event';
 import { selectLeads } from '../shared/leads';
 import { isReviewField, reviewChanges } from '../shared/spec';
 // Cloudflare Worker 入口：/api/* 走这里，其余由静态资源（网站页面）处理。
@@ -180,17 +181,20 @@ ingest.post('/offers', async c => {
   const srcs = sids.length ? await d.select().from(s.sources).where(inArray(s.sources.id, sids)) : [];
   const results = [];
   // 硬性去重的比对范围：这些平台下的全部条目（含已拒绝，避免拒掉的换个 ID 又回来）
-  const peers = pids.length ? (await d.select({ id: s.offers.id, platformId: s.offers.platformId, title: s.offers.title, valueText: s.offers.valueText, evidence: s.offers.evidence, reviewState: s.offers.reviewState })
-    .from(s.offers).where(inArray(s.offers.platformId, pids))).map(x => ({ ...x, evidenceUrl: x.evidence.url })) : [];
+  const peers = pids.length ? (await d.select({ id: s.offers.id, platformId: s.offers.platformId, title: s.offers.title, valueText: s.offers.valueText, evidence: s.offers.evidence, tags: s.offers.tags, publishedAt: s.offers.publishedAt, claimStart: s.offers.claimStart, sourceTz: s.offers.sourceTz, reviewState: s.offers.reviewState })
+    .from(s.offers).where(inArray(s.offers.platformId, pids))).map(x => ({ ...x, evidenceUrl: x.evidence.url, eventDay: resetEventDay(x) })) : [];
   for (const o of body.data) {
+    const eventDay = resetEventDay(o);
+    const sameId = peers.find(x=>x.id===o.id);
+    if (eventDay && sameId?.eventDay && eventDay!==sameId.eventDay) o.id = `${o.id.slice(0,69)}-${eventDay}`;
     const plat = plats.find(p => p.id === o.platformId);
     if (!peers.some(x => x.id === o.id)) {
-      const dup = findDuplicate({ platformId: o.platformId, title: o.title, valueText: o.valueText, evidenceUrl: o.evidence.url }, peers);
+      const dup = findDuplicate({ platformId: o.platformId, title: o.title, valueText: o.valueText, evidenceUrl: o.evidence.url, eventDay }, peers);
       if (dup?.reviewState === 'rejected') { results.push({ id: o.id, skipped: `与已拒绝的 ${dup.id} 重复` }); continue; }
       if (dup) o.id = dup.id; // 并入已有条目，走正常的更新和人工字段保护
     }
     // 同一批里后面的条目也要和前面的比
-    if (!peers.some(x => x.id === o.id)) peers.push({ id: o.id, platformId: o.platformId, title: o.title, valueText: o.valueText, evidence: o.evidence as never, reviewState: 'pending', evidenceUrl: o.evidence.url });
+    if (!peers.some(x => x.id === o.id)) peers.push({ id: o.id, platformId: o.platformId, title: o.title, valueText: o.valueText, evidence: o.evidence as never, reviewState: 'pending', evidenceUrl: o.evidence.url, eventDay, tags:o.tags ?? [],publishedAt:o.publishedAt ?? null,claimStart:o.claimStart ?? null,sourceTz:o.sourceTz ?? 'UTC' });
     if (!plat) { results.push({ id: o.id, error: `平台 ${o.platformId} 不在白名单里，先建平台` }); continue; }
     if (o.evidence.tier === 'tested') { results.push({ id: o.id, error: '“管理员实测”只能在后台人工设置' }); continue; }
     const src = srcs.find(x => x.id === o.sourceId);

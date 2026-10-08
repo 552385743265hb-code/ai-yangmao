@@ -15,3 +15,10 @@ describe('入库去重', () => {
   it('同链接同额度判为重复', () =>
     expect(findDuplicate({ platformId: 'stepfun', title: '阶跃 Mini 套餐', valueText: '每月 400M Credit', evidenceUrl: 'https://platform.stepfun.com/docs/zh/step-plan/overview/' }, ex)?.id).toBe('a'));
 });
+
+
+it('keeps equal-title reset events on different dates separate',()=>{
+  const previous={id:'july',platformId:'openai',title:'Codex 重置卡发放',valueText:'1张重置卡',evidenceUrl:'https://x.com/staff/status/old',eventDay:'2026-07-13'};
+  expect(findDuplicate({...previous,eventDay:'2026-10-07'},[previous])).toBeUndefined();
+  expect(findDuplicate({...previous,evidenceUrl:'https://x.com/staff/status/confirmed'},[previous])?.id).toBe('july');
+});

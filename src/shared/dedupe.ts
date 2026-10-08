@@ -16,9 +16,9 @@ export const normUrl = (u: string) => u.replace(/^https?:\/\/(www\.)?/i, '').rep
 // 档位、金额不同的标题（如 2,999 元档 / 4,999 元档）只差几个数字，不能当成同一条
 const digits = (s: string) => (s.normalize('NFKC').match(/\d[\d,.]*/g) ?? []).map(x => x.replace(/,/g, '')).sort().join('|');
 
-export interface DedupeCandidate { id: string; platformId: string; title: string; valueText: string; evidenceUrl: string }
+export interface DedupeCandidate { id: string; platformId: string; title: string; valueText: string; evidenceUrl: string; eventDay?: string | null }
 export function findDuplicate<T extends DedupeCandidate>(o: Omit<DedupeCandidate, 'id'>, existing: T[]): T | undefined {
-  return existing.find(e => e.platformId === o.platformId && (
+  return existing.find(e => e.platformId === o.platformId && !(o.eventDay && e.eventDay && o.eventDay !== e.eventDay) && (
     (digits(e.title) === digits(o.title) && similarity(e.title, o.title) >= 0.85) ||
     (normUrl(e.evidenceUrl) === normUrl(o.evidenceUrl) && digits(e.valueText) === digits(o.valueText) && similarity(e.valueText, o.valueText) >= 0.85)));
 }
