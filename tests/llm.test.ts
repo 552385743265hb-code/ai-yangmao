@@ -81,6 +81,18 @@ describe('model result contract', () => {
     const r = await extract('Vendor', 'https://vendor.example/free', '活动发表于2026年10月6日');
     expect(r.offers[0].publishedAt).toBe('2026-10-06');
   });
+
+  it.each([
+    ['活动发表于2026年10月6日', '2026-10-06'],
+    ['Published October 6, 2026', '2026-10-06'],
+    ['公告发表于2026-10-06T00:00:00Z', '2026-10-06T00:00:00.000Z'],
+    ['Published October 6, 2026 at 12 AM UTC', '2026-10-06T00:00:00.000Z'],
+  ])('grounds model-supplied time precision in the evidence: %s', async (body, expected) => {
+    vi.stubGlobal('fetch', vi.fn(async () => gemini(JSON.stringify({ offers: [{ ...offer, publishedAt: '2026-10-06T00:00:00Z' }] }))));
+    const { extract } = await import('../pipeline/llm');
+    const r = await extract('Vendor', 'https://vendor.example/free', body);
+    expect(r.offers[0].publishedAt).toBe(expected);
+  });
 });
 
 describe('provider cooldown within a collection run', () => {

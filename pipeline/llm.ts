@@ -265,6 +265,18 @@ export function tidy(o: Extracted): Extracted {
   };
 }
 
+/** 源只有日精度时，不接受模型补出的时刻；源有时刻则保留，避免损失真实午夜公告。 */
+function groundedPublication(raw: unknown, normalized: string | null | undefined, evidence: string) {
+  if (typeof raw !== 'string' || !/^\d{4}-\d{2}-\d{2}T/.test(raw) || !normalized) return normalized;
+  const date = raw.slice(0, 10), [year, month, day] = date.split('-').map(Number);
+  const months = ['Jan(?:uary)?', 'Feb(?:ruary)?', 'Mar(?:ch)?', 'Apr(?:il)?', 'May', 'Jun(?:e)?', 'Jul(?:y)?', 'Aug(?:ust)?', 'Sep(?:tember)?', 'Oct(?:ober)?', 'Nov(?:ember)?', 'Dec(?:ember)?'];
+  const dateInSource = evidence.includes(date)
+    || new RegExp(`${year}\\s*年\\s*0?${month}\\s*月\\s*0?${day}\\s*[日号]`).test(evidence)
+    || (months[month - 1] && new RegExp(`\\b${months[month - 1]}\\.?\\s+${day}(?:st|nd|rd|th)?[,]?\\s+${year}\\b|\\b${day}\\s+${months[month - 1]}\\.?\\s+${year}\\b`, 'i').test(evidence));
+  const timeInSource = /\d{4}-\d{2}-\d{2}T(?:[01]\d|2[0-3]):[0-5]\d|\b(?:[01]?\d|2[0-3]):[0-5]\d\b|\b\d{1,2}(?::\d{2})?\s*(?:am|pm)\b|\d{1,2}\s*[时点]|午夜|零点/i.test(evidence);
+  return dateInSource && !timeInSource ? date : normalized;
+}
+
 /** 免费模型都不可用时抛出，调用方把这个页面推迟到下一轮。 */
 export class DeferError extends Error {}
 export class ModelOutputError extends Error {}
@@ -331,7 +343,11 @@ export async function extract(platformName: string, url: string, text: string, l
         }
       }
       const { text: out, tokens, costCny = 0 } = res!;
-      const offers = parseOffers(out).map(o => ({ ...tidy(o), excerpts: keepVerbatim(o.excerpts, opts.evidenceText ?? text) }));
+      const evidence = opts.evidenceText ?? text;
+      const offers = parseOffers(out).map(o => {
+        const normalized = tidy(o);
+        return { ...normalized, publishedAt: groundedPublication(o.publishedAt, normalized.publishedAt, evidence), excerpts: keepVerbatim(o.excerpts, evidence) };
+      });
       return { offers, tokens, costCny, provider: p.name };
     } catch (e) {
       if (e instanceof BudgetExhaustedError || e instanceof BudgetLedgerError || e instanceof DeferError) throw e;
