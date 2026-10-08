@@ -38,7 +38,7 @@ function view(o: OfferRow, platformName: string, now = new Date()) {
     steps: o.steps, models: o.models ?? [], tags: o.tags ?? [], publishedAt: o.publishedAt ?? null, modalities: o.modalities, usdEstimate: o.usdEstimate, usdMax: o.usdMax ?? null, adminNote: o.adminNote ?? null, reviewMemo: o.reviewMemo ?? null, suggestion: o.reviewSuggestion ?? null,
     // 上架前检查：缺了哪些字段、影响哪些栏目（规格见 src/shared/spec.ts）
     checks: checkOffer(o, now).map(i => ({ ...i, sections: i.sections.map(k => SECTIONS[k]) })),
-    link: `https://ai-yangmao.com/#offer-${o.id}`,
+    link: `https://ai-yangmao.com/#${o.reviewState === 'pending' ? 'admin-offer-' : 'offer-'}${encodeURIComponent(o.id)}`,
   };
 }
 
@@ -180,7 +180,7 @@ admin.get('/queue', async c => {
       ...pending.map(queueView),
       ...proposals.flatMap(p => {
         const original = originals.find(o => o.id === p.offerId);
-        return original ? [{ ...queueView({ ...original, ...p.candidate } as OfferRow), reviewVersion: p.updatedAt, pendingUpdate: true, changedFields: p.diff.map(x => x.field) }] : [];
+        return original ? [{ ...queueView({ ...original, ...p.candidate } as OfferRow), link:`https://ai-yangmao.com/#admin-offer-${encodeURIComponent(p.offerId)}`, reviewVersion: p.updatedAt, pendingUpdate: true, changedFields: p.diff.map(x => x.field) }] : [];
       }),
     ],
     priorityLeads: (await d.select().from(s.leads).where(inArray(s.leads.status,['new','reviewing'])))
@@ -215,7 +215,7 @@ admin.get('/offers/:ref', async c => {
   const names = await platformNames(c.env);
   const [proposal] = await db(c.env).select().from(s.offerProposals).where(eq(s.offerProposals.offerId, o.id));
   const revisions = await db(c.env).select().from(s.offerRevisions).where(eq(s.offerRevisions.offerId, o.id)).orderBy(desc(s.offerRevisions.at));
-  return c.json({ offer: { ...view(proposal ? { ...o, ...proposal.candidate } as OfferRow : o, names[o.platformId] ?? o.platformId), reviewVersion:proposal?.updatedAt ?? o.updatedAt }, pendingUpdate: !!proposal, revisions });
+  return c.json({ offer: { ...view(proposal ? { ...o, ...proposal.candidate } as OfferRow : o, names[o.platformId] ?? o.platformId), reviewVersion:proposal?.updatedAt ?? o.updatedAt, ...(proposal ? {link:`https://ai-yangmao.com/#admin-offer-${encodeURIComponent(o.id)}`} : {}) }, pendingUpdate: !!proposal, revisions });
 });
 
 /** 审核：通过 / 拒绝。原样通过会给信源的"连续原样通过"加一；拒绝清零。 */

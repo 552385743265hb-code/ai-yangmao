@@ -559,6 +559,7 @@ describe('workflow audit regressions', () => {
     const r=await call('admin/notify?kind=urgent',undefined,'admin');
     const alerts=r.body.reviewAlerts as {key:string;url:string}[];
     expect(alerts[0].key).toBe('offer:vendor-free');expect(alerts[0].url).toContain('#admin-offer-vendor-free');
+    const detail=await call('admin/offers/vendor-free',undefined,'admin');expect((detail.body.offer as {link:string}).link).toContain('#admin-offer-vendor-free');
   });
   it('paginates older manual-review leads and supports status filtering without omission',async()=>{
     const insert=sqlite.prepare("INSERT INTO leads(origin,url,title,status) VALUES ('aihot',?,'lead',?)");
