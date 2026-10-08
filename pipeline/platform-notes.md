@@ -225,6 +225,7 @@
 - 本批核验入口：https://devin.ai/blog/gpt-5-2；https://devin.ai/blog/windsurf-pricing-plans；https://devin.ai/blog/gpt-5-2-codex；https://devin.ai/blog/opus-46；https://devin.ai/blog/glm-5-minimax-m25；https://devin.ai/blog/sonnet-46；https://devin.ai/blog/gemini-31-pro；https://windsurf.com/pricing。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## n8n
+- 优惠码核验（2026-10-08，待审 2dl3）：`https://n8n.notion.site/voucher-code` 是通用兑换教程，要求选对套餐及月付/年付，未注明具体码、免费时长、资格或截止；教程不能单独证明某枚码的活动。当前 `2026-COMMUNITY-HACKATHON-INDIA-18BF8FA8` 仅找到社区转发，未找到发放方对应公告，保持待审。主办方 `https://docs.pechacks.org/` 展示同前缀不同尾码 `7B5D82F8` 的 350 份 Pro licenses、有效至 9 月首周，是活动码线索，不能将其数量、期限或资格套用当前码。官方帮助中心 Lenny 文档只适用 Yearly Starter，也不能替代当前 Pro 码证据。免费会员兑换码可以收，但须核实真实活动、发放资格、对应套餐/周期和续费；管理员亲测仅按实际确认范围标 tested，不推导人人可用；不因缺公告直接判假，也不为上架将通用教程改作活动证明。
 - 新 Cloud 账号（含试用）带的 Gateway 赠金和 14 天试用是同一个领取动作，合成一条；Gateway 上线时发给付费用户的一次性赠金按 2026-09-17 作历史；自托管 Business 试用没有 AI 额度，不收。（2026-10-03 批量审核）
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - n8n Gateway credits只付工作流支持节点，和Assistant credits/旧OpenAI免费赠金分账。具体金额、免费有效期未公开。Business现行只可自托管，不是Cloud；自托管Assistant为BYOK。新Cloud试用14天、800Assistant+100AI，无卡；Gateway余额另计。
