@@ -1,6 +1,11 @@
 name: 抽取经验回归
 on:
   workflow_dispatch:
+    inputs:
+      only_cases:
+        description: '只验这些案例id（逗号分隔；留空验全部）'
+        type: string
+        default: ''
 concurrency:
   group: extraction-lessons
   cancel-in-progress: false
@@ -23,6 +28,7 @@ jobs:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           OPENROUTER_MODEL: ${{ vars.OPENROUTER_MODEL || 'openrouter/free' }}
           GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+          LESSON_CASES: ${{ inputs.only_cases }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
