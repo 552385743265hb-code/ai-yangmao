@@ -256,7 +256,8 @@ export function tidy(o: Extracted): Extracted {
     requirements: normalizeRequirements(o.requirements),
     // 模型名里有空格（如 Gemini 3.8 Flash），字符串只按逗号、顿号、分号拆
     tags: [...new Set(toList(o.tags ?? []).map(x => x.toLowerCase()).filter(x => ['reset', 'referral', 'discount', 'daily'].includes(x)))],
-    publishedAt: typeof o.publishedAt === 'string' && !Number.isNaN(Date.parse(o.publishedAt)) ? new Date(o.publishedAt).toISOString() : null,
+    publishedAt: typeof o.publishedAt === 'string' && !Number.isNaN(Date.parse(o.publishedAt))
+      ? /^\d{4}-\d{2}-\d{2}$/.test(o.publishedAt.trim()) ? o.publishedAt.trim() : new Date(o.publishedAt).toISOString() : null,
     models: [...new Set((Array.isArray(o.models) ? o.models.map(String) : typeof o.models === 'string' ? (o.models as string).split(/[,，、;；]+/) : []).map(x => x.trim()).filter(x => x && x.length <= 80 && !/^(等|系列|and more|etc\.?)$/i.test(x)))].slice(0, 80),
     steps: toList(o.steps).length && Array.isArray(o.steps) ? o.steps : typeof o.steps === 'string' ? [o.steps] : [],
     usdEstimate: numberOrNull(o.usdEstimate), usdMax: numberOrNull(o.usdMax),

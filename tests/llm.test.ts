@@ -74,6 +74,13 @@ describe('model result contract', () => {
     const { tidy } = await import('../pipeline/llm');
     expect(tidy({ ...offer, usdEstimate: '100', usdMax: '200' } as never)).toMatchObject({ usdEstimate: 100, usdMax: 200 });
   });
+
+  it('keeps publication day precision without inventing a midnight timestamp', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => gemini(JSON.stringify({ offers: [{ ...offer, publishedAt: '2026-10-06' }] }))));
+    const { extract } = await import('../pipeline/llm');
+    const r = await extract('Vendor', 'https://vendor.example/free', '活动发表于2026年10月6日');
+    expect(r.offers[0].publishedAt).toBe('2026-10-06');
+  });
 });
 
 describe('provider cooldown within a collection run', () => {
