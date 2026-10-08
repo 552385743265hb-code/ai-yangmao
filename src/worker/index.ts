@@ -1,3 +1,4 @@
+import { selectLeads } from '../shared/leads';
 import { isReviewField, reviewChanges } from '../shared/spec';
 // Cloudflare Worker 入口：/api/* 走这里，其余由静态资源（网站页面）处理。
 import { and, desc, eq, gte, inArray, sql } from 'drizzle-orm';
@@ -232,7 +233,7 @@ ingest.post('/offers', async c => {
     }
     if (!prev) {
       await d.insert(s.offers).values({ ...row, reviewState: auto ? 'approved' : 'pending' });
-      if (leadId) await d.update(s.leads).set({ status: 'linked', offerId: o.id }).where(eq(s.leads.id, leadId));
+      // 调用方在整条线索的所有候选完成后才确认关联，部分失败不能提前吞掉线索。
       results.push({ id: o.id, created: true, reviewState: auto ? 'approved' : 'pending', missingEvidence: missing });
       continue;
     }
@@ -388,17 +389,21 @@ ingest.post('/snapshots', async c => {
 
 /** 线索研判：取待处理的线索、回写处理结果。 */
 ingest.get('/leads', async c => {
-  const limit = Math.min(50, Number(c.req.query('limit') ?? 20));
-  // 社区和媒体线索优先（信号密度高），同类里由新到旧
-  const rows = await db(c.env).select().from(s.leads).where(eq(s.leads.status, 'new'))
-    .orderBy(sql`CASE WHEN ${s.leads.origin} IN ('telegram','manual') THEN 0 WHEN ${s.leads.origin} IN ('linuxdo','ithome','v2ex','hn','reddit') THEN 1 ELSE 2 END`, desc(s.leads.id)).limit(limit);
-  return c.json({ leads: rows });
+  const requested = Number(c.req.query('limit') ?? 50);
+  const limit = Number.isFinite(requested) ? Math.max(1, Math.min(100, Math.floor(requested))) : 50;
+  const rows = await db(c.env).select().from(s.leads).where(eq(s.leads.status, 'new'));
+  return c.json({ leads: selectLeads(rows, limit), backlog: rows.length });
 });
 ingest.post('/leads/:id/status', async c => {
   const b = z.object({ status: z.enum(['linked', 'rejected', 'reviewing']), offerId: z.string().optional(), note: z.string().max(500).optional() }).safeParse(await c.req.json().catch(() => null));
   if (!b.success) return c.json({ error: '数据格式不正确' }, 400);
   const [lead] = await db(c.env).select().from(s.leads).where(eq(s.leads.id, Number(c.req.param('id'))));
   if (!lead) return c.json({ error: '没有这条线索' }, 404);
+  if (b.data.status === 'linked') {
+    if (!b.data.offerId) return c.json({ error: '已关联必须提供已入库条目' }, 400);
+    const [saved] = await db(c.env).select({ id: s.offers.id }).from(s.offers).where(eq(s.offers.id, b.data.offerId));
+    if (!saved) return c.json({ error: '条目尚未成功入库，线索不能标记已关联' }, 409);
+  }
   const raw = b.data.note ? `${lead.raw ?? ''}\n[研判] ${b.data.note}`.slice(-20000) : lead.raw;
   await db(c.env).update(s.leads).set({ status: b.data.status, offerId: b.data.offerId ?? lead.offerId, raw }).where(eq(s.leads.id, lead.id));
   return c.json({ ok: true });

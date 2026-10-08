@@ -458,3 +458,42 @@ describe('public status and subscriptions', () => {
     expect(xml).toContain('Vendor free tokens');
   });
 });
+
+
+describe('lead to review workflow', () => {
+  it('puts time-sensitive AIHOT leads before community noise and reserves backlog capacity', async () => {
+    const insert = sqlite.prepare("INSERT INTO leads(origin,url,title,created_at) VALUES (?,?,?,?)");
+    insert.run('reddit','https://example.org/old','Old free API credits','2026-09-01T00:00:00Z');
+    for (let i=0;i<60;i++) insert.run('linuxdo',`https://example.org/noise-${i}`,'免费话费游戏','2026-10-01T00:00:00Z');
+    insert.run('aihot','https://example.org/max','Anthropic Max 每月赠送 API 额度','2026-10-07T00:00:00Z');
+    insert.run('aihot','https://example.org/reset','Codex 重置卡已发放','2026-10-08T00:00:00Z');
+    const result = await call('ingest/leads?limit=25');
+    const rows = result.body.leads as {title:string}[];
+    expect(rows.slice(0,2).map(l=>l.title)).toEqual(['Codex 重置卡已发放','Anthropic Max 每月赠送 API 额度']);
+    expect(rows.map(l=>l.title)).toContain('Old free API credits');
+  });
+  it('alerts about untriaged reset leads and new pending offers hourly, without publishing or repeating', async () => {
+    sqlite.prepare("INSERT INTO leads(origin,url,title) VALUES ('aihot','https://example.org/reset','Codex 重置卡已发放')").run();
+    await call('ingest/offers',[offer]);
+    const first = await call('admin/notify/claim',{kind:'urgent',channel:'telegram'},'admin');
+    expect(first.body.empty).toBe(false);
+    expect(first.body.reviewAlerts).toHaveLength(2);
+    expect((sqlite.prepare("SELECT review_state FROM offers WHERE id='vendor-free'").get() as {review_state:string}).review_state).toBe('pending');
+    const concurrent = await call('admin/notify/claim',{kind:'urgent',channel:'telegram'},'admin');
+    expect(concurrent.body.empty).toBe(true);
+    await call(`admin/notify/${first.body.deliveryId}/ack`,{status:'sent'},'admin');
+    expect((await call('admin/notify?kind=urgent',undefined,'admin')).body.empty).toBe(true);
+    sqlite.prepare("INSERT INTO leads(origin,url,title) VALUES ('aihot','https://example.org/reset2','Codex 第二次重置卡发放')").run();
+    expect((await call('admin/notify?kind=urgent',undefined,'admin')).body.reviewAlerts).toHaveLength(1);
+  });
+});
+
+
+it('refuses to consume a lead when its supposed offer did not persist', async () => {
+  sqlite.prepare("INSERT INTO leads(origin,url,title) VALUES ('aihot','https://example.org/max','Max API credits')").run();
+  expect((await call('ingest/leads/1/status',{status:'linked',offerId:'missing'})).status).toBe(409);
+  expect((sqlite.prepare('SELECT status FROM leads WHERE id=1').get() as {status:string}).status).toBe('new');
+  await call('ingest/offers',[{...offer,leadId:1}]);
+  expect((sqlite.prepare('SELECT status FROM leads WHERE id=1').get() as {status:string}).status).toBe('new');
+  expect((await call('ingest/leads/1/status',{status:'linked',offerId:'vendor-free'})).status).toBe(200);
+});

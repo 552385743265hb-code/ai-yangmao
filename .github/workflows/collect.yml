@@ -16,10 +16,14 @@ on:
         description: '忽略上次比对结果，强制重新抽取（提示词改进后补跑）'
         type: boolean
         default: false
+      fast_leads:
+        description: '快速通道：只采集重要线索并研判，跳过全站复核'
+        type: boolean
+        default: false
       lead_limit:
         description: '本轮最多研判多少条线索'
         type: string
-        default: '25'
+        default: '50'
 
 concurrency:
   group: collect
@@ -60,4 +64,5 @@ jobs:
           DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
           ONLY_SOURCES: ${{ inputs.only_sources }}
           FORCE: ${{ inputs.force && '1' || '0' }}
-          LEAD_LIMIT: ${{ inputs.lead_limit || '25' }}
+          LEAD_LIMIT: ${{ inputs.lead_limit || '50' }}
+          FAST_LEADS: ${{ inputs.fast_leads && '1' || '0' }}

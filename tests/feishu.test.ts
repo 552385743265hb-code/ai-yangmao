@@ -120,7 +120,9 @@ describe('飞书群日报', () => {
     const calls = stubFetch(() => ({}));
     expect(await dispatchCollect({ ...env, GH_DISPATCH_TOKEN: 'ghp_test' } as Env)).toEqual({ ok: true });
     expect(calls[0].url).toBe('https://api.github.com/repos/accesaver-byte/ai-yangmao/actions/workflows/collect.yml/dispatches');
-    expect(calls[0].body).toEqual({ ref: 'main' });
+    expect(calls[0].body).toEqual({ ref: 'main', inputs: { fast_leads: 'false', lead_limit: '50' } });
+    expect(await dispatchCollect({ ...env, GH_DISPATCH_TOKEN: 'ghp_test' } as Env, true)).toEqual({ ok: true });
+    expect(calls[1].body.inputs).toEqual({ fast_leads: 'true', lead_limit: '50' });
   });
 
   it('定时触发采集失败会重试一次，仍失败就记一条失败记录', async () => {

@@ -12,6 +12,6 @@
   ],
   "routes": [{ "pattern": "ai-yangmao.com", "custom_domain": true }],
   // 定时任务（UTC）：0 0 * * * = 东京 09:00 飞书日报；7 * * * * = 每小时加急；17 */6 * * * = 每 6 小时触发采集
-  "triggers": { "crons": ["0 0 * * *", "7 * * * *", "17 */6 * * *"] },
+  "triggers": { "crons": ["0 0 * * *", "7 * * * *", "17 */6 * * *", "27 * * * *"] },
   "observability": { "enabled": true }
 }

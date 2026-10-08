@@ -1,3 +1,4 @@
+import { leadPriority } from '../shared/leads';
 import { isReviewField } from '../shared/spec';
 // 管理接口（Bearer ADMIN_TOKEN）：审核、编辑、补录、日报、健康检查。
 // 调用方：Hermes Agent 的"AI 羊毛牧场"技能（scripts/ym.ts），以后还有网页后台。
@@ -182,6 +183,9 @@ admin.get('/queue', async c => {
         return original ? [{ ...queueView({ ...original, ...p.candidate } as OfferRow), pendingUpdate: true, changedFields: p.diff.map(x => x.field) }] : [];
       }),
     ],
+    priorityLeads: (await d.select().from(s.leads).where(inArray(s.leads.status,['new','reviewing'])))
+      .filter(l=>leadPriority(l)<=1).sort((a,b)=>leadPriority(a)-leadPriority(b)||b.id-a.id).slice(0,10)
+      .map(l=>({ id:l.id,title:l.title,url:l.url,status:l.status,note:l.status==='reviewing'?l.raw?.split('[研判]').at(-1)?.slice(0,500):null })),
     newLeads, needsVerification: needsVerification.map(queueView), incomplete: incomplete.map(queueView), pendingPlatforms: pendingPlatforms.map(p => ({ id: p.id, name: p.name, type: p.type, site: p.site })),
     suggestAutoPublish: suggest.map(x => ({ id: x.id, platformId: x.platformId, url: x.url, cleanStreak: x.cleanStreak })),
   });
@@ -514,8 +518,29 @@ export async function buildNotice(env: Env, kind: NoticeKind, channel: NoticeCha
       if (!sentToday.length) d1Alert = { rowsRead: u.rowsRead, limit: u.limits.rowsRead };
     }
   }
-  const empty = !d1Alert && !marks.length && !out.standing.length && !out.rising.length && !out.lastcall.length && (kind === 'urgent' || channel !== 'telegram' || (!pendingCount && !suggestAutoPublish.length && !needsVerificationCount && !coverageDegraded));
-  return { kind, channel, items: out, marks, moreCount, d1Alert, pendingCount, suggestAutoPublish, needsVerificationCount, coverageDegraded, empty, blockedCount: blocked.size };
+  // 审核提醒按对象身份去重，不能用“待审总数没增加”吞掉替换进来的新条目。
+  type ReviewAlert = { key: string; title: string; state: string; url: string };
+  let reviewAlerts: ReviewAlert[] = [];
+  let leadBacklog = 0;
+  if (channel === 'telegram') {
+    const receipts = await d.select({ payload: s.deliveries.payload }).from(s.deliveries)
+      .where(and(eq(s.deliveries.channel, 'telegram'), inArray(s.deliveries.status, ['sent', 'pending', 'unknown'])));
+    const announced = new Set(receipts.flatMap(r => ((r.payload as { reviewAlerts?: ReviewAlert[] }).reviewAlerts ?? []).map(a=>a.key)));
+    const awaiting = await d.select().from(s.offers).where(eq(s.offers.reviewState, 'pending')).orderBy(s.offers.discoveredAt);
+    const proposals = await d.select().from(s.offerProposals);
+    const unresolved = await d.select().from(s.leads).where(inArray(s.leads.status,['new','reviewing']));
+    leadBacklog = unresolved.length;
+    reviewAlerts = [
+      ...awaiting.map(o=>({ key: `offer:${o.id}`, title: `[${shortCode(o.id)}] ${o.title}`, state: '待审', url: `https://ai-yangmao.com/#offer-${o.id}` })),
+      ...proposals.filter(p=>p.diff.some(x=>isReviewField(x.field))).map(p=>({ key: `proposal:${p.offerId}:${p.updatedAt}`, title: String(p.candidate.title ?? p.offerId), state: '条款更新待审', url: `https://ai-yangmao.com/#offer-${p.offerId}` })),
+      ...unresolved.filter(l=>leadPriority(l)<=1).sort((a,b)=>leadPriority(a)-leadPriority(b)||b.id-a.id).map(l=>({ key: `lead:${l.id}:${l.status}`, title: `#${l.id} ${l.title ?? ''}`, state: l.status==='reviewing' ? '抽取受阻，需人工核验' : '重要线索，尚未研判', url: l.url })),
+    ].filter(a=>!announced.has(a.key));
+    // 重要线索先提醒，余下待审分批发完；单条失败不堵住其他审核提醒。
+    reviewAlerts.sort((a,b)=>Number(b.key.startsWith('lead:'))-Number(a.key.startsWith('lead:')));
+    reviewAlerts = reviewAlerts.slice(0,10);
+  }
+  const empty = !reviewAlerts.length && !d1Alert && !marks.length && !out.standing.length && !out.rising.length && !out.lastcall.length && (kind === 'urgent' || channel !== 'telegram' || (!pendingCount && !suggestAutoPublish.length && !needsVerificationCount && !coverageDegraded));
+  return { kind, channel, items: out, marks, moreCount, d1Alert, pendingCount, reviewAlerts, leadBacklog, suggestAutoPublish, needsVerificationCount, coverageDegraded, empty, blockedCount: blocked.size };
 }
 
 /** 预览是纯读取，不能仅凭获取消息就把内容记为已发送。 */
@@ -531,9 +556,10 @@ export async function claimNotice(env: Env, kind: NoticeKind, channel: NoticeCha
   const notice = await buildNotice(env, kind, channel);
   if (notice.empty) return { ...notice, alreadyClaimed: notice.blockedCount > 0 };
   const day = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
-  const content = notice.marks.length
-    ? JSON.stringify({ kind: notice.kind, channel: notice.channel, marks: notice.marks })
-    : JSON.stringify({ kind: notice.kind, channel: notice.channel, day, pendingCount: notice.pendingCount, suggestAutoPublish: notice.suggestAutoPublish, needsVerificationCount: notice.needsVerificationCount, coverageDegraded: notice.coverageDegraded });
+  const content = JSON.stringify({ kind: notice.kind, channel: notice.channel,
+    marks: notice.marks, reviewKeys: notice.reviewAlerts.map(a=>a.key),
+    ...(!notice.marks.length && !notice.reviewAlerts.length ? { day, pendingCount: notice.pendingCount,
+      suggestAutoPublish: notice.suggestAutoPublish, needsVerificationCount: notice.needsVerificationCount, coverageDegraded: notice.coverageDegraded } : {}) });
   const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(content));
   const fingerprint = [...new Uint8Array(hash)].map(x => x.toString(16).padStart(2, '0')).join('');
   const id = crypto.randomUUID();
@@ -640,7 +666,13 @@ admin.get('/health', async c => {
   const dispatchFailures = (await c.env.DB.prepare("SELECT started_at AS at, stats FROM runs WHERE kind='collect' AND ok=0 AND started_at >= ?1 ORDER BY started_at DESC LIMIT 5")
     .bind(new Date(Date.now() - 48 * 3600_000).toISOString()).all<{ at: string; stats: string }>()).results
     .map(r => ({ at: r.at, ...(JSON.parse(r.stats || '{}') as { stage?: string; error?: string }) })).filter(r => r.stage === 'dispatch');
-  return c.json({ tokensToday: b?.t ?? 0, tokenCap: Number(c.env.DAILY_TOKEN_CAP ?? 0), costMonthCny: b?.c ?? 0, coverageDegraded: !!lastOk?.stats?.coverageDegraded, sources: allSources, lastSuccessfulCollect: lastOk?.finishedAt ?? null,
+  const [lastLeadRun] = await d.select().from(s.runs).where(eq(s.runs.kind,'sweep')).orderBy(desc(s.runs.startedAt)).limit(1);
+  const backlog = await d.select().from(s.leads).where(inArray(s.leads.status,['new','reviewing']));
+  const important = backlog.filter(l=>leadPriority(l)<=1);
+  const leadWorkflow = { new: backlog.filter(l=>l.status==='new').length, reviewing: backlog.filter(l=>l.status==='reviewing').length,
+    important: important.length, oldestImportantNewAt: important.filter(l=>l.status==='new').map(l=>l.createdAt).sort()[0] ?? null, oldestAt: backlog.map(l=>l.createdAt).sort()[0] ?? null,
+    lastRun: lastLeadRun ? { startedAt:lastLeadRun.startedAt,finishedAt:lastLeadRun.finishedAt,ok:lastLeadRun.ok,stats:lastLeadRun.stats } : null };
+  return c.json({ leadWorkflow, tokensToday: b?.t ?? 0, tokenCap: Number(c.env.DAILY_TOKEN_CAP ?? 0), costMonthCny: b?.c ?? 0, coverageDegraded: !!lastOk?.stats?.coverageDegraded, sources: allSources, lastSuccessfulCollect: lastOk?.finishedAt ?? null,
     hoursSince: hours, collectStale: hours === null || hours > 8, failingSources: failing, uncertainDeliveries, needsVerification, dispatchFailures, d1Usage: await d1Usage(c.env) });
 });
 

@@ -1,3 +1,4 @@
+import { leadPriority } from '../src/shared/leads';
 // 采集管线入口：GitHub Actions 每 6 小时运行一次，也可以手动触发补跑。
 // 流程：取信源 → 抓取 → 只保留和羊毛相关的句子 → 与上次比对 → 有变化才调用模型抽取 → 写入网站（默认进待审）。
 import { aihot, feed, hn, parseFeed, reddit, type Source } from './collectors';
@@ -10,8 +11,9 @@ const DAILY_TOKEN_CAP = Number(process.env.DAILY_TOKEN_CAP ?? 0); // 0 = 调试�
 const MONTHLY_COST_CAP = Number(process.env.MONTHLY_COST_CAP_CNY ?? 10);
 let costLeft = MONTHLY_COST_CAP;
 const DRY = process.env.DRY_RUN === '1';
+const FAST = process.env.FAST_LEADS === '1';
 const FORCE = process.env.FORCE === '1'; // 忽略上次的哈希，强制重新抽取（提示词改进后补跑）
-const LEAD_LIMIT = Number(process.env.LEAD_LIMIT ?? 25);
+const LEAD_LIMIT = Number(process.env.LEAD_LIMIT ?? 50);
 const onlyList = (process.env.ONLY_SOURCES ?? '').split(',').map(s => s.trim()).filter(Boolean);
 const only = onlyList.length ? onlyList : null; // 留空 = 全部信源
 const stats = { leadsTriaged: 0, leadOffers: 0, costCny: 0, deferred: 0, sources: 0, ok: 0, failed: 0, changed: 0, leads: 0, offers: 0, pending: 0, extractSkipped: 0, tokens: 0, coverageDegraded: false, errors: [] as string[] };
@@ -235,7 +237,7 @@ function tierOf(url: string, p: Plat | undefined): OfferIn['evidence']['tier'] {
   return 'media';
 }
 async function triageLeads(plats: Plat[]) {
-  if (!llmAvailable()) return;
+  if (!llmAvailable()) { stats.deferred++; stats.errors.push('线索研判：没有可用模型'); return; }
   const { leads } = await api<{ leads: Lead[] }>(`/leads?limit=${LEAD_LIMIT}`);
   if (!leads.length) return;
   const list = plats.map(p => `${p.id}=${p.name}`).join('；');
@@ -250,7 +252,7 @@ async function triageLeads(plats: Plat[]) {
   const pmap = new Map(plats.map(p => [p.id, p]));
   log(`研判线索 ${leads.length} 条`);
   for (const l of leads) {
-    if (tokensLeft < 8000) { log('  今日模型预算不足，剩余线索留到下次'); break; }
+    if (tokensLeft < 8000) { stats.deferred++; log('  今日模型预算不足，剩余线索留到下次'); break; }
     stats.leadsTriaged++;
     let text = `${l.title ?? ''}\n${l.raw ?? ''}`;
     let fetched = false;
@@ -262,10 +264,12 @@ async function triageLeads(plats: Plat[]) {
     catch (e) {
       log(`  #${l.id} 抽取失败：${(e as Error).message.slice(0, 80)}`);
       if (!(e instanceof DeferError) && !(e instanceof BudgetExhaustedError) && !DRY) await api(`/leads/${l.id}/status`, { status: 'reviewing', note: `抽取失败，需人工确认后重试：${(e as Error).message.slice(0, 160)}` });
+      if (e instanceof DeferError || e instanceof BudgetExhaustedError) stats.deferred++;
       continue;
     }
     tokensLeft -= r.tokens; stats.tokens += r.tokens; stats.costCny += r.costCny;
     const valid: OfferIn[] = [];
+    let invalidCount = 0;
     const unknown: string[] = [];
     const findPlat = (x: string | undefined) => {
       if (!x) return undefined;
@@ -285,13 +289,19 @@ async function triageLeads(plats: Plat[]) {
       }
       if (e.officialUrl && tier === 'media') o.steps = [...(o.steps ?? []), `官方出处：${e.officialUrl}`].slice(0, 6);
       const v = offerIn.safeParse(o);
-      if (v.success) valid.push(v.data); else log(`  #${l.id} 丢弃「${e.title}」：${v.error.issues.map(i => i.path.join('.') + ' ' + i.message).join('；').slice(0, 120)}`);
+      if (v.success) valid.push(v.data); else { invalidCount++; log(`  #${l.id} 字段不合规「${e.title}」：${v.error.issues.map(i => i.path.join('.') + ' ' + i.message).join('；').slice(0, 120)}`); }
     }
     if (DRY) { log(`  #${l.id} ${l.title?.slice(0, 40)} → ${valid.map(v => `${v.platformId}:${v.title}`).join('、') || '无'}${unknown.length ? `；白名单外：${unknown.join('、')}` : ''}`); continue; }
     if (valid.length) {
-      const res = await api<{ results: { id: string; error?: string; unchanged?: boolean }[] }>('/offers', valid);
-      stats.leadOffers += res.results.filter(x => !x.error && !x.unchanged).length;
-      for (const saved of res.results.filter(x => !x.error)) {
+      let res;
+      try { res = await api<{ results: { id: string; error?: string; skipped?: string; unchanged?: boolean }[] }>('/offers', valid); }
+      catch (e) {
+        stats.errors.push(`线索 #${l.id} 入库失败`);
+        await api(`/leads/${l.id}/status`, { status: 'reviewing', note: `入库失败，需人工处理：${(e as Error).message.slice(0,350)}` });
+        continue;
+      }
+      stats.leadOffers += res.results.filter(x => !x.error && !('skipped' in x) && !x.unchanged).length;
+      for (const saved of res.results.filter(x => !x.error && !('skipped' in x))) {
         const record = valid.find(v => v.id === saved.id);
         if (!record) continue;
         const entry = { id: record.id, platformId: record.platformId, title: record.title, valueText: record.valueText };
@@ -305,9 +315,14 @@ async function triageLeads(plats: Plat[]) {
       }
       existing = known.map(k => `${k.id}｜${k.title}｜${k.valueText.slice(0, 40)}`).join('\n');
       log(`  #${l.id} → ${valid.map(v => v.title).join('、')}`);
-      await api(`/leads/${l.id}/status`, { status: 'linked', offerId: valid[0].id });
+      const saved = res.results.filter(x => !x.error && !('skipped' in x));
+      if (!saved.length || saved.length < valid.length || invalidCount || unknown.length) {
+        await api(`/leads/${l.id}/status`, { status: 'reviewing', note: '部分或全部条目未成功入库，需人工处理：' + res.results.map(x => x.error ?? ('skipped' in x ? String(x.skipped) : x.id)).join('；').slice(0, 350) });
+      } else {
+        await api(`/leads/${l.id}/status`, { status: 'linked', offerId: saved[0].id });
+      }
     } else {
-      await api(`/leads/${l.id}/status`, { status: unknown.length || !fetched ? 'reviewing' : 'rejected', note: unknown.length ? `白名单外的平台：${unknown.join('、')}` : !fetched ? '原文抓取失败，仅有转述，等待人工核验' : '模型判断不是 AI 羊毛' });
+      await api(`/leads/${l.id}/status`, { status: invalidCount || unknown.length || !fetched || leadPriority(l) <= 1 ? 'reviewing' : 'rejected', note: invalidCount ? '抽取字段不合规，保留线索等待人工补齐' : unknown.length ? `白名单外的平台：${unknown.join('、')}` : !fetched ? '原文抓取失败，仅有转述，等待人工核验' : leadPriority(l) <= 1 ? '重要福利线索未抽取出条目，等待人工核验，不能仅因模型漏抽拒绝' : '模型判断不是 AI 羊毛' });
     }
   }
 }
@@ -323,18 +338,24 @@ async function main() {
   // config.relay 表示由别的机器负责（例如 Reddit 由常开 Mac 中继），云端跳过
   const list = sources.filter(s => (!only || only.includes(s.id)) && !(s.config as { relay?: string } | undefined)?.relay);
   log(`共 ${list.length} 个信源；今日 token ${Number.isFinite(tokensLeft) ? `剩 ${tokensLeft}` : '不设总上限'}，本月付费兜底剩 ¥${costLeft.toFixed(2)}${DRY ? '；演练模式，不写入权益' : ''}`);
-  const queue = [...list];
-  await Promise.all(Array.from({ length: 4 }, async () => { while (queue.length) await runSource(queue.shift()!); }));
-  await verifyExistingOffers(sources);
+  // 先采集线索，再研判；全站官方页面抽取与复核不能抢走重要线索的模型预算。
+  const leadSources = list.filter(s => s.kind === 'aihot' || s.tier === 'lead');
+  const selected = FAST ? leadSources.filter(s => s.kind === 'aihot' || s.kind === 'feed') : leadSources;
+  for (const source of selected) await runSource(source);
   try {
     const { platforms } = await fetch(`${(process.env.API_BASE ?? 'https://ai-yangmao.com').replace(/\/$/, '')}/api/platforms`).then(r => r.json()) as { platforms: Plat[] };
     await triageLeads(platforms);
-  } catch (e) { stats.errors.push(`线索研判：${(e as Error).message}`); log('线索研判出错', (e as Error).message); }
-  const ok = !only && stats.sources > 0 && stats.failed === 0 && stats.ok === stats.sources;
+  } catch (e) { stats.errors.push(`线索研判：${(e as Error).message}`); stats.deferred++; log('线索研判出错', (e as Error).message); }
+  if (!FAST) {
+    const queue = list.filter(s => !leadSources.includes(s));
+    await Promise.all(Array.from({ length: 4 }, async () => { while (queue.length) await runSource(queue.shift()!); }));
+    await verifyExistingOffers(sources);
+  }
+  const ok = (FAST || !only) && stats.sources > 0 && stats.failed === 0 && stats.ok === stats.sources && stats.deferred === 0;
   stats.coverageDegraded = stats.deferred > 0 || stats.extractSkipped > 0 || list.some(source => source.deferThisRun);
   log('完成', JSON.stringify(stats));
   // 模型调用逐次在 runs(kind=model) 预留并结算；汇总行不能再次计费。
-  if (!DRY) await api('/runs', { kind: 'collect', startedAt, finishedAt: new Date().toISOString(), ok, stats, tokens: 0, costCny: 0 });
+  if (!DRY) await api('/runs', { kind: FAST ? 'sweep' : 'collect', startedAt, finishedAt: new Date().toISOString(), ok, stats, tokens: 0, costCny: 0 });
   if (!ok && !only) process.exitCode = 1;
 }
 

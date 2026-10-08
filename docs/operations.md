@@ -33,7 +33,7 @@ npx tsx .claude/skills/yangmao-review/scripts/offer.ts plan <短码> patch.json
 
 ## 采集与复核
 
-Worker 的 UTC cron 为 `0 0 * * *` 日报、`7 * * * *` 加急、`17 */6 * * *` 触发采集。GitHub collect 工作流为 dispatch 入口；每周 distill 工作流生成纠错规则 PR，需要审核，不是社区发现扫描。邮件接收和 Discord 尚无实现。
+Worker 的 UTC cron 为 `0 0 * * *` 日报、`7 * * * *` 加急、`17 */6 * * *` 触发全站采集，`27 * * * *` 触发快速线索通道。GitHub collect 工作流为 dispatch 入口；每周 distill 工作流生成纠错规则 PR，需要审核，不是社区发现扫描。邮件接收和 Discord 尚无实现。
 
 采集模型链为 Gemini 免费层、OpenRouter、可选 GLM、受预算限制的付费 DeepSeek，额度不足可延期。仓库配置 `DAILY_TOKEN_CAP=0`、`MONTHLY_COST_CAP_CNY=10`；线上实际覆盖值另行核对。无需为文档整理调用模型或跑全量采集。
 
@@ -74,3 +74,13 @@ npx wrangler deployments list
 OpenRouter 免费备用配置使用 `OPENROUTER_MODEL=openrouter/free`（2026-10-07 已检查模型目录并实测零费用请求）。固定免费模型若下线会返回 404，应核对可用性，不能把付费版本直接当免费兜底。
 
 数据库迁移列表与实际字段都需核对。若字段曾被手工添加而台账漏记，先检查类型、默认值和完整迁移效果，确认匹配后仅补迁移台账；不要重复 ALTER、删除字段或覆盖业务数据。详见 [2026-10-07 采集失败记录](incident-2026-10-07-collect.md)。
+
+## 新线索到审核（2026-10-08 修复）
+
+每小时快速通道只采集 AIHOT 与社区 feed，并研判最多 50 条；每 6 小时的全量采集先采线索和研判，再抽取官方页面、复核已上架条目。两类 Actions 共用并发组，避免同时抽取同一线索；Actions 排队、页面不可达或模型故障会延迟，不能保证固定到审时间。
+
+人工补录优先，其次含 AI 福利信号的重置、赠额、限时活动，再到 AIHOT，普通社区线索随后；每轮 20% 名额处理最早积压，避免旧线索饿死。排序信号不代表福利属实。条目成功入库后才确认 linked；字段不合规、部分写入失败、重要线索漏抽保留为 reviewing，后台“待审”顶部同步展示重要未研判/受阻线索。模型额度不足保留 new 并记录降级，下一轮重试。
+
+Telegram 小时检查和日报均携带按对象去重的审核提醒，每批最多 10 条，余下下轮继续；未研判的重要线索、需人工核验、待审条目和更新提案都可提醒。提醒不是批准，公共列表仍只显示已批准条目。提醒使用现有 delivery claim/ack 协议，送达不明不重发；线索转入人工处理后可以再次提醒。快速运行记录为 runs(kind=sweep)，不冒充全量采集成功；health 返回 leadWorkflow，重要新线索积压超过两小时或快速运行失败会告警。
+
+人工补跑：`gh workflow run collect.yml -f fast_leads=true -f lead_limit=50`。补跑会写线索和待审，不自动批准、不配置自动上架。
