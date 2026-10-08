@@ -527,6 +527,12 @@ export async function buildNotice(env: Env, kind: NoticeKind, channel: NoticeCha
       .where(and(eq(s.deliveries.channel, 'telegram'), inArray(s.deliveries.status, ['sent', 'pending', 'unknown'])));
     const announced = new Set(receipts.flatMap(r => ((r.payload as { reviewAlerts?: ReviewAlert[] }).reviewAlerts ?? []).map(a=>a.key)));
     const awaiting = await d.select().from(s.offers).where(eq(s.offers.reviewState, 'pending')).orderBy(s.offers.discoveredAt);
+    const reviewRank = (o: OfferRow) => {
+      const end = claimEndAt(o);
+      if (end && end > now && end.getTime()-now.getTime() <= 48*3600_000) return 0;
+      return leadPriority({id:0,origin:'aihot',title:o.title,raw:o.valueText}) <= 1 ? 1 : 2;
+    };
+    awaiting.sort((a,b)=>reviewRank(a)-reviewRank(b));
     const proposals = await d.select().from(s.offerProposals);
     const unresolved = await d.select().from(s.leads).where(inArray(s.leads.status,['new','reviewing']));
     leadBacklog = unresolved.length;

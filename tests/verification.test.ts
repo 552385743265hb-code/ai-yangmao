@@ -510,3 +510,13 @@ it('creates a new pending reset event even when the model reuses a historical ID
   expect((sqlite.prepare("SELECT published_at FROM offers WHERE id='vendor-reset'").get() as {published_at:string}).published_at).toBe(old.publishedAt);
   expect((sqlite.prepare('SELECT count(*) n FROM offer_proposals').get() as {n:number}).n).toBe(0);
 });
+
+
+it('does not bury a new pending Max benefit behind routine review backlog',async()=>{
+  for (let i=0;i<20;i++) await call('ingest/offers',[{...offer,id:`vendor-noise-${i}`,title:`工具体验 ${i}`,valueText:`${i+1} credits`}]);
+  await call('ingest/offers',[{...offer,id:'vendor-max',title:'Anthropic Max 每月免费 API 额度',valueText:'700 API credits'}]);
+  const notice = await call('admin/notify?kind=urgent',undefined,'admin');
+  const alerts=notice.body.reviewAlerts as {title:string}[];
+  expect(alerts[0].title).toContain('Anthropic Max');
+  expect(alerts).toHaveLength(10);
+});
