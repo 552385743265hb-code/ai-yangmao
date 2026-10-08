@@ -55,6 +55,17 @@ describe('admin text input lifecycle',()=>{
     await new Promise(resolve=>setTimeout(resolve,0));
     expect(requests).toEqual(['/api/admin/offers/first/reject']);
   });
+  it('discards a late background refresh when typing started during the request',async()=>{
+    const {document,context}=await pageFixture();
+    const input=document.querySelector('[data-note]')!;
+    const refresh=runInContext(`location.hash='#today'; OFFERS=[{id:'original'}];
+      loadData=()=>new Promise(resolve=>{releaseRefresh=()=>{OFFERS=[{id:'replacement'}];resolve();};});
+      refreshPage()`,context);
+    Object.defineProperty(document,'activeElement',{value:input,configurable:true});
+    runInContext('releaseRefresh()',context); await refresh;
+    expect(runInContext('OFFERS[0].id',context)).toBe('original');
+    expect(document.querySelector('[data-note]')).toBe(input);
+  });
   it('keeps typing local and immediately dirty, saves exact Chinese text, and reports success without rebuilding the field',async()=>{
     const {document,window,writes,timers}=await pageFixture();
     const input=document.querySelector('[data-note]') as HTMLTextAreaElement;

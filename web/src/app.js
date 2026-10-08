@@ -1591,9 +1591,15 @@ async function refreshPage() {
   if (refreshInFlight) return;
   refreshInFlight = true;
   lastRefreshAt = Date.now();
+  const previous = { OFFERS, PLATFORMS, META, COVERAGE, NOW, T0 };
   try {
     NOW = new Date(); T0 = new Date(NOW.getFullYear(), NOW.getMonth(), NOW.getDate());
-    await loadData(); if (keepPage()) return; prepare(); render(true);
+    await loadData();
+    if (keepPage()) {
+      ({ OFFERS, PLATFORMS, META, COVERAGE, NOW, T0 } = previous);
+      return;
+    }
+    prepare(); render(true);
   } catch (e) { /* 保留已加载页面；下次周期检查会再试 */ }
   finally { refreshInFlight = false; }
 }
