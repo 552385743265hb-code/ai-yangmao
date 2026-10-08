@@ -8,7 +8,7 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import * as s from '../db/schema';
 import { isoDate, leadIn, offerIn, runIn } from '../shared/ingest';
-import { findDuplicate } from '../shared/dedupe';
+import { differentOccurrence, findDuplicate } from '../shared/dedupe';
 import { activeOnDate, isClaimable, liveStatus, missingEvidence } from '../shared/lifecycle';
 import { admin } from './admin';
 import { feishuAdmin, runScheduled } from './feishu';
@@ -186,10 +186,10 @@ ingest.post('/offers', async c => {
   for (const o of body.data) {
     const eventDay = resetEventDay(o);
     const sameId = peers.find(x=>x.id===o.id);
-    if (eventDay && sameId?.eventDay && eventDay!==sameId.eventDay) o.id = `${o.id.slice(0,69)}-${eventDay}`;
+    if (sameId && differentOccurrence({...o,evidenceUrl:o.evidence.url,eventDay},sameId)) o.id = `${o.id.slice(0,69)}-${eventDay ?? o.claimStart}`;
     const plat = plats.find(p => p.id === o.platformId);
     if (!peers.some(x => x.id === o.id)) {
-      const dup = findDuplicate({ platformId: o.platformId, title: o.title, valueText: o.valueText, evidenceUrl: o.evidence.url, eventDay }, peers);
+      const dup = findDuplicate({ platformId: o.platformId, title: o.title, valueText: o.valueText, evidenceUrl: o.evidence.url, eventDay, claimStart:o.claimStart }, peers);
       if (dup?.reviewState === 'rejected') { results.push({ id: o.id, skipped: `与已拒绝的 ${dup.id} 重复` }); continue; }
       if (dup) o.id = dup.id; // 并入已有条目，走正常的更新和人工字段保护
     }
@@ -210,7 +210,7 @@ ingest.post('/offers', async c => {
     const row = {
       ...od, usdEstimate: o.usdEstimate ?? null, claimStart: o.claimStart ?? null, claimEnd: o.claimEnd ?? null,
       creditValidity: o.creditValidity ?? null, publishedAt: o.publishedAt ?? null, sourceId: o.sourceId ?? null,
-      lastVerifiedAt: nowIso, verifyResult: '官方页面可以打开，已抽取字段', updatedAt: nowIso,
+      lastVerifiedAt: o.evidence.tier === 'media' ? null : nowIso, verifyResult: o.evidence.tier === 'media' ? '线索待核验，尚无可采信的官方证据' : '官方页面已抽取字段', updatedAt: nowIso,
     };
     // 人工改过的字段是已经核准的事实，后续模型提案不得静默覆盖。
     if (prev) {
@@ -270,9 +270,9 @@ ingest.post('/offers', async c => {
     }
     const diff = reviewChanges(prev, row);
     if (!diff.length) {
-      if (existingProposal) await d.delete(s.offerProposals).where(eq(s.offerProposals.offerId, o.id));
+      if (existingProposal && o.evidence.tier !== 'media') await d.delete(s.offerProposals).where(eq(s.offerProposals.offerId, o.id));
       // 只刷新自动核验元数据，保留已审核文案、摘录及可选字段，模型漏摘录不能清空它们。
-      const sameEvidencePage = prev.evidence.url === o.evidence.url && prev.evidence.tier !== 'tested';
+      const sameEvidencePage = prev.evidence.url === o.evidence.url && prev.evidence.tier !== 'tested' && o.evidence.tier !== 'media';
       if (prev.reviewState === 'approved' && sameEvidencePage) {
         await d.update(s.offers).set({ lastVerifiedAt: nowIso, verifyResult: '必要业务字段没有变化',
           evidence: { ...prev.evidence, capturedAt: nowIso, pageHash: o.evidence.pageHash ?? prev.evidence.pageHash }, updatedAt: nowIso }).where(eq(s.offers.id, o.id));
@@ -444,7 +444,7 @@ ingest.get('/corrections', async c => {
 
 /** 所有尚未拒绝的条目索引；常驻福利不能在第 61 天从判重范围消失。 */
 ingest.get('/offers-index', async c => {
-  const rows = await db(c.env).select({ id: s.offers.id, platformId: s.offers.platformId, title: s.offers.title, valueText: s.offers.valueText })
+  const rows = await db(c.env).select({ id: s.offers.id, platformId: s.offers.platformId, title: s.offers.title, valueText: s.offers.valueText, claimStart:s.offers.claimStart, publishedAt:s.offers.publishedAt, tags:s.offers.tags, evidenceUrl:sql<string>`json_extract(${s.offers.evidence}, '$.url')` })
     .from(s.offers).where(inArray(s.offers.reviewState, ['pending', 'approved']));
   return c.json({ offers: rows });
 });

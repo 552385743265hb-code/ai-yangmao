@@ -12,6 +12,7 @@ export async function api<T = unknown>(path: string, body?: unknown): Promise<T>
     method: body === undefined ? 'GET' : 'POST',
     headers: { Authorization: `Bearer ${process.env.INGEST_TOKEN ?? ''}`, 'Content-Type': 'application/json' },
     body: body === undefined ? undefined : JSON.stringify(body),
+    signal: AbortSignal.timeout(30000),
   });
   const text = await res.text();
   if (!res.ok) throw new Error(`写入接口 ${path} 返回 ${res.status}：${text.slice(0, 300)}`);

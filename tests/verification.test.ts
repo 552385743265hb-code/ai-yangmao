@@ -520,3 +520,89 @@ it('does not bury a new pending Max benefit behind routine review backlog',async
   expect(alerts[0].title).toContain('Anthropic Max');
   expect(alerts).toHaveLength(10);
 });
+
+describe('workflow audit regressions', () => {
+  it('rejects malformed publication timestamps before they can break the review UI', async () => {
+    expect((await call('ingest/offers',[{...offer,publishedAt:'unknown'}])).status).toBe(400);
+  });
+  it('cannot downgrade a published offer to forbidden evidence through an ordinary edit', async () => {
+    await call('ingest/offers',[offer]);await call('admin/offers/vendor-free/approve',{},'admin');
+    const edit=await call('admin/offers/vendor-free/edit',{fields:{evidence:{...evidence,tier:'media'},requirements:['unknown']}},'admin');
+    expect(edit.status).toBe(400);
+    expect((sqlite.prepare("SELECT review_state,requirements FROM offers WHERE id='vendor-free'").get() as {requirements:string}).requirements).toBe('["none"]');
+  });
+  it('an explicit approval records the reviewer verification so the offer is immediately eligible',async()=>{
+    await call('ingest/offers',[offer]);
+    sqlite.prepare("UPDATE offers SET last_verified_at=? WHERE id='vendor-free'").run(new Date(Date.now()-3*86400_000).toISOString());
+    expect((await call('admin/offers/vendor-free/approve',{},'admin')).status).toBe(200);
+    const listed=await call('offers');expect((listed.body.offers as {id:string}[]).map(x=>x.id)).toContain('vendor-free');
+  });
+  it('keeps pending or unknown Feishu batches out of all reconstructed rankings',async()=>{
+    await call('ingest/offers',[offer]);await call('admin/offers/vendor-free/approve',{},'admin');
+    const first=await call('admin/notify/claim',{kind:'digest',channel:'feishu'},'admin');
+    expect(first.body.deliveryId).toBeTruthy();
+    const second=await call('admin/notify/claim',{kind:'digest',channel:'feishu'},'admin');
+    expect(second.body.empty).toBe(true);expect(second.body.deliveryId).toBeUndefined();
+    await call(`admin/notify/${first.body.deliveryId}/ack`,{status:'unknown'},'admin');
+    expect((await call('admin/notify?kind=digest&channel=feishu',undefined,'admin')).body.empty).toBe(true);
+  });
+  it('atomically prevents overlapping digest and urgent claims from sending the same offer twice',async()=>{
+    await call('ingest/offers',[{...offer,endKind:'date',claimEnd:new Date(Date.now()+86400_000).toISOString().slice(0,10)}]);
+    await call('admin/offers/vendor-free/approve',{},'admin');
+    const results=await Promise.all(['digest','urgent'].map(kind=>call('admin/notify/claim',{kind,channel:'telegram'},'admin')));
+    expect(results.filter(r=>r.body.deliveryId)).toHaveLength(1);
+  });
+  it('keeps expiring pending offers ahead of fresh leads and uses a protected review destination',async()=>{
+    await call('ingest/offers',[{...offer,endKind:'date',claimEnd:new Date(Date.now()+86400_000).toISOString().slice(0,10)}]);
+    const insert=sqlite.prepare("INSERT INTO leads(origin,url,title) VALUES ('aihot',?,'Codex 重置卡发放')");
+    for(let i=0;i<20;i++)insert.run(`https://example.org/reset-${i}`);
+    const r=await call('admin/notify?kind=urgent',undefined,'admin');
+    const alerts=r.body.reviewAlerts as {key:string;url:string}[];
+    expect(alerts[0].key).toBe('offer:vendor-free');expect(alerts[0].url).toContain('#admin-offer-vendor-free');
+  });
+  it('paginates older manual-review leads and supports status filtering without omission',async()=>{
+    const insert=sqlite.prepare("INSERT INTO leads(origin,url,title,status) VALUES ('aihot',?,'lead',?)");
+    for(let i=0;i<65;i++)insert.run(`https://example.org/lead-${i}`,i===0?'reviewing':'new');
+    const first=await call('admin/leads?limit=60',undefined,'admin');
+    expect(first.body.total).toBe(65);expect(first.body.nextCursor).toBe(6);
+    const next=await call(`admin/leads?limit=60&before=${first.body.nextCursor}`,undefined,'admin');
+    expect((next.body.leads as {id:number}[]).map(l=>l.id)).toEqual([5,4,3,2,1]);expect(next.body.nextCursor).toBeNull();
+    const manual=await call('admin/leads?status=reviewing',undefined,'admin');
+    expect((manual.body.leads as {id:number}[]).map(l=>l.id)).toEqual([1]);
+  });
+});
+
+it('does not revive official verification or erase an existing proposal using media-only extraction',async()=>{
+  await call('ingest/offers',[offer]);await call('admin/offers/vendor-free/approve',{},'admin');
+  const before='2026-07-01T00:00:00Z';
+  sqlite.prepare("UPDATE offers SET last_verified_at=?,verify_result='evidence_missing' WHERE id='vendor-free'").run(before);
+  await call('ingest/offers',[{...offer,valueText:'200 credits'}]);
+  await call('ingest/offers',[{...offer,evidence:{...evidence,tier:'media'}}]);
+  expect((sqlite.prepare("SELECT last_verified_at FROM offers WHERE id='vendor-free'").get() as {last_verified_at:string}).last_verified_at).toBe(before);
+  expect((sqlite.prepare("SELECT count(*) n FROM offer_proposals WHERE offer_id='vendor-free'").get() as {n:number}).n).toBe(1);
+});
+
+it('rejects stale review cards and does not report competing approvals as both successful',async()=>{
+  await call('ingest/offers',[offer]);
+  const q=await call('admin/queue',undefined,'admin');
+  const shown=(q.body.pending as {reviewVersion:string}[])[0].reviewVersion;
+  sqlite.prepare("UPDATE offers SET updated_at='2030-01-01T00:00:00Z',value_text='changed' WHERE id='vendor-free'").run();
+  expect((await call('admin/offers/vendor-free/approve',{expectedReviewVersion:shown},'admin')).status).toBe(409);
+  const competing=await Promise.all(['approve','reject'].map(action=>call(`admin/offers/vendor-free/${action}`,{},'admin')));
+  expect(competing.map(r=>r.status).sort()).toEqual([200,409]);
+});
+
+it('accepting and rejecting the same proposal cannot both succeed',async()=>{
+  await call('ingest/offers',[offer]);await call('admin/offers/vendor-free/approve',{},'admin');
+  await call('ingest/offers',[{...offer,valueText:'200 credits'}]);
+  const actions=await Promise.all(['approve','reject'].map(action=>call(`admin/offers/vendor-free/${action}`,{},'admin')));
+  expect(actions.map(r=>r.status).sort()).toEqual([200,409]);
+});
+
+it('reports the latest incomplete collect rather than masking it with an older success',async()=>{
+  const insert=sqlite.prepare("INSERT INTO runs(kind,started_at,finished_at,ok,stats) VALUES ('collect',?,?,?,?)");
+  insert.run('2026-10-07T00:00:00Z','2026-10-07T00:10:00Z',1,'{}');
+  insert.run('2026-10-08T00:00:00Z','2026-10-08T00:10:00Z',1,JSON.stringify({errors:['vendor: 复核失败']}));
+  const health=await call('admin/health',undefined,'admin');
+  expect(health.body.coverageDegraded).toBe(true);
+});

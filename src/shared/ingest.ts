@@ -38,7 +38,7 @@ export const offerIn = z.object({
   endKind: z.enum(['date', 'unknown', 'standing']),
   creditValidity: z.string().max(100).nullable().optional(),
   sourceTz: z.string().refine(tz => { try { new Intl.DateTimeFormat('en', { timeZone: tz }); return true; } catch { return false; } }, '无效的时区'),
-  publishedAt: z.string().nullable().optional(),
+  publishedAt: z.union([isoDate, z.iso.datetime({ offset: true })]).nullable().optional(),
   firstChannel: z.string().max(40).optional(),
   leadId: z.number().int().optional(),
   steps: z.array(z.string().max(200)).max(10).default([]),

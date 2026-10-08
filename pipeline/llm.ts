@@ -17,6 +17,7 @@ export interface Extracted {
   audience: 'new' | 'old' | 'all' | 'unclear';
   valueText: string;
   usdEstimate: number | null;
+  usdMax?: number | null;
   claimStart: string | null;
   claimEnd: string | null;
   endKind: 'date' | 'unknown' | 'standing';
@@ -105,18 +106,18 @@ const TRIAGE = `\n\n补充规则（本文可能是媒体报道、社区帖子或
 - 再加一个字段 sameAs：如果这条和下面"已收录条目"里的某条是同一个活动（同一平台、同一权益，只是说法不同），填那条的 id；否则 null。
 平台白名单（id=名称）：`;
 
-interface Provider { name: string; paid?: boolean; price?: ModelPrice; call: (sys: string, user: string) => Promise<{ text: string; tokens: number; costCny?: number; usageKnown: boolean }> }
+interface Provider { name: string; paid?: boolean; price?: ModelPrice; call: (sys: string, user: string, timeoutMs: number) => Promise<{ text: string; tokens: number; costCny?: number; usageKnown: boolean }> }
 
 function providers(): Provider[] {
   const list: Provider[] = [];
   if (process.env.GEMINI_API_KEY) list.push({
     name: 'gemini',
-    call: async (sys, user) => {
+    call: async (sys, user, timeoutMs) => {
       const model = process.env.GEMINI_MODEL || 'gemini-flash-lite-latest';
       const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
         method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': process.env.GEMINI_API_KEY! },
         body: JSON.stringify({ systemInstruction: { parts: [{ text: sys }] }, contents: [{ role: 'user', parts: [{ text: user }] }], generationConfig: { responseMimeType: 'application/json', temperature: 0.1, maxOutputTokens: MODEL_OUTPUT_LIMIT } }),
-        signal: AbortSignal.timeout(90000),
+        signal: AbortSignal.timeout(timeoutMs),
       });
       if (!r.ok) throw Object.assign(new Error(`Gemini ${r.status}: ${(await r.text()).slice(0, 200)}`), { retryable: r.status >= 500 || r.status === 404 || r.status === 429, httpStatus: r.status });
       const j = await r.json() as { candidates?: { content?: { parts?: { text?: string }[] } }[]; usageMetadata?: { totalTokenCount?: number } };
@@ -126,11 +127,11 @@ function providers(): Provider[] {
   const openaiLike = (name: string, url: string, key: string | undefined, model: string | undefined, price?: { in: number; out: number }) => {
     if (key && model) list.push({
       name, paid: !!price, price,
-      call: async (sys, user) => {
+      call: async (sys, user, timeoutMs) => {
         const r = await fetch(url, {
           method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
           body: JSON.stringify({ model, temperature: 0.1, max_tokens: MODEL_OUTPUT_LIMIT, response_format: { type: 'json_object' }, messages: [{ role: 'system', content: sys }, { role: 'user', content: user }] }),
-          signal: AbortSignal.timeout(90000),
+          signal: AbortSignal.timeout(timeoutMs),
         });
         if (!r.ok) throw Object.assign(new Error(`${name} ${r.status}: ${(await r.text()).slice(0, 200)}`), { httpStatus: r.status });
         const j = await r.json() as { choices?: { message?: { content?: string } }[]; usage?: { total_tokens?: number; prompt_tokens?: number; completion_tokens?: number } };
@@ -151,6 +152,9 @@ function providers(): Provider[] {
 }
 
 export const llmAvailable = () => providers().length > 0;
+// 每次采集是独立进程。额度/鉴权故障或连续网络故障后，本轮不再逐条重复撞同一个供应商。
+const unavailableProviders = new Set<string>();
+export const modelAvailable = (allowPaid = false) => providers().some(p => !unavailableProviders.has(p.name) && (!p.paid || allowPaid));
 // 免费档有每分钟请求数限制：两次调用至少间隔 MIN_GAP 毫秒
 const MIN_GAP = Number(process.env.LLM_MIN_GAP_MS ?? 4500);
 let nextCall = 0;
@@ -174,10 +178,12 @@ export function parseModelJson(out: string): unknown {
     else if (ch === '{') depth++;
     else if (ch === '}' && --depth === 0) { end = i; break; }
   }
-  const body = end > 0 ? s.slice(start, end + 1) : s.slice(start);
+  // jsonrepair 会把被截断的 {"offers":[ 修补成空数组；这不是“确认没有福利”。
+  if (end < 0) throw new Error('模型 JSON 对象被截断，不能确认抽取结果');
+  const body = s.slice(start, end + 1);
   try { return JSON.parse(body); } catch { /* 继续尝试 */ }
   try { return JSON.parse(body.replace(/,\s*([}\]])/g, '$1')); } catch { /* 继续尝试 */ }
-  // 最后用 jsonrepair 兜底：注释、单引号、缺引号、截断等常见格式错误
+  // 最后用 jsonrepair 兜底：完整对象内的注释、单引号、缺引号等格式错误
   return JSON.parse(jsonrepair(body));
 }
 
@@ -221,6 +227,11 @@ const pick = (v: unknown, ok: string[], alias: [RegExp, string][], fallback: str
 };
 const validTz = (tz: unknown) => { try { if (typeof tz === 'string' && tz) { new Intl.DateTimeFormat('en', { timeZone: tz }); return tz; } } catch { /* 无效时区 */ } return 'UTC'; };
 const isoOrNull = (d: unknown) => (typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d.trim()) ? d.trim() : null);
+const numberOrNull = (value: unknown) => {
+  if (value == null || (typeof value !== 'number' && typeof value !== 'string') || String(value).trim() === '') return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+};
 
 export function tidy(o: Extracted): Extracted {
   const low = (v: unknown) => (typeof v === 'string' ? v.trim().toLowerCase() : v);
@@ -242,55 +253,84 @@ export function tidy(o: Extracted): Extracted {
     publishedAt: typeof o.publishedAt === 'string' && !Number.isNaN(Date.parse(o.publishedAt)) ? new Date(o.publishedAt).toISOString() : null,
     models: [...new Set((Array.isArray(o.models) ? o.models.map(String) : typeof o.models === 'string' ? (o.models as string).split(/[,，、;；]+/) : []).map(x => x.trim()).filter(x => x && x.length <= 80 && !/^(等|系列|and more|etc\.?)$/i.test(x)))].slice(0, 80),
     steps: toList(o.steps).length && Array.isArray(o.steps) ? o.steps : typeof o.steps === 'string' ? [o.steps] : [],
-    usdEstimate: typeof o.usdEstimate === 'number' ? o.usdEstimate : Number(o.usdEstimate) || null,
+    usdEstimate: numberOrNull(o.usdEstimate), usdMax: numberOrNull(o.usdMax),
     claimStart: isoOrNull(o.claimStart), claimEnd, creditValidity: o.creditValidity || null,
   };
 }
 
 /** 免费模型都不可用时抛出，调用方把这个页面推迟到下一轮。 */
 export class DeferError extends Error {}
+export class ModelOutputError extends Error {}
 
-export async function extract(platformName: string, url: string, text: string, log: (...a: unknown[]) => void = () => undefined, opts: { allowPaid?: boolean; platformList?: string; existing?: string; corrections?: string[]; platformIds?: (string | null | undefined)[]; budget?: { reserve: (provider: string, system: string, user: string, price?: ModelPrice) => Promise<ModelReservation>; settle: (reservation: ModelReservation, provider: string, tokens: number, costCny: number) => Promise<void> } } = {}): Promise<{ offers: (Extracted & { platformId?: string; officialUrl?: string | null; sameAs?: string | null })[]; tokens: number; costCny: number; provider: string }> {
+function parseOffers(out: string): Extracted[] {
+  try {
+    const json = parseModelJson(out);
+    if (!json || typeof json !== 'object' || Array.isArray(json) || Object.keys(json).some(key => key !== 'offers')
+      || !('offers' in json) || !Array.isArray(json.offers)
+      || json.offers.some(o => !o || typeof o !== 'object' || Array.isArray(o)
+        || typeof o.key !== 'string' || !o.key.trim() || typeof o.title !== 'string' || typeof o.valueText !== 'string')) {
+      throw new Error('模型输出必须是 {"offers":[...]}，条目必须包含 key、title 和 valueText');
+    }
+    return json.offers as Extracted[];
+  } catch (error) { throw new ModelOutputError((error as Error).message); }
+}
+
+export async function extract(platformName: string, url: string, text: string, log: (...a: unknown[]) => void = () => undefined, opts: { allowPaid?: boolean; evidenceText?: string; deadlineAt?: number; platformList?: string; existing?: string; corrections?: string[]; platformIds?: (string | null | undefined)[]; budget?: { reserve: (provider: string, system: string, user: string, price?: ModelPrice) => Promise<ModelReservation>; settle: (reservation: ModelReservation, provider: string, tokens: number, costCny: number) => Promise<void> } } = {}): Promise<{ offers: (Extracted & { platformId?: string; officialUrl?: string | null; sameAs?: string | null })[]; tokens: number; costCny: number; provider: string }> {
   const user = `平台：${platformName}\n来源：${url}\n\n---- 原文 ----\n${text}`;
   const base = PROMPT + LEARNED + platformNotesFor(opts.platformIds ?? []) + (opts.corrections?.length ? `\n\n管理员最近的纠正（照这些改正方向抽取，同类错误不要再犯）：\n${opts.corrections.map(x => '- ' + x).join('\n')}` : '');
   const known = opts.existing ? `\n已收录条目（id｜标题｜额度）：\n${opts.existing}` : '';
   const same = opts.existing && !opts.platformList ? `\n\n每条再加一个字段 sameAs：如果和下面"已收录条目"里的某条是同一个权益（说法不同也算），填那条的 id，否则 null。` : '';
   const sys = opts.platformList ? base + TRIAGE + opts.platformList + known : base + same + known;
   let lastErr: unknown;
-  const all = providers();
+  const all = providers().filter(p => !unavailableProviders.has(p.name));
   const free = all.filter(p => !p.paid), paid = all.filter(p => p.paid);
   const chain = opts.allowPaid ? [...free, ...paid] : free;
   for (const p of chain) {
     try {
       let res: { text: string; tokens: number; costCny?: number; usageKnown: boolean } | null = null;
       for (let i = 0; i < 3 && !res; i++) {
+        if (Date.now() >= (opts.deadlineAt ?? Infinity)) throw new DeferError('本轮即将结束，留到下一轮抽取');
         const reservation = opts.budget ? await opts.budget.reserve(p.name, sys, user, p.price) : null;
         try {
           await pace();
-          res = await p.call(sys, user);
+          const remaining = (opts.deadlineAt ?? Infinity) - Date.now();
+          if (remaining <= 0) {
+            if (reservation) await opts.budget!.settle(reservation, p.name, 0, 0);
+            throw new DeferError('本轮即将结束，留到下一轮抽取');
+          }
+          res = await p.call(sys, user, Math.max(1, Math.min(90000, remaining)));
           if (reservation) {
             if (res.usageKnown) await opts.budget!.settle(reservation, p.name, res.tokens, res.costCny ?? 0);
             else { log(`  ${p.name} 未返回可靠用量，保留预算预留`); res.tokens = reservation.tokens; res.costCny = reservation.costCny; }
           }
         }
         catch (e) {
-          if (e instanceof BudgetExhaustedError || e instanceof BudgetLedgerError) throw e;
-          if (reservation && (e as { httpStatus?: number }).httpStatus) await opts.budget!.settle(reservation, p.name, 0, 0);
-          if (!(e as { retryable?: boolean }).retryable || i === 2) throw e;
-          const wait = /429/.test((e as Error).message) ? 20000 * (i + 1) : 3000 * (i + 1);
+          if (e instanceof BudgetExhaustedError || e instanceof BudgetLedgerError || e instanceof DeferError) throw e;
+          const status = (e as { httpStatus?: number }).httpStatus;
+          if (reservation && status) await opts.budget!.settle(reservation, p.name, 0, 0);
+          if (status && [401, 403, 404, 429].includes(status)) {
+            unavailableProviders.add(p.name);
+            log(`  ${p.name} 返回 ${status}，本轮冷却，下一轮再试`);
+            throw e;
+          }
+          if (!(e as { retryable?: boolean }).retryable || i === 2) {
+            unavailableProviders.add(p.name);
+            throw e;
+          }
+          const wait = 3000 * (i + 1);
+          if (Date.now() + wait >= (opts.deadlineAt ?? Infinity)) throw new DeferError('本轮即将结束，留到下一轮重试');
           log(`  ${p.name} 临时出错，${wait / 1000} 秒后重试：${(e as Error).message.slice(0, 80)}`);
           await new Promise(r => setTimeout(r, wait));
         }
       }
       const { text: out, tokens, costCny = 0 } = res!;
-      const json = parseModelJson(out) as { offers?: Extracted[] };
-      const offers = (Array.isArray(json.offers) ? json.offers : []).map(o => ({ ...tidy(o), excerpts: keepVerbatim(o.excerpts, text) }));
+      const offers = parseOffers(out).map(o => ({ ...tidy(o), excerpts: keepVerbatim(o.excerpts, opts.evidenceText ?? text) }));
       return { offers, tokens, costCny, provider: p.name };
     } catch (e) {
-      if (e instanceof BudgetExhaustedError || e instanceof BudgetLedgerError) throw e;
+      if (e instanceof BudgetExhaustedError || e instanceof BudgetLedgerError || e instanceof DeferError) throw e;
       lastErr = e; log(`  ${p.name} 失败，换下一个模型：${(e as Error).message.slice(0, 120)}`);
     }
   }
-  if (!opts.allowPaid && paid.length) throw new DeferError(`免费模型都不可用，推迟到下一轮：${(lastErr as Error)?.message?.slice(0, 80) ?? ''}`);
-  throw lastErr ?? new Error('没有可用的模型（未配置任何 API key）');
+  if (lastErr instanceof ModelOutputError) throw lastErr;
+  throw new DeferError(`本轮可用模型已耗尽，推迟到下一轮：${(lastErr as Error)?.message?.slice(0, 80) ?? ''}`);
 }

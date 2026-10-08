@@ -2,7 +2,7 @@ import { leadPriority } from '../shared/leads';
 import { isReviewField } from '../shared/spec';
 // 管理接口（Bearer ADMIN_TOKEN）：审核、编辑、补录、日报、健康检查。
 // 调用方：Hermes Agent 的"AI 羊毛牧场"技能（scripts/ym.ts），以后还有网页后台。
-import { and, desc, eq, gte, inArray, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray, lt, sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
 import { Hono } from 'hono';
 import { z } from 'zod';
@@ -30,7 +30,7 @@ const endText = (o: OfferRow) => (o.endKind === 'date' && o.claimEnd ? `${md(o.c
 
 function view(o: OfferRow, platformName: string, now = new Date()) {
   return {
-    code: shortCode(o.id), id: o.id, platformId: o.platformId, platform: platformName, title: o.title, type: TYPE_L[o.type] ?? o.type,
+    reviewVersion: o.updatedAt, code: shortCode(o.id), id: o.id, platformId: o.platformId, platform: platformName, title: o.title, type: TYPE_L[o.type] ?? o.type,
     value: o.valueText, usd: o.usdEstimate, end: endText(o), status: liveStatus(o, now), reviewState: o.reviewState,
     requirements: o.requirements, audience: o.audience, claimMethod: o.claimMethod, creditValidity: o.creditValidity,
     sourceTz: o.sourceTz, claimStart: o.claimStart, claimEnd: o.claimEnd, endKind: o.endKind,
@@ -180,7 +180,7 @@ admin.get('/queue', async c => {
       ...pending.map(queueView),
       ...proposals.flatMap(p => {
         const original = originals.find(o => o.id === p.offerId);
-        return original ? [{ ...queueView({ ...original, ...p.candidate } as OfferRow), pendingUpdate: true, changedFields: p.diff.map(x => x.field) }] : [];
+        return original ? [{ ...queueView({ ...original, ...p.candidate } as OfferRow), reviewVersion: p.updatedAt, pendingUpdate: true, changedFields: p.diff.map(x => x.field) }] : [];
       }),
     ],
     priorityLeads: (await d.select().from(s.leads).where(inArray(s.leads.status,['new','reviewing'])))
@@ -215,7 +215,7 @@ admin.get('/offers/:ref', async c => {
   const names = await platformNames(c.env);
   const [proposal] = await db(c.env).select().from(s.offerProposals).where(eq(s.offerProposals.offerId, o.id));
   const revisions = await db(c.env).select().from(s.offerRevisions).where(eq(s.offerRevisions.offerId, o.id)).orderBy(desc(s.offerRevisions.at));
-  return c.json({ offer: view(proposal ? { ...o, ...proposal.candidate } as OfferRow : o, names[o.platformId] ?? o.platformId), pendingUpdate: !!proposal, revisions });
+  return c.json({ offer: { ...view(proposal ? { ...o, ...proposal.candidate } as OfferRow : o, names[o.platformId] ?? o.platformId), reviewVersion:proposal?.updatedAt ?? o.updatedAt }, pendingUpdate: !!proposal, revisions });
 });
 
 /** 审核：通过 / 拒绝。原样通过会给信源的"连续原样通过"加一；拒绝清零。 */
@@ -223,9 +223,10 @@ admin.post('/offers/:ref/:action{approve|reject}', async c => {
   const o = await findOffer(c.env, c.req.param('ref'));
   if (!o) return c.json({ error: '找不到这条羊毛' }, 404);
   const action = c.req.param('action') as 'approve' | 'reject';
-  const body = await c.req.json().catch(() => ({})) as { reason?: string; reasonCode?: string; reviewer?: string };
+  const body = await c.req.json().catch(() => ({})) as { reason?: string; reasonCode?: string; reviewer?: string; expectedReviewVersion?: string };
   const d = db(c.env);
   const [proposal] = await d.select().from(s.offerProposals).where(eq(s.offerProposals.offerId, o.id));
+  if (body.expectedReviewVersion && body.expectedReviewVersion !== (proposal?.updatedAt ?? o.updatedAt)) return c.json({ error: '内容已更新，请刷新这条活动后再审核' }, 409);
   if (o.reviewState !== 'pending' && !proposal) return c.json({ error: '这条活动目前没有待审核内容' }, 409);
   if (action === 'approve') {
     const candidate = proposal ? { ...o, ...proposal.candidate } as OfferRow : o;
@@ -238,12 +239,15 @@ admin.post('/offers/:ref/:action{approve|reject}', async c => {
       const candidate = { ...o, ...proposal.candidate } as OfferRow;
       const parsed = validateStoredOffer(candidate);
       if (!parsed.success) return c.json({ error: '提案字段不正确', issues: parsed.error.issues }, 400);
-      await d.update(s.offers).set({ ...parsed.data, lastVerifiedAt: candidate.lastVerifiedAt, verifyResult: candidate.verifyResult, updatedAt: nowIso }).where(eq(s.offers.id, o.id));
+      const accepted = await d.update(s.offers).set({ ...parsed.data, lastVerifiedAt: nowIso, verifyResult: '审核员确认官方证据', updatedAt: nowIso }).where(and(eq(s.offers.id,o.id),eq(s.offers.updatedAt,o.updatedAt),sql`EXISTS (SELECT 1 FROM offer_proposals WHERE offer_id=${o.id} AND updated_at=${proposal.updatedAt})`)).returning({id:s.offers.id});
+      if (!accepted.length) return c.json({error:'条目或提案已更新，请刷新后重试'},409);
       await d.insert(s.offerRevisions).values({ offerId: o.id, diff: proposal.diff, evidenceBefore: o.evidence, evidenceAfter: candidate.evidence });
     }
-    await d.delete(s.offerProposals).where(eq(s.offerProposals.offerId, o.id));
+    const removed = await d.delete(s.offerProposals).where(and(eq(s.offerProposals.offerId,o.id),eq(s.offerProposals.updatedAt,proposal.updatedAt))).returning({id:s.offerProposals.offerId});
+    if (!removed.length && action==='reject') return c.json({error:'提案已更新，请刷新后重试'},409);
   } else {
-    await d.update(s.offers).set({ reviewState: action === 'approve' ? 'approved' : 'rejected', updatedAt: nowIso }).where(and(eq(s.offers.id, o.id), eq(s.offers.reviewState, 'pending')));
+    const changed = await d.update(s.offers).set({ reviewState: action === 'approve' ? 'approved' : 'rejected', ...(action === 'approve' ? { lastVerifiedAt: nowIso, verifyResult: '审核员确认官方证据' } : {}), updatedAt: nowIso }).where(and(eq(s.offers.id, o.id), eq(s.offers.reviewState, 'pending'), eq(s.offers.updatedAt,o.updatedAt))).returning({id:s.offers.id});
+    if (!changed.length) return c.json({error:'这条活动已被更新或处理，请刷新后重试'},409);
   }
   await d.insert(s.reviews).values({ offerId: o.id, action, reviewer: c.get('who'), reason: body.reason ?? null, reasonCode: body.reasonCode ?? null });
   let streak: number | null = null;
@@ -265,11 +269,12 @@ const EDITABLE_FIELDS = new Set(['title', 'type', 'valueText', 'usdEstimate', 'u
 admin.post('/offers/:ref/edit', async c => {
   const o = await findOffer(c.env, c.req.param('ref'));
   if (!o) return c.json({ error: '找不到这条羊毛' }, 404);
-  const body = await c.req.json().catch(() => null) as { fields?: Record<string, unknown>; approve?: boolean; reason?: string; reasonCode?: string } | null;
+  const body = await c.req.json().catch(() => null) as { fields?: Record<string, unknown>; approve?: boolean; reason?: string; reasonCode?: string; expectedReviewVersion?: string } | null;
   const patch = z.record(z.string(), z.unknown()).safeParse(body?.fields);
   if (!patch.success || Object.keys(patch.data).some(key => !EDITABLE_FIELDS.has(key))) return c.json({ error: '包含不可编辑的字段' }, 400);
   const d = db(c.env), nowIso = new Date().toISOString();
   const [proposal] = await d.select().from(s.offerProposals).where(eq(s.offerProposals.offerId, o.id));
+  if (body?.expectedReviewVersion && body.expectedReviewVersion !== (proposal?.updatedAt ?? o.updatedAt)) return c.json({ error: '内容已更新，请刷新这条活动后再审核' }, 409);
   const base = proposal ? { ...o, ...proposal.candidate } as OfferRow : o;
   const candidate = { ...base, ...patch.data } as OfferRow;
   const valid = validateStoredOffer(candidate);
@@ -279,7 +284,7 @@ admin.post('/offers/:ref/edit', async c => {
     .map(field => ({ field, from: (base as Record<string, unknown>)[field], to: (candidate as Record<string, unknown>)[field] }));
   if (!diff.length && !body?.approve) return c.json({ error: '没有要改的字段' }, 400);
   if (!diff.length && body?.approve && o.reviewState !== 'pending' && !proposal) return c.json({ error: '这条活动没有待审核内容' }, 409);
-  if (body?.approve) {
+  if (body?.approve || (!proposal && o.reviewState === 'approved')) {
     const issue = await publicationError(c.env, candidate);
     if (issue) return c.json({ error: issue }, 400);
   }
@@ -290,17 +295,20 @@ admin.post('/offers/:ref/edit', async c => {
       .filter(field => JSON.stringify((o as Record<string, unknown>)[field] ?? null) !== JSON.stringify((candidate as Record<string, unknown>)[field] ?? null))
       .map(field => ({ field, from: (o as Record<string, unknown>)[field], to: (candidate as Record<string, unknown>)[field] }));
     if (body?.approve) {
-      await d.update(s.offers).set({ ...valid.data, lastVerifiedAt: candidate.lastVerifiedAt, verifyResult: candidate.verifyResult, updatedAt: nowIso }).where(eq(s.offers.id, o.id));
+      const accepted = await d.update(s.offers).set({ ...valid.data, lastVerifiedAt: nowIso, verifyResult: '审核员确认官方证据', updatedAt: nowIso }).where(and(eq(s.offers.id,o.id),eq(s.offers.updatedAt,o.updatedAt),sql`EXISTS (SELECT 1 FROM offer_proposals WHERE offer_id=${o.id} AND updated_at=${proposal.updatedAt})`)).returning({id:s.offers.id});
+      if (!accepted.length) return c.json({error:'条目或提案已更新，请刷新后重试'},409);
       const pipelineDiff = proposedDiff.filter(x => !manualFields.includes(x.field));
       const manualDiff = proposedDiff.filter(x => manualFields.includes(x.field));
       if (pipelineDiff.length) await d.insert(s.offerRevisions).values({ offerId: o.id, diff: pipelineDiff, evidenceBefore: o.evidence, evidenceAfter: candidate.evidence });
       if (manualDiff.length) await d.insert(s.offerRevisions).values({ offerId: o.id, diff: manualDiff, author: 'admin', evidenceBefore: o.evidence, evidenceAfter: candidate.evidence });
-      await d.delete(s.offerProposals).where(eq(s.offerProposals.offerId, o.id));
+      await d.delete(s.offerProposals).where(and(eq(s.offerProposals.offerId,o.id),eq(s.offerProposals.updatedAt,proposal.updatedAt)));
     } else {
-      await d.update(s.offerProposals).set({ candidate, diff: proposedDiff, manualFields, updatedAt: nowIso }).where(eq(s.offerProposals.offerId, o.id));
+      const changed = await d.update(s.offerProposals).set({ candidate, diff: proposedDiff, manualFields, updatedAt: nowIso }).where(and(eq(s.offerProposals.offerId,o.id),eq(s.offerProposals.updatedAt,proposal.updatedAt))).returning({id:s.offerProposals.offerId});
+      if (!changed.length) return c.json({error:'提案已更新，请刷新后重试'},409);
     }
   } else {
-    await d.update(s.offers).set({ ...valid.data, ...(body?.approve ? { reviewState: 'approved' as const } : {}), updatedAt: nowIso }).where(eq(s.offers.id, o.id));
+    const changed = await d.update(s.offers).set({ ...valid.data, ...(body?.approve ? { reviewState: 'approved' as const, lastVerifiedAt: nowIso, verifyResult: '审核员确认官方证据' } : {}), updatedAt: nowIso }).where(and(eq(s.offers.id, o.id),eq(s.offers.updatedAt,o.updatedAt))).returning({id:s.offers.id});
+    if (!changed.length) return c.json({error:'这条活动已更新，请刷新后重试'},409);
     if (diff.length) await d.insert(s.offerRevisions).values({ offerId: o.id, diff, author: 'admin', evidenceBefore: o.evidence, evidenceAfter: candidate.evidence });
   }
   await d.insert(s.reviews).values({ offerId: o.id, action: 'edit', editedFields: diff.map(x => x.field), reviewer: c.get('who'), reason: body?.reason ?? null, reasonCode: body?.reasonCode ?? 'wrong_field' });
@@ -361,15 +369,23 @@ admin.post('/offers/:ref/note', async c => {
   const body = z.object({ note: z.string().max(500) }).safeParse(await c.req.json().catch(() => null));
   if (!body.success) return c.json({ error: '心得最多 500 字' }, 400);
   const note = body.data.note.trim() || null;
-  await db(c.env).update(s.offers).set({ adminNote: note, updatedAt: new Date().toISOString() }).where(eq(s.offers.id, o.id));
-  return c.json({ ok: true, code: shortCode(o.id), adminNote: note });
+  const updatedAt = new Date().toISOString();
+  await db(c.env).update(s.offers).set({ adminNote: note, updatedAt }).where(eq(s.offers.id, o.id));
+  return c.json({ ok: true, code: shortCode(o.id), adminNote: note, reviewVersion: updatedAt });
 });
 
 admin.get('/leads', async c => {
-  const limit = Math.max(1, Math.min(100, Number(c.req.query('limit') ?? 20) || 20));
-  const rows = await db(c.env).select().from(s.leads).where(inArray(s.leads.status, ['new', 'reviewing'])).orderBy(desc(s.leads.id)).limit(limit);
-  return c.json({ leads: rows.map(l => ({ id: l.id, origin: l.origin, title: l.title, url: l.url, status: l.status,
-    note: l.status === 'reviewing' ? l.raw?.split('[研判]').at(-1)?.slice(0, 500) : null, createdAt: l.createdAt })) });
+  const params = z.object({limit:z.coerce.number().int().min(1).max(100).default(30),
+    before:z.coerce.number().int().positive().optional(), status:z.enum(['all','new','reviewing']).default('all')})
+    .safeParse(c.req.query());
+  if (!params.success) return c.json({error:'线索分页参数不正确'},400);
+  const {limit,before,status}=params.data, d=db(c.env);
+  const state = status==='all' ? inArray(s.leads.status,['new','reviewing']) : eq(s.leads.status,status);
+  const [{total}] = await d.select({total:sql<number>`count(*)`}).from(s.leads).where(state);
+  const rows=await d.select().from(s.leads).where(and(state,before ? lt(s.leads.id,before):undefined)).orderBy(desc(s.leads.id)).limit(limit+1);
+  const page=rows.slice(0,limit);
+  return c.json({total,nextCursor:rows.length>limit ? page.at(-1)!.id:null,leads:page.map(l=>({id:l.id,origin:l.origin,title:l.title,url:l.url,status:l.status,
+    note:l.status==='reviewing'?l.raw?.split('[研判]').at(-1)?.slice(0,500):null,createdAt:l.createdAt}))});
 });
 
 admin.post('/leads/:id/:action{dismiss|reviewing|retry}', async c => {
@@ -457,9 +473,10 @@ export async function buildNotice(env: Env, kind: NoticeKind, channel: NoticeCha
   }
   const inFlight = (await d.select({ payload: s.deliveries.payload, channel: s.deliveries.channel, status: s.deliveries.status }).from(s.deliveries)
     .where(inArray(s.deliveries.status, ['pending', 'unknown']))).filter(delivery => delivery.channel === channel);
+  const blockedItems = new Set(inFlight.flatMap(delivery => Object.values((delivery.payload as {items?:Record<string,{id:string}[]>}).items ?? {}).flat().map(item=>item.id)));
   const key = (mark: NoticeMark) => `${mark.offerId}\u0000${mark.stage}\u0000${mark.messageId ?? ''}`;
   const blocked = new Set(inFlight.flatMap(delivery => ((delivery.payload as { marks?: NoticeMark[] }).marks ?? []).map(key)));
-  marks = marks.filter(mark => !blocked.has(key(mark))).sort((a, b) => key(a).localeCompare(key(b)));
+  marks = marks.filter(mark => !blocked.has(key(mark)) && !blockedItems.has(mark.offerId)).sort((a, b) => key(a).localeCompare(key(b)));
   for (const stage of Object.keys(out) as NoticeStage[]) out[stage] = out[stage].filter(item => marks.some(mark => mark.offerId === item.id && mark.stage === stage));
   // 飞书日报：三个榜，都按薅度分排。
   //   常驻榜：全部可领的常驻额度取前 5（每天都排，不记推送）
@@ -468,7 +485,7 @@ export async function buildNotice(env: Env, kind: NoticeKind, channel: NoticeCha
   // 条款变化和已结束不进飞书日报（Telegram 照旧）。
   let moreCount = 0;
   if (kind === 'digest' && String(channel).startsWith('feishu')) {
-    const scored = approved.map(o => ({ o, st: liveStatus(o, now), score: haoScore(o, now) })).sort((a, b) => b.score - a.score);
+    const scored = approved.filter(o=>!blockedItems.has(o.id)).map(o => ({ o, st: liveStatus(o, now), score: haoScore(o, now) })).sort((a, b) => b.score - a.score);
     const item = (x: typeof scored[number]) => ({ ...view(x.o, names[x.o.platformId] ?? x.o.platformId, now), score: x.score });
     const used = new Set<string>();
     const pick = (list: typeof scored, n: number) => { const got = list.filter(x => !used.has(x.o.id)).slice(0, n); got.forEach(x => used.add(x.o.id)); return got; };
@@ -505,7 +522,7 @@ export async function buildNotice(env: Env, kind: NoticeKind, channel: NoticeCha
   }
   const [lastCollect] = kind === 'digest' && channel === 'telegram'
     ? await d.select({ stats: s.runs.stats }).from(s.runs).where(eq(s.runs.kind, 'collect')).orderBy(desc(s.runs.startedAt)).limit(1) : [];
-  const coverageDegraded = !!lastCollect?.stats?.coverageDegraded;
+  const coverageDegraded = !!lastCollect?.stats?.coverageDegraded || (Array.isArray(lastCollect?.stats?.errors) && lastCollect.stats.errors.length > 0);
   // D1 读取超过免费额度 70%：推给 Telegram（每小时检查，UTC 同一天只推一次）
   let d1Alert: { rowsRead: number; limit: number } | null = null;
   if (channel === 'telegram') {
@@ -519,7 +536,7 @@ export async function buildNotice(env: Env, kind: NoticeKind, channel: NoticeCha
     }
   }
   // 审核提醒按对象身份去重，不能用“待审总数没增加”吞掉替换进来的新条目。
-  type ReviewAlert = { key: string; title: string; state: string; url: string };
+  type ReviewAlert = { key: string; title: string; state: string; url: string; priority?: number };
   let reviewAlerts: ReviewAlert[] = [];
   let leadBacklog = 0;
   if (channel === 'telegram') {
@@ -537,13 +554,19 @@ export async function buildNotice(env: Env, kind: NoticeKind, channel: NoticeCha
     const unresolved = await d.select().from(s.leads).where(inArray(s.leads.status,['new','reviewing']));
     leadBacklog = unresolved.length;
     reviewAlerts = [
-      ...awaiting.map(o=>({ key: `offer:${o.id}`, title: `[${shortCode(o.id)}] ${o.title}`, state: '待审', url: `https://ai-yangmao.com/#offer-${o.id}` })),
-      ...proposals.filter(p=>p.diff.some(x=>isReviewField(x.field))).map(p=>({ key: `proposal:${p.offerId}:${JSON.stringify(p.diff)}`, title: String(p.candidate.title ?? p.offerId), state: '条款更新待审', url: `https://ai-yangmao.com/#offer-${p.offerId}` })),
-      ...unresolved.filter(l=>leadPriority(l)<=1).sort((a,b)=>leadPriority(a)-leadPriority(b)||b.id-a.id).map(l=>({ key: `lead:${l.id}:${l.status}`, title: `#${l.id} ${l.title ?? ''}`, state: l.status==='reviewing' ? '抽取受阻，需人工核验' : '重要线索，尚未研判', url: l.url })),
+      ...awaiting.map(o=>({ key: `offer:${o.id}`, priority: reviewRank(o), title: `[${shortCode(o.id)}] ${o.title}`, state: '待审', url: `https://ai-yangmao.com/#admin-offer-${encodeURIComponent(o.id)}` })),
+      ...proposals.filter(p=>p.diff.some(x=>isReviewField(x.field))).map(p=>({ key: `proposal:${p.offerId}:${JSON.stringify(p.diff)}`, priority: 2, title: String(p.candidate.title ?? p.offerId), state: '条款更新待审', url: `https://ai-yangmao.com/#admin-offer-${encodeURIComponent(p.offerId)}` })),
+      ...unresolved.filter(l=>leadPriority(l)<=1).sort((a,b)=>leadPriority(a)-leadPriority(b)||b.id-a.id).map(l=>({ key: `lead:${l.id}:${l.status}`, priority: 1, title: `#${l.id} ${l.title ?? ''}`, state: l.status==='reviewing' ? '抽取受阻，需人工核验' : '重要线索，尚未研判', url: l.url })),
     ].filter(a=>!announced.has(a.key));
     // 重要线索先提醒，余下待审分批发完；单条失败不堵住其他审核提醒。
-    reviewAlerts.sort((a,b)=>Number(b.key.startsWith('lead:'))-Number(a.key.startsWith('lead:')));
-    reviewAlerts = reviewAlerts.slice(0,10);
+    reviewAlerts.sort((a,b)=>(a.priority ?? 2)-(b.priority ?? 2));
+    const alertPool = reviewAlerts;
+    const primary = reviewAlerts.slice(0,8);
+    const selected = new Set(primary.map(a=>a.key));
+    const backlog = reviewAlerts.filter(a=>!selected.has(a.key) && !a.key.startsWith('lead:')).slice(0,2);
+    reviewAlerts = [...primary,...backlog];
+    const chosen = new Set(reviewAlerts.map(a=>a.key));
+    reviewAlerts.push(...alertPool.filter(a=>!chosen.has(a.key)).slice(0,10-reviewAlerts.length));
   }
   const empty = !reviewAlerts.length && !d1Alert && !marks.length && !out.standing.length && !out.rising.length && !out.lastcall.length && (kind === 'urgent' || channel !== 'telegram' || (!pendingCount && !suggestAutoPublish.length && !needsVerificationCount && !coverageDegraded));
   return { kind, channel, items: out, marks, moreCount, d1Alert, pendingCount, reviewAlerts, leadBacklog, suggestAutoPublish, needsVerificationCount, coverageDegraded, empty, blockedCount: blocked.size };
@@ -569,9 +592,17 @@ export async function claimNotice(env: Env, kind: NoticeKind, channel: NoticeCha
   const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(content));
   const fingerprint = [...new Uint8Array(hash)].map(x => x.toString(16).padStart(2, '0')).join('');
   const id = crypto.randomUUID();
-  const created = await db(env).insert(s.deliveries).values({ id, fingerprint, channel: notice.channel, kind: notice.kind, payload: notice })
-    .onConflictDoNothing().returning({ id: s.deliveries.id });
-  return created.length ? { ...notice, deliveryId: id } : { ...notice, empty: true, alreadyClaimed: true };
+  const created = await env.DB.prepare(`
+    INSERT INTO deliveries(id,fingerprint,channel,kind,payload)
+    SELECT ?1,?2,?3,?4,?5 WHERE NOT EXISTS (
+      SELECT 1 FROM deliveries prior WHERE prior.channel=?3 AND prior.status IN ('pending','unknown') AND (
+        EXISTS (SELECT 1 FROM json_tree(prior.payload,'$.items') old_item, json_tree(?5,'$.items') new_item
+          WHERE old_item.key='id' AND new_item.key='id' AND old_item.value=new_item.value)
+        OR EXISTS (SELECT 1 FROM json_each(prior.payload,'$.reviewAlerts') old_alert, json_each(?5,'$.reviewAlerts') new_alert
+          WHERE json_extract(old_alert.value,'$.key')=json_extract(new_alert.value,'$.key'))
+      )) ON CONFLICT(fingerprint) DO NOTHING RETURNING id`)
+    .bind(id,fingerprint,channel,kind,JSON.stringify(notice)).all<{id:string}>();
+  return created.results.length ? { ...notice, deliveryId: id } : { ...notice, empty: true, alreadyClaimed: true };
 }
 admin.post('/notify/claim', async c => {
   const parsed = z.object({ kind: z.enum(['digest', 'urgent']), channel: z.enum(['telegram', 'feishu']) }).safeParse(await c.req.json().catch(() => null));
@@ -659,6 +690,7 @@ async function d1Usage(env: Env): Promise<{ configured: boolean; rowsRead?: numb
 admin.get('/health', async c => {
   const d = db(c.env);
   const [lastOk] = await d.select().from(s.runs).where(and(eq(s.runs.kind, 'collect'), eq(s.runs.ok, true))).orderBy(desc(s.runs.finishedAt)).limit(1);
+  const [lastAttempt] = await d.select().from(s.runs).where(eq(s.runs.kind, 'collect')).orderBy(desc(s.runs.startedAt)).limit(1);
   const allSources = await d.select({ id: s.sources.id, failStreak: s.sources.failStreak, lastError: s.sources.lastError, lastOkAt: s.sources.lastOkAt,
     kind: s.sources.kind, url: s.sources.url, autoPublish: s.sources.autoPublish, cleanStreak: s.sources.cleanStreak, enabled: s.sources.enabled }).from(s.sources);
   const failing = allSources.filter(source => source.enabled && (source.failStreak >= 3 || !source.lastOkAt || Date.now() - Date.parse(source.lastOkAt) > 12 * 3600_000));
@@ -678,7 +710,7 @@ admin.get('/health', async c => {
   const leadWorkflow = { new: backlog.filter(l=>l.status==='new').length, reviewing: backlog.filter(l=>l.status==='reviewing').length,
     important: important.length, oldestImportantNewAt: important.filter(l=>l.status==='new').map(l=>l.createdAt).sort()[0] ?? null, oldestAt: backlog.map(l=>l.createdAt).sort()[0] ?? null,
     lastRun: lastLeadRun ? { startedAt:lastLeadRun.startedAt,finishedAt:lastLeadRun.finishedAt,ok:lastLeadRun.ok,stats:lastLeadRun.stats } : null };
-  return c.json({ leadWorkflow, tokensToday: b?.t ?? 0, tokenCap: Number(c.env.DAILY_TOKEN_CAP ?? 0), costMonthCny: b?.c ?? 0, coverageDegraded: !!lastOk?.stats?.coverageDegraded, sources: allSources, lastSuccessfulCollect: lastOk?.finishedAt ?? null,
+  return c.json({ leadWorkflow, tokensToday: b?.t ?? 0, tokenCap: Number(c.env.DAILY_TOKEN_CAP ?? 0), costMonthCny: b?.c ?? 0, coverageDegraded: !!lastAttempt?.stats?.coverageDegraded || (Array.isArray(lastAttempt?.stats?.errors) && lastAttempt.stats.errors.length > 0), lastCollectAttempt: lastAttempt ? {startedAt:lastAttempt.startedAt,ok:lastAttempt.ok,stats:lastAttempt.stats}:null, sources: allSources, lastSuccessfulCollect: lastOk?.finishedAt ?? null,
     hoursSince: hours, collectStale: hours === null || hours > 8, failingSources: failing, uncertainDeliveries, needsVerification, dispatchFailures, d1Usage: await d1Usage(c.env) });
 });
 

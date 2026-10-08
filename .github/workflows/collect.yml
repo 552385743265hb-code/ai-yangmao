@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
     inputs:
       dry_run:
-        description: '演练模式：只抓取、不写入'
+        description: '演练：不写业务数据，模型调用仍记预算'
         type: boolean
         default: false
       only_sources:

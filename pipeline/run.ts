@@ -3,9 +3,11 @@ import { leadPriority } from '../src/shared/leads';
 // 流程：取信源 → 抓取 → 只保留和羊毛相关的句子 → 与上次比对 → 有变化才调用模型抽取 → 写入网站（默认进待审）。
 import { aihot, feed, hn, parseFeed, reddit, type Source } from './collectors';
 import { api, fetchPage, fetchText, isFreebie, norm, relevantText, sha256, slug } from './lib';
-import { DeferError, extract, llmAvailable, paidAvailable, type Extracted } from './llm';
-import { BudgetExhaustedError, modelBudget } from './budget';
+import { DeferError, extract, llmAvailable, modelAvailable, paidAvailable, type Extracted } from './llm';
+import { BudgetExhaustedError, BudgetLedgerError, modelBudget } from './budget';
 import { offerIn, type LeadIn, type OfferIn } from '../src/shared/ingest';
+import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 const DAILY_TOKEN_CAP = Number(process.env.DAILY_TOKEN_CAP ?? 0); // 0 = 调试阶段不设每日 token 总上限
 const MONTHLY_COST_CAP = Number(process.env.MONTHLY_COST_CAP_CNY ?? 10);
@@ -16,8 +18,12 @@ const FORCE = process.env.FORCE === '1'; // 忽略上次的哈希，强制重新
 const LEAD_LIMIT = Number(process.env.LEAD_LIMIT ?? 50);
 const onlyList = (process.env.ONLY_SOURCES ?? '').split(',').map(s => s.trim()).filter(Boolean);
 const only = onlyList.length ? onlyList : null; // 留空 = 全部信源
-const stats = { leadsTriaged: 0, leadOffers: 0, costCny: 0, deferred: 0, sources: 0, ok: 0, failed: 0, changed: 0, leads: 0, offers: 0, pending: 0, extractSkipped: 0, tokens: 0, coverageDegraded: false, errors: [] as string[] };
+const stats = { leadsTriaged: 0, leadOffers: 0, costCny: 0, deferred: 0, sources: 0, ok: 0, failed: 0, changed: 0, leads: 0, offers: 0, pending: 0, extractSkipped: 0, verificationChecked: 0, verificationFailed: 0, verificationDeferred: 0, tokens: 0, coverageDegraded: false, errors: [] as string[] };
 let tokensLeft = DAILY_TOKEN_CAP > 0 ? DAILY_TOKEN_CAP : Infinity;
+let budgetBlocked = false;
+let deadline = Infinity;
+const needsWrapUp = () => budgetBlocked || Date.now() >= deadline;
+const budgetFailure = (error: unknown) => error instanceof BudgetExhaustedError || error instanceof BudgetLedgerError;
 
 const log = (...a: unknown[]) => console.log(new Date().toISOString().slice(11, 19), ...a);
 
@@ -43,7 +49,7 @@ function toOffer(src: Source, e: Extracted & { fixedId?: string }, url: string, 
     title: clip(e.title, 120), type: e.type, modalities: e.modalities as OfferIn['modalities'], models: e.models ?? [], tags: (e.tags ?? []) as OfferIn['tags'], publishedAt: e.publishedAt ?? null, claimMethod: e.claimMethod as OfferIn['claimMethod'],
     // 超过长度上限的字段截短保留，不再让整条羊毛因校验失败被丢弃（2026-10-01 批量抓取时 AWS、硅基流动两条因额度描述超长被丢）
     requirements: e.requirements?.length ? e.requirements : ['unknown'], audience: e.audience ?? 'unclear', valueText: clip(e.valueText, 200),
-    usdEstimate: e.usdEstimate ?? null, claimStart: e.claimStart ?? null, claimEnd: e.claimEnd ?? null,
+    usdEstimate: e.usdEstimate ?? null, usdMax: e.usdMax ?? null, claimStart: e.claimStart ?? null, claimEnd: e.claimEnd ?? null,
     // 模型说有截止日期却给不出具体日期（如“免费 7 天”但没写从哪天起）：按截止未知保留，交给人工审核，而不是整条丢弃
     endKind: e.endKind === 'date' && !e.claimEnd ? 'unknown' : e.endKind,
     creditValidity: e.creditValidity ? clip(e.creditValidity, 100) : null, sourceTz: e.sourceTz || 'UTC', steps: (e.steps ?? []).slice(0, 4).map(x => clip(x, 200)), firstChannel: src.kind,
@@ -66,21 +72,24 @@ async function extractAndPost(src: Source, url: string, text: string): Promise<b
 }
 
 async function extractAndPostUnlocked(src: Source, url: string, text: string): Promise<boolean> {
+  if (needsWrapUp()) { stats.deferred++; src.deferThisRun = true; return false; }
   if (!llmAvailable()) { stats.extractSkipped++; log('  没有配置模型 key，跳过抽取'); return false; }
   const estimate = Math.ceil(text.length / 2) + 1500;
   if (estimate > tokensLeft) { stats.extractSkipped++; log(`  今日模型预算不足（剩 ${tokensLeft}），留到下次`); return false; }
   const deferCount = Number((src.config as { deferCount?: number } | undefined)?.deferCount ?? 0);
   const allowPaid = paidAvailable() && deferCount >= 1 && costLeft > 0.05;
+  if (!modelAvailable(allowPaid)) { stats.deferred++; src.deferThisRun = true; return false; }
   let r: Awaited<ReturnType<typeof extract>>;
   try {
     const idx = (await offerIndex()).filter(k => k.platformId === src.platformId);
-    r = await extract(src.platform?.name ?? src.platformId ?? '', url, text, log, { allowPaid, platformIds: [src.platformId], corrections: await correctionsFor(src.platformId, src.id), existing: idx.map(k => `${k.id}｜${k.title}｜${k.valueText.slice(0, 40)}`).join('\n') || undefined, budget: modelBudget });
+    r = await extract(src.platform?.name ?? src.platformId ?? '', url, text, log, { allowPaid, deadlineAt: deadline, platformIds: [src.platformId], corrections: await correctionsFor(src.platformId, src.id), existing: formatOfferIndex(idx) || undefined, budget: modelBudget });
     // 同一个权益沿用已有 id，避免模型换个说法就生成重复条目
     for (const e of r.offers as (Extracted & { sameAs?: string | null; fixedId?: string })[]) { const hit = idx.find(k => k.id === e.sameAs); if (hit) e.fixedId = hit.id; }
   }
   catch (e) {
-    if (!(e instanceof DeferError) && !(e instanceof BudgetExhaustedError)) throw e;
-    stats.deferred++; log(`  ${e.message}`);
+    if (!(e instanceof DeferError) && !budgetFailure(e)) throw e;
+    if (budgetFailure(e)) budgetBlocked = true;
+    stats.deferred++; log(`  ${(e as Error).message}`);
     src.deferThisRun = true; return false;
   }
   tokensLeft -= r.tokens; stats.tokens += r.tokens; costLeft -= r.costCny; stats.costCny += r.costCny;
@@ -113,7 +122,7 @@ async function extractAndPostUnlocked(src: Source, url: string, text: string): P
     if (!x.error && idxCache) {
       const accepted = offers.find(o => o.id === x.id);
       if (accepted) {
-        const entry = { id: accepted.id, platformId: accepted.platformId, title: accepted.title, valueText: accepted.valueText };
+        const entry = indexEntry(accepted);
         const index = idxCache.findIndex(item => item.id === x.id);
         if (index < 0) idxCache.push(entry); else idxCache[index] = entry;
       }
@@ -134,7 +143,16 @@ async function officialPage(src: Source) {
   if (!done) src.deferThisRun = true;
   if (!DRY) {
     const { offers } = await api<{ offers: { id: string; url: string }[] }>(`/verification-queue?sourceId=${encodeURIComponent(src.id)}&force=1`);
-    for (const offer of offers.filter(o => o.url === src.url)) await api('/verify', { offerId: offer.id, url: offer.url, finalUrl, text, pageHash: sha256(rel), processedChange: done });
+    for (const offer of offers.filter(o => o.url === src.url)) {
+      stats.verificationChecked++;
+      try {
+        const result = await api<{ verified: boolean }>('/verify', { offerId: offer.id, url: offer.url, finalUrl, text, pageHash: sha256(rel), processedChange: done });
+        if (!result.verified) { stats.verificationFailed++; stats.errors.push(`${offer.id}: 当前官方证据无法再次确认`); }
+      } catch (error) {
+        stats.verificationFailed++;
+        stats.errors.push(`${offer.id}: 复核失败：${(error as Error).message}`);
+      }
+    }
   }
   await report(src, true, done ? { hash, text: rel } : { deferred: !!src.deferThisRun });
 }
@@ -144,20 +162,35 @@ async function officialFeed(src: Source) {
   // RSS 里的文章链接可能是相对路径（如 Sakana 的 /sail/），用 RSS 地址补全
   const abs = (link: string) => { try { return new URL(link, src.url).href; } catch { return ''; } };
   const items = parseFeed(await fetchText(src.url, { accept: 'application/rss+xml' })).map(i => ({ ...i, link: abs(i.link) })).filter(i => i.link && isFreebie(`${i.title} ${i.summary}`));
-  const links = items.map(i => i.link).sort();
+  const links = [...new Set(items.map(i => i.link))].sort();
   const hash = sha256(links.join('\n'));
-  if (hash === src.lastHash) { await report(src, true); log('  无新文章'); return; }
-  const prev = new Set((src.lastText ?? '').split('\n').filter(Boolean)); // 只记真正处理完的文章
-  for (const it of items.filter(i => !prev.has(i.link)).slice(0, 5)) {
+  if (hash === src.lastHash && !FORCE) { await report(src, true); log('  无新文章'); return; }
+  // 强制模式重新建立完成清单；一次超过处理名额的剩余文章由后续常规运行继续。
+  const prev = new Set(FORCE ? [] : (src.lastText ?? '').split('\n').filter(Boolean));
+  let completedThisRun = 0;
+  const failures: string[] = [];
+  for (const it of items) {
+    if (prev.has(it.link)) continue;
+    if (completedThisRun >= 5 || needsWrapUp()) break;
     stats.changed++;
-    const { text, via, finalUrl } = await fetchPage(it.link);
-    const rel = relevantText(text);
-    log(`  新文章：${it.title}（相关文本 ${rel.length} 字）`);
-    if (!rel.length || await extractAndPost(via === 'jina' ? { ...src, tier: 'media', autoPublish: false } : src, finalUrl, rel)) prev.add(it.link);
+    try {
+      const { text, via, finalUrl } = await fetchPage(it.link, { timeoutMs: 10000, tries: 1 });
+      const rel = relevantText(text);
+      log(`  新文章：${it.title}（相关文本 ${rel.length} 字）`);
+      if (!rel.length || await extractAndPost(via === 'jina' ? { ...src, tier: 'media', autoPublish: false } : src, finalUrl, rel)) {
+        prev.add(it.link); completedThisRun++;
+      }
+    } catch (error) {
+      failures.push(`${it.link}: ${(error as Error).message}`);
+      log(`  文章失败，继续后续文章：${failures.at(-1)}`);
+    }
   }
   const completed = links.filter(link => prev.has(link)).join('\n');
   if (completed.split('\n').filter(Boolean).length < links.length) src.deferThisRun = true;
-  await report(src, true, { hash: sha256(completed), text: completed, deferred: !!src.deferThisRun });
+  // 即使某篇失败，已经完成的文章也落检查点；完全没有新进展时保留信源连续失败次数。
+  const completedHash = sha256(completed);
+  if (!failures.length || completedHash !== src.lastHash) await report(src, true, { hash: completedHash, text: completed, deferred: !!src.deferThisRun });
+  if (failures.length) throw new Error(`${failures.length} 篇 RSS 文章未处理：${failures.join('；').slice(0, 400)}`);
 }
 
 async function runSource(src: Source) {
@@ -184,6 +217,8 @@ async function runSource(src: Source) {
 async function verifyExistingOffers(sources: Source[]) {
   const { offers } = await api<{ offers: { id: string; url: string; tier: string; pageHash: string | null; proposalHash: string | null; sourceId: string | null; platformId: string }[] }>('/verification-queue');
   for (const offer of offers) {
+    if (needsWrapUp()) { stats.verificationDeferred += offers.length - offers.indexOf(offer); break; }
+    stats.verificationChecked++;
     try {
       const { text, via, finalUrl } = await fetchPage(offer.url);
       const relevant = relevantText(text), currentHash = sha256(relevant);
@@ -196,16 +231,21 @@ async function verifyExistingOffers(sources: Source[]) {
         processedChange = await extractAndPost(via === 'jina' ? { ...source, tier: 'media', autoPublish: false } : source, finalUrl, relevant);
       }
       const result = DRY ? { verified: false } : await api<{ verified: boolean }>('/verify', { offerId: offer.id, url: offer.url, finalUrl, text, pageHash: currentHash, processedChange });
-      if (!result.verified && !DRY) stats.errors.push(`${offer.id}: 当前官方证据无法再次确认`);
+      if (!result.verified && !DRY) { stats.verificationFailed++; stats.errors.push(`${offer.id}: 当前官方证据无法再次确认`); }
     } catch (e) {
+      stats.verificationFailed++;
       stats.errors.push(`${offer.id}: 复核失败：${(e as Error).message}`);
     }
   }
 }
 
-let idxCache: { id: string; platformId: string; title: string; valueText: string }[] | null = null;
+interface IndexedOffer { id: string; platformId: string; title: string; valueText: string; claimStart?: string | null; publishedAt?: string | null; tags?: string[]; evidenceUrl?: string }
+const indexEntry = (offer: OfferIn): IndexedOffer => ({ id: offer.id, platformId: offer.platformId, title: offer.title, valueText: offer.valueText,
+  claimStart: offer.claimStart, publishedAt: offer.publishedAt, tags: offer.tags, evidenceUrl: offer.evidence.url });
+const formatOfferIndex = (offers: IndexedOffer[]) => offers.map(offer => `${offer.id}｜${offer.title}｜${offer.valueText.slice(0, 40)}｜开始:${offer.claimStart ?? '未知'}${offer.tags?.includes('reset') ? `｜发布:${offer.publishedAt ?? '未知'}｜证据:${offer.evidenceUrl ?? '未知'}` : ''}`).join('\n');
+let idxCache: IndexedOffer[] | null = null;
 async function offerIndex() {
-  if (!idxCache) { try { idxCache = (await api<{ offers: { id: string; platformId: string; title: string; valueText: string }[] }>('/offers-index')).offers; } catch { idxCache = []; } }
+  if (!idxCache) { try { idxCache = (await api<{ offers: IndexedOffer[] }>('/offers-index')).offers; } catch { idxCache = []; } }
   return idxCache;
 }
 
@@ -222,7 +262,7 @@ async function correctionsFor(platform: string | null, source: string | null): P
 
 /* ---------- 线索研判：把线索变成待审羊毛 ---------- */
 interface Plat { id: string; name: string; site: string | null; xHandles: string[]; staffHandles: string[] }
-interface Lead { id: number; origin: string; url: string; title: string | null; raw: string | null }
+interface Lead { id: number; origin: string; url: string; title: string | null; raw: string | null; createdAt?: string }
 const host = (u: string) => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return ''; } };
 /** 证据级别：平台官网域名 → site；白名单里的官方 X 账号 → official；员工账号 → staff；其余（媒体、社区、公众号转载）→ media。 */
 function tierOf(url: string, p: Plat | undefined): OfferIn['evidence']['tier'] {
@@ -246,28 +286,40 @@ async function triageLeads(plats: Plat[]) {
     const t = text.toLowerCase();
     return plats.filter(p => [p.id, ...p.name.split(/[（）()\/·、\s]+/)].some(k => k.length >= 2 && t.includes(k.toLowerCase()))).map(p => p.id).slice(0, 6);
   };
-  const { offers: known } = await api<{ offers: { id: string; platformId: string; title: string; valueText: string }[] }>('/offers-index');
+  const { offers: known } = await api<{ offers: IndexedOffer[] }>('/offers-index');
   const knownIds = new Set(known.map(k => k.id));
-  let existing = known.map(k => `${k.id}｜${k.title}｜${k.valueText.slice(0, 40)}`).join('\n');
+  let existing = formatOfferIndex(known);
   const pmap = new Map(plats.map(p => [p.id, p]));
   log(`研判线索 ${leads.length} 条`);
   for (const l of leads) {
-    if (tokensLeft < 8000) { stats.deferred++; log('  今日模型预算不足，剩余线索留到下次'); break; }
+    if (needsWrapUp() || tokensLeft < 8000) { stats.deferred++; log('  预算不足或本轮即将结束，剩余线索留到下次'); break; }
+    const aged = !!l.createdAt && Date.now() - Date.parse(l.createdAt) >= 2 * 3600_000;
+    const allowPaid = paidAvailable() && costLeft > 0.05 && (aged || leadPriority(l) <= 1);
+    if (!modelAvailable(allowPaid)) { stats.deferred++; continue; }
     stats.leadsTriaged++;
-    let text = `${l.title ?? ''}\n${l.raw ?? ''}`;
+    let evidenceText = l.raw ?? '';
+    let text = `线索标题（转述，仅用于定位）：${l.title ?? ''}\n${evidenceText}`;
     let fetched = false;
     let effectiveUrl = l.url, indirect = false;
-    try { const pg = await fetchPage(l.url, { timeoutMs: 10000, tries: 1 }); text = `${l.title ?? ''}\n${pg.text}`.slice(0, 14000); effectiveUrl = pg.finalUrl; indirect = pg.via === 'jina'; fetched = true; }
-    catch { if (l.origin === 'manual' || l.origin === 'telegram') { log(`  #${l.id} 原文暂时不可访问，下轮继续抓取`); continue; } }
+    try {
+      const pg = await fetchPage(l.url, { timeoutMs: 10000, tries: 1 });
+      evidenceText = pg.text.slice(0, 14000);
+      text = `线索标题（转述，仅用于定位）：${l.title ?? ''}\n${evidenceText}`;
+      effectiveUrl = pg.finalUrl; indirect = pg.via === 'jina'; fetched = true;
+    }
+    catch { if (l.origin === 'manual' || l.origin === 'telegram') { stats.deferred++; log(`  #${l.id} 原文暂时不可访问，下轮继续抓取`); continue; } }
     let r;
-    try { r = await extract('（见平台白名单）', l.url, text, log, { platformList: list, platformIds: mentionedPlatforms(`${l.title ?? ''}\n${text}`), existing, corrections: await correctionsFor(null, null), budget: modelBudget }); }
+    try { r = await extract('（见平台白名单）', l.url, text, log, { allowPaid, evidenceText, deadlineAt: deadline, platformList: list, platformIds: mentionedPlatforms(`${l.title ?? ''}\n${text}`), existing, corrections: await correctionsFor(null, null), budget: modelBudget }); }
     catch (e) {
       log(`  #${l.id} 抽取失败：${(e as Error).message.slice(0, 80)}`);
-      if (!(e instanceof DeferError) && !(e instanceof BudgetExhaustedError) && !DRY) await api(`/leads/${l.id}/status`, { status: 'reviewing', note: `抽取失败，需人工确认后重试：${(e as Error).message.slice(0, 160)}` });
-      if (e instanceof DeferError || e instanceof BudgetExhaustedError) stats.deferred++;
+      if (budgetFailure(e)) { budgetBlocked = true; stats.deferred++; break; }
+      if (!(e instanceof DeferError)) {
+        stats.errors.push(`线索 #${l.id} 抽取失败：${(e as Error).message.slice(0, 160)}`);
+        if (!DRY) await api(`/leads/${l.id}/status`, { status: 'reviewing', note: `抽取失败，需人工确认后重试：${(e as Error).message.slice(0, 160)}` });
+      } else stats.deferred++;
       continue;
     }
-    tokensLeft -= r.tokens; stats.tokens += r.tokens; stats.costCny += r.costCny;
+    tokensLeft -= r.tokens; stats.tokens += r.tokens; costLeft -= r.costCny; stats.costCny += r.costCny;
     const valid: OfferIn[] = [];
     let invalidCount = 0;
     const unknown: string[] = [];
@@ -279,8 +331,8 @@ async function triageLeads(plats: Plat[]) {
     for (const e of r.offers) {
       const p = findPlat(e.platformId);
       if (!p) { unknown.push(e.title); continue; }
-      const tier = indirect ? 'media' : tierOf(effectiveUrl, p);
-      const o = toOffer({ id: `lead-${l.origin}`, kind: l.origin, platformId: p.id, tier } as unknown as Source, e, effectiveUrl, text);
+      const tier = !fetched || indirect ? 'media' : tierOf(effectiveUrl, p);
+      const o = toOffer({ id: `lead-${l.origin}`, kind: l.origin, platformId: p.id, tier } as unknown as Source, e, effectiveUrl, relevantText(evidenceText));
       o.evidence.tier = tier; o.leadId = l.id; o.sourceId = undefined; o.firstChannel = l.origin;
       // 同一个活动：沿用已有条目的 id（写入接口会按修订处理，不会新开一条）
       if (e.sameAs && knownIds.has(e.sameAs)) {
@@ -304,7 +356,7 @@ async function triageLeads(plats: Plat[]) {
       for (const saved of res.results.filter(x => !x.error && !('skipped' in x))) {
         const record = valid.find(v => v.id === saved.id);
         if (!record) continue;
-        const entry = { id: record.id, platformId: record.platformId, title: record.title, valueText: record.valueText };
+        const entry = indexEntry(record);
         const index = known.findIndex(k => k.id === saved.id);
         if (index < 0) known.push(entry); else known[index] = entry;
         knownIds.add(saved.id);
@@ -313,7 +365,7 @@ async function triageLeads(plats: Plat[]) {
           if (cached < 0) idxCache.push(entry); else idxCache[cached] = entry;
         }
       }
-      existing = known.map(k => `${k.id}｜${k.title}｜${k.valueText.slice(0, 40)}`).join('\n');
+      existing = formatOfferIndex(known);
       log(`  #${l.id} → ${valid.map(v => v.title).join('、')}`);
       const saved = res.results.filter(x => !x.error && !('skipped' in x));
       if (!saved.length || saved.length < valid.length || invalidCount || unknown.length) {
@@ -327,8 +379,10 @@ async function triageLeads(plats: Plat[]) {
   }
 }
 
-async function main() {
+export async function runPipeline() {
   const startedAt = new Date().toISOString();
+  // Actions 总限时 45 分钟，保留 5 分钟给在途请求和持久化运行结果。
+  deadline = Date.now() + 40 * 60_000;
   if (!DRY) {
     const b = await api<{ tokensToday: number; costMonthCny: number }>('/budget');
     tokensLeft = DAILY_TOKEN_CAP > 0 ? Math.max(0, DAILY_TOKEN_CAP - b.tokensToday) : Infinity;
@@ -341,22 +395,36 @@ async function main() {
   // 先采集线索，再研判；全站官方页面抽取与复核不能抢走重要线索的模型预算。
   const leadSources = list.filter(s => s.kind === 'aihot' || s.tier === 'lead');
   const selected = FAST ? leadSources.filter(s => s.kind === 'aihot' || s.kind === 'feed') : leadSources;
-  for (const source of selected) await runSource(source);
+  for (const source of selected) {
+    if (needsWrapUp()) { stats.deferred++; break; }
+    await runSource(source);
+  }
   try {
-    const { platforms } = await fetch(`${(process.env.API_BASE ?? 'https://ai-yangmao.com').replace(/\/$/, '')}/api/platforms`).then(r => r.json()) as { platforms: Plat[] };
+    const { platforms } = await fetch(`${(process.env.API_BASE ?? 'https://ai-yangmao.com').replace(/\/$/, '')}/api/platforms`, { signal: AbortSignal.timeout(30000) }).then(r => r.json()) as { platforms: Plat[] };
     await triageLeads(platforms);
   } catch (e) { stats.errors.push(`线索研判：${(e as Error).message}`); stats.deferred++; log('线索研判出错', (e as Error).message); }
   if (!FAST) {
     const queue = list.filter(s => !leadSources.includes(s));
-    await Promise.all(Array.from({ length: 4 }, async () => { while (queue.length) await runSource(queue.shift()!); }));
-    await verifyExistingOffers(sources);
+    await Promise.all(Array.from({ length: 4 }, async () => {
+      while (queue.length && !needsWrapUp()) await runSource(queue.shift()!);
+    }));
+    stats.deferred += queue.length;
+    try { await verifyExistingOffers(sources); }
+    catch (error) {
+      stats.verificationFailed++;
+      stats.errors.push(`读取复核队列失败：${(error as Error).message}`);
+    }
   }
-  const ok = (FAST || !only) && stats.sources > 0 && stats.failed === 0 && stats.ok === stats.sources && stats.deferred === 0;
-  stats.coverageDegraded = stats.deferred > 0 || stats.extractSkipped > 0 || list.some(source => source.deferThisRun);
+  stats.coverageDegraded = stats.deferred > 0 || stats.extractSkipped > 0 || stats.failed > 0 || stats.verificationFailed > 0
+    || stats.verificationDeferred > 0 || stats.errors.length > 0 || list.some(source => source.deferThisRun);
+  const ok = (FAST || !only) && stats.sources > 0 && stats.ok === stats.sources && !stats.coverageDegraded;
   log('完成', JSON.stringify(stats));
   // 模型调用逐次在 runs(kind=model) 预留并结算；汇总行不能再次计费。
   if (!DRY) await api('/runs', { kind: FAST ? 'sweep' : 'collect', startedAt, finishedAt: new Date().toISOString(), ok, stats, tokens: 0, costCny: 0 });
-  if (!ok && !only) process.exitCode = 1;
+  return { ok, stats };
 }
 
-main().catch(e => { console.error(e); process.exit(1); });
+if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
+  runPipeline().then(({ ok }) => { if (!ok && !only) process.exitCode = 1; })
+    .catch(e => { console.error(e); process.exitCode = 1; });
+}

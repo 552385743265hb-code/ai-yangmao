@@ -22,3 +22,16 @@ it('keeps equal-title reset events on different dates separate',()=>{
   expect(findDuplicate({...previous,eventDay:'2026-10-07'},[previous])).toBeUndefined();
   expect(findDuplicate({...previous,evidenceUrl:'https://x.com/staff/status/confirmed'},[previous])?.id).toBe('july');
 });
+
+it('keeps content-identifying query parameters while ignoring tracking parameters',()=>{
+  const old={id:'a',platformId:'vendor',title:'活动 A',valueText:'100 credits',evidenceUrl:'https://vendor.example/benefit?id=1&utm_source=feed'};
+  expect(findDuplicate({...old,title:'活动 B',evidenceUrl:'https://vendor.example/benefit?id=2'},[old])).toBeUndefined();
+  expect(findDuplicate({...old,title:'活动转述',evidenceUrl:'https://vendor.example/benefit?utm_medium=rss&id=1'},[old])?.id).toBe('a');
+});
+
+it('does not merge similar benefits from independent dated announcements',()=>{
+  const regular={id:'regular',platformId:'devin',title:'Windsurf 平台 Claude Opus 4.6 额度限时优惠',valueText:'限时优惠',evidenceUrl:'https://devin.ai/blog/opus-46',claimStart:'2026-02-05'};
+  const fast={...regular,title:'Windsurf 平台 Claude Opus 4.6 (fast mode) 额度限时优惠',evidenceUrl:'https://devin.ai/blog/opus-46-fast',claimStart:'2026-02-07'};
+  expect(findDuplicate(fast,[regular])).toBeUndefined();
+  expect(findDuplicate({...regular,evidenceUrl:regular.evidenceUrl,claimStart:'2026-02-06'},[regular])?.id).toBe('regular');
+});

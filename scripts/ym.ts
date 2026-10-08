@@ -136,7 +136,7 @@ ${revisions.length ? `修订：${revisions.map((r: any) => r.diff.map((x: any) =
     const review = r.reviewAlerts?.length ? `\n📝 审核提醒（${r.reviewAlerts.length} 条）\n${r.reviewAlerts.map((a: any)=>`${a.state}｜${a.title}\n${a.url}`).join('\n')}\n请在后台“待审 / 线索”核验；这些内容尚未批准上架。\n` : '';
     const message = review + alert + (kind === 'urgent'
       ? (r.items.urgent.length ? `⚡ 加急：48 小时内截止\n${r.items.urgent.map(line).join('\n')}` : '')
-      : `🐑 AI 羊毛牧场日报 · ${d}\n${sec('🆕 新上架', r.items.new)}${sec('⏰ 3 天内结束', r.items.ending)}${sec('🔄 条款变化', r.items.changed)}${sec('❌ 已结束', r.items.ended)}${r.pendingCount ? `\n📝 待审 ${r.pendingCount} 条，回复"看待审"处理` : ''}${r.needsVerificationCount ? `\n⚠️ ${r.needsVerificationCount} 条权益证据待核验，回复"看待审"处理` : ''}${r.coverageDegraded ? '\n⚠️ 本轮抓取完成，但部分新增条款因模型额度或模型故障尚未抽取；下一轮会重试' : ''}${r.suggestAutoPublish?.length ? `\n🔓 建议审核自动上架信源：${r.suggestAutoPublish.join('、')}` : ''}\n\n网页：https://ai-yangmao.com`);
+      : `🐑 AI 羊毛牧场日报 · ${d}\n${sec('🆕 新上架', r.items.new)}${sec('⏰ 3 天内结束', r.items.ending)}${sec('🔄 条款变化', r.items.changed)}${sec('❌ 已结束', r.items.ended)}${r.pendingCount ? `\n📝 待审 ${r.pendingCount} 条，回复"看待审"处理` : ''}${r.needsVerificationCount ? `\n⚠️ ${r.needsVerificationCount} 条权益证据待核验，回复"看待审"处理` : ''}${r.coverageDegraded ? '\n⚠️ 部分抓取、抽取或官方核验未完成；请查看采集健康，自动任务会继续重试' : ''}${r.suggestAutoPublish?.length ? `\n🔓 建议审核自动上架信源：${r.suggestAutoPublish.join('、')}` : ''}\n\n网页：https://ai-yangmao.com`);
     if (cmd !== 'dispatch') { console.log(message); break; }
     const { spawnSync } = await import('node:child_process');
     const sent = spawnSync('hermes', ['send', '--to', 'telegram', '--quiet', '--file', '-'], { input: message, encoding: 'utf8', timeout: 30000 });
@@ -153,9 +153,9 @@ ${revisions.length ? `修订：${revisions.map((r: any) => r.diff.map((x: any) =
     const h = await call('/health');
     const uncertain = (h.uncertainDeliveries ?? []).filter((d: any) => d.status === 'unknown' || Date.now() - Date.parse(d.createdAt) > 10 * 60_000);
     const leadStalled = h.leadWorkflow?.oldestImportantNewAt && Date.now()-Date.parse(h.leadWorkflow.oldestImportantNewAt)>2*3600_000;
-    const bad = leadStalled || h.leadWorkflow?.lastRun?.ok === false || h.collectStale || h.failingSources.length || uncertain.length;
+    const bad = h.coverageDegraded || leadStalled || h.leadWorkflow?.lastRun?.ok === false || h.collectStale || h.failingSources.length || uncertain.length;
     if (!bad && !flag('--verbose')) break;
-    console.log(`${bad ? '🚨 采集或投递告警' : '✅ 采集正常'}：最近一次完整成功采集 ${h.lastSuccessfulCollect ? `${h.hoursSince.toFixed(1)} 小时前` : '从未成功'}${h.leadWorkflow ? `\n线索：新 ${h.leadWorkflow.new} · 人工处理 ${h.leadWorkflow.reviewing} · 重要 ${h.leadWorkflow.important}${leadStalled ? '；重要线索已积压超过 2 小时' : ''}${h.leadWorkflow.lastRun?.ok === false ? '；快速研判最近一次失败' : ''}` : ''}${h.failingSources.length ? `\n失效或连续失败的信源：\n${h.failingSources.map((s: any) => `• ${s.id}（${s.failStreak} 次）：${s.lastError ?? '超过 12 小时未成功'}`).join('\n')}` : ''}${uncertain.length ? `\n需人工核对的推送：\n${uncertain.map((d: any) => `• ${d.id}（${d.kind} / ${d.status}）：ym delivery-delivered ${d.id} <理由> 或 ym delivery-unsent ${d.id} <理由>`).join('\n')}` : ''}`);
+    console.log(`${bad ? '🚨 采集或投递告警' : '✅ 采集正常'}：最近一次完整成功采集 ${h.lastSuccessfulCollect ? `${h.hoursSince.toFixed(1)} 小时前` : '从未成功'}${h.coverageDegraded ? `\n⚠️ 最近采集覆盖不完整：核验失败 ${h.lastCollectAttempt?.stats?.verificationFailed ?? '未记录'}、核验延期 ${h.lastCollectAttempt?.stats?.verificationDeferred ?? '未记录'}，其余失败见采集健康页` : ''}${h.leadWorkflow ? `\n线索：新 ${h.leadWorkflow.new} · 人工处理 ${h.leadWorkflow.reviewing} · 重要 ${h.leadWorkflow.important}${leadStalled ? '；重要线索已积压超过 2 小时' : ''}${h.leadWorkflow.lastRun?.ok === false ? '；快速研判最近一次失败' : ''}` : ''}${h.failingSources.length ? `\n失效或连续失败的信源：\n${h.failingSources.map((s: any) => `• ${s.id}（${s.failStreak} 次）：${s.lastError ?? '超过 12 小时未成功'}`).join('\n')}` : ''}${uncertain.length ? `\n需人工核对的推送：\n${uncertain.map((d: any) => `• ${d.id}（${d.kind} / ${d.status}）：ym delivery-delivered ${d.id} <理由> 或 ym delivery-unsent ${d.id} <理由>`).join('\n')}` : ''}`);
     break;
   }
   case 'delivery-delivered': case 'delivery-unsent': {

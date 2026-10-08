@@ -7,7 +7,14 @@ export function resetEventDay(o: ResetEvent): string | null {
   const published = tweet ? new Date(Number((BigInt(tweet)>>22n)+1288834974657n)) : o.publishedAt ? new Date(o.publishedAt) : null;
   if (published && Number.isFinite(published.getTime())) {
     const tz = o.platformId==='openai' ? 'America/Los_Angeles' : o.sourceTz ?? 'UTC';
-    try { return new Intl.DateTimeFormat('en-CA',{timeZone:tz,year:'numeric',month:'2-digit',day:'2-digit'}).format(published); } catch { return published.toISOString().slice(0,10); }
+    let postedDay: string;
+    try { postedDay = new Intl.DateTimeFormat('en-CA',{timeZone:tz,year:'numeric',month:'2-digit',day:'2-digit'}).format(published); }
+    catch { postedDay = published.toISOString().slice(0,10); }
+    // 明确的发放日可串起跨日预告/确认；过旧开始日可能来自模型复用历史条目。
+    // 七天是保守的合并保护窗口，不是活动有效期。更久的回顾由管理员判断。
+    if (o.claimStart && /^\d{4}-\d{2}-\d{2}$/.test(o.claimStart) &&
+      Date.parse(postedDay)-Date.parse(o.claimStart) <= 7*86400_000) return o.claimStart;
+    return postedDay;
   }
   return o.claimStart ?? null;
 }
