@@ -8,6 +8,7 @@ import { liveStatus } from '../src/shared/lifecycle';
 
 let sqlite: DatabaseSync;
 let env: Parameters<typeof worker.fetch>[1];
+let beforeStatement: ((sql: string) => void) | undefined;
 
 function d1(memory: DatabaseSync) {
   return {
@@ -18,8 +19,8 @@ function d1(memory: DatabaseSync) {
           if (values.length > 100) throw new Error('D1_ERROR: too many SQL variables');
           args = values; return this;
         },
-        async raw() { const statement = memory.prepare(sql); statement.setReturnArrays(true); return statement.all(...args as []); },
-        async all() { return { results: memory.prepare(sql).all(...args as []) }; },
+        async raw() { beforeStatement?.(sql); const statement = memory.prepare(sql); statement.setReturnArrays(true); return statement.all(...args as []); },
+        async all() { beforeStatement?.(sql); return { results: memory.prepare(sql).all(...args as []) }; },
         async first() { return memory.prepare(sql).get(...args as []) ?? null; },
         async run() { return { meta: memory.prepare(sql).run(...args as []), success: true }; },
       };
@@ -37,6 +38,7 @@ async function call(path: string, body?: unknown, kind: 'ingest' | 'admin' = 'in
 }
 
 beforeEach(() => {
+  beforeStatement = undefined;
   sqlite = new DatabaseSync(':memory:');
   for (const name of readdirSync(new URL('../migrations/', import.meta.url)).filter(name => /^\d+_.+\.sql$/.test(name)).sort()) {
     sqlite.exec(readFileSync(new URL(`../migrations/${name}`, import.meta.url), 'utf8'));
@@ -46,6 +48,103 @@ beforeEach(() => {
   sqlite.prepare("INSERT INTO sources (id,platform_id,kind,url,tier) VALUES ('source','vendor','web_list','https://vendor.example/free','docs')").run();
 });
 afterEach(() => sqlite.close());
+
+describe('workflow recovery and race regressions',()=>{
+  it('prioritizes an expiring ordinary draft while reserving capacity for the oldest official-review backlog',async()=>{
+    for(let n=0;n<8;n++)await call('ingest/offers',[{...offer,id:`vendor-${n}`,title:`Codex 重置卡 ${n}`,valueText:`${n} tokens`,evidence:{...evidence,tier:'media',url:`https://community.example/${n}`}}]);
+    sqlite.prepare("UPDATE offers SET discovered_at='2020-01-01T00:00:00Z',title='长期积压待补证' WHERE id='vendor-0'").run();
+    await call('ingest/offers',[{...offer,id:'vendor-urgent',title:'普通名称赠额',valueText:'99 tokens',claimEnd:new Date().toISOString().slice(0,10),endKind:'date',evidence:{...evidence,tier:'media',url:'https://community.example/urgent'}}]);
+    const jobs=(await call('ingest/official-reviews/queue?limit=5')).body.jobs as any[];
+    expect(jobs[0].id).toBe('vendor-urgent');expect(jobs.map(x=>x.id)).toContain('vendor-0');
+  });
+  it('rejects a user-created issue in an otherwise official registered repository',async()=>{
+    sqlite.prepare("UPDATE sources SET url='https://github.com/vendor/project',tier='docs' WHERE id='source'").run();
+    await call('ingest/offers',[{...offer,evidence:{...evidence,url:'https://github.com/vendor/project/issues/99'}}]);
+    expect((await call('admin/offers/vendor-free/approve',{},'admin')).status).toBe(400);
+  });
+  it('requires explicit direct provenance and preserves the last real verification',async()=>{
+    await call('ingest/offers',[offer]);await call('admin/offers/vendor-free/approve',{},'admin');
+    sqlite.prepare("UPDATE offers SET last_verified_at='2026-01-01T00:00:00Z' WHERE id='vendor-free'").run();
+    const check={offerId:offer.id,url:evidence.url,text:Object.values(evidence.excerpts).join(' ')};
+    for(const body of [check,{...check,trustedDirect:false}]){
+      expect((await call('ingest/verify',body)).body).toMatchObject({verified:false,sourceUnverified:true});
+    }
+    expect(sqlite.prepare('SELECT last_verified_at FROM offers').get()).toEqual({last_verified_at:'2026-01-01T00:00:00Z'});
+  });
+  it('does not restore old evidence over an administrator edit made during verification',async()=>{
+    await call('ingest/offers',[offer]);await call('admin/offers/vendor-free/approve',{},'admin');
+    const corrected={...evidence,url:'https://vendor.example/corrected'};
+    beforeStatement=sql=>{if(sql.startsWith('update "offers"')){beforeStatement=undefined;sqlite.prepare("UPDATE offers SET evidence=?,updated_at='2030-01-01T00:00:00Z' WHERE id='vendor-free'").run(JSON.stringify(corrected));}};
+    const result=await call('ingest/verify',{trustedDirect:true,offerId:offer.id,url:evidence.url,text:Object.values(evidence.excerpts).join(' ')});
+    expect(result.body).toMatchObject({verified:false,stale:true});
+    expect(JSON.parse((sqlite.prepare('SELECT evidence FROM offers').get() as any).evidence).url).toBe(corrected.url);
+  });
+  it('keeps a reviewer proposal edit made while a new extraction is being saved',async()=>{
+    await call('ingest/offers',[offer]);await call('admin/offers/vendor-free/approve',{},'admin');
+    await call('ingest/offers',[{...offer,valueText:'200 tokens'}]);
+    beforeStatement=sql=>{if(sql.startsWith('update "offer_proposals"')){beforeStatement=undefined;sqlite.prepare("UPDATE offer_proposals SET candidate=?,updated_at='2030-01-01T00:00:00Z'").run(JSON.stringify({...offer,valueText:'管理员确认的额度'}));}};
+    const result=await call('ingest/offers',[{...offer,valueText:'300 tokens'}]);
+    expect((result.body.results as any[])[0].error).toContain('已更新');
+    expect(JSON.parse((sqlite.prepare('SELECT candidate FROM offer_proposals').get() as any).candidate).valueText).toBe('管理员确认的额度');
+  });
+  it('does not renew unchanged media proposals and defeat official review backoff',async()=>{
+    await call('ingest/offers',[offer]);await call('admin/offers/vendor-free/approve',{},'admin');
+    const next={...offer,valueText:'200 tokens',evidence:{...evidence,tier:'media'}};
+    await call('ingest/offers',[next]);
+    sqlite.prepare("UPDATE offer_proposals SET updated_at='2026-01-01T00:00:00Z'").run();
+    await call('ingest/offers',[next]);
+    expect(sqlite.prepare('SELECT updated_at FROM offer_proposals').get()).toEqual({updated_at:'2026-01-01T00:00:00Z'});
+  });
+  it('recovers a lost completion receipt after the official draft was already saved',async()=>{
+    await call('ingest/offers',[{...offer,evidence:{...evidence,tier:'media'}}]);
+    const lease=await call('ingest/official-reviews/vendor-free/claim',{});
+    await call('ingest/offers',[{...offer,officialReviewJobId:lease.body.jobId}]);
+    sqlite.prepare("UPDATE offers SET official_review=json_set(official_review,'$.checkedAt','2026-01-01T00:00:00Z')").run();
+    const queue=await call('ingest/official-reviews/queue');
+    expect(queue.body.jobs).toMatchObject([{id:offer.id,recovery:true}]);
+    expect((await call('ingest/official-reviews/vendor-free/claim',{})).body).toMatchObject({claimed:false,recovered:true});
+    const detail=(await call('admin/offers/vendor-free',undefined,'admin')).body.offer as any;
+    expect(detail).toMatchObject({reviewState:'pending',evidenceTier:'docs',officialReview:{status:'unresolved'}});
+    expect((await call('ingest/official-reviews/queue')).body.jobs).toEqual([]);
+  });
+  it('requeues new input even if it changed before the old search finished',async()=>{
+    await call('ingest/offers',[{...offer,evidence:{...evidence,tier:'media'}}]);
+    const lease=await call('ingest/official-reviews/vendor-free/claim',{});
+    sqlite.prepare("UPDATE offers SET updated_at='2026-01-01T00:00:00Z',title='已修改的搜索目标'").run();
+    await call('ingest/official-reviews/vendor-free/result',{jobId:lease.body.jobId,status:'unresolved',reason:'旧目标无结果',queries:[],candidates:[],changedFields:[]});
+    expect((await call('ingest/official-reviews/queue')).body.jobs).toMatchObject([{id:offer.id}]);
+  });
+  it('continues retrying technical outages after five attempts instead of silently exhausting them',async()=>{
+    await call('ingest/offers',[{...offer,evidence:{...evidence,tier:'media'}}]);
+    const lease=await call('ingest/official-reviews/vendor-free/claim',{});
+    sqlite.prepare("UPDATE offers SET official_review=json_set(official_review,'$.attempts',6)").run();
+    const result=await call('ingest/official-reviews/vendor-free/result',{jobId:lease.body.jobId,status:'failed',reason:'搜索限流',queries:[],candidates:[],changedFields:[]});
+    expect(result.body.nextAttemptAt).toBeTruthy();
+    expect((await call('ingest/official-reviews/vendor-free/result',{jobId:lease.body.jobId,status:'failed',reason:'重复回执',queries:[],candidates:[],changedFields:[]})).body).toEqual({ok:true,status:'failed',nextAttemptAt:result.body.nextAttemptAt});
+  });
+  it('blocks enrichment and publication of a second identical official activity',async()=>{
+    await call('ingest/offers',[offer]);
+    const other={...offer,id:'vendor-other',title:'另一篇社区说法',valueText:'传闻赠额',evidence:{...evidence,url:'https://community.example/2',tier:'media'}};
+    await call('ingest/offers',[other]);
+    const lease=await call('ingest/official-reviews/vendor-other/claim',{});
+    const enriched=await call('ingest/offers',[{...offer,id:other.id,officialReviewJobId:lease.body.jobId}]);
+    expect((enriched.body.results as any[])[0].error).toContain('核对合并');
+    await call('admin/offers/vendor-free/approve',{},'admin');
+    sqlite.prepare("UPDATE offers SET title=?,value_text=?,evidence=? WHERE id='vendor-other'").run(offer.title,offer.valueText,JSON.stringify(evidence));
+    const approved=await call('admin/offers/vendor-other/approve',{},'admin');
+    expect(approved.status).toBe(400);expect(String(approved.body.error)).toContain('重复上架');
+  });
+  it('preserves same-day reset candidates with a review note until event identity is established',async()=>{
+    const reset={...offer,type:'perk',tags:['reset'],title:'Codex 重置卡',valueText:'赠送 1 张重置卡',claimStart:'2026-10-08',claimEnd:'2026-10-08',endKind:'date',publishedAt:'2026-10-08T12:00:00Z'};
+    await call('ingest/offers',[reset]);
+    const r=await call('ingest/offers',[{...reset,publishedAt:'2026-10-08T18:00:00Z',evidence:{...evidence,url:'https://vendor.example/second-reset'}}]);
+    const second=(r.body.results as any[])[0];
+    expect(second.id).not.toBe(reset.id);expect(second.reviewState).toBe('pending');
+    const record=(await call('admin/offers/'+second.id,undefined,'admin')).body.offer as any;
+    expect(record.reviewMemo).toContain('同日另有重置');
+    expect((sqlite.prepare('SELECT count(*) n FROM offers').get() as any).n).toBe(2);
+  });
+});
 
 const evidence = {
   url: 'https://vendor.example/free', tier: 'docs', capturedAt: '2026-09-30T00:00:00Z',
@@ -94,13 +193,13 @@ describe('official evidence verification', () => {
     const queue = await call('ingest/verification-queue');
     expect((queue.body.offers as { id: string }[]).map(row => row.id)).toContain('vendor-free');
 
-    const verified = await call('ingest/verify', { offerId: 'vendor-free', url: evidence.url, text: Object.values(evidence.excerpts).join('\n') });
+    const verified = await call('ingest/verify', { trustedDirect: true, offerId: 'vendor-free', url: evidence.url, text: Object.values(evidence.excerpts).join('\n') });
     expect(verified.body.verified).toBe(true);
     const after = sqlite.prepare("SELECT last_verified_at FROM offers WHERE id='vendor-free'").get() as { last_verified_at: string };
     expect(Date.parse(after.last_verified_at)).toBeGreaterThan(Date.parse(before.last_verified_at));
     expect((await call('ingest/verification-queue')).body.offers).toEqual([]);
 
-    const missing = await call('ingest/verify', { offerId: 'vendor-free', url: evidence.url, text: 'Offer removed' });
+    const missing = await call('ingest/verify', { trustedDirect: true, offerId: 'vendor-free', url: evidence.url, text: 'Offer removed' });
     expect(missing.body.verified).toBe(false);
     expect((sqlite.prepare("SELECT last_verified_at FROM offers WHERE id='vendor-free'").get() as { last_verified_at: string }).last_verified_at).toBe(after.last_verified_at);
   });
@@ -113,7 +212,7 @@ describe('official evidence verification', () => {
   it('removes an offer when current official evidence disappears and records a confirmed withdrawal', async () => {
     await call('ingest/offers', [offer]);
     await call('admin/offers/vendor-free/approve', {}, 'admin');
-    const missing = await call('ingest/verify', { offerId: 'vendor-free', url: evidence.url, text: 'The benefit has been discontinued.' });
+    const missing = await call('ingest/verify', { trustedDirect: true, offerId: 'vendor-free', url: evidence.url, text: 'The benefit has been discontinued.' });
     expect(missing.body.verified).toBe(false);
     expect((await call('offers?view=claimable')).body.count).toBe(0);
     expect((await call('admin/notify?kind=digest', undefined, 'admin')).body).toMatchObject({ needsVerificationCount: 0 });
@@ -237,7 +336,7 @@ describe('review gates and preserved public version', () => {
     await call('admin/offers/vendor-free/approve', {}, 'admin');
     const hash = 'a'.repeat(64);
     await call('ingest/offers', [{ ...offer, evidence: { ...evidence, pageHash: hash, excerpts: {} } }]);
-    const verified = await call('ingest/verify', { offerId: offer.id, url: evidence.url,
+    const verified = await call('ingest/verify', { trustedDirect: true, offerId: offer.id, url: evidence.url,
       text: 'All members can receive one hundred tokens when they register.', pageHash: hash, processedChange: true });
     expect(verified.body.verified).toBe(true);
     expect((await call('admin/queue', undefined, 'admin')).body.needsVerification).toEqual([]);
@@ -303,7 +402,7 @@ describe('review gates and preserved public version', () => {
   it('does not bless a failed quotation check by storing its hash and retrying', async () => {
     await call('ingest/offers', [offer]);
     await call('admin/offers/vendor-free/approve', {}, 'admin');
-    const body = { offerId: offer.id, url: evidence.url, text: 'Unrelated page', pageHash: 'b'.repeat(64), processedChange: true };
+    const body = { trustedDirect: true, offerId: offer.id, url: evidence.url, text: 'Unrelated page', pageHash: 'b'.repeat(64), processedChange: true };
     expect((await call('ingest/verify', body)).body.verified).toBe(false);
     expect((await call('ingest/verify', body)).body.verified).toBe(false);
     expect((await call('admin/queue', undefined, 'admin')).body.needsVerification).toEqual([]);

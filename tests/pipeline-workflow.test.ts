@@ -16,6 +16,10 @@ const json = (value: unknown) => new Response(JSON.stringify(value), { headers: 
 
 interface HarnessOptions {
   officialJob?: boolean;
+  officialSteps?: string[];
+  officialUrls?: string[];
+  previousCandidates?: string[];
+  jinaBody?: string;
   officialSearchStatus?: number;
   partialSearch?: boolean;
   sources?: Record<string, unknown>[];
@@ -45,10 +49,10 @@ function harness(options: HarnessOptions = {}) {
     if (url.endsWith('/api/platforms')) return json({ platforms: [{ id: 'vendor', name: 'Vendor', site: 'https://vendor.example', xHandles: [], staffHandles: [] }] });
     if (url.includes('/leads?')) return json({ leads: options.leads ?? [] });
     if (url.includes('/official-reviews/queue')) return json({jobs:options.officialJob?[{id:'vendor-max-api',title:candidate.title}]:[],remaining:options.officialJob?1:0});
-    if(url.endsWith('/official-reviews/vendor-max-api/claim'))return json({claimed:true,jobId:'12345678-1234-4234-8234-123456789012',offer:{...candidate,id:'vendor-max-api',firstChannel:'reddit',evidence:{url:'https://community.example/post',tier:'media',capturedAt:new Date().toISOString(),excerpts:{}}},platform:{id:'vendor',name:'Vendor',site:'https://vendor.example',xHandles:options.partialSearch?['@vendor']:[],staffHandles:[]},sources:[]});
+    if(url.endsWith('/official-reviews/vendor-max-api/claim'))return json({claimed:true,jobId:'12345678-1234-4234-8234-123456789012',previousCandidates:options.previousCandidates,offer:{...candidate,steps:options.officialSteps??[],id:'vendor-max-api',firstChannel:'reddit',evidence:{url:'https://community.example/post',tier:'media',capturedAt:new Date().toISOString(),excerpts:{}}},platform:{id:'vendor',name:'Vendor',site:'https://vendor.example',xHandles:options.partialSearch?['@vendor']:[],staffHandles:[]},sources:[]});
     if(url.endsWith('/official-reviews/vendor-max-api/result'))return json({status:body.status});
     if(url==='https://mcp.exa.ai/mcp' && options.partialSearch && ++searchCalls>1)return new Response('quota',{status:429});
-    if(url==='https://mcp.exa.ai/mcp')return options.officialSearchStatus?new Response('unavailable',{status:options.officialSearchStatus}):json({result:{content:[{type:'text',text:'Title: Official benefit\nURL: https://vendor.example/confirmed\nHighlights: Discovery snippet only'}]}});
+    if(url==='https://mcp.exa.ai/mcp')return options.officialSearchStatus?new Response('unavailable',{status:options.officialSearchStatus}):json({result:{content:[{type:'text',text:(options.officialUrls??['https://vendor.example/confirmed']).map(u=>'URL: '+u).join('\n')}]}});
     if (url.endsWith('/offers-index')) return json({ offers: options.known ?? [] });
     if (url.includes('/corrections?')) return json({ corrections: [] });
     if (url.endsWith('/model-budget/reserve')) return options.budgetDenied ? jsonError() : json({ id: ++reservation });
@@ -61,8 +65,8 @@ function harness(options: HarnessOptions = {}) {
     if (url.endsWith('/status') || url.endsWith('/runs')) return json({ ok: true });
     if (url.includes('/verification-queue')) return options.verificationStatus
       ? new Response('verification queue unavailable', { status: options.verificationStatus }) : json({ offers: options.verification ?? [] });
-    if (url.endsWith('/verify')) return json({ verified: options.verified ?? true });
-    if (url.startsWith('https://r.jina.ai/')) return new Response('blocked', { status: 403 });
+    if (url.endsWith('/verify')) return json({ verified: body.trustedDirect !== false && (options.verified ?? true) });
+    if (url.startsWith('https://r.jina.ai/')) return options.jinaBody?new Response(options.jinaBody):new Response('blocked', { status: 403 });
     if (url.startsWith('https://vendor.example/')) {
       const response = options.pages?.[url] ?? page;
       return typeof response === 'number' ? new Response('blocked', { status: response }) : new Response(response);
@@ -271,4 +275,40 @@ it('does not falsely fail a completed review when only the supplementary search 
   expect(result.ok).toBe(true);
   expect((result.stats as any).officialReview).toMatchObject({matched:1,failed:0,deferred:0,searches:2});
   expect(h.payloads('/official-reviews/vendor-max-api/result')[0].reason).toContain('部分搜索受限');
+});
+
+it('uses a known exact official link even when search is rate limited',async()=>{
+  const h=harness({officialJob:true,officialSearchStatus:429,officialSteps:['官方出处：https://vendor.example/exact']});
+  const {runPipeline}=await import('../pipeline/run');await runPipeline();
+  expect(h.payloads('/offers')[0][0].evidence.url).toBe('https://vendor.example/exact');
+  expect(h.payloads('/official-reviews/vendor-max-api/result')[0]).toMatchObject({status:'matched'});
+});
+
+it('tries an explicit official link before broad search results and moves on from previous candidates',async()=>{
+  const urls=['one','two','three','four'].map(p=>'https://vendor.example/'+p);
+  const h=harness({officialJob:true,officialUrls:urls,officialSteps:['https://vendor.example/exact']});
+  const {runPipeline}=await import('../pipeline/run');await runPipeline();
+  expect(h.payloads('/offers')[0][0].evidence.url).toBe('https://vendor.example/exact');
+});
+
+it('advances beyond three previously unhelpful official pages on the next attempt',async()=>{
+  const urls=['one','two','three','four'].map(p=>'https://vendor.example/'+p);
+  const h=harness({officialJob:true,officialUrls:urls,previousCandidates:urls.slice(0,3)});
+  const {runPipeline}=await import('../pipeline/run');await runPipeline();
+  expect(h.payloads('/offers')[0][0].evidence.url).toBe(urls[3]);
+});
+
+it('does not count indirect reader text as a successful routine verification',async()=>{
+  vi.stubEnv('FAST_LEADS','0');
+  const h=harness({verification:[{id:'vendor-free',url:lead.url,tier:'site',platformId:'vendor',sourceId:null}],pages:{[lead.url]:403},
+    jinaBody:'URL Source: https://unrelated.example\nWarning: Target URL returned error 403\nMarkdown Content:\n'+benefit});
+  const {runPipeline}=await import('../pipeline/run');const result=await runPipeline();
+  expect(h.payloads('/verify')[0].trustedDirect).toBe(false);
+  expect(result.stats.verificationFailed).toBe(1);expect(result.stats.coverageDegraded).toBe(true);
+});
+
+it('turns inaccessible manual notes into a media draft or visible manual review instead of an endless new lead',async()=>{
+  const h=harness({leads:[{...lead,origin:'manual'}],pages:{[lead.url]:403},modelOutput:'{"offers":[]}'});
+  const {runPipeline}=await import('../pipeline/run');await runPipeline();
+  expect(h.payloads('/status')[0]).toMatchObject({status:'reviewing'});
 });

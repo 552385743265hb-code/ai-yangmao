@@ -16,11 +16,23 @@ describe('入库去重', () => {
     expect(findDuplicate({ platformId: 'stepfun', title: '阶跃 Mini 套餐', valueText: '每月 400M Credit', evidenceUrl: 'https://platform.stepfun.com/docs/zh/step-plan/overview/' }, ex)?.id).toBe('a'));
 });
 
+it('does not collapse ambiguous same-day reset announcements solely because the titles match',()=>{
+  const first={id:'reset-1',platformId:'openai',title:'Codex 重置',valueText:'1张',eventDay:'2026-10-08',evidenceUrl:'https://x.com/staff/status/1'};
+  const second={...first,id:'reset-2',evidenceUrl:'https://x.com/staff/status/2'};
+  expect(findDuplicate(second,[first])).toBeUndefined();
+  expect(findDuplicate({...second,sameOccurrenceAs:first.id},[first])?.id).toBe(first.id);
+});
+
+it('recognizes twitter.com and x.com links to the same reset post as the same source',()=>{
+  const post={id:'reset',platformId:'openai',title:'额度重置',valueText:'1张',eventDay:'2026-10-08',evidenceUrl:'https://x.com/staff/status/123'};
+  expect(findDuplicate({...post,evidenceUrl:'https://twitter.com/staff/status/123'},[post])?.id).toBe(post.id);
+});
+
 
 it('keeps equal-title reset events on different dates separate',()=>{
   const previous={id:'july',platformId:'openai',title:'Codex 重置卡发放',valueText:'1张重置卡',evidenceUrl:'https://x.com/staff/status/old',eventDay:'2026-07-13'};
   expect(findDuplicate({...previous,eventDay:'2026-10-07'},[previous])).toBeUndefined();
-  expect(findDuplicate({...previous,evidenceUrl:'https://x.com/staff/status/confirmed'},[previous])?.id).toBe('july');
+  expect(findDuplicate({...previous,evidenceUrl:'https://x.com/staff/status/confirmed',sameOccurrenceAs:previous.id},[previous])?.id).toBe('july');
 });
 
 it('keeps content-identifying query parameters while ignoring tracking parameters',()=>{

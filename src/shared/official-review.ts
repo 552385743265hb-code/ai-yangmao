@@ -18,6 +18,14 @@ export interface OfficialPlatform {
   xHandles: string[]; staffHandles: string[];
 }
 export interface OfficialSource { url: string; tier: string; platformId?: string | null }
+export const OFFICIAL_REVIEW_LEASE_MS = 20 * 60_000;
+export function officialReviewDue(review: OfficialReview | null, now: number, version: string): boolean {
+  if (!review) return true;
+  if (review.status === 'checking') return now - Date.parse(review.checkedAt) >= OFFICIAL_REVIEW_LEASE_MS;
+  // 修改发生在任务执行期间也必须重新排队，不能拿完成时间掩盖新的输入。
+  if (review.inputVersion !== version) return true;
+  return !!review.nextAttemptAt && Date.parse(review.nextAttemptAt) <= now;
+}
 const hosted = new Set(['github.com','gitee.com','huggingface.co','medium.com','substack.com','mp.weixin.qq.com']);
 export function officialTier(value: string, platform: OfficialPlatform, sources: OfficialSource[]): 'site'|'docs'|'official'|'staff'|null {
   let url: URL;
@@ -44,6 +52,9 @@ export function officialTier(value: string, platform: OfficialPlatform, sources:
         // 共享托管不信任整站；GitHub/Gitee限已登记仓库，其他站限已登记路径。
         const prefix=parts.slice(0,['github.com','gitee.com'].includes(baseHost)?2:1).join('/');
         if(!prefix || !(url.pathname==='/'+prefix || url.pathname.startsWith('/'+prefix+'/')))continue;
+        // 官方仓库内的 issue / PR / discussion 正文和评论可由任何用户提交。
+        if (['github.com','gitee.com'].includes(baseHost) && (/^\/(issues|pull|pulls|discussions|wiki)(\/|$)/.test(url.pathname.slice(prefix.length+1)) || /(?:issue|discussion|pullrequest|commit)comment/i.test(url.hash))) continue;
+        if (baseHost === 'huggingface.co' && /\/(discussions|community)(\/|$)/.test(url.pathname)) continue;
       }
     }
     return entry.tier==='docs' || /\b(docs|help|support)\b/.test(host) ? 'docs':'site';

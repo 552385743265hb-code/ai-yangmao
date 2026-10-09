@@ -1,4 +1,6 @@
 import { officialReviewRoutes } from './official-review';
+import { sameBenefit, ambiguousReset } from '../shared/dedupe';
+import { officialTier } from '../shared/official-review';
 import { resetEventDay } from '../shared/reset-event';
 import { selectLeads } from '../shared/leads';
 import { isReviewField, reviewChanges } from '../shared/spec';
@@ -189,10 +191,18 @@ ingest.post('/offers', async c => {
   for (const o of body.data) {
     const eventDay = resetEventDay(o);
     const sameId = peers.find(x=>x.id===o.id);
-    if (!o.officialReviewJobId && sameId && differentOccurrence({...o,evidenceUrl:o.evidence.url,eventDay},sameId)) o.id = `${o.id.slice(0,69)}-${eventDay ?? o.claimStart}`;
+    const identity={...o,evidenceUrl:o.evidence.url,eventDay};
+    const ambiguous=peers.find(x=>x.platformId===o.platformId&&ambiguousReset(identity,x));
+    if (!o.officialReviewJobId && sameId) {
+      if(differentOccurrence(identity,sameId))o.id = `${o.id.slice(0,69)}-${eventDay ?? o.claimStart}`;
+      else if(ambiguousReset(identity,sameId)){
+        const hash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(o.evidence.url)))).slice(0,5).map(x=>x.toString(16).padStart(2,'0')).join('');
+        o.id=`${o.id.slice(0,69)}-${hash}`;
+      }
+    }
     const plat = plats.find(p => p.id === o.platformId);
     if (!peers.some(x => x.id === o.id)) {
-      const dup = findDuplicate({ platformId: o.platformId, title: o.title, valueText: o.valueText, evidenceUrl: o.evidence.url, eventDay, claimStart:o.claimStart }, peers);
+      const dup = findDuplicate({ platformId: o.platformId, title: o.title, valueText: o.valueText, evidenceUrl: o.evidence.url, eventDay, claimStart:o.claimStart, sameOccurrenceAs:o.sameOccurrenceAs }, peers);
       if (dup?.reviewState === 'rejected') { results.push({ id: o.id, skipped: `与已拒绝的 ${dup.id} 重复` }); continue; }
       if (dup) o.id = dup.id; // 并入已有条目，走正常的更新和人工字段保护
     }
@@ -203,14 +213,14 @@ ingest.post('/offers', async c => {
     const src = srcs.find(x => x.id === o.sourceId);
     const missing = missingEvidence(o.evidence.excerpts);
     const sameOfficialHost = src && (() => { try { return new URL(src.url).hostname.toLowerCase() === new URL(o.evidence.url).hostname.toLowerCase(); } catch { return false; } })();
-    const auto = plat.status === 'approved' && !!src?.enabled && sameOfficialHost && src.platformId === o.platformId && src.autoPublish
+    const auto = plat.status === 'approved' && !!src?.enabled && sameOfficialHost && src.platformId === o.platformId && src.autoPublish && !!officialTier(o.evidence.url,plat,[src])
       && ['site', 'docs', 'official'].includes(src.tier) && src.tier === o.evidence.tier
-      && !o.officialReviewJobId && missing.length === 0 && !/未写明|不明确/.test(o.valueText) && !o.requirements.some(requirement => requirement === 'unknown' || /未写明/.test(requirement));
+      && !o.officialReviewJobId && !ambiguous && missing.length === 0 && !/未写明|不明确/.test(o.valueText) && !o.requirements.some(requirement => requirement === 'unknown' || /未写明/.test(requirement));
     const [prev] = await d.select().from(s.offers).where(eq(s.offers.id, o.id));
     const [existingProposal] = prev ? await d.select().from(s.offerProposals).where(eq(s.offerProposals.offerId, o.id)) : [];
     const nowIso = new Date().toISOString();
     if (o.officialReviewJobId && (prev?.officialReview?.jobId !== o.officialReviewJobId || prev.officialReview.status !== 'checking' || prev.officialReview.inputVersion !== `${prev.updatedAt}|${existingProposal?.updatedAt??''}`)) { results.push({id:o.id,error:'官方复核任务已失效'}); continue; }
-    const { leadId, officialReviewJobId, ...od } = o;
+    const { leadId, officialReviewJobId, sameOccurrenceAs, ...od } = o;
     const row = {
       ...od, usdEstimate: o.usdEstimate ?? null, claimStart: o.claimStart ?? null, claimEnd: o.claimEnd ?? null,
       creditValidity: o.creditValidity ?? null, publishedAt: o.publishedAt ?? null, sourceId: o.sourceId ?? null,
@@ -240,7 +250,7 @@ ingest.post('/offers', async c => {
       }
     }
     if (!prev) {
-      await d.insert(s.offers).values({ ...row, reviewState: auto ? 'approved' : 'pending' });
+      await d.insert(s.offers).values({ ...row, ...(ambiguous?{reviewMemo:`同日另有重置记录 ${ambiguous.id}。不同公告尚不能证明独立发放，请区分第二次发放与同次活动的预告/确认/进度回复。`}:{}), reviewState: auto ? 'approved' : 'pending' });
       // 调用方在整条线索的所有候选完成后才确认关联，部分失败不能提前吞掉线索。
       results.push({ id: o.id, created: true, reviewState: auto ? 'approved' : 'pending', missingEvidence: missing });
       continue;
@@ -273,6 +283,13 @@ ingest.post('/offers', async c => {
       }
     }
     const diff: {field:string;from:unknown;to:unknown}[] = reviewChanges(prev, row);
+    const baseCurrent=sql`EXISTS (SELECT 1 FROM offers WHERE id=${o.id} AND updated_at=${prev.updatedAt} AND review_state=${prev.reviewState})`;
+    const jobCurrent=o.officialReviewJobId?sql`json_extract(${s.offers.officialReview},'$.jobId')=${o.officialReviewJobId} AND json_extract(${s.offers.officialReview},'$.status')='checking'`:undefined;
+    if(o.officialReviewJobId){
+      const others=await d.select().from(s.offers).where(and(eq(s.offers.platformId,row.platformId),inArray(s.offers.reviewState,['pending','approved'])));
+      const duplicate=others.find(other=>other.id!==o.id && other.evidence.tier!=='media' && sameBenefit(row,other));
+      if(duplicate){results.push({id:o.id,error:`官方补全后与 ${duplicate.id} 相同，请管理员核对合并，保留原线索`});continue;}
+    }
     if(prev.reviewState==='pending' && prev.evidence.tier!=='media' && row.evidence.tier==='media' && !diff.length) {
       results.push({id:o.id,unchanged:true});continue; // 相同条款的社区转述不降级已找到的官方证据。
     }
@@ -287,12 +304,12 @@ ingest.post('/offers', async c => {
     }
     if (!diff.length) {
       if(o.officialReviewJobId && existingProposal){results.push({id:o.id,skipped:'官方材料未形成可应用的条款更新，保留提案供管理员判断'});continue;}
-      if (existingProposal && o.evidence.tier !== 'media') await d.delete(s.offerProposals).where(eq(s.offerProposals.offerId, o.id));
+      if (existingProposal && o.evidence.tier !== 'media') await d.delete(s.offerProposals).where(and(eq(s.offerProposals.offerId, o.id),eq(s.offerProposals.updatedAt,existingProposal.updatedAt),baseCurrent));
       // 只刷新自动核验元数据，保留已审核文案、摘录及可选字段，模型漏摘录不能清空它们。
       const sameEvidencePage = prev.evidence.url === o.evidence.url && prev.evidence.tier !== 'tested' && o.evidence.tier !== 'media';
       if (prev.reviewState === 'approved' && sameEvidencePage) {
         await d.update(s.offers).set({ lastVerifiedAt: nowIso, verifyResult: '必要业务字段没有变化',
-          evidence: { ...prev.evidence, capturedAt: nowIso, pageHash: o.evidence.pageHash ?? prev.evidence.pageHash }, updatedAt: nowIso }).where(eq(s.offers.id, o.id));
+          evidence: { ...prev.evidence, capturedAt: nowIso, pageHash: o.evidence.pageHash ?? prev.evidence.pageHash }, updatedAt: nowIso }).where(and(eq(s.offers.id, o.id),eq(s.offers.updatedAt,prev.updatedAt),eq(s.offers.reviewState,prev.reviewState),jobCurrent));
       }
       results.push({ id: o.id, unchanged: true });
       continue;
@@ -303,15 +320,24 @@ ingest.post('/offers', async c => {
     }
     if (prev.reviewState === 'approved') {
       // 公开的已审核版本在提案通过前仍保持不变。
-      await d.insert(s.offerProposals).values({ offerId: o.id, candidate: row, diff, manualFields: existingProposal?.manualFields ?? [] })
-        .onConflictDoUpdate({ target: s.offerProposals.offerId, set: { candidate: row, diff, manualFields: existingProposal?.manualFields ?? [], updatedAt: nowIso } });
+      if(existingProposal && JSON.stringify(existingProposal.diff)===JSON.stringify(diff)
+        && JSON.stringify((existingProposal.candidate.evidence as typeof row.evidence)?.excerpts)===JSON.stringify(row.evidence.excerpts)
+        && (existingProposal.candidate.evidence as typeof row.evidence)?.url===row.evidence.url
+        && (existingProposal.candidate.evidence as typeof row.evidence)?.tier===row.evidence.tier){results.push({id:o.id,unchanged:true});continue;}
+      const changed=existingProposal
+        ? await d.update(s.offerProposals).set({candidate:row,diff,manualFields:existingProposal.manualFields,updatedAt:nowIso})
+          .where(and(eq(s.offerProposals.offerId,o.id),eq(s.offerProposals.updatedAt,existingProposal.updatedAt),baseCurrent,
+            o.officialReviewJobId?sql`EXISTS (SELECT 1 FROM offers WHERE id=${o.id} AND ${jobCurrent})`:undefined)).returning({id:s.offerProposals.offerId})
+        : await c.env.DB.prepare('INSERT INTO offer_proposals (offer_id,candidate,diff,manual_fields,detected_at,updated_at) SELECT ?,?,?,\'[]\',?,? WHERE EXISTS (SELECT 1 FROM offers WHERE id=? AND updated_at=? AND review_state=\'approved\') ON CONFLICT (offer_id) DO NOTHING RETURNING offer_id AS id')
+          .bind(o.id,JSON.stringify(row),JSON.stringify(diff),nowIso,nowIso,o.id,prev.updatedAt).all<{id:string}>().then(r=>r.results);
+      if(!changed.length){results.push({id:o.id,error:'复核期间条目或提案已更新，保留管理员操作'});continue;}
       results.push({ id: o.id, changed: diff.map(x => x.field), reviewState: 'pending_update', missingEvidence: missing });
       continue;
     }
     const reviewState = auto ? 'approved' : 'pending';
-    const changed = await d.update(s.offers).set({ ...row, reviewState }).where(and(eq(s.offers.id,o.id),o.officialReviewJobId ? eq(s.offers.updatedAt,prev.updatedAt) : undefined)).returning({id:s.offers.id});
+    const changed = await d.update(s.offers).set({ ...row, reviewState }).where(and(eq(s.offers.id,o.id),eq(s.offers.updatedAt,prev.updatedAt),eq(s.offers.reviewState,prev.reviewState),jobCurrent)).returning({id:s.offers.id});
     if(!changed.length){results.push({id:o.id,error:'复核期间条目已更新，保留管理员操作'});continue;}
-    if (existingProposal) await d.delete(s.offerProposals).where(eq(s.offerProposals.offerId, o.id));
+    if (existingProposal) await d.delete(s.offerProposals).where(and(eq(s.offerProposals.offerId, o.id),eq(s.offerProposals.updatedAt,existingProposal.updatedAt)));
     results.push({ id: o.id, changed: diff.map(x => x.field), reviewState, missingEvidence: missing });
   }
   return c.json({ results });
@@ -356,14 +382,16 @@ ingest.get('/verification-queue', async c => {
 /** 只有同一证据页仍含保存的关键原文，才刷新该权益的核验时间。 */
 ingest.post('/verify', async c => {
   const body = z.object({ offerId: z.string(), url: z.url(), finalUrl: z.url().optional(), text: z.string().max(250000),
-    pageHash: z.string().regex(/^[a-f0-9]{64}$/).optional(), processedChange: z.boolean().optional() }).safeParse(await c.req.json().catch(() => null));
+    trustedDirect: z.boolean().optional(), pageHash: z.string().regex(/^[a-f0-9]{64}$/).optional(), processedChange: z.boolean().optional() }).safeParse(await c.req.json().catch(() => null));
   if (!body.success) return c.json({ error: '核验数据不正确', issues: body.error.issues }, 400);
   const d = db(c.env);
   const [o] = await d.select().from(s.offers).where(eq(s.offers.id, body.data.offerId));
   if (!o || o.reviewState !== 'approved' || o.evidence.url !== body.data.url) return c.json({ error: '证据或活动不匹配' }, 404);
+  if (body.data.trustedDirect !== true) return c.json({ verified: false, sourceUnverified: true });
+  const currentVersion = and(eq(s.offers.id,o.id),eq(s.offers.updatedAt,o.updatedAt),eq(s.offers.reviewState,'approved'));
   if (body.data.finalUrl && new URL(body.data.finalUrl).hostname.toLowerCase() !== new URL(o.evidence.url).hostname.toLowerCase()) {
-    await d.update(s.offers).set({ verifyResult: 'evidence_missing', updatedAt: new Date().toISOString() }).where(eq(s.offers.id, o.id));
-    return c.json({ verified: false, redirectedOutsideOfficialHost: true });
+    const changed = await d.update(s.offers).set({ verifyResult: 'evidence_missing', updatedAt: new Date().toISOString() }).where(currentVersion).returning({id:s.offers.id});
+    return c.json({ verified: false, redirectedOutsideOfficialHost: true, stale: !changed.length });
   }
   const normalize = (value: string) => value.replace(/\s+/g, ' ').trim().toLowerCase();
   const current = normalize(body.data.text);
@@ -377,11 +405,11 @@ ingest.post('/verify', async c => {
   const evidence = verified && body.data.processedChange && body.data.pageHash && !proposal
     ? { ...o.evidence, pageHash: body.data.pageHash } : o.evidence;
   const nowIso = new Date().toISOString();
-  await d.update(s.offers).set(verified
+  const changed = await d.update(s.offers).set(verified
     ? { lastVerifiedAt: nowIso, verifyResult: unchangedTerms ? '必要业务字段没有变化' : '官方证据原文仍在当前页面', evidence, updatedAt: nowIso }
     : { verifyResult: 'evidence_missing', evidence, updatedAt: nowIso })
-    .where(eq(s.offers.id, o.id));
-  return c.json({ verified, matchedExcerpts: verified ? quotes.length : 0 });
+    .where(currentVersion).returning({id:s.offers.id});
+  return c.json({ verified: verified && changed.length > 0, stale: !changed.length, matchedExcerpts: verified && changed.length ? quotes.length : 0 });
 });
 
 /** 一次抓取的结果：成功时记录内容哈希（变化才存快照），失败时累计连续失败次数。 */

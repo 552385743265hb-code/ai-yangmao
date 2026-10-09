@@ -1,6 +1,7 @@
 import { toOffer } from './offer-draft';
 import { runOfficialReviews } from './official-review';
 import { leadPriority } from '../src/shared/leads';
+import { officialTier } from '../src/shared/official-review';
 // 采集管线入口：GitHub Actions 每 6 小时运行一次，也可以手动触发补跑。
 // 流程：取信源 → 抓取 → 只保留和羊毛相关的句子 → 与上次比对 → 有变化才调用模型抽取 → 写入网站（默认进待审）。
 import { aihot, feed, hn, parseFeed, reddit, type Source } from './collectors';
@@ -133,7 +134,7 @@ async function officialPage(src: Source) {
     for (const offer of offers.filter(o => o.url === src.url)) {
       stats.verificationChecked++;
       try {
-        const result = await api<{ verified: boolean }>('/verify', { offerId: offer.id, url: offer.url, finalUrl, text, pageHash: sha256(rel), processedChange: done });
+        const result = await api<{ verified: boolean }>('/verify', { offerId: offer.id, url: offer.url, finalUrl, text, trustedDirect: via !== 'jina', pageHash: sha256(rel), processedChange: done });
         if (!result.verified) { stats.verificationFailed++; stats.errors.push(`${offer.id}: 当前官方证据无法再次确认`); }
       } catch (error) {
         stats.verificationFailed++;
@@ -217,7 +218,7 @@ async function verifyExistingOffers(sources: Source[]) {
         } as Source;
         processedChange = await extractAndPost(via === 'jina' ? { ...source, tier: 'media', autoPublish: false } : source, finalUrl, relevant);
       }
-      const result = DRY ? { verified: false } : await api<{ verified: boolean }>('/verify', { offerId: offer.id, url: offer.url, finalUrl, text, pageHash: currentHash, processedChange });
+      const result = DRY ? { verified: false } : await api<{ verified: boolean }>('/verify', { offerId: offer.id, url: offer.url, finalUrl, text, trustedDirect: via !== 'jina', pageHash: currentHash, processedChange });
       if (!result.verified && !DRY) { stats.verificationFailed++; stats.errors.push(`${offer.id}: 当前官方证据无法再次确认`); }
     } catch (e) {
       stats.verificationFailed++;
@@ -253,15 +254,7 @@ interface Lead { id: number; origin: string; url: string; title: string | null; 
 const host = (u: string) => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return ''; } };
 /** 证据级别：平台官网域名 → site；白名单里的官方 X 账号 → official；员工账号 → staff；其余（媒体、社区、公众号转载）→ media。 */
 function tierOf(url: string, p: Plat | undefined): OfferIn['evidence']['tier'] {
-  if (!p) return 'media';
-  const h = host(url);
-  if (p.site && h && (h === host(p.site) || h.endsWith('.' + host(p.site)))) return 'site';
-  if (h === 'x.com' || h === 'twitter.com') {
-    const handle = '@' + (new URL(url).pathname.split('/')[1] ?? '').toLowerCase();
-    if (p.xHandles.some(x => x.toLowerCase() === handle)) return 'official';
-    if (p.staffHandles.some(x => x.toLowerCase() === handle)) return 'staff';
-  }
-  return 'media';
+  return p ? officialTier(url,p,[])??'media':'media';
 }
 async function triageLeads(plats: Plat[]) {
   if (!llmAvailable()) { stats.deferred++; stats.errors.push('线索研判：没有可用模型'); return; }
@@ -278,8 +271,10 @@ async function triageLeads(plats: Plat[]) {
   let existing = formatOfferIndex(known);
   const pmap = new Map(plats.map(p => [p.id, p]));
   log(`研判线索 ${leads.length} 条`);
+  // 每轮给官方补证保留执行时间，初抽不能独占整个40分钟工作窗口。
+  const triageDeadline=Math.min(deadline-10*60_000,Date.now()+15*60_000);
   for (const l of leads) {
-    if (needsWrapUp() || tokensLeft < 8000) { stats.deferred++; log('  预算不足或本轮即将结束，剩余线索留到下次'); break; }
+    if (needsWrapUp() || Date.now()>=triageDeadline || tokensLeft < 8000) { stats.deferred++; log('  预算不足或初抽时间已用完，剩余线索留到下次，继续官方补证'); break; }
     const aged = !!l.createdAt && Date.now() - Date.parse(l.createdAt) >= 2 * 3600_000;
     const allowPaid = paidAvailable() && costLeft > 0.05 && (aged || leadPriority(l) <= 1);
     if (!modelAvailable(allowPaid)) { stats.deferred++; continue; }
@@ -294,9 +289,9 @@ async function triageLeads(plats: Plat[]) {
       text = `线索标题（转述，仅用于定位）：${l.title ?? ''}\n${evidenceText}`;
       effectiveUrl = pg.finalUrl; indirect = pg.via === 'jina'; fetched = true;
     }
-    catch { if (l.origin === 'manual' || l.origin === 'telegram') { stats.deferred++; log(`  #${l.id} 原文暂时不可访问，下轮继续抓取`); continue; } }
+    catch { /* 补录失败也研判已有备注为媒体级草稿；不能让失效链接永远占据 new 队首。 */ }
     let r;
-    try { r = await extract('（见平台白名单）', l.url, text, log, { allowPaid, evidenceText, deadlineAt: deadline, platformList: list, platformIds: mentionedPlatforms(`${l.title ?? ''}\n${text}`), existing, corrections: await correctionsFor(null, null), budget: modelBudget }); }
+    try { r = await extract('（见平台白名单）', l.url, text, log, { allowPaid, evidenceText, deadlineAt: triageDeadline, platformList: list, platformIds: mentionedPlatforms(`${l.title ?? ''}\n${text}`), existing, corrections: await correctionsFor(null, null), budget: modelBudget }); }
     catch (e) {
       log(`  #${l.id} 抽取失败：${(e as Error).message.slice(0, 80)}`);
       if (budgetFailure(e)) { budgetBlocked = true; stats.deferred++; break; }
@@ -324,7 +319,7 @@ async function triageLeads(plats: Plat[]) {
       // 同一个活动：沿用已有条目的 id（写入接口会按修订处理，不会新开一条）
       if (e.sameAs && knownIds.has(e.sameAs)) {
         const prev = known.find(k => k.id === e.sameAs)!;
-        if (prev.platformId === p.id) { o.id = prev.id; log(`  #${l.id} 与已有条目 ${prev.id} 是同一活动，合并`); }
+        if (prev.platformId === p.id) { o.id = prev.id; o.sameOccurrenceAs=prev.id; log(`  #${l.id} 与已有条目 ${prev.id} 是同一活动，合并`); }
       }
       if (e.officialUrl && tier === 'media') o.steps = [...(o.steps ?? []), `官方出处：${e.officialUrl}`].slice(0, 6);
       const v = offerIn.safeParse(o);

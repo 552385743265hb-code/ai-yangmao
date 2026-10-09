@@ -33,15 +33,15 @@ export async function searchOfficial(query:string,deadlineAt:number):Promise<str
   return parseSearchResults(body);
 }
 interface Job {
-  claimed:boolean;jobId:string;offer:OfferIn & {discoveredAt?:string};platform:OfficialPlatform;sources:OfficialSource[];
+  claimed:boolean;recovered?:boolean;previousCandidates?:string[];jobId:string;offer:OfferIn & {discoveredAt?:string};platform:OfficialPlatform;sources:OfficialSource[];
 }
 export interface OfficialReviewStats { checked:number;matched:number;unresolved:number;failed:number;deferred:number;searches:number }
 export async function runOfficialReviews(options:{limit:number;deadlineAt:number;dry:boolean;allowPaid:boolean;account:(tokens:number,costCny:number)=>void;canContinue:()=>boolean;log:(...args:unknown[])=>void}):Promise<OfficialReviewStats> {
   const stats:OfficialReviewStats={checked:0,matched:0,unresolved:0,failed:0,deferred:0,searches:0};
   if(options.dry||options.limit<=0)return stats;
-  const {jobs}=await api<{jobs:{id:string}[]}>(`/official-reviews/queue?limit=${options.limit}`);
+  const {jobs}=await api<{jobs:{id:string;recovery?:boolean}[]}>(`/official-reviews/queue?limit=${options.limit}`);
   for(const [index,queued] of jobs.entries()) {
-    if(!options.canContinue()||!modelAvailable(options.allowPaid)){stats.deferred++;break;}
+    if(!queued.recovery&&(!options.canContinue()||!modelAvailable(options.allowPaid))){stats.deferred+=jobs.length-index;break;}
     const job=await api<Job>(`/official-reviews/${queued.id}/claim`,{});
     if(!job.claimed)continue;
     stats.checked++;
@@ -56,17 +56,20 @@ export async function runOfficialReviews(options:{limit:number;deadlineAt:number
       const planned=[`${terms} ${domains.map(d=>'site:'+d).join(' OR ')}`.slice(0,350)];
       const handles=[...job.platform.xHandles,...job.platform.staffHandles].slice(0,3);
       if(handles.length)planned.push(`${terms} ${handles.map(h=>'site:x.com/'+h.replace(/^@/,'')+'/status').join(' OR ')}`.slice(0,350));
-      const urls:string[]=[];
+      // 已知准确出处优先，搜索服务故障不阻断读取这些候选。
+      const known=job.offer.steps.flatMap(step=>step.match(/https?:\/\/[^\s<>"）)]+/g) ?? []).map(url=>url.replace(/[.,;，。；]+$/,''));
+      const urls:string[]=[...known];
       for(const query of planned) {
         queries.push(query);stats.searches++;
         try { urls.push(...await searchOfficial(query,deadlineAt)); }
-        catch(error) { if(!urls.length)throw error; failures.push('部分搜索受限，使用已返回的官方候选');stop=true;break; }
+        catch(error) { failure=true;failures.push('部分搜索受限，继续读取已知官方候选：'+(error as Error).message.slice(0,100));stop=true;break; }
       }
       // 搜索摘要和猜测链接只用于发现；实际修改必须重新抓取官方正文。
-      urls.push(...job.offer.steps.flatMap(step=>step.match(/https?:\/\/[^\s]+/g) ?? []));
       urls.push(...job.sources.filter(s=>['site','docs','official'].includes(s.tier)).map(s=>s.url));
       const seen=new Set<string>();
-      for(const url of urls) {
+      const previous=new Set((job.previousCandidates??[]).map(normUrl));
+      // 每轮推进未读候选；不能五次重复前三个无关页面后就耗尽机会。
+      for(const url of [...urls.filter(u=>!previous.has(normUrl(u))),...urls.filter(u=>previous.has(normUrl(u)))]) {
         if(!officialTier(url,job.platform,job.sources)||seen.has(normUrl(url)))continue;
         seen.add(normUrl(url));candidates.push(url);if(candidates.length>=3)break;
       }
@@ -100,7 +103,7 @@ export async function runOfficialReviews(options:{limit:number;deadlineAt:number
     }
     if(!matched && candidates.length && !readable)failure=true;
     const result=await api<{status:string}>(`/official-reviews/${queued.id}/result`,{jobId:job.jobId,status:matched?'matched':failure?'failed':'unresolved',
-      reason:matched?'已搜索并读取发放方原文，AI按同一活动重新抽取；保持待审，需管理员确认'+(stop?'（部分搜索受限）':''):(failures.join('；')||'本轮搜索范围内未找到能支持此活动的官方原文').slice(0,500),queries,candidates,chosenUrl,changedFields});
+      reason:matched?'已读取发放方原文，AI按同一活动重新抽取；保持待审，需管理员确认'+(stop?'（部分搜索受限，使用已知或已返回候选）':''):(failures.join('；')||'本轮搜索范围内未找到能支持此活动的官方原文').slice(0,500),queries,candidates:[...new Set([...(job.previousCandidates??[]),...candidates])].slice(-10),chosenUrl,changedFields});
     if(result.status==='matched')stats.matched++;else if(result.status==='failed')stats.failed++;else stats.unresolved++;
     options.log(`  官方复核 ${queued.id}：${result.status}`);
     if(stop){if(index+1<jobs.length)stats.deferred+=jobs.length-index-1;break;}

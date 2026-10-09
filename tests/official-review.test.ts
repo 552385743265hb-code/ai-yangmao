@@ -13,6 +13,9 @@ describe('official source discovery',()=>{
     const sources=[{url:'https://github.com/vendor/project',tier:'official'}];
     expect(officialTier('https://github.com/vendor/project/blob/main/README.md',platform,sources)).toBe('site');
     expect(officialTier('https://github.com/attacker/project',platform,sources)).toBeNull();
+    expect(officialTier('https://github.com/vendor/project/issues/123',platform,sources)).toBeNull();
+    expect(officialTier('https://github.com/vendor/project/discussions/123',platform,sources)).toBeNull();
+    expect(officialTier('https://github.com/vendor/project/releases/tag/v1#issuecomment-123',platform,sources)).toBeNull();
     expect(officialTier('https://vendor.example:8080/free',platform,[])).toBeNull();
   });
   it('parses actual MCP source records, never promoting excerpts into fetched evidence',()=>{
@@ -28,6 +31,14 @@ describe('official source discovery',()=>{
     expect(url).toBe('https://mcp.exa.ai/mcp');
     const request=JSON.parse(String(init.body));expect(request.params.name).toBe('web_search_exa');expect(request.params.arguments.objective).toContain('official');
   });
+});
+
+it('keeps room for a fresh automatic benefit amid an unreachable manual backlog',async()=>{
+  const {selectLeads}=await import('../src/shared/leads');
+  const stuck=Array.from({length:50},(_,id)=>({id,origin:'manual',title:'旧补录链接'}));
+  const urgent={id:99,origin:'aihot',title:'Codex 今日重置卡发放'};
+  const chosen=selectLeads([...stuck,urgent],50);
+  expect(chosen).toHaveLength(50);expect(chosen).toContain(urgent);expect(chosen).toContain(stuck[0]);
 });
 
 it('only marks reader content attributable when its source metadata matches and has no error warning',async()=>{

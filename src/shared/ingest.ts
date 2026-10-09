@@ -42,6 +42,7 @@ export const offerIn = z.object({
   firstChannel: z.string().max(40).optional(),
   leadId: z.number().int().optional(),
   officialReviewJobId: z.string().uuid().optional(),
+  sameOccurrenceAs: z.string().max(80).optional(),
   steps: z.array(z.string().max(200)).max(10).default([]),
   evidence: z.object({
     url: z.url(),

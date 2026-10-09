@@ -32,6 +32,13 @@ function publicOffer(run: (code: string) => any, extra: Record<string, unknown> 
 }
 
 describe('frontend review workflow', () => {
+  it('shows official backlog, exhausted retries and degraded verification separately',async()=>{
+    const page=fixture(()=>({hoursSince:1,failingSources:[],tokensToday:0,tokenCap:0,costMonthCny:0,sources:[],
+      officialReviewCounts:{waiting:7,checking:1,retrying:3,matched:4,exhausted:2,stalled:1},leadWorkflow:{new:5,reviewing:6,important:1},coverageDegraded:true,lastCollectAttempt:{stats:{verificationFailed:9,verificationDeferred:0}}}));
+    await page.run('admHealth()');
+    const text=page.document.querySelector('#admBody')!.textContent;
+    expect(text).toContain('待处理 7');expect(text).toContain('重试耗尽待人工 2');expect(text).toContain('核验失败 9 次');expect(text).toContain('人工处理 6');
+  });
   it('keeps a review deep link through login and focuses the pending card', async () => {
     const page = fixture(url => url.endsWith('/whoami') ? { role: 'admin', who: 'admin' } : queue([offer('target'), offer('other')]));
     page.run("location.hash='#admin-offer-target';ADM.token='';ADM.role='';ADM.tab='health';ADM.sug='reject';render(false)");

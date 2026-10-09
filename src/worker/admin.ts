@@ -11,7 +11,8 @@ import { claimEndAt, isClaimable, liveStatus, missingEvidence } from '../shared/
 import { offerIn } from '../shared/ingest';
 import { SECTIONS, blocking, checkOffer } from '../shared/spec';
 import { haoScore } from '../shared/score';
-import { sameOrganization } from '../shared/domain';
+import { officialTier, officialReviewDue } from '../shared/official-review';
+import { sameBenefit } from '../shared/dedupe';
 import type { Env } from './index';
 
 type OfferRow = typeof s.offers.$inferSelect;
@@ -124,6 +125,9 @@ async function publicationError(env: Env, offer: OfferRow): Promise<string | nul
   const [platform] = await db(env).select().from(s.platforms).where(eq(s.platforms.id, offer.platformId));
   if (!platform || platform.status !== 'approved') return '平台尚未准入';
   if (offer.evidence.tier === 'media') return '媒体或社区转述不能作为上架证据，请先补齐官方出处';
+  const published=await db(env).select().from(s.offers).where(and(eq(s.offers.platformId,offer.platformId),eq(s.offers.reviewState,'approved')));
+  const duplicate=published.find(other=>other.id!==offer.id&&sameBenefit(offer,other));
+  if(duplicate)return `与已上架的 ${duplicate.id} 是同一活动，请先核对合并，避免重复上架`;
   const block = blocking(checkOffer(offer));
   if (block.length) return block.map(i => `${i.label}：${i.problem}`).join('；');
   // 不检查原文摘录：摘录门槛是防模型编造的（自动上架仍要求三项齐全，见 missingEvidence）。
@@ -133,26 +137,11 @@ async function publicationError(env: Env, offer: OfferRow): Promise<string | nul
   if (!['https:', 'http:'].includes(url.protocol)) return '官方证据必须是网页链接';
   // 管理员亲自领到过：链接可以是官网下载页或社区帖子，不要求属于平台官方出处
   if (offer.evidence.tier === 'tested') return null;
-  const host = url.hostname.toLowerCase();
-  const handles = offer.evidence.tier === 'staff' ? platform.staffHandles : platform.xHandles;
-  if (offer.evidence.tier === 'staff' || (offer.evidence.tier === 'official' && ['x.com', 'twitter.com'].includes(host))) {
-    const handle = '@' + url.pathname.split('/')[1]?.toLowerCase();
-    if (!['x.com', 'twitter.com'].includes(host) || !handles.some(x => x.toLowerCase() === handle)) return '官方或员工账号不在平台白名单中';
-    return null;
-  }
-  if (offer.evidence.tier === 'official' && host === 'mp.weixin.qq.com' && platform.wechat) return null;
-  const [source] = offer.sourceId ? await db(env).select().from(s.sources).where(eq(s.sources.id, offer.sourceId)) : [];
-  if (source && source.platformId === platform.id && source.tier === offer.evidence.tier) {
-    try { if (new URL(source.url).hostname.toLowerCase() === host) return null; } catch { /* 无效的信源地址不能证明归属 */ }
-  }
-  if (platform.site) {
-    const officialHost = new URL(platform.site).hostname.toLowerCase();
-    if (sameOrganization(host, officialHost)) return null;
-  }
-  // 平台已登记的任一官方信源的域名也算官方出处（如 MiniMax 官网是 minimaxi.com，文档在 platform.minimax.cn）。
-  // 之前只认这条福利自己的来源信源，管理员手动补录的条目没有来源信源，会被误拦（2026-10-01）
+  // 公众号图片等仍由管理员确认；自动流程不能以公众号名推断任意文章作者。
+  if (offer.evidence.tier === 'official' && url.hostname === 'mp.weixin.qq.com' && platform.wechat) return null;
   const official = await db(env).select({ url: s.sources.url, tier: s.sources.tier }).from(s.sources).where(eq(s.sources.platformId, platform.id));
-  if (official.some(x => ['site', 'docs', 'official'].includes(x.tier) && (() => { try { return sameOrganization(host, new URL(x.url).hostname); } catch { return false; } })())) return null;
+  const tier=officialTier(url.href,platform,official);
+  if (tier && (offer.evidence.tier!=='staff'||tier==='staff')) return null;
   return '证据链接不属于该平台的官网或已登记官方信源';
 }
 
@@ -565,7 +554,7 @@ export async function buildNotice(env: Env, kind: NoticeKind, channel: NoticeCha
     const unresolved = await d.select().from(s.leads).where(inArray(s.leads.status,['new','reviewing']));
     leadBacklog = unresolved.length;
     reviewAlerts = [
-      ...awaiting.map(o=>({ key: o.officialReview?.status === 'matched' ? `offer:${o.id}:official:${o.officialReview.jobId}` : `offer:${o.id}`, priority: reviewRank(o), title: `[${shortCode(o.id)}] ${o.title}`, state: '待审', url: `https://ai-yangmao.com/#admin-offer-${encodeURIComponent(o.id)}` })),
+      ...awaiting.map(o=>({ key: o.officialReview && (o.officialReview.status === 'matched' || (o.officialReview.status!=='checking'&&!o.officialReview.nextAttemptAt)) ? `offer:${o.id}:official:${o.officialReview.jobId}` : `offer:${o.id}`, priority: reviewRank(o), title: `[${shortCode(o.id)}] ${o.title}`, state: o.officialReview?.status==='unresolved'&&!o.officialReview.nextAttemptAt?'官方复核待人工核对':'待审', url: `https://ai-yangmao.com/#admin-offer-${encodeURIComponent(o.id)}` })),
       ...proposals.filter(p=>p.diff.some(x=>isReviewField(x.field))).map(p=>({ key: `proposal:${p.offerId}:${JSON.stringify(p.diff)}`, priority: 2, title: String(p.candidate.title ?? p.offerId), state: '条款更新待审', url: `https://ai-yangmao.com/#admin-offer-${encodeURIComponent(p.offerId)}` })),
       ...unresolved.filter(l=>leadPriority(l)<=1).sort((a,b)=>leadPriority(a)-leadPriority(b)||b.id-a.id).map(l=>({ key: `lead:${l.id}:${l.status}`, priority: 1, title: `#${l.id} ${l.title ?? ''}`, state: l.status==='reviewing' ? '抽取受阻，需人工核验' : '重要线索，尚未研判', url: l.url })),
     ].filter(a=>!announced.has(a.key));
@@ -721,9 +710,19 @@ admin.get('/health', async c => {
   const leadWorkflow = { new: backlog.filter(l=>l.status==='new').length, reviewing: backlog.filter(l=>l.status==='reviewing').length,
     important: important.length, oldestImportantNewAt: important.filter(l=>l.status==='new').map(l=>l.createdAt).sort()[0] ?? null, oldestAt: backlog.map(l=>l.createdAt).sort()[0] ?? null,
     lastRun: lastLeadRun ? { startedAt:lastLeadRun.startedAt,finishedAt:lastLeadRun.finishedAt,ok:lastLeadRun.ok,stats:lastLeadRun.stats } : null };
-  const officialReviewRows = await d.select({review:s.offers.officialReview}).from(s.offers).where(inArray(s.offers.reviewState,['pending','approved']));
-  const officialReviewCounts = {checking:0,matched:0,unresolved:0,failed:0};
-  for(const row of officialReviewRows)if(row.review)officialReviewCounts[row.review.status]++;
+  const officialReviewRows = await d.select().from(s.offers).where(inArray(s.offers.reviewState,['pending','approved']));
+  const officialProposals=new Map((await d.select().from(s.offerProposals)).map(p=>[p.offerId,p]));
+  const officialReviewCounts = {checking:0,matched:0,unresolved:0,failed:0,waiting:0,retrying:0,exhausted:0,stalled:0};
+  for(const row of officialReviewRows){
+    const r=row.officialReview,p=officialProposals.get(row.id),target=p?{...row,...p.candidate}:row;
+    if(r)officialReviewCounts[r.status]++;
+    if(r?.status==='checking'&&Date.now()-Date.parse(r.checkedAt)>=20*60_000)officialReviewCounts.stalled++;
+    if((row.reviewState==='pending'||p)&&target.evidence.tier==='media'){
+      if(officialReviewDue(r,Date.now(),`${row.updatedAt}|${p?.updatedAt??''}`))officialReviewCounts.waiting++;
+      else if(r?.nextAttemptAt)officialReviewCounts.retrying++;
+      else if(r&&r.status!=='checking')officialReviewCounts.exhausted++;
+    }
+  }
   return c.json({ officialReviewCounts, leadWorkflow, tokensToday: b?.t ?? 0, tokenCap: Number(c.env.DAILY_TOKEN_CAP ?? 0), costMonthCny: b?.c ?? 0, coverageDegraded: !!lastAttempt?.stats?.coverageDegraded || (Array.isArray(lastAttempt?.stats?.errors) && lastAttempt.stats.errors.length > 0), lastCollectAttempt: lastAttempt ? {startedAt:lastAttempt.startedAt,ok:lastAttempt.ok,stats:lastAttempt.stats}:null, sources: allSources, lastSuccessfulCollect: lastOk?.finishedAt ?? null,
     hoursSince: hours, collectStale: hours === null || hours > 8, failingSources: failing, uncertainDeliveries, needsVerification, dispatchFailures, d1Usage: await d1Usage(c.env) });
 });
