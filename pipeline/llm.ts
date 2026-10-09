@@ -66,6 +66,7 @@ const PROMPT = `你是"AI 羊毛牧场"的信息抽取器。下面是某个 AI �
 - usdEstimate：折合美元（常驻额度按每月）。平台自有单位（credits、Neurons、Token、次数等）必须用同一平台官方公布的单价折算成美元，人民币按 7.1 折算；valueText 里在原单位后面括号写出折算依据，如"每天 10,000 Neurons（官方单价 $0.011/千 Neurons，约 $3.3/月）"。按 Token 折算时用官方输入价保守估算。只限速率的免费模型：按主力模型（该额度里最好的那个，如 Gemini 3.8 Flash）的官方输入价，乘以官方速率上限推出的每月最多 Token：每天最多 Token = min（每天请求数 × 单次最多 Token，每分钟 Token 数 × 1440），再 × 30。官方没公开速率上限就填 null，不要自己假设次数或每次 Token 数。价值有明显区间时（如分套餐档位、订阅价到最高额度）usdEstimate 填保守下限，usdMax 填上限。实在找不到任何官方单价才用 null，不要编单价
 - claimStart / claimEnd：官方时区下的日期 YYYY-MM-DD，没写就 null
 - 只有“2026年5月”时，不能输出2026-05-01；日精度不能补成00:00:00Z。原计划5月推出、本轮10月6日新增权益，抽当前扩展权益时claimStart=2026-10-06，publishedAt仅有日期就保留2026-10-06，不猜时刻。
+- 输出前逐项核对日期来源：原计划推出月份不能充当本次新增/扩展权益的开始日；只知道月份时不得补任何具体日，应留空。若正文明确本轮扩展的生效日期，则使用该日期。
 - endKind：有明确截止日期用 date；没写截止日期的活动（包括长期有效的新人礼、充值赠送）用 unknown；只有 type 为 standing 或 apply 时才用 standing
 - creditValidity：领取后额度多久失效，用中文写（如"30 天""每月重置，未用完不结转"），没写就 null
 - sourceTz：官方使用的 IANA 时区（中国厂商一般 Asia/Shanghai，美国厂商 America/Los_Angeles），拿不准用 UTC
@@ -282,6 +283,17 @@ function groundedPublication(raw: unknown, normalized: string | null | undefined
 export class DeferError extends Error {}
 export class ModelOutputError extends Error {}
 
+/** 原文只有月份时，模型不能补造月初或任意日；让备用模型纠正，仍失败则保留待处理。 */
+function assertClaimDatePrecision(date:string|null|undefined, evidence:string, field:string) {
+  if(!date)return;
+  const [year,month]=date.split('-').map(Number);
+  const monthNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const name=monthNames[month-1];if(!name)return;
+  const monthSeen=new RegExp(`${year}\\s*年\\s*0?${month}\\s*月|${year}-0?${month}(?!\\d)|\\b${name}\\s+${year}\\b`,'i').test(evidence);
+  const daySeen=new RegExp(`${year}\\s*年\\s*0?${month}\\s*月\\s*\\d{1,2}\\s*[日号]|${year}-0?${month}-\\d{2}|\\b${name}\\s+\\d{1,2}(?:st|nd|rd|th)?[,]?\\s+${year}\\b|\\b\\d{1,2}\\s+${name}\\s+${year}\\b`,'i').test(evidence);
+  if(monthSeen&&!daySeen)throw new ModelOutputError(`${field}=${date} 的原文只有月份，没有具体日。当前扩展权益请用正文明确的生效日，否则日期留空，不要补造月初。`);
+}
+
 function parseOffers(out: string): Extracted[] {
   try {
     const json = parseModelJson(out);
@@ -308,10 +320,11 @@ export async function extract(platformName: string, url: string, text: string, l
   const chain = opts.allowPaid ? [...free, ...paid] : free;
   for (const p of chain) {
     try {
+      const currentSystem=lastErr instanceof ModelOutputError?sys+'\n上次抽取未通过校验，请按原文修正：'+lastErr.message.slice(0,350):sys;
       let res: { text: string; tokens: number; costCny?: number; usageKnown: boolean } | null = null;
       for (let i = 0; i < 3 && !res; i++) {
         if (Date.now() >= (opts.deadlineAt ?? Infinity)) throw new DeferError('本轮即将结束，留到下一轮抽取');
-        const reservation = opts.budget ? await opts.budget.reserve(p.name, sys, user, p.price) : null;
+        const reservation = opts.budget ? await opts.budget.reserve(p.name, currentSystem, user, p.price) : null;
         try {
           await pace();
           const remaining = (opts.deadlineAt ?? Infinity) - Date.now();
@@ -319,7 +332,7 @@ export async function extract(platformName: string, url: string, text: string, l
             if (reservation) await opts.budget!.settle(reservation, p.name, 0, 0);
             throw new DeferError('本轮即将结束，留到下一轮抽取');
           }
-          res = await p.call(sys, user, Math.max(1, Math.min(90000, remaining)));
+          res = await p.call(currentSystem, user, Math.max(1, Math.min(90000, remaining)));
           if (reservation) {
             if (res.usageKnown) await opts.budget!.settle(reservation, p.name, res.tokens, res.costCny ?? 0);
             else { log(`  ${p.name} 未返回可靠用量，保留预算预留`); res.tokens = reservation.tokens; res.costCny = reservation.costCny; }
@@ -348,6 +361,8 @@ export async function extract(platformName: string, url: string, text: string, l
       const evidence = opts.evidenceText ?? text;
       const offers = parseOffers(out).map(o => {
         const normalized = tidy(o);
+        assertClaimDatePrecision(normalized.claimStart,evidence,'claimStart');
+        assertClaimDatePrecision(normalized.claimEnd,evidence,'claimEnd');
         return { ...normalized, publishedAt: groundedPublication(o.publishedAt, normalized.publishedAt, evidence), excerpts: keepVerbatim(o.excerpts, evidence) };
       });
       return { offers, tokens, costCny, provider: p.name };

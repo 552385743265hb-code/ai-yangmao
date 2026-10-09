@@ -18,6 +18,23 @@ beforeEach(() => {
 afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); vi.unstubAllEnvs(); vi.restoreAllMocks(); });
 
 describe('model result contract', () => {
+  it('rejects an invented first-of-month claim date instead of accepting prompt compliance on trust',async()=>{
+    vi.stubGlobal('fetch',vi.fn(async()=>gemini(JSON.stringify({offers:[{...offer,claimStart:'2026-05-01'}]}))));
+    const {extract}=await import('../pipeline/llm');
+    await expect(extract('Vendor','https://vendor.example/free','计划2026年5月推出，2026年10月6日公布扩展权益')).rejects.toThrow('只有月份');
+  });
+  it('sends a month-precision validation error to a fallback model and accepts its evidenced current date',async()=>{
+    vi.stubEnv('OPENROUTER_API_KEY','test-key');vi.stubEnv('OPENROUTER_MODEL','test:free');
+    let instruction='';
+    vi.stubGlobal('fetch',vi.fn(async(input,init)=>{
+      if(String(input).includes('googleapis'))return gemini(JSON.stringify({offers:[{...offer,claimStart:'2026-05-01'}]}));
+      instruction=JSON.parse(String(init?.body)).messages[0].content;
+      return new Response(JSON.stringify({choices:[{message:{content:JSON.stringify({offers:[{...offer,claimStart:'2026-10-06'}]})}}],usage:{total_tokens:10}}));
+    }));
+    const {extract}=await import('../pipeline/llm');
+    const r=await extract('Vendor','https://vendor.example/free','计划2026年5月推出，2026年10月6日公布扩展权益');
+    expect(r.offers[0].claimStart).toBe('2026-10-06');expect(instruction).toContain('只有月份');
+  });
   it.each([false, true])('sends current review lessons through the real extraction request (triage=%s)', async triage => {
     let system = '';
     vi.stubGlobal('fetch', vi.fn(async (_input, init) => {

@@ -122,6 +122,21 @@ describe('workflow recovery and race regressions',()=>{
     expect(result.body.nextAttemptAt).toBeTruthy();
     expect((await call('ingest/official-reviews/vendor-free/result',{jobId:lease.body.jobId,status:'failed',reason:'重复回执',queries:[],candidates:[],changedFields:[]})).body).toEqual({ok:true,status:'failed',nextAttemptAt:result.body.nextAttemptAt});
   });
+  it('counts full unresolved attempts separately from outages and retries expiring offers hourly',async()=>{
+    await call('ingest/offers',[{...offer,claimEnd:new Date(Date.now()+86400_000).toISOString().slice(0,10),endKind:'date',evidence:{...evidence,tier:'media'}}]);
+    const lease=await call('ingest/official-reviews/vendor-free/claim',{});
+    sqlite.prepare("UPDATE offers SET official_review=json_set(official_review,'$.attempts',6,'$.unresolvedAttempts',0)").run();
+    const result=await call('ingest/official-reviews/vendor-free/result',{jobId:lease.body.jobId,status:'unresolved',reason:'服务恢复后的第一次完整搜索',queries:[],candidates:[],changedFields:[]});
+    expect(result.body.nextAttemptAt).toBeTruthy();
+    expect(Date.parse(String(result.body.nextAttemptAt))-Date.now()).toBeLessThanOrEqual(3600_000);
+    const record=JSON.parse((sqlite.prepare('SELECT official_review FROM offers').get() as any).official_review);
+    expect(record.unresolvedAttempts).toBe(1);
+    record.nextAttemptAt='2026-01-01T00:00:00Z';record.unresolvedAttempts=4;
+    sqlite.prepare('UPDATE offers SET official_review=?').run(JSON.stringify(record));
+    const last=await call('ingest/official-reviews/vendor-free/claim',{});
+    const done=await call('ingest/official-reviews/vendor-free/result',{jobId:last.body.jobId,status:'unresolved',reason:'第五次完整搜索',queries:[],candidates:[],changedFields:[]});
+    expect(done.body.nextAttemptAt).toBeNull();
+  });
   it('blocks enrichment and publication of a second identical official activity',async()=>{
     await call('ingest/offers',[offer]);
     const other={...offer,id:'vendor-other',title:'另一篇社区说法',valueText:'传闻赠额',evidence:{...evidence,url:'https://community.example/2',tier:'media'}};

@@ -5,6 +5,7 @@ export interface OfficialReview {
   inputVersion: string;
   originUrl: string;
   attempts: number;
+  unresolvedAttempts?: number;
   checkedAt: string;
   nextAttemptAt: string | null;
   reason: string;

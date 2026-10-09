@@ -58,6 +58,7 @@ officialReviewRoutes.post('/:id/claim',async c=>{
   }
   if(!state.eligible || !officialReviewDue(old,now,state.version))return c.json({claimed:false});
   const review:OfficialReview={status:'checking',jobId:crypto.randomUUID(),inputVersion:state.version,originUrl:state.target.evidence.url,attempts:(state.offer.officialReview && state.offer.officialReview.inputVersion===state.version ? state.offer.officialReview.attempts : 0)+1,checkedAt:new Date(now).toISOString(),nextAttemptAt:null,reason:'正在搜索官方出处并核对原文',queries:[],candidates:[]};
+  review.unresolvedAttempts=old?.inputVersion===state.version?(old.unresolvedAttempts??(old.status==='unresolved'?old.attempts:0)):0;
   const changed=await db(c.env).update(s.offers).set({officialReview:review}).where(guard).returning({id:s.offers.id});
   return c.json(changed.length?{claimed:true,jobId:review.jobId,previousCandidates:old?.inputVersion===state.version?old.candidates:[],offer:state.target,platform:state.platform,sources:state.sources}:{claimed:false});
 });
@@ -73,8 +74,11 @@ officialReviewRoutes.post('/:id/result',async c=>{
     status='unresolved';reason='已找到候选官方证据，但字段保护或状态变化使结果未应用，请管理员核对';
   }
   // 技术故障不等于证据不足：搜索/抓取服务恢复后仍可自动继续。
-  const retry=status==='matched'||(status==='unresolved'&&old.attempts>=5)?null:new Date(now+Math.min(24,2**Math.min(5,old.attempts-1))*3600_000).toISOString();
-  const review:OfficialReview={...parsed.data,inputVersion:status==='matched'?state.version:old.inputVersion,originUrl:old.originUrl,status,reason,attempts:old.attempts,checkedAt:new Date(now).toISOString(),nextAttemptAt:retry};
+  const unresolvedAttempts=(old.unresolvedAttempts??0)+(status==='unresolved'?1:0);
+  const end=claimEndAt(state.target)?.getTime();
+  const delayHours=end!=null&&end>now&&end-now<48*3600_000?1:Math.min(24,2**Math.min(5,old.attempts-1));
+  const retry=status==='matched'||(status==='unresolved'&&unresolvedAttempts>=5)?null:new Date(now+delayHours*3600_000).toISOString();
+  const review:OfficialReview={...parsed.data,inputVersion:status==='matched'?state.version:old.inputVersion,originUrl:old.originUrl,status,reason,attempts:old.attempts,unresolvedAttempts,checkedAt:new Date(now).toISOString(),nextAttemptAt:retry};
   const changed=await db(c.env).update(s.offers).set({officialReview:review}).where(and(eq(s.offers.id,state.offer.id),eq(s.offers.updatedAt,state.offer.updatedAt),proposalVersion(state.offer.id,state.version.split('|')[1]||undefined),sql`json_extract(${s.offers.officialReview},'$.jobId')=${old.jobId}`,sql`json_extract(${s.offers.officialReview},'$.status')='checking'`)).returning({id:s.offers.id});
   return changed.length?c.json({ok:true,status,nextAttemptAt:retry}):c.json({error:'官方复核任务已更新'},409);
 });
