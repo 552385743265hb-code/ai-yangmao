@@ -6,6 +6,7 @@
 本次补充覆盖 73 个平台，完整待审字段核验及未解决事项见 [批量补字段记录](../docs/pending-field-review-2026-10-01.md)。有官方资料冲突时保留具体缺口，不把旧活动或订阅售价写成现行免费额度。
 
 ## kiro
+
 - 免费版每月 50 credits，永久有效、每月重置不结转；按官方加购价 $0.04/credit 折算约 $2/月。
 - 要写明免费版可用的模型（价格页脚注：Claude Sonnet 4.5 及开源模型 Qwen3 Coder Next、DeepSeek 3.2、MiniMax M2.1），并注明需用社交账号或 AWS Builder ID 登录。
 - 学生认证后一年内每月给额度的，算常驻免费额度 standing（门槛 student，截止方式 standing，额度有效期写“学生认证后 12 个月，每月刷新”，美元按每月算）；若官方写法是“学生免费获得 Pro 一年”则算会员免费送 gift。（2026-10-01 管理员确认）
@@ -15,33 +16,40 @@
 - 本批核验入口：https://kiro.dev/pricing/。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## cloudflare
+
 - Workers AI 免费额度是每天 10,000 Neurons，按官方单价 $0.011/千 Neurons 折算约 $0.11/天、$3.3/月；不要只写 Neurons。
 
 ## hf
+
 - 2026-10-07 官方定价表已写 Free Users 的 Monthly Credits 为 None；旧免费每月 $0.10 不能当当前承诺。PRO 每月 $2、Team / Enterprise 每席位每月 $2 是 Included Monthly Credits，官方明确为付费订阅内含通用算力额度，按 paid_bundle 不收；可用于 Inference Providers、Inference Endpoints、Spaces 升级硬件（含超出配额的 ZeroGPU）和 Jobs。来源：https://huggingface.co/docs/inference-providers/pricing
 - 如有独立免费或额外赠送活动，再按领取资格、使用范围分条；不能把付费档内含额度包装成独立福利。
 
 ## replit
+
 - Free Mode（GPT-5.6 Luna 不扣 credits）是 Core $20/月订阅附带的功能，按“付费套餐自带”不收录。
 - 条款以 Replit 自己的博客和价格页为准，不要采信 OpenAI 等合作方新闻稿。
 
 ## opencode
+
 - 2026-10-09：Step 5 Preview在OpenCode免费一周的保留条为已上架wofy；StepFun官方在OpenCode公告后约2分钟转述，h16u为重复待审线索，已纠归opencode并标duplicate，未擅自拒绝。发放方OpenCode原文https://x.com/opencode/status/2108206631859454383，模型厂商转述不新建活动；多模态输入不表示免费生图，模态按文本/编程记。
 - 独立免费渠道分两条，各自列模型：① 应用内免费模型（“Free models provided by OpenCode”，不用绑卡）；② Zen API 免费模型（要登录并绑定信用卡，免费模型按 $0 计费，不扣钱）。Go/Go Plus 是付费套餐，不构成第三条福利。
 - Go / Go Plus 的套餐内含额度与不限量模型属于付费套餐自带，不收；只有独立限时额外加赠/重置活动才另核。2026-09-30 的“超值订阅”例外已撤销。
 - 免费模型多数会收集使用数据；实测应用内免费模型常因限流报错。
 
 ## zhipu
+
 - 2026-10-08：官方https://bigmodel.cn/activity/trial-card/EEGA0AKYV5的JS页面是GLM Coding Plan“7天体验卡”，不是7张，当前显示已领完。不能把朋友分享卡当作仅付费会员福利，卡资格/档位/起止未公布仍留缺口；页面资源Last-Modified或榜单更新日期不是活动时间。
 - 免费模型要逐个列出并写明类型：文本 GLM-4.7-Flash、GLM-4.5-Flash、GLM-4-Flash-250414；视觉 GLM-4.6V-Flash、GLM-4.1V-Thinking-Flash、GLM-4V-Flash；图像生成 CogView-3-Flash；视频生成 CogVideoX-Flash。是常驻免费，不是限时。
 - ZCode 的活动以 ZCode 公众号原文为准，媒体转述常把条件写错（如把“1 个月内回归的老用户”写成“1 个月内有效”）；有效期等细节可能只在公众号图片里。
 - 重置卡按官方 Lite / Pro / Max 三档分别折算并列出（周积分 10,000 / 60,000 / 140,000，5 小时积分 2,000 / 12,000 / 28,000），下限用 Lite。
 
 ## deepseek
+
 - 桌面端（DeepSeek Harness）赠金只在客户端里提示，官网和 API 文档没有文字公告；只能管理员实测。
 - “首次登录桌面端送 6 元”新老用户都能领，类型是应用尝鲜（trial），不是注册新人礼。
 
 ## google
+
 - Pixel 9a 送的是 Google One Basic 100 GB 3 个月，Pixel 9 送的是 Google One Premium 2 TB 6 个月，均为存储会员，按 not_ai 不收；不能与 Pixel Pro 系列的 Google AI Pro 试用混同。以官方帮助页各机型的完整 Offer 名称为准：https://support.google.com/gemini/answer/13529884 （2026-10-07）
 - 学生和设备专享福利以 Google One / Gemini 帮助中心为准：美国大学生 AI Pro 12 个月（support.google.com/googleone/answer/17422238）、美国以外大学生 AI Plus 12 个月（2026-08-19 官方博客，2026-12-31 前领取）、Pixel 10 Pro 系列 12 个月 AI Pro（2025-08-20 至 2026-10-31 购买）、Pixel 11 Pro 系列 6 个月（2027-10-31 前领取），设备优惠表在 support.google.com/gemini/answer/13529884 。每年开学季会更新，届时复查。（2026-10-03）
 - Google AI Studio 免费版按主力模型 Gemini 3.8 Flash 的官方单价和 AI Studio 显示的速率上限（RPM / TPM / RPD）折算；上限未公开时留空，不要假设次数。
@@ -49,6 +57,7 @@
 - Gemini CLI 的领取方式是下载应用并登录（app）；写明每天 1000 次、每分钟 60 次，按 Gemini 3 模型计。
 
 ## minimax
+
 - MiniMax Code 更新日志 https://agent.minimax.cn/docs/changelog 会写回馈积分的发放时间，建议作为信源。MiniMax Agent 2025-10 发布时的“免费到服务器撑不住”没有截止日，不收。（2026-10-03 批量审核）
 - MiniMax Code 与 M Plan / Token Plan 的公告在开放平台升级公告页；只核独立额外赠额/重置。档位内含不限量与普通首月折扣不收；一篇公告同一优惠的多个模型合一条。
 - 博客列表里的旧文章（如 MiniMax Agent，已改名 Mavis）不是现行福利，要看文章日期。
@@ -60,10 +69,12 @@
 - 本批核验入口：https://www.minimax.cn/blog/minimax-m2。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## gmi
+
 - 2026-10-08：qwen-day官方确认Qwen3.8 Max/Flash与Wan3.0-video七天免费窗口，已有$10余额无需再付款、新用户充值$10且此余额不扣；不自动标card。官网未写七天统一起止，删除模型捏造2025年日期，不把企业至11月5日赠额截止套到开发者活动。https://www.gmicloud.ai/qwen-day。
 - 其他厂商宣传的“在 GMI Cloud 上免费用”的活动，平台归 GMI；要找 GMI 自己（官网、@gmi_cloud）的原文。
 
 ## tencent-hy
+
 - 旧混元平台已停止新购，新人福利改看 TokenHub 新人免费体验包（cloud.tencent.com/document/product/1823/130053），可能漏抓；旧平台新人礼不再收。（2026-10-03 批量审核）
 - 腾讯混元宣传自家模型在第三方平台（如 GMI Cloud）的免费试用，不算混元自己的福利，平台归第三方。
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
@@ -71,6 +82,7 @@
 - 本批核验入口：https://cloud.tencent.com/document/product/1729/97731；https://cloud.tencent.com/document/product/1823/131382。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## siliconflow
+
 - 实名认证礼（16 元代金券）和推荐官邀请奖励（每邀请 1 人 16 元）分成两条，不因同一平台合并。
 - 以官网新闻页公告为准：代金券自获得之日起 180 天有效，活动至 2026-12-31，重复认证不再发放；活动中心页面需要登录。
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
@@ -80,6 +92,7 @@
 - 本批核验入口：https://www.siliconflow.cn/pricing；https://www.siliconflow.cn/news/od7wj9rr23p95uhihmhrombp。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## suno
+
 - 免费套餐每天补到 50 credits，不累计，仅限个人非商业用途；按最低费率 Premier 年付 $24/月含 10,000 credits 折算（约 $3.6/月），证据用帮助中心 9601601。
 - 邀请奖励（好友创作满 10 首双方各 250 credits）只有 2024-06、2024-10 的旧推文，2026-10 产品里找不到入口，已按旧活动拒绝；除非官方重新公告，不再收录。
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
@@ -87,18 +100,21 @@
 - 本批核验入口：https://suno.com/；https://suno.com/pricing；https://help.suno.com/en/articles/9601601；https://help.suno.com/en/articles/2418177。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## liblibtv
+
 - LiblibAI 与 LibTV 是同一平台。每日登录积分只在登录后的会员页显示，只能管理员实测；首页的年卡折扣是付费活动。
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - 原管理员截图20积分到账证据保留tested，网页读取429或登录才能见不等于撤回。跨日清零及具体免费可用模型仍未实测；未找到积分加购价时usd留null而不是0，免费models不加入Seedance等付费模型。
 - 本批核验入口：https://www.liblib.art/?paywall=personal。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## kling
+
 - 国内版（klingai.kuaishou.com）和国际版（klingai.com / kling.ai）规则不同，不要用国际站规则替代国内权益；国内版每月灵感值和体验包只在登录后可见。
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - 本批保留原管理员已实测国内版128灵感值及到期样本，不新造tested证据、不改每月1日、不猜免费模型或美元。附加视频体验是否额外扣灵感值、同平台单价和免费模型需管理员登录确认；旧核验记录已保留并追加缺口。
 - 本批核验入口：https://app.klingai.com/global/membership/membership-plans；https://klingai.kuaishou.com/。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## jimeng
+
 - 国内版每日登录积分数量因账号而异（样本 20、66），当天 23:59 清零；免费计划不能用 Seedance 2.0 VIP。国际版是另一个平台 dreamina。
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - 国内每日登录20/66仅管理员样本；保留现有tested记录，禁止从公开站未确认登录后数据就新增tested。免费计划不能用Seedance2.0 VIP是排除条件，不应将此型号放免费models。
@@ -106,33 +122,39 @@
 - 本批核验入口：https://jimeng.jianying.com/ai-tool/home；https://jimeng.jianying.com/。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## dreamina
+
 - CapCut 国际版即梦，和国内版即梦（jimeng）分开记录；活动常限定国家（中国大陆通常不在内）和付款方式。
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - Dreamina免费120积分/日来自2026-09-10官方free credits FAQ；模型导航/介绍不是免费可用名单。9月Basic首月$1.50是用户支付价不是福利美元估值；官方90%OFF为按原价1折付，账号/国家/支付渠道限定，循环订阅续费必须写。
 - 本批核验入口：https://dreamina.capcut.com/ai-video/free-image-to-video-generator-credits-faq；https://dreamina.capcut.com/resource/dreamina-september-offer-faq-2026。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## lovart
+
 - 免费版每天重置为 70 积分（不是每天累加），同时写明“免费主流图像模型每天限 5 张”，不能只写较大的数字。
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - Lovart公开SSR UI文案确认主流模型Nano Banana、Seedream、GPT-Image每天5张，但套餐页为动态骨架，70积分本轮未独立重新验证；不猜具体版本，不从订阅均价盲算免费额度。
 - 本批核验入口：https://www.lovart.ai/pricing。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## aliyun
+
 - 百炼新人额度是每个模型独立 100 万 Token（90 天、仅北京地域、只抵扣实时推理）；价值按官方价格页逐个模型的免费额度 × 输入价加总，核心模型为下限、全部模型为上限。
 
 ## vercel
+
 - AI Gateway 免费版每月 $5，只能用官方 Free Tier 列表里的模型（约 200 个，Claude 仅 Claude 3 Haiku），有速率限制；一旦购买额度就转为付费版，不再发每月免费额度。
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - 本次官方定价重核每月$5、首次request激活、仅FreeTier模型子集、free不支持BYOK，买credits后取消每月免费。giac已经人工通过且有更新proposal，仅补核验memo，没有接受proposal或改已有正确字段。
 - 本批核验入口：https://vercel.com/docs/ai-gateway/pricing。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## poe
+
 - 官网和帮助中心对爬虫不可读，每日积分只能管理员实测。
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - Poe每日300积分只有第三方文本，本轮真正官方FAQs 403/Jina429。订阅帮助能读但不能证实每日积分数字；已补注册/登录核对步骤并删除未证300/日、24小时重置、不结转及daily标签，证据保持media；需要管理员登录实测，不造tested。
 - 本批核验入口：https://help.poe.com/hc/en-us/articles/19944206309524；https://help.poe.com/hc/en-us/articles/19945140063636。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## adobe-firefly
+
 - 2026-10-09 fihl完整核表：官方HTML4表中的绿色勾选/红叉已逐格读取；Markdown空单元格不能当作均支持或均不支持。各档并集23模型（去分辨率重复），Pro/4,000/7,000仅6图像，Pro Plus/10,000扩图像与视频，Premium/50,000扩更多视频与高分辨率。门槛准确枚举Pro/Pro Plus/Premium及4,000/7,000/10,000/50,000个人积分订阅，不能笼统写任意4,000以上；模型名单会调整。完整矩阵见docs/firefly-dedupe-review-2026-10-09.md。
 - 2026-10-08：9uvs实际为Adobe Firefly首年指定模型无限量，非Higgsfield权益；已按官方帮助页修归属与证据docs，记录各档/分辨率、仅网页移动端、升级不延长期限，与已上架fihl同活动重复；2026-10-09已按管理员指令拒绝9uvs并保留fihl。
 - 2026-10-08第三轮81p6：Mashable India 2026-10-05报道明确Photoshop专项年度预付首年100%折扣、₹0/12个月，之后₹1999/年自动续费，部分符合资格账号可见，填college信息及UPI AutoPay约₹2token payment；未注明₹2退还，不把UPI步骤解释成官方禁止银行卡。文章没有直达Adobe活动链接，Adobe文字链为媒体站内文章，X引用是Analytics Insight媒体账号。媒体补强线索但不升官方证据等级；详细条款按报道写入并保留待审，发布日期不当活动起点。https://in.mashable.com/tech/114589/adobe-photoshop-free-for-1-year-for-indian-students-check-eligibility-and-how-to-claim。
@@ -154,10 +176,12 @@
 - 本批核验入口：https://helpx.adobe.com/firefly/web/get-started/learn-the-basics/current-firefly-promotions.html；https://www.adobe.com/products/firefly/plans.html；https://helpx.adobe.com/creative-cloud/apps/generative-ai/generative-credits-faq.html。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## meituan
+
 - 截至 2026-10-01，LongCat 现行模型是 LongCat-2.5-Preview，官网没有免费额度公告，现行文档只有按量付费和 Token 资源包。
 - 更新日志里的旧内测额度（如 2026 年 3 月 LongCat-2.0-Preview 每天 500 万 Token）早已结束，不要输出；只有更新日志里新出现、写明当前模型和日期的免费活动才算。
 
 ## nous
+
 - 2026-10-09重复记录纠正：原stepfun-stepfun-nous-portal-step-5-preview-one-week-free已通过，厂商10月9日转述同轮活动被误加日期后缀新建，后缀条目已按duplicate拒绝。普通限免稳定ID不能因转述日期/证据URL不同而拆轮次；沿用原记录，只有确证新的独立发放才新建。
 - 2026-10-09官网明确链接@NousResearch，已补账号登记；官网时间线实际转发StepFun的Nous Portal Step 5 Preview一周限免公告，Portal模型目录同时显示付费与$0版本，必须选免费版本，不泛化到工具和云托管。原厂转述是补充佐证，不把厂商账号加到Nous白名单；Tommy账号仅简介自称Nous，不凭此扩大staff白名单。
 - 2026-10-09全量归属复核14条相关记录及更新提案：Step 5 Preview在Cline的glj5已归cline，在Nous Portal的yn9a已归nous；OpenCode h16u/wofy已归opencode。同一模型三条调用渠道是不同活动，平台和厂商各发公告只是同渠道同活动转述。ModelScope、OpenCode Zen、Nous常驻免费层归属正确；StepFun自家Studio归stepfun，原已拒套餐记录不复活。Cline平台随后经管理员明确授权准入，活动条目仍独立待审。
@@ -171,6 +195,7 @@
 - 本批核验入口：https://portal.nousresearch.com/manage-subscription。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## higgsfield
+
 - 2026-10-09：API首次消费满$100送$15、30天消费阶梯5%–20%返利属于消费促销，不收；higgsfield-higgsfield-api-cashback-bonus已拒绝。
 - 2026-10-09：changelog中2026-10-02的AI Influencer条目写免费角色生成5次，as of October 3是状态参照，非截止，也不足以精确确定赠额开始日；publishedAt用10-02日精度、claimStart/End无明示则留空。仅Character Builder角色图像，不能套Face Swap每日5次或Seedance新人5段视频；视频Motion/Genjutsu另计，当前可用次数按账号Generate页。官方blog/new-ai-influencer标角色生成1.12积分/次及20积分/$1，5次比价$0.28。公告仍保留不等于每个账号现在都还有免费次数。
 - 2026-10-09管理员确认：刚注册、从未使用AI Influencer的新账号已无5次试用。该记录停止作为当前可领取展示，保留历史；用管理员实测的停止领取确认时刻记录withdrawnAt，不把它当活动真实结束日，也不猜10月3日截止。保留原官方历史摘录，不将旧changelog持续存在视为当前仍可领的证明。
@@ -191,14 +216,16 @@
 - 本批核验入口：https://higgsfield.ai/blog/higgsfield-all-unlimited-explained；https://higgsfield.ai/blog/seedance-4k-unlimited-11-days；https://higgsfield.ai/blog/annual-unlimited-ai-video-plans；https://higgsfield.ai/blog/ai-video-credits-explained；https://higgsfield.ai/blog/seedance-2-5-pricing-2026；https://higgsfield.ai/blog/best-unlimited-ai-video-generators；https://higgsfield.ai/creator-hub/changelog。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## luma
+
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - 以官方New Luma Agents FAQ为准：Pro $30/mo含10000credits、Plus $90含40000、Ultra $300含150000；credits每账单周期重置。Higgsfield比较文出现的Pro/Plus顺序及年付$25等不能不核实沿用。
 - 这是正常付费套餐，不是新增免费赠送。models不把所有付费可调用模型填成免费模型。
 - 本批核验入口：https://lumalabs.ai/learning-hub/frequently-asked-questions-about-the-new-luma-agents-app。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## runway
+
 - 更新日志里“free in Explore Mode”是付费档自带的 relaxed 无限生成，按 paid_bundle 不收；免费版一次性 125 积分可收。独立额外赠送活动另核，不把付费档自带权益当赠送。（2026-10-03 批量审核；2026-10-07 补明确范围）
-- 2026-10-07 “Enterprises get 2 months of usage free. Sign by 10/31.” 的完整条款是额外返赠积分：合同生效后的前 60 天或截至 2026-12-31（取较早者），按该期间消耗的 Annual Included Credits 等额发一次性 bonus credits；上限为合同所购年度积分，失效规则随年度积分。这是独立加赠，不能按普通年付折扣拒绝，也不能写成无需签约的 2 个月免费会员。来源：https://runway.com/enterprise-bonus-terms
+- 2026-10-07 “Enterprises get 2 months of usage free. Sign by 10/31.” 的完整条款是额外返赠积分：合同生效后的前 60 天或截至 2026-12-31（取较早者），按该期间消耗的 Annual Included Credits 等额发一次性 bonus credits；上限为合同所购年度积分，失效规则随年度积分。这份历史条款属于签约付费触发赠额；2026-10-09消费促销排除规则生效后不收，不能沿用旧“独立加赠可收”判断，也不能写成无需签约的免费会员。来源：https://runway.com/enterprise-bonus-terms
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - 当前官方 https://runway.com/pricing 表：Standard625、Pro2250、Max9500credits/mo；月付$15/$35/$95，年付折合$12/$28/$76。Pro和Max都含Unlimited4Kvideo upscaling，非Max独享。只有Max支持未用credits滚动1个月。
 - Max不是无限视频生成；旧Unlimited订阅只针对符合资格的既有用户，官方支持公告已延长至2026-11-30，新用户不可领取。
@@ -206,6 +233,7 @@
 - 本批核验入口：https://runway.com/pricing；https://runway.com/changelog。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## midjourney
+
 - Standard / Pro / Mega 自带的 Relax 无限量是档位权益，不收。（2026-10-03 批量审核）
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - Standard/Pro/Mega含Relax不限量图像；Relax不限量SD视频只有Pro/Mega。Standard$30/mo或年付折合$24/mo；Pro$60/Mega$120月付。所有方案会自动续订。
@@ -213,6 +241,7 @@
 - 本批核验入口：https://docs.midjourney.com/hc/en-us/articles/27870484040333-Comparing-Midjourney-Plans。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## hailuo
+
 - Max 档 Relax 模式无限量是档位自带；新人注册与调研奖励在官网和协议里都找不到，不收。（2026-10-03 批量审核）
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - 官方 https://hailuoai.video/doc/payment-policy.html 本次读取Max $199.99/mo、20000credits及Hailuo01/02 Relax不限量视频；membership credits1个月有效不结转。官方条款未证实Higgsfield比较文$184年付、Hailuo2.3及年度第三方图像无限量，已移除未经确认的说法。
@@ -221,6 +250,7 @@
 - 本批核验入口：https://hailuoai.video/doc/payment-policy.html；https://hailuoai.com/。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## magnific
+
 - 2026-10-09核实Magnific One独立发布活动：官网https://www.magnific.com/pricing及https://www.magnific.com/one均明确10月8–15日desktop app Unlimited；仅Premium+/Pro/Business，Draft和Final的High quality 2K/4K，Max仍扣credits，不扩成所有账号/所有质量/API免费。桌面入口https://www.magnific.com/desktop；平台默认官网改为magnific.com，magnific.ai留作legacy upscaler服务。活动仍待审，精确截止时刻/时区未公布，不编不限量美元估值；不能与套餐自带年度Unlimited混为一项。
 - 年付档自带的年度积分和全年不限量模型是档位权益，不收。（2026-10-03 批量审核）
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
@@ -229,6 +259,7 @@
 - 本批核验入口：https://www.magnific.com/pricing；https://www.magnific.com/ai/docs/plans-and-pricing。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## openrouter
+
 - 免费层只收一条：以 docs/api/reference/limits 为准（:free 模型每分钟 20、每天 50 次；累计购买满 10 credits 后每天 1,000 次），openrouter/free 路由并入同一条。价格页的“25+ free models / 4 free providers”是营销数字，官方没列名单，实际提供免费端点的服务商（2026-10-03 查 API 有英伟达、Google AI Studio、Novita、Cohere 等约 10 家）和模型数经常变，都不写具体数字。（2026-10-03 管理员确认）
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - openrouter/free官方路由随机选择当前免费模型且按请求能力筛选，接受text/images，输出text。模型池动态变化，不能固定宣称24个。
@@ -237,11 +268,13 @@
 - 本批核验入口：https://openrouter.ai/openrouter/free；https://openrouter.ai/api/v1/models；https://openrouter.ai/docs/api_reference/limits。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## devin
+
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - Windsurf 2026-03-19 从 credits 改 usage quota，旧模型积分折扣公告不代表当前仍有效；0.25x/0.75x/2x 不是免费，清空免费模型列表并标折扣。self serve 不能直接解释为付费用户。Windsurf当前pricing重定向Devin，Free模型名单未写，SWE-2 Free写在Pro档，不能赋给Free。
 - 本批核验入口：https://devin.ai/blog/gpt-5-2；https://devin.ai/blog/windsurf-pricing-plans；https://devin.ai/blog/gpt-5-2-codex；https://devin.ai/blog/opus-46；https://devin.ai/blog/glm-5-minimax-m25；https://devin.ai/blog/sonnet-46；https://devin.ai/blog/gemini-31-pro；https://windsurf.com/pricing。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## n8n
+
 - 优惠码核验（2026-10-08，2dl3 已由管理员拒绝：证据不足）：`https://n8n.notion.site/voucher-code` 是通用兑换教程，要求选对套餐及月付/年付，未注明具体码、免费时长、资格或截止；教程不能单独证明某枚码的活动。当前 `2026-COMMUNITY-HACKATHON-INDIA-18BF8FA8` 仅找到社区转发，未找到发放方对应公告；管理员已决定按证据不足拒绝，不等于判定优惠码虚假。主办方 `https://docs.pechacks.org/` 展示同前缀不同尾码 `7B5D82F8` 的 350 份 Pro licenses、有效至 9 月首周，是活动码线索，不能将其数量、期限或资格套用当前码。官方帮助中心 Lenny 文档只适用 Yearly Starter，也不能替代当前 Pro 码证据。免费会员兑换码可以收，但须核实真实活动、发放资格、对应套餐/周期和续费；管理员亲测仅按实际确认范围标 tested，不推导人人可用；不因缺公告直接判假，也不为上架将通用教程改作活动证明。
 - 新 Cloud 账号（含试用）带的 Gateway 赠金和 14 天试用是同一个领取动作，合成一条；Gateway 上线时发给付费用户的一次性赠金按 2026-09-17 作历史；自托管 Business 试用没有 AI 额度，不收。（2026-10-03 批量审核）
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
@@ -249,34 +282,43 @@
 - 本批核验入口：https://blog.n8n.io/gateway-credits/；https://docs.n8n.io/deploy/use-n8n-cloud/gateway-credits/；https://n8n.io/pricing/；https://docs.n8n.io/manage-cloud/cloud-free-trial/。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## cursor
+
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - Cursor Rollouts专页2026-09-23，原待审9月10日错误。10天窗口终止日期按发布日+10推算，确切时刻未公开。只能供Rollouts，大约50/500次变更，不是通用模型额度。
 - 本批核验入口：https://cursor.com/pricing；https://cursor.com/changelog/rollouts-and-security-reviewer。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## nvidia
+
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - NVIDIA Build官方多数模型40RPM，但缺TPM/单次Token上限，不造美元；只把目录明确Free Endpoint的模型当免费，下载标签不够。完整目录用SSR筛选URL https://build.nvidia.com/models?filters=nimType%3Anim_type_preview 和 &page=2：24+15=39，resourceId去重后39，逐项PREVIEW=true（官方JS PREVIEW=Free Endpoint），已全部补models。注意page=1为零索引页0，page=2为索引页1。
 - 本批核验入口：https://build.nvidia.com/explore/discover；https://build.nvidia.com/models?filters=nimType%3Anim_type_preview；https://build.nvidia.com/models?filters=nimType%3Anim_type_preview&page=2。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## niteshift
+
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - Niteshift $10/月买活跃agent运行时间，不买模型Token；0.1credits/min对应100min；模型自带API key或订阅，不是零门槛模型免费。
 - 本批核验入口：https://niteshift.dev/pricing。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## pika
+
 - 现行免费版每月 0 积分、只能购买积分包（packs only），没有免费生成额度，不收录；价格页 Free 档列的“All models / 并行数 / 无水印”是买积分包后的能力。（2026-10-03 管理员实测无法生成）
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - Pika旧FAQ Basic150/月与现行pricing Free0/月冲突；保留历史条目、标主站不适用，不把当前0替换成虚假零权益，也不伪造活动结束日。旧站/iOS需管理员核实。
 - 本批核验入口：https://pika.art/faq；https://pika.art/pricing。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## windsurf
+
 - windsurf.com 现在 308 跳到 devin.ai（Windsurf 已更名 Devin Desktop），windsurf.com/pricing 和 devin.ai/pricing 是同一个 Free 档，只收一条（暂挂 windsurf）。新模型上线的积分倍率促销都早于 2026-03-19 积分制，官方没写结束日的按 2026-03-18 作历史；只有 opus-46-fast 原文写了截止 Feb 16。（2026-10-03 批量审核）
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - 同devin：旧credits促销与2026-03-19后usage quota不可混用；self serve不直接解释为付费；旧促销须核结束日期，不零价的模型不可填免费models。
 - 2026-03-18公告、3-19针对当时付费订阅用户一次性多赠一周，维持其原grandfathered价格；不能作为10月现行可领或每天重复。赠送时长一周不等于明确领取截止，不随意造3-26作为claimEnd；旧套餐不同价格，不能统一用新$20套餐估值$5。待管理员补历史截止。https://devin.ai/blog/windsurf-pricing-plans
 - 本批核验入口：https://devin.ai/blog/windsurf-pricing-plans。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
+
+- Windsurf 是 Cognition 旗下产品，但它的福利归 windsurf 平台，不要挂到 devin；Windsurf 的公告现在发在 devin.ai/blog（以及 windsurf.com），两处都算官方出处。
+- Windsurf 博客里“新模型上线限时 N 倍积分优惠”多数是旧文的发布价，先看文章日期：已过期的作为历史，打折不是免费的按 discount 标签处理。（2026-10-02）
 ## aws
+
 - 2026-10-08 复核 Comprehend：Free Tier 是免费额度体系，Paid plan 是按量计费账户模式，不是固定月费订阅。官方 AI 福利页明确该服务在 Paid plan 有 12 个月免费试用；额度内免费，超额和不含功能可收费。仅启用该计费模式不要求为领取额度先充值，coxm 不标 pay，保留 card，并在额度/步骤完整注明 Paid plan 与收费条件。来源：https://aws.amazon.com/free/ai/；https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/free-tier-plans.html；https://aws.amazon.com/comprehend/pricing/
 - 证据用各服务英文价格页的 Free Tier 段（如 aws.amazon.com/transcribe/pricing/），不要用中文汇总页 /cn/free/ai/（“付费计划”是链接，摘录必跨链接）。单价从 b0.p.awsstatic.com/pricing/2.0/meteredUnitMaps/<服务>/USD/current/<服务>.json 读。Comprehend 新老客户都能用；Q Developer Java 转换超额 $0.003/行；Translate Active Custom 前 2 个月每月 50 万字符免费；HealthLake 存储内含额度是付费自带。（2026-10-03 批量审核）
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
@@ -291,6 +333,7 @@
 - 本批核验入口：https://aws.amazon.com/cn/free/ai/；https://aws.amazon.com/q/developer/pricing/；https://aws.amazon.com/free/free-tier-faqs/；https://aws.amazon.com/free/registration-faqs/；https://aws.amazon.com/devops-guru/pricing/；https://aws.amazon.com/personalize/pricing/；https://aws.amazon.com/kendra/pricing/；https://aws.amazon.com/comprehend/pricing/。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## genspark
+
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - Free每天100积分有账号终身总上限（数字不公开），达到上限即停每日补充，剩余余额仍可使用。不得写永久每天送、每日余额一定清零或猜终身总数。
 - Plus每月10000积分起、Pro125000起；Standard模式周免费额度Pro为Plus10倍，从首次消息开始7天窗口。核心模型限额内免积分，超限自动扣月积分；旗舰模型和视频/音频生成付费。不能“无限制（达到上限）”自相矛盾。
@@ -299,6 +342,7 @@
 - 本批核验入口：https://www.genspark.ai/helpcenter/membership-plans；https://www.genspark.ai/helpcenter/credits-guide。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## vidu
+
 - 2026-10-08 管理员明确亲测新人注册获 20 积分，授权更新 ds4t；证据用 tested，截图保存于 [Free 套餐实测截图](../docs/evidence/vidu-2026-10-08/free-plan-admin-tested.png)。20 积分是一次性注册礼，不能写成每月 20 积分，也不能把亲测数量补进官方英文摘录冒充官网原文。
 - 本次官网价格页与截图均确认 Free 为 $0/月，Q4 的 540P 使用费率为 4 credits/sec；20 积分按此费率只可算成 5 秒用量，实际可选视频时长以界面为准。截图只确认 Q4，不把产品导航中的 Q3 自动写入本条免费模型名单；这不是断言 Q3 不可用。
 - “10 references/month” 在官网比较表归 Content Management → Number of My References，是每月 10 个参考素材管理配额，不是每月 10 条免费视频，不能与注册送积分相加或冒估美元价值。
@@ -309,6 +353,7 @@
 - 核验入口：https://www.vidu.com/pricing；本次完整记录见 [Vidu 注册礼核验](../docs/evidence/vidu-2026-10-08/verification.md)。
 
 ## worldlabs
+
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - Marble产品端Free7000 credits、最多4个世界，含文字/图像/多图/360输入。视频输入、商业许可、下载导出在付费档；不要把支持输入当生成视频模态。
 - 网页产品积分与API积分独立；加购仅Standard以上，$5/5000、$20/22000、$50/63000。可按最低加购包$0.001/credit比价免费额度=$7，但不是现金，不宣称免费账号能购买或使用API。
@@ -316,18 +361,21 @@
 - 本批核验入口：https://marble.worldlabs.ai/pricing。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## tencent
+
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - “云产品免费馆”包含非AI云服务器、DNS、建站等，不混入AI福利价值；本条缩到智能体开发平台体验版1个月。
 - “产品新用户”不等于整个腾讯云账号新注册，老账号未购/未试该产品仍可申请；实名认证、每日限量要写清。未公开Token与模型清单不猜$5。
 - 本批核验入口：https://cloud.tencent.com/act/pro/free。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## moark
+
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - Gitee登录后每日100次合计调用，官方getting-started明确DeepSeek-R1示例；其他免费模型完整目录未核实不能泛化“所有模型免费”。
 - 按次额度无单次Token上限，不能用Token输入单价随意折成$1；美元留空。模态和API/在线体验以实际模型页资格为准。
 - 本批核验入口：https://ai.gitee.com/docs/getting-started。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## trae
+
 - 2026-10-08 qsjv 核验：2026-02-13 官方公告的 $20 是旧 Pro 在下一月度权益期结束自动迁移前手动切新方案的一次性额外用量奖励；90 天从实际发放日算，不从公告日/2月24方案生效日算。按迁移窗口与90天规则，当前不作为可领福利，保留中文历史待审说明；统一领取截止未公布，不猜全局结束日。2月14领奖截止、3月24用量延长属于周年快速请求活动，不套用到此奖；余下旧请求转换是原权益转移，不重复计赠金。公告发布时间只知日精度，保留2026-02-13。引用的计费文档本轮只返回出错/空白，未补出截止，未自动通过或拒绝。https://www.trae.ai/blog/trae_membership_0213
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - 2026-02-13官方公告，2/24 02:00UTC新方案生效：新用户注册48小时内添加支付方式，14天Pro试用；结束自动订阅，可移除支付方式切Free。卡门槛和自动续费必须写。
@@ -335,6 +383,7 @@
 - 本批核验入口：https://www.trae.ai/blog；https://www.trae.ai/blog/trae_membership_0213。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## baidu
+
 - 千帆 ERNIE-Speed/Lite/Tiny 免费预置服务已随模型退役于 2026-06-09 结束（退役机制页 cloud.baidu.com/doc/qianfan/s/zmh4stou3），只作历史。BCC、直播云、点播等通用云产品不是 AI 额度；试用体验馆、企业满减券、量包折扣都不收。可能漏抓：千帆新用户每款模型 100 万 Token（17 款，3 个月）https://cloud.baidu.com/doc/qianfan/s/Imi2rpirg 。（2026-10-03 批量审核）
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - 千帆2024-05-21公告属于长期免费预置服务（standing），不是限时免费；实名认证个人或企业按量调用适用。名单：ERNIE-Speed-8K、ERNIE-Speed-128K、ERNIE-Speed-AppBuilder专用版、ERNIE-Lite-8K、ERNIE-Lite-8K-0922、ERNIE-Lite-128K、ERNIE-Tiny；其中Lite-128K在公告时标即将上线，当前控制台可开通情况必须核实。TPM/RPM仅控制台可见，不造美元。https://cloud.baidu.com/news/notice_c7a145b9-5c99-4870-939f-e09ba506aab3
@@ -344,6 +393,7 @@
 - 本批核验入口：https://cloud.baidu.com/campaign/event/enterprise/index.html；https://cloud.baidu.com/；https://cloud.baidu.com/campaign/event/free/index.html；https://cloud.baidu.com/news/notice_c7a145b9-5c99-4870-939f-e09ba506aab3。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## volc
+
 - Managed Agents 没有只限企业的说法，门槛 realname。web_fetch 只写“限时免费”无原价、额度、起止，不收。联网搜索每月固定次数不打 reset 标签。（2026-10-03 批量审核）
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - 新注册赠免费在线推理属于new；注册即可得。仅抵扣按Token后付费在线推理，不抵扣插件、知识库、批量推理和缓存存储。各模型独立额度、主账号及基础/精调模型共享。公开文档没给逐模型数量/有效期，必须控制台补，不凭旧模型表造数。https://www.volcengine.com/docs/ark/free-inference-quota?lang=zh
@@ -353,34 +403,40 @@
 - 本批核验入口：https://www.volcengine.com/docs/ark/free-inference-quota?lang=zh；https://www.volcengine.com/docs/82379/1544106。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## qiniu
+
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - AI企业订阅2999/4999/9999元（月付），对应官方原价4284/8332/19998元；积分约10.7/20.8/50亿每月、24717/48067/115373万每周。每周刷新且不结转，积分按模型不同倍率扣减，不等于Token；不能直接用0.004元/K Tokens乘积分估值。2026-10-01 曾按超值订阅例外估值，该口径现已撤销；套餐本身按 paid_bundle 不收，不能把实付价与原价的区间记为赠送价值。付费套餐包含模型不能填免费models。https://www.qiniu.com/ai/plan
 - Jina页HTTP Published Time出现2012年，是网站/响应时间元数据，不能当AI套餐官方发布日期。
 - 本批核验入口：https://www.qiniu.com/ai/plan。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## huaweicloud
+
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - 码道福利不是仅GLM：当前四款专属福利模型deepseek-v4.1-flash、glm-5.3-flash、deepseek-v4-flash-0731、deepseek-v4-pro-0813，共享每位用户每日1000万Token（不逐模型乘4）；所有用户登录自动领，24:00 UTC+8清零，与积分包不互通。IDE/插件2026-08-19 22:00、桌面/网页9-15、小程序9-17开始；截止另行通知。同平台输入价缺口时不能拿火山/智谱价格替代。https://support.huaweicloud.com/offers-codeartsagent/codeartsagent_offers_0001.html
 - OfficeAce官网首次注册登录赠4000积分，与个人体验版基础500（一次发放、不失效）是不同来源；不把两者混称、直接相加或把500永不过期套到活动4000。积分用于推理、解析、工具；2026-10-08 复核：官网仍列首次注册登录赠4000及首次体验500；华为云828活动页明确“首次注册，解锁4000积分”“首次体验，再得500积分”，支持两份奖励叠加合计4500（4000有效期未注明，500不过期）。同页列每日登录1000、当日有效，须单独核实当前领取条件，不计入一次性奖励或无限累加；活动页条款不能据页名猜活动截止。https://activity.huaweicloud.com/828_promotion/index.html 。没有加购单价时按最低套餐费率折算：个人标准版 ¥98 含 2,000 积分 ≈ ¥0.049/积分，并在额度里写明（2026-10-03 批量审核）。https://www.huaweicloud.com/product/officeace.html https://support.huaweicloud.com/price-officeace/officeace_05_0003.html
 - 本批核验入口：https://support.huaweicloud.com/offers-codeartsagent/codeartsagent_offers_0001.html；https://www.huaweicloud.com/product/officeace.html；https://support.huaweicloud.com/price-officeace/officeace_05_0003.html。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## seaart
+
 - 活力值美元按 Beginner 年付 $4.79 含 9,000 活力值的最低费率折算。（2026-10-03 批量审核）
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - 免费130 Stamina每日有效不结转；FAQ“约21张”是常见6点模型示例，不能写按Z Image Turbo20点/张也21张（130/20仅6整张）。付费SVIP Free Creation不限量不属于免费账号福利。页面同一FAQ还出现“daily login 0 Stamina”冲突，应保留130多处证据并请求免费账号核实，不装作实测。原美元0.39无加购价依据已清空；正式可用免费模型完整名单需登录确认。https://www.seaart.ai/mall
 - 本批核验入口：https://www.seaart.ai/mall。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## deepinfra
+
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - DeepSeek-V4-Flash-Vision-Exp 51% off是按量付费折扣，不是free。当前输入$0.2156/M、缓存输入$0.0069/M、输出$0.6468/M；没有额外赠送额度，建议paid_bundle拒绝但不自动拒绝。https://deepinfra.com/pricing
 - 本批核验入口：https://deepinfra.com/pricing。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## baichuan
+
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - 海纳百川计划针对“为医务工作者提供服务的机构”，需准入审核，不是所有注册账号。官方称永久免费Baichuan-M3 Plus API，但未公开额度/速率；价格页医疗搜索独立收费，免费计划是否包含须准入协议，不能把模型免费扩展到全部搜索收费。https://www.baichuan-ai.com/?new_locale=zh-cn https://platform.baichuan-ai.com/prices
 - 本批核验入口：https://www.baichuan-ai.com/?new_locale=zh-cn；https://platform.baichuan-ai.com/prices。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## stepfun
+
 - 2026-10-09全量归属复核14条相关记录及更新提案：Step 5 Preview在Cline的glj5已归cline，在Nous Portal的yn9a已归nous；OpenCode h16u/wofy已归opencode。同一模型三条调用渠道是不同活动，平台和厂商各发公告只是同渠道同活动转述。ModelScope、OpenCode Zen、Nous常驻免费层归属正确；StepFun自家Studio归stepfun，原已拒套餐记录不复活。Cline平台随后经管理员明确授权准入，活动条目仍独立待审。
 - 2026-10-09：Step 5 Preview在OpenCode免费一周的保留条为已上架wofy；StepFun官方在OpenCode公告后约2分钟转述，h16u为重复待审线索，已纠归opencode并标duplicate，未擅自拒绝。发放方OpenCode原文https://x.com/opencode/status/2108206631859454383，模型厂商转述不新建活动；多模态输入不表示免费生图，模态按文本/编程记。
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
@@ -391,6 +447,7 @@
 - 本批核验入口：https://platform.stepfun.com/docs/zh/step-plan/overview。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## lovable
+
 - 每日聊天额度和这套聊天计价官方写明暂行到 2026-10-31，11 月复核。Monthly Cloud grant 只抵扣数据库、存储、网络等托管用量，不是 AI 额度，不收。（2026-10-03 批量审核）
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - 现行 credits-and-usage 文档：Free 每日5 build credits但每月最多30；Pro/Business每日5无该月上限。每日00:00 UTC刷新当日失效。
@@ -401,6 +458,7 @@
 - 本批核验入口：https://docs.lovable.dev/introduction/credits-and-usage；https://docs.lovable.dev/introduction/dashboard-overview。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## otter
+
 - 受邀人获得的 1 个月 Pro Lite、每月 300 分钟与 Basic 基础额度相同，不能仅据此认定有额外价值；学生八折仍不收。邀请人奖励须另读条款，不能用受邀人的 300 分钟否定所有邀请奖励。（2026-10-07 修正邀请人/受邀人边界）
 - 2026-10-07 referral-terms 仍明确邀请人可获转写分钟或 Pro Lite，累计上限 10,000 分钟及 12 个月；每次实际奖励由邀请页面/材料决定，不能把累计上限当每次保证额度。Business 不适用，付费邀请须完成首个账单周期，奖励自兑换起 12 个月到期。5sj1 保留待审，需当前邀请页面确认单次奖励后再决定，不因旧 Pro Lite 名称直接拒绝。来源：https://otter.ai/referral-terms
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
@@ -410,6 +468,7 @@
 - 本批核验入口：https://otter.ai/referral-terms；https://otter.ai/pricing。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## mistral
+
 - 只收免费计划每月 $10 API credits（价格页），Le Chat / Vibe 免费版的有限聊天、搜索、生图不收。Studio 文档原文“Free mode: API access is enabled by default with no credit card required”，门槛 none。学生 Pro 折扣不收。（2026-10-03 管理员确认）
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - 教育优惠$5.99/月（原$14.99），须认证高等教育学生且此前未用Vibe/Le Chat，最多12个月、未含税；折扣美元为节省$9而非费用$5.99。
@@ -417,11 +476,13 @@
 - 本批核验入口：https://mistral.ai/pricing/；https://docs.mistral.ai/getting-started/quickstarts/studio/activate-and-generate-api-key。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## moonshot
+
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - 官方免费测试帮助页确认国内手机号新用户实名认证获15元代金券，3个月到期，不能体验Kimi K3；未明确逐个可抵扣模型不能从导航菜单推定。
 - 本批核验入口：https://www.kimi.com/help/kimi-api/api-free-trial。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## novita
+
 - 价格页零价模型名单会变（2026-10-03 有三款，多了 Apodex 1.1 Mini），每次逐行重查；零余额能否调用零价模型官方没写，需管理员实测定门槛。（2026-10-03 批量审核）
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - 当前价格页只有Ling 3.1 Flash与Ling 3.0 Flash Sante输入输出都Free，256K上下文；Fin/Flash/VL收费。零价价格无公开截止，不造活动日期/月上限。
@@ -429,32 +490,33 @@
 - 本批核验入口：https://novita.ai/pricing。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## fireworks
+
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - 2026-10-03 价格页已撤下 $1 免费 credits，改为先绑卡购买，不再收；之前写法：官方定价原始HTML有$1免费Serverless credits（web抽取可能漏段）；Standard/Priority/Fast按Token服务。开户是否绑卡和到期条件未找到，门槛保留unknown。
 - 本批核验入口：https://fireworks.ai/pricing。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## pollo
-- 2026-10-09最新管理员登录实测（覆盖下列旧六月指南数值及“现行未确认”结论）：本人Chrome账号英文任务截图确认连续7天合计25；社交X10、YouTube10、Discord20合计40；邀请好友注册双方各50，好友升级双方各200（两阶段累计每人250）；MCP连接礼20，最多20图或4视频共享该额度。前三项复用原ID，MCP新建pollo-mcp-connect-20-bonus且官网https://pollo.ai/mcp有连续英文原文；四条tested、保持pending，未代管理员上架。截图只证明任务当前开放，不声称已全部到账/已连续签到7天，不泛化所有地区或无限重复领取，有效期仍按账号明细。按官方Pro $14.50/800积分比价：25=$0.45、40=$0.73、50=$0.91、累计250=$4.53、20=$0.36。
-- 2026-10-09管理员再次指出有效性：德文“Stand: Juni 2026”为信息截至六月，非领取截止；旧指南只证明当时条款，不证明十月Reward任务仍开放。当前浏览器未登录、只能看到Login与产品首页，尚不能确认签到/社交活动现行可领，两条保持待审、建议需补当前证据，不因主页或旧指南正常可打开而上架；也不得捏造6月30日截止。必须读取登录后实际任务或最新活动公告。
-- 2026-10-09重查英语来源：英语主页可用不等于活动指南有英语版本。官网sitemap.xml约32926去重URL仅列德文how-to-get-pollo-ai-free-credits，英语同路径返回站内404；IAB德文正文可打开，canonical仅德文、无alternate对应。不能据此断言英文账号不适用，也不能换英语首页当25积分/社交奖励条款。指南2026-06-10注明按账号、地区与campaign变化；须登录Reward区确认当前任务、数额与有效期。保留德文官方摘录与中文用户文案，尚未账号实测不标tested。7天合计25不外推每月反复领取；社交正文30与表格40冲突保留内部核验记录，公开数量按实际任务。
-- 2026-10-08复核：官方德文Hub指南确认7天签到25、邀请注册使用双方各30，但社交正文各10合计30与Discord表格20合计40冲突，邀请后续双方100与摘要最多60不一致，必须以Reward/邀请窗口复核；不保证所有地区账号可领。英语同路径404不否认德语官方资料。未注明重复签到周期、有效期或免费可用完整模型，不能凭导航填写Sora/Veo等。https://pollo.ai/de/hub/how-to-get-pollo-ai-free-credits；价格页Pro14.50/800单位比价当前复现。
-- 价格页 Free 列 20 credits；美元按 Pro 年付 $14.50 / 800 credits ≈ $0.018/credit 折算。（2026-10-03 批量审核）
-- 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
-- 官方德语Hub指南2026-06-10明确新注册20 credits，非每月赠20；同时警告账号/地区/活动可变。具体可抵扣模型和现行新号到账仍需登录核对，不把全部目录当免费。
-- 首页对GPT Image 2.5/MiniMax H3一面称any paid plan，一面Unlimited with Ultra，What's New又有Ultra10天；应查现行套餐限制，不泛化所有会员永远不限量，Seedance 2.5的60%折扣与免费不同。
-- 本批核验入口：https://pollo.ai/home；https://pollo.ai/whats-new；https://pollo.ai/pricing；https://pollo.ai/de/hub/how-to-get-pollo-ai-free-credits。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
+
+- 2026-10-09管理员在本人Chrome账号实测：连续7天合计25积分；社交X10、YouTube10、Discord20合计40；邀请注册双方各50，升级双方各200；MCP连接20（最多20图或4视频，共享额度）。前三项沿用原ID，MCP为pollo-mcp-connect-20-bonus，英文官网https://pollo.ai/mcp也明确连接奖励。以这次实测替代旧指南30/100及社交30数字；当前审批状态必须读后台，不从本节快照推断。
+- 2026-10-09消费促销排除规则优先：邀请注册50可收，付费升级200不纳入收录金额或价值上限；截图中的事实与本站收录范围分别判断。该规则之后的生产条目内容是否已剔除付费部分须读回核查，文档整理不代为审批。
+- 截图显示任务开放不等于已到账或完成7日签到；不泛化所有地区或无限复领，奖励有效期按账号明细，不能把7天合计25外推成固定月额度。模型目录不代表奖励积分可免费使用的完整模型名单。
+- 英语主页可用不代表所有指南均有英语版；2026-10-09官网索引只找到德文https://pollo.ai/de/hub/how-to-get-pollo-ai-free-credits，英语同路径404。该指南“Stand: Juni 2026”是六月信息快照，不是活动截止，更不能替代十月账号证据；旧内部冲突判断保留在审核记录，不复制进用户文案。
+- 新注册20为一次赠送，不是每月20；需按当前账号确认到账。2026-10-09价格页Pro $14.50/800积分作单位比价，25≈$0.45、40≈$0.73、50≈$0.91、20≈$0.36；不是免费用户可购买该价格的承诺。
+- 付费套餐的无限量模型受档位、分辨率及期间限制；GPT Image 2.5/MiniMax H3不能泛化所有会员永久可用，Seedance折扣不等于免费。来源：https://pollo.ai/home、https://pollo.ai/whats-new、https://pollo.ai/pricing。
 
 ## tripo
+
 - 2026-10-07 官方价格页“年付 50% off 月付”是普通年付定价，按 other 不收；不是身份认证专享五折例外，也没有独立赠送。免费版每月 200 积分是另一项真实可量化额度，仍可收。来源：https://www.tripo3d.ai/zh/pricing
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - Studio 与 API 为独立计费体系，Studio 月度订阅积分不结转，API 购买积分长期有效；不可用 API 的永不过期规则替代 Studio 充值有效期。来源：https://www.tripo3d.ai/help/api-plugins/tripo-studiotripo-api
-- 充值赠送只估额外积分，不包括付款换得的本金积分，也不能把 credits 当模型个数。Studio 同页 $10/1,000 credits：$100+2,000 赠积分约 $20；$500+12,000 赠积分约 $120；$1,000+30,000 赠积分约 $300；中文版 ¥700+2,000 赠积分按 ¥70/1,000、7.1 汇率为 $19.72。来源：https://www.tripo3d.ai/pricing 、https://www.tripo3d.ai/zh/pricing
-- 中文 ¥700 与英文 $100 为同档不同币种，疑似重复收录需管理员决定；未自行合并或删除。
+- 以下为旧条目的单价核验记录；充值赠送已按现役规则排除，不因可折美元而重新收录：Studio 同页 $10/1,000 credits：$100+2,000 赠积分约 $20；$500+12,000 赠积分约 $120；$1,000+30,000 赠积分约 $300；中文版 ¥700+2,000 赠积分按 ¥70/1,000、7.1 汇率为 $19.72。来源：https://www.tripo3d.ai/pricing 、https://www.tripo3d.ai/zh/pricing
+- 中文¥700与英文$100为同档不同币种；各档充值阶梯赠额均按消费促销不收，历史比价不是收录依据。
 - 免费 Studio 每月 200 credits、约 13 个3D模型，按加购价估 $2/月；公开模型且非商用。免费图像栏 Nano Banana；H2.5 only 是导出限制，不推断全部免费模型名单。
 - New User 50% Off First Month coupon 与 Annually 50% off Monthly 是不同优惠，不能混用证据；首月优惠无公开起止日期。
 - 本批核验入口：https://www.tripo3d.ai/pricing；https://www.tripo3d.ai/zh/pricing；https://www.tripo3d.ai/help/api-plugins/tripo-studiotripo-api。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## xiaomi-mimo
+
 - 2026-10-09：MiMo好友订单付费返利10%–20%按消费返利新口径不收，原xiaomi-mimo-xiaomi-mimo-friend-invite-rebate已撤下；不影响不需付费的模型限免。
 - 2026-10-07 年付 12% 与个人首购 12% 都是普通订阅折扣，无独立赠额，不收；Lite 首购实付 $5.28，超过首月不超过 $1 的近免费例外。Claw 免费时长及模型限免另核，不受折扣条目拒绝影响。来源：https://platform.xiaomimimo.com/
 - Claw 免费时长以更新日志 mimo.mi.com/docs/zh-CN/updates/feature/claw 为准（每天 3 小时、单次有算力上限）。MiMo-V2.5-ASR 现按 $0.074/小时收费，旧“免费”线索不收。（2026-10-03 批量审核）
@@ -466,6 +528,7 @@
 - 本批核验入口：https://platform.xiaomimimo.com/；https://mimo.mi.com/。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## manus
+
 - 推荐奖励官方只提一句 referral bonuses，没写金额，不收（500 积分只见于第三方）。帮助文章的编辑日期不是活动发布时间，publishedAt 留空。（2026-10-03 批量审核）
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - 免费用户Chat Mode及Agent Mode的Manus 2.0 Lite，每日刷新300积分、1并发、2定时任务；daily标签，每月按30天9,000积分。Pro官方$20/月含4,000积分比例估值$45/月，原$1.5仅一天价值不可作standing月价值。来源：https://help.manus.im/en/articles/11711111-what-is-the-current-membership-pricing-for-manus
@@ -475,12 +538,14 @@
 - 本批核验入口：https://help.manus.im/en/articles/11813668-are-there-any-discounts-or-special-offers；https://help.manus.im/en/articles/11711111-what-is-the-current-membership-pricing-for-manus；https://manus.im/help/credits。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## ppio
+
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - 官方FAQ仅公布新用户代金券、邀请注册并完成任务代金券的种类及触发行为；未给统一金额、有效期和模型范围时以控制台券详情为准，不编金额、名单、永久有效。邀奖用referral标签，具体任务仍待账号内规则。来源：https://ppio.com/docs/model/FAQs
 - FAQ模型调用范例（DeepSeek/Qwen等）不能当优惠券可免费模型清单。
 - 本批核验入口：https://ppio.com/docs/model/FAQs。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## xai
+
 - 2026-10-08：个人howie_serious所说Grok Bot采集推特每日1000次，未找到xAI/X官方免费模型额度证明。数据采集频控不等于Grok模型调用免费；不根据个人bot反馈推导人人通过X登录可领1000次。保留media和资格缺口。
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - 个人Free官网写实时网页/X搜索、Voice mode和Connectors，没有明确免费模型版本与调用上限；$0/月是售价不等于福利价值0。SuperGrok标Grok4.6不能移植为Free模型。来源：https://x.ai/pricing
@@ -488,6 +553,7 @@
 - 本批核验入口：https://x.ai/pricing；https://x.ai/news/grok-bot-for-enterprise。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## modelscope
+
 - API-Inference 每天 200 魔粒只要登录就给；验证邮箱是一次性 50 长期魔粒奖励，不是前提；调用前提是绑定已实名的阿里云账号。（2026-10-03 批量审核）
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - 当前API-Inference按魔粒而非旧2000次/日。每日登录200短期魔粒+绑定阿里云50=250/日；轻量0.5、主流1、旗舰2魔粒/次，仅全部用于该档时最多500/250/125调用；短期发放起24小时、长期90天。需验证个人邮箱、绑定已实名认证阿里云账号。来源：https://modelscope.cn/docs/model-service/API-Inference/limits 、https://modelscope.cn/docs/magicube/intro
@@ -497,6 +563,7 @@
 - 本批核验入口：https://modelscope.cn/docs/model-service/API-Inference/intro；https://modelscope.cn/docs/model-service/API-Inference/limits；https://modelscope.cn/docs/magicube/intro；https://api-inference.modelscope.cn/v1/models。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## krea
+
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - Free每天100units需登录无需信用卡。免费表有Krea1、Krea2 Medium/Large/Turbo、Flux.1 Dev、Flux2、Flux Kontext Dev、Flux.1 Krea、Flux2 Klein、Qwen Image、Qwen Image2512、Wan2.2 Image、Z Image、LTX-2 19B；按Free列非空筛选，不把付费列全部模型当免费。Krea Agent是产品功能不是模型。来源：https://www.krea.ai/pricing
 - 每款的日生成估计共享同一100units，不能相加算总额度。按最低年付Pro$21/月/20,000 units，30天3,000units比例$3.15/月；不估值“不限量”部分。
@@ -504,6 +571,7 @@
 - 本批核验入口：https://www.krea.ai/pricing。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## copilot
+
 - 2026-03-12 起学生改为 Copilot Student 计划（每月 200 AI Credits、补全无限），以 GitHub 官方社区公告 discussions/189268 为准；认证教师和热门开源维护者免费 Copilot Pro（docs 教师页）。免费层 Copilot Free 本身不单独收。（2026-10-03）
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - Free适用于符合资格的个人新老账号，不限新注册，Business/Enterprise已分配席位者不适用。官方Free列当前有36模型，不能只抽前两个Fable；可用模型按入口/功能不同。来源：https://github.com/features/copilot/plans
@@ -512,22 +580,24 @@
 - 本批核验入口：https://github.com/features/copilot/plans。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## anthropic
-- 2026-10-08社区复核：Opus5.5官方9月22日发布文确认订阅banked reset，社区10月23日卡到期不是全局领取截止，不拿套餐月费估现金。OSS Scanner官方red文档面向开源核心维护者PR接入，非biz企业门槛，周期性免费且报告未人工审，不编扫描次数。定向100美元offer仅公开登录墙，不能拿通用Startups1000替代；Reddit250个案未核实，不把官方实付200购买250的bundle当赠额。详见docs/community-official-review-2026-10-08.md。
+
+- 2026-10-08社区复核：Opus5.5官方9月22日发布文确认订阅banked reset，社区10月23日卡到期不是全局领取截止，不拿套餐月费估现金。OSS Scanner官方red文档面向开源核心维护者PR接入，非biz企业门槛，周期性免费且报告未人工审，不编扫描次数。定向Founder House入口2026-10-09管理员登录后仍显示Invalid offer，未取得资格/金额条款，不能拿通用Startups1000替代；Reddit250个案未核实，不把官方实付200购买250的bundle当赠额。详见docs/community-official-review-2026-10-08.md。
 - 2026-10-08 以 https://claude.com/programs/startups 及其 FAQ 核定创业计划：获批公司得 $1,000 第一方 Claude API 额度（发放后 6 个月有效）；首次使用 Team 的组织另可领最多 5 个 Premium 席位免费一年。按官方扩展公告 $100/席/月年付，5 席一年 $6,000，自有权益估值写 usdEstimate=1000、usdMax=7000。最高 $45,000 Startup Stack 是独立合作方优惠，不是 Anthropic API 赠金，不相加成人人固定 $46,000；VC 网络的最多 $100,000 API 是另一领取渠道，不并入本条估值。https://claude.com/resources/articles/were-expanding-the-claude-startups-program-to-help-founders-build
 - 创业计划须成立 5 年内或近 2 年获融资、Console 账号、与官网同域的公司邮箱、产品简述并经审核；不要求 VC 融资。API 仅用于第一方 Console，不适用 Bedrock/Vertex。官方条款排除在中国等受限地区设立/运营或向当地提供服务的公司，不能用“海外网络”替代公司资格；门槛 biz，具体条件写在额度和步骤。https://www.anthropic.com/startup-program-official-terms
-- 本轮扩展福利有 2026-10-06 官方公告和当日生效的附加权益条款，日期用于本轮新增 Team/合作方权益，不是整个创业计划的最初 Launch 日期。管理员补充 MadRobot 后已追到并通过 Jina 读到 CNBC 原文，CNBC 明确援引 Anthropic 称计划最初在 5 月推出；2026 年报道与官网 earlier this year 限定年份。记录 2026-05 为月份精度，具体日未披露，不猜 5 月 1 日；旧官方条款 May 22, 2025 的编辑日期也不当 Launch。7rs2 标题明确扩展版，步骤同时说明最初推出月份；保留指定条目，将同活动同渠道 ungi 作为重复处理，vmjp $100 未自动改写或拒绝。https://www.anthropic.com/legal/startup-program-addendum；https://madrobot.blog/2026/10/06/anthropic-claude-startups-free-year-claude-team-1000-api-credits/；https://www.cnbc.com/2026/10/06/anthropic-claude-startups-program.html
+- 本轮扩展福利有 2026-10-06 官方公告和当日生效的附加权益条款，日期用于本轮新增 Team/合作方权益，不是整个创业计划的最初 Launch 日期。管理员补充 MadRobot 后已追到并通过 Jina 读到 CNBC 原文，CNBC 明确援引 Anthropic 称计划最初在 5 月推出；2026 年报道与官网 earlier this year 限定年份。记录 2026-05 为月份精度，具体日未披露，不猜 5 月 1 日；旧官方条款 May 22, 2025 的编辑日期也不当 Launch。扩展版活动日期与最初推出月份分别保留在核验记录，不把历史查证过程放公开步骤；保留指定条目，将同活动同渠道 ungi 作为重复处理，vmjp $100 未自动改写或拒绝。https://www.anthropic.com/legal/startup-program-addendum；https://madrobot.blog/2026/10/06/anthropic-claude-startups-free-year-claude-team-1000-api-credits/；https://www.cnbc.com/2026/10/06/anthropic-claude-startups-program.html
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - Claude API代码执行现每组织每月1,550小时免费，超额$0.05/小时/容器，最少5分钟；工具替代价值77.50美元/月。原“每日50小时、网页端运行Python”是错误。来源：https://platform.claude.com/docs/en/agents-and-tools/tool-use/code-execution-tool
 - 2026-10-09再次核查：计量单位是累计容器小时，不是个人聊天或Claude Code订阅时长；API organization不等于Enterprise会员。现行每月1,550不能除以31改写成“每日50”，也不能拼进网页免费版。已收录canonical anthropic-claude-free-tier；再发现同一代码执行免工具费额度时复用该ID，不能另建daily 50条。超额费、最低5分钟、上传文件预加载也可能计时，模型Token始终另按价目收费；配合新版web_search/web_fetch不收工具费是独立计费条件。
 - 2026-10-09：Claude for OSS是申请制apply，endKind=standing；https://www.anthropic.com/claude-for-oss-terms明确滚动审核、Anthropic自主选择、达标不保证批准，最多10000名，非认证后自动送的gift。https://claude.com/open-source-max跳到正式申请表；免费Max20x从激活起6个月，获批兑换码90天内激活。申请须18岁、支持地区合法居民、GitHub账号2年、近90天公开贡献及OSI项目等，量化条件是考虑门槛，生态重要项目可走裁量通道。期满恢复旧付费方案/原免费版，超额可能收费。按官方Max20x $200/月比价为$1200，不猜$2000或API赠额；10月8日OSS Scanner博客不代表既有OSS资助计划启动，未公布开始日留空。
 - 2026-10-09去重：OSS Scanner的项目级免费安全扫描与Claude for OSS的个人Max20x六个月订阅是两项独立权益，前者项目配置PR接入并接收漏洞报告，后者独立GitHub表单申请并发个人订阅。同一文章提及、共同面向开源生态或都由Anthropic发放，不构成同一活动；不得合并Scanner和Max条目。Max条款未要求先加入Scanner，也不能把Scanner项目接入写成领取Max的步骤。
-- Claude API 文档里的“per organization”指 Console 计费账户：个人注册 API 也自动有一个组织，不需要企业版；但调用 API 必须绑信用卡并充值，门槛写 card + pay，不是零门槛。Claude.ai 的 Pro/Max 订阅不含 API。（2026-10-03 管理员确认）
+- Claude API 文档里的“per organization”指 Console 计费账户：个人注册 API 也自动有一个组织，不需要企业版；但调用 API 必须绑信用卡并充值，门槛写 card + pay，不是零门槛。API与网页订阅分别计费；Max/Team后续附带的月度API额度按对应官方帮助页单独核对，不能沿用旧“不含API”概括，也不能把工具免费时长写成模型Token免费。（2026-10-09校对）
 - 请求包含web_search_20260209/web_fetch_20260209及后续版本时，code_execution本身不加收，标准输入输出Token仍收费；这是API工具执行权益不是免费Claude模型或网页会员，models保持空并注明收费门槛。
 - 套餐权益调整、一次性赠送额度以 support.claude.com 帮助中心为准（金额、资格、领取期、失效日期写得最全），@claudeai 推文用来定发布时间；第三方汇总站（如 resetradar.com）只当线索。
 - “某档位开始包含某模型”（如 Max / Team 高级席位内含 Fable 5）是套餐权益，不收；只收一次性赠送的 usage credits（如 2026-07 Fable 5 补偿 Pro $100，7-20~8-02 可领、9-17 失效，已作为历史）。（2026-10-02 管理员确认）
 - 本批核验入口：https://platform.claude.com/docs/en/agents-and-tools/tool-use/code-execution-tool。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## azure
+
 - 美元用官方 Retail Prices API（prices.azure.com）查单价，产品页显示 $- 时不必留空。API Management、Bot Service 消息通道等不是模型推理额度，not_ai。（2026-10-03 批量审核）
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - Azure 免费账户需 Microsoft/GitHub 账号、手机号、非预付信用卡/借记卡做验证；不能把常驻免费服务写成零门槛。$200 试用仅适格新用户且30天有效，用完或30天后继续使用须主动转按量付费。
@@ -536,6 +606,7 @@
 - 本批核验入口：https://azure.microsoft.com/en-us/pricing/purchase-options/azure-account；https://azure.microsoft.com/en-us/pricing/details/bot-services/；https://azure.microsoft.com/en-us/pricing/details/content-safety/；https://azure.microsoft.com/en-us/pricing/details/translator/。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## pixverse
+
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - 以 app.pixverse.ai/subscribe 完整 Plans Details 表为准：Basic每天30积分，付费Standard/Pro/Premium/Ultra每天60；月会员积分分别1200/6000/15000/25000，会员按订阅开始的准确时刻每30天刷新，不是UTC月初；日额度UTC00:00刷新，两者均不结转。
 - 官方积分包$5/500、$20/2000、$50/5000、$100/10000，可按$0.01/积分作替代成本估值；免费30积分×30天=$9，付费月额度及付费档日领额度是套餐内含权益，不另收或计为赠送价值；无限生成也不编造美元。
@@ -544,39 +615,46 @@
 - 本批核验入口：https://app.pixverse.ai/subscribe。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## thinking-machines
+
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - 2025-10-29 Tinker research/teaching grants是申请制apply/endKind standing/claimMethod form，不是企业认证常驻自动赠额；研究面向研究与开源项目，起步$5000不是最高金额；教学由教师申请每学生$250、供课程使用，滚动审批，授予有效期以批准为准。
 - 本批核验入口：https://thinkingmachines.ai/news/tinker-research-and-teaching-grants/。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## gamma
+
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - 新Free用户一次性400 AI积分，不会自动刷新，归注册新人礼；不能只写每次10页功能上限当额度。Free可邀请，好友完成专属链接注册后邀请人200积分；余额同时上限2000，消费后继续赚，总累计不限，不限于付费会员。
 - 官方 https://help.gamma.app/en/articles/12466653-how-do-i-purchase-more-credits 加购1500积分/$6；替代成本比较注册400约$1.60，每邀请200约$0.80。Free不能买积分，不能写成免费层能直接充值此价。
 - 本批核验入口：https://help.gamma.app/en/articles/7834324-how-do-credits-work-in-gamma；https://help.gamma.app/en/articles/12466653-how-do-i-purchase-more-credits；https://gamma.app/pricing。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## tapnow
+
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - Terms新用户赠Tapies带条件：资格与额度依产品、安全、合规检查，不能许诺人人领，不编固定数量；官方Tapies validity文档2026-09-28起到账的新用户赠额30天，未用完自动清除，生效日不是领取活动开始日。
 - 本批核验入口：https://www.tapnow.ai/terms-of-service；https://docs.tapnow.ai/en/docs/account/tapies-validity-and-expiration。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## meshy
+
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - 免费每月100积分，UTC月初00:00刷新，未用不结转；每月可下载10个Meshy6Lite，CC BY4.0需署名，可商用，1并发低队列，不含API；不能把所有当前付费模型填进免费模型。
 - 官方Pro$20/月含1000积分，可按套餐比例比较100积分约$2；写明套餐替代成本而非免费账号可购单价。加购文档未公布数字，不编加购价。
 - 本批核验入口：https://www.meshy.ai/pricing；https://docs.meshy.ai/en/webapp/pricing。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## ideogram
+
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - 当前价格页Free仅eligible accounts每周慢速积分，Google/Apple/Microsoft登录，数量可变化；无限Slow为Plus/Pro等付费权益，不能写在Free。当前页与旧FAQ固定10/周存在漂移，依现行表不沿用旧数量/固定重置时刻。
 - 优先积分才能AI编辑/图像参考，免费生成默认公开；未写免费层具体模型版本，不把网站所有模型导航当免费模型。
 - 本批核验入口：https://ideogram.ai/pricing/。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## github
+
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - Copilot Free每月2000行内建议，另外Chat/Agent有限额度，补全与Agent模型范围不同，不能把所有Chat模型填进补全条目的免费模型，也无按次公开单价可折算。领取方式app，在支持IDE登录GitHub并启用插件。
 - 本批核验入口：https://github.com/features/copilot/plans。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## gcloud
+
 - 独立产品试用（GKE、Spanner、Cloud SQL、AlloyDB、Looker、Bigtable 等）不是 AI 额度，not_ai。Gemini Enterprise 试用以帮助中心 answer/16551831 为准：新用户、最多 5 席、需支付方式、到期自动转付费。$300 新人额度不能付 AI Studio 的 Gemini API，也不能用于第三方合作模型、GPU、Marketplace。（2026-10-03 批量审核）
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - Google Cloud 独立数据库试用不得重复算公共$300新人额度。Bigtable10天仅Google账号、无billing；延长90天需启用结算。AlloyDB/SQL/Spanner均需有效结算，新客户验证支付方式。数据库/容器服务应交管理员判断非AI收录边界。
@@ -586,6 +664,7 @@
 - 本批核验入口：https://cloud.google.com/startup/ai；https://cloud.google.com/startup；https://docs.cloud.google.com/bigtable/docs/free-trial-instance；https://docs.cloud.google.com/free/docs/free-cloud-features；https://docs.cloud.google.com/looker/docs/looker-core-overview；https://docs.cloud.google.com/alloydb/docs/free-trial-cluster；https://docs.cloud.google.com/spanner/docs/free-trial-instance；https://docs.cloud.google.com/sql/docs/mysql/free-trial-instance。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## elevenlabs
+
 - v4 页和 pricing 页内容不同，摘录要从证据链接那一页取。API 的 72% off 是折扣，不收。多档位按“套餐价 ÷ 积分”取最低费率折美元。（2026-10-03 批量审核）
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - Eleven v4横幅3x实际为Creator及以上额外最高2倍月TTS用量不扣余额，仅web/mobile；API折价为另一条定价规则，不混用。
@@ -593,22 +672,26 @@
 - 本批核验入口：https://elevenlabs.io/pricing；https://elevenlabs.io/v4；https://elevenlabs.io/startup-grants；https://elevenlabs.io/pricing/api。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## leonardo
+
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - Leonardo日150=30天4500 tokens，旧0.45估值错误；官方Essential $12/8500估值$6.35。免费目录具体型号不全，不把付费不限速模型列表直接填free。
 - 本批核验入口：https://leonardo.ai/pricing；https://intercom.help/leonardo-ai/en/articles/8044033-token-usage。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## groq
+
 - 美元按主力免费模型（gpt-oss-120b）官方速率上限 × 输入价算：每天 200K Token × 30 × $0.15/百万 ≈ $0.9/月。（2026-10-03 批量审核）
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - Groq和Cohere型号以各自Free/Trial limit表为准，不能用平台全部支持模型自动填免费。Cohere每月1000次不是固定Token数，不能假定每请求Token量折美元。
 - 本批核验入口：https://console.groq.com/docs/rate-limits；https://console.groq.com/docs/billing-faqs。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## cohere
+
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - Groq和Cohere型号以各自Free/Trial limit表为准，不能用平台全部支持模型自动填免费。Cohere每月1000次不是固定Token数，不能假定每请求Token量折美元。
 - 本批核验入口：https://docs.cohere.com/docs/rate-limits；https://cohere.com/pricing。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## together
+
 - 本节按 2026-10-01 官方资料核验；额度和申请资格后续更新须重新读取官方全文。
 - Together AI Startup Accelerator 为申请审核制，面向构建 AI 原生应用的初创企业，不是注册即得；新老平台账号不决定资格，按企业融资阶段及审核结果决定。
 - 官方三个档位：Build（融资不超过 $5M）最高 $15,000；Scale（融资 $5M–$10M）最高 $30,000；Grow（融资超过 $10M）最高 $50,000。最低档名称是 Build，不是 Start；各数字是可获批上限，不保证每家企业足额领取。
@@ -619,29 +702,38 @@
 - 官方来源：https://www.together.ai/blog/announcing-together-ai-startup-accelerator
 
 ## inception
+
 - 同一页面写了 1000 万和 1 亿，以 Free 档的 1 亿为准，一次性赠送，类型 new。（2026-10-03 批量审核）
 - 官方Free档1亿API Token体验；Mercury2.5发布页再次明确100million，不能按每月刷新或继承聚合站未证实的有效期；开户细则未读到就保留待核。
 ## browser-use
+
 - 合资格Google/GitHub/Microsoft注册赠$15云端额度，浏览器时间、代理流量、模型费用和20%服务费都消耗余额；不当成原模型厂商赠金，赠额有效期以账户条款为准。
 ## hume
+
 - 官方billing写新账号免费档含$20额度，TTS/EVI/Voice权限与余额有效期须核具体账户；不凭付费模型导航填完整免费模型。
 ## free-ai
+
 - 创业资助1500万Token需公司不满3年、融资少于$5M、有产品且未付费，经审核；仅自托管开源模型，外部GPT/Claude/Gemini不在赠额范围，不允许收录号池转售版本。
 ## qwenwork
+
 - 活动以帮助中心《千问办公正式上线，多重惊喜福利！》https://help.aliyun.com/zh/qwenwork/qwenwork-is-live 为准，每个活动标题会标注“已结束”；上线日 2026-08-03（阿里巴巴集团新闻稿）。
 - 积分没有公开单价，按个人标准版套餐费率折算：78 元/月约 8,000 积分（基础 2,000 + 每天 200 登录），约 0.01 元/积分。付费档每日登录积分是套餐自带，不收。（2026-10-03 管理员确认）
 - 与千问AI平台/百炼API是独立权益：注册2000积分90天，免费每天登录100当日有效；标准/高级每天200/300。8月五倍登录和经济模型免积分已结束，不套旧促销。
 ## doubao-work
+
 - 官网首页现行宣传下载领30天订阅体验，批次、新老资格、截止需账户核验；个人、团队、企业套餐分开。团队2000加赠存在9/30旧细则，未核延期不当现在可领。
 ## coze
+
 - docs.coze.cn 要用浏览器 UA 才能抓（否则 UA Forbidden）。积分折美元用 coze_pro_credits 企业版“1000 积分 = 1 元”（比个人进阶版 39.9 元/3 万更保守）。积分页现在只写“新用户注册一次性 1500（30 天）”，免费版每日 1500 需登录核对；新用户 1500 可能是一条漏收的新人礼。（2026-10-03 批量审核）
 - 国内扣子个人免费版官方升级规则每日登录1500积分、1天有效，不能套旧500档或已结束的9.9元优惠；新套餐实际领取仍需当前账户核对。
 ## lingxi
+
 - 文档里的“快速模式不消耗智点”“自定义模型下搜索、生图等工具限时免费”都不收：前者只是基础模式、没有额度，后者要自带 API Key 付模型费。体验800/月和无需消费的签到额度另核；2026-10-09首购加赠已明确不收，原lingxi-first-purchase-double已撤下。（2026-10-03 管理员确认）
 - WPS灵犀体验800智点/月；签到100/200，连续Day7起200/天；首次购买标准/进阶/旗舰额外5000/14000/48000只一次。本金不记赠金；加量2000智点25元，仅付费用户，可作同平台替代成本比较。
 ## workbuddy
+
 - 2026-10-09审批拦截复核：invite页的个人奖励有效期在“查看完整活动规则”弹窗内，默认折叠抓取缺原句造成evidence_missing，不是活动撤下。浏览器现场确认10月31日23:59、国内新老可邀请、受邀新人PC首次使用、7日累计3天、邀请累计上限30000、注册礼1个月及邀请奖励6个月；公开证据有效期摘录用卡片的10/31截止，个人有效期按完整弹窗核实。人工核对官网恢复核验，不将evidence改tested或自动接受更新。付费500加成按现役消费促销排除规则不列收录权益。
-- 2026-10-09邀请活动：官方invite页可由新老用户生成链接/海报，requirements=none而非invite；链接是奖励归因，不是私有邀请码准入。claimMethod=app，注册2000积分仅受邀新账号，type=new；同条包含邀请人奖励故audience=all，正文按角色写清。原提案trial不保留；app/none及2000积分按50元/1000比价约$14.08正确。9/1及按上一轮结束推断10/1均不能作本轮明示开始，日期留空，不把旧内部拒绝理由当现行规则。修改在提案中，等待管理员接受，不覆盖旧公开版本。
+- 2026-10-09邀请活动：官方invite页可由新老用户生成链接/海报，requirements=none而非invite；链接是奖励归因，不是私有邀请码准入。claimMethod=app，注册2000积分仅受邀新账号，type=new；同条包含邀请人奖励故audience=all，正文按角色写清。原提案trial不保留；app/none及2000积分按50元/1000比价约$14.08正确。9/1及按上一轮结束推断10/1均不能作本轮明示开始，日期留空，不把旧内部拒绝理由当现行规则。具体审批状态读取后台；人工编辑不自动批准，不能用本节旧快照推断当前仍有提案。
 - 2026-10-09修复国际官方来源登记：@WorkBuddy_AI真实账号Profile指向workbuddy.ai，该官网说明产品来自Tencent，页脚Tencent Cloud。此前句柄误挂tencent-hy、WorkBuddy的xHandles为空，导致7z56无法通过官方来源校验。生产及seed已将句柄移至workbuddy，登记国际官网https://www.workbuddy.ai为官方来源，autoPublish仍关闭；中国站官网保留。账号白名单逐平台精确匹配，不放宽X整个域名，也不把国际100/350积分与中国站2000活动或费率混算。7z56保持待审，平台证据校验修复不代表条目批准。
 - 2026-10-08：国际X账号WorkBuddy_AI原帖邀请人100、好友350（100推荐+250欢迎），profile官网workbuddy.ai、地区Singapore；不套中国站2000邀请活动或50元/1000费率。发放资格为好友注册并首次查询，积分到期未说明；原帖时间由ID2108082016860413973校准。账号Profile指向workbuddy.ai，该官网明确WorkBuddy属于Tencent且页脚Tencent Cloud；国际积分活动与中国站仍分开核验，不凭同品牌套用费率。
 - 2026-10-08 管理员指出标准/高级/旗舰“加赠”实际随套餐分档配置。重新核对 Pricing：三档基础/月分别 2,000/4,000/20,000，加赠/月 2,000/5,000/30,000，当前每月实得 4,000/9,000/50,000，随订阅自动发放。官网确实标“加赠积分 / 月（限时）”，不能说官方没写限时，但当前可核证据只给套餐定价，没有足够的独立活动条件/期限证据；到账后 1 个月有效是积分寿命，不是活动截止。按现行套餐自带权益口径，6j7x/lpen/v4sd 建议 paid_bundle 拒绝，不能仅凭“加赠/限时”字样当独立羊毛或按三档拆条。此前保留为独立限时加赠的判断过松，予以纠正。本次用户要求核查告知，未改生产审核状态；订阅升级公众号公告受验证码阻挡，未读到，不将其视为已核实或不存在活动。https://www.workbuddy.cn/docs/workbuddy/Pricing；https://mp.weixin.qq.com/s/EAhTahzB5K-7sfERoy1YsQ
@@ -653,45 +745,50 @@
 - 邀请2000、教师礼和企业双倍积分9/30已结束；社区4000万Token是换算，不能写成官方固定Token赠额。
 
 ## sensenova
+
 - 商汤 SenseNova TokenPlan 由商汤自己发放，不要挂到火山方舟等其他平台；社区帖只当线索，以 https://platform.sensenova.cn/docs “积分”一节和 https://www.sensenova.cn/token-plan 为准。
 - 2026-08-28 起为积分制：通用积分池与 Flash-Lite 专属积分池各滚动 5 小时 60,000、每周 600,000 积分；Flash-Lite 消费 1:1 返赠通用积分，30 天有效。公测期 ¥0/月，无截止日期；条目按常驻处理（type standing、endKind standing），规则变化看文档“积分”一节（2026-10-03 批量审核）。
 - 免费模型只列订阅页 Free 档点名的（目前 SenseNova 6.8 Flash Lite、SenseNova U1 Fast）；模型总览里的第三方模型未写入免费档，不列。积分无官方换算，美元留空。规则改动看文档“积分”一节，旧的“每 5 小时 N 次”是 7 月规则。（2026-10-02 管理员确认）
 
-## windsurf
-- Windsurf 是 Cognition 旗下产品，但它的福利归 windsurf 平台，不要挂到 devin；Windsurf 的公告现在发在 devin.ai/blog（以及 windsurf.com），两处都算官方出处。
-- Windsurf 博客里“新模型上线限时 N 倍积分优惠”多数是旧文的发布价，先看文章日期：已过期的作为历史，打折不是免费的按 discount 标签处理。（2026-10-02）
-
 ## cerebras
+
 - 新人 $5 免费额度可用于所有公开模型，30 天有效，以 inference-docs.cerebras.ai/support/rate-limits 为准（2026-10-03 批量审核）。
 
 ## openai
+
 - 2026-10-08：Auto-review媒体来源追到Tibo原帖https://x.com/thsottiaux/status/2107368734981517634，明确通过ChatGPT账号登录免费开启、自动审核不消耗计划用量；只覆盖Auto-review，不是主Agent或全部ChatGPT免费。校准发布时间，保留待审，不编固定调用次数。
 - Codex / ChatGPT 重置按官方每次发放的实际语义记录，不按同名/同额度去重。单次自动重置或banked reset卡发放：claimStart与claimEnd为同一事件日；publishedAt保存Tibo（@thsottiaux）官方原公告精确时间，process/传播进度回复不能冒充新发放。明确tomorrow或指定执行日时，事件日按原文，发布时间另存；卡的使用期限不扩成发放窗口。若明确未来24小时重置两次、未来一周每天重置等多次安排，则保留公告覆盖的起止区间，不强制同日；new release、未来改进、next week本身不是持续重置证据。不同时间点的独立发放，即使同一天也可分别记录；同一次发放的预告、确认、延迟解释仍为同一事件，不能只按推文时间不同判成新福利。只有窗口明确才计算日期，不猜未公布的逐次process时刻。（2026-10-08）
 - 本次实读13个X来源及线程：7月9日未来24小时两次重置保留7月9–10日；8月22日tomorrow指8月23日；10月1日tomorrow 10am预告指10月2日，10月2日道歉回复不是10月3日新发放；10月7日banked reset主公告status/2107913674593644711，稍后status/2107913738791596286仅说当天美西EOD前到账。美西夏令时日期使用America/Los_Angeles；原文口语PST保留，不将其写法误算为确认实际执行时刻。原7月17日证据实际只回复“And now 100%”，不能伪造完整全员公告摘录。逐条凭证见docs/codex-reset-time-audit-2026-10-08.md。
 
 ## periodic
+
 - 2026-10-08：社区“基元律动认证18、充19减18”不是Periodic Labs，两个条目已改归TokenRhythm待准入平台；不得翻译“基元”自动映射到科学AI公司Periodic.com。
 
 ## qoder
+
 - 2026-10-09核实：Qoder属于阿里体系，不是独立于Qwen厂商的第三方公司；平台显示“阿里 Qoder（CN / International）”。CN用户协议https://qoder.cn/product-service的主体为通义云启（杭州）信息技术有限公司及/或关联公司，并明确阿里云可共同提供服务、采用阿里云账号；阿里集团官网https://www.alibabagroup.com/zh-CN/document-2016703577908576256将Qoder/QoderWork列为其平台。生产平台已准入，活动仍单独待审。
 - Qoder与Qwen Code是不同编程产品，虽同属阿里仍分别核验账号、余额与活动范围。Qwen Code官方仓库https://github.com/QwenLM/qwen-code；Qoder自己的IDE/CLI/网页/移动端活动留在qoder，不能把Qwen Code或百炼额度拼进来。同一事件由阿里/Qwen及Qoder各公告一次时复用原条目，不重复建活动。
 - 2026-10-09读回CN https://docs.qoder.cn/events/flashoffer 与国际 https://docs.qoder.com/events/flashoffer：两页均已延期，原9月30日截止均不再有效，CN明确10月1日起继续免费，国际FAQ同样写October 1；结束另行提前公告。开始均2026-09-18 10:00，CN北京时间、国际Singapore Time。不要沿用旧的“只有CN延期、国际截至9月30日”结论。
 - 两区均限个人账号（免费/试用/零余额均可）、不含Teams/Enterprise；指定Qwen3.8-Flash不扣Credits，无需领取，覆盖各自Qoder、IDE、插件、CLI、Wake、Cloud Agents、移动/网页端。CN另明确会员卡可参与。模型图像理解是输入能力，不是免费图像生成。各区域官方活动分别核验，不因同厂商把账号/门槛自动互通，也不新建同区域的延期重复条目。
 
 ## tokenrhythm
+
 - 2026-10-08待准入，官网https://tokenrhythm.studio自称基元律动多模型API服务，与Periodic Labs无关。社区认证18/充19减18尚无公开官方活动条款，单位、支付机制、期限与渠道授权待核；不把18直接折成2.54美元，不自动批准聚合平台。
 
 ## cline
+
 - 2026-10-09管理员明确授权平台白名单，Cline已准入；官网cline.bot指向github.com/cline/cline，官方X账号@cline的Profile也指向同一仓库，已登记账号。Step 5 Preview活动原帖https://x.com/cline/status/2108249633789263917确认免费，StepFun稍后转述一周；归cline，不归stepfun。精确结束时刻未公开，原日期按一周推算，未自动批准。
 
 
 ## oiioii
+
 - 2026-10-09管理员已实测并通过：注册一次赠60与每日签到60为两种独立领取机制，分别保留oiioii-new-user-bonus及oiioii-daily-check-in。FAQ“free tier with daily credits”是每日签到权益的概述，不是另一份每日赠额；新oiioii-oiioii-free-tier-daily-credits已按duplicate拒绝，未来FAQ/价格页的日积分统一复用oiioii-daily-check-in，不因页面不同、缺数字或叫“免费档”重建，不从模型导航推免费模型清单。
 - 2026-10-09 用户明确授权平台准入，site https://www.oiioii.ai；同站简中 https://www.oiioii.ai/zh/、英文 https://www.oiioii.ai/en/、繁中 /zh-Hant/、日文 /ja/。FAQ明确为原生多语言UI；未找到独立大陆版的官方证据，不因语言页面重复建厂商/权益。搜索发现app.oiioii.art同名页面，但未从主站取得官方互链确认，暂记候选入口，不放入证据域名白名单；不要混入名字相近的oioiart.com。
 - 官网页脚直接链接并由FAQ再次列明：X https://x.com/OiiOii_AI、YouTube https://www.youtube.com/@OiiOii_AI、Instagram https://www.instagram.com/oiioii_ai/、Reddit https://www.reddit.com/user/OiiOiiAI/。Discord https://discord.gg/KCwR6burVc 来自官网价格页Help区域。国内公众号/小红书同名账号有第三方提及，尚未确认官方账号ID，不据此授权任意同名账号。
 - 中文主页Help直接链接 https://ecncw7du1qtr.feishu.cn/wiki/R6m5w5RILiS35lkM7PycEUhHnfc；英文主页Help直接链接 https://docs.google.com/document/d/1plIxnmE-XoWP-GbOsZ9jqiz5qKXS7ysg1-rsJ4pifEY/edit 。Google文档正文已读。外部托管文档只登记为参考链接，不能把整个Google Docs/飞书域名认作该厂商官方。稳定自动信源为本域 /price、/faq、/zh/、/changelog、/blog。
-- 官网 /price 的Community & Rewards明确有新用户注册赠额、每日签到（UTC 00:00刷新）、邀请好友注册并登录奖励，但数值与有效期均以当期活动为准。/faq说明免费档有daily credits。2026-01-16社区帖 https://linux.do/t/topic/1468443 的注册1000、每日50、邀请200是旧线索，不能当2026-10现行数额。当前金额、免费账号领取范围、有效期需登录权益页核验，美元暂留空；不可将套餐表会员签到310/930/1550等套到免费用户。
+- 官网 /price 的Community & Rewards明确有新用户注册赠额、每日签到（UTC 00:00刷新）、邀请好友注册并登录奖励，但数值与有效期均以当期活动为准。/faq说明免费档有daily credits。2026-01-16社区帖 https://linux.do/t/topic/1468443 的注册1000、每日50、邀请200是旧线索，不能当2026-10现行数额。2026-10-09注册60及每日60已有管理员实测，未公布的有效期仍看账号明细；不可将套餐表会员签到310/930/1550等套到免费用户。
 - Google帮助文档仍写签到/邀请7天、会员赠额30天；当前价格页另写会员31天且奖励有效期以活动为准，旧文档不覆盖当前账户活动规则。$7 Base促销、普通会员折扣、常设套餐包含额度不单独收录；比赛获奖不收。免费额度适用模型名单需单独核对，不能把全站展示的付费模型填成免费模型。
 
 ## kilo
+
 - 2026-10-09：Kilo Code官网kilo.ai，官推@kilocode；与AWS Kiro（kiro.dev）是不同平台，不能按近似拼写归同一ID。官推2108557014913691902于2026-10-09T13:55:42Z宣布Step5Preview FREE for a week，是全局公告日起一周，非个人领取后7天；精确截止未公布，不造日期午夜。StepFun后续引用同一推文只补来源、不新建活动。平台已准入，官方句柄已登记，条目仍pending。

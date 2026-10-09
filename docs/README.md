@@ -25,6 +25,10 @@
 - [抽取经验发布](extraction-lessons-release-2026-10-08.md)：规则加载和真实模型回归凭证。
 - [第一轮工作流审查](workflow-audit-2026-10-08.md)：来源、通知、审核与输入性能修复。
 - [第二轮恢复能力复查](workflow-resilience-2026-10-08.md)：活动错配、重试、人工竞争及数据恢复；真实回归分批验证记录。
+- [已审核字段漂移修复](review-drift-fix-2026-10-09.md)：同源条款变更门槛、拒绝记忆、候选校验及16条噪声清理。
+- [新建入口去重修复](new-offer-dedupe-fix-2026-10-09.md)：跨ID、来源、平台误归及四个真实案例重放；与字段漂移是不同入口。
+- [WorkBuddy邀请审核](workbuddy-invite-review-2026-10-09.md)：邀请门槛、人工提案及最新审核元数据读取。
+- [Higgsfield试用停止领取](higgsfield-ai-influencer-end-2026-10-09.md)：管理员实测结束与未知实际截止日期。
 
 ## 条目审核与厂商接入记录
 

@@ -24,7 +24,7 @@ npx tsx .claude/skills/yangmao-review/scripts/offer.ts plan <短码> patch.json
 | 下架/撤回、平台准入、启用自动上架 | 不可 | 可 |
 | 健康/分析、发送通知、处理送达台账 | 不可 | 可 |
 
-以`src/worker/admin.ts`的`REVIEWER_ALLOWED`为准。`REVIEWER_TOKENS`使用name:token列表，令牌至少16字符。角色能力不扩大本次任务授权。平台准入不等于条目批准；`reject`对已上架条目只丢弃更新提案，误收条目用`unpublish`，官方明确撤回用`withdraw`并保存官方链接及理由。
+以`src/worker/admin.ts`的`REVIEWER_ALLOWED`为准。`REVIEWER_TOKENS`使用name:token列表，令牌至少16字符。角色能力不扩大本次任务授权。平台准入不等于条目批准；`reject`对已上架条目持久保存被拒证据后移除更新提案，误收条目用`unpublish`，官方明确撤回用`withdraw`并保存官方链接及理由。
 
 ## 调度与线索到审核
 
@@ -43,7 +43,7 @@ Worker UTC 00:00对应东京09:00、上海08:00。Hermes未设置独立任务时
 
 人工补录优先；调度给自动发现留名额，并保留20%最老积压。排序只决定先后。成功入库后才标linked；部分失败、未知平台、重要福利漏抽等保留reviewing供处理。取不到原文时可用备注/摘要形成媒体级稿；失效补录不无限占据new队首。后台支持状态筛选和游标分页，重要受阻线索在待审顶部可见。
 
-社区稿的固定官方搜索、机制一致性检查、占位、输入版本、退避和恢复由[自动官方复核](official-review-workflow.md)维护。普通`/api/ingest/verify`须显式传`trustedDirect:true`才刷新核验；Jina正文不经普通核验路径升级。核验或提案写入检查读取时版本，旧结果不能覆盖人工修改。approved旧版保持公开，变化进入提案。
+社区稿的固定官方搜索、机制一致性检查、占位、输入版本、退避和恢复由[自动官方复核](official-review-workflow.md)维护。普通`/api/ingest/verify`须显式传`trustedDirect:true`才刷新核验；Jina正文不经普通核验路径升级。核验或提案写入检查读取时版本，旧结果不能覆盖人工修改。approved旧版保持公开，仅有同源官方正文证明条款改变才进入提案；采集器附完整sourceText，纯模型漂移或拒绝过的同版条款不入队，合并后重新校验。新ID查重是独立入口，须同时验收；完整行为见数据合同。
 
 手动补跑会写线索和待审，只在任务授权范围执行：
 
@@ -60,6 +60,12 @@ gh workflow run collect.yml --ref main -f fast_leads=true -f lead_limit=50
 模型链为Gemini免费层、OpenRouter、可选GLM、预算内DeepSeek付费兜底。免费供应商受限会本轮冷却；重要或积压超过2小时的线索可使用既有付费预算。默认`DAILY_TOKEN_CAP=0`、`MONTHLY_COST_CAP_CNY=10`，实际覆盖以部署变量和Actions配置为准。预算先原子预留再结算，用量不明保留预留；RSS单篇失败不阻断后续，FORCE可以重抽。
 
 工作流`extraction-lessons.yml`用合成文本驱动真实模型，`only_cases`以[scripts/eval-extraction-lessons.ts](../scripts/eval-extraction-lessons.ts)的cases为准，留空全部；涵盖套餐/免费额度、账单模式、日期、重置、身份认证、资助与比赛及官方活动错配。禁止付费兜底，不写条目/线索，模型仍记预算，输出保留artifact。通过不等于官网事实全部核验；失败需查具体结果，不能降低验收标准。
+
+## 证据拦截的处置
+
+“当前官方页面未能再次确认原条款”来自evidence_missing，和字段拦截数不同。先核对证据URL、跳转、默认页/弹窗及保存摘录；如WorkBuddy个人有效期藏在完整规则弹窗，普通抓取缺失不能直接判结束。人工读到当前官方规则后可修正摘录并用`retested`记录已核实仍有效；这不是接受更新，也不把site证据改成tested。只有管理员明确亲测过权益才用tested级别。
+
+管理员亲测停止领取时，管理接口`POST /api/admin/offers/:ref/withdraw`可传`basis:"tested"`、reason及实测入口evidenceUrl；默认basis为official。withdrawnAt是确认时刻，实际截止未知仍留空。结束会清除过时提案、退出可领和自动复核队列，历史approved记录保留。
 
 ## 展示、通知与健康
 
@@ -94,3 +100,5 @@ npx wrangler deployments list
 `verification-queue`500先查Worker/D1查询，不重复调用所有模型。已修复逐ID绑定超过100参数的问题；历史根因和迁移台账修复见[采集事故](incident-2026-10-07-collect.md)。迁移字段若已存在但台账漏记，先验证完整效果，仅补缺失台账，不重复ALTER。
 
 OpenRouter默认备用为`openrouter/free`；404须检查模型可用性，不能把付费模型当免费兜底。登录墙、页面不可读、额度不明、未准入平台和人工字段保护会保留待审/人工处理，具体事实须核实后裁决。
+
+拒绝记忆迁移为0013_rejected_offer_updates.sql；首次启用须迁移后部署Worker，再推送采集器完整正文协议。文档同步本身无需重新部署。回归同时覆盖旧ID改字段、新ID重复插入、拒绝后重放、人工候选保留及真实新轮次不误合并。

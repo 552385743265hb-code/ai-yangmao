@@ -41,7 +41,7 @@ cd /Volumes/AI/MyWorkspace/AI_Freebies && ./node_modules/.bin/tsx scripts/ym.ts 
 | 核对结果不明的 Telegram 推送 | `ym health --verbose` 查看 ID；确认收到后执行 `ym delivery-delivered <ID> <核对依据>`，确认没收到后执行 `ym delivery-unsent <ID> <核对依据>` |
 
 `edit` 可改字段：title type valueText usdEstimate claimStart claimEnd endKind creditValidity audience requirements modalities platformId sourceTz claimMethod。
-- type：new 注册新人礼 / trial 应用尝鲜 / free 限时免费开放 / perk 会员福利 / topup 充值赠送 / gift 会员免费送 / standing 常驻免费额度 / apply 申请制
+- type：new 注册新人礼 / trial 应用尝鲜 / free 限时免费开放 / perk 会员福利 / topup 历史充值赠送/身份专享折扣 / gift 会员免费送 / standing 常驻免费额度 / apply 申请制
 - endKind：date（有截止日期）/ unknown（截止未知）/ standing（只用于常驻和申请制）
 - requirements 逗号分隔：none phone card net realname biz student invite targeted pay:¥100 member:会员名
 - 日期一律 YYYY-MM-DD，按官方时区
@@ -67,7 +67,7 @@ npx tsx .claude/skills/yangmao-review/scripts/offer.ts apply <短码> patch.json
 npx tsx .claude/skills/yangmao-review/scripts/offer.ts suggest <短码> judge --reason "需要管理员判断"
 ```
 
-`plan` 只试算；`apply` 默认只补字段；`suggest` 仅写内部建议，不通过或拒绝。对已上架条目用 `reject` 只丢弃更新提案；管理员确需下架时用审核脚本 `unpublish`，官方撤回则用 `ym withdraw`。
+`plan` 只试算；`apply` 默认只补字段；`suggest` 仅写内部建议，不通过或拒绝。对已上架条目用 `reject` 持久记住被拒证据后移除更新提案；管理员确需下架时用审核脚本 `unpublish`，官方撤回则用 `ym withdraw`。
 
 审核员可以处理条目、建议、核验记录和线索；不能下架、撤回、批准平台、启用自动上架或处理推送台账。平台准入与条目通过是两件事。`ym` 使用本机管理员密钥，不代表本次任务已授权执行管理员动作。`digest` / `urgent` 只预览，`dispatch` 发送消息必须得到用户明确授权。
 
@@ -82,3 +82,5 @@ npx tsx .claude/skills/yangmao-review/scripts/offer.ts suggest <短码> judge --
 - 中文、简短，直接转述命令输出的要点；列表保留短码，方便用户接着回复。
 - 命令报错时，原样告诉用户错误信息，不要猜测或重试多次。
 - 一次通过/拒绝多条时，最后汇总一句"已通过 N 条、拒绝 M 条"。
+
+收录排除与审核稳定性统一按项目数据合同和通用规则；消费返利、首购/升级付费/充值触发赠额不收。模型改写不等于官方条款变化，新ID也必须查重。原文匹配失败先核对默认页与折叠弹窗；人工核对后retested仅恢复有效性，不代替接受更新。
