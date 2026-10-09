@@ -18,6 +18,23 @@ beforeEach(() => {
 afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); vi.unstubAllEnvs(); vi.restoreAllMocks(); });
 
 describe('model result contract', () => {
+  it('rechecks suspicious empty extraction without losing an independent grant beside a competition',async()=>{
+    let calls=0,feedback='';
+    vi.stubGlobal('fetch',vi.fn(async(_input,init)=>{
+      feedback=JSON.parse(String(init?.body)).systemInstruction.parts[0].text;
+      return gemini(JSON.stringify({offers:++calls===1?[]:[{...offer,type:'apply',valueText:'最高$200科研API额度'}]}));
+    }));
+    const {extract}=await import('../pipeline/llm');
+    const body='比赛前三名获奖$1000。另有独立科研资助，提交课题材料，审批后最高$200 API额度，不参与比赛排名。';
+    const r=await extract('Vendor','https://vendor.example/free',body);
+    expect(calls).toBe(2);expect(r.offers[0].type).toBe('apply');expect(feedback).toContain('空结果疑似漏掉');
+  });
+  it('never checkpoints a repeatedly empty mixed grant page as successfully evaluated',async()=>{
+    const fetcher=vi.fn(async()=>gemini('{"offers":[]}'));vi.stubGlobal('fetch',fetcher);
+    const {extract}=await import('../pipeline/llm');
+    await expect(extract('Vendor','https://vendor.example/free','比赛前三名获奖$1000。另有独立科研资助，提交课题材料，审批后最高$200 API额度。')).rejects.toThrow('疑似漏掉');
+    expect(fetcher).toHaveBeenCalledTimes(2);
+  });
   it('does not infer an overseas-network requirement from a foreign billing account',async()=>{
     vi.stubGlobal('fetch',vi.fn(async()=>gemini(JSON.stringify({offers:[{...offer,requirements:['card','net']}]}))));
     const {extract}=await import('../pipeline/llm');

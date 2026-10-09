@@ -283,6 +283,7 @@ function groundedPublication(raw: unknown, normalized: string | null | undefined
 /** 免费模型都不可用时抛出，调用方把这个页面推迟到下一轮。 */
 export class DeferError extends Error {}
 export class ModelOutputError extends Error {}
+class SuspectedOmissionError extends ModelOutputError {}
 
 /** 原文只有月份时，模型不能补造月初或任意日；让备用模型纠正，仍失败则保留待处理。 */
 function assertClaimDatePrecision(date:string|null|undefined, evidence:string, field:string) {
@@ -319,7 +320,9 @@ export async function extract(platformName: string, url: string, text: string, l
   const all = providers().filter(p => !unavailableProviders.has(p.name));
   const free = all.filter(p => !p.paid), paid = all.filter(p => p.paid);
   const chain = opts.allowPaid ? [...free, ...paid] : free;
-  for (const p of chain) {
+  const omissionRechecks=new Set<string>();
+  for (let providerIndex=0;providerIndex<chain.length;providerIndex++) {
+    const p=chain[providerIndex];
     try {
       const currentSystem=lastErr instanceof ModelOutputError?sys+'\n上次抽取未通过校验，请按原文修正：'+lastErr.message.slice(0,350):sys;
       let res: { text: string; tokens: number; costCny?: number; usageKnown: boolean } | null = null;
@@ -360,7 +363,16 @@ export async function extract(platformName: string, url: string, text: string, l
       }
       const { text: out, tokens, costCny = 0 } = res!;
       const evidence = opts.evidenceText ?? text;
-      const offers = parseOffers(out).map(o => {
+      const parsedOffers=parseOffers(out);
+      // 混合公告不能因排除了获奖奖池，就把旁边独立可申请的科研/创业资助也当成空结果。
+      if(!opts.verificationTarget && !parsedOffers.length && /比赛|竞赛|获奖|contest|prize/i.test(evidence)
+        && /独立|另有|separate|independent/i.test(evidence)
+        && /(?:科研|研究|教学|创业|创作者).{0,12}(?:资助|赠金)|(?:research|startup|creator).{0,20}grant/i.test(evidence)
+        && /提交.{0,15}(?:课题|项目|材料|申请)|submit.{0,40}(?:proposal|application)/i.test(evidence)
+        && /(?:最高|最多|up to).{0,20}(?:\$|美元|credits?|额度|tokens?)/i.test(evidence)){
+        throw new SuspectedOmissionError('空结果疑似漏掉同页独立申请资助：请分别判断比赛获奖与提交材料获得的资助，后者不是比赛奖池；按原文抽取，不能连带排除。');
+      }
+      const offers = parsedOffers.map(o => {
         const normalized = tidy(o);
         assertClaimDatePrecision(normalized.claimStart,evidence,'claimStart');
         assertClaimDatePrecision(normalized.claimEnd,evidence,'claimEnd');
@@ -373,6 +385,9 @@ export async function extract(platformName: string, url: string, text: string, l
       return { offers, tokens, costCny, provider: p.name };
     } catch (e) {
       if (e instanceof BudgetExhaustedError || e instanceof BudgetLedgerError || e instanceof DeferError) throw e;
+      if(e instanceof SuspectedOmissionError&&!omissionRechecks.has(p.name)){
+        omissionRechecks.add(p.name);chain.splice(providerIndex+1,0,p);
+      }
       lastErr = e; log(`  ${p.name} 失败，换下一个模型：${(e as Error).message.slice(0, 120)}`);
     }
   }
