@@ -21,4 +21,6 @@ Qoder刚通过后被模型从free改成perk；Azure Translator在空模型列表
 
 部署前快照共18个更新，按原/候选证据URL与权益/资格/有效期完全相同且manualFields为空筛出16条噪声。通过带expectedReviewVersion的拒绝更新接口逐条清理，保存拒绝记忆，原approved版本不动。WorkBuddy人工修正与n8n证据差异提案保留；未批准任何新权益。
 
-完整生产快照/提案版本与回执保存在本机/tmp，不提交内部核验原文或凭据。读回和重放验证结果见本次执行回执；此凭证是当次快照，不代表未来队列数量。
+生产读回：16条原记录全部仍为approved，16份拒绝证据已持久保存；剩余2个提案为WorkBuddy人工修正和n8n证据差异。把Qoder、Azure Translator和WorkBuddy旧提案各重放2次，接口均返回unchanged；Qoder/Azure没有重新入队，WorkBuddy人工候选及版本未被覆盖。
+
+完整生产快照/提案版本与回执保存在本机/tmp，不提交内部核验原文或凭据。此凭证是当次快照，不代表未来队列数量。
