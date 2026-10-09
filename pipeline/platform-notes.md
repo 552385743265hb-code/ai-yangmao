@@ -666,3 +666,11 @@
 
 ## cline
 - 2026-10-09管理员明确授权平台白名单，Cline已准入；官网cline.bot指向github.com/cline/cline，官方X账号@cline的Profile也指向同一仓库，已登记账号。Step 5 Preview活动原帖https://x.com/cline/status/2108249633789263917确认免费，StepFun稍后转述一周；归cline，不归stepfun。精确结束时刻未公开，原日期按一周推算，未自动批准。
+
+
+## oiioii
+- 2026-10-09 用户明确授权平台准入，site https://www.oiioii.ai；同站简中 https://www.oiioii.ai/zh/、英文 https://www.oiioii.ai/en/、繁中 /zh-Hant/、日文 /ja/。FAQ明确为原生多语言UI；未找到独立大陆版的官方证据，不因语言页面重复建厂商/权益。搜索发现app.oiioii.art同名页面，但未从主站取得官方互链确认，暂记候选入口，不放入证据域名白名单；不要混入名字相近的oioiart.com。
+- 官网页脚直接链接并由FAQ再次列明：X https://x.com/OiiOii_AI、YouTube https://www.youtube.com/@OiiOii_AI、Instagram https://www.instagram.com/oiioii_ai/、Reddit https://www.reddit.com/user/OiiOiiAI/。Discord https://discord.gg/KCwR6burVc 来自官网价格页Help区域。国内公众号/小红书同名账号有第三方提及，尚未确认官方账号ID，不据此授权任意同名账号。
+- 中文主页Help直接链接 https://ecncw7du1qtr.feishu.cn/wiki/R6m5w5RILiS35lkM7PycEUhHnfc；英文主页Help直接链接 https://docs.google.com/document/d/1plIxnmE-XoWP-GbOsZ9jqiz5qKXS7ysg1-rsJ4pifEY/edit 。Google文档正文已读。外部托管文档只登记为参考链接，不能把整个Google Docs/飞书域名认作该厂商官方。稳定自动信源为本域 /price、/faq、/zh/、/changelog、/blog。
+- 官网 /price 的Community & Rewards明确有新用户注册赠额、每日签到（UTC 00:00刷新）、邀请好友注册并登录奖励，但数值与有效期均以当期活动为准。/faq说明免费档有daily credits。2026-01-16社区帖 https://linux.do/t/topic/1468443 的注册1000、每日50、邀请200是旧线索，不能当2026-10现行数额。当前金额、免费账号领取范围、有效期需登录权益页核验，美元暂留空；不可将套餐表会员签到310/930/1550等套到免费用户。
+- Google帮助文档仍写签到/邀请7天、会员赠额30天；当前价格页另写会员31天且奖励有效期以活动为准，旧文档不覆盖当前账户活动规则。$7 Base促销、普通会员折扣、常设套餐包含额度不单独收录；比赛获奖不收。免费额度适用模型名单需单独核对，不能把全站展示的付费模型填成免费模型。
