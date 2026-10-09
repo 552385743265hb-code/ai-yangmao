@@ -217,6 +217,7 @@
 - 本批核验入口：https://hailuoai.video/doc/payment-policy.html；https://hailuoai.com/。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## magnific
+- 2026-10-09核实Magnific One独立发布活动：官网https://www.magnific.com/pricing及https://www.magnific.com/one均明确10月8–15日desktop app Unlimited；仅Premium+/Pro/Business，Draft和Final的High quality 2K/4K，Max仍扣credits，不扩成所有账号/所有质量/API免费。桌面入口https://www.magnific.com/desktop；平台默认官网改为magnific.com，magnific.ai留作legacy upscaler服务。活动仍待审，精确截止时刻/时区未公布，不编不限量美元估值；不能与套餐自带年度Unlimited混为一项。
 - 年付档自带的年度积分和全年不限量模型是档位权益，不收。（2026-10-03 批量审核）
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - https://www.magnific.com/pricing 是原Freepik Creative Suite；导航明确 magnific.ai 是 legacy service。平台登记需区别新creative-suite站与旧upscaler站，纳入magnific.com官方域名才可用新站证据通过。

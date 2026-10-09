@@ -159,7 +159,7 @@ INSERT INTO platforms (id, name, type, site, x_handles, staff_handles, wechat) V
   ON CONFLICT(id) DO UPDATE SET name=excluded.name, type=excluded.type, site=excluded.site, x_handles=excluded.x_handles, staff_handles=excluded.staff_handles, wechat=COALESCE(excluded.wechat, platforms.wechat), updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now');
 INSERT INTO platforms (id, name, type, site, x_handles, staff_handles, wechat) VALUES ('devin', 'Devin（Cognition）', 'tool', 'https://devin.ai', '[]', '[]', NULL)
   ON CONFLICT(id) DO UPDATE SET name=excluded.name, type=excluded.type, site=excluded.site, x_handles=excluded.x_handles, staff_handles=excluded.staff_handles, wechat=COALESCE(excluded.wechat, platforms.wechat), updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now');
-INSERT INTO platforms (id, name, type, site, x_handles, staff_handles, wechat) VALUES ('magnific', 'Magnific', 'tool', 'https://magnific.ai', '[]', '[]', NULL)
+INSERT INTO platforms (id, name, type, site, x_handles, staff_handles, wechat) VALUES ('magnific', 'Magnific', 'tool', 'https://www.magnific.com', '[]', '[]', NULL)
   ON CONFLICT(id) DO UPDATE SET name=excluded.name, type=excluded.type, site=excluded.site, x_handles=excluded.x_handles, staff_handles=excluded.staff_handles, wechat=COALESCE(excluded.wechat, platforms.wechat), updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now');
 INSERT INTO platforms (id, name, type, site, x_handles, staff_handles, wechat) VALUES ('seaart', 'SeaArt', 'tool', 'https://www.seaart.ai', '[]', '[]', NULL)
   ON CONFLICT(id) DO UPDATE SET name=excluded.name, type=excluded.type, site=excluded.site, x_handles=excluded.x_handles, staff_handles=excluded.staff_handles, wechat=COALESCE(excluded.wechat, platforms.wechat), updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now');
