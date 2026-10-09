@@ -19,6 +19,25 @@ export interface OfficialPlatform {
   xHandles: string[]; staffHandles: string[];
 }
 export interface OfficialSource { url: string; tier: string; platformId?: string | null }
+type Activity = {title:string;valueText:string;type:string;tags?:string[]};
+/** 搜到同一厂商不等于同一活动。金额/日期可以校正，但不能用月度套餐替换一次发放。 */
+export function officialActivityMismatch(target:Activity,candidate:Activity): string|null {
+  const family=(o:Activity)=>{
+    const text=o.title+' '+o.valueText;
+    if(o.tags?.includes('reset')||/重置卡|额度重置|banked reset|reset card/i.test(text))return 'reset';
+    if(o.tags?.includes('referral')||/邀请奖励|推荐奖励|referral reward/i.test(text))return 'referral';
+    if(o.type==='apply')return 'grant';
+    if(o.type==='topup')return 'topup';
+    if(o.type==='gift')return 'membership-gift';
+    if(o.tags?.includes('daily')||/每日|每天|daily|per day|each day/i.test(text))return 'daily';
+    if(/每月|monthly|per month|each month/i.test(text))return 'monthly';
+    if(/每周|weekly|per week|each week/i.test(text))return 'weekly';
+    if(o.type==='standing')return 'ongoing';
+    return 'one-off';
+  };
+  const before=family(target),after=family(candidate);
+  return before===after?null:`官方页面属于另一类活动（${before} → ${after}），不能替代原线索；需核对同一次发放或领取机制`;
+}
 export const OFFICIAL_REVIEW_LEASE_MS = 20 * 60_000;
 export function officialReviewDue(review: OfficialReview | null, now: number, version: string): boolean {
   if (!review) return true;

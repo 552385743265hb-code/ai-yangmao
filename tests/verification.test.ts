@@ -50,6 +50,14 @@ beforeEach(() => {
 afterEach(() => sqlite.close());
 
 describe('workflow recovery and race regressions',()=>{
+  it('refuses an official review changing a reset into unrelated monthly plan benefits',async()=>{
+    const reset={...offer,type:'perk',title:'赠送重置卡',tags:['reset'],evidence:{...evidence,tier:'media'}};
+    await call('ingest/offers',[reset]);
+    const lease=await call('ingest/official-reviews/vendor-free/claim',{});
+    const result=await call('ingest/offers',[{...offer,type:'standing',endKind:'standing',valueText:'每月100积分',officialReviewJobId:lease.body.jobId}]);
+    expect((result.body.results as any[])[0].error).toContain('另一类活动');
+    expect((await call('admin/offers/vendor-free',undefined,'admin')).body.offer).toMatchObject({evidenceTier:'media',title:reset.title});
+  });
   it('prioritizes an expiring ordinary draft while reserving capacity for the oldest official-review backlog',async()=>{
     for(let n=0;n<8;n++)await call('ingest/offers',[{...offer,id:`vendor-${n}`,title:`Codex 重置卡 ${n}`,valueText:`${n} tokens`,evidence:{...evidence,tier:'media',url:`https://community.example/${n}`}}]);
     sqlite.prepare("UPDATE offers SET discovered_at='2020-01-01T00:00:00Z',title='长期积压待补证' WHERE id='vendor-0'").run();

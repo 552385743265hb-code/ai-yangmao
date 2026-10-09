@@ -1,9 +1,15 @@
 import { describe,it,expect,vi,afterEach } from 'vitest';
-import { officialTier } from '../src/shared/official-review';
+import { officialTier,officialActivityMismatch } from '../src/shared/official-review';
 import { parseSearchResults,searchOfficial } from '../pipeline/official-review';
 const platform={id:'vendor',name:'Vendor',site:'https://vendor.example',xHandles:['@vendor'],staffHandles:['@staff']};
 afterEach(()=>vi.unstubAllGlobals());
 describe('official source discovery',()=>{
+  it('rejects unrelated recurring quotas or pricing as proof of a one-off gift or reset',()=>{
+    const monthly={title:'Max API credits',valueText:'每月 100 至 200 美元 API 额度',type:'standing',tags:[]};
+    expect(officialActivityMismatch({title:'Claude $250 额度赠金',valueText:'$250赠金',type:'perk'},monthly)).toContain('另一类活动');
+    expect(officialActivityMismatch({title:'Opus发布送重置卡',valueText:'1张',type:'perk',tags:['reset']},monthly)).toContain('另一类活动');
+    expect(officialActivityMismatch({...monthly,type:'perk',valueText:'每月100美元 API额度'},monthly)).toBeNull();
+  });
   it('accepts registered docs and account posts but rejects lookalikes and unrelated shared-host content',()=>{
     expect(officialTier('https://docs.vendor.example/credits',platform,[])).toBe('docs');
     expect(officialTier('https://vendor.example.evil.test/free',platform,[])).toBeNull();

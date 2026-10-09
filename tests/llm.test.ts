@@ -18,6 +18,12 @@ beforeEach(() => {
 afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); vi.unstubAllEnvs(); vi.restoreAllMocks(); });
 
 describe('model result contract', () => {
+  it('does not turn ordinary recurring allowances into reset-clock events',async()=>{
+    const {tidy}=await import('../pipeline/llm');
+    expect(tidy({...offer,type:'perk',tags:['reset'],title:'每月API赠额'} as never).tags).toEqual([]);
+    expect(tidy({...offer,type:'standing',tags:['reset']} as never).tags).toEqual([]);
+    expect(tidy({...offer,type:'perk',title:'未来一周每天发放重置卡',valueText:'每天1张重置卡',tags:['reset']} as never).tags).toEqual(['reset']);
+  });
   it('rejects an invented first-of-month claim date instead of accepting prompt compliance on trust',async()=>{
     vi.stubGlobal('fetch',vi.fn(async()=>gemini(JSON.stringify({offers:[{...offer,claimStart:'2026-05-01'}]}))));
     const {extract}=await import('../pipeline/llm');

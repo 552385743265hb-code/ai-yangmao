@@ -3,7 +3,7 @@ import type { Source } from './collectors';
 import { fetchPage, relevantText, api } from './lib';
 import { extract, modelAvailable, DeferError } from './llm';
 import { modelBudget, BudgetExhaustedError, BudgetLedgerError } from './budget';
-import { officialTier, type OfficialPlatform, type OfficialSource } from '../src/shared/official-review';
+import { officialTier, officialActivityMismatch, type OfficialPlatform, type OfficialSource } from '../src/shared/official-review';
 import { offerIn, type OfferIn } from '../src/shared/ingest';
 import { normUrl } from '../src/shared/dedupe';
 
@@ -82,10 +82,12 @@ export async function runOfficialReviews(options:{limit:number;deadlineAt:number
         if(!tier || (page.via==='jina'&&!page.sourceVerified)){failures.push(`来源无法确认：${url}`);continue;}
         readable++;
         const result=await extract(job.platform.name,page.finalUrl,page.text.slice(0,22000),options.log,{allowPaid:options.allowPaid,deadlineAt,evidenceText:page.text,platformIds:[job.platform.id],budget:modelBudget,corrections,
-          verificationTarget:JSON.stringify({title:job.offer.title,valueText:job.offer.valueText,claimStart:job.offer.claimStart,claimEnd:job.offer.claimEnd})});
+          verificationTarget:JSON.stringify({title:job.offer.title,valueText:job.offer.valueText,type:job.offer.type,tags:job.offer.tags,claimMethod:job.offer.claimMethod,originUrl:job.offer.evidence.url,claimStart:job.offer.claimStart,claimEnd:job.offer.claimEnd})});
         options.account(result.tokens,result.costCny);
         if(result.offers.length!==1){failures.push(`未唯一匹配同一活动：${url}`);continue;}
         const next=result.offers[0];
+        const mismatch=officialActivityMismatch(job.offer,next);
+        if(mismatch){failures.push(mismatch+'：'+url);continue;}
         if(next.platformId && next.platformId!==job.platform.id){failures.push(`发放方归属需人工确认：${url}`);continue;}
         if(!next.excerpts.benefit || next.excerpts.benefit.trim().length<12){failures.push(`缺少充分权益原文：${url}`);continue;}
         const draft=toOffer({id:job.offer.sourceId??'',platformId:job.platform.id,kind:job.offer.firstChannel??'media',tier} as Source,

@@ -1,6 +1,6 @@
 import { officialReviewRoutes } from './official-review';
 import { sameBenefit, ambiguousReset } from '../shared/dedupe';
-import { officialTier } from '../shared/official-review';
+import { officialTier, officialActivityMismatch } from '../shared/official-review';
 import { resetEventDay } from '../shared/reset-event';
 import { selectLeads } from '../shared/leads';
 import { isReviewField, reviewChanges } from '../shared/spec';
@@ -220,6 +220,10 @@ ingest.post('/offers', async c => {
     const [existingProposal] = prev ? await d.select().from(s.offerProposals).where(eq(s.offerProposals.offerId, o.id)) : [];
     const nowIso = new Date().toISOString();
     if (o.officialReviewJobId && (prev?.officialReview?.jobId !== o.officialReviewJobId || prev.officialReview.status !== 'checking' || prev.officialReview.inputVersion !== `${prev.updatedAt}|${existingProposal?.updatedAt??''}`)) { results.push({id:o.id,error:'官方复核任务已失效'}); continue; }
+    if(o.officialReviewJobId && prev){
+      const mismatch=officialActivityMismatch(existingProposal?{...prev,...existingProposal.candidate}:prev,o);
+      if(mismatch){results.push({id:o.id,error:mismatch});continue;}
+    }
     const { leadId, officialReviewJobId, sameOccurrenceAs, ...od } = o;
     const row = {
       ...od, usdEstimate: o.usdEstimate ?? null, claimStart: o.claimStart ?? null, claimEnd: o.claimEnd ?? null,
