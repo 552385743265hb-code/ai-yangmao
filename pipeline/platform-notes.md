@@ -130,6 +130,7 @@
 - 本批核验入口：https://help.poe.com/hc/en-us/articles/19944206309524；https://help.poe.com/hc/en-us/articles/19945140063636。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## adobe-firefly
+- 2026-10-08第三轮81p6：Mashable India 2026-10-05报道明确Photoshop专项年度预付首年100%折扣、₹0/12个月，之后₹1999/年自动续费，部分符合资格账号可见，填college信息及UPI AutoPay约₹2token payment；未注明₹2退还，不把UPI步骤解释成官方禁止银行卡。文章没有直达Adobe活动链接，Adobe文字链为媒体站内文章，X引用是Analytics Insight媒体账号。媒体补强线索但不升官方证据等级；详细条款按报道写入并保留待审，发布日期不当活动起点。https://in.mashable.com/tech/114589/adobe-photoshop-free-for-1-year-for-indian-students-check-eligibility-and-how-to-claim。
 - 2026-10-08二次核验81p6：用户补充首年₹0/12个月、续费₹1999/年及强制UPI AutoPay、印度高校资格等线索，尚非管理员明确亲测激活。所给两个通用/in/education/students页面公开实时正文仍为7天试用及Creative Cloud学生价首年₹398.99/月、次年₹699.01/月；不能据通用页面URL证明特殊Photoshop免费促销。请求印度IN动态出口后Photoshop仅空HTML、结账及CC提取连接失败，属覆盖降级，不证明活动不存在。保留专用GEN_IN_PSSTUDENT促销线索，详细条件仅标待核实，不伪造官方摘录，不凭印度普通银行卡支付文档推断本促销必须/不允许某支付方式；待专用活动或₹0结账URL。条目保持待审、media，用户新线索已补字段和内部核验记录。
 - 2026-10-08 印度学生一年Photoshop个人优惠81p6：社区B2C结账链接（GEN_IN_PSSTUDENT）当前普通抓取及JS渲染均到错误页，未确认一年免费、资格、支付或续费条款；不能据错误页判过期。另有正式印度高校免费Creative Cloud Pro计划，依法设立并认证高校完成教育核验及Federated ID配置，机构申请并分配学生/教职员工授权，20多款应用、标准生成合理使用额度及每月25高级积分，每年评估且可停止，不是个人Autopay一年优惠；不嫁接机构计划证据，个人条目保持待审及media。Photoshop是应用不是模型名，删除无依据美元估值。官方资料：https://www.adobe.com/in/creativecloud/buy/education/india-higher-education-offer.html；https://helpx.adobe.com/in/creative-cloud/apps/manage-plans/higher-education-ste-offer-india.html。
 - helpx.adobe.com 直接抓 403，走 Jina。首年指定模型无限量这类权益不按订阅价折美元。CC Pro / Firefly 各付费档每月积分和标准功能不限次是档位自带，不收。（2026-10-03 批量审核）
