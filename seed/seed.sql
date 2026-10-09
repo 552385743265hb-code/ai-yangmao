@@ -229,6 +229,8 @@ INSERT INTO platforms (id, name, type, site, x_handles, staff_handles, wechat) V
   ON CONFLICT(id) DO UPDATE SET name=excluded.name, type=excluded.type, site=excluded.site, x_handles=excluded.x_handles, staff_handles=excluded.staff_handles, wechat=COALESCE(excluded.wechat, platforms.wechat), updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now');
 INSERT INTO platforms (id, name, type, site, x_handles, staff_handles, wechat) VALUES ('oiioii', 'OiiOii（AI 动画创作）', 'tool', 'https://www.oiioii.ai', '["@OiiOii_AI"]', '[]', NULL)
   ON CONFLICT(id) DO UPDATE SET name=excluded.name, type=excluded.type, site=excluded.site, x_handles=excluded.x_handles, staff_handles=excluded.staff_handles, wechat=COALESCE(excluded.wechat, platforms.wechat), updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now');
+INSERT INTO platforms (id, name, type, site, x_handles, staff_handles, wechat) VALUES ('kilo', 'Kilo Code', 'tool', 'https://kilo.ai', '["@kilocode"]', '[]', NULL)
+  ON CONFLICT(id) DO UPDATE SET name=excluded.name, type=excluded.type, site=excluded.site, x_handles=excluded.x_handles, staff_handles=excluded.staff_handles, wechat=COALESCE(excluded.wechat, platforms.wechat), updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now');
 INSERT INTO sources (id, platform_id, kind, url, tier, config, enabled) VALUES ('aihot-resets', NULL, 'aihot', 'https://aihot.news/api/v1/codex-resets', 'lead', '{}', 1)
   ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
 INSERT INTO sources (id, platform_id, kind, url, tier, config, enabled) VALUES ('aihot-items', NULL, 'aihot', 'https://aihot.news/api/v1/items?mode=all&window=7d&limit=100', 'lead', '{}', 1)
@@ -688,4 +690,6 @@ INSERT INTO sources (id, platform_id, kind, url, tier, config, enabled) VALUES (
 INSERT INTO sources (id, platform_id, kind, url, tier, config, enabled) VALUES ('qoder-add-mv0pxicw', 'qoder', 'web_list', 'https://docs.qoder.cn/events/flashoffer', 'docs', '{"addedBy":"admin"}', 1)
   ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
 INSERT INTO sources (id, platform_id, kind, url, tier, config, enabled) VALUES ('qoder-add-mv0pxjus', 'qoder', 'web_list', 'https://docs.qoder.com/events/flashoffer', 'docs', '{"addedBy":"admin"}', 1)
+  ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
+INSERT INTO sources (id, platform_id, kind, url, tier, config, enabled) VALUES ('kilo-add-mv1ihjxl', 'kilo', 'web_list', 'https://x.com/kilocode', 'official', '{"addedBy":"admin"}', 1)
   ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);

@@ -689,3 +689,6 @@
 - 中文主页Help直接链接 https://ecncw7du1qtr.feishu.cn/wiki/R6m5w5RILiS35lkM7PycEUhHnfc；英文主页Help直接链接 https://docs.google.com/document/d/1plIxnmE-XoWP-GbOsZ9jqiz5qKXS7ysg1-rsJ4pifEY/edit 。Google文档正文已读。外部托管文档只登记为参考链接，不能把整个Google Docs/飞书域名认作该厂商官方。稳定自动信源为本域 /price、/faq、/zh/、/changelog、/blog。
 - 官网 /price 的Community & Rewards明确有新用户注册赠额、每日签到（UTC 00:00刷新）、邀请好友注册并登录奖励，但数值与有效期均以当期活动为准。/faq说明免费档有daily credits。2026-01-16社区帖 https://linux.do/t/topic/1468443 的注册1000、每日50、邀请200是旧线索，不能当2026-10现行数额。当前金额、免费账号领取范围、有效期需登录权益页核验，美元暂留空；不可将套餐表会员签到310/930/1550等套到免费用户。
 - Google帮助文档仍写签到/邀请7天、会员赠额30天；当前价格页另写会员31天且奖励有效期以活动为准，旧文档不覆盖当前账户活动规则。$7 Base促销、普通会员折扣、常设套餐包含额度不单独收录；比赛获奖不收。免费额度适用模型名单需单独核对，不能把全站展示的付费模型填成免费模型。
+
+## kilo
+- 2026-10-09：Kilo Code官网kilo.ai，官推@kilocode；与AWS Kiro（kiro.dev）是不同平台，不能按近似拼写归同一ID。官推2108557014913691902于2026-10-09T13:55:42Z宣布Step5Preview FREE for a week，是全局公告日起一周，非个人领取后7天；精确截止未公布，不造日期午夜。StepFun后续引用同一推文只补来源、不新建活动。平台已准入，官方句柄已登记，条目仍pending。

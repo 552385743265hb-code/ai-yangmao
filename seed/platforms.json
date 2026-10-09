@@ -897,6 +897,15 @@
     "@OiiOii_AI"
    ],
    "staff": []
+  },
+  {
+   "id": "kilo",
+   "name": "Kilo Code",
+   "type": "tool",
+   "site": "https://kilo.ai",
+   "x": [
+    "@kilocode"
+   ]
   }
  ],
  "sources": [
@@ -2589,6 +2598,16 @@
    "kind": "web_list",
    "url": "https://docs.qoder.com/events/flashoffer",
    "tier": "docs",
+   "config": {
+    "addedBy": "admin"
+   }
+  },
+  {
+   "id": "kilo-add-mv1ihjxl",
+   "platform": "kilo",
+   "kind": "web_list",
+   "url": "https://x.com/kilocode",
+   "tier": "official",
    "config": {
     "addedBy": "admin"
    }
