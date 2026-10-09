@@ -35,7 +35,7 @@ function view(o: OfferRow, platformName: string, now = new Date()) {
     requirements: o.requirements, audience: o.audience, claimMethod: o.claimMethod, creditValidity: o.creditValidity,
     sourceTz: o.sourceTz, claimStart: o.claimStart, claimEnd: o.claimEnd, endKind: o.endKind,
     evidenceUrl: o.evidence.url, evidenceTier: o.evidence.tier, excerpts: o.evidence.excerpts, missingEvidence: missingEvidence(o.evidence.excerpts),
-    steps: o.steps, models: o.models ?? [], tags: o.tags ?? [], publishedAt: o.publishedAt ?? null, modalities: o.modalities, usdEstimate: o.usdEstimate, usdMax: o.usdMax ?? null, adminNote: o.adminNote ?? null, reviewMemo: o.reviewMemo ?? null, suggestion: o.reviewSuggestion ?? null,
+    steps: o.steps, models: o.models ?? [], tags: o.tags ?? [], publishedAt: o.publishedAt ?? null, modalities: o.modalities, usdEstimate: o.usdEstimate, usdMax: o.usdMax ?? null, adminNote: o.adminNote ?? null, reviewMemo: o.reviewMemo ?? null, officialReview: o.officialReview ?? null, suggestion: o.reviewSuggestion ?? null,
     // 上架前检查：缺了哪些字段、影响哪些栏目（规格见 src/shared/spec.ts）
     checks: checkOffer(o, now).map(i => ({ ...i, sections: i.sections.map(k => SECTIONS[k]) })),
     link: `https://ai-yangmao.com/#${o.reviewState === 'pending' ? 'admin-offer-' : 'offer-'}${encodeURIComponent(o.id)}`,
@@ -47,7 +47,7 @@ export const admin = new Hono<{ Bindings: Env; Variables: { role: 'admin' | 'rev
 /** 审核员能用的接口：看待审、通过、拒绝、修改、核验记录、线索、补录、补信源、送交平台准入。 */
 const REVIEWER_ALLOWED: [string, RegExp][] = [
   ['GET', /^\/(whoami|queue|leads)$/], ['GET', /^\/offers\/[^/]+$/],
-  ['POST', /^\/offers\/[^/]+\/(approve|reject|edit|memo|note|retested|suggest)$/],
+  ['POST', /^\/offers\/[^/]+\/(approve|reject|edit|memo|note|retested|suggest|official-retry)$/],
   ['POST', /^\/leads\/\d+\/(dismiss|reviewing|retry)$/], ['POST', /^\/(manual|sources|platforms)$/],
 ];
 export function reviewerFor(env: Env, token: string | undefined): string | null {
@@ -362,6 +362,17 @@ admin.post('/offers/:ref/suggest', async c => {
   return c.json({ ok: true, code: shortCode(o.id), suggestion });
 });
 
+/** 明确重试官方检索：仅操作复核队列，不修改业务字段或审批结果。 */
+admin.post('/offers/:ref/official-retry',async c=>{
+  const o=await findOffer(c.env,c.req.param('ref'));if(!o)return c.json({error:'找不到条目'},404);
+  const [proposal]=await db(c.env).select().from(s.offerProposals).where(eq(s.offerProposals.offerId,o.id));
+  const target=proposal?{...o,...proposal.candidate} as OfferRow:o;
+  if(target.evidence.tier!=='media'||(o.reviewState!=='pending'&&!proposal))return c.json({error:'当前条目不需要社区来源官方复核'},409);
+  if(o.officialReview?.status==='checking'&&Date.now()-Date.parse(o.officialReview.checkedAt)<20*60_000)return c.json({error:'官方复核正在进行，请稍后查看'},409);
+  await db(c.env).update(s.offers).set({officialReview:null}).where(eq(s.offers.id,o.id));
+  return c.json({ok:true});
+});
+
 /** 管理员使用心得：不改条款、不影响审核状态，写了立即公开；空字符串表示删除。 */
 admin.post('/offers/:ref/note', async c => {
   const o = await findOffer(c.env, c.req.param('ref'));
@@ -554,7 +565,7 @@ export async function buildNotice(env: Env, kind: NoticeKind, channel: NoticeCha
     const unresolved = await d.select().from(s.leads).where(inArray(s.leads.status,['new','reviewing']));
     leadBacklog = unresolved.length;
     reviewAlerts = [
-      ...awaiting.map(o=>({ key: `offer:${o.id}`, priority: reviewRank(o), title: `[${shortCode(o.id)}] ${o.title}`, state: '待审', url: `https://ai-yangmao.com/#admin-offer-${encodeURIComponent(o.id)}` })),
+      ...awaiting.map(o=>({ key: o.officialReview?.status === 'matched' ? `offer:${o.id}:official:${o.officialReview.jobId}` : `offer:${o.id}`, priority: reviewRank(o), title: `[${shortCode(o.id)}] ${o.title}`, state: '待审', url: `https://ai-yangmao.com/#admin-offer-${encodeURIComponent(o.id)}` })),
       ...proposals.filter(p=>p.diff.some(x=>isReviewField(x.field))).map(p=>({ key: `proposal:${p.offerId}:${JSON.stringify(p.diff)}`, priority: 2, title: String(p.candidate.title ?? p.offerId), state: '条款更新待审', url: `https://ai-yangmao.com/#admin-offer-${encodeURIComponent(p.offerId)}` })),
       ...unresolved.filter(l=>leadPriority(l)<=1).sort((a,b)=>leadPriority(a)-leadPriority(b)||b.id-a.id).map(l=>({ key: `lead:${l.id}:${l.status}`, priority: 1, title: `#${l.id} ${l.title ?? ''}`, state: l.status==='reviewing' ? '抽取受阻，需人工核验' : '重要线索，尚未研判', url: l.url })),
     ].filter(a=>!announced.has(a.key));
@@ -710,7 +721,10 @@ admin.get('/health', async c => {
   const leadWorkflow = { new: backlog.filter(l=>l.status==='new').length, reviewing: backlog.filter(l=>l.status==='reviewing').length,
     important: important.length, oldestImportantNewAt: important.filter(l=>l.status==='new').map(l=>l.createdAt).sort()[0] ?? null, oldestAt: backlog.map(l=>l.createdAt).sort()[0] ?? null,
     lastRun: lastLeadRun ? { startedAt:lastLeadRun.startedAt,finishedAt:lastLeadRun.finishedAt,ok:lastLeadRun.ok,stats:lastLeadRun.stats } : null };
-  return c.json({ leadWorkflow, tokensToday: b?.t ?? 0, tokenCap: Number(c.env.DAILY_TOKEN_CAP ?? 0), costMonthCny: b?.c ?? 0, coverageDegraded: !!lastAttempt?.stats?.coverageDegraded || (Array.isArray(lastAttempt?.stats?.errors) && lastAttempt.stats.errors.length > 0), lastCollectAttempt: lastAttempt ? {startedAt:lastAttempt.startedAt,ok:lastAttempt.ok,stats:lastAttempt.stats}:null, sources: allSources, lastSuccessfulCollect: lastOk?.finishedAt ?? null,
+  const officialReviewRows = await d.select({review:s.offers.officialReview}).from(s.offers).where(inArray(s.offers.reviewState,['pending','approved']));
+  const officialReviewCounts = {checking:0,matched:0,unresolved:0,failed:0};
+  for(const row of officialReviewRows)if(row.review)officialReviewCounts[row.review.status]++;
+  return c.json({ officialReviewCounts, leadWorkflow, tokensToday: b?.t ?? 0, tokenCap: Number(c.env.DAILY_TOKEN_CAP ?? 0), costMonthCny: b?.c ?? 0, coverageDegraded: !!lastAttempt?.stats?.coverageDegraded || (Array.isArray(lastAttempt?.stats?.errors) && lastAttempt.stats.errors.length > 0), lastCollectAttempt: lastAttempt ? {startedAt:lastAttempt.startedAt,ok:lastAttempt.ok,stats:lastAttempt.stats}:null, sources: allSources, lastSuccessfulCollect: lastOk?.finishedAt ?? null,
     hoursSince: hours, collectStale: hours === null || hours > 8, failingSources: failing, uncertainDeliveries, needsVerification, dispatchFailures, d1Usage: await d1Usage(c.env) });
 });
 

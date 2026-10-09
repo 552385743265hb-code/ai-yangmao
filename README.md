@@ -10,6 +10,7 @@
 | [通用规则](pipeline/learned-rules.md) | 管理员纠正后的抽取与审核规则 |
 | [平台要点](pipeline/platform-notes.md) | 官方渠道、额度换算、拆条和平台限制；数值带核验日期 |
 | [架构](docs/design.md) | 数据流、系统设计；历史决策已标注 |
+| [自动官方复核](docs/official-review-workflow.md) | 社区条目自动搜索官方出处、补全待审及重试 |
 | [运维说明](docs/operations.md) | 命令、角色、定时采集、通知、发布与回滚 |
 | [2026-10-07 整理凭证](docs/closeout-2026-10-07.md) | 本地、远端、生产差异与本次覆盖范围 |
 | [抽取经验发布凭证](docs/extraction-lessons-release-2026-10-08.md) | 近期收录纠正、实际提示词加载、模型回归及发布验证 |

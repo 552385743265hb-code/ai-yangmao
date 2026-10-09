@@ -624,3 +624,70 @@ it('applies official evidence and missing steps to pending offers even if core t
   await call('ingest/offers',[{...offer,steps:['注册后领取'],creditValidity:'30 天'}]);
   expect((await call('admin/offers/vendor-free',undefined,'admin')).body.offer).toMatchObject({evidenceTier:'docs',steps:['注册后领取'],creditValidity:'30 天'});
 });
+
+describe('automatic official review queue',()=>{
+  it('leases jobs once, permits protected draft updates, and never auto-approves the result',async()=>{
+    await call('ingest/offers',[{...offer,evidence:{...evidence,tier:'media'}}]);
+    expect(((await call('ingest/official-reviews/queue')).body.jobs as unknown[])).toHaveLength(1);
+    const first=await call('ingest/official-reviews/vendor-free/claim',{});
+    expect(first.body.claimed).toBe(true);
+    expect((await call('ingest/official-reviews/vendor-free/claim',{})).body.claimed).toBe(false);
+    sqlite.prepare("UPDATE sources SET auto_publish=1 WHERE id='source'").run();
+    const changed=await call('ingest/offers',[{...offer,officialReviewJobId:first.body.jobId}]);
+    expect((changed.body.results as {reviewState:string}[])[0].reviewState).toBe('pending');
+    const end=await call('ingest/official-reviews/vendor-free/result',{jobId:first.body.jobId,status:'matched',reason:'官方正文匹配',queries:['vendor free credits'],candidates:[evidence.url],chosenUrl:evidence.url,changedFields:['evidence']});
+    expect(end.body.status).toBe('matched');
+    expect(((await call('ingest/official-reviews/queue')).body.jobs as unknown[])).toHaveLength(0);
+    const detail=await call('admin/offers/vendor-free',undefined,'admin');expect((detail.body.offer as any).officialReview.status).toBe('matched');
+    await call('admin/offers/vendor-free/approve',{},'admin');
+    expect(JSON.stringify((await call('offers?view=all')).body)).not.toContain('vendor free credits');
+    expect(JSON.stringify((await call('offers?view=all')).body)).not.toContain('officialReview');
+  });
+  it('preserves media evidence and schedules retry if no official support was found',async()=>{
+    await call('ingest/offers',[{...offer,evidence:{...evidence,tier:'media'}}]);
+    const lease=await call('ingest/official-reviews/vendor-free/claim',{});
+    const result=await call('ingest/official-reviews/vendor-free/result',{jobId:lease.body.jobId,status:'unresolved',reason:'没有充分证据',queries:['vendor credits'],candidates:[],changedFields:[]});
+    expect(result.body.nextAttemptAt).toBeTruthy();
+    expect(((await call('ingest/official-reviews/queue')).body.jobs as unknown[])).toHaveLength(0);
+    const record=await call('admin/offers/vendor-free',undefined,'admin');expect(record.body.offer).toMatchObject({reviewState:'pending',evidenceTier:'media'});
+    expect((await call('admin/offers/vendor-free/official-retry',{},'admin')).status).toBe(200);
+    expect(((await call('ingest/official-reviews/queue')).body.jobs as unknown[])).toHaveLength(1);
+  });
+  it('does not accept a forged or completed official review job id',async()=>{
+    await call('ingest/offers',[{...offer,evidence:{...evidence,tier:'media'}}]);
+    const r=await call('ingest/offers',[{...offer,officialReviewJobId:'12345678-1234-4234-8234-123456789012'}]);
+    expect((r.body.results as any[])[0].error).toContain('失效');
+  });
+});
+
+it('discards official-review edits if the administrator changed the draft after it was claimed',async()=>{
+  await call('ingest/offers',[{...offer,evidence:{...evidence,tier:'media'}}]);
+  const lease=await call('ingest/official-reviews/vendor-free/claim',{});
+  sqlite.prepare("UPDATE offers SET title='管理员正在修改',updated_at='2030-01-01T00:00:00Z' WHERE id='vendor-free'").run();
+  const saved=await call('ingest/offers',[{...offer,officialReviewJobId:lease.body.jobId}]);
+  expect((saved.body.results as any[])[0].error).toBeTruthy();
+  expect((await call('admin/offers/vendor-free',undefined,'admin')).body.offer).toMatchObject({title:'管理员正在修改',evidenceTier:'media'});
+});
+
+it('requeues a corrected media draft even after automatic retries previously stopped',async()=>{
+  await call('ingest/offers',[{...offer,evidence:{...evidence,tier:'media'}}]);
+  sqlite.prepare("UPDATE offers SET official_review=?,updated_at='2030-01-02T00:00:00Z' WHERE id='vendor-free'").run(JSON.stringify({status:'unresolved',jobId:'old',inputVersion:'old',attempts:5,checkedAt:'2030-01-01T00:00:00Z',nextAttemptAt:null,reason:'old',queries:[],candidates:[]}));
+  expect(((await call('ingest/official-reviews/queue')).body.jobs as unknown[])).toHaveLength(1);
+});
+
+it('official review of an update improves its proposal while keeping the public approved version unchanged',async()=>{
+  await call('ingest/offers',[offer]);await call('admin/offers/vendor-free/approve',{},'admin');
+  await call('ingest/offers',[{...offer,valueText:'200 tokens',evidence:{...evidence,tier:'media',url:'https://community.example/post'}}]);
+  const lease=await call('ingest/official-reviews/vendor-free/claim',{});expect(lease.body.claimed).toBe(true);
+  await call('ingest/offers',[{...offer,valueText:'200 tokens',officialReviewJobId:lease.body.jobId}]);
+  const result=await call('ingest/official-reviews/vendor-free/result',{jobId:lease.body.jobId,status:'matched',reason:'官方匹配',queries:['vendor'],candidates:[evidence.url],chosenUrl:evidence.url,changedFields:['valueText','evidence']});
+  expect(result.body.status).toBe('matched');
+  expect(((await call('offers?view=all')).body.offers as any[])[0].valueText).toBe(offer.valueText);
+  const admin=await call('admin/offers/vendor-free',undefined,'admin');expect(admin.body.pendingUpdate).toBe(true);expect((admin.body.offer as any).evidenceTier).toBe('docs');
+});
+
+it('does not let unapproved platforms occupy the official verification queue',async()=>{
+  await call('ingest/offers',[{...offer,evidence:{...evidence,tier:'media'}}]);
+  sqlite.prepare("UPDATE platforms SET status='pending' WHERE id='vendor'").run();
+  expect(((await call('ingest/official-reviews/queue')).body.jobs as unknown[])).toHaveLength(0);
+});

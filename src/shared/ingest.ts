@@ -41,6 +41,7 @@ export const offerIn = z.object({
   publishedAt: z.union([isoDate, z.iso.datetime({ offset: true })]).nullable().optional(),
   firstChannel: z.string().max(40).optional(),
   leadId: z.number().int().optional(),
+  officialReviewJobId: z.string().uuid().optional(),
   steps: z.array(z.string().max(200)).max(10).default([]),
   evidence: z.object({
     url: z.url(),

@@ -20,6 +20,10 @@ on:
         description: '快速通道：只采集重要线索并研判，跳过全站复核'
         type: boolean
         default: false
+      official_review_limit:
+        description: '本轮官方复核条数（留空用仓库配置，0跳过）'
+        type: string
+        default: ''
       lead_limit:
         description: '本轮最多研判多少条线索'
         type: string
@@ -66,3 +70,4 @@ jobs:
           FORCE: ${{ inputs.force && '1' || '0' }}
           LEAD_LIMIT: ${{ inputs.lead_limit || '50' }}
           FAST_LEADS: ${{ inputs.fast_leads && '1' || '0' }}
+          OFFICIAL_REVIEW_LIMIT: ${{ inputs.official_review_limit || vars.OFFICIAL_REVIEW_LIMIT || '8' }}

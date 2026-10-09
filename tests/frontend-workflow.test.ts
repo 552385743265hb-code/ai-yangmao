@@ -163,3 +163,13 @@ describe('frontend review workflow', () => {
     expect(page.run('TREND.ed.reduce((a,b)=>a+b,0)')).toBe(1);
   });
 });
+
+it('shows automatic official review provenance and lets reviewers requeue without approving',async()=>{
+  const requests:string[]=[];
+  const page=fixture((url)=>{requests.push(url);return url.endsWith('/official-retry')?{ok:true}:queue([offer('check',{evidenceTier:'media',officialReview:{status:'unresolved',attempts:2,checkedAt:'2026-10-08T10:00:00Z',nextAttemptAt:'2026-10-08T12:00:00Z',reason:'官网未能确认',originUrl:'https://community.example/post',queries:['Vendor credits'],candidates:['https://vendor.example/credits']}})]);});
+  await page.run('admQueue()');
+  const block=page.document.querySelector('[data-official-review]')!;
+  expect(block.textContent).toContain('暂未找到充分官方证据');expect(block.textContent).toContain('Vendor credits');
+  block.querySelector('[data-official-retry]')!.dispatchEvent(new page.window.Event('click'));
+  await pause();expect(requests).toContain('/api/admin/offers/check/official-retry');expect(requests.some(p=>p.endsWith('/approve'))).toBe(false);
+});

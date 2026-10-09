@@ -69,7 +69,7 @@ export function readableText(html: string, url: string): string {
  * 1. 直接抓取，Readability 正文和整页纯文本里，取羊毛相关内容更多的那个（Readability 有时会丢掉定价说明）；
  * 2. 字数仍然太少（多半是脚本渲染的页面），改用 Jina Reader，要 Markdown 格式以保留表格结构。
  */
-export async function fetchPage(url: string, opts: { timeoutMs?: number; tries?: number } = {}): Promise<{ text: string; via: 'readability' | 'direct' | 'jina'; finalUrl: string }> {
+export async function fetchPage(url: string, opts: { timeoutMs?: number; tries?: number; minimumTextLength?: number } = {}): Promise<{ sourceVerified?: boolean; text: string; via: 'readability' | 'direct' | 'jina'; finalUrl: string }> {
   assertSafeUrl(url);
   let text = '', via: 'readability' | 'direct' = 'direct', finalUrl = url;
   try {
@@ -79,13 +79,16 @@ export async function fetchPage(url: string, opts: { timeoutMs?: number; tries?:
     // 哪个版本保留的羊毛相关内容多就用哪个；一样多时用更干净的 Readability
     if (read.length >= 800 && relevantText(read).length >= relevantText(full).length) { text = read; via = 'readability'; } else text = full;
   } catch { /* 直接抓失败就走 Jina */ }
-  if (text.length >= 800) return { text, via, finalUrl };
+  if (text.length >= (opts.minimumTextLength ?? 800)) return { text, via, finalUrl, sourceVerified: true };
   const headers: Record<string, string> = { 'User-Agent': UA, 'X-Return-Format': 'markdown', Accept: 'text/plain', 'X-Locale': 'en-US' };
   if (process.env.JINA_API_KEY) headers.Authorization = `Bearer ${process.env.JINA_API_KEY}`;
   const res = await fetch(`https://r.jina.ai/${url}`, { headers, signal: AbortSignal.timeout(opts.timeoutMs ?? 60000) });
   if (!res.ok) throw new Error(`直接抓取只有 ${text.length} 字，Jina Reader 返回 ${res.status}`);
-  const body = (await res.text()).replace(/^[\s\S]*?Markdown Content:\n/, ''); // 去掉 Jina 的元信息头
-  return { text: body.replace(/\n\s*\n+/g, '\n').trim(), via: 'jina', finalUrl: url };
+  const raw = await res.text();
+  const declared = raw.match(/^URL Source:\s*(https?:\/\/\S+)/m)?.[1];
+  const sourceVerified = declared === url && !/^Warning:.*(?:error|failed|403|404|captcha)/im.test(raw) && finalUrl === url;
+  const body = raw.replace(/^[\s\S]*?Markdown Content:\n/, '');
+  return { text: body.replace(/\n\s*\n+/g, '\n').trim(), via: 'jina', finalUrl, sourceVerified };
 }
 
 // 羊毛关键词两档：

@@ -1,3 +1,4 @@
+import { officialReviewRoutes } from './official-review';
 import { resetEventDay } from '../shared/reset-event';
 import { selectLeads } from '../shared/leads';
 import { isReviewField, reviewChanges } from '../shared/spec';
@@ -58,7 +59,7 @@ for (const path of ['/api/offers', '/api/platforms']) app.use(path, async (c, ne
 });
 
 // 公开接口不输出内部核验记录
-const withStatus = (o: OfferRow, now: Date) => { const { reviewMemo: _memo, reviewSuggestion: _suggestion, ...pub } = o; return { ...pub, status: liveStatus(o, now), missingEvidence: missingEvidence(o.evidence.excerpts) }; };
+const withStatus = (o: OfferRow, now: Date) => { const { reviewMemo: _memo, reviewSuggestion: _suggestion, officialReview: _officialReview, ...pub } = o; return { ...pub, status: liveStatus(o, now), missingEvidence: missingEvidence(o.evidence.excerpts) }; };
 
 app.get('/api/health', c => c.json({ ok: true, time: new Date().toISOString() }));
 
@@ -153,6 +154,8 @@ ingest.use('*', async (c, next) => {
   await next();
 });
 
+ingest.route('/official-reviews', officialReviewRoutes);
+
 ingest.post('/leads', async c => {
   const body = z.array(leadIn).max(100).safeParse(await c.req.json().catch(() => null));
   if (!body.success) return c.json({ error: '数据格式不正确', issues: body.error.issues }, 400);
@@ -186,7 +189,7 @@ ingest.post('/offers', async c => {
   for (const o of body.data) {
     const eventDay = resetEventDay(o);
     const sameId = peers.find(x=>x.id===o.id);
-    if (sameId && differentOccurrence({...o,evidenceUrl:o.evidence.url,eventDay},sameId)) o.id = `${o.id.slice(0,69)}-${eventDay ?? o.claimStart}`;
+    if (!o.officialReviewJobId && sameId && differentOccurrence({...o,evidenceUrl:o.evidence.url,eventDay},sameId)) o.id = `${o.id.slice(0,69)}-${eventDay ?? o.claimStart}`;
     const plat = plats.find(p => p.id === o.platformId);
     if (!peers.some(x => x.id === o.id)) {
       const dup = findDuplicate({ platformId: o.platformId, title: o.title, valueText: o.valueText, evidenceUrl: o.evidence.url, eventDay, claimStart:o.claimStart }, peers);
@@ -202,11 +205,12 @@ ingest.post('/offers', async c => {
     const sameOfficialHost = src && (() => { try { return new URL(src.url).hostname.toLowerCase() === new URL(o.evidence.url).hostname.toLowerCase(); } catch { return false; } })();
     const auto = plat.status === 'approved' && !!src?.enabled && sameOfficialHost && src.platformId === o.platformId && src.autoPublish
       && ['site', 'docs', 'official'].includes(src.tier) && src.tier === o.evidence.tier
-      && missing.length === 0 && !/未写明|不明确/.test(o.valueText) && !o.requirements.some(requirement => requirement === 'unknown' || /未写明/.test(requirement));
+      && !o.officialReviewJobId && missing.length === 0 && !/未写明|不明确/.test(o.valueText) && !o.requirements.some(requirement => requirement === 'unknown' || /未写明/.test(requirement));
     const [prev] = await d.select().from(s.offers).where(eq(s.offers.id, o.id));
     const [existingProposal] = prev ? await d.select().from(s.offerProposals).where(eq(s.offerProposals.offerId, o.id)) : [];
     const nowIso = new Date().toISOString();
-    const { leadId, ...od } = o;
+    if (o.officialReviewJobId && (prev?.officialReview?.jobId !== o.officialReviewJobId || prev.officialReview.status !== 'checking' || prev.officialReview.inputVersion !== `${prev.updatedAt}|${existingProposal?.updatedAt??''}`)) { results.push({id:o.id,error:'官方复核任务已失效'}); continue; }
+    const { leadId, officialReviewJobId, ...od } = o;
     const row = {
       ...od, usdEstimate: o.usdEstimate ?? null, claimStart: o.claimStart ?? null, claimEnd: o.claimEnd ?? null,
       creditValidity: o.creditValidity ?? null, publishedAt: o.publishedAt ?? null, sourceId: o.sourceId ?? null,
@@ -269,6 +273,9 @@ ingest.post('/offers', async c => {
       }
     }
     const diff: {field:string;from:unknown;to:unknown}[] = reviewChanges(prev, row);
+    if(prev.reviewState==='pending' && prev.evidence.tier!=='media' && row.evidence.tier==='media' && !diff.length) {
+      results.push({id:o.id,unchanged:true});continue; // 相同条款的社区转述不降级已找到的官方证据。
+    }
     // 待审草稿还未核准：只补证据、步骤或有效期也必须落库；已审核条目仍按业务字段提案。
     if (prev.reviewState === 'pending') {
       const meaningfulEvidence = (e: typeof row.evidence) => [e.url,e.tier,e.excerpts.benefit ?? null,e.excerpts.eligibility ?? null,e.excerpts.claim ?? null,e.excerpts.validity ?? null];
@@ -301,7 +308,8 @@ ingest.post('/offers', async c => {
       continue;
     }
     const reviewState = auto ? 'approved' : 'pending';
-    await d.update(s.offers).set({ ...row, reviewState }).where(eq(s.offers.id, o.id));
+    const changed = await d.update(s.offers).set({ ...row, reviewState }).where(and(eq(s.offers.id,o.id),o.officialReviewJobId ? eq(s.offers.updatedAt,prev.updatedAt) : undefined)).returning({id:s.offers.id});
+    if(!changed.length){results.push({id:o.id,error:'复核期间条目已更新，保留管理员操作'});continue;}
     if (existingProposal) await d.delete(s.offerProposals).where(eq(s.offerProposals.offerId, o.id));
     results.push({ id: o.id, changed: diff.map(x => x.field), reviewState, missingEvidence: missing });
   }

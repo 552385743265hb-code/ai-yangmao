@@ -1250,6 +1250,20 @@ function pAdmin(focusId) {
   $$('[data-admtab]').forEach(b => b.addEventListener('click', () => { ADM.tab = b.dataset.admtab; if (route()[1]) location.hash = 'admin'; render(true); }));
   ({ queue: admQueue, quality: admQuality, leads: admLeads, manual: admManual, health: admHealth })[ADM.tab]().catch(err => { $('#admBody').innerHTML = `<div class="card"><p>${esc(err.message)}</p></div>`; if (!ADM.token) render(true); });
 }
+function officialReviewBlock(o) {
+  const r=o.officialReview;
+  if(!r && o.evidenceTier!=='media')return '';
+  const at=value=>Number.isNaN(Date.parse(value))?'时间未知':new Date(value).toLocaleString('zh-CN');
+  const labels={checking:'正在搜索与复核',matched:'AI 已匹配官方原文，待你审核',unresolved:'暂未找到充分官方证据',failed:'复核受阻，等待重试'};
+  return `<details class="small" data-official-review><summary style="cursor:pointer;font-weight:600">🔎 ${r?labels[r.status]||'官方复核':'等待自动搜索官方出处'}</summary>
+    <p>${esc(r?.reason || '工作流会自动搜索官网、官方文档和已登记的官方 X 账号，找到原文后补全待审字段。')}</p>
+    ${r?`<p>已尝试 ${r.attempts} 次 · ${esc(at(r.checkedAt))}${r.nextAttemptAt?` · 下次重试 ${esc(at(r.nextAttemptAt))}`:r.status==='unresolved'||r.status==='failed'?' · 自动重试已暂停，可手动重试':''}</p>`:''}
+    ${r?.originUrl?`<p>原社区线索：<a href="${esc(r.originUrl)}" target="_blank" rel="noopener">${esc(r.originUrl)}</a></p>`:''}
+    ${r?.queries?.length?`<p>搜索词：${r.queries.map(esc).join('；')}</p>`:''}
+    ${(r?.candidates||[]).map(url=>`<p><a href="${esc(url)}" target="_blank" rel="noopener">${esc(url)}</a></p>`).join('')}
+    ${r?.changedFields?.length?`<p>补全字段：${r.changedFields.map(f=>esc(FIELD_L[f]||f)).join('、')}</p>`:''}
+    ${o.evidenceTier==='media'&&r?.status!=='checking'?'<button class="btn sm" type="button" data-official-retry>重新排入官方复核</button>':''}</details>`;
+}
 async function admQueue() {
   const box = $('#admBody');
   const q = await adm('/queue');
@@ -1262,6 +1276,7 @@ async function admQueue() {
     ${checksBlock(o)}
     <div class="rows">${EX_L.filter(([k]) => k !== 'claim' || o.excerpts[k]).map(([k, l]) => `<div class="orow" style="grid-template-columns:auto minmax(0,1fr);padding:6px 2px">${o.excerpts[k] ? `<span class="st good"><b>✓</b>${l}</span>` : `<span class="st warn"><b>!</b>${l}</span>`}<span class="t" style="font-weight:400;font-size:13.5px">${o.excerpts[k] ? '「' + esc(o.excerpts[k]) + '」' : '原文里没有找到'}</span></div>`).join('')}</div>
     <div class="small" style="word-break:break-all">来源：<a href="${esc(o.evidenceUrl)}" target="_blank" rel="noopener" style="text-decoration:underline">${esc(o.evidenceUrl)}</a></div>
+    ${officialReviewBlock(o)}
     ${reviewActions(o, live)}
     ${o.reviewMemo ? `<details open class="small"><summary style="cursor:pointer;font-weight:600">🔍 核验记录（仅管理员可见）</summary><div style="white-space:pre-wrap;margin-top:6px;color:var(--ink-2)">${esc(o.reviewMemo)}</div></details>` : ''}
     <details><summary class="small" style="cursor:pointer">💬 牧场心得${o.adminNote ? '（已写）' : '（可选，公开显示）'}</summary><div class="row" style="margin-top:6px;align-items:flex-start"><textarea data-note rows="2" maxlength="500" style="flex:1;min-width:160px" placeholder="实际用下来怎么样？比如：免费模型速度慢、容易限流">${esc(o.adminNote || '')}</textarea><button class="btn sm" type="button" data-act="note">保存心得</button><span data-note-status role="status" class="small" style="align-self:center"></span></div></details>
@@ -1314,6 +1329,11 @@ async function admQueue() {
   const done = (el, msg) => { el.style.opacity = .45; el.querySelectorAll('button,input,select').forEach(x => { x.disabled = true; }); toast(msg); };
   const bindCards = scope => $$('[data-code]', scope).forEach(el => {
     const code = el.dataset.code, live = el.dataset.live === '1', o = (live ? q.incomplete || [] : q.pending).find(x => x.code === code);
+    el.querySelector('[data-official-retry]')?.addEventListener('click',async e=>{
+      const button=e.currentTarget;button.disabled=true;
+      try { await adm(`/offers/${code}/official-retry`,{}); button.textContent='已排队，定时任务会自动复核'; }
+      catch(error){button.disabled=false;toast(error.message);}
+    });
     // 失败原因显示在按钮旁边，不只在顶部闪一下
     const actMsg = (msg, bad = true) => { let m = el.querySelector('[data-actmsg]'); if (!m) { m = document.createElement('p'); m.dataset.actmsg = ''; m.className = 'small'; m.style.cssText = 'margin:0;font-weight:600'; el.querySelector('[data-act]').closest('.row').after(m); } m.style.color = bad ? 'var(--critical-ink)' : ''; m.textContent = msg; };
     el.querySelector('[data-act="approve"]')?.addEventListener('click', async () => { try { const r = await adm(`/offers/${code}/approve`, {expectedReviewVersion:o?.reviewVersion}); done(el, `${o?.pendingUpdate ? '已接受更新' : '已通过'}：${r.title}`); } catch (e) { actMsg((o?.pendingUpdate ? '没有接受更新：' : '没有通过：') + e.message); } });

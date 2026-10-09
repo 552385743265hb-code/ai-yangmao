@@ -15,6 +15,8 @@ const rssSource = { id: 'rss', kind: 'rss', tier: 'site', platformId: 'vendor', 
 const json = (value: unknown) => new Response(JSON.stringify(value), { headers: { 'Content-Type': 'application/json' } });
 
 interface HarnessOptions {
+  officialJob?: boolean;
+  officialSearchStatus?: number;
   sources?: Record<string, unknown>[];
   leads?: Record<string, unknown>[];
   pages?: Record<string, string | number>;
@@ -41,6 +43,10 @@ function harness(options: HarnessOptions = {}) {
     if (url.endsWith('/snapshots')) return json({ changed: false });
     if (url.endsWith('/api/platforms')) return json({ platforms: [{ id: 'vendor', name: 'Vendor', site: 'https://vendor.example', xHandles: [], staffHandles: [] }] });
     if (url.includes('/leads?')) return json({ leads: options.leads ?? [] });
+    if (url.includes('/official-reviews/queue')) return json({jobs:options.officialJob?[{id:'vendor-max-api',title:candidate.title}]:[],remaining:options.officialJob?1:0});
+    if(url.endsWith('/official-reviews/vendor-max-api/claim'))return json({claimed:true,jobId:'12345678-1234-4234-8234-123456789012',offer:{...candidate,id:'vendor-max-api',firstChannel:'reddit',evidence:{url:'https://community.example/post',tier:'media',capturedAt:new Date().toISOString(),excerpts:{}}},platform:{id:'vendor',name:'Vendor',site:'https://vendor.example',xHandles:[],staffHandles:[]},sources:[]});
+    if(url.endsWith('/official-reviews/vendor-max-api/result'))return json({status:body.status});
+    if(url==='https://mcp.exa.ai/mcp')return options.officialSearchStatus?new Response('unavailable',{status:options.officialSearchStatus}):json({result:{content:[{type:'text',text:'Title: Official benefit\nURL: https://vendor.example/confirmed\nHighlights: Discovery snippet only'}]}});
     if (url.endsWith('/offers-index')) return json({ offers: options.known ?? [] });
     if (url.includes('/corrections?')) return json({ corrections: [] });
     if (url.endsWith('/model-budget/reserve')) return options.budgetDenied ? jsonError() : json({ id: ++reservation });
@@ -59,6 +65,7 @@ function harness(options: HarnessOptions = {}) {
       const response = options.pages?.[url] ?? page;
       return typeof response === 'number' ? new Response('blocked', { status: response }) : new Response(response);
     }
+    if(url==='https://community.example/post')return new Response(page);
     throw new Error(`Unexpected mocked request: ${url}`);
   }));
   return { reads, writes, payloads: (suffix: string) => writes.filter(write => write.url.endsWith(suffix)).map(write => write.body) };
@@ -226,4 +233,31 @@ describe('bounded lead processing and paid fallback', () => {
     expect(h.reads.some(url => url.includes('api.deepseek.com'))).toBe(false);
     expect(h.payloads('/status')).toEqual([]);
   });
+});
+
+
+describe('scheduled official review integration',()=>{
+  it('automatically searches and re-extracts official evidence in the normal pipeline run',async()=>{
+    const h=harness({officialJob:true,leads:[{...lead,origin:'reddit',url:'https://community.example/post'}]});
+    const {runPipeline}=await import('../pipeline/run');const result=await runPipeline();
+    expect(h.reads).toContain('https://mcp.exa.ai/mcp');expect(h.reads).toContain('https://vendor.example/confirmed');
+    const writes=h.payloads('/offers');expect(writes).toHaveLength(2);
+    expect(writes[0][0].evidence.tier).toBe('media');
+    expect(writes[1][0]).toMatchObject({id:'vendor-max-api',officialReviewJobId:'12345678-1234-4234-8234-123456789012',usdMax:200,evidence:{url:'https://vendor.example/confirmed',tier:'site',excerpts:{benefit}}});
+    expect((result.stats as any).officialReview.matched).toBe(1);
+  });
+  it('records search failure and coverage degradation rather than pretending no official benefit exists',async()=>{
+    const h=harness({officialJob:true,officialSearchStatus:429});
+    const {runPipeline}=await import('../pipeline/run');const result=await runPipeline();
+    expect(h.payloads('/offers')).toHaveLength(0);
+    expect(h.payloads('/official-reviews/vendor-max-api/result')[0]).toMatchObject({status:'failed'});
+    expect(result.stats.coverageDegraded).toBe(true);
+  });
+});
+
+it('leaves the community draft untouched when fetched official pages do not corroborate the target',async()=>{
+  const h=harness({officialJob:true,modelOutput:'{"offers":[]}'});
+  const {runPipeline}=await import('../pipeline/run');await runPipeline();
+  expect(h.payloads('/offers')).toHaveLength(0);
+  expect(h.payloads('/official-reviews/vendor-max-api/result')[0]).toMatchObject({status:'unresolved'});
 });
