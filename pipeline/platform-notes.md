@@ -130,6 +130,7 @@
 - 本批核验入口：https://help.poe.com/hc/en-us/articles/19944206309524；https://help.poe.com/hc/en-us/articles/19945140063636。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## adobe-firefly
+- 2026-10-08 印度学生一年Photoshop个人优惠81p6：社区B2C结账链接（GEN_IN_PSSTUDENT）当前普通抓取及JS渲染均到错误页，未确认一年免费、资格、支付或续费条款；不能据错误页判过期。另有正式印度高校免费Creative Cloud Pro计划，依法设立并认证高校完成教育核验及Federated ID配置，机构申请并分配学生/教职员工授权，20多款应用、标准生成合理使用额度及每月25高级积分，每年评估且可停止，不是个人Autopay一年优惠；不嫁接机构计划证据，个人条目保持待审及media。Photoshop是应用不是模型名，删除无依据美元估值。官方资料：https://www.adobe.com/in/creativecloud/buy/education/india-higher-education-offer.html；https://helpx.adobe.com/in/creative-cloud/apps/manage-plans/higher-education-ste-offer-india.html。
 - helpx.adobe.com 直接抓 403，走 Jina。首年指定模型无限量这类权益不按订阅价折美元。CC Pro / Firefly 各付费档每月积分和标准功能不限次是档位自带，不收。（2026-10-03 批量审核）
 - CC Pro 与 Firefly 付费个人套餐的月积分以官方 FAQ 的 monthly-generative-credits 表为准：CC Pro 4,000；Firefly Standard 2,000、Pro 4,000、Pro Plus 10,000、Premium 50,000（2026-10-01 核验）。不要混入 CC Standard、单应用、团队、企业和教育档，它们的额度与标准功能权限不同。
 - 仅独立于常规付费档的额外加赠/重置才用 perk、claimMethod=member，新老资格按活动原文；门槛写完整套餐名和地区价格，不能截成 member:Creative 或保留 unknown。积分在账单日按月重置、不结转；多订阅积分叠加，重置日以最早订阅为准。
