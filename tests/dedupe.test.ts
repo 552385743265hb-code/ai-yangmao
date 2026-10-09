@@ -1,11 +1,32 @@
 import { describe, expect, it } from 'vitest';
 import { findDuplicate } from '../src/shared/dedupe';
+import {resetEventDay} from '../src/shared/reset-event';
 
 const ex = [
   { id: 'a', platformId: 'stepfun', title: '阶跃星辰 Step Plan Flash Mini 每月 400M Credit', valueText: '每月 400M Credit', evidenceUrl: 'https://platform.stepfun.com/docs/zh/step-plan/overview' },
   { id: 'b', platformId: 'qiniu', title: '七牛云 AI 企业订阅计划（2,999元档）', valueText: '2,999 元每月', evidenceUrl: 'https://qiniu.com/ai/plan' },
 ];
 describe('入库去重', () => {
+  it('recognizes a daily free-tier FAQ summary as the existing daily check-in benefit',()=>{
+    const old={id:'oiioii-daily-check-in',platformId:'oiioii',title:'OiiOii 免费档每日积分／签到奖励',valueText:'每天60积分',evidenceUrl:'https://www.oiioii.ai/price'};
+    expect(findDuplicate({...old,id:'other',title:'OiiOii 免费档每日积分',valueText:'免费档提供每日积分',evidenceUrl:'https://www.oiioii.ai/faq'},[old])?.id).toBe(old.id);
+    expect(findDuplicate({...old,title:'OiiOii 新用户注册60积分',valueText:'首次注册赠60积分'},[old])).toBeUndefined();
+    expect(findDuplicate({...old,title:'OiiOii 视频模型每天60积分',valueText:'仅视频池每天60积分'},[old])).toBeUndefined();
+  });
+  it('recognizes the same one-week promotion reposted the next day without merging independent model modes',()=>{
+    const old={id:'nous-original',platformId:'nous',title:'Nous Portal Step 5 Preview 免费一周',valueText:'免费一周',claimStart:'2026-10-08',evidenceUrl:'https://portal.nousresearch.com/'};
+    expect(findDuplicate({...old,claimStart:'2026-10-09',evidenceUrl:'https://x.com/StepFun_ai/status/repost'},[old])?.id).toBe(old.id);
+    expect(findDuplicate({...old,claimStart:'2026-11-09',evidenceUrl:'https://x.com/StepFun_ai/status/new'},[old])).toBeUndefined();
+  });
+  it('uses the stable original ID when extraction adds a date suffix to a continuing monthly allowance',()=>{
+    const old={id:'anthropic-max-member-monthly-api',platformId:'anthropic',title:'Anthropic Max与Team订阅每月API额度',valueText:'Max100/200，Team最高500',evidenceUrl:'https://platform.claude.com/credits'};
+    expect(findDuplicate({...old,id:old.id+'-2026-10-08',title:'Claude Max / Team会员每月API额度扩展',valueText:'Max5x100、20x200、Team500',evidenceUrl:'https://x.com/ClaudeDevs/status/new'},[old])?.id).toBe(old.id);
+    expect(findDuplicate({...old,id:'unrelated-new-key',title:'Claude Max / Team会员每月API额度扩展',valueText:'Max5x100、20x200、Team500',evidenceUrl:'https://x.com/ClaudeDevs/status/new'},[old])?.id).toBe(old.id);
+  });
+  it('does not treat a monthly allowance mislabeled reset as a new reset event',()=>{
+    expect(resetEventDay({title:'Claude Max / Team 会员每月 API 额度扩展',tags:['reset'],publishedAt:'2026-10-08T16:09:00Z'})).toBeNull();
+    expect(resetEventDay({title:'Codex 每月额度重置卡发放',tags:['reset'],publishedAt:'2026-10-08T16:09:00Z'})).toBe('2026-10-08');
+  });
   it('同平台同标题（措辞略不同）判为重复', () =>
     expect(findDuplicate({ platformId: 'stepfun', title: '阶跃星辰 Step Plan Flash Mini：每月 400M Credit', valueText: 'y', evidenceUrl: 'https://x' }, ex)?.id).toBe('a'));
   it('档位金额不同不算重复', () =>

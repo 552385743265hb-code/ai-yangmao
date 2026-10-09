@@ -2,6 +2,8 @@
 export interface ResetEvent { platformId?: string; tags?: string[]; title?: string; publishedAt?: string | null; claimStart?: string | null; sourceTz?: string; evidence?: {url:string}; evidenceUrl?: string }
 export function resetEventDay(o: ResetEvent): string | null {
   if (!o.tags?.includes('reset')) return null;
+  // A model-applied tag cannot turn a recurring allowance into a separately dated reset.
+  if (/每月|每天|每日|monthly|daily/i.test(o.title ?? '') && !/重置|reset/i.test(o.title ?? '')) return null;
   const url = o.evidence?.url ?? o.evidenceUrl ?? '';
   const tweet = url.match(/^https?:\/\/(?:www\.)?(?:x\.com|twitter\.com)\/[^/]+\/status\/(\d+)/i)?.[1];
   const published = tweet ? new Date(Number((BigInt(tweet)>>22n)+1288834974657n)) : o.publishedAt ? new Date(o.publishedAt) : null;

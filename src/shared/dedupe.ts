@@ -24,7 +24,36 @@ export const normUrl = (value: string) => {
 // 档位、金额不同的标题（如 2,999 元档 / 4,999 元档）只差几个数字，不能当成同一条
 const digits = (s: string) => (s.normalize('NFKC').match(/\d[\d,.]*/g) ?? []).map(x => x.replace(/,/g, '')).sort().join('|');
 
-export interface DedupeCandidate { id: string; platformId: string; title: string; valueText: string; evidenceUrl: string; eventDay?: string | null; claimStart?: string | null; sameOccurrenceAs?:string }
+export interface DedupeCandidate { id: string; platformId: string; title: string; valueText: string; evidenceUrl: string; eventDay?: string | null; claimStart?: string | null; sameOccurrenceAs?:string; reviewState?:string }
+type Incoming = Omit<DedupeCandidate,'id'> & {id?:string};
+const titleKey=(s:string)=>s.normalize('NFKC').toLowerCase().replace(/[\s\p{P}\p{S}]/gu,'');
+// Generic daily-credit descriptions may come from FAQ, pricing, or the account check-in page.
+// Keep product/model, paid-tier, region and task qualifiers: only a scope-free alias is safe.
+function genericDailyCredits(o: Incoming): boolean {
+  let t=titleKey(o.title);
+  if(!/每日|每天|签到|daily|checkin/.test(t)||!/积分|credits?|tokens?|points?|盒饭/.test(t))return false;
+  t=t.replaceAll(titleKey(o.platformId),'');
+  t=t.replace(/免费档|免费层|免费版|每日|每天|签到|登录|奖励|赠送|额度|积分|盒饭|领取|赠|送|领|合计|free|tier|daily|checkin|credits?|tokens?|points?|bonus|rewards?|[0-9]+/g,'');
+  return !t;
+}
+function sameRepostedWeek(a: Incoming,b:Incoming):boolean {
+  if(a.eventDay||b.eventDay||titleKey(a.title)!==titleKey(b.title)||!a.claimStart||!b.claimStart)return false;
+  if(!/一周|1周|7天|one week|a week|7 days/i.test(a.title+' '+a.valueText)||!/一周|1周|7天|one week|a week|7 days/i.test(b.title+' '+b.valueText))return false;
+  return Math.abs(Date.parse(a.claimStart)-Date.parse(b.claimStart))<7*86400000;
+}
+function sameRecurringAlias(a: Incoming,b:DedupeCandidate):boolean {
+  return !a.eventDay&&!b.eventDay&&!!a.id&&a.id.replace(/-\d{4}-\d{2}-\d{2}$/,'')===b.id
+    && /每月|monthly/i.test(a.title+' '+a.valueText)&&/每月|monthly/i.test(b.title+' '+b.valueText);
+}
+function monthlyApiScope(o: Incoming):string|null {
+  if(o.eventDay||!/每月|monthly/i.test(o.title)||!/api/i.test(o.title))return null;
+  const plans=[...new Set(o.title.toLowerCase().match(/max(?:\s*\d+x)?|team|pro|premium|standard|enterprise/g)??[])].sort();
+  if(!plans.length)return null;
+  // Named products or capabilities left over mean a different scope, not a generic plan allowance.
+  let rest=o.title.toLowerCase().replace(o.platformId.toLowerCase(),'').replace(/anthropic|claude/g,'');
+  rest=rest.replace(/max(?:\s*\d+x)?|team|pro|premium|standard|enterprise|api|monthly|credits?|每月|月度|计划|订阅|用户|会员|额度|扩展|赠送|赠金|免费|与|和|及/g,'').replace(/[\s\p{P}\p{S}]/gu,'');
+  return rest?null:plans.join('|');
+}
 // 同日不同公告可能是第二次发放，也可能是传播进度。没有同活动判断时保留待审，不能硬合并。
 export const ambiguousReset = (a: Omit<DedupeCandidate,'id'>, b:DedupeCandidate) =>
   !!(a.eventDay && a.eventDay===b.eventDay && normUrl(a.evidenceUrl)!==normUrl(b.evidenceUrl) && a.sameOccurrenceAs!==b.id);
@@ -32,10 +61,20 @@ export const differentOccurrence = (a: Omit<DedupeCandidate, 'id'>, b: Omit<Dedu
   !!((a.eventDay && b.eventDay && a.eventDay !== b.eventDay) ||
     (a.claimStart && b.claimStart && a.claimStart !== b.claimStart && normUrl(a.evidenceUrl) !== normUrl(b.evidenceUrl)));
 
-export function findDuplicate<T extends DedupeCandidate>(o: Omit<DedupeCandidate, 'id'>, existing: T[]): T | undefined {
-  return existing.find(e => e.platformId === o.platformId && !differentOccurrence(o,e) && !ambiguousReset(o,e) && (
+export function findDuplicate<T extends DedupeCandidate>(o: Incoming, existing: T[]): T | undefined {
+  // Prefer the accepted canonical record over a rejected duplicate alias.
+  const ranked=[...existing].sort((a,b)=>(a.reviewState==='approved'?0:a.reviewState==='pending'?1:2)-(b.reviewState==='approved'?0:b.reviewState==='pending'?1:2));
+  return ranked.find(e => e.platformId === o.platformId && !ambiguousReset(o,e) && (
+    (!o.eventDay&&!e.eventDay&&genericDailyCredits(o)&&genericDailyCredits(e)) || (!!monthlyApiScope(o)&&monthlyApiScope(o)===monthlyApiScope(e)) || sameRecurringAlias(o,e) || sameRepostedWeek(o,e) || (!differentOccurrence(o,e) && (
     (digits(e.title) === digits(o.title) && similarity(e.title, o.title) >= 0.85) ||
-    (normUrl(e.evidenceUrl) === normUrl(o.evidenceUrl) && digits(e.valueText) === digits(o.valueText) && similarity(e.valueText, o.valueText) >= 0.85)));
+    (normUrl(e.evidenceUrl) === normUrl(o.evidenceUrl) && digits(e.valueText) === digits(o.valueText) && similarity(e.valueText, o.valueText) >= 0.85)))));
+}
+
+/** Exact source + title can identify a record mistakenly assigned to another platform. */
+export function crossPlatformDuplicate<T extends DedupeCandidate>(o:Incoming,existing:T[]):T|undefined {
+  if(o.eventDay)return undefined;
+  return existing.find(e=>e.platformId!==o.platformId&&!e.eventDay&&e.reviewState==='approved'
+    && normUrl(e.evidenceUrl)===normUrl(o.evidenceUrl)&&titleKey(e.title)===titleKey(o.title)&&!differentOccurrence(o,e));
 }
 
 /** 补全后的精确冲突只交审核处理，不能静默覆盖两个已有草稿或重复上架。 */

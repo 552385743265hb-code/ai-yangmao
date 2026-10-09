@@ -188,6 +188,20 @@ function legacyProposal(candidate: object) {
 }
 
 describe('official evidence verification', () => {
+  it('blocks a new-ID FAQ daily-credit duplicate and preserves the approved amount',async()=>{
+    await call('ingest/offers',[{...offer,id:'vendor-daily',type:'standing',endKind:'standing',title:'Vendor 免费档每日积分／签到奖励',valueText:'每日60积分'}]);
+    await call('admin/offers/vendor-daily/approve',{},'admin');
+    const r=await call('ingest/offers',[{...offer,id:'vendor-faq-daily',type:'standing',endKind:'standing',title:'Vendor 免费档每日积分',valueText:'每日积分，数量以账号为准',evidence:{...evidence,url:'https://vendor.example/faq'}}]);
+    expect((r.body.results as any[])[0]).toMatchObject({id:'vendor-daily',unchanged:true});
+    expect(sqlite.prepare('SELECT id,value_text FROM offers').all()).toEqual([{id:'vendor-daily',value_text:'每日60积分'}]);
+  });
+  it('blocks the exact same official benefit misattributed to another platform',async()=>{
+    await call('ingest/offers',[offer]);await call('admin/offers/vendor-free/approve',{},'admin');
+    sqlite.prepare("INSERT INTO platforms(id,name,type,status) VALUES('wrong','Wrong','tool','approved')").run();
+    const r=await call('ingest/offers',[{...offer,id:'wrong-duplicate',platformId:'wrong',sourceId:undefined,evidence:{...evidence,tier:'media'}}]);
+    expect((r.body.results as any[])[0].skipped).toContain('vendor-free');
+    expect(sqlite.prepare('SELECT count(*) n FROM offers').get()).toEqual({n:1});
+  });
   it('does not split an approved limited offer when a later repost changes its start date and source URL',async()=>{
     await call('ingest/offers',[{...offer,claimStart:'2026-10-08'}]);await call('admin/offers/vendor-free/approve',{},'admin');
     const result=await call('ingest/offers',[{...offer,claimStart:'2026-10-09',evidence:{...evidence,tier:'media',url:'https://community.example/repost'}}]);
