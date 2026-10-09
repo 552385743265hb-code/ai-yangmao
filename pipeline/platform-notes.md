@@ -31,6 +31,7 @@
 - 免费模型多数会收集使用数据；实测应用内免费模型常因限流报错。
 
 ## zhipu
+- 2026-10-08：官方https://bigmodel.cn/activity/trial-card/EEGA0AKYV5的JS页面是GLM Coding Plan“7天体验卡”，不是7张，当前显示已领完。不能把朋友分享卡当作仅付费会员福利，卡资格/档位/起止未公布仍留缺口；页面资源Last-Modified或榜单更新日期不是活动时间。
 - 免费模型要逐个列出并写明类型：文本 GLM-4.7-Flash、GLM-4.5-Flash、GLM-4-Flash-250414；视觉 GLM-4.6V-Flash、GLM-4.1V-Thinking-Flash、GLM-4V-Flash；图像生成 CogView-3-Flash；视频生成 CogVideoX-Flash。是常驻免费，不是限时。
 - ZCode 的活动以 ZCode 公众号原文为准，媒体转述常把条件写错（如把“1 个月内回归的老用户”写成“1 个月内有效”）；有效期等细节可能只在公众号图片里。
 - 重置卡按官方 Lite / Pro / Max 三档分别折算并列出（周积分 10,000 / 60,000 / 140,000，5 小时积分 2,000 / 12,000 / 28,000），下限用 Lite。
@@ -58,6 +59,7 @@
 - 本批核验入口：https://www.minimax.cn/blog/minimax-m2。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## gmi
+- 2026-10-08：qwen-day官方确认Qwen3.8 Max/Flash与Wan3.0-video七天免费窗口，已有$10余额无需再付款、新用户充值$10且此余额不扣；不自动标card。官网未写七天统一起止，删除模型捏造2025年日期，不把企业至11月5日赠额截止套到开发者活动。https://www.gmicloud.ai/qwen-day。
 - 其他厂商宣传的“在 GMI Cloud 上免费用”的活动，平台归 GMI；要找 GMI 自己（官网、@gmi_cloud）的原文。
 
 ## tencent-hy
@@ -130,6 +132,7 @@
 - 本批核验入口：https://help.poe.com/hc/en-us/articles/19944206309524；https://help.poe.com/hc/en-us/articles/19945140063636。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## adobe-firefly
+- 2026-10-08：9uvs实际为Adobe Firefly首年指定模型无限量，非Higgsfield权益；已按官方帮助页修归属与证据docs，记录各档/分辨率、仅网页移动端、升级不延长期限，与已上架同活动重复，待管理员处置。
 - 2026-10-08第三轮81p6：Mashable India 2026-10-05报道明确Photoshop专项年度预付首年100%折扣、₹0/12个月，之后₹1999/年自动续费，部分符合资格账号可见，填college信息及UPI AutoPay约₹2token payment；未注明₹2退还，不把UPI步骤解释成官方禁止银行卡。文章没有直达Adobe活动链接，Adobe文字链为媒体站内文章，X引用是Analytics Insight媒体账号。媒体补强线索但不升官方证据等级；详细条款按报道写入并保留待审，发布日期不当活动起点。https://in.mashable.com/tech/114589/adobe-photoshop-free-for-1-year-for-indian-students-check-eligibility-and-how-to-claim。
 - 2026-10-08二次核验81p6：用户补充首年₹0/12个月、续费₹1999/年及强制UPI AutoPay、印度高校资格等线索，尚非管理员明确亲测激活。所给两个通用/in/education/students页面公开实时正文仍为7天试用及Creative Cloud学生价首年₹398.99/月、次年₹699.01/月；不能据通用页面URL证明特殊Photoshop免费促销。请求印度IN动态出口后Photoshop仅空HTML、结账及CC提取连接失败，属覆盖降级，不证明活动不存在。保留专用GEN_IN_PSSTUDENT促销线索，详细条件仅标待核实，不伪造官方摘录，不凭印度普通银行卡支付文档推断本促销必须/不允许某支付方式；待专用活动或₹0结账URL。条目保持待审、media，用户新线索已补字段和内部核验记录。
 - 2026-10-08 印度学生一年Photoshop个人优惠81p6：社区B2C结账链接（GEN_IN_PSSTUDENT）当前普通抓取及JS渲染均到错误页，未确认一年免费、资格、支付或续费条款；不能据错误页判过期。另有正式印度高校免费Creative Cloud Pro计划，依法设立并认证高校完成教育核验及Federated ID配置，机构申请并分配学生/教职员工授权，20多款应用、标准生成合理使用额度及每月25高级积分，每年评估且可停止，不是个人Autopay一年优惠；不嫁接机构计划证据，个人条目保持待审及media。Photoshop是应用不是模型名，删除无依据美元估值。官方资料：https://www.adobe.com/in/creativecloud/buy/education/india-higher-education-offer.html；https://helpx.adobe.com/in/creative-cloud/apps/manage-plans/higher-education-ste-offer-india.html。
@@ -420,6 +423,7 @@
 - 本批核验入口：https://fireworks.ai/pricing。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## pollo
+- 2026-10-08复核：官方德文Hub指南确认7天签到25、邀请注册使用双方各30，但社交正文各10合计30与Discord表格20合计40冲突，邀请后续双方100与摘要最多60不一致，必须以Reward/邀请窗口复核；不保证所有地区账号可领。英语同路径404不否认德语官方资料。未注明重复签到周期、有效期或免费可用完整模型，不能凭导航填写Sora/Veo等。https://pollo.ai/de/hub/how-to-get-pollo-ai-free-credits；价格页Pro14.50/800单位比价当前复现。
 - 价格页 Free 列 20 credits；美元按 Pro 年付 $14.50 / 800 credits ≈ $0.018/credit 折算。（2026-10-03 批量审核）
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - 官方德语Hub指南2026-06-10明确新注册20 credits，非每月赠20；同时警告账号/地区/活动可变。具体可抵扣模型和现行新号到账仍需登录核对，不把全部目录当免费。
@@ -462,6 +466,7 @@
 - 本批核验入口：https://ppio.com/docs/model/FAQs。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## xai
+- 2026-10-08：个人howie_serious所说Grok Bot采集推特每日1000次，未找到xAI/X官方免费模型额度证明。数据采集频控不等于Grok模型调用免费；不根据个人bot反馈推导人人通过X登录可领1000次。保留media和资格缺口。
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - 个人Free官网写实时网页/X搜索、Voice mode和Connectors，没有明确免费模型版本与调用上限；$0/月是售价不等于福利价值0。SuperGrok标Grok4.6不能移植为Free模型。来源：https://x.ai/pricing
 - Grok Bot企业两周活动官方发布2026-09-03，“next two weeks”按日期加两周为2026-09-17，截止精确时刻未公告；这是历史活动不是每个企业加入就从当天试用14天。限Grok Enterprise/Cursor Enterprise，管理员后台启用并下载应用，整个组织可用。来源：https://x.ai/news/grok-bot-for-enterprise
@@ -492,6 +497,7 @@
 - 本批核验入口：https://github.com/features/copilot/plans。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## anthropic
+- 2026-10-08社区复核：Opus5.5官方9月22日发布文确认订阅banked reset，社区10月23日卡到期不是全局领取截止，不拿套餐月费估现金。OSS Scanner官方red文档面向开源核心维护者PR接入，非biz企业门槛，周期性免费且报告未人工审，不编扫描次数。定向100美元offer仅公开登录墙，不能拿通用Startups1000替代；Reddit250个案未核实，不把官方实付200购买250的bundle当赠额。详见docs/community-official-review-2026-10-08.md。
 - 2026-10-08 以 https://claude.com/programs/startups 及其 FAQ 核定创业计划：获批公司得 $1,000 第一方 Claude API 额度（发放后 6 个月有效）；首次使用 Team 的组织另可领最多 5 个 Premium 席位免费一年。按官方扩展公告 $100/席/月年付，5 席一年 $6,000，自有权益估值写 usdEstimate=1000、usdMax=7000。最高 $45,000 Startup Stack 是独立合作方优惠，不是 Anthropic API 赠金，不相加成人人固定 $46,000；VC 网络的最多 $100,000 API 是另一领取渠道，不并入本条估值。https://claude.com/resources/articles/were-expanding-the-claude-startups-program-to-help-founders-build
 - 创业计划须成立 5 年内或近 2 年获融资、Console 账号、与官网同域的公司邮箱、产品简述并经审核；不要求 VC 融资。API 仅用于第一方 Console，不适用 Bedrock/Vertex。官方条款排除在中国等受限地区设立/运营或向当地提供服务的公司，不能用“海外网络”替代公司资格；门槛 biz，具体条件写在额度和步骤。https://www.anthropic.com/startup-program-official-terms
 - 本轮扩展福利有 2026-10-06 官方公告和当日生效的附加权益条款，日期用于本轮新增 Team/合作方权益，不是整个创业计划的最初 Launch 日期。管理员补充 MadRobot 后已追到并通过 Jina 读到 CNBC 原文，CNBC 明确援引 Anthropic 称计划最初在 5 月推出；2026 年报道与官网 earlier this year 限定年份。记录 2026-05 为月份精度，具体日未披露，不猜 5 月 1 日；旧官方条款 May 22, 2025 的编辑日期也不当 Launch。7rs2 标题明确扩展版，步骤同时说明最初推出月份；保留指定条目，将同活动同渠道 ungi 作为重复处理，vmjp $100 未自动改写或拒绝。https://www.anthropic.com/legal/startup-program-addendum；https://madrobot.blog/2026/10/06/anthropic-claude-startups-free-year-claude-team-1000-api-credits/；https://www.cnbc.com/2026/10/06/anthropic-claude-startups-program.html
@@ -616,6 +622,7 @@
 - 文档里的“快速模式不消耗智点”“自定义模型下搜索、生图等工具限时免费”都不收：前者只是基础模式、没有额度，后者要自带 API Key 付模型费。只收有具体智点数的（体验 800/月、签到、首购加赠）。（2026-10-03 管理员确认）
 - WPS灵犀体验800智点/月；签到100/200，连续Day7起200/天；首次购买标准/进阶/旗舰额外5000/14000/48000只一次。本金不记赠金；加量2000智点25元，仅付费用户，可作同平台替代成本比较。
 ## workbuddy
+- 2026-10-08：国际X账号WorkBuddy_AI原帖邀请人100、好友350（100推荐+250欢迎），profile官网workbuddy.ai、地区Singapore；不套中国站2000邀请活动或50元/1000费率。发放资格为好友注册并首次查询，积分到期未说明；原帖时间由ID2108082016860413973校准。账号Profile指向workbuddy.ai，该官网明确WorkBuddy属于Tencent且页脚Tencent Cloud；国际积分活动与中国站仍分开核验，不凭同品牌套用费率。
 - 2026-10-08 管理员指出标准/高级/旗舰“加赠”实际随套餐分档配置。重新核对 Pricing：三档基础/月分别 2,000/4,000/20,000，加赠/月 2,000/5,000/30,000，当前每月实得 4,000/9,000/50,000，随订阅自动发放。官网确实标“加赠积分 / 月（限时）”，不能说官方没写限时，但当前可核证据只给套餐定价，没有足够的独立活动条件/期限证据；到账后 1 个月有效是积分寿命，不是活动截止。按现行套餐自带权益口径，6j7x/lpen/v4sd 建议 paid_bundle 拒绝，不能仅凭“加赠/限时”字样当独立羊毛或按三档拆条。此前保留为独立限时加赠的判断过松，予以纠正。本次用户要求核查告知，未改生产审核状态；订阅升级公众号公告受验证码阻挡，未读到，不将其视为已核实或不存在活动。https://www.workbuddy.cn/docs/workbuddy/Pricing；https://mp.weixin.qq.com/s/EAhTahzB5K-7sfERoy1YsQ
 - 积分单价用官方加量包 50 元 / 1,000 积分。（2026-10-03 批量审核）
 - 官网活动都在 https://www.workbuddy.cn/events/<名称>/ 下（invite、campus-freshman），活动页是 site 级证据；Jina 抓取会被降级成 media，审核时改回 site。
@@ -637,5 +644,15 @@
 - 新人 $5 免费额度可用于所有公开模型，30 天有效，以 inference-docs.cerebras.ai/support/rate-limits 为准（2026-10-03 批量审核）。
 
 ## openai
+- 2026-10-08：Auto-review媒体来源追到Tibo原帖https://x.com/thsottiaux/status/2107368734981517634，明确通过ChatGPT账号登录免费开启、自动审核不消耗计划用量；只覆盖Auto-review，不是主Agent或全部ChatGPT免费。校准发布时间，保留待审，不编固定调用次数。
 - Codex / ChatGPT 重置按官方每次发放的实际语义记录，不按同名/同额度去重。单次自动重置或banked reset卡发放：claimStart与claimEnd为同一事件日；publishedAt保存Tibo（@thsottiaux）官方原公告精确时间，process/传播进度回复不能冒充新发放。明确tomorrow或指定执行日时，事件日按原文，发布时间另存；卡的使用期限不扩成发放窗口。若明确未来24小时重置两次、未来一周每天重置等多次安排，则保留公告覆盖的起止区间，不强制同日；new release、未来改进、next week本身不是持续重置证据。不同时间点的独立发放，即使同一天也可分别记录；同一次发放的预告、确认、延迟解释仍为同一事件，不能只按推文时间不同判成新福利。只有窗口明确才计算日期，不猜未公布的逐次process时刻。（2026-10-08）
 - 本次实读13个X来源及线程：7月9日未来24小时两次重置保留7月9–10日；8月22日tomorrow指8月23日；10月1日tomorrow 10am预告指10月2日，10月2日道歉回复不是10月3日新发放；10月7日banked reset主公告status/2107913674593644711，稍后status/2107913738791596286仅说当天美西EOD前到账。美西夏令时日期使用America/Los_Angeles；原文口语PST保留，不将其写法误算为确认实际执行时刻。原7月17日证据实际只回复“And now 100%”，不能伪造完整全员公告摘录。逐条凭证见docs/codex-reset-time-audit-2026-10-08.md。
+
+## periodic
+- 2026-10-08：社区“基元律动认证18、充19减18”不是Periodic Labs，两个条目已改归TokenRhythm待准入平台；不得翻译“基元”自动映射到科学AI公司Periodic.com。
+
+## qoder
+- 2026-10-08待准入，产品发放方与Qwen模型原厂分开。CN官方https://docs.qoder.cn/events/flashoffer起始2026-09-18 10:00北京，10月1日延期、结束另行公告；国际https://docs.qoder.com/events/flashoffer截至9月30日，不混地区、不新建同福利延期条目。仅个人账号、Free/零余额/会员卡可用，企业不适用，指定Qwen3.8-Flash不扣Credits。
+
+## tokenrhythm
+- 2026-10-08待准入，官网https://tokenrhythm.studio自称基元律动多模型API服务，与Periodic Labs无关。社区认证18/充19减18尚无公开官方活动条款，单位、支付机制、期限与渠道授权待核；不把18直接折成2.54美元，不自动批准聚合平台。
