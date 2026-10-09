@@ -9,7 +9,7 @@
 - 免费版每月 50 credits，永久有效、每月重置不结转；按官方加购价 $0.04/credit 折算约 $2/月。
 - 要写明免费版可用的模型（价格页脚注：Claude Sonnet 4.5 及开源模型 Qwen3 Coder Next、DeepSeek 3.2、MiniMax M2.1），并注明需用社交账号或 AWS Builder ID 登录。
 - 学生认证后一年内每月给额度的，算常驻免费额度 standing（门槛 student，截止方式 standing，额度有效期写“学生认证后 12 个月，每月刷新”，美元按每月算）；若官方写法是“学生免费获得 Pro 一年”则算会员免费送 gift。（2026-10-01 管理员确认）
-- “首次升级付费套餐送 $20”是充值赠送（topup），门槛 pay:首次升级付费套餐，不是注册即送。
+- 2026-10-09新口径：“首次升级付费套餐送$20”为首购/升级消费促销，不收；原kiro-kiro-signup-bonus已撤下，不能重新输出topup。
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - td37原approved仅证据-only旧提案，官方首次付费升级20美元与绑卡条件未变；本轮保留已审核业务字段，只内部memo，不approve/reject/retest旧提案。
 - 本批核验入口：https://kiro.dev/pricing/。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
@@ -170,6 +170,7 @@
 - 本批核验入口：https://portal.nousresearch.com/manage-subscription。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## higgsfield
+- 2026-10-09：API首次消费满$100送$15、30天消费阶梯5%–20%返利属于消费促销，不收；higgsfield-higgsfield-api-cashback-bonus已拒绝。
 - 2026-10-09：changelog中2026-10-02的AI Influencer条目写免费角色生成5次，as of October 3是状态参照，非截止，也不足以精确确定赠额开始日；publishedAt用10-02日精度、claimStart/End无明示则留空。仅Character Builder角色图像，不能套Face Swap每日5次或Seedance新人5段视频；视频Motion/Genjutsu另计，当前可用次数按账号Generate页。官方blog/new-ai-influencer标角色生成1.12积分/次及20积分/$1，5次比价$0.28。公告仍保留不等于每个账号现在都还有免费次数。
 - 2026-10-09管理员确认：刚注册、从未使用AI Influencer的新账号已无5次试用。该记录停止作为当前可领取展示，保留历史；用管理员实测的停止领取确认时刻记录withdrawnAt，不把它当活动真实结束日，也不猜10月3日截止。保留原官方历史摘录，不将旧changelog持续存在视为当前仍可领的证明。
 - 2026-10-08复核df8o：官方changelog#credit-reset为2026-09-29T01:24:00Z公布的旧会员补足活动，领取及未用奖励于2026-09-30 23:59 UTC结束；Basic及以上有效计划，将余额补足套餐完整月额，最多额外2000，非人人固定赠2000。已取消但仍有效计划可恢复，升级不多给，奖励先消耗。dateModified不代表新发放，当前未见延期或新一轮；保留历史窗口，不套用Codex单日事件。未点名免费模型不添models；最高$100仅正文比价，不填无依据个人最低赠額。原已批准记录保留，已有更新提案仅补字段待审。来源：https://higgsfield.ai/creator-hub/changelog#credit-reset。
@@ -453,6 +454,7 @@
 - 本批核验入口：https://www.tripo3d.ai/pricing；https://www.tripo3d.ai/zh/pricing；https://www.tripo3d.ai/help/api-plugins/tripo-studiotripo-api。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## xiaomi-mimo
+- 2026-10-09：MiMo好友订单付费返利10%–20%按消费返利新口径不收，原xiaomi-mimo-xiaomi-mimo-friend-invite-rebate已撤下；不影响不需付费的模型限免。
 - 2026-10-07 年付 12% 与个人首购 12% 都是普通订阅折扣，无独立赠额，不收；Lite 首购实付 $5.28，超过首月不超过 $1 的近免费例外。Claw 免费时长及模型限免另核，不受折扣条目拒绝影响。来源：https://platform.xiaomimimo.com/
 - Claw 免费时长以更新日志 mimo.mi.com/docs/zh-CN/updates/feature/claw 为准（每天 3 小时、单次有算力上限）。MiMo-V2.5-ASR 现按 $0.074/小时收费，旧“免费”线索不收。（2026-10-03 批量审核）
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
@@ -634,7 +636,7 @@
 - docs.coze.cn 要用浏览器 UA 才能抓（否则 UA Forbidden）。积分折美元用 coze_pro_credits 企业版“1000 积分 = 1 元”（比个人进阶版 39.9 元/3 万更保守）。积分页现在只写“新用户注册一次性 1500（30 天）”，免费版每日 1500 需登录核对；新用户 1500 可能是一条漏收的新人礼。（2026-10-03 批量审核）
 - 国内扣子个人免费版官方升级规则每日登录1500积分、1天有效，不能套旧500档或已结束的9.9元优惠；新套餐实际领取仍需当前账户核对。
 ## lingxi
-- 文档里的“快速模式不消耗智点”“自定义模型下搜索、生图等工具限时免费”都不收：前者只是基础模式、没有额度，后者要自带 API Key 付模型费。只收有具体智点数的（体验 800/月、签到、首购加赠）。（2026-10-03 管理员确认）
+- 文档里的“快速模式不消耗智点”“自定义模型下搜索、生图等工具限时免费”都不收：前者只是基础模式、没有额度，后者要自带 API Key 付模型费。体验800/月和无需消费的签到额度另核；2026-10-09首购加赠已明确不收，原lingxi-first-purchase-double已撤下。（2026-10-03 管理员确认）
 - WPS灵犀体验800智点/月；签到100/200，连续Day7起200/天；首次购买标准/进阶/旗舰额外5000/14000/48000只一次。本金不记赠金；加量2000智点25元，仅付费用户，可作同平台替代成本比较。
 ## workbuddy
 - 2026-10-09邀请活动：官方invite页可由新老用户生成链接/海报，requirements=none而非invite；链接是奖励归因，不是私有邀请码准入。claimMethod=app，注册2000积分仅受邀新账号，type=new；同条包含邀请人奖励故audience=all，正文按角色写清。原提案trial不保留；app/none及2000积分按50元/1000比价约$14.08正确。9/1及按上一轮结束推断10/1均不能作本轮明示开始，日期留空，不把旧内部拒绝理由当现行规则。修改在提案中，等待管理员接受，不覆盖旧公开版本。
