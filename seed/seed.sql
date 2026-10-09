@@ -221,7 +221,7 @@ INSERT INTO platforms (id, name, type, site, x_handles, staff_handles, wechat) V
   ON CONFLICT(id) DO UPDATE SET name=excluded.name, type=excluded.type, site=excluded.site, x_handles=excluded.x_handles, staff_handles=excluded.staff_handles, wechat=COALESCE(excluded.wechat, platforms.wechat), updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now');
 INSERT INTO platforms (id, name, type, site, x_handles, staff_handles, wechat) VALUES ('sensenova', '商汤 SenseNova（日日新）', 'lab', 'https://platform.sensenova.cn', '[]', '[]', NULL)
   ON CONFLICT(id) DO UPDATE SET name=excluded.name, type=excluded.type, site=excluded.site, x_handles=excluded.x_handles, staff_handles=excluded.staff_handles, wechat=COALESCE(excluded.wechat, platforms.wechat), updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now');
-INSERT INTO platforms (id, name, type, site, x_handles, staff_handles, wechat) VALUES ('qoder', 'Qoder（CN / International）', 'tool', 'https://qoder.cn', '[]', '[]', NULL)
+INSERT INTO platforms (id, name, type, site, x_handles, staff_handles, wechat) VALUES ('qoder', '阿里 Qoder（CN / International）', 'tool', 'https://qoder.cn', '[]', '[]', NULL)
   ON CONFLICT(id) DO UPDATE SET name=excluded.name, type=excluded.type, site=excluded.site, x_handles=excluded.x_handles, staff_handles=excluded.staff_handles, wechat=COALESCE(excluded.wechat, platforms.wechat), updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now');
 INSERT INTO platforms (id, name, type, site, x_handles, staff_handles, wechat) VALUES ('tokenrhythm', '基元律动 TokenRhythm', 'infra', 'https://tokenrhythm.studio', '[]', '[]', NULL)
   ON CONFLICT(id) DO UPDATE SET name=excluded.name, type=excluded.type, site=excluded.site, x_handles=excluded.x_handles, staff_handles=excluded.staff_handles, wechat=COALESCE(excluded.wechat, platforms.wechat), updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now');
@@ -684,4 +684,8 @@ INSERT INTO sources (id, platform_id, kind, url, tier, config, enabled) VALUES (
 INSERT INTO sources (id, platform_id, kind, url, tier, config, enabled) VALUES ('oiioii-changelog', 'oiioii', 'web_list', 'https://www.oiioii.ai/changelog', 'official', '{"regionScope":"同站多语言；未确认独立国内/国际账号体系"}', 1)
   ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
 INSERT INTO sources (id, platform_id, kind, url, tier, config, enabled) VALUES ('oiioii-blog', 'oiioii', 'web_list', 'https://www.oiioii.ai/blog', 'official', '{"regionScope":"同站多语言；未确认独立国内/国际账号体系"}', 1)
+  ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
+INSERT INTO sources (id, platform_id, kind, url, tier, config, enabled) VALUES ('qoder-add-mv0pxicw', 'qoder', 'web_list', 'https://docs.qoder.cn/events/flashoffer', 'docs', '{"addedBy":"admin"}', 1)
+  ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
+INSERT INTO sources (id, platform_id, kind, url, tier, config, enabled) VALUES ('qoder-add-mv0pxjus', 'qoder', 'web_list', 'https://docs.qoder.com/events/flashoffer', 'docs', '{"addedBy":"admin"}', 1)
   ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);

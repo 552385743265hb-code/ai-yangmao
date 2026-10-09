@@ -659,7 +659,10 @@
 - 2026-10-08：社区“基元律动认证18、充19减18”不是Periodic Labs，两个条目已改归TokenRhythm待准入平台；不得翻译“基元”自动映射到科学AI公司Periodic.com。
 
 ## qoder
-- 2026-10-08待准入，产品发放方与Qwen模型原厂分开。CN官方https://docs.qoder.cn/events/flashoffer起始2026-09-18 10:00北京，10月1日延期、结束另行公告；国际https://docs.qoder.com/events/flashoffer截至9月30日，不混地区、不新建同福利延期条目。仅个人账号、Free/零余额/会员卡可用，企业不适用，指定Qwen3.8-Flash不扣Credits。
+- 2026-10-09核实：Qoder属于阿里体系，不是独立于Qwen厂商的第三方公司；平台显示“阿里 Qoder（CN / International）”。CN用户协议https://qoder.cn/product-service的主体为通义云启（杭州）信息技术有限公司及/或关联公司，并明确阿里云可共同提供服务、采用阿里云账号；阿里集团官网https://www.alibabagroup.com/zh-CN/document-2016703577908576256将Qoder/QoderWork列为其平台。生产平台已准入，活动仍单独待审。
+- Qoder与Qwen Code是不同编程产品，虽同属阿里仍分别核验账号、余额与活动范围。Qwen Code官方仓库https://github.com/QwenLM/qwen-code；Qoder自己的IDE/CLI/网页/移动端活动留在qoder，不能把Qwen Code或百炼额度拼进来。同一事件由阿里/Qwen及Qoder各公告一次时复用原条目，不重复建活动。
+- 2026-10-09读回CN https://docs.qoder.cn/events/flashoffer 与国际 https://docs.qoder.com/events/flashoffer：两页均已延期，原9月30日截止均不再有效，CN明确10月1日起继续免费，国际FAQ同样写October 1；结束另行提前公告。开始均2026-09-18 10:00，CN北京时间、国际Singapore Time。不要沿用旧的“只有CN延期、国际截至9月30日”结论。
+- 两区均限个人账号（免费/试用/零余额均可）、不含Teams/Enterprise；指定Qwen3.8-Flash不扣Credits，无需领取，覆盖各自Qoder、IDE、插件、CLI、Wake、Cloud Agents、移动/网页端。CN另明确会员卡可参与。模型图像理解是输入能力，不是免费图像生成。各区域官方活动分别核验，不因同厂商把账号/门槛自动互通，也不新建同区域的延期重复条目。
 
 ## tokenrhythm
 - 2026-10-08待准入，官网https://tokenrhythm.studio自称基元律动多模型API服务，与Periodic Labs无关。社区认证18/充19减18尚无公开官方活动条款，单位、支付机制、期限与渠道授权待核；不把18直接折成2.54美元，不自动批准聚合平台。

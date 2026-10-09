@@ -83,6 +83,9 @@ describe('model result contract', () => {
     expect(system).toContain('第三方合作优惠分别核验与估值');
     expect(system).toContain('只知道月份不猜月初');
     expect(system).toContain('已有条目只是去重索引');
+    expect(system).toContain('Qoder、Qwen及Qwen Code同属阿里体系');
+    expect(system).toContain('第三方平台调用Qwen模型不因此成为阿里产品');
+    expect(system).not.toContain('Qoder不等于Qwen');
     expect(system).toContain('steps只写用户操作，不写审核员待办');
     expect(system).toContain('仅作内部判断依据，不得将核验经过、历史错误或审核待办复制到公开字段');
     expect(system).not.toContain('写"官方未写明具体额度："加原文说法');
