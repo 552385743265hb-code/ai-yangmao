@@ -632,3 +632,7 @@
 
 ## cerebras
 - 新人 $5 免费额度可用于所有公开模型，30 天有效，以 inference-docs.cerebras.ai/support/rate-limits 为准（2026-10-03 批量审核）。
+
+## openai
+- Codex / ChatGPT 重置按官方每次发放的实际语义记录，不按同名/同额度去重。单次自动重置或banked reset卡发放：claimStart与claimEnd为同一事件日；publishedAt保存Tibo（@thsottiaux）官方原公告精确时间，process/传播进度回复不能冒充新发放。明确tomorrow或指定执行日时，事件日按原文，发布时间另存；卡的使用期限不扩成发放窗口。若明确未来24小时重置两次、未来一周每天重置等多次安排，则保留公告覆盖的起止区间，不强制同日；new release、未来改进、next week本身不是持续重置证据。不同时间点的独立发放，即使同一天也可分别记录；同一次发放的预告、确认、延迟解释仍为同一事件，不能只按推文时间不同判成新福利。只有窗口明确才计算日期，不猜未公布的逐次process时刻。（2026-10-08）
+- 本次实读13个X来源及线程：7月9日未来24小时两次重置保留7月9–10日；8月22日tomorrow指8月23日；10月1日tomorrow 10am预告指10月2日，10月2日道歉回复不是10月3日新发放；10月7日banked reset主公告status/2107913674593644711，稍后status/2107913738791596286仅说当天美西EOD前到账。美西夏令时日期使用America/Los_Angeles；原文口语PST保留，不将其写法误算为确认实际执行时刻。原7月17日证据实际只回复“And now 100%”，不能伪造完整全员公告摘录。逐条凭证见docs/codex-reset-time-audit-2026-10-08.md。
