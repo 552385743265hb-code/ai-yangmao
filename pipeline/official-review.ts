@@ -25,7 +25,7 @@ export function parseSearchResults(body:string):string[] {
 }
 export async function searchOfficial(query:string,deadlineAt:number):Promise<string[]> {
   if(Date.now()>=deadlineAt)throw new DeferError('本轮官方搜索时间不足');
-  const response=await fetch(SEARCH_URL,{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json, text/event-stream'},
+  const response=await fetch(SEARCH_URL,{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json, text/event-stream',...(process.env.EXA_API_KEY?{'x-api-key':process.env.EXA_API_KEY}:{})},
     body:JSON.stringify({jsonrpc:'2.0',id:1,method:'tools/call',params:{name:'web_search_exa',arguments:{query,numResults:5,objective:'Find the issuer’s own official announcement, documentation or official X post for this exact AI benefit. Prefer primary sources. Return source URLs; exclude community reposts and reseller promotions.'}}}),
     signal:AbortSignal.timeout(Math.max(1,Math.min(20000,deadlineAt-Date.now())))});
   if(!response.ok)throw new Error(`搜索服务 HTTP ${response.status}`);
@@ -40,7 +40,7 @@ export async function runOfficialReviews(options:{limit:number;deadlineAt:number
   const stats:OfficialReviewStats={checked:0,matched:0,unresolved:0,failed:0,deferred:0,searches:0};
   if(options.dry||options.limit<=0)return stats;
   const {jobs}=await api<{jobs:{id:string}[]}>(`/official-reviews/queue?limit=${options.limit}`);
-  for(const queued of jobs) {
+  for(const [index,queued] of jobs.entries()) {
     if(!options.canContinue()||!modelAvailable(options.allowPaid)){stats.deferred++;break;}
     const job=await api<Job>(`/official-reviews/${queued.id}/claim`,{});
     if(!job.claimed)continue;
@@ -103,7 +103,7 @@ export async function runOfficialReviews(options:{limit:number;deadlineAt:number
       reason:matched?'已搜索并读取发放方原文，AI按同一活动重新抽取；保持待审，需管理员确认'+(stop?'（部分搜索受限）':''):(failures.join('；')||'本轮搜索范围内未找到能支持此活动的官方原文').slice(0,500),queries,candidates,chosenUrl,changedFields});
     if(result.status==='matched')stats.matched++;else if(result.status==='failed')stats.failed++;else stats.unresolved++;
     options.log(`  官方复核 ${queued.id}：${result.status}`);
-    if(stop){stats.deferred++;break;}
+    if(stop){if(index+1<jobs.length)stats.deferred+=jobs.length-index-1;break;}
   }
   return stats;
 }

@@ -691,3 +691,12 @@ it('does not let unapproved platforms occupy the official verification queue',as
   sqlite.prepare("UPDATE platforms SET status='pending' WHERE id='vendor'").run();
   expect(((await call('ingest/official-reviews/queue')).body.jobs as unknown[])).toHaveLength(0);
 });
+
+it('official review cannot silently discard a pending update when official terms match the old public version',async()=>{
+  await call('ingest/offers',[offer]);await call('admin/offers/vendor-free/approve',{},'admin');
+  await call('ingest/offers',[{...offer,valueText:'200 tokens',evidence:{...evidence,tier:'media',url:'https://community.example/post'}}]);
+  const lease=await call('ingest/official-reviews/vendor-free/claim',{});
+  const result=await call('ingest/offers',[{...offer,officialReviewJobId:lease.body.jobId}]);
+  expect((result.body.results as any[])[0].skipped).toBeTruthy();
+  expect((await call('admin/offers/vendor-free',undefined,'admin')).body.pendingUpdate).toBe(true);
+});

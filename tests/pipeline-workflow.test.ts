@@ -17,6 +17,7 @@ const json = (value: unknown) => new Response(JSON.stringify(value), { headers: 
 interface HarnessOptions {
   officialJob?: boolean;
   officialSearchStatus?: number;
+  partialSearch?: boolean;
   sources?: Record<string, unknown>[];
   leads?: Record<string, unknown>[];
   pages?: Record<string, string | number>;
@@ -32,7 +33,7 @@ interface HarnessOptions {
 function harness(options: HarnessOptions = {}) {
   const writes: { url: string; body: any }[] = [];
   const reads: string[] = [];
-  let reservation = 0;
+  let reservation = 0, searchCalls = 0;
   vi.stubGlobal('fetch', vi.fn(async (input: unknown, init: RequestInit = {}) => {
     const url = String(input), body = typeof init.body === 'string' ? JSON.parse(init.body) : undefined;
     reads.push(url);
@@ -44,8 +45,9 @@ function harness(options: HarnessOptions = {}) {
     if (url.endsWith('/api/platforms')) return json({ platforms: [{ id: 'vendor', name: 'Vendor', site: 'https://vendor.example', xHandles: [], staffHandles: [] }] });
     if (url.includes('/leads?')) return json({ leads: options.leads ?? [] });
     if (url.includes('/official-reviews/queue')) return json({jobs:options.officialJob?[{id:'vendor-max-api',title:candidate.title}]:[],remaining:options.officialJob?1:0});
-    if(url.endsWith('/official-reviews/vendor-max-api/claim'))return json({claimed:true,jobId:'12345678-1234-4234-8234-123456789012',offer:{...candidate,id:'vendor-max-api',firstChannel:'reddit',evidence:{url:'https://community.example/post',tier:'media',capturedAt:new Date().toISOString(),excerpts:{}}},platform:{id:'vendor',name:'Vendor',site:'https://vendor.example',xHandles:[],staffHandles:[]},sources:[]});
+    if(url.endsWith('/official-reviews/vendor-max-api/claim'))return json({claimed:true,jobId:'12345678-1234-4234-8234-123456789012',offer:{...candidate,id:'vendor-max-api',firstChannel:'reddit',evidence:{url:'https://community.example/post',tier:'media',capturedAt:new Date().toISOString(),excerpts:{}}},platform:{id:'vendor',name:'Vendor',site:'https://vendor.example',xHandles:options.partialSearch?['@vendor']:[],staffHandles:[]},sources:[]});
     if(url.endsWith('/official-reviews/vendor-max-api/result'))return json({status:body.status});
+    if(url==='https://mcp.exa.ai/mcp' && options.partialSearch && ++searchCalls>1)return new Response('quota',{status:429});
     if(url==='https://mcp.exa.ai/mcp')return options.officialSearchStatus?new Response('unavailable',{status:options.officialSearchStatus}):json({result:{content:[{type:'text',text:'Title: Official benefit\nURL: https://vendor.example/confirmed\nHighlights: Discovery snippet only'}]}});
     if (url.endsWith('/offers-index')) return json({ offers: options.known ?? [] });
     if (url.includes('/corrections?')) return json({ corrections: [] });
@@ -260,4 +262,13 @@ it('leaves the community draft untouched when fetched official pages do not corr
   const {runPipeline}=await import('../pipeline/run');await runPipeline();
   expect(h.payloads('/offers')).toHaveLength(0);
   expect(h.payloads('/official-reviews/vendor-max-api/result')[0]).toMatchObject({status:'unresolved'});
+});
+
+
+it('does not falsely fail a completed review when only the supplementary search is limited',async()=>{
+  const h=harness({officialJob:true,partialSearch:true});
+  const {runPipeline}=await import('../pipeline/run');const result=await runPipeline();
+  expect(result.ok).toBe(true);
+  expect((result.stats as any).officialReview).toMatchObject({matched:1,failed:0,deferred:0,searches:2});
+  expect(h.payloads('/official-reviews/vendor-max-api/result')[0].reason).toContain('部分搜索受限');
 });

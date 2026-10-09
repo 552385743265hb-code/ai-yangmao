@@ -286,6 +286,7 @@ ingest.post('/offers', async c => {
       }
     }
     if (!diff.length) {
+      if(o.officialReviewJobId && existingProposal){results.push({id:o.id,skipped:'官方材料未形成可应用的条款更新，保留提案供管理员判断'});continue;}
       if (existingProposal && o.evidence.tier !== 'media') await d.delete(s.offerProposals).where(eq(s.offerProposals.offerId, o.id));
       // 只刷新自动核验元数据，保留已审核文案、摘录及可选字段，模型漏摘录不能清空它们。
       const sameEvidencePage = prev.evidence.url === o.evidence.url && prev.evidence.tier !== 'tested' && o.evidence.tier !== 'media';
