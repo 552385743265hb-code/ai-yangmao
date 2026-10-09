@@ -180,6 +180,23 @@ const offer = {
 };
 
 describe('official evidence verification', () => {
+  it('uses current review metadata instead of a stale full-row proposal snapshot in both queue and detail', async () => {
+    await call('ingest/offers', [offer]);
+    await call('admin/offers/vendor-free/approve', {}, 'admin');
+    const candidate={...offer,valueText:'200 tokens',reviewState:'rejected',reviewMemo:'旧核验',adminNote:'旧心得',reviewSuggestion:{verdict:'reject',reason:'旧建议'}};
+    sqlite.prepare("INSERT INTO offer_proposals(offer_id,candidate,diff) VALUES('vendor-free',?,?)").run(JSON.stringify(candidate),JSON.stringify([{field:'valueText',from:'100 tokens',to:'200 tokens'}]));
+    await call('admin/offers/vendor-free/memo',{memo:'最新核验'},'admin');
+    await call('admin/offers/vendor-free/suggest',{verdict:'approve',reason:'最新建议'},'admin');
+    await call('admin/offers/vendor-free/note',{note:'最新心得'},'admin');
+    const detail=(await call('admin/offers/vendor-free',undefined,'admin')).body.offer as any;
+    const queue=(await call('admin/queue',undefined,'admin')).body.pending as any[];
+    for(const view of [detail,queue.find(o=>o.id==='vendor-free')]){
+      expect(view).toMatchObject({value:'200 tokens',reviewState:'approved',reviewMemo:'最新核验',adminNote:'最新心得',suggestion:{verdict:'approve',reason:'最新建议'}});
+    }
+    expect((await call('admin/offers/vendor-free/approve',{},'admin')).status).toBe(200);
+    const saved=sqlite.prepare("SELECT value_text,review_memo,admin_note FROM offers WHERE id='vendor-free'").get();
+    expect(saved).toEqual({value_text:'200 tokens',review_memo:'最新核验',admin_note:'最新心得'});
+  });
   it('records an administrator-tested end without inventing a deadline or rewriting historical official evidence', async () => {
     await call('ingest/offers', [offer]);
     await call('admin/offers/vendor-free/approve', {}, 'admin');

@@ -171,7 +171,7 @@ admin.get('/queue', async c => {
         if (!original) return [];
         const updateDiff = proposalComparison(original, p.candidate);
         if (!updateDiff.some(change => isReviewField(change.field))) return [];
-        return [{ ...queueView({ ...original, ...p.candidate } as OfferRow), link:`https://ai-yangmao.com/#admin-offer-${encodeURIComponent(p.offerId)}`, reviewVersion: p.updatedAt, pendingUpdate: true, changedFields: updateDiff.map(x => x.field), updateDiff }];
+        return [{ ...queueView(proposalOffer(original, p.candidate)), link:`https://ai-yangmao.com/#admin-offer-${encodeURIComponent(p.offerId)}`, reviewVersion: p.updatedAt, pendingUpdate: true, changedFields: updateDiff.map(x => x.field), updateDiff }];
       }),
     ],
     priorityLeads: (await d.select().from(s.leads).where(inArray(s.leads.status,['new','reviewing'])))
@@ -210,7 +210,8 @@ admin.get('/offers/:ref', async c => {
   const names = await platformNames(c.env);
   const [proposal] = await db(c.env).select().from(s.offerProposals).where(eq(s.offerProposals.offerId, o.id));
   const revisions = await db(c.env).select().from(s.offerRevisions).where(eq(s.offerRevisions.offerId, o.id)).orderBy(desc(s.offerRevisions.at));
-  return c.json({ offer: { ...view(proposal ? { ...o, ...proposal.candidate } as OfferRow : o, names[o.platformId] ?? o.platformId), reviewVersion:proposal?.updatedAt ?? o.updatedAt, ...(proposal ? {link:`https://ai-yangmao.com/#admin-offer-${encodeURIComponent(o.id)}`, pendingUpdate: true, updateDiff: proposalComparison(o, proposal.candidate)} : {}) }, pendingUpdate: !!proposal, revisions });
+  const target = proposal ? proposalOffer(o, proposal.candidate) : o;
+  return c.json({ offer: { ...view(target, names[target.platformId] ?? target.platformId), reviewVersion:proposal?.updatedAt ?? o.updatedAt, ...(proposal ? {link:`https://ai-yangmao.com/#admin-offer-${encodeURIComponent(o.id)}`, pendingUpdate: true, updateDiff: proposalComparison(o, proposal.candidate)} : {}) }, pendingUpdate: !!proposal, revisions });
 });
 
 /** 审核：通过 / 拒绝。原样通过会给信源的"连续原样通过"加一；拒绝清零。 */
@@ -224,14 +225,14 @@ admin.post('/offers/:ref/:action{approve|reject}', async c => {
   if (body.expectedReviewVersion && body.expectedReviewVersion !== (proposal?.updatedAt ?? o.updatedAt)) return c.json({ error: '内容已更新，请刷新这条活动后再审核' }, 409);
   if (o.reviewState !== 'pending' && !proposal) return c.json({ error: '这条活动目前没有待审核内容' }, 409);
   if (action === 'approve') {
-    const candidate = proposal ? { ...o, ...proposal.candidate } as OfferRow : o;
+    const candidate = proposal ? proposalOffer(o, proposal.candidate) : o;
     const issue = await publicationError(c.env, candidate);
     if (issue) return c.json({ error: issue }, 400);
   }
   const nowIso = new Date().toISOString();
   if (proposal && o.reviewState === 'approved') {
     if (action === 'approve') {
-      const candidate = { ...o, ...proposal.candidate } as OfferRow;
+      const candidate = proposalOffer(o, proposal.candidate);
       const parsed = validateStoredOffer(candidate);
       if (!parsed.success) return c.json({ error: '提案字段不正确', issues: parsed.error.issues }, 400);
       const accepted = await d.update(s.offers).set({ ...parsed.data, lastVerifiedAt: nowIso, verifyResult: '审核员确认官方证据', updatedAt: nowIso }).where(and(eq(s.offers.id,o.id),eq(s.offers.updatedAt,o.updatedAt),sql`EXISTS (SELECT 1 FROM offer_proposals WHERE offer_id=${o.id} AND updated_at=${proposal.updatedAt})`)).returning({id:s.offers.id});
@@ -253,7 +254,7 @@ admin.post('/offers/:ref/:action{approve|reject}', async c => {
       await d.update(s.sources).set({ cleanStreak: streak }).where(eq(s.sources.id, src.id));
     }
   }
-  const end = claimEndAt(proposal ? { ...o, ...proposal.candidate } as OfferRow : o);
+  const end = claimEndAt(proposal ? proposalOffer(o, proposal.candidate) : o);
   const urgent = action === 'approve' && !!end && end.getTime() - Date.now() <= 48 * 3600_000 && end.getTime() > Date.now();
   return c.json({ ok: true, code: shortCode(o.id), title: o.title, reviewState: action === 'approve' ? 'approved' : 'rejected', sourceCleanStreak: streak, urgent });
 });
@@ -261,9 +262,13 @@ admin.post('/offers/:ref/:action{approve|reject}', async c => {
 /** 补丁只允许编辑业务字段；补丁合并后仍由 offerIn 校验完整活动。 */
 const EDITABLE_FIELDS = new Set(['title', 'type', 'valueText', 'usdEstimate', 'usdMax', 'models', 'tags', 'claimStart', 'claimEnd', 'endKind', 'creditValidity',
   'audience', 'requirements', 'modalities', 'platformId', 'sourceTz', 'claimMethod', 'steps', 'evidence', 'publishedAt', 'sourceId']);
+/** 旧提案可能含整行快照；只覆盖业务字段，审核建议、核验记录及当前状态始终读原条目。 */
+function proposalOffer(original: OfferRow, candidate: Record<string, unknown>): OfferRow {
+  return { ...original, ...Object.fromEntries(Object.entries(candidate).filter(([field]) => EDITABLE_FIELDS.has(field))) } as OfferRow;
+}
 /** Compare against the current public row, even if a legacy proposal has an empty or stale stored diff. */
 function proposalComparison(original: OfferRow, candidate: Record<string, unknown>) {
-  const parsed = validateStoredOffer({ ...original, ...candidate } as OfferRow);
+  const parsed = validateStoredOffer(proposalOffer(original, candidate));
   const normalized = parsed.success ? { ...candidate, ...parsed.data } : candidate;
   return Object.entries(normalized)
     .filter(([field, value]) => EDITABLE_FIELDS.has(field) && JSON.stringify((original as Record<string, unknown>)[field] ?? null) !== JSON.stringify(value ?? null))
@@ -278,7 +283,7 @@ admin.post('/offers/:ref/edit', async c => {
   const d = db(c.env), nowIso = new Date().toISOString();
   const [proposal] = await d.select().from(s.offerProposals).where(eq(s.offerProposals.offerId, o.id));
   if (body?.expectedReviewVersion && body.expectedReviewVersion !== (proposal?.updatedAt ?? o.updatedAt)) return c.json({ error: '内容已更新，请刷新这条活动后再审核' }, 409);
-  const base = proposal ? { ...o, ...proposal.candidate } as OfferRow : o;
+  const base = proposal ? proposalOffer(o, proposal.candidate) : o;
   const candidate = { ...base, ...patch.data } as OfferRow;
   const valid = validateStoredOffer(candidate);
   if (!valid.success) return c.json({ error: '活动字段不正确', issues: valid.error.issues }, 400);
@@ -369,7 +374,7 @@ admin.post('/offers/:ref/suggest', async c => {
 admin.post('/offers/:ref/official-retry',async c=>{
   const o=await findOffer(c.env,c.req.param('ref'));if(!o)return c.json({error:'找不到条目'},404);
   const [proposal]=await db(c.env).select().from(s.offerProposals).where(eq(s.offerProposals.offerId,o.id));
-  const target=proposal?{...o,...proposal.candidate} as OfferRow:o;
+  const target=proposal?proposalOffer(o,proposal.candidate):o;
   if(target.evidence.tier!=='media'||(o.reviewState!=='pending'&&!proposal))return c.json({error:'当前条目不需要社区来源官方复核'},409);
   if(o.officialReview?.status==='checking'&&Date.now()-Date.parse(o.officialReview.checkedAt)<20*60_000)return c.json({error:'官方复核正在进行，请稍后查看'},409);
   await db(c.env).update(s.offers).set({officialReview:null}).where(eq(s.offers.id,o.id));
@@ -728,7 +733,7 @@ admin.get('/health', async c => {
   const officialProposals=new Map((await d.select().from(s.offerProposals)).map(p=>[p.offerId,p]));
   const officialReviewCounts = {checking:0,matched:0,unresolved:0,failed:0,waiting:0,retrying:0,exhausted:0,stalled:0};
   for(const row of officialReviewRows){
-    const r=row.officialReview,p=officialProposals.get(row.id),target=p?{...row,...p.candidate}:row;
+    const r=row.officialReview,p=officialProposals.get(row.id),target=p?proposalOffer(row,p.candidate):row;
     if(r)officialReviewCounts[r.status]++;
     if(r?.status==='checking'&&Date.now()-Date.parse(r.checkedAt)>=20*60_000)officialReviewCounts.stalled++;
     if((row.reviewState==='pending'||p)&&target.evidence.tier==='media'){
