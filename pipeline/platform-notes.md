@@ -509,6 +509,7 @@
 - 本轮扩展福利有 2026-10-06 官方公告和当日生效的附加权益条款，日期用于本轮新增 Team/合作方权益，不是整个创业计划的最初 Launch 日期。管理员补充 MadRobot 后已追到并通过 Jina 读到 CNBC 原文，CNBC 明确援引 Anthropic 称计划最初在 5 月推出；2026 年报道与官网 earlier this year 限定年份。记录 2026-05 为月份精度，具体日未披露，不猜 5 月 1 日；旧官方条款 May 22, 2025 的编辑日期也不当 Launch。7rs2 标题明确扩展版，步骤同时说明最初推出月份；保留指定条目，将同活动同渠道 ungi 作为重复处理，vmjp $100 未自动改写或拒绝。https://www.anthropic.com/legal/startup-program-addendum；https://madrobot.blog/2026/10/06/anthropic-claude-startups-free-year-claude-team-1000-api-credits/；https://www.cnbc.com/2026/10/06/anthropic-claude-startups-program.html
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - Claude API代码执行现每组织每月1,550小时免费，超额$0.05/小时/容器，最少5分钟；工具替代价值77.50美元/月。原“每日50小时、网页端运行Python”是错误。来源：https://platform.claude.com/docs/en/agents-and-tools/tool-use/code-execution-tool
+- 2026-10-09再次核查：计量单位是累计容器小时，不是个人聊天或Claude Code订阅时长；API organization不等于Enterprise会员。现行每月1,550不能除以31改写成“每日50”，也不能拼进网页免费版。已收录canonical anthropic-claude-free-tier；再发现同一代码执行免工具费额度时复用该ID，不能另建daily 50条。超额费、最低5分钟、上传文件预加载也可能计时，模型Token始终另按价目收费；配合新版web_search/web_fetch不收工具费是独立计费条件。
 - Claude API 文档里的“per organization”指 Console 计费账户：个人注册 API 也自动有一个组织，不需要企业版；但调用 API 必须绑信用卡并充值，门槛写 card + pay，不是零门槛。Claude.ai 的 Pro/Max 订阅不含 API。（2026-10-03 管理员确认）
 - 请求包含web_search_20260209/web_fetch_20260209及后续版本时，code_execution本身不加收，标准输入输出Token仍收费；这是API工具执行权益不是免费Claude模型或网页会员，models保持空并注明收费门槛。
 - 套餐权益调整、一次性赠送额度以 support.claude.com 帮助中心为准（金额、资格、领取期、失效日期写得最全），@claudeai 推文用来定发布时间；第三方汇总站（如 resetradar.com）只当线索。
