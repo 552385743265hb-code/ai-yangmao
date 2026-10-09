@@ -3,10 +3,10 @@
 //   queue [条数]                       待审列表（拦截项多的排前面）
 //   show <短码或ID>                    全部字段、上架前检查、修订、平台要点、信源
 //   plan <短码或ID> <patch.json>       试算：把修改套上去，列出改后的检查结果（不写入）
-//   apply <短码或ID> <patch.json> --reason "理由" [--code wrong_field] [--approve] [--dry-run]
+//   apply <短码或ID> <patch.json> --version <reviewVersion> --reason "理由" [--code wrong_field] [--approve] [--dry-run]
 //   memo <短码或ID> <memo.txt> [--dry-run]       写内部核验记录（仅管理员可见）
-//   approve <短码或ID> [--dry-run]
-//   reject <短码或ID> --code <理由代码> --reason "理由" [--dry-run]
+//   approve <短码或ID> --version <reviewVersion> [--dry-run]
+//   reject <短码或ID> --version <reviewVersion> --code <理由代码> --reason "理由" [--dry-run]
 //   retest <短码或ID> [--dry-run]                管理员核对仍有效（更新核验时间）
 //   unpublish <短码或ID> --code <代码> --reason "理由"   把已上架但不该收的条目撤下（仅管理员）
 //   suggest <短码或ID> approve|history|reject|judge|clear [--code 理由代码] --reason "理由"   给审批卡片标审核建议（不改状态）
@@ -20,8 +20,13 @@ const args = process.argv.slice(2);
 const cmd = args[0];
 const flag = (name: string) => args.includes(name);
 const opt = (name: string) => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : undefined; };
-const positional = args.filter((a, i) => !a.startsWith('--') && !(i > 0 && ['--reason', '--code'].includes(args[i - 1])));
+const positional = args.filter((a, i) => !a.startsWith('--') && !(i > 0 && ['--reason', '--code', '--version'].includes(args[i - 1])));
 const DRY = flag('--dry-run');
+function reviewedVersion(): string {
+  const version = opt('--version');
+  if (!version || version.startsWith('--')) throw new Error('edit/approve/reject 必须传 --version <show 中已审核的 reviewVersion>；版本变化后重新核对差异，不要原样重放');
+  return version;
+}
 
 const TYPE_CODE: Record<string, string> = { 注册新人礼: 'new', 应用尝鲜: 'trial', 限时免费开放: 'free', 会员福利: 'perk', 充值赠送: 'topup', 会员免费送: 'gift', 常驻免费额度: 'standing', 申请制: 'apply' };
 const EDITABLE = ['title', 'type', 'valueText', 'usdEstimate', 'usdMax', 'models', 'tags', 'claimStart', 'claimEnd', 'endKind', 'creditValidity',
@@ -118,6 +123,8 @@ async function main() {
   if (cmd === 'show') {
     const { offer: v, revisions, pendingUpdate } = await call<{ offer: View; revisions: { at: string; author?: string; diff: { field: string }[] }[]; pendingUpdate: boolean }>(`/offers/${encodeURIComponent(ref)}`);
     const r = raw(v);
+    console.log(`reviewVersion：${v.reviewVersion}`);
+    if (pendingUpdate) console.log('注意：下列字段是候选；批准基线差异（from → to）：\n' + JSON.stringify(v.updateDiff ?? [], null, 2));
     console.log(`# [${v.code}] ${v.title}\nID：${v.id}｜平台：${v.platform}（${v.platformId}）｜审核：${v.reviewState}｜状态：${v.status}${pendingUpdate ? '｜有条款更新待审' : ''}`);
     for (const k of ['type', 'valueText', 'usdEstimate', 'usdMax', 'claimMethod', 'requirements', 'audience', 'claimStart', 'claimEnd', 'endKind', 'sourceTz', 'creditValidity', 'modalities', 'models', 'tags', 'publishedAt', 'steps']) console.log(`- ${k}：${JSON.stringify(r[k])}`);
     console.log(`- 证据：${r.evidence.tier} ${r.evidence.url}`);
@@ -147,13 +154,15 @@ async function main() {
     return;
   }
   if (cmd === 'apply') {
+    const version = reviewedVersion();
     const reason = opt('--reason');
     if (!reason) throw new Error('要写 --reason（模型会从修改理由里学习）');
     const code = opt('--code') ?? 'wrong_field';
     if (!REASON_CODES.includes(code)) throw new Error(`--code 只能是：${REASON_CODES.join('、')}`);
     const { offer: v } = await call<{ offer: View }>(`/offers/${encodeURIComponent(ref)}`);
+    if (v.reviewVersion !== version) throw new Error('内容已更新，请重新 show 并核对差异；不提交旧补丁');
     const fields = mergePatch(v, JSON.parse(readFileSync(positional[2], 'utf8')));
-    await write(`/offers/${encodeURIComponent(ref)}/edit`, { fields, approve: flag('--approve'), reason, reasonCode: code });
+    await write(`/offers/${encodeURIComponent(ref)}/edit`, { fields, approve: flag('--approve'), reason, reasonCode: code, expectedReviewVersion: version });
     return;
   }
   if (cmd === 'unpublish') {
@@ -168,12 +177,13 @@ async function main() {
     return;
   }
   if (cmd === 'memo') { await write(`/offers/${encodeURIComponent(ref)}/memo`, { memo: readFileSync(positional[2], 'utf8') }); return; }
-  if (cmd === 'approve') { await write(`/offers/${encodeURIComponent(ref)}/approve`, {}); return; }
+  if (cmd === 'approve') { await write(`/offers/${encodeURIComponent(ref)}/approve`, { expectedReviewVersion: reviewedVersion() }); return; }
   if (cmd === 'retest') { await write(`/offers/${encodeURIComponent(ref)}/retested`, {}); return; }
   if (cmd === 'reject') {
+    const version = reviewedVersion();
     const code = opt('--code'), reason = opt('--reason');
     if (!code || !REASON_CODES.includes(code) || !reason) throw new Error(`reject 需要 --code（${REASON_CODES.join('、')}）和 --reason`);
-    await write(`/offers/${encodeURIComponent(ref)}/reject`, { reasonCode: code, reason });
+    await write(`/offers/${encodeURIComponent(ref)}/reject`, { reasonCode: code, reason, expectedReviewVersion: version });
     return;
   }
   throw new Error('未知命令。可用：queue、show、plan、apply、memo、approve、reject、retest');
