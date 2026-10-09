@@ -188,6 +188,12 @@ function legacyProposal(candidate: object) {
 }
 
 describe('official evidence verification', () => {
+  it('does not split an approved limited offer when a later repost changes its start date and source URL',async()=>{
+    await call('ingest/offers',[{...offer,claimStart:'2026-10-08'}]);await call('admin/offers/vendor-free/approve',{},'admin');
+    const result=await call('ingest/offers',[{...offer,claimStart:'2026-10-09',evidence:{...evidence,tier:'media',url:'https://community.example/repost'}}]);
+    expect((result.body.results as any[])[0].unchanged).toBe(true);
+    expect(sqlite.prepare('SELECT count(*) n FROM offers').get()).toEqual({n:1});
+  });
   it('remembers newly approved official terms after an earlier manual evidence correction',async()=>{
     await call('ingest/offers',[offer]);await call('admin/offers/vendor-free/approve',{},'admin');
     await call('admin/offers/vendor-free/edit',{fields:{evidence:{...evidence,capturedAt:'2026-10-01'}}},'admin');

@@ -195,7 +195,9 @@ ingest.post('/offers', async c => {
     const identity={...o,evidenceUrl:o.evidence.url,eventDay};
     const ambiguous=peers.find(x=>x.platformId===o.platformId&&ambiguousReset(identity,x));
     if (!o.officialReviewJobId && sameId) {
-      if(differentOccurrence(identity,sameId))o.id = `${o.id.slice(0,69)}-${eventDay ?? o.claimStart}`;
+      // Only reset events have independently grounded per-event identity here. A repost date
+      // cannot split a stable ID for an already-reviewed ordinary limited offer.
+      if(differentOccurrence(identity,sameId) && (eventDay || sameId.eventDay))o.id = `${o.id.slice(0,69)}-${eventDay ?? o.claimStart}`;
       else if(ambiguousReset(identity,sameId)){
         const hash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(o.evidence.url)))).slice(0,5).map(x=>x.toString(16).padStart(2,'0')).join('');
         o.id=`${o.id.slice(0,69)}-${hash}`;

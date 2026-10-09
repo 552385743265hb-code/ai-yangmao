@@ -158,6 +158,7 @@
 - 更新日志里的旧内测额度（如 2026 年 3 月 LongCat-2.0-Preview 每天 500 万 Token）早已结束，不要输出；只有更新日志里新出现、写明当前模型和日期的免费活动才算。
 
 ## nous
+- 2026-10-09重复记录纠正：原stepfun-stepfun-nous-portal-step-5-preview-one-week-free已通过，厂商10月9日转述同轮活动被误加日期后缀新建，后缀条目已按duplicate拒绝。普通限免稳定ID不能因转述日期/证据URL不同而拆轮次；沿用原记录，只有确证新的独立发放才新建。
 - 2026-10-09官网明确链接@NousResearch，已补账号登记；官网时间线实际转发StepFun的Nous Portal Step 5 Preview一周限免公告，Portal模型目录同时显示付费与$0版本，必须选免费版本，不泛化到工具和云托管。原厂转述是补充佐证，不把厂商账号加到Nous白名单；Tommy账号仅简介自称Nous，不凭此扩大staff白名单。
 - 2026-10-09全量归属复核14条相关记录及更新提案：Step 5 Preview在Cline的glj5已归cline，在Nous Portal的yn9a已归nous；OpenCode h16u/wofy已归opencode。同一模型三条调用渠道是不同活动，平台和厂商各发公告只是同渠道同活动转述。ModelScope、OpenCode Zen、Nous常驻免费层归属正确；StepFun自家Studio归stepfun，原已拒套餐记录不复活。Cline平台随后经管理员明确授权准入，活动条目仍独立待审。
 - Nous Portal Free 免费层需要注册登录；管理员在 2026-10-01 确认开户流程需要绑定信用卡或支付方式，不能写成零门槛。通用 Terms 的免费试用条款不能替代 Free 层实际开户流程。
