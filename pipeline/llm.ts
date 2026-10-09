@@ -364,7 +364,11 @@ export async function extract(platformName: string, url: string, text: string, l
         const normalized = tidy(o);
         assertClaimDatePrecision(normalized.claimStart,evidence,'claimStart');
         assertClaimDatePrecision(normalized.claimEnd,evidence,'claimEnd');
-        return { ...normalized, publishedAt: groundedPublication(o.publishedAt, normalized.publishedAt, evidence), excerpts: keepVerbatim(o.excerpts, evidence) };
+        // 海外厂商/境外支付方式并不等于需要海外网络；不能凭厂商国别添加门槛。
+        const networkEvidence=/海外网络|网络限制|网络代理|境外\s*IP|海外\s*IP|\b(?:VPN|proxy|IP address|network restrictions?)\b/i.test(evidence)
+          && !/无需.{0,5}(?:VPN|代理|海外网络)|no\s+(?:VPN|proxy)\s+(?:is\s+)?(?:needed|required)/i.test(evidence);
+        const requirements=normalized.requirements.filter(r=>r!=='net'||networkEvidence);
+        return { ...normalized, requirements:requirements.length?requirements:['unknown'], publishedAt: groundedPublication(o.publishedAt, normalized.publishedAt, evidence), excerpts: keepVerbatim(o.excerpts, evidence) };
       });
       return { offers, tokens, costCny, provider: p.name };
     } catch (e) {

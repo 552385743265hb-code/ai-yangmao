@@ -36,7 +36,8 @@ export function officialActivityMismatch(target:Activity,candidate:Activity): st
     return 'one-off';
   };
   const before=family(target),after=family(candidate);
-  return before===after?null:`官方页面属于另一类活动（${before} → ${after}），不能替代原线索；需核对同一次发放或领取机制`;
+  const labels:Record<string,string>={reset:'额度重置',referral:'邀请奖励',grant:'申请资助',topup:'充值赠额','membership-gift':'会员赠送',daily:'每日额度',monthly:'每月额度',weekly:'每周额度',ongoing:'常驻额度','one-off':'单次活动'};
+  return before===after?null:`官方页面属于另一类活动（${labels[before]} → ${labels[after]}），不能替代原线索；需核对同一次发放或领取机制`;
 }
 export const OFFICIAL_REVIEW_LEASE_MS = 20 * 60_000;
 export function officialReviewDue(review: OfficialReview | null, now: number, version: string): boolean {

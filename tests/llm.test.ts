@@ -18,6 +18,14 @@ beforeEach(() => {
 afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); vi.unstubAllEnvs(); vi.restoreAllMocks(); });
 
 describe('model result contract', () => {
+  it('does not infer an overseas-network requirement from a foreign billing account',async()=>{
+    vi.stubGlobal('fetch',vi.fn(async()=>gemini(JSON.stringify({offers:[{...offer,requirements:['card','net']}]}))));
+    const {extract}=await import('../pipeline/llm');
+    const r=await extract('AWS','https://vendor.example','按量计费账户需要绑定支持的支付方式，无需预付款。');
+    expect(r.offers[0].requirements).toEqual(['card']);
+    const explicit=await extract('Vendor','https://vendor.example','须使用海外网络、境外IP地址并绑定支付方式。');
+    expect(explicit.offers[0].requirements).toContain('net');
+  });
   it('does not turn ordinary recurring allowances into reset-clock events',async()=>{
     const {tidy}=await import('../pipeline/llm');
     expect(tidy({...offer,type:'perk',tags:['reset'],title:'每月API赠额'} as never).tags).toEqual([]);

@@ -2,8 +2,9 @@
 import { writeFileSync } from 'node:fs';
 import { extract } from '../pipeline/llm';
 import { modelBudget } from '../pipeline/budget';
+import { officialActivityMismatch } from '../src/shared/official-review';
 
-type Case = { id: string; name: string; text: string; existing?: string; platformIds?:string[]; check: (offers: Awaited<ReturnType<typeof extract>>['offers']) => boolean };
+type Case = { id: string; name: string; text: string; existing?: string; platformIds?:string[]; target?:Parameters<typeof officialActivityMismatch>[0]; check: (offers: Awaited<ReturnType<typeof extract>>['offers']) => boolean };
 const cases: Case[] = [
   { id: 'workbuddy', name: 'WorkBuddy', text: 'WorkBuddy套餐表：体验版免费，每月500基础积分。标准版每月基础2000+加赠2000（限时），实得4000；高级版基础4000+加赠5000（限时），实得9000；旗舰版基础20000+加赠30000（限时），实得50000。以上随付费订阅每月发放，未提供独立活动条件。',
     existing: 'workbuddy-standard｜标准版限时加赠2000｜每月赠2000\nworkbuddy-advanced｜高级版限时加赠5000｜每月赠5000\nworkbuddy-flagship｜旗舰版限时加赠30000｜每月赠30000',
@@ -28,6 +29,12 @@ const cases: Case[] = [
     check:o=>o.length===1&&o[0].type==='apply'&&o[0].endKind==='standing'&&/200/.test(o[0].valueText)&&!(/1,?000/.test(o[0].valueText)) },
   { id:'claim-vs-validity',name:'Example AI',text:'Example AI注册送$10模型推理API赠金。所有新账号可在2026年10月10日到10月12日（UTC）注册并领取，无需支付或绑卡，领取后的额度30天有效。仅限推理API，不能抵扣云服务器。',
     check:o=>o.length===1&&o[0].type==='new'&&o[0].claimStart==='2026-10-10'&&o[0].claimEnd==='2026-10-12'&&/30/.test(o[0].creditValidity??'')&&o[0].usdEstimate===10 },
+  { id:'official-wrong-monthly',name:'Example AI',target:{title:'发布会赠送一张重置卡',valueText:'今天向会员发一张额度重置卡',type:'perk',tags:['reset']},
+    text:'Example AI 官方文档：Max 会员每月额外领取100美元API额度。这是新的独立长期福利，不属于套餐基础用量；按月自动到账。本页没有重置卡或发布会活动。',check:o=>o.length===0 },
+  { id:'official-wrong-trial',name:'Example Video',target:{title:'7天每日签到送积分',valueText:'连续7天签到共25积分',type:'trial',tags:['daily']},
+    text:'Example Video MCP首次体验可免费生成4条视频和20张图片，首次连接客户端自动到账。这个页面仅说明MCP试用，不涉及每日签到。',check:o=>o.length===0 },
+  { id:'official-correct-monthly',name:'Example AI',target:{title:'Max每月额外API赠金',valueText:'每月100至200美元',type:'perk'},
+    text:'Example AI 官方额外赠金计划：两档Max会员每月分别获得100美元和200美元独立API赠金。它不是原套餐基础额度，免费加赠给已有会员，按月自动到账，月底失效，下一月重新发放。',check:o=>o.length===1&&o[0].usdEstimate===100&&o[0].usdMax===200&&!o[0].tags?.includes('reset') },
 ];
 const results: object[] = [];
 const deadline=Date.now()+15*60_000;
@@ -37,10 +44,11 @@ for (const c of cases.filter(c => !selected.length || selected.includes(c.id))) 
   try {
     if(Date.now()>=deadline)throw new Error('回归总时限已到，剩余案例未评估');
     const r = await extract(c.name, `https://fixture.invalid/${c.id}`, c.text, () => undefined,
-      { platformIds: c.platformIds??[c.id], existing: c.existing, allowPaid: false, budget: modelBudget, deadlineAt: Math.min(deadline,Date.now() + 180_000) });
-    const passed = c.check(r.offers);
-    results.push({ id: c.id, passed, provider: r.provider, tokens: r.tokens, costCny: r.costCny, offers: r.offers });
-    console.log(JSON.stringify({ id: c.id, passed, provider: r.provider, tokens: r.tokens, costCny: r.costCny, offers: r.offers.length }));
+      { platformIds: c.platformIds??[c.id], existing: c.existing, verificationTarget:c.target?JSON.stringify(c.target):undefined, allowPaid: false, budget: modelBudget, deadlineAt: Math.min(deadline,Date.now() + 180_000) });
+    const usable=c.target?r.offers.filter(o=>!officialActivityMismatch(c.target!,o)):r.offers;
+    const passed = c.check(usable), blockedByIdentity=r.offers.length-usable.length;
+    results.push({ id: c.id, passed, provider: r.provider, tokens: r.tokens, costCny: r.costCny, blockedByIdentity, offers: r.offers });
+    console.log(JSON.stringify({ id: c.id, passed, provider: r.provider, tokens: r.tokens, costCny: r.costCny, offers: r.offers.length,blockedByIdentity }));
   } catch (error) {
     results.push({ id: c.id, passed: false, error: (error as Error).message });
     console.log(JSON.stringify({ id: c.id, passed: false, error: (error as Error).message }));

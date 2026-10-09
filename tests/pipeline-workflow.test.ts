@@ -16,6 +16,7 @@ const json = (value: unknown) => new Response(JSON.stringify(value), { headers: 
 
 interface HarnessOptions {
   officialJob?: boolean;
+  officialJobIds?:string[];
   officialSteps?: string[];
   officialUrls?: string[];
   previousCandidates?: string[];
@@ -48,9 +49,9 @@ function harness(options: HarnessOptions = {}) {
     if (url.endsWith('/snapshots')) return json({ changed: false });
     if (url.endsWith('/api/platforms')) return json({ platforms: [{ id: 'vendor', name: 'Vendor', site: 'https://vendor.example', xHandles: [], staffHandles: [] }] });
     if (url.includes('/leads?')) return json({ leads: options.leads ?? [] });
-    if (url.includes('/official-reviews/queue')) return json({jobs:options.officialJob?[{id:'vendor-max-api',title:candidate.title}]:[],remaining:options.officialJob?1:0});
-    if(url.endsWith('/official-reviews/vendor-max-api/claim'))return json({claimed:true,jobId:'12345678-1234-4234-8234-123456789012',previousCandidates:options.previousCandidates,offer:{...candidate,steps:options.officialSteps??[],id:'vendor-max-api',firstChannel:'reddit',evidence:{url:'https://community.example/post',tier:'media',capturedAt:new Date().toISOString(),excerpts:{}}},platform:{id:'vendor',name:'Vendor',site:'https://vendor.example',xHandles:options.partialSearch?['@vendor']:[],staffHandles:[]},sources:[]});
-    if(url.endsWith('/official-reviews/vendor-max-api/result'))return json({status:body.status});
+    if (url.includes('/official-reviews/queue')) return json({jobs:(options.officialJobIds??(options.officialJob?['vendor-max-api']:[])).map(id=>({id,title:candidate.title})),remaining:options.officialJobIds?.length??(options.officialJob?1:0)});
+    if(url.includes('/official-reviews/')&&url.endsWith('/claim'))return json({claimed:true,jobId:'12345678-1234-4234-8234-123456789012',previousCandidates:options.previousCandidates,offer:{...candidate,steps:options.officialSteps??[],id:url.split('/').at(-2),firstChannel:'reddit',evidence:{url:'https://community.example/post',tier:'media',capturedAt:new Date().toISOString(),excerpts:{}}},platform:{id:'vendor',name:'Vendor',site:'https://vendor.example',xHandles:options.partialSearch?['@vendor']:[],staffHandles:[]},sources:[]});
+    if(url.includes('/official-reviews/')&&url.endsWith('/result'))return json({status:body.status});
     if(url==='https://mcp.exa.ai/mcp' && options.partialSearch && ++searchCalls>1)return new Response('quota',{status:429});
     if(url==='https://mcp.exa.ai/mcp')return options.officialSearchStatus?new Response('unavailable',{status:options.officialSearchStatus}):json({result:{content:[{type:'text',text:(options.officialUrls??['https://vendor.example/confirmed']).map(u=>'URL: '+u).join('\n')}]}});
     if (url.endsWith('/offers-index')) return json({ offers: options.known ?? [] });
@@ -311,4 +312,13 @@ it('turns inaccessible manual notes into a media draft or visible manual review 
   const h=harness({leads:[{...lead,origin:'manual'}],pages:{[lead.url]:403},modelOutput:'{"offers":[]}'});
   const {runPipeline}=await import('../pipeline/run');await runPipeline();
   expect(h.payloads('/status')[0]).toMatchObject({status:'reviewing'});
+});
+
+
+it('cools down a limited search service but still reads known official sources for the remaining jobs',async()=>{
+  const h=harness({officialJobIds:['vendor-max-api','vendor-another'],officialSearchStatus:429,officialSteps:['https://vendor.example/exact']});
+  const {runPipeline}=await import('../pipeline/run');const result=await runPipeline();
+  expect(h.reads.filter(url=>url==='https://mcp.exa.ai/mcp')).toHaveLength(1);
+  expect(h.payloads('/offers')).toHaveLength(2);
+  expect((result.stats as any).officialReview).toMatchObject({checked:2,matched:2,failed:0,searches:1});
 });
