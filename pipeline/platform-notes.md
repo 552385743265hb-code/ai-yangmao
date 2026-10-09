@@ -158,6 +158,8 @@
 - 更新日志里的旧内测额度（如 2026 年 3 月 LongCat-2.0-Preview 每天 500 万 Token）早已结束，不要输出；只有更新日志里新出现、写明当前模型和日期的免费活动才算。
 
 ## nous
+- 2026-10-09官网明确链接@NousResearch，已补账号登记；官网时间线实际转发StepFun的Nous Portal Step 5 Preview一周限免公告，Portal模型目录同时显示付费与$0版本，必须选免费版本，不泛化到工具和云托管。原厂转述是补充佐证，不把厂商账号加到Nous白名单；Tommy账号仅简介自称Nous，不凭此扩大staff白名单。
+- 2026-10-09全量归属复核14条相关记录及更新提案：Step 5 Preview在Cline的glj5已归cline，在Nous Portal的yn9a已归nous；OpenCode h16u/wofy已归opencode。同一模型三条调用渠道是不同活动，平台和厂商各发公告只是同渠道同活动转述。ModelScope、OpenCode Zen、Nous常驻免费层归属正确；StepFun自家Studio归stepfun，原已拒套餐记录不复活。Cline新平台待准入，所有新条目仍待审。
 - Nous Portal Free 免费层需要注册登录；管理员在 2026-10-01 确认开户流程需要绑定信用卡或支付方式，不能写成零门槛。通用 Terms 的免费试用条款不能替代 Free 层实际开户流程。
 - 免费模型以 https://portal.nousresearch.com/ 当前模型目录中整体标价 $0 的版本为准；同名付费版本不能算免费，仅输入零价而输出收费也不算。2026-10-01 快照为 Ling 3.0 Flash Fin、Ling 3.0 Flash Sante (free)、LongCat 2.0、LongCat 2.5 Preview、Laguna S 2.1、Laguna XS 2.1、Space Bunny Alpha、Step 3.7 Flash、Solar Pro 4；名单会调整，后续以当轮官方目录为准。
 - Free 的“$0 monthly credits”是不赠现金余额，不是模型价值为零；没有公布可用于折算的速率上限时 usdEstimate 留空，不编造每月重置。付费工具与 Hermes Cloud 托管不属于免费模型权益。
@@ -374,6 +376,7 @@
 - 本批核验入口：https://www.baichuan-ai.com/?new_locale=zh-cn；https://platform.baichuan-ai.com/prices。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## stepfun
+- 2026-10-09全量归属复核14条相关记录及更新提案：Step 5 Preview在Cline的glj5已归cline，在Nous Portal的yn9a已归nous；OpenCode h16u/wofy已归opencode。同一模型三条调用渠道是不同活动，平台和厂商各发公告只是同渠道同活动转述。ModelScope、OpenCode Zen、Nous常驻免费层归属正确；StepFun自家Studio归stepfun，原已拒套餐记录不复活。Cline新平台待准入，所有新条目仍待审。
 - 2026-10-09：Step 5 Preview在OpenCode免费一周的保留条为已上架wofy；StepFun官方在OpenCode公告后约2分钟转述，h16u为重复待审线索，已纠归opencode并标duplicate，未擅自拒绝。发放方OpenCode原文https://x.com/opencode/status/2108206631859454383，模型厂商转述不新建活动；多模态输入不表示免费生图，模态按文本/编程记。
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - Step Plan 当前官方档位 Flash Mini/Plus/Pro/Max 为 400M/1600M/8000M/40000M Credit，月费¥49/99/199/699。M=百万，1M Credit=¥1，人民币按7.1折美元。Flash Mini 400M不是$5.63，而是$56.34/月。
@@ -660,3 +663,6 @@
 
 ## tokenrhythm
 - 2026-10-08待准入，官网https://tokenrhythm.studio自称基元律动多模型API服务，与Periodic Labs无关。社区认证18/充19减18尚无公开官方活动条款，单位、支付机制、期限与渠道授权待核；不把18直接折成2.54美元，不自动批准聚合平台。
+
+## cline
+- 2026-10-09新登记待准入，官网cline.bot指向github.com/cline/cline，官方X账号@cline的Profile也指向同一仓库，已登记账号。Step 5 Preview活动原帖https://x.com/cline/status/2108249633789263917确认免费，StepFun稍后转述一周；归cline，不归stepfun。精确结束时刻未公开，原日期按一周推算，未自动批准。

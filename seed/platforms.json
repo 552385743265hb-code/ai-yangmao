@@ -1,5 +1,5 @@
 {
- "_note": "种子白名单草稿（Claude 起草，待管理员审核）。x 只填在 AIHOT 真实数据里出现过的官方账号；staff 是候选员工账号，进白名单前需要确认。官网为首页级链接，具体公告页在第 3 阶段逐个核实后加入 sources。 2026-09-30 管理员已审核：全部准入；主要面向企业、不给个人免费额度的平台（Palantir、Harvey、PixieBrix）不收。 2026-10-08新登记Qoder及TokenRhythm仅待准入，未获管理员批准；不得将前述全部准入快照套到新增平台。",
+ "_note": "种子白名单草稿（Claude 起草，待管理员审核）。x 只填在 AIHOT 真实数据里出现过的官方账号；staff 是候选员工账号，进白名单前需要确认。官网为首页级链接，具体公告页在第 3 阶段逐个核实后加入 sources。 2026-09-30 管理员已审核：全部准入；主要面向企业、不给个人免费额度的平台（Palantir、Harvey、PixieBrix）不收。 2026-10-08新登记Qoder及TokenRhythm仅待准入，未获管理员批准；不得将前述全部准入快照套到新增平台。 2026-10-09新增Cline仅待准入，未批准平台或条目。",
  "platforms": [
   {
    "id": "openai",
@@ -744,7 +744,9 @@
    "name": "Nous Research",
    "type": "new",
    "site": "https://nousresearch.com",
-   "x": []
+   "x": [
+    "@NousResearch"
+   ]
   },
   {
    "id": "prime-intellect",
@@ -876,6 +878,15 @@
    "type": "infra",
    "site": "https://tokenrhythm.studio",
    "x": []
+  },
+  {
+   "id": "cline",
+   "name": "Cline",
+   "type": "tool",
+   "site": "https://cline.bot",
+   "x": [
+    "@cline"
+   ]
   }
  ],
  "sources": [
