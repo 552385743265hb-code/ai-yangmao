@@ -288,7 +288,7 @@
 - 本次官网价格页与截图均确认 Free 为 $0/月，Q4 的 540P 使用费率为 4 credits/sec；20 积分按此费率只可算成 5 秒用量，实际可选视频时长以界面为准。截图只确认 Q4，不把产品导航中的 Q3 自动写入本条免费模型名单；这不是断言 Q3 不可用。
 - “10 references/month” 在官网比较表归 Content Management → Number of My References，是每月 10 个参考素材管理配额，不是每月 10 条免费视频，不能与注册送积分相加或冒估美元价值。
 - 2026-10-08 套餐卡年付 Standard $99/年、800/月；Premium $425/年、3,500/月；Ultimate $2,300/年、限时 20,000/月。同页比较表仍写 Ultimate 8,000/月，采用促销卡 20,000 得到最低单位费率 $2,300/(12×20,000)，20 积分约 $0.19，仅作积分单位单价比价，不表示 Free 用户能购买该档，也不是自由换现或视频实际支付价格。Free Q4 每秒 4 积分、付费档每秒 2 积分，不把相同积分数等同相同生成量。
-- 官网 FAQ 注册礼原文只有“New users receive trial credits upon registering for Vidu.”，每日登录也确有积分奖励，但数量未公开；登录礼不是仅付费会员，rqbg 另按常驻 + daily 核实，本次不改。没有额外“1 free trial”的已核证据。
+- 官网 FAQ 注册礼原文只有“New users receive trial credits upon registering for Vidu.”；此前Daily Login描述仅作为官网文字核验。2026-10-08管理员亲测：其账号每日登录未获credit，仅新人注册获20积分；因此rqbg已按管理员要求撤下并拒绝更新提案。不得继续把FAQ文案推导成所有用户当前可领取的每日积分；新抓取若仍只有同一FAQ描述，不再次输出或复活已拒记录；只有新的具体发放机制与可复核资格证据才重新核验。单账号实测不证明所有账号永远没有登录活动。ds4t一次性注册20积分保留；没有额外“1 free trial”的已核证据。
 - 注册 trial 积分的到期时间仍须账户积分明细，不能套用订阅积分 30 天或 Purchased/Bonus Credits 两年。未公布注册礼的活动起止，不把管理员亲测日期或页面更新日期当领取开始。
 - Ultimate 的 Off-Peak 每天 200 条和付费档内含功能是套餐自带，不作为额外赠送。此前 Ultimate $79 等价格已是旧快照，不能沿用为当前售价。
 - 核验入口：https://www.vidu.com/pricing；本次完整记录见 [Vidu 注册礼核验](../docs/evidence/vidu-2026-10-08/verification.md)。
