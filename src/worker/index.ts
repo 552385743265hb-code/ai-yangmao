@@ -119,8 +119,8 @@ app.get('/api/offers/:id', async c => {
   if (!o) return c.json({ error: '没有这条羊毛' }, 404);
   const [platform] = await d.select().from(s.platforms).where(eq(s.platforms.id, o.platformId));
   if (platform?.status !== 'approved') return c.json({ error: '没有这条羊毛' }, 404);
-  const revisions = await d.select().from(s.offerRevisions).where(eq(s.offerRevisions.offerId, o.id)).orderBy(desc(s.offerRevisions.at));
-  return c.json({ offer: withStatus(o, new Date()), platform, revisions });
+  // 修订包含旧的审核文案和人工纠错，完整记录只由管理员接口提供。
+  return c.json({ offer: withStatus(o, new Date()), platform });
 });
 
 app.get('/api/platforms', async c => {

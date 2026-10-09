@@ -180,6 +180,24 @@ const offer = {
 };
 
 describe('official evidence verification', () => {
+  it('keeps old correction text and review history private while administrators can read it', async () => {
+    await call('ingest/offers', [offer]);
+    await call('admin/offers/vendor-free/approve', {}, 'admin');
+    sqlite.prepare("UPDATE offers SET review_memo='内部：曾误归平台',admin_note='公开使用心得' WHERE id='vendor-free'").run();
+    sqlite.prepare("INSERT INTO offer_revisions(offer_id,diff,author) VALUES('vendor-free',?,'admin')").run(JSON.stringify([{field:'valueText',from:'历史审核错误：不得折美元',to:'100 tokens'}]));
+    const response = await worker.fetch(new Request('https://local.test/api/offers/vendor-free'), env, {} as ExecutionContext);
+    const publicBody = await response.json() as any;
+    expect(response.status).toBe(200);
+    expect(publicBody).not.toHaveProperty('revisions');
+    expect(publicBody.offer).not.toHaveProperty('reviewMemo');
+    expect(publicBody.offer.adminNote).toBe('公开使用心得');
+    expect(JSON.stringify(publicBody)).not.toContain('历史审核错误');
+    const adminBody = (await call('admin/offers/vendor-free', undefined, 'admin')).body;
+    expect(JSON.stringify(adminBody)).toContain('历史审核错误');
+    expect(JSON.stringify(adminBody)).toContain('内部：曾误归平台');
+    const denied = await worker.fetch(new Request('https://local.test/api/admin/offers/vendor-free'), env, {} as ExecutionContext);
+    expect(denied.status).toBe(401);
+  });
   it('keeps verification, review queue and notices within D1 limits above 100 offers', async () => {
     await call('ingest/offers', [offer]);
     sqlite.prepare("UPDATE offers SET review_state='approved',last_verified_at=NULL WHERE id='vendor-free'").run();

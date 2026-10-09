@@ -1092,7 +1092,7 @@ function pOffer(id) {
   });
   // 修订记录按需读取
   const revisionBox = $('#revBox');
-  fetch(`/api/offers/${encodeURIComponent(o.id)}`).then(r => r.ok ? r.json() : null).then(j => {
+  (revisionBox ? adm(`/offers/${encodeURIComponent(o.id)}`) : Promise.resolve(null)).then(j => {
     const box = revisionBox; if (!box?.isConnected || route()[1] !== o.id || !j?.revisions?.length) return;
     const F = { valueText: '额度', claimEnd: '截止', claimStart: '开始', requirements: '门槛', usdEstimate: '折合美元', usdMax: '价值上限', title: '标题', creditValidity: '有效期', endKind: '截止类型', type: '类型', audience: '适用对象', steps: '领取步骤', claimMethod: '领取方式', modalities: '模态', platformId: '平台', sourceTz: '时区', evidence: '官方证据' };
     // 修订内容转成人能读的文字：枚举用中文名，列表逐条，证据只说明链接和级别变化

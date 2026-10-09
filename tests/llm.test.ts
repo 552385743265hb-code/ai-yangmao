@@ -75,7 +75,7 @@ describe('model result contract', () => {
     }));
     const { extract } = await import('../pipeline/llm');
     await extract('WorkBuddy', 'https://www.workbuddy.cn/docs/workbuddy/Pricing', '标准版每月实得4,000积分', undefined,
-      triage ? { platformList: 'workbuddy=WorkBuddy', existing: 'old｜标准版加赠2000｜每月2000' } : { platformIds: ['workbuddy'], existing: 'old｜标准版加赠2000｜每月2000' });
+      triage ? { platformList: 'workbuddy=WorkBuddy', existing: 'old｜标准版加赠2000｜每月2000', corrections: ['此前误归平台，无法折美元，待审'] } : { platformIds: ['workbuddy'], existing: 'old｜标准版加赠2000｜每月2000', corrections: ['此前误归平台，无法折美元，待审'] });
     expect(system).toContain('WorkBuddy 标准/高级/旗舰每月加赠');
     expect(system).toContain('不因这些字样自动输出');
     expect(system).toContain('无需先付款');
@@ -83,6 +83,9 @@ describe('model result contract', () => {
     expect(system).toContain('第三方合作优惠分别核验与估值');
     expect(system).toContain('只知道月份不猜月初');
     expect(system).toContain('已有条目只是去重索引');
+    expect(system).toContain('steps只写用户操作，不写审核员待办');
+    expect(system).toContain('仅作内部判断依据，不得将核验经过、历史错误或审核待办复制到公开字段');
+    expect(system).not.toContain('写"官方未写明具体额度："加原文说法');
     expect(system).not.toContain('只输出免费档里可量化的 AI 额度，以及写明');
     if (!triage) expect(system).toContain('6j7x/lpen/v4sd');
   });
