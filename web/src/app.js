@@ -1207,6 +1207,86 @@ const RC = [['paid_bundle', '付费套餐自带'], ['not_ai', '不是 AI 额度'
 const FIELD_L = { models: '免费模型', tags: '标签', publishedAt: '发布时间', usdMax: '价值上限', steps: '领取步骤', sourceTz: '官方时区', modalities: '模态', title: '标题', type: '类型', valueText: '额度', usdEstimate: '折合美元', claimStart: '开始', claimEnd: '截止', endKind: '截止方式', creditValidity: '有效期', audience: '适用对象', requirements: '门槛', modalities: '模态', platformId: '平台', sourceTz: '时区', claimMethod: '领取方式' };
 const SUG = { approve: ['good', '✓', '建议通过'], history: ['good', '⌛', '建议作为历史上架'], reject: ['bad', '✕', '建议拒绝'], judge: ['warn', '?', '需要你判断'] };
 const RCL_ALL = { paid_bundle: '付费套餐自带', not_ai: '不是 AI 额度', wrong_platform: '平台归错', duplicate: '重复', expired: '旧活动 · 日期查不到', vague: '额度不明', insufficient_evidence: '证据不足', wrong_type: '分类错', wrong_field: '字段错', other: '其他' };
+function reviewDiffRows(changes) {
+  const rows = [];
+  const object = v => v !== null && typeof v === 'object' && !Array.isArray(v);
+  const visit = (field, before, after) => {
+    if (JSON.stringify(before ?? null) === JSON.stringify(after ?? null)) return;
+    if (field === 'evidence.capturedAt' || field === 'evidence.pageHash') return;
+    if (object(before) || object(after)) {
+      const a = object(before) ? before : {}, b = object(after) ? after : {};
+      for (const key of new Set([...Object.keys(a), ...Object.keys(b)])) visit(`${field}.${key}`, a[key], b[key]);
+      return;
+    }
+    const empty = v => v == null || v === '' || (Array.isArray(v) && v.length === 0);
+    if (empty(before) && empty(after)) return;
+    rows.push({ field, before, after, kind: empty(before) ? 'add' : empty(after) ? 'remove' : 'modify' });
+  };
+  for (const change of changes || []) visit(change.field, change.from, change.to);
+  return rows;
+}
+function reviewDiffLabel(field) {
+  const evidence = { 'evidence.url': '证据链接', 'evidence.tier': '证据级别', 'evidence.excerpts.benefit': '权益原文', 'evidence.excerpts.eligibility': '资格原文', 'evidence.excerpts.claim': '领取方式原文', 'evidence.excerpts.validity': '有效期原文' };
+  return evidence[field] || (field === 'sourceId' ? '采集信源' : FIELD_L[field]) || field;
+}
+function reviewDiffValue(field, value) {
+  if (field === 'type') return TYPES[value]?.l || String(value);
+  if (field === 'audience') return AUD[value] || String(value);
+  if (field === 'claimMethod') return CLAIM[value] || String(value);
+  if (field === 'endKind') return { date: '有截止日期', unknown: '截止未知', standing: '常驻 / 申请制' }[value] || String(value);
+  if (field === 'evidence.tier') return TIER_L[value] || String(value);
+  if (field === 'platformId') return PLATFORMS.find(p => p.id === value)?.name || String(value);
+  if (field === 'requirements') return reqLabel(value);
+  if (field === 'tags') return TAG_L[value] || String(value);
+  if (field === 'modalities') return MODAL[value] || String(value);
+  if (field === 'usdEstimate' || field === 'usdMax') return `$${value}`;
+  return typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value);
+}
+/** LCS keeps the matching context readable, including repeated list items and Chinese text. */
+function reviewDiffOps(a, b) {
+  const ops = [], emit = (kind, value) => { const last = ops.at(-1); if (last?.kind === kind) last.values.push(value); else ops.push({ kind, values: [value] }); };
+  if ((a.length + 1) * (b.length + 1) > 200000) {
+    let start = 0, end = 0;
+    while (start < a.length && start < b.length && a[start] === b[start]) start++;
+    while (end < a.length - start && end < b.length - start && a[a.length - 1 - end] === b[b.length - 1 - end]) end++;
+    a.slice(0, start).forEach(v => emit('same', v));
+    a.slice(start, a.length - end).forEach(v => emit('remove', v));
+    b.slice(start, b.length - end).forEach(v => emit('add', v));
+    a.slice(a.length - end).forEach(v => emit('same', v));
+    return ops;
+  }
+  const width = b.length + 1, dp = new Uint32Array((a.length + 1) * width);
+  for (let i = a.length - 1; i >= 0; i--) for (let j = b.length - 1; j >= 0; j--) dp[i * width + j] = a[i] === b[j] ? dp[(i + 1) * width + j + 1] + 1 : Math.max(dp[(i + 1) * width + j], dp[i * width + j + 1]);
+  let i = 0, j = 0;
+  while (i < a.length || j < b.length) {
+    if (i < a.length && j < b.length && a[i] === b[j]) { emit('same', a[i++]); j++; }
+    else if (j < b.length && (i === a.length || dp[i * width + j + 1] > dp[(i + 1) * width + j])) emit('add', b[j++]);
+    else emit('remove', a[i++]);
+  }
+  return ops;
+}
+function reviewDiffPair(row) {
+  const a = row.before, b = row.after;
+  const absent = v => v == null || v === '' || (Array.isArray(v) && !v.length);
+  const mark = (text, kind) => kind === 'remove' ? `<del>${esc(text)}</del>` : kind === 'add' ? `<ins>${esc(text)}</ins>` : esc(text);
+  if (Array.isArray(a) || Array.isArray(b)) {
+    const ops = reviewDiffOps(Array.isArray(a) ? a.map(v => JSON.stringify(v)) : [], Array.isArray(b) ? b.map(v => JSON.stringify(v)) : []);
+    const side = kind => `<ol>${ops.flatMap(op => op.kind === (kind === 'before' ? 'add' : 'remove') ? [] : op.values.map(v => `<li>${mark(reviewDiffValue(row.field, JSON.parse(v)), op.kind)}</li>`)).join('')}</ol>`;
+    return { before: absent(a) ? '<span class="muted">未填写</span>' : side('before'), after: absent(b) ? '<span class="muted">已清空</span>' : side('after') };
+  }
+  const ops = reviewDiffOps(absent(a) ? [] : Array.from(reviewDiffValue(row.field, a)), absent(b) ? [] : Array.from(reviewDiffValue(row.field, b)));
+  const side = kind => ops.filter(op => op.kind !== (kind === 'before' ? 'add' : 'remove')).map(op => mark(op.values.join(''), op.kind)).join('');
+  return { before: absent(a) ? '<span class="muted">未填写</span>' : side('before'), after: absent(b) ? '<span class="muted">已清空</span>' : side('after') };
+}
+function reviewDiffBlock(o) {
+  if (!o.pendingUpdate) return '';
+  if (!Array.isArray(o.updateDiff)) return '<div class="review-diff small">更新差异暂未加载，请刷新后核对旧版与新版。</div>';
+  const rows = reviewDiffRows(o.updateDiff);
+  const counts = { add: 0, remove: 0, modify: 0 }; rows.forEach(row => counts[row.kind]++);
+  const labels = { add: '新增', remove: '删除', modify: '修改' };
+  return `<details open class="review-diff" data-update-diff><summary><b>本次更新对比</b><span class="review-diff-counts">${Object.entries(counts).filter(([, n]) => n).map(([kind, n]) => `<span class="diff-badge diff-${kind}">${labels[kind]} ${n}</span>`).join('')}</span></summary><p class="small muted">逐项比较当前公开内容与待审更新，高亮处表示增删改。</p>${rows.length ? rows.map(row => { const pair = reviewDiffPair(row); return `<section class="review-diff-field" data-diff-field="${esc(row.field)}"><div class="review-diff-heading"><b>${esc(reviewDiffLabel(row.field))}</b><span class="diff-badge diff-${row.kind}">${labels[row.kind]}</span></div><div class="review-diff-pair"><div><span class="small muted">当前公开</span><div class="review-diff-value">${pair.before}</div></div><div><span class="small muted">待审更新</span><div class="review-diff-value">${pair.after}</div></div></div></section>`; }).join('') : '<p class="small">条款字段没有变化，仅核验记录更新。</p>'}</details>`;
+}
+
 function sugBlock(o, live = false) {
   const g = o.suggestion; if (!g) return '';
   const [tone, icon, defaultLabel] = SUG[g.verdict] || SUG.judge;
@@ -1272,6 +1352,7 @@ async function admQueue() {
   const card = (o, live = false) => `<article class="card" data-code="${o.code}" data-offer-id="${esc(o.id)}" data-live="${live ? 1 : ''}" data-type="${esc(o.type)}" data-sug="${o.suggestion?.verdict || 'none'}" style="display:flex;flex-direction:column;gap:10px">
     <div class="row" style="justify-content:space-between"><span class="row" style="gap:8px">${TYPES[Object.keys(TYPES).find(k => TYPES[k].l === o.type)] ? etag(Object.keys(TYPES).find(k => TYPES[k].l === o.type)) : esc(o.type)}<span class="chip">${esc(o.platform)}</span><span class="st ${o.evidenceTier === 'media' ? 'warn' : 'good'}"><b>${o.evidenceTier === 'media' ? '!' : '✓'}</b>${TIER_L[o.evidenceTier] || o.evidenceTier}</span>${o.pendingUpdate ? '<span class="st warn"><b>!</b>条款更新待审，旧版仍公开</span>' : ''}${o.status === 'ended' ? '<span class="st"><b>⌛</b>已结束，通过后计入历史</span>' : ''}</span><span class="small muted num">${esc(o.code)}</span></div>
     <div><div style="font-weight:600;font-size:16px">${esc(o.title)}</div><div class="${/未写明|不明确/.test(o.value) ? 'warn-note' : ''}" style="margin-top:4px">${esc(o.value)}</div><div class="small muted" style="margin-top:4px">${esc(o.end)} · 额度有效期：${esc(o.creditValidity || '未写')} · 门槛：${o.requirements.map(r => esc(reqLabel(r))).join('、')} · 对象：${AUD[o.audience] || o.audience}</div></div>
+    ${reviewDiffBlock(o)}
     ${sugBlock(o, live)}
     ${checksBlock(o)}
     <div class="rows">${EX_L.filter(([k]) => k !== 'claim' || o.excerpts[k]).map(([k, l]) => `<div class="orow" style="grid-template-columns:auto minmax(0,1fr);padding:6px 2px">${o.excerpts[k] ? `<span class="st good"><b>✓</b>${l}</span>` : `<span class="st warn"><b>!</b>${l}</span>`}<span class="t" style="font-weight:400;font-size:13.5px">${o.excerpts[k] ? '「' + esc(o.excerpts[k]) + '」' : '原文里没有找到'}</span></div>`).join('')}</div>

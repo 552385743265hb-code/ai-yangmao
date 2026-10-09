@@ -323,6 +323,21 @@ describe('review gates and preserved public version', () => {
     expect((await call('offers/vendor-free')).status).toBe(404);
   });
 
+  it('exposes original and candidate values for review while leaving the public offer unchanged', async () => {
+    await call('ingest/offers', [{...offer,usdEstimate:10}]);
+    await call('admin/offers/vendor-free/approve', {}, 'admin');
+    await call('ingest/offers', [{ ...offer, valueText: '200 tokens', usdEstimate: 0, models:['New Model'] }]);
+    sqlite.prepare("UPDATE offer_proposals SET diff='[]' WHERE offer_id='vendor-free'").run();
+    const queue=await call('admin/queue',undefined,'admin');
+    const proposal=(queue.body.pending as any[]).find(o=>o.id==='vendor-free');
+    expect(proposal).toMatchObject({pendingUpdate:true,value:'200 tokens'});
+    expect(proposal.updateDiff).toContainEqual({field:'valueText',from:'100 tokens',to:'200 tokens'});
+    expect(proposal.updateDiff).toContainEqual({field:'usdEstimate',from:10,to:0});
+    const detail=await call('admin/offers/vendor-free',undefined,'admin');
+    expect((detail.body.offer as any).updateDiff).toEqual(proposal.updateDiff);
+    expect(sqlite.prepare("SELECT value_text,usd_estimate FROM offers WHERE id='vendor-free'").get()).toMatchObject({value_text:'100 tokens',usd_estimate:10});
+  });
+
   it('protects an administrator correction and stages a model update without hiding the published offer', async () => {
     await call('ingest/offers', [offer]);
     const firstApproval = await call('admin/offers/vendor-free/approve', {}, 'admin');

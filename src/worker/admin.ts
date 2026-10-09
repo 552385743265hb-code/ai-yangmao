@@ -149,8 +149,7 @@ admin.get('/queue', async c => {
   const d = db(c.env), names = await platformNames(c.env), now = new Date();
   // 先抓到的在前，新抓取的排在最后（管理员按顺序审，新来的不打乱已预审的条目，2026-10-03）
   const pending = await d.select().from(s.offers).where(eq(s.offers.reviewState, 'pending')).orderBy(s.offers.discoveredAt, s.offers.id);
-  const proposals = (await d.select().from(s.offerProposals).orderBy(desc(s.offerProposals.updatedAt)))
-    .filter(proposal => proposal.diff.some(change => isReviewField(change.field)));
+  const proposals = await d.select().from(s.offerProposals).orderBy(desc(s.offerProposals.updatedAt));
   const originals = proposals.length ? await d.select().from(s.offers).where(inArray(s.offers.id, d.select({ id: s.offerProposals.offerId }).from(s.offerProposals))) : [];
   const codeCounts = new Map<string, number>();
   for (const { id } of await d.select({ id: s.offers.id }).from(s.offers)) codeCounts.set(shortCode(id), (codeCounts.get(shortCode(id)) ?? 0) + 1);
@@ -169,7 +168,10 @@ admin.get('/queue', async c => {
       ...pending.map(queueView),
       ...proposals.flatMap(p => {
         const original = originals.find(o => o.id === p.offerId);
-        return original ? [{ ...queueView({ ...original, ...p.candidate } as OfferRow), link:`https://ai-yangmao.com/#admin-offer-${encodeURIComponent(p.offerId)}`, reviewVersion: p.updatedAt, pendingUpdate: true, changedFields: p.diff.map(x => x.field) }] : [];
+        if (!original) return [];
+        const updateDiff = proposalComparison(original, p.candidate);
+        if (!updateDiff.some(change => isReviewField(change.field))) return [];
+        return [{ ...queueView({ ...original, ...p.candidate } as OfferRow), link:`https://ai-yangmao.com/#admin-offer-${encodeURIComponent(p.offerId)}`, reviewVersion: p.updatedAt, pendingUpdate: true, changedFields: updateDiff.map(x => x.field), updateDiff }];
       }),
     ],
     priorityLeads: (await d.select().from(s.leads).where(inArray(s.leads.status,['new','reviewing'])))
@@ -204,7 +206,7 @@ admin.get('/offers/:ref', async c => {
   const names = await platformNames(c.env);
   const [proposal] = await db(c.env).select().from(s.offerProposals).where(eq(s.offerProposals.offerId, o.id));
   const revisions = await db(c.env).select().from(s.offerRevisions).where(eq(s.offerRevisions.offerId, o.id)).orderBy(desc(s.offerRevisions.at));
-  return c.json({ offer: { ...view(proposal ? { ...o, ...proposal.candidate } as OfferRow : o, names[o.platformId] ?? o.platformId), reviewVersion:proposal?.updatedAt ?? o.updatedAt, ...(proposal ? {link:`https://ai-yangmao.com/#admin-offer-${encodeURIComponent(o.id)}`} : {}) }, pendingUpdate: !!proposal, revisions });
+  return c.json({ offer: { ...view(proposal ? { ...o, ...proposal.candidate } as OfferRow : o, names[o.platformId] ?? o.platformId), reviewVersion:proposal?.updatedAt ?? o.updatedAt, ...(proposal ? {link:`https://ai-yangmao.com/#admin-offer-${encodeURIComponent(o.id)}`, pendingUpdate: true, updateDiff: proposalComparison(o, proposal.candidate)} : {}) }, pendingUpdate: !!proposal, revisions });
 });
 
 /** 审核：通过 / 拒绝。原样通过会给信源的"连续原样通过"加一；拒绝清零。 */
@@ -255,6 +257,14 @@ admin.post('/offers/:ref/:action{approve|reject}', async c => {
 /** 补丁只允许编辑业务字段；补丁合并后仍由 offerIn 校验完整活动。 */
 const EDITABLE_FIELDS = new Set(['title', 'type', 'valueText', 'usdEstimate', 'usdMax', 'models', 'tags', 'claimStart', 'claimEnd', 'endKind', 'creditValidity',
   'audience', 'requirements', 'modalities', 'platformId', 'sourceTz', 'claimMethod', 'steps', 'evidence', 'publishedAt', 'sourceId']);
+/** Compare against the current public row, even if a legacy proposal has an empty or stale stored diff. */
+function proposalComparison(original: OfferRow, candidate: Record<string, unknown>) {
+  const parsed = validateStoredOffer({ ...original, ...candidate } as OfferRow);
+  const normalized = parsed.success ? { ...candidate, ...parsed.data } : candidate;
+  return Object.entries(normalized)
+    .filter(([field, value]) => EDITABLE_FIELDS.has(field) && JSON.stringify((original as Record<string, unknown>)[field] ?? null) !== JSON.stringify(value ?? null))
+    .map(([field, value]) => ({ field, from: (original as Record<string, unknown>)[field] ?? null, to: value ?? null }));
+}
 admin.post('/offers/:ref/edit', async c => {
   const o = await findOffer(c.env, c.req.param('ref'));
   if (!o) return c.json({ error: '找不到这条羊毛' }, 404);

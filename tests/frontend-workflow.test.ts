@@ -32,6 +32,38 @@ function publicOffer(run: (code: string) => any, extra: Record<string, unknown> 
 }
 
 describe('frontend review workflow', () => {
+  it('shows proposal additions, removals and edits against public values, including zero and nested evidence', async () => {
+    const changes = [
+      {field:'valueText',from:'新人送20积分',to:'新人送40积分'},
+      {field:'usdEstimate',from:0,to:null},
+      {field:'models',from:['Model A','Model A','Model B'],to:['Model A','Model C']},
+      {field:'claimEnd',from:null,to:'2026-10-20'},
+      {field:'evidence',from:{url:'https://vendor.example/old',tier:'media',excerpts:{benefit:'旧原文'},capturedAt:'old'},to:{url:'https://vendor.example/new',tier:'docs',excerpts:{benefit:'<img src=x onerror=alert(1)>'},capturedAt:'new'}},
+    ];
+    const f = fixture(() => queue([offer('updated',{pendingUpdate:true,updateDiff:changes})]));
+    await f.run('admQueue()');
+    const diff=f.document.querySelector('[data-update-diff]')!;
+    expect(diff.hasAttribute('open')).toBe(true);
+    expect(diff.textContent).toContain('当前公开'); expect(diff.textContent).toContain('待审更新');
+    expect(diff.querySelector('[data-diff-field="valueText"] del')!.textContent).toBe('2');
+    expect(diff.querySelector('[data-diff-field="valueText"] ins')!.textContent).toBe('4');
+    expect(diff.querySelector('[data-diff-field="usdEstimate"]')!.textContent).toContain('删除');
+    expect(diff.querySelector('[data-diff-field="usdEstimate"] del')!.textContent).toBe('$0');
+    expect(diff.querySelector('[data-diff-field="claimEnd"]')!.textContent).toContain('新增');
+    const models=diff.querySelector('[data-diff-field="models"]')!;
+    expect(models.querySelectorAll('del')).toHaveLength(2);expect(models.querySelector('ins')!.textContent).toBe('Model C');
+    expect(diff.querySelector('[data-diff-field="evidence.url"]')).not.toBeNull();
+    expect(diff.querySelector('[data-diff-field="evidence.tier"]')!.textContent).toContain('官方文档');
+    expect(diff.querySelector('[data-diff-field="evidence.capturedAt"]')).toBeNull();
+    expect(diff.querySelector('img')).toBeNull();expect(diff.textContent).toContain('<img src=x onerror=alert(1)>');
+  });
+  it('distinguishes missing proposal comparison data from metadata-only updates and preserves false values', () => {
+    const f=fixture(()=>queue());
+    expect(f.run('reviewDiffBlock({pendingUpdate:true})')).toContain('暂未加载');
+    expect(f.run(`reviewDiffBlock({pendingUpdate:true,updateDiff:[{field:'evidence',from:{capturedAt:'old'},to:{capturedAt:'new'}}]})`)).toContain('仅核验记录更新');
+    expect(f.run(`reviewDiffRows([{field:'flag',from:false,to:true}])[0].kind`)).toBe('modify');
+    expect(f.run('reviewDiffBlock({pendingUpdate:false})')).toBe('');
+  });
   it('shows official backlog, exhausted retries and degraded verification separately',async()=>{
     const page=fixture(()=>({hoursSince:1,failingSources:[],tokensToday:0,tokenCap:0,costMonthCny:0,sources:[],
       officialReviewCounts:{waiting:7,checking:1,retrying:3,matched:4,exhausted:2,stalled:1},leadWorkflow:{new:5,reviewing:6,important:1},coverageDegraded:true,lastCollectAttempt:{stats:{verificationFailed:9,verificationDeferred:0}}}));
