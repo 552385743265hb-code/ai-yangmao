@@ -156,8 +156,7 @@
    "type": "lab",
    "site": "https://hunyuan.tencent.com",
    "x": [
-    "@TencentHunyuan",
-    "@WorkBuddy_AI"
+    "@TencentHunyuan"
    ]
   },
   {
@@ -852,7 +851,9 @@
    "name": "WorkBuddy",
    "type": "tool",
    "site": "https://www.workbuddy.cn",
-   "x": [],
+   "x": [
+    "@WorkBuddy_AI"
+   ],
    "wechat": "腾讯WorkBuddy"
   },
   {
@@ -2492,6 +2493,13 @@
    "platform": "workbuddy",
    "kind": "web_list",
    "url": "https://www.workbuddy.cn/events/invite/",
+   "tier": "site"
+  },
+  {
+   "id": "workbuddy-add-mv0k1fy1",
+   "platform": "workbuddy",
+   "kind": "web_list",
+   "url": "https://www.workbuddy.ai",
    "tier": "site"
   }
  ]
