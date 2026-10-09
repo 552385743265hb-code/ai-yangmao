@@ -511,6 +511,7 @@
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - Claude API代码执行现每组织每月1,550小时免费，超额$0.05/小时/容器，最少5分钟；工具替代价值77.50美元/月。原“每日50小时、网页端运行Python”是错误。来源：https://platform.claude.com/docs/en/agents-and-tools/tool-use/code-execution-tool
 - 2026-10-09再次核查：计量单位是累计容器小时，不是个人聊天或Claude Code订阅时长；API organization不等于Enterprise会员。现行每月1,550不能除以31改写成“每日50”，也不能拼进网页免费版。已收录canonical anthropic-claude-free-tier；再发现同一代码执行免工具费额度时复用该ID，不能另建daily 50条。超额费、最低5分钟、上传文件预加载也可能计时，模型Token始终另按价目收费；配合新版web_search/web_fetch不收工具费是独立计费条件。
+- 2026-10-09：Claude for OSS是申请制apply，endKind=standing；https://www.anthropic.com/claude-for-oss-terms明确滚动审核、Anthropic自主选择、达标不保证批准，最多10000名，非认证后自动送的gift。https://claude.com/open-source-max跳到正式申请表；免费Max20x从激活起6个月，获批兑换码90天内激活。申请须18岁、支持地区合法居民、GitHub账号2年、近90天公开贡献及OSI项目等，量化条件是考虑门槛，生态重要项目可走裁量通道。期满恢复旧付费方案/原免费版，超额可能收费。按官方Max20x $200/月比价为$1200，不猜$2000或API赠额；10月8日OSS Scanner博客不代表既有OSS资助计划启动，未公布开始日留空。
 - Claude API 文档里的“per organization”指 Console 计费账户：个人注册 API 也自动有一个组织，不需要企业版；但调用 API 必须绑信用卡并充值，门槛写 card + pay，不是零门槛。Claude.ai 的 Pro/Max 订阅不含 API。（2026-10-03 管理员确认）
 - 请求包含web_search_20260209/web_fetch_20260209及后续版本时，code_execution本身不加收，标准输入输出Token仍收费；这是API工具执行权益不是免费Claude模型或网页会员，models保持空并注明收费门槛。
 - 套餐权益调整、一次性赠送额度以 support.claude.com 帮助中心为准（金额、资格、领取期、失效日期写得最全），@claudeai 推文用来定发布时间；第三方汇总站（如 resetradar.com）只当线索。
