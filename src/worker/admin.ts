@@ -239,6 +239,13 @@ admin.post('/offers/:ref/:action{approve|reject}', async c => {
       if (!accepted.length) return c.json({error:'条目或提案已更新，请刷新后重试'},409);
       await d.insert(s.offerRevisions).values({ offerId: o.id, diff: proposal.diff, evidenceBefore: o.evidence, evidenceAfter: candidate.evidence });
     }
+    if (action === 'reject') {
+      // Save the rejected source terms before removing the queue item, guarded by its exact version.
+      await c.env.DB.prepare(`INSERT INTO rejected_offer_updates(offer_id,evidence,diff)
+        SELECT offer_id,?,diff FROM offer_proposals WHERE offer_id=? AND updated_at=?
+        AND EXISTS(SELECT 1 FROM offers WHERE id=? AND updated_at=? AND review_state='approved')`)
+        .bind(JSON.stringify(proposal.candidate.evidence ?? o.evidence),o.id,proposal.updatedAt,o.id,o.updatedAt).run();
+    }
     const removed = await d.delete(s.offerProposals).where(and(eq(s.offerProposals.offerId,o.id),eq(s.offerProposals.updatedAt,proposal.updatedAt))).returning({id:s.offerProposals.offerId});
     if (!removed.length && action==='reject') return c.json({error:'提案已更新，请刷新后重试'},409);
   } else {

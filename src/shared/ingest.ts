@@ -43,6 +43,8 @@ export const offerIn = z.object({
   leadId: z.number().int().optional(),
   officialReviewJobId: z.string().uuid().optional(),
   sameOccurrenceAs: z.string().max(80).optional(),
+  // Collector-supplied full source, never model-generated and never stored on the public offer.
+  sourceText: z.string().max(250000).optional(),
   steps: z.array(z.string().max(200)).max(10).default([]),
   evidence: z.object({
     url: z.url(),

@@ -3,6 +3,7 @@ import { sameBenefit, ambiguousReset } from '../shared/dedupe';
 import { officialTier, officialActivityMismatch } from '../shared/official-review';
 import { resetEventDay } from '../shared/reset-event';
 import { selectLeads } from '../shared/leads';
+import { changedOfficialTerms, rejectedTermsStillPresent } from '../shared/review-stability';
 import { isReviewField, reviewChanges } from '../shared/spec';
 // Cloudflare Worker 入口：/api/* 走这里，其余由静态资源（网站页面）处理。
 import { and, desc, eq, gte, inArray, sql } from 'drizzle-orm';
@@ -224,7 +225,20 @@ ingest.post('/offers', async c => {
       const mismatch=officialActivityMismatch(existingProposal?{...prev,...existingProposal.candidate}:prev,o);
       if(mismatch){results.push({id:o.id,error:mismatch});continue;}
     }
-    const { leadId, officialReviewJobId, sameOccurrenceAs, ...od } = o;
+    // An approved record is the baseline. A model's differing output alone is never a new review.
+    if (prev?.reviewState === 'approved') {
+      const rejected = await d.select().from(s.rejectedOfferUpdates).where(eq(s.rejectedOfferUpdates.offerId, prev.id));
+      const officialSources = await d.select({url:s.sources.url,tier:s.sources.tier}).from(s.sources).where(eq(s.sources.platformId,prev.platformId));
+      const trusted = prev.platformId === o.platformId && !!officialTier(o.evidence.url, plat, officialSources);
+      const changed = trusted && changedOfficialTerms(prev.evidence, o.evidence, o.sourceText);
+      const repeat = rejected.some(r => rejectedTermsStillPresent(r.evidence, o.evidence, o.sourceText));
+      if (!changed || repeat) {
+        results.push({id:o.id,unchanged:true,reviewState:'approved',reviewSuppressed:repeat?'rejected_terms':'no_proven_terms_change',
+          ...(o.officialReviewJobId?{skipped:'没有新的官方条款依据，保留已审核版本及人工提案'}:{})});
+        continue; // Keep manual proposals and verification metadata; the /verify route verifies source health.
+      }
+    }
+    const { leadId, officialReviewJobId, sameOccurrenceAs, sourceText, ...od } = o;
     const row = {
       ...od, usdEstimate: o.usdEstimate ?? null, claimStart: o.claimStart ?? null, claimEnd: o.claimEnd ?? null,
       creditValidity: o.creditValidity ?? null, publishedAt: o.publishedAt ?? null, sourceId: o.sourceId ?? null,
@@ -247,6 +261,9 @@ ingest.post('/offers', async c => {
         return !!before && !!after && before !== after;
       });
       for (const field of protectedFields) {
+        // A proven replacement of official terms needs its new evidence approved with the new facts.
+        if (prev.reviewState === 'approved' && field === 'evidence' && !existingProposal?.manualFields.includes(field)
+          && changedOfficialTerms(prev.evidence, o.evidence, o.sourceText)) continue;
         // 唯一例外：官方原文变了、额度里的数字也变了，额度文字可以进提案（仍不直接覆盖）
         if (prev.reviewState === 'approved' && field === 'valueText' && excerptChanged && factNumbers(o.valueText) !== factNumbers(prev.valueText) && !existingProposal?.manualFields.includes(field)) continue;
         if (field in row) (row as Record<string, unknown>)[field] = existingProposal?.manualFields.includes(field)
@@ -285,7 +302,14 @@ ingest.post('/offers', async c => {
         }
         row.evidence = { ...row.evidence, excerpts };
       }
+      // Preserve every field currently being edited by a reviewer, including presentation fields.
+      for (const field of existingProposal?.manualFields ?? []) {
+        if (field in row && field in existingProposal!.candidate) (row as Record<string,unknown>)[field] = existingProposal!.candidate[field];
+      }
     }
+    // Retaining approved fields can make an individually valid extraction invalid after merge.
+    const merged = offerIn.safeParse({...row,sourceId:row.sourceId ?? undefined,firstChannel:row.firstChannel ?? undefined});
+    if (!merged.success) { results.push({id:o.id,error:'合并已审核字段后未通过完整校验：'+merged.error.issues.map(x=>x.message).join('；')});continue; }
     const diff: {field:string;from:unknown;to:unknown}[] = reviewChanges(prev, row);
     const baseCurrent=sql`EXISTS (SELECT 1 FROM offers WHERE id=${o.id} AND updated_at=${prev.updatedAt} AND review_state=${prev.reviewState})`;
     const jobCurrent=o.officialReviewJobId?sql`json_extract(${s.offers.officialReview},'$.jobId')=${o.officialReviewJobId} AND json_extract(${s.offers.officialReview},'$.status')='checking'`:undefined;

@@ -142,6 +142,15 @@ export const reviews = sqliteTable('reviews', {
   at: text('at').notNull().default(now),
 });
 
+/** Rejected updates remain remembered independently of the ephemeral proposal queue. */
+export const rejectedOfferUpdates = sqliteTable('rejected_offer_updates', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  offerId: text('offer_id').notNull().references(() => offers.id),
+  evidence: text('evidence', { mode: 'json' }).$type<Evidence>().notNull(),
+  diff: text('diff', { mode: 'json' }).$type<{field:string;from:unknown;to:unknown}[]>().notNull(),
+  at: text('at').notNull().default(now),
+}, t => [index('rejected_updates_offer_idx').on(t.offerId)]);
+
 export const notifications = sqliteTable('notifications', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   offerId: text('offer_id').notNull().references(() => offers.id),

@@ -50,16 +50,16 @@ async function postLeads(leads: LeadIn[]) {
  * 付费的 DeepSeek 只在这个信源已经被推迟过至少一次（卡了 12 小时以上）、且本月费用没到上限时才用。
  */
 let extractionQueue: Promise<void> = Promise.resolve();
-async function extractAndPost(src: Source, url: string, text: string): Promise<boolean> {
+async function extractAndPost(src: Source, url: string, text: string, sourceText?: string): Promise<boolean> {
   const prior = extractionQueue;
   let release!: () => void;
   extractionQueue = new Promise<void>(resolve => { release = resolve; });
   await prior;
-  try { return await extractAndPostUnlocked(src, url, text); }
+  try { return await extractAndPostUnlocked(src, url, text, sourceText); }
   finally { release(); }
 }
 
-async function extractAndPostUnlocked(src: Source, url: string, text: string): Promise<boolean> {
+async function extractAndPostUnlocked(src: Source, url: string, text: string, sourceText?: string): Promise<boolean> {
   if (needsWrapUp()) { stats.deferred++; src.deferThisRun = true; return false; }
   if (!llmAvailable()) { stats.extractSkipped++; log('  没有配置模型 key，跳过抽取'); return false; }
   const estimate = Math.ceil(text.length / 2) + 1500;
@@ -89,7 +89,7 @@ async function extractAndPostUnlocked(src: Source, url: string, text: string): P
   const seenInPage = new Map<string, number>();
   let invalidCount = 0;
   for (const e of r.offers) {
-    const v = offerIn.safeParse(toOffer(src, e, url, text));
+    const v = offerIn.safeParse({...toOffer(src, e, url, text), sourceText:sourceText && sourceText.length<=250000 ? sourceText : undefined});
     if (v.success) {
       const candidate = v.data;
       const identity = [candidate.platformId, candidate.type, candidate.claimMethod, norm(candidate.title), norm(candidate.valueText), candidate.claimStart, candidate.claimEnd].join('|');
@@ -107,7 +107,7 @@ async function extractAndPostUnlocked(src: Source, url: string, text: string): P
     if (x.error) stats.errors.push(`${x.id}: ${x.error}`);
     else if (!x.unchanged) { stats.offers++; if (x.reviewState === 'pending') stats.pending++; }
     if (x.error) hasWriteError = true;
-    if (!x.error && idxCache) {
+    if (!x.error && !x.unchanged && idxCache) {
       const accepted = offers.find(o => o.id === x.id);
       if (accepted) {
         const entry = indexEntry(accepted);
@@ -127,7 +127,7 @@ async function officialPage(src: Source) {
   stats.changed++;
   log(`  有变化（${via}，相关文本 ${rel.length} 字）`);
   const extractionSource = via === 'jina' ? { ...src, tier: 'media', autoPublish: false } : src;
-  const done = rel.length ? await extractAndPost(extractionSource, finalUrl, rel) : true;
+  const done = rel.length ? await extractAndPost(extractionSource, finalUrl, rel, text) : true;
   if (!done) src.deferThisRun = true;
   if (!DRY) {
     const { offers } = await api<{ offers: { id: string; url: string }[] }>(`/verification-queue?sourceId=${encodeURIComponent(src.id)}&force=1`);
@@ -165,7 +165,7 @@ async function officialFeed(src: Source) {
       const { text, via, finalUrl } = await fetchPage(it.link, { timeoutMs: 10000, tries: 1 });
       const rel = relevantText(text);
       log(`  新文章：${it.title}（相关文本 ${rel.length} 字）`);
-      if (!rel.length || await extractAndPost(via === 'jina' ? { ...src, tier: 'media', autoPublish: false } : src, finalUrl, rel)) {
+      if (!rel.length || await extractAndPost(via === 'jina' ? { ...src, tier: 'media', autoPublish: false } : src, finalUrl, rel, text)) {
         prev.add(it.link); completedThisRun++;
       }
     } catch (error) {
@@ -216,7 +216,7 @@ async function verifyExistingOffers(sources: Source[]) {
           id: '', kind: 'manual', url: offer.url, tier: offer.tier, platformId: offer.platformId, lastHash: null,
           platform: { id: offer.platformId, name: offer.platformId, status: 'approved' }, autoPublish: false,
         } as Source;
-        processedChange = await extractAndPost(via === 'jina' ? { ...source, tier: 'media', autoPublish: false } : source, finalUrl, relevant);
+        processedChange = await extractAndPost(via === 'jina' ? { ...source, tier: 'media', autoPublish: false } : source, finalUrl, relevant, text);
       }
       const result = DRY ? { verified: false } : await api<{ verified: boolean }>('/verify', { offerId: offer.id, url: offer.url, finalUrl, text, trustedDirect: via !== 'jina', pageHash: currentHash, processedChange });
       if (!result.verified && !DRY) { stats.verificationFailed++; stats.errors.push(`${offer.id}: 当前官方证据无法再次确认`); }
@@ -315,6 +315,7 @@ async function triageLeads(plats: Plat[]) {
       if (!p) { unknown.push(e.title); continue; }
       const tier = !fetched || indirect ? 'media' : tierOf(effectiveUrl, p);
       const o = toOffer({ id: `lead-${l.origin}`, kind: l.origin, platformId: p.id, tier } as unknown as Source, e, effectiveUrl, relevantText(evidenceText));
+      o.sourceText = !indirect && fetched && evidenceText.length<=250000 ? evidenceText : undefined;
       o.evidence.tier = tier; o.leadId = l.id; o.sourceId = undefined; o.firstChannel = l.origin;
       // 同一个活动：沿用已有条目的 id（写入接口会按修订处理，不会新开一条）
       if (e.sameAs && knownIds.has(e.sameAs)) {

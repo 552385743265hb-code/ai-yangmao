@@ -89,16 +89,16 @@ describe('workflow recovery and race regressions',()=>{
   });
   it('keeps a reviewer proposal edit made while a new extraction is being saved',async()=>{
     await call('ingest/offers',[offer]);await call('admin/offers/vendor-free/approve',{},'admin');
-    await call('ingest/offers',[{...offer,valueText:'200 tokens'}]);
+    await call('ingest/offers',[changedOffer()]);
     beforeStatement=sql=>{if(sql.startsWith('update "offer_proposals"')){beforeStatement=undefined;sqlite.prepare("UPDATE offer_proposals SET candidate=?,updated_at='2030-01-01T00:00:00Z'").run(JSON.stringify({...offer,valueText:'管理员确认的额度'}));}};
-    const result=await call('ingest/offers',[{...offer,valueText:'300 tokens'}]);
+    const result=await call('ingest/offers',[changedOffer('300 tokens')]);
     expect((result.body.results as any[])[0].error).toContain('已更新');
     expect(JSON.parse((sqlite.prepare('SELECT candidate FROM offer_proposals').get() as any).candidate).valueText).toBe('管理员确认的额度');
   });
   it('does not renew unchanged media proposals and defeat official review backoff',async()=>{
     await call('ingest/offers',[offer]);await call('admin/offers/vendor-free/approve',{},'admin');
     const next={...offer,valueText:'200 tokens',evidence:{...evidence,tier:'media'}};
-    await call('ingest/offers',[next]);
+    legacyProposal(next);
     sqlite.prepare("UPDATE offer_proposals SET updated_at='2026-01-01T00:00:00Z'").run();
     await call('ingest/offers',[next]);
     expect(sqlite.prepare('SELECT updated_at FROM offer_proposals').get()).toEqual({updated_at:'2026-01-01T00:00:00Z'});
@@ -179,7 +179,59 @@ const offer = {
   claimStart: null, claimEnd: null, endKind: 'unknown', sourceTz: 'UTC', evidence,
 };
 
+function changedOffer(valueText='200 tokens') {
+  const benefit='Free '+valueText;
+  return {...offer,valueText,sourceText:benefit+'. All users. No published end date.',evidence:{...evidence,excerpts:{...evidence.excerpts,benefit}}};
+}
+function legacyProposal(candidate: object) {
+  sqlite.prepare("INSERT INTO offer_proposals(offer_id,candidate,diff) VALUES('vendor-free',?,?)").run(JSON.stringify(candidate),JSON.stringify([{field:'valueText',from:'100 tokens',to:'200 tokens'}]));
+}
+
 describe('official evidence verification', () => {
+  it('remembers newly approved official terms after an earlier manual evidence correction',async()=>{
+    await call('ingest/offers',[offer]);await call('admin/offers/vendor-free/approve',{},'admin');
+    await call('admin/offers/vendor-free/edit',{fields:{evidence:{...evidence,capturedAt:'2026-10-01'}}},'admin');
+    await call('ingest/offers',[changedOffer()]);
+    expect((await call('admin/offers/vendor-free/approve',{},'admin')).status).toBe(200);
+    await call('ingest/offers',[{...changedOffer(),type:'perk',valueText:'200 tokens daily'}]);
+    expect(sqlite.prepare('SELECT count(*) n FROM offer_proposals').get()).toEqual({n:0});
+    expect(JSON.parse((sqlite.prepare('SELECT evidence FROM offers').get() as any).evidence).excerpts.benefit).toBe('Free 200 tokens');
+  });
+  it('keeps approved business fields stable when the source still contains approved terms despite model drift', async () => {
+    await call('ingest/offers', [{...offer,usdEstimate:20,models:[]}]);
+    await call('admin/offers/vendor-free/approve',{},'admin');
+    const result=await call('ingest/offers',[{...offer,type:'perk',models:['Vendor'],usdEstimate:20,usdMax:20,valueText:'100 tokens with a new estimate',sourceText:'Free 100 tokens. All users. No published end date. Changed footer.',evidence:{...evidence,pageHash:'b'.repeat(64),excerpts:{benefit:'Free 100 tokens. All users.'}}}]);
+    expect((result.body.results as any[])[0].unchanged).toBe(true);
+    expect(sqlite.prepare('SELECT count(*) n FROM offer_proposals').get()).toEqual({n:0});
+    expect(sqlite.prepare('SELECT type,usd_max,models FROM offers').get()).toEqual({type:'new',usd_max:null,models:'[]'});
+  });
+  it('does not recreate a rejected update on the same official terms even with a different extracted quote or ID', async () => {
+    await call('ingest/offers',[offer]);await call('admin/offers/vendor-free/approve',{},'admin');
+    const next={...offer,valueText:'200 tokens',sourceText:'Free 200 tokens. All users. No published end date.',evidence:{...evidence,excerpts:{...evidence.excerpts,benefit:'Free 200 tokens'}}};
+    await call('ingest/offers',[next]);
+    expect((await call('admin/offers/vendor-free/reject',{reason:'不要这次变更'},'admin')).status).toBe(200);
+    const again=await call('ingest/offers',[{...next,id:'vendor-another-key',evidence:{...next.evidence,capturedAt:new Date().toISOString(),pageHash:'c'.repeat(64),excerpts:{...next.evidence.excerpts,benefit:'Free 200 tokens. All users.'}}}]);
+    expect(sqlite.prepare('SELECT count(*) n FROM offers').get()).toEqual({n:1});
+    expect(sqlite.prepare('SELECT count(*) n FROM offer_proposals').get()).toEqual({n:0});
+    expect((again.body.results as any[])[0].unchanged).toBe(true);
+    const realChange=await call('ingest/offers',[{...next,valueText:'300 tokens',sourceText:'Free 300 tokens. All users. No published end date.',evidence:{...evidence,excerpts:{...evidence.excerpts,benefit:'Free 300 tokens'}}}]);
+    expect((realChange.body.results as any[])[0].reviewState).toBe('pending_update');
+  });
+  it('rejects an invalid merged valuation instead of queueing a maximum below the approved minimum',async()=>{
+    await call('ingest/offers',[{...offer,usdEstimate:20,usdMax:20}]);await call('admin/offers/vendor-free/approve',{},'admin');
+    await call('admin/offers/vendor-free/edit',{fields:{usdEstimate:20,valueText:'100 tokens, worth $20'}},'admin');
+    // Explicitly protect the approved estimate as an administrator correction.
+    sqlite.prepare("INSERT INTO offer_revisions(offer_id,diff,author) VALUES('vendor-free',?, 'admin')").run(JSON.stringify([{field:'usdEstimate',from:null,to:20}]));
+    const result=await call('ingest/offers',[{...offer,usdEstimate:0,usdMax:0,valueText:'200 tokens',sourceText:'Free 200 tokens. All users. No published end date.',evidence:{...evidence,excerpts:{...evidence.excerpts,benefit:'Free 200 tokens'}}}]);
+    expect((result.body.results as any[])[0].error).toContain('校验');
+    expect(sqlite.prepare('SELECT count(*) n FROM offer_proposals').get()).toEqual({n:0});
+  });
+  it('preserves a manually edited proposal when a no-change extraction arrives',async()=>{
+    await call('ingest/offers',[offer]);await call('admin/offers/vendor-free/approve',{},'admin');
+    sqlite.prepare("INSERT INTO offer_proposals(offer_id,candidate,diff,manual_fields) VALUES('vendor-free',?,?,'[\"requirements\"]')").run(JSON.stringify({...offer,requirements:['card']}),JSON.stringify([{field:'requirements',from:['none'],to:['card']} ]));
+    await call('ingest/offers',[{...offer,sourceText:'Free 100 tokens. All users. No published end date.'}]);
+    expect(sqlite.prepare('SELECT count(*) n FROM offer_proposals').get()).toEqual({n:1});
+  });
   it('uses current review metadata instead of a stale full-row proposal snapshot in both queue and detail', async () => {
     await call('ingest/offers', [offer]);
     await call('admin/offers/vendor-free/approve', {}, 'admin');
@@ -392,7 +444,7 @@ describe('review gates and preserved public version', () => {
   it('exposes original and candidate values for review while leaving the public offer unchanged', async () => {
     await call('ingest/offers', [{...offer,usdEstimate:10}]);
     await call('admin/offers/vendor-free/approve', {}, 'admin');
-    await call('ingest/offers', [{ ...offer, valueText: '200 tokens', usdEstimate: 0, models:['New Model'] }]);
+    await call('ingest/offers', [{ ...changedOffer(), usdEstimate: 0, models:['New Model'] }]);
     sqlite.prepare("UPDATE offer_proposals SET diff='[]' WHERE offer_id='vendor-free'").run();
     const queue=await call('admin/queue',undefined,'admin');
     const proposal=(queue.body.pending as any[]).find(o=>o.id==='vendor-free');
@@ -410,7 +462,7 @@ describe('review gates and preserved public version', () => {
     expect(firstApproval.status, JSON.stringify(firstApproval.body)).toBe(200);
     const correction = await call('admin/offers/vendor-free/edit', { fields: { audience: 'old' }, reason: 'Official eligibility clarification' }, 'admin');
     expect(correction.status, JSON.stringify(correction.body)).toBe(200);
-    const changed = await call('ingest/offers', [{ ...offer, audience: 'new', valueText: '200 tokens' }]);
+    const changed = await call('ingest/offers', [{ ...changedOffer(), audience: 'new' }]);
     expect((changed.body.results as { reviewState: string }[])[0].reviewState).toBe('pending_update');
     const published = sqlite.prepare("SELECT value_text,audience,review_state FROM offers WHERE id='vendor-free'").get() as { value_text: string; audience: string; review_state: string };
     expect(published).toMatchObject({ value_text: '100 tokens', audience: 'old', review_state: 'approved' });
@@ -435,14 +487,14 @@ describe('review gates and preserved public version', () => {
     expect(saved.verify_result).not.toBe('evidence_missing');
   });
 
-  it('processed extraction with unchanged terms verifies even when saved quotes were paraphrased', async () => {
+  it('does not renew verification solely because a model says terms match despite missing saved quotes', async () => {
     await call('ingest/offers', [offer]);
     await call('admin/offers/vendor-free/approve', {}, 'admin');
     const hash = 'a'.repeat(64);
     await call('ingest/offers', [{ ...offer, evidence: { ...evidence, pageHash: hash, excerpts: {} } }]);
     const verified = await call('ingest/verify', { trustedDirect: true, offerId: offer.id, url: evidence.url,
       text: 'All members can receive one hundred tokens when they register.', pageHash: hash, processedChange: true });
-    expect(verified.body.verified).toBe(true);
+    expect(verified.body.verified).toBe(false);
     expect((await call('admin/queue', undefined, 'admin')).body.needsVerification).toEqual([]);
   });
 
@@ -452,7 +504,7 @@ describe('review gates and preserved public version', () => {
   ])('requires review for necessary field %s and preserves the published version', async (field, value) => {
     await call('ingest/offers', [offer]);
     await call('admin/offers/vendor-free/approve', {}, 'admin');
-    const changed = await call('ingest/offers', [{ ...offer, [field]: value,
+    const changed = await call('ingest/offers', [{ ...offer, sourceText:'Replacement terms for '+field, evidence:{...evidence,excerpts:{benefit:'Replacement terms for '+field}}, [field]: value,
       ...(field === 'claimEnd' ? { endKind: 'date' } : {}),
       ...(field === 'usdMax' ? { usdEstimate: 1 } : {}) }]);
     expect((changed.body.results as { reviewState: string }[])[0].reviewState).toBe('pending_update');
@@ -470,7 +522,7 @@ describe('review gates and preserved public version', () => {
     expect((await call('admin/queue', undefined, 'admin')).body.pending).toEqual([]);
   });
 
-  it('ignores ordering and whitespace and discards legacy evidence-only proposals', async () => {
+  it('ignores ordering and whitespace without exposing legacy evidence-only proposals', async () => {
     const initial = { ...offer, models: ['A', 'B'], modalities: ['text', 'code'] };
     await call('ingest/offers', [initial]);
     await call('admin/offers/vendor-free/approve', {}, 'admin');
@@ -479,25 +531,25 @@ describe('review gates and preserved public version', () => {
     expect((await call('admin/queue', undefined, 'admin')).body.pending).toEqual([]);
     const changed = await call('ingest/offers', [{ ...initial, models: ['B', 'A'], modalities: ['code', 'text'], valueText: '  100   tokens  ' }]);
     expect((changed.body.results as { unchanged: boolean }[])[0].unchanged).toBe(true);
-    expect(sqlite.prepare('SELECT count(*) AS n FROM offer_proposals').get()).toEqual({ n: 0 });
+    expect((await call('admin/queue', undefined, 'admin')).body.pending).toEqual([]);
   });
 
   it('requires review of real changes even for sources allowed to auto-publish', async () => {
     sqlite.prepare("UPDATE sources SET auto_publish=1 WHERE id='source'").run();
     await call('ingest/offers', [offer]);
     expect(sqlite.prepare('SELECT review_state FROM offers').get()).toEqual({ review_state: 'approved' });
-    const result = await call('ingest/offers', [{ ...offer, valueText: '200 tokens', evidence: { ...evidence, excerpts: {} } }]);
+    const result = await call('ingest/offers', [changedOffer()]);
     expect((result.body.results as { reviewState: string }[])[0].reviewState).toBe('pending_update');
     expect(sqlite.prepare('SELECT value_text FROM offers').get()).toEqual({ value_text: '100 tokens' });
     const candidate = JSON.parse((sqlite.prepare('SELECT candidate FROM offer_proposals').get() as { candidate: string }).candidate);
-    expect(candidate.evidence.excerpts).toEqual(evidence.excerpts);
+    expect(candidate.evidence.excerpts).toEqual(changedOffer().evidence.excerpts);
   });
 
   it('proposes a necessary change supported by new terms even after an administrator correction', async () => {
     await call('ingest/offers', [offer]);
     await call('admin/offers/vendor-free/approve', {}, 'admin');
     await call('admin/offers/vendor-free/edit', { fields: { valueText: '100 tokens corrected' } }, 'admin');
-    const result = await call('ingest/offers', [{ ...offer, valueText: '200 tokens',
+    const result = await call('ingest/offers', [{ ...offer, valueText: '200 tokens', sourceText:'Free 200 tokens. All users. No published end date.',
       evidence: { ...evidence, excerpts: { ...evidence.excerpts, benefit: 'Free 200 tokens' } } }]);
     expect((result.body.results as { reviewState: string }[])[0].reviewState).toBe('pending_update');
     expect(sqlite.prepare('SELECT value_text FROM offers').get()).toEqual({ value_text: '100 tokens corrected' });
@@ -780,7 +832,7 @@ it('does not revive official verification or erase an existing proposal using me
   await call('ingest/offers',[offer]);await call('admin/offers/vendor-free/approve',{},'admin');
   const before='2026-07-01T00:00:00Z';
   sqlite.prepare("UPDATE offers SET last_verified_at=?,verify_result='evidence_missing' WHERE id='vendor-free'").run(before);
-  await call('ingest/offers',[{...offer,valueText:'200 credits'}]);
+  await call('ingest/offers',[changedOffer('200 credits')]);
   await call('ingest/offers',[{...offer,evidence:{...evidence,tier:'media'}}]);
   expect((sqlite.prepare("SELECT last_verified_at FROM offers WHERE id='vendor-free'").get() as {last_verified_at:string}).last_verified_at).toBe(before);
   expect((sqlite.prepare("SELECT count(*) n FROM offer_proposals WHERE offer_id='vendor-free'").get() as {n:number}).n).toBe(1);
@@ -798,7 +850,7 @@ it('rejects stale review cards and does not report competing approvals as both s
 
 it('accepting and rejecting the same proposal cannot both succeed',async()=>{
   await call('ingest/offers',[offer]);await call('admin/offers/vendor-free/approve',{},'admin');
-  await call('ingest/offers',[{...offer,valueText:'200 credits'}]);
+  await call('ingest/offers',[changedOffer('200 credits')]);
   const actions=await Promise.all(['approve','reject'].map(action=>call(`admin/offers/vendor-free/${action}`,{},'admin')));
   expect(actions.map(r=>r.status).sort()).toEqual([200,409]);
 });
@@ -880,9 +932,9 @@ it('requeues a corrected media draft even after automatic retries previously sto
 
 it('official review of an update improves its proposal while keeping the public approved version unchanged',async()=>{
   await call('ingest/offers',[offer]);await call('admin/offers/vendor-free/approve',{},'admin');
-  await call('ingest/offers',[{...offer,valueText:'200 tokens',evidence:{...evidence,tier:'media',url:'https://community.example/post'}}]);
+  legacyProposal({...offer,valueText:'200 tokens',evidence:{...evidence,tier:'media',url:'https://community.example/post'}});
   const lease=await call('ingest/official-reviews/vendor-free/claim',{});expect(lease.body.claimed).toBe(true);
-  await call('ingest/offers',[{...offer,valueText:'200 tokens',officialReviewJobId:lease.body.jobId}]);
+  await call('ingest/offers',[{...changedOffer(),officialReviewJobId:lease.body.jobId}]);
   const result=await call('ingest/official-reviews/vendor-free/result',{jobId:lease.body.jobId,status:'matched',reason:'官方匹配',queries:['vendor'],candidates:[evidence.url],chosenUrl:evidence.url,changedFields:['valueText','evidence']});
   expect(result.body.status).toBe('matched');
   expect(((await call('offers?view=all')).body.offers as any[])[0].valueText).toBe(offer.valueText);
@@ -897,7 +949,7 @@ it('does not let unapproved platforms occupy the official verification queue',as
 
 it('official review cannot silently discard a pending update when official terms match the old public version',async()=>{
   await call('ingest/offers',[offer]);await call('admin/offers/vendor-free/approve',{},'admin');
-  await call('ingest/offers',[{...offer,valueText:'200 tokens',evidence:{...evidence,tier:'media',url:'https://community.example/post'}}]);
+  legacyProposal({...offer,valueText:'200 tokens',evidence:{...evidence,tier:'media',url:'https://community.example/post'}});
   const lease=await call('ingest/official-reviews/vendor-free/claim',{});
   const result=await call('ingest/offers',[{...offer,officialReviewJobId:lease.body.jobId}]);
   expect((result.body.results as any[])[0].skipped).toBeTruthy();
