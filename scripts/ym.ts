@@ -26,7 +26,7 @@ const HELP = `用法：ym <命令>
   queue                 看待审（羊毛、新平台、可放开自动上架的信源）
   show <短码>           看一条羊毛的全部字段和官方证据
   approve <短码>        通过
-  reject <短码> [理由]  拒绝。理由开头可加快捷分类：付费套餐 / 非AI / 平台错 / 重复 / 过期 / 额度不明 / 分类错
+  reject <短码> [理由]  拒绝。理由开头可加快捷分类：付费套餐 / 非AI / 平台错 / 重复 / 过期 / 额度不明 / 证据不足 / 分类错
   edit <短码> 字段=值 … [--approve] [--reason 理由]  修改字段（可同时通过）；写上理由，模型以后学得更快。字段：title type valueText usdEstimate claimStart claimEnd endKind creditValidity audience requirements modalities platformId sourceTz claimMethod
   leads [数量]          看最新线索
   dismiss <线索id>      忽略线索
@@ -78,7 +78,7 @@ ${revisions.length ? `修订：${revisions.map((r: any) => r.diff.map((x: any) =
   }
   case 'approve': case 'reject': {
     const text = rest.slice(1).join(' ');
-    const CODES: [RegExp, string][] = [[/付费套餐|套餐自带/, 'paid_bundle'], [/非\s*AI|不是\s*AI/, 'not_ai'], [/平台(错|归属)/, 'wrong_platform'], [/重复/, 'duplicate'], [/过期|已结束/, 'expired'], [/额度不明|没写额度/, 'vague'], [/分类错|类型错/, 'wrong_type']];
+    const CODES: [RegExp, string][] = [[/证据不足|缺少官方证据/, 'insufficient_evidence'], [/付费套餐|套餐自带/, 'paid_bundle'], [/非\s*AI|不是\s*AI/, 'not_ai'], [/平台(错|归属)/, 'wrong_platform'], [/重复/, 'duplicate'], [/过期|已结束/, 'expired'], [/额度不明|没写额度/, 'vague'], [/分类错|类型错/, 'wrong_type']];
     const reasonCode = cmd === 'reject' ? (CODES.find(([re]) => re.test(text))?.[1] ?? (text ? 'other' : undefined)) : undefined;
     const r = await call(`/offers/${rest[0]}/${cmd}`, { reason: text || undefined, reasonCode });
     console.log(`${cmd === 'approve' ? '已通过' : '已拒绝'}：[${r.code}] ${r.title}${r.sourceCleanStreak != null ? `（该信源连续原样通过 ${r.sourceCleanStreak} 条）` : ''}${r.urgent ? '\n⚠️ 48 小时内截止，下一次整点检查会发加急提醒' : ''}`);

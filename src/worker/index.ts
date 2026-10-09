@@ -441,7 +441,7 @@ ingest.get('/corrections', async c => {
   const edits = { results: recentRevs2.filter(v => offerById.has(v.oid)).map(v => { const o = offerById.get(v.oid)!; return { p: o.p, src: o.src, t: o.t, d: v.d, reason: editReason(v.oid, v.at), at: v.at }; }) };
   const rejects = { results: recentReviews.results.filter(r => r.action === 'reject' && (r.reviewer ?? '') !== 'system' && (r.reason || r.code) && r.at >= since && offerById.has(r.oid))
     .slice(0, 200).map(r => { const o = offerById.get(r.oid)!; return { p: o.p, src: o.src, t: o.t, v: o.v, reason: r.reason, code: r.code, at: r.at }; }) };
-  const CODE: Record<string, string> = { paid_bundle: '付费套餐自带的额度', not_ai: '不是 AI 使用额度', wrong_platform: '平台归错', duplicate: '重复', expired: '已过期', vague: '额度不明确', wrong_type: '分类错', wrong_field: '字段错', other: '其他' };
+  const CODE: Record<string, string> = { paid_bundle: '付费套餐自带的额度', not_ai: '不是 AI 使用额度', wrong_platform: '平台归错', duplicate: '重复', expired: '已过期', vague: '额度不明确', insufficient_evidence: '证据不足', wrong_type: '分类错', wrong_field: '字段错', other: '其他' };
   const items = [
     ...edits.results.map(e => ({ p: e.p, src: e.src, at: e.at, line: `「${e.t}」人工修改：${(JSON.parse(e.d) as { field: string; from: unknown; to: unknown }[]).filter(x => JSON.stringify(x.from) !== JSON.stringify(x.to)).map(x => `${x.field} ${JSON.stringify(x.from)} → ${JSON.stringify(x.to)}`).join('；')}${e.reason ? `（理由：${e.reason}）` : ''}` })),
     ...rejects.results.map(r => ({ p: r.p, src: r.src, at: r.at, line: `「${r.t}」（${r.v.slice(0, 40)}）被拒绝：${[r.code ? CODE[r.code] ?? r.code : '', r.reason ?? ''].filter(Boolean).join('，')}` })),

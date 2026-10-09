@@ -26,7 +26,7 @@ const DRY = flag('--dry-run');
 const TYPE_CODE: Record<string, string> = { 注册新人礼: 'new', 应用尝鲜: 'trial', 限时免费开放: 'free', 会员福利: 'perk', 充值赠送: 'topup', 会员免费送: 'gift', 常驻免费额度: 'standing', 申请制: 'apply' };
 const EDITABLE = ['title', 'type', 'valueText', 'usdEstimate', 'usdMax', 'models', 'tags', 'claimStart', 'claimEnd', 'endKind', 'creditValidity',
   'audience', 'requirements', 'modalities', 'platformId', 'sourceTz', 'claimMethod', 'steps', 'evidence', 'publishedAt'];
-const REASON_CODES = ['paid_bundle', 'not_ai', 'wrong_platform', 'duplicate', 'expired', 'vague', 'wrong_type', 'wrong_field', 'other'];
+const REASON_CODES = ['paid_bundle', 'not_ai', 'wrong_platform', 'duplicate', 'expired', 'vague', 'insufficient_evidence', 'wrong_type', 'wrong_field', 'other'];
 
 function token(): string {
   if (process.env.ADMIN_TOKEN) return process.env.ADMIN_TOKEN;

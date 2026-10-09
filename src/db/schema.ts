@@ -135,7 +135,7 @@ export const reviews = sqliteTable('reviews', {
   editedFields: text('edited_fields', { mode: 'json' }).$type<string[]>().notNull().default(sql`'[]'`),
   reviewer: text('reviewer'),
   reason: text('reason'),
-  // 拒绝 / 修改的快捷理由，便于统计：paid_bundle 付费套餐自带、not_ai 不是 AI 额度、wrong_platform 平台归错、duplicate 重复、expired 已过期、vague 额度不明、wrong_type 分类错、wrong_field 字段错、other 其他
+  // 拒绝 / 修改的快捷理由，便于统计：paid_bundle 付费套餐自带、not_ai 不是 AI 额度、wrong_platform 平台归错、duplicate 重复、expired 已过期、vague 额度不明、insufficient_evidence 证据不足、wrong_type 分类错、wrong_field 字段错、other 其他
   reasonCode: text('reason_code'),
   at: text('at').notNull().default(now),
 });
