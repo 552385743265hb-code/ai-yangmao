@@ -34,6 +34,7 @@
 |---|---|
 | [OiiOii 接入](oiioii-onboarding-2026-10-09.md) | 官方账号、语言入口、五个信源、三条待审和送达凭证 |
 | [公开文案与内部审核分离](public-copy-cleanup-2026-10-09.md) | 公开字段边界、历史核验记录迁移与权限验证 |
+| [Qoder 自营产品归属](qoder-owned-product-review-2026-10-09.md) | 公司、旗下产品与第三方领取渠道的区别 |
 | [StepFun 发放归属](stepfun-provider-audit-2026-10-09.md) | 实际领取渠道与厂商转述的区别 |
 | [Firefly 去重](firefly-dedupe-review-2026-10-09.md) | 既有条目、提案及重复处理 |
 | [Codex 重置时间](codex-reset-time-audit-2026-10-08.md) | 独立发放与传播回复、事件日与公告时间 |
