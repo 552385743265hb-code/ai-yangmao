@@ -26,6 +26,7 @@
 - 条款以 Replit 自己的博客和价格页为准，不要采信 OpenAI 等合作方新闻稿。
 
 ## opencode
+- 2026-10-09：Step 5 Preview在OpenCode免费一周的保留条为已上架wofy；StepFun官方在OpenCode公告后约2分钟转述，h16u为重复待审线索，已纠归opencode并标duplicate，未擅自拒绝。发放方OpenCode原文https://x.com/opencode/status/2108206631859454383，模型厂商转述不新建活动；多模态输入不表示免费生图，模态按文本/编程记。
 - 独立免费渠道分两条，各自列模型：① 应用内免费模型（“Free models provided by OpenCode”，不用绑卡）；② Zen API 免费模型（要登录并绑定信用卡，免费模型按 $0 计费，不扣钱）。Go/Go Plus 是付费套餐，不构成第三条福利。
 - Go / Go Plus 的套餐内含额度与不限量模型属于付费套餐自带，不收；只有独立限时额外加赠/重置活动才另核。2026-09-30 的“超值订阅”例外已撤销。
 - 免费模型多数会收集使用数据；实测应用内免费模型常因限流报错。
@@ -373,6 +374,7 @@
 - 本批核验入口：https://www.baichuan-ai.com/?new_locale=zh-cn；https://platform.baichuan-ai.com/prices。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## stepfun
+- 2026-10-09：Step 5 Preview在OpenCode免费一周的保留条为已上架wofy；StepFun官方在OpenCode公告后约2分钟转述，h16u为重复待审线索，已纠归opencode并标duplicate，未擅自拒绝。发放方OpenCode原文https://x.com/opencode/status/2108206631859454383，模型厂商转述不新建活动；多模态输入不表示免费生图，模态按文本/编程记。
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - Step Plan 当前官方档位 Flash Mini/Plus/Pro/Max 为 400M/1600M/8000M/40000M Credit，月费¥49/99/199/699。M=百万，1M Credit=¥1，人民币按7.1折美元。Flash Mini 400M不是$5.63，而是$56.34/月。
 - 月池月末清零不结转、加油包独立30天；Step Plan专属Base URL与普通API余额相互独立，不应混用。
