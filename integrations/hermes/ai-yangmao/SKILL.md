@@ -18,7 +18,7 @@ cd /Volumes/AI/MyWorkspace/AI_Freebies && ./node_modules/.bin/tsx scripts/ym.ts 
 
 下文用 `ym` 代指上面这一整行。
 
-审核依据：[数据合同](../../../docs/data-contract.md)、[通用规则](../../../pipeline/learned-rules.md)、[平台要点](../../../pipeline/platform-notes.md)。命令与权限见 [运维说明](../../../docs/operations.md)。当前收录口径覆盖历史设计决定。
+文档路径以项目根目录 `/Volumes/AI/MyWorkspace/AI_Freebies` 为基准，安装到 Hermes 后也不能按技能安装目录解析：`docs/data-contract.md`、`pipeline/learned-rules.md`、`pipeline/platform-notes.md`；命令与权限见 `docs/operations.md`，完整索引 `docs/README.md`。当前口径覆盖历史设计决定。
 
 ## 命令
 

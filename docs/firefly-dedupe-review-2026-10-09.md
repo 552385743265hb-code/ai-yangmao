@@ -1,5 +1,7 @@
 # Adobe Firefly 首年指定模型无限量：去重复核
 
+> 历史记录：仅证明标题日期的核验、操作与快照；现役机制见[文档索引](README.md)，当前审批、数量、部署及活动有效性须重新读取。
+
 核验日期：2026-10-09。官方文档本次读取仍标更新于2026-09-10，模型表标as of June 11, 2026；这是官网当前展示快照，不保证未来不变。
 
 保留已上架fihl（higgsfield-adobe-firefly-unlimited-promo），实际平台adobe-firefly；拒绝待审重复9uvs（higgsfield-firefly-unlimited-generations-offer），保留重复审核记录；izr2此前已拒。旧ID前缀不作为平台归属事实，不变更现有ID及链接。

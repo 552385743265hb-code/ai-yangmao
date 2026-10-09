@@ -1,5 +1,7 @@
 # 采集 workflow 连续失败 · 2026-10-07
 
+> 历史记录：仅证明标题日期的核验、操作与快照；现役机制见[文档索引](README.md)，当前审批、数量、部署及活动有效性须重新读取。
+
 ## 原因与影响
 
 抽查 10 月 6 日 18:17、10 月 7 日 12:17 / 18:17（UTC）的失败运行，均在采集后的 `/api/ingest/verification-queue` 返回 500，堆栈指向 `verifyExistingOffers`。代码检查 workflow 正常。样本：[最新失败运行](https://github.com/accesaver-byte/ai-yangmao/actions/runs/37665682719)。
