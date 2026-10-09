@@ -132,7 +132,8 @@
 - 本批核验入口：https://help.poe.com/hc/en-us/articles/19944206309524；https://help.poe.com/hc/en-us/articles/19945140063636。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## adobe-firefly
-- 2026-10-08：9uvs实际为Adobe Firefly首年指定模型无限量，非Higgsfield权益；已按官方帮助页修归属与证据docs，记录各档/分辨率、仅网页移动端、升级不延长期限，与已上架同活动重复，待管理员处置。
+- 2026-10-09 fihl完整核表：官方HTML4表中的绿色勾选/红叉已逐格读取；Markdown空单元格不能当作均支持或均不支持。各档并集23模型（去分辨率重复），Pro/4,000/7,000仅6图像，Pro Plus/10,000扩图像与视频，Premium/50,000扩更多视频与高分辨率。门槛准确枚举Pro/Pro Plus/Premium及4,000/7,000/10,000/50,000个人积分订阅，不能笼统写任意4,000以上；模型名单会调整。完整矩阵见docs/firefly-dedupe-review-2026-10-09.md。
+- 2026-10-08：9uvs实际为Adobe Firefly首年指定模型无限量，非Higgsfield权益；已按官方帮助页修归属与证据docs，记录各档/分辨率、仅网页移动端、升级不延长期限，与已上架fihl同活动重复；2026-10-09已按管理员指令拒绝9uvs并保留fihl。
 - 2026-10-08第三轮81p6：Mashable India 2026-10-05报道明确Photoshop专项年度预付首年100%折扣、₹0/12个月，之后₹1999/年自动续费，部分符合资格账号可见，填college信息及UPI AutoPay约₹2token payment；未注明₹2退还，不把UPI步骤解释成官方禁止银行卡。文章没有直达Adobe活动链接，Adobe文字链为媒体站内文章，X引用是Analytics Insight媒体账号。媒体补强线索但不升官方证据等级；详细条款按报道写入并保留待审，发布日期不当活动起点。https://in.mashable.com/tech/114589/adobe-photoshop-free-for-1-year-for-indian-students-check-eligibility-and-how-to-claim。
 - 2026-10-08二次核验81p6：用户补充首年₹0/12个月、续费₹1999/年及强制UPI AutoPay、印度高校资格等线索，尚非管理员明确亲测激活。所给两个通用/in/education/students页面公开实时正文仍为7天试用及Creative Cloud学生价首年₹398.99/月、次年₹699.01/月；不能据通用页面URL证明特殊Photoshop免费促销。请求印度IN动态出口后Photoshop仅空HTML、结账及CC提取连接失败，属覆盖降级，不证明活动不存在。保留专用GEN_IN_PSSTUDENT促销线索，详细条件仅标待核实，不伪造官方摘录，不凭印度普通银行卡支付文档推断本促销必须/不允许某支付方式；待专用活动或₹0结账URL。条目保持待审、media，用户新线索已补字段和内部核验记录。
 - 2026-10-08 印度学生一年Photoshop个人优惠81p6：社区B2C结账链接（GEN_IN_PSSTUDENT）当前普通抓取及JS渲染均到错误页，未确认一年免费、资格、支付或续费条款；不能据错误页判过期。另有正式印度高校免费Creative Cloud Pro计划，依法设立并认证高校完成教育核验及Federated ID配置，机构申请并分配学生/教职员工授权，20多款应用、标准生成合理使用额度及每月25高级积分，每年评估且可停止，不是个人Autopay一年优惠；不嫁接机构计划证据，个人条目保持待审及media。Photoshop是应用不是模型名，删除无依据美元估值。官方资料：https://www.adobe.com/in/creativecloud/buy/education/india-higher-education-offer.html；https://helpx.adobe.com/in/creative-cloud/apps/manage-plans/higher-education-ste-offer-india.html。
@@ -147,7 +148,7 @@
 - 首年从符合条件套餐开通日起连续12个月；升级扩模型但不延长原截止。仅firefly.adobe.com与Firefly移动应用，其他Adobe桌面产品不包含此首年partner无限量。
 - 模型和分辨率逐档不同，Nano Banana2/Flux.2 Pro等Pro可用，更高档有Nano Banana Pro/Kling2.5 Turbo/Veo3.1 Fast等；不得把最高档的19模型整体写成Pro档。完整列表看官方打勾表。
 - 2026-10-01官方报价Pro $19.99/mo；ProPlus与Premium有截至Oct21的首年30%价格优惠，不能把价格优惠截止当首年无限量权益的领取截止。
-- fihl/izr2重复同一首年权益，仍留待审让管理员决定保留一个；两条均不能自动通过。
+- 2026-10-09去重：保留已上架fihl，实际平台Adobe Firefly；izr2此前已拒，新增重复9uvs本次按duplicate拒绝并从待审队列移除。旧ID含higgsfield不表示实际发放方，不重建原ID。
 - 官方生成积分FAQ在Generative AI access for free users without a plan明确每日限定模型免费生成，免费次数、功能和模型会变化，未公布固定数量与具体完整名单。本轮免费daily条目证据改docs，不使用media/未经生成实测的tested，原付费ctu2是档位内含权益，后续收录规则不再保留这类条目；此处仅说明免费档证据，不执行数据库审核。
 - 本批核验入口：https://helpx.adobe.com/firefly/web/get-started/learn-the-basics/current-firefly-promotions.html；https://www.adobe.com/products/firefly/plans.html；https://helpx.adobe.com/creative-cloud/apps/generative-ai/generative-credits-faq.html。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
