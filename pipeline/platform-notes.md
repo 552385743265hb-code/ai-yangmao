@@ -686,6 +686,7 @@
 
 
 ## oiioii
+- 2026-10-09管理员已实测并通过：注册一次赠60与每日签到60为两种独立领取机制，分别保留oiioii-new-user-bonus及oiioii-daily-check-in。FAQ“free tier with daily credits”是每日签到权益的概述，不是另一份每日赠额；新oiioii-oiioii-free-tier-daily-credits已按duplicate拒绝，未来FAQ/价格页的日积分统一复用oiioii-daily-check-in，不因页面不同、缺数字或叫“免费档”重建，不从模型导航推免费模型清单。
 - 2026-10-09 用户明确授权平台准入，site https://www.oiioii.ai；同站简中 https://www.oiioii.ai/zh/、英文 https://www.oiioii.ai/en/、繁中 /zh-Hant/、日文 /ja/。FAQ明确为原生多语言UI；未找到独立大陆版的官方证据，不因语言页面重复建厂商/权益。搜索发现app.oiioii.art同名页面，但未从主站取得官方互链确认，暂记候选入口，不放入证据域名白名单；不要混入名字相近的oioiart.com。
 - 官网页脚直接链接并由FAQ再次列明：X https://x.com/OiiOii_AI、YouTube https://www.youtube.com/@OiiOii_AI、Instagram https://www.instagram.com/oiioii_ai/、Reddit https://www.reddit.com/user/OiiOiiAI/。Discord https://discord.gg/KCwR6burVc 来自官网价格页Help区域。国内公众号/小红书同名账号有第三方提及，尚未确认官方账号ID，不据此授权任意同名账号。
 - 中文主页Help直接链接 https://ecncw7du1qtr.feishu.cn/wiki/R6m5w5RILiS35lkM7PycEUhHnfc；英文主页Help直接链接 https://docs.google.com/document/d/1plIxnmE-XoWP-GbOsZ9jqiz5qKXS7ysg1-rsJ4pifEY/edit 。Google文档正文已读。外部托管文档只登记为参考链接，不能把整个Google Docs/飞书域名认作该厂商官方。稳定自动信源为本域 /price、/faq、/zh/、/changelog、/blog。
