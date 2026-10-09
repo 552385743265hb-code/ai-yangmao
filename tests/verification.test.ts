@@ -180,6 +180,25 @@ const offer = {
 };
 
 describe('official evidence verification', () => {
+  it('records an administrator-tested end without inventing a deadline or rewriting historical official evidence', async () => {
+    await call('ingest/offers', [offer]);
+    await call('admin/offers/vendor-free/approve', {}, 'admin');
+    sqlite.prepare("INSERT INTO offer_proposals(offer_id,candidate,diff) VALUES('vendor-free','{}','[]')").run();
+    const before = sqlite.prepare("SELECT evidence FROM offers WHERE id='vendor-free'").get() as any;
+    const stopped = await call('admin/offers/vendor-free/withdraw', { basis:'tested',reason:'新注册且从未使用的账号已没有试用次数',evidenceUrl:'https://vendor.example/app' }, 'admin');
+    expect(stopped.body.status).toBe('ended');
+    const saved = sqlite.prepare("SELECT * FROM offers WHERE id='vendor-free'").get() as any;
+    expect(saved.claim_end).toBeNull();
+    expect(saved.end_kind).toBe('unknown');
+    expect(saved.review_state).toBe('approved');
+    expect(saved.evidence).toBe(before.evidence);
+    expect(saved.withdrawn_reason).toContain('管理员实测停止领取');
+    expect(saved.review_memo).toContain('仅为确认时刻');
+    expect(sqlite.prepare('SELECT count(*) n FROM offer_proposals').get()).toEqual({n:0});
+    const publicResult = await worker.fetch(new Request('https://local.test/api/offers/vendor-free'),env,{} as ExecutionContext);
+    expect((await publicResult.json() as any).offer.status).toBe('ended');
+    expect((await call('ingest/verification-queue?force=1')).body.offers).toEqual([]);
+  });
   it('keeps old correction text and review history private while administrators can read it', async () => {
     await call('ingest/offers', [offer]);
     await call('admin/offers/vendor-free/approve', {}, 'admin');

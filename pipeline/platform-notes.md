@@ -170,6 +170,8 @@
 - 本批核验入口：https://portal.nousresearch.com/manage-subscription。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## higgsfield
+- 2026-10-09：changelog中2026-10-02的AI Influencer条目写免费角色生成5次，as of October 3是状态参照，非截止，也不足以精确确定赠额开始日；publishedAt用10-02日精度、claimStart/End无明示则留空。仅Character Builder角色图像，不能套Face Swap每日5次或Seedance新人5段视频；视频Motion/Genjutsu另计，当前可用次数按账号Generate页。官方blog/new-ai-influencer标角色生成1.12积分/次及20积分/$1，5次比价$0.28。公告仍保留不等于每个账号现在都还有免费次数。
+- 2026-10-09管理员确认：刚注册、从未使用AI Influencer的新账号已无5次试用。该记录停止作为当前可领取展示，保留历史；用管理员实测的停止领取确认时刻记录withdrawnAt，不把它当活动真实结束日，也不猜10月3日截止。保留原官方历史摘录，不将旧changelog持续存在视为当前仍可领的证明。
 - 2026-10-08复核df8o：官方changelog#credit-reset为2026-09-29T01:24:00Z公布的旧会员补足活动，领取及未用奖励于2026-09-30 23:59 UTC结束；Basic及以上有效计划，将余额补足套餐完整月额，最多额外2000，非人人固定赠2000。已取消但仍有效计划可恢复，升级不多给，奖励先消耗。dateModified不代表新发放，当前未见延期或新一轮；保留历史窗口，不套用Codex单日事件。未点名免费模型不添models；最高$100仅正文比价，不填无依据个人最低赠額。原已批准记录保留，已有更新提案仅补字段待审。来源：https://higgsfield.ai/creator-hub/changelog#credit-reset。
 - 2026-10-08：Discord 200K 视频比赛 q86e 仅前十名获奖者领积分，管理员明确比赛类奖励不收，按 other 拒绝；不得改为会员福利或申请制。电影人申请制资助与比赛分开。
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。

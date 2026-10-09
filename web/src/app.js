@@ -1027,7 +1027,7 @@ function pOffer(id) {
   if (o.pub != null && o.pub !== o.s) hist.push([o.pub, '官方发布']);
   if (o.s != null && o.s <= 0) hist.push([o.s, '活动开始（按官方公布时间）']);
   (o.rev || []).forEach(rv => hist.push([rv.at, `条款修订：${rv.from} → ${rv.to}`]));
-  if (st === 'ended') hist.push([o.withdrawnAt ? dayIdx(new Date(o.withdrawnAt)) : o.e, o.withdrawnAt ? `官方撤回${o.why ? `（${o.why}）` : ''}` : '已到官方公布的领取截止时间']);
+  if (st === 'ended') hist.push([o.withdrawnAt ? dayIdx(new Date(o.withdrawnAt)) : o.e, o.withdrawnAt ? `确认停止领取${o.why ? `（${o.why}）` : ''}` : '已到官方公布的领取截止时间']);
   if (o.vfDay != null) hist.push([o.vfDay, '最近一次成功核验']);
   hist.sort((a, b) => b[0] - a[0]);
   const same = OFFERS.filter(x => x.p === o.p && x.id !== o.id);

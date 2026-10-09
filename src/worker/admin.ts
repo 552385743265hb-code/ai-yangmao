@@ -182,19 +182,23 @@ admin.get('/queue', async c => {
   });
 });
 
-/** 人工核对官方撤回公告后，结束无固定截止时间的权益。 */
+/** 人工确认停止领取：官方撤回，或管理员明确实测；记录确认时刻，不推断实际截止日。 */
 admin.post('/offers/:ref/withdraw', async c => {
   const o = await findOffer(c.env, c.req.param('ref'));
   if (!o) return c.json({ error: '找不到这条羊毛' }, 404);
-  const body = z.object({ reason: z.string().min(4).max(500), evidenceUrl: z.url().refine(url => /^https?:\/\//.test(url)) })
+  const body = z.object({ reason: z.string().min(4).max(500), evidenceUrl: z.url().refine(url => /^https?:\/\//.test(url)), basis: z.enum(['official', 'tested']).default('official') })
     .safeParse(await c.req.json().catch(() => null));
-  if (!body.success) return c.json({ error: '需要官方撤回链接和具体理由', issues: body.error.issues }, 400);
+  if (!body.success) return c.json({ error: '需要证据入口链接和具体理由', issues: body.error.issues }, 400);
   const nowIso = new Date().toISOString();
   const previousEvidence = o.evidence;
-  const evidence = { ...previousEvidence, url: body.data.evidenceUrl, capturedAt: nowIso };
-  await db(c.env).update(s.offers).set({ withdrawnAt: nowIso, withdrawnReason: body.data.reason, evidence, updatedAt: nowIso }).where(eq(s.offers.id, o.id));
+  // 实测确认不能冒充官方撤回公告；原权益的官方历史证据及抓取日期保留。
+  const tested = body.data.basis === 'tested';
+  const reason = tested ? `管理员实测停止领取：${body.data.reason}` : body.data.reason;
+  const evidence = tested ? previousEvidence : { ...previousEvidence, url: body.data.evidenceUrl, capturedAt: nowIso };
+  const reviewMemo = tested ? `${o.reviewMemo ?? ''}\n\n${nowIso} ${reason}；实测入口：${body.data.evidenceUrl}。withdrawnAt仅为确认时刻，未修改未知claimEnd。`.trim() : o.reviewMemo;
+  await db(c.env).update(s.offers).set({ withdrawnAt: nowIso, withdrawnReason: reason, evidence, reviewMemo, updatedAt: nowIso }).where(eq(s.offers.id, o.id));
   await db(c.env).insert(s.offerRevisions).values({ offerId: o.id, author: 'admin',
-    diff: [{ field: 'withdrawnAt', from: o.withdrawnAt, to: nowIso }, { field: 'withdrawnReason', from: o.withdrawnReason, to: body.data.reason }],
+    diff: [{ field: 'withdrawnAt', from: o.withdrawnAt, to: nowIso }, { field: 'withdrawnReason', from: o.withdrawnReason, to: reason }],
     evidenceBefore: previousEvidence, evidenceAfter: evidence });
   await db(c.env).delete(s.offerProposals).where(eq(s.offerProposals.offerId, o.id));
   return c.json({ ok: true, code: shortCode(o.id), status: 'ended' });
