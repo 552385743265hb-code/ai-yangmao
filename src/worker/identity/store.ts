@@ -153,8 +153,10 @@ export class IdentityStore {
       const facts = normalizeTerms(candidate.facts);
       const mechanism = facts.mechanism;
       const spanKey = `${candidate.span.start}:${candidate.span.end}`;
-      const key = await sha256(stableJson([input.observationId,input.extractionVersion,spanKey,mechanism.state==='known'?mechanism.value:candidate.mechanismHint??null]));
-      const candidateId = `candidate_${key}`;
+      const familyKey = await sha256(stableJson([input.observationId,input.extractionVersion,spanKey,mechanism.state==='known'?mechanism.value:candidate.mechanismHint??null]));
+      const factsHash = await hashTerms(facts);
+      let key = await sha256(stableJson(['candidate-assertion-v2',familyKey,factsHash]));
+      let candidateId = `candidate_${key}`;
       const mechanismKey = mechanism.state==='known'?mechanism.value:candidate.mechanismHint??null;
       const ambiguous = input.candidates.some(other => other.inputId !== candidate.inputId
         && other.span.start === candidate.span.start && other.span.end === candidate.span.end
@@ -162,7 +164,9 @@ export class IdentityStore {
         && stableJson(other.rawCandidate) !== stableJson(candidate.rawCandidate));
       const base: IntakeReceipt = {inputId:candidate.inputId,candidateId,canonicalOfferId:null,entityId:null,versionId:null,decisionId:null,taskId:null,outcome:'deferred',retryable:true,reasonCodes:['shadow_pending_resolution']};
       try {
-        const previous = await this.db.prepare('SELECT receipt_json FROM intake_candidates WHERE candidate_key=?').bind(key).first<{receipt_json:string|null}>();
+        const previous = await this.db.prepare('SELECT id,candidate_key,receipt_json FROM intake_candidates WHERE claim_family_key=? AND assertion_facts_hash=? ORDER BY id LIMIT 1').bind(familyKey,factsHash).first<{id:string;candidate_key:string;receipt_json:string|null}>();
+        if(previous){key=previous.candidate_key;candidateId=previous.id;base.candidateId=candidateId;}
+        const conflictingAssertion=await this.db.prepare('SELECT 1 FROM intake_candidates WHERE claim_family_key=? AND assertion_facts_hash<>? LIMIT 1').bind(familyKey,factsHash).first();
         const quoteMap = new Map(candidate.quotes.map(q=>[q.id,q]));
         let grounded = quoteMap.size === candidate.quotes.length && observation.text.slice(candidate.span.start,candidate.span.end) === candidate.span.quote;
         const checkRefs = (value: unknown): void => {
@@ -178,11 +182,10 @@ export class IdentityStore {
         };
         checkRefs(facts);
         const receipt = previous?.receipt_json ? {...intakeReceiptSchema.parse(JSON.parse(previous.receipt_json)),inputId:candidate.inputId} : {...base,reasonCodes:!grounded?['invalid_evidence_reference']:!readable?['source_incomplete']:base.reasonCodes};
-        if (ambiguous) { receipt.reasonCodes=['ambiguous_subitems']; receipt.outcome='deferred'; receipt.retryable=true; }
+        if (ambiguous||conflictingAssertion) { receipt.reasonCodes=['ambiguous_subitems']; receipt.outcome='deferred'; receipt.retryable=true; }
         const command = `candidate:${await sha256(stableJson([input.requestId,candidate.inputId]))}`;
-        const factsHash = await hashTerms(facts);
         const result = await this.storageCommand(command,payloadHash,receipt,(guard,args)=>[
-          this.db.prepare(`INSERT INTO intake_candidates(id,observation_id,extraction_version,span_key,candidate_key,raw_candidate_json,facts_json,facts_hash,state,last_error,receipt_json) SELECT ?,?,?,?,?,?,?,?,'deferred',?,? WHERE ${guard} ON CONFLICT(candidate_key) DO NOTHING`).bind(candidateId,input.observationId,input.extractionVersion,spanKey,key,JSON.stringify({candidate:candidate.rawCandidate,quotes:candidate.quotes,span:candidate.span}),JSON.stringify(facts),factsHash,receipt.reasonCodes.join(','),JSON.stringify(receipt),...args),
+          this.db.prepare(`INSERT INTO intake_candidates(id,observation_id,extraction_version,span_key,candidate_key,claim_family_key,assertion_facts_hash,raw_candidate_json,facts_json,facts_hash,state,last_error,receipt_json) SELECT ?,?,?,?,?,?,?,?,?,?,'deferred',?,? WHERE ${guard} ON CONFLICT(candidate_key) DO NOTHING`).bind(candidateId,input.observationId,input.extractionVersion,spanKey,key,familyKey,factsHash,JSON.stringify({candidate:candidate.rawCandidate,quotes:candidate.quotes,span:candidate.span}),JSON.stringify(facts),factsHash,receipt.reasonCodes.join(','),JSON.stringify(receipt),...args),
           ...input.leadIds.map(leadId=>this.db.prepare(`INSERT INTO lead_candidate_links(lead_id,candidate_id) SELECT ?,? WHERE ${guard} ON CONFLICT DO NOTHING`).bind(leadId,candidateId,...args)),
         ],'EXISTS(SELECT 1 FROM intake_candidates WHERE id=?)',[candidateId]);
         receipts.push(result);

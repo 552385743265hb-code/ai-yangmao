@@ -12,7 +12,7 @@ import { hashTerms,sha256,stableJson } from '../../shared/identity/normalize';
 import { IdentityStore,IdentityError,readReviewDecision } from './store';
 import { MutationBuilder,commitIdentityMutation,readIdentityReceipt,type Binding,type ExpectedRevision } from './commit';
 type OfferRow=typeof tables.offers.$inferSelect;
-type CandidateRow={id:string;observation_id:string;facts_json:string;facts_hash:string;raw_candidate_json:string;receipt_json:string|null;revision:number;entity_id:string|null;state:string;last_error:string|null};
+type CandidateRow={id:string;observation_id:string;facts_json:string;facts_hash:string;raw_candidate_json:string;receipt_json:string|null;revision:number;entity_id:string|null;state:string;last_error:string|null;claim_family_key:string|null;assertion_facts_hash:string|null};
 type EntityRow={routing_generation?:number;id:string;platform_id:string;canonical_offer_id:string|null;business_revision:number;publication_revision:number;current_approved_version_id:string|null};
 type TaskRow={id:string;task_key:string;kind:string;entity_id:string|null;version_id:string|null;base_version_id:string|null;state:string;revision:number;material_revision:number;decision_id:string|null;lease_context_json?:string|null};
 type ResolutionControl={task:TaskRow;actor:string;action:'same'|'new';reason?:string;facts?:CanonicalTermsV1;entityId?:string};
@@ -242,10 +242,12 @@ export class IdentityService {
   if(!candidate)throw new IdentityError(404,'candidate not found');
   const stored=candidate.receipt_json?intakeReceiptSchema.parse(JSON.parse(candidate.receipt_json)):null;
   if(!stored)throw new IdentityError(409,'candidate lacks intake receipt');
+  const ambiguousFamily=!!candidate.claim_family_key&&!!await this.db.prepare('SELECT 1 FROM intake_candidates WHERE claim_family_key=? AND assertion_facts_hash<>? LIMIT 1').bind(candidate.claim_family_key,candidate.assertion_facts_hash??candidate.facts_hash).first();
   const facts=canonicalTermsSchema.parse(control?.facts??JSON.parse(candidate.facts_json)),evidence=await this.evidence({...candidate,facts_json:JSON.stringify(control?.facts??JSON.parse(candidate.facts_json))});
   const builder=new MutationBuilder(this.db,command,payloadHash),expected:ExpectedRevision[]=[];
   if(control){expected.push({kind:'task',id:control.task.id,revision:control.task.revision});builder.require("EXISTS(SELECT 1 FROM review_tasks WHERE id=? AND state IN ('open','checking','manual'))",[control.task.id]);}
   builder.require('EXISTS(SELECT 1 FROM intake_candidates WHERE id=? AND revision=?)',[candidate.id,candidate.revision]);
+  if(candidate.claim_family_key&&!control&&!ambiguousFamily)builder.require('NOT EXISTS(SELECT 1 FROM intake_candidates WHERE claim_family_key=? AND assertion_facts_hash<>?)',[candidate.claim_family_key,candidate.assertion_facts_hash??candidate.facts_hash]);
   const leadRaw=JSON.parse(candidate.raw_candidate_json).candidate?._identityLegacyLead;
   const legacyLead=!control&&leadRaw?z.strictObject({leadId:z.number().int().positive(),resolution:z.string()}).parse(leadRaw):null;
   if(legacyLead)builder.require("EXISTS(SELECT 1 FROM leads WHERE id=? AND status='reviewing' AND resolution=? AND json_extract(resolution,'$.status')='checking')",[legacyLead.leadId,legacyLead.resolution]);
@@ -262,7 +264,7 @@ export class IdentityService {
   const direct=directRows.results.map(readReviewDecision).filter(d=>decisionApplies(d,facts,{entityId:null,versionId:null,candidateId:candidate.id,observationId:candidate.observation_id}));
   if(direct.length===1&&!control){receipt.outcome='duplicate_rejected';receipt.decisionId=direct[0].id;receipt.reasonCodes=['existing_refusal'];builder.require('NOT EXISTS(SELECT 1 FROM review_decisions WHERE supersedes_id=?)',[direct[0].id]);}
   let blockKey:string|null=null,blockRevision=0;
-  if(receipt.outcome!=='duplicate_rejected'&&productId&&mechanism&&!evidence.truncated&&!candidate.last_error?.includes('invalid_evidence')&&!candidate.last_error?.includes('ambiguous_subitems')) {
+  if(receipt.outcome!=='duplicate_rejected'&&productId&&mechanism&&!evidence.truncated&&!candidate.last_error?.includes('invalid_evidence')&&(control||(!candidate.last_error?.includes('ambiguous_subitems')&&!ambiguousFamily))) {
    blockKey=productId+':'+mechanism;
    blockRevision=(await this.db.prepare('SELECT revision FROM identity_blocks WHERE block_key=?').bind(blockKey).first<{revision:number}>())?.revision??0;
    expected.push({kind:'block',id:blockKey,revision:blockRevision});
@@ -343,7 +345,7 @@ export class IdentityService {
     receipt.canonicalOfferId=offerId;entity.canonical_offer_id=offerId;
    }
    // Alias evidence is independently grounded; arbitrary model campaign IDs are never registered.
-   if(!(control?.action==='new'&&control.entityId)&&facts.occurrenceAnchor.state==='known'&&evidence.sourceVerified&&!evidence.truncated&&facts.occurrenceAnchor.evidenceRefs.some(ref=>evidence.quoteById[ref]?.includes(facts.occurrenceAnchor.state==='known'?facts.occurrenceAnchor.value:''))) {
+   if(control?.action!=='new'&&facts.occurrenceAnchor.state==='known'&&evidence.sourceVerified&&!evidence.truncated&&facts.occurrenceAnchor.evidenceRefs.some(ref=>evidence.quoteById[ref]?.includes(facts.occurrenceAnchor.state==='known'?facts.occurrenceAnchor.value:''))) {
     builder.insert('identity_aliases',{id:crypto.randomUUID(),namespace:'official_campaign',alias_key:facts.occurrenceAnchor.value,scope_key:blockKey!,entity_id:entity.id,basis_json:JSON.stringify({observationId:candidate.observation_id,evidenceRefs:facts.occurrenceAnchor.evidenceRefs,rule:RESOLVER_VERSION})},'nothing');
     builder.assert("EXISTS(SELECT 1 FROM identity_aliases a JOIN benefit_entities owner ON owner.id=a.entity_id LEFT JOIN benefit_entities root ON root.id=owner.merged_into WHERE a.namespace='official_campaign' AND a.alias_key=? AND a.scope_key=? AND a.status='active' AND ((owner.state='active' AND owner.id=?) OR (owner.state='merged' AND root.state='active' AND root.id=? AND root.platform_id=owner.platform_id)))",[facts.occurrenceAnchor.value,blockKey!,entity.id,entity.id]);
    }
