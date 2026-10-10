@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { Readability } from '@mozilla/readability';
 import { parseHTML } from 'linkedom';
 import { assertSafeUrl, fetchPublic, UnsafeTargetError } from './safe-fetch';
+import { officialStatusKey } from '../src/shared/dedupe';
 
 export const UA = 'Mozilla/5.0 (compatible; ai-yangmao-bot/0.1; +https://ai-yangmao.com)';
 export async function api<T = unknown>(path: string, body?: unknown): Promise<T> {
@@ -64,13 +65,34 @@ export function readableText(html: string, url: string): string {
   } catch { return ''; }
 }
 
+/** Read a first-party embed only after binding its post ID and author to the requested status. */
+export function syndicatedPostText(url:string,payload:unknown):string|null {
+  const key=officialStatusKey(url);if(!key||!payload||typeof payload!=='object')return null;
+  const [handle,id]=key.slice('x.com/'.length).split('/status/');
+  const post=payload as {id_str?:unknown;user?:{screen_name?:unknown};text?:unknown;created_at?:unknown;truncated?:unknown};
+  if(post.id_str!==id||typeof post.user?.screen_name!=='string'||post.user.screen_name.toLowerCase()!==handle||typeof post.text!=='string'||!post.text.trim()||post.truncated===true)return null;
+  return `@${post.user.screen_name}\n${typeof post.created_at==='string'?post.created_at+'\n':''}${post.text}`;
+}
+
 /**
  * 抓官方页面正文，三层兜底：
  * 1. 直接抓取，Readability 正文和整页纯文本里，取羊毛相关内容更多的那个（Readability 有时会丢掉定价说明）；
  * 2. 字数仍然太少（多半是脚本渲染的页面），改用 Jina Reader，要 Markdown 格式以保留表格结构。
  */
-export async function fetchPage(url: string, opts: { timeoutMs?: number; tries?: number; minimumTextLength?: number } = {}): Promise<{ sourceVerified?: boolean; text: string; via: 'readability' | 'direct' | 'jina'; finalUrl: string }> {
+export async function fetchPage(url: string, opts: { timeoutMs?: number; tries?: number; minimumTextLength?: number } = {}): Promise<{ sourceVerified?: boolean; text: string; via: 'readability' | 'direct' | 'jina'; finalUrl: string; fetchedUrl?:string }> {
   assertSafeUrl(url);
+  const status=officialStatusKey(url);
+  if(status){
+    const id=status.split('/status/')[1];
+    const fetchedUrl=`https://cdn.syndication.twimg.com/tweet-result?id=${id}&lang=en&token=0`;
+    try{
+      const response=await fetchTextWithUrl(fetchedUrl,{...opts,tries:1,accept:'application/json'});
+      if(new URL(response.finalUrl).hostname!=='cdn.syndication.twimg.com')throw new Error('Unexpected embed host');
+      const text=syndicatedPostText(url,JSON.parse(response.text));
+      // finalUrl is the verified canonical post; fetchedUrl records the physical first-party reader.
+      if(text)return {text,via:'direct',finalUrl:url,fetchedUrl,sourceVerified:true};
+    }catch{/* Failed/mismatched embed is not evidence; continue through the normal readers. */}
+  }
   let text = '', via: 'readability' | 'direct' = 'direct', finalUrl = url;
   try {
     const page = await fetchTextWithUrl(url, { accept: 'text/html', ...opts });

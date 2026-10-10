@@ -14,7 +14,7 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import * as s from '../db/schema';
 import { isoDate, leadIn, offerIn, runIn } from '../shared/ingest';
-import { differentOccurrence, findDuplicate, crossPlatformDuplicate, sameRecurringCreditPlan } from '../shared/dedupe';
+import { differentOccurrence, findDuplicate, crossPlatformDuplicate, sameRecurringCreditPlan, sameModelAnnouncement } from '../shared/dedupe';
 import { activeOnDate, isClaimable, liveStatus, missingEvidence } from '../shared/lifecycle';
 import { admin } from './admin';
 import { feishuAdmin, runScheduled } from './feishu';
@@ -246,7 +246,7 @@ ingest.post('/offers', async c => {
       && !o.officialReviewJobId && !o.leadReviewJobId && !ambiguous && missing.length === 0 && !/未写明|不明确/.test(o.valueText) && !o.requirements.some(requirement => requirement === 'unknown' || /未写明/.test(requirement));
     const [prev] = await d.select().from(s.offers).where(eq(s.offers.id, o.id));
     if(o.leadReviewJobId&&prev){
-      if(o.sameOccurrenceAs!==prev.id&&!sameBenefit(o,prev)&&!sameRecurringCreditPlan(identity,{...prev,evidenceUrl:prev.evidence.url,eventDay:resetEventDay(prev)})){results.push({id:o.id,error:'生成的ID与已有活动冲突，尚未证明同一活动，请人工核对'});continue;}
+      if(o.sameOccurrenceAs!==prev.id&&!sameBenefit(o,prev)&&!sameRecurringCreditPlan(identity,{...prev,evidenceUrl:prev.evidence.url,eventDay:resetEventDay(prev)})&&!sameModelAnnouncement(identity,{...prev,evidenceUrl:prev.evidence.url,eventDay:resetEventDay(prev)})){results.push({id:o.id,error:'生成的ID与已有活动冲突，尚未证明同一活动，请人工核对'});continue;}
       results.push({id:prev.id,linkedExisting:true,reviewState:prev.reviewState});continue;
     }
     const [existingProposal] = prev ? await d.select().from(s.offerProposals).where(eq(s.offerProposals.offerId, o.id)) : [];
@@ -461,6 +461,7 @@ ingest.post('/verify', async c => {
   if (body.data.trustedDirect !== true) return c.json({ verified: false, sourceUnverified: true });
   const currentVersion = and(eq(s.offers.id,o.id),eq(s.offers.updatedAt,o.updatedAt),eq(s.offers.reviewState,'approved'));
   if (body.data.finalUrl && new URL(body.data.finalUrl).hostname.toLowerCase() !== new URL(o.evidence.url).hostname.toLowerCase()) {
+    if(o.verifyResult==='evidence_missing')return c.json({verified:false,redirectedOutsideOfficialHost:true,unchanged:true});
     const changed = await d.update(s.offers).set({ verifyResult: 'evidence_missing', updatedAt: new Date().toISOString() }).where(currentVersion).returning({id:s.offers.id});
     return c.json({ verified: false, redirectedOutsideOfficialHost: true, stale: !changed.length });
   }
@@ -476,6 +477,8 @@ ingest.post('/verify', async c => {
   const evidence = verified && body.data.processedChange && body.data.pageHash && !proposal
     ? { ...o.evidence, pageHash: body.data.pageHash } : o.evidence;
   const nowIso = new Date().toISOString();
+  // The same failed probe must not refresh reviewVersion and resend the same card.
+  if(!verified&&o.verifyResult==='evidence_missing')return c.json({verified:false,unchanged:true,matchedExcerpts:0});
   const changed = await d.update(s.offers).set(verified
     ? { lastVerifiedAt: nowIso, verifyResult: unchangedTerms ? '必要业务字段没有变化' : '官方证据原文仍在当前页面', evidence, updatedAt: nowIso }
     : { verifyResult: 'evidence_missing', evidence, updatedAt: nowIso })

@@ -21,6 +21,10 @@ export const normUrl = (value: string) => {
     return (host==='twitter.com'?'x.com':host) + url.pathname.replace(/\/+$/,'') + url.search;
   } catch { return value.trim(); }
 };
+/** A fixed social announcement is one source version, not a mutable pricing page. */
+export function officialStatusKey(value:string):string|null {
+  try{const url=new URL(value);const host=url.hostname.toLowerCase().replace(/^www\./,'');const match=url.pathname.match(/^\/([^/]+)\/status\/(\d+)\/?$/);return ['x.com','twitter.com'].includes(host)&&match?`x.com/${match[1].toLowerCase()}/status/${match[2]}`:null;}catch{return null;}
+}
 // 档位、金额不同的标题（如 2,999 元档 / 4,999 元档）只差几个数字，不能当成同一条
 const digits = (s: string) => (s.normalize('NFKC').match(/\d[\d,.]*/g) ?? []).map(x => x.replace(/,/g, '')).sort().join('|');
 
@@ -94,11 +98,25 @@ export function sameRecurringCreditPlan(a: Incoming,b:DedupeCandidate):boolean {
   return common.length>0&&common.every(key=>Number.isFinite(A.get(key))&&A.get(key)===B.get(key));
 }
 
+// An abbreviated description of the same model-extension post must reuse the main ID.
+// Model scope + offer type + channel/region/eligibility qualifiers protect independent offers.
+export function sameModelAnnouncement(a:Incoming,b:DedupeCandidate):boolean {
+  if(a.eventDay||b.eventDay||a.type!=='free'||b.type!=='free'||!['auto','signup'].includes(a.claimMethod??'')||!['auto','signup'].includes(b.claimMethod??''))return false;
+  const post=officialStatusKey(a.evidenceUrl);if(!post||post!==officialStatusKey(b.evidenceUrl))return false;
+  const modelKey=(o:Incoming)=>o.models?.map(titleKey).sort().join('|');
+  if(!a.models?.length||modelKey(a)!==modelKey(b))return false;
+  if(/重置|reset/i.test(a.title+' '+b.title))return false;
+  const extended=(o:Incoming)=>/延长|延期|extend/i.test(o.title);
+  if(extended(a)!==extended(b))return false;
+  const qualifiers=(o:Incoming)=>(o.title.match(/\bapi\b|zen|\bapp\b|\bcli\b|\bweb\b|应用|插件|网页版|桌面|订阅|邀请码|国际|国内|海外|中国|美区|学生|教师|企业|团队|个人/gi)??[]).map(titleKey).sort().join('|');
+  return qualifiers(a)===qualifiers(b);
+}
+
 export function findDuplicate<T extends DedupeCandidate>(o: Incoming, existing: T[]): T | undefined {
   // Prefer the accepted canonical record over a rejected duplicate alias.
   const ranked=[...existing].sort((a,b)=>(a.reviewState==='approved'?0:a.reviewState==='pending'?1:2)-(b.reviewState==='approved'?0:b.reviewState==='pending'?1:2));
   return ranked.find(e => e.platformId === o.platformId && !ambiguousReset(o,e) && (
-    sameRecurringCreditPlan(o,e) || (!o.eventDay&&!e.eventDay&&genericDailyCredits(o)&&genericDailyCredits(e)) || (!!monthlyApiScope(o)&&monthlyApiScope(o)===monthlyApiScope(e)) || sameRecurringAlias(o,e) || sameRepostedWeek(o,e) || (!differentOccurrence(o,e) && (
+    sameModelAnnouncement(o,e) || sameRecurringCreditPlan(o,e) || (!o.eventDay&&!e.eventDay&&genericDailyCredits(o)&&genericDailyCredits(e)) || (!!monthlyApiScope(o)&&monthlyApiScope(o)===monthlyApiScope(e)) || sameRecurringAlias(o,e) || sameRepostedWeek(o,e) || (!differentOccurrence(o,e) && (
     (digits(e.title) === digits(o.title) && similarity(e.title, o.title) >= 0.85) ||
     (normUrl(e.evidenceUrl) === normUrl(o.evidenceUrl) && digits(e.valueText) === digits(o.valueText) && similarity(e.valueText, o.valueText) >= 0.85)))));
 }

@@ -596,7 +596,7 @@ describe('review gates and preserved public version', () => {
   ])('requires review for necessary field %s and preserves the published version', async (field, value) => {
     await call('ingest/offers', [offer]);
     await call('admin/offers/vendor-free/approve', {}, 'admin');
-    const changed = await call('ingest/offers', [{ ...offer, sourceText:'Replacement terms for '+field, evidence:{...evidence,excerpts:{benefit:'Replacement terms for '+field}}, [field]: value,
+    const changed = await call('ingest/offers', [{ ...offer, sourceText:'Free 200 tokens. Replacement terms for '+field, evidence:{...evidence,excerpts:{benefit:'Free 200 tokens. Replacement terms for '+field}}, [field]: value,
       ...(field === 'claimEnd' ? { endKind: 'date' } : {}),
       ...(field === 'usdMax' ? { usdEstimate: 1 } : {}) }]);
     expect((changed.body.results as { reviewState: string }[])[0].reviewState).toBe('pending_update');
@@ -1162,4 +1162,31 @@ describe('cross-page recurring plan identity',()=>{
   expect(sqlite.prepare('SELECT id FROM offers WHERE id=?').get(alias.id)).toBeUndefined();
   expect(sqlite.prepare('SELECT id FROM offers WHERE id=?').get(watermark.id)).toBeDefined();
  });
+});
+
+
+describe('repeated failed evidence checks are idempotent',()=>{
+ it('does not advance reviewVersion for repeated missing quotes or outside-host redirects',async()=>{
+  await call('ingest/offers',[offer]);await call('admin/offers/'+offer.id+'/approve',{},'admin');
+  const probe={trustedDirect:true,offerId:offer.id,url:evidence.url,text:'Unrelated navigation only.'};
+  expect((await call('ingest/verify',probe)).body.verified).toBe(false);
+  const before=sqlite.prepare('SELECT * FROM offers WHERE id=?').get(offer.id);
+  for(const next of [probe,{...probe,finalUrl:'https://unrelated.example/login'},probe]){expect((await call('ingest/verify',next)).body).toMatchObject({verified:false,unchanged:true});}
+  expect(sqlite.prepare('SELECT * FROM offers WHERE id=?').get(offer.id)).toEqual(before);
+  const recovered=await call('ingest/verify',{...probe,text:Object.values(evidence.excerpts).join(' ')});expect(recovered.body.verified).toBe(true);
+ });
+});
+
+
+it('links a model-extension status alias during old lead recheck without creating another review',async()=>{
+ sqlite.prepare("UPDATE platforms SET x_handles='[\"@vendor\"]' WHERE id='vendor'").run();
+ const original={...offer,id:'model-extension',type:'free',claimMethod:'auto',models:['Space Bunny'],title:'Vendor Space Bunny 模型免费期延长数日',valueText:'免费期延长数日',evidence:{...evidence,tier:'official',url:'https://x.com/vendor/status/2107398361733104102'}};
+ await call('ingest/offers',[original]);const approval=await call('admin/offers/'+original.id+'/approve',{},'admin');expect(approval.body.error).toBeUndefined();expect(approval.status).toBe(200);
+ const before=sqlite.prepare('SELECT * FROM offers WHERE id=?').get(original.id);
+ sqlite.prepare("INSERT INTO leads(id,origin,url,title,status) VALUES(99,'v2ex','https://community.example/post','Space Bunny免费期延长','reviewing')").run();
+ const lease=await call('ingest/lead-reviews/99/claim',{});
+ const r=await call('ingest/offers',[{...original,id:'another-extension-key',claimMethod:'signup',title:'Space Bunny 免费期延长',valueText:'免费tier开放，未写具体天数',leadId:99,leadReviewJobId:lease.body.jobId}]);
+ expect(r.body.results[0]).toMatchObject({id:original.id,linkedExisting:true,reviewState:'approved'});
+ expect(sqlite.prepare('SELECT * FROM offers WHERE id=?').get(original.id)).toEqual(before);
+ expect(sqlite.prepare('SELECT count(*) n FROM offers').get()).toMatchObject({n:1});
 });

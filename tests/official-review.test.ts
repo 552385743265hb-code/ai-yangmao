@@ -58,3 +58,14 @@ it('only marks reader content attributable when its source metadata matches and 
     :new Response('tiny')));
   expect((await fetchPage('https://vendor.example/free',{tries:1})).sourceVerified).toBe(false);
 });
+
+
+it('validates the identity of a first-party status embed and preserves reader provenance',async()=>{
+ const {fetchPage,syndicatedPostText}=await import('../pipeline/lib');
+ const url='https://x.com/vendor/status/2107398361733104102';const post={id_str:'2107398361733104102',user:{screen_name:'Vendor'},text:'Space Bunny free period extended.',created_at:'2026-10-06T09:11:37.000Z'};
+ expect(syndicatedPostText(url,post)).toContain(post.text);
+ for(const wrong of [{...post,id_str:'other'}, {...post,user:{screen_name:'Imposter'}},{...post,text:''},{...post,truncated:true}])expect(syndicatedPostText(url,wrong)).toBeNull();
+ vi.stubGlobal('fetch',vi.fn(async()=>new Response(JSON.stringify(post),{headers:{'content-type':'application/json'}})));
+ const result=await fetchPage(url,{tries:1});
+ expect(result).toMatchObject({via:'direct',sourceVerified:true,finalUrl:url});expect(result.fetchedUrl).toContain('cdn.syndication.twimg.com/tweet-result');expect(result.text).toContain(post.text);
+});

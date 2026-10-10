@@ -91,3 +91,10 @@ it('does not collapse independent mechanisms, pools, regions, models, amounts or
   {evidenceUrl:'https://www.sensenova.cn/another-product'},
  ]) expect(findDuplicate({...senseAlias,...change},[senseCanonical]),JSON.stringify(change)).toBeUndefined();
 });
+
+const spaceOriginal={id:'opencode-opencode-space-bunny-free-period-extension',platformId:'opencode',reviewState:'approved',type:'free',claimMethod:'auto',models:['Space Bunny'],title:'OpenCode Space Bunny 模型免费期延长数日',valueText:'官方未写明具体免费额度与延长天数：Space Bunny 模型免费期延长数日，在 OpenCode 免费层中继续免费提供调用',claimStart:'2026-10-06',evidenceUrl:'https://x.com/opencode/status/2107398361733104102'};
+const spaceAlias={...spaceOriginal,id:'opencode-opencode-spacebunny-free-tier',reviewState:'pending',claimMethod:'signup',title:'Space Bunny 免费期延长',valueText:'Space Bunny 模型在 OpenCode 免费 tier 限时免费开放，具体天数未明确，模型正在调校中',claimStart:null};
+it('identifies Space Bunny aliases by the same model and official extension announcement',()=>{expect(findDuplicate(spaceAlias,[spaceOriginal])?.id).toBe(spaceOriginal.id);});
+it('does not merge separate announcements, mechanisms, model scopes or channels',()=>{
+ for(const delta of [{evidenceUrl:'https://x.com/opencode/status/2107398361733104103'}, {models:['Other Model']}, {title:'Space Bunny Zen API 免费期延长'}, {claimMethod:'code'}, {type:'new'}, {title:'Space Bunny 发布免费'}, {title:'Space Bunny 学生免费期延长'}, {eventDay:'2026-10-10'}])expect(findDuplicate({...spaceAlias,...delta},[spaceOriginal]),JSON.stringify(delta)).toBeUndefined();
+});

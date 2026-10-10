@@ -63,6 +63,8 @@ gh workflow run collect.yml --ref main -f fast_leads=true -f lead_limit=50
 
 ## 证据拦截的处置
 
+重复的evidence_missing核验失败不再推进条目reviewVersion，避免同一失败不断生成新提醒；官方正文恢复时仍正常刷新核验。X/status的第一方嵌入读取须绑定ID/作者，finalUrl为验证后的原帖地址，fetchedUrl记录实际cdn.syndication.twimg.com读取地址；失败或身份不符回退普通读取，不将导航或登录页当原帖。
+
 “当前官方页面未能再次确认原条款”来自evidence_missing，和字段拦截数不同。先核对证据URL、跳转、默认页/弹窗及保存摘录；如WorkBuddy个人有效期藏在完整规则弹窗，普通抓取缺失不能直接判结束。人工读到当前官方规则后可修正摘录并用`retested`记录已核实仍有效；这不是接受更新，也不把site证据改成tested。只有管理员明确亲测过权益才用tested级别。
 
 管理员亲测停止领取时，管理接口`POST /api/admin/offers/:ref/withdraw`可传`basis:"tested"`、reason及实测入口evidenceUrl；默认basis为official。withdrawnAt是确认时刻，实际截止未知仍留空。结束会清除过时提案、退出可领和自动复核队列，历史approved记录保留。
