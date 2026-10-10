@@ -20,5 +20,8 @@
   "productionCanary": "not_run",
   "productionOperations": 0,
   "modelCalls": 0,
-  "externalMessages": 0
+  "externalMessages": 0,
+  "identityPrecision": null,
+  "identityUncertainRate": null,
+  "falseSame": null
 }

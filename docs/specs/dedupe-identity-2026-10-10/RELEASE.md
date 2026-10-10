@@ -42,7 +42,7 @@ npx tsx scripts/identity/evaluate.ts --input /approved/pairs.json --environment 
 npx tsx scripts/identity/evaluate.ts --input /approved/pairs.json --environment redacted_local --hash <first-output-corpusHash>
 ```
 
-先冻结并人工确认 hash；任何标签、证据或事实改变使旧 hash 失效。报告各类分母、automatic precision（预测 SAME 且细分关系正确 / 所有预测 SAME）、duplicate recall、changed recall、uncertain rate 和 false merge。样本至少 20/20/10/10，重复类至少 8 个跨语言/来源。这个工具只跑纯比较器，不会发模型请求或写数据库；false reject / duplicate review leak 为 null，须另用该批语料的服务流程回放补齐，故即使语义门槛通过也不会自动把 fieldAcceptance 改成通过。
+先冻结并人工确认 hash；任何标签、证据或事实改变使旧 hash 失效。报告各类分母、automatic precision（预测 SAME 且细分关系正确 / 所有原始 SAME，包括 INSUFFICIENT）与 identity precision（身份关系正确 / 所有原始 SAME）、duplicate recall、changed recall、uncertain rate 和 false merge/falseSame。原始 relation、termsRelation、entityId 均保留，条款不足不能藏掉已作出的 SAME 判断。样本至少 20/20/10/10，重复类至少 8 个跨语言/来源。这个工具只跑纯比较器，不会发模型请求或写数据库；false reject / duplicate review leak 为 null，须另用该批语料的服务流程回放补齐，故即使语义门槛通过也不会自动把 fieldAcceptance 改成通过。
 
 ## 兼容回滚包
 
@@ -58,4 +58,6 @@ npx tsx scripts/identity/evaluate.ts --input /approved/pairs.json --environment 
 
 使用 Node 24.21.0。完整命令和最新结果见 [P3-C-EVIDENCE.md](P3-C-EVIDENCE.md)。`tests/fixtures/identity/wrangler.jsonc` 是隔离配置；每次真实 D1 演练使用新的 `.superpowers/sdd/IMPLEMENTATION/merge-d1-*` 目录。只运行 `--local`，不加载项目真实凭据或发送器。
 
-`metrics.ts` 记录逐条 SQL（batch 内每条单独计数）、D1 暴露的 rows_read/rows_written、调用耗时和错误；first/raw 不提供元数据的语句计为 metadataMissing，部分和不冒充全量。返回 raw 数组保持重复列，不能为采集指标改变 SQL 的行为。重试数量和最早计划时间另行输出；当前候选没有排队起始时间，队龄明确未测。本地 wall time 不表示生产 CPU 或线上时延。
+`metrics.ts` 记录逐条 SQL（batch 内每条单独计数）、D1 暴露的 rows_read/rows_written、累计数据库调用耗时和错误；first/raw 不提供元数据的语句计为 metadataMissing，部分和不冒充全量。返回 raw 数组保持重复列，不能为采集指标改变 SQL 的行为。重试数量和最早计划时间另行输出；当前候选没有排队起始时间，队龄明确未测。`elapsedMs` 累计数据库调用时长，并行调用会重复计时，不能当作整个操作 wall time 或生产 CPU/延迟；字段名更改列为延期 Minor。
+
+resolver identity-v2 对自动锚点下的缺失/新增事实保持身份待判；这可能增加人工任务，但防止模型欠抽取的独立子权益被当成重复吞掉。人工明确 same、或既有拒绝规则点名且只补齐该缺项，仍可进入受控待审；普通官方 alias 不是人工确认。

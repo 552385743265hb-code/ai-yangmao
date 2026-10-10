@@ -230,6 +230,48 @@
     ]
   },
   {
+    "log": "p3c-reopen-preservation-red.log",
+    "sha256": "f4c2c209480f614f007d20fc5213b84b76330f2271a2ee3b7a4462b67d8c121a",
+    "failures": [
+      {
+        "failure": "tests/identity-service.test.ts > A26 an explicit missing-fact refusal policy permits one pending evidence reopen after the named fact is supplied",
+        "message": "AssertionError: expected { inputId: 'supplied', …(10) } to match object { outcome: 'evidence_reopen', …(1) }"
+      }
+    ]
+  },
+  {
+    "log": "p3c-review-boundary-red.log",
+    "sha256": "b486503b4946e2503e385ca0b6d79017864dec350fd9902a9cf457d7f96a9ea2",
+    "failures": [
+      {
+        "failure": "tests/identity-compare.test.ts > A08/A10 an automatic anchor with omitted or newly discovered facts cannot prove the same activity",
+        "message": "AssertionError: expected { relation: 'SAME', …(9) } to match object { relation: 'UNRESOLVED', …(2) }"
+      },
+      {
+        "failure": "tests/identity-evaluation.test.ts > raw SAME with insufficient terms still counts as a false identity match for a DISTINCT gold control",
+        "message": "AssertionError: expected +0 to be 1 // Object.is equality"
+      },
+      {
+        "failure": "tests/identity-evaluation.test.ts > tagged test results never assert complete contract subcase coverage",
+        "message": "AssertionError: expected undefined to be 'passed' // Object.is equality"
+      },
+      {
+        "failure": "tests/identity-service.test.ts > A08/A10 a retained automatic campaign alias cannot consume an under-extracted independent claim as duplicate pending",
+        "message": "AssertionError: expected { inputId: 'independent', …(10) } to match object { …(3) }"
+      }
+    ]
+  },
+  {
+    "log": "p3c-review-red.log",
+    "sha256": "b58dda4d0c68e243ee5852db08f12136ea86fac2b83ccf6f6ed64dc052dec0bf",
+    "failures": [
+      {
+        "failure": "tests/identity-evaluation.test.ts > raw SAME with insufficient terms still counts as a false identity match for a DISTINCT gold control",
+        "message": "AssertionError: expected +0 to be 1 // Object.is equality"
+      }
+    ]
+  },
+  {
     "log": "task1-red-behavior.log",
     "sha256": "d848d560a3cf49d75c1709aeb918dda8500508c5f371f49ddd131ca1432a6556",
     "failures": [

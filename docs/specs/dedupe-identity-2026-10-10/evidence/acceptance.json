@@ -1,11 +1,13 @@
 {
-  "schemaVersion": "identity-acceptance-v1",
-  "status": "passed",
-  "scope": "Executed synthetic assertions, with manual comparison to ACCEPTANCE.md; not human-corpus or production acceptance.",
+  "schemaVersion": "identity-acceptance-v2",
+  "contractCoverage": "not_established_by_reporter",
+  "taggedTestsStatus": "passed",
+  "scope": "Only executed tagged assertions. Complete contract subcase coverage requires an explicit separate review; not human-corpus or production acceptance.",
   "scenarios": [
     {
       "id": "A01",
-      "status": "passed",
+      "taggedTestsStatus": "passed",
+      "contractCoverage": "not_established_by_reporter",
       "tests": [
         {
           "file": "tests/identity-normalize.test.ts",
@@ -32,7 +34,8 @@
     },
     {
       "id": "A02",
-      "status": "passed",
+      "taggedTestsStatus": "passed",
+      "contractCoverage": "not_established_by_reporter",
       "tests": [
         {
           "file": "tests/identity-normalize.test.ts",
@@ -47,7 +50,8 @@
     },
     {
       "id": "A03",
-      "status": "passed",
+      "taggedTestsStatus": "passed",
+      "contractCoverage": "not_established_by_reporter",
       "tests": [
         {
           "file": "tests/identity-normalize.test.ts",
@@ -80,7 +84,8 @@
     },
     {
       "id": "A04",
-      "status": "passed",
+      "taggedTestsStatus": "passed",
+      "contractCoverage": "not_established_by_reporter",
       "tests": [
         {
           "file": "tests/identity-observations.test.ts",
@@ -123,7 +128,8 @@
     },
     {
       "id": "A05",
-      "status": "passed",
+      "taggedTestsStatus": "passed",
+      "contractCoverage": "not_established_by_reporter",
       "tests": [
         {
           "file": "tests/identity-adapters.test.ts",
@@ -149,7 +155,8 @@
     },
     {
       "id": "A06",
-      "status": "passed",
+      "taggedTestsStatus": "passed",
+      "contractCoverage": "not_established_by_reporter",
       "tests": [
         {
           "file": "tests/identity-adapters.test.ts",
@@ -202,7 +209,8 @@
     },
     {
       "id": "A07",
-      "status": "passed",
+      "taggedTestsStatus": "passed",
+      "contractCoverage": "not_established_by_reporter",
       "tests": [
         {
           "file": "tests/identity-adapters.test.ts",
@@ -223,11 +231,17 @@
     },
     {
       "id": "A08",
-      "status": "passed",
+      "taggedTestsStatus": "passed",
+      "contractCoverage": "not_established_by_reporter",
       "tests": [
         {
           "file": "tests/identity-compare.test.ts",
           "name": "A08 omissions never erase known facts; wholly vague candidates are insufficient",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-compare.test.ts",
+          "name": "A08/A10 an automatic anchor with omitted or newly discovered facts cannot prove the same activity",
           "status": "passed"
         },
         {
@@ -242,12 +256,18 @@
         },
         {
           "file": "tests/identity-service.test.ts",
-          "name": "A08 a partial duplicate reuses the pending version without reinserting it",
+          "name": "A08 a partial candidate waits for identity confirmation without reinserting a pending version",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-service.test.ts",
+          "name": "A08/A10 a retained automatic campaign alias cannot consume an under-extracted independent claim as duplicate pending",
           "status": "passed"
         }
       ],
       "redLogs": [
         "p2c-review-red.log",
+        "p3c-review-boundary-red.log",
         "task4-protection-red.log"
       ],
       "bootstrapRedLogs": [
@@ -256,7 +276,8 @@
     },
     {
       "id": "A09",
-      "status": "passed",
+      "taggedTestsStatus": "passed",
+      "contractCoverage": "not_established_by_reporter",
       "tests": [
         {
           "file": "tests/identity-compare.test.ts",
@@ -277,7 +298,8 @@
     },
     {
       "id": "A10",
-      "status": "passed",
+      "taggedTestsStatus": "passed",
+      "contractCoverage": "not_established_by_reporter",
       "tests": [
         {
           "file": "tests/identity-compare.test.ts",
@@ -288,16 +310,28 @@
           "file": "tests/identity-compare.test.ts",
           "name": "A10 independent mechanisms cannot be merged merely because the same umbrella campaign is quoted",
           "status": "passed"
+        },
+        {
+          "file": "tests/identity-compare.test.ts",
+          "name": "A08/A10 an automatic anchor with omitted or newly discovered facts cannot prove the same activity",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-service.test.ts",
+          "name": "A08/A10 a retained automatic campaign alias cannot consume an under-extracted independent claim as duplicate pending",
+          "status": "passed"
         }
       ],
       "redLogs": [
+        "p3c-review-boundary-red.log",
         "task3-extra-red.log"
       ],
       "bootstrapRedLogs": []
     },
     {
       "id": "A11",
-      "status": "passed",
+      "taggedTestsStatus": "passed",
+      "contractCoverage": "not_established_by_reporter",
       "tests": [
         {
           "file": "tests/identity-compare.test.ts",
@@ -312,7 +346,8 @@
     },
     {
       "id": "A12",
-      "status": "passed",
+      "taggedTestsStatus": "passed",
+      "contractCoverage": "not_established_by_reporter",
       "tests": [
         {
           "file": "tests/identity-compare.test.ts",
@@ -347,7 +382,8 @@
     },
     {
       "id": "A13",
-      "status": "passed",
+      "taggedTestsStatus": "passed",
+      "contractCoverage": "not_established_by_reporter",
       "tests": [
         {
           "file": "tests/identity-compare.test.ts",
@@ -362,7 +398,8 @@
     },
     {
       "id": "A14",
-      "status": "passed",
+      "taggedTestsStatus": "passed",
+      "contractCoverage": "not_established_by_reporter",
       "tests": [
         {
           "file": "tests/identity-compare.test.ts",
@@ -395,7 +432,8 @@
     },
     {
       "id": "A15",
-      "status": "passed",
+      "taggedTestsStatus": "passed",
+      "contractCoverage": "not_established_by_reporter",
       "tests": [
         {
           "file": "tests/identity-compare.test.ts",
@@ -416,7 +454,8 @@
     },
     {
       "id": "A16",
-      "status": "passed",
+      "taggedTestsStatus": "passed",
+      "contractCoverage": "not_established_by_reporter",
       "tests": [
         {
           "file": "tests/identity-compare.test.ts",
@@ -443,7 +482,8 @@
     },
     {
       "id": "A17",
-      "status": "passed",
+      "taggedTestsStatus": "passed",
+      "contractCoverage": "not_established_by_reporter",
       "tests": [
         {
           "file": "tests/identity-compare.test.ts",
@@ -492,7 +532,8 @@
     },
     {
       "id": "A18",
-      "status": "passed",
+      "taggedTestsStatus": "passed",
+      "contractCoverage": "not_established_by_reporter",
       "tests": [
         {
           "file": "tests/identity-model.test.ts",
@@ -540,7 +581,8 @@
     },
     {
       "id": "A19",
-      "status": "passed",
+      "taggedTestsStatus": "passed",
+      "contractCoverage": "not_established_by_reporter",
       "tests": [
         {
           "file": "tests/identity-compare.test.ts",
@@ -605,7 +647,8 @@
     },
     {
       "id": "A20",
-      "status": "passed",
+      "taggedTestsStatus": "passed",
+      "contractCoverage": "not_established_by_reporter",
       "tests": [
         {
           "file": "tests/identity-adapters.test.ts",
@@ -650,7 +693,8 @@
     },
     {
       "id": "A21",
-      "status": "passed",
+      "taggedTestsStatus": "passed",
+      "contractCoverage": "not_established_by_reporter",
       "tests": [
         {
           "file": "tests/identity-transaction.test.ts",
@@ -665,7 +709,8 @@
     },
     {
       "id": "A22",
-      "status": "passed",
+      "taggedTestsStatus": "passed",
+      "contractCoverage": "not_established_by_reporter",
       "tests": [
         {
           "file": "tests/identity-service.test.ts",
@@ -723,7 +768,8 @@
     },
     {
       "id": "A23",
-      "status": "passed",
+      "taggedTestsStatus": "passed",
+      "contractCoverage": "not_established_by_reporter",
       "tests": [
         {
           "file": "tests/identity-merge.test.ts",
@@ -771,7 +817,8 @@
     },
     {
       "id": "A24",
-      "status": "passed",
+      "taggedTestsStatus": "passed",
+      "contractCoverage": "not_established_by_reporter",
       "tests": [
         {
           "file": "tests/identity-schema.test.ts",
@@ -781,6 +828,11 @@
         {
           "file": "tests/identity-service.test.ts",
           "name": "A24 same strong campaign across two requests creates one entity/version/task and no publication",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-service.test.ts",
+          "name": "A24 different requests and extractor IDs race on one strong anchor then the loser retries canonical",
           "status": "passed"
         },
         {
@@ -797,7 +849,8 @@
     },
     {
       "id": "A25",
-      "status": "passed",
+      "taggedTestsStatus": "passed",
+      "contractCoverage": "not_established_by_reporter",
       "tests": [
         {
           "file": "tests/identity-transaction.test.ts",
@@ -812,7 +865,8 @@
     },
     {
       "id": "A26",
-      "status": "passed",
+      "taggedTestsStatus": "passed",
+      "contractCoverage": "not_established_by_reporter",
       "tests": [
         {
           "file": "tests/identity-adapters.test.ts",
@@ -883,11 +937,17 @@
           "file": "tests/identity-service.test.ts",
           "name": "A26 a mechanism scoped refusal suppresses another occurrence without cross-entity ownership",
           "status": "passed"
+        },
+        {
+          "file": "tests/identity-service.test.ts",
+          "name": "A26 an explicit missing-fact refusal policy permits one pending evidence reopen after the named fact is supplied",
+          "status": "passed"
         }
       ],
       "redLogs": [
         "p2c-review-red.log",
         "p2c-scope-red.log",
+        "p3c-reopen-preservation-red.log",
         "task3-retrieval-red.log",
         "task4-decisions-red.log",
         "task4-service-red.log",
@@ -902,7 +962,8 @@
     },
     {
       "id": "A27",
-      "status": "passed",
+      "taggedTestsStatus": "passed",
+      "contractCoverage": "not_established_by_reporter",
       "tests": [
         {
           "file": "tests/frontend-workflow.test.ts",
@@ -974,7 +1035,8 @@
     },
     {
       "id": "A28",
-      "status": "passed",
+      "taggedTestsStatus": "passed",
+      "contractCoverage": "not_established_by_reporter",
       "tests": [
         {
           "file": "tests/frontend-workflow.test.ts",
@@ -1025,7 +1087,8 @@
     },
     {
       "id": "A29",
-      "status": "passed",
+      "taggedTestsStatus": "passed",
+      "contractCoverage": "not_established_by_reporter",
       "tests": [
         {
           "file": "tests/frontend-workflow.test.ts",
@@ -1138,7 +1201,8 @@
     },
     {
       "id": "A30",
-      "status": "passed",
+      "taggedTestsStatus": "passed",
+      "contractCoverage": "not_established_by_reporter",
       "tests": [
         {
           "file": "tests/identity-history-cli.test.ts",
@@ -1172,7 +1236,8 @@
     },
     {
       "id": "A31",
-      "status": "passed",
+      "taggedTestsStatus": "passed",
+      "contractCoverage": "not_established_by_reporter",
       "tests": [
         {
           "file": "tests/frontend-workflow.test.ts",
@@ -1223,7 +1288,8 @@
     },
     {
       "id": "A32",
-      "status": "passed",
+      "taggedTestsStatus": "passed",
+      "contractCoverage": "not_established_by_reporter",
       "tests": [
         {
           "file": "tests/identity-backfill.test.ts",
@@ -1286,7 +1352,8 @@
     },
     {
       "id": "A33",
-      "status": "passed",
+      "taggedTestsStatus": "passed",
+      "contractCoverage": "not_established_by_reporter",
       "tests": [
         {
           "file": "tests/identity-backfill.test.ts",
@@ -1313,7 +1380,8 @@
     },
     {
       "id": "A34",
-      "status": "passed",
+      "taggedTestsStatus": "passed",
+      "contractCoverage": "not_established_by_reporter",
       "tests": [
         {
           "file": "tests/identity-merge-plan.test.ts",
@@ -1366,7 +1434,8 @@
     },
     {
       "id": "A35",
-      "status": "passed",
+      "taggedTestsStatus": "passed",
+      "contractCoverage": "not_established_by_reporter",
       "tests": [
         {
           "file": "tests/identity-acceptance-controls.test.ts",
@@ -1409,7 +1478,8 @@
     },
     {
       "id": "A36",
-      "status": "passed",
+      "taggedTestsStatus": "passed",
+      "contractCoverage": "not_established_by_reporter",
       "tests": [
         {
           "file": "tests/identity-acceptance-controls.test.ts",
@@ -1445,7 +1515,8 @@
     },
     {
       "id": "A37",
-      "status": "passed",
+      "taggedTestsStatus": "passed",
+      "contractCoverage": "not_established_by_reporter",
       "tests": [
         {
           "file": "tests/identity-merge.test.ts",
@@ -1502,7 +1573,8 @@
     },
     {
       "id": "A38",
-      "status": "passed",
+      "taggedTestsStatus": "passed",
+      "contractCoverage": "not_established_by_reporter",
       "tests": [
         {
           "file": "tests/identity-merge.test.ts",
@@ -1517,7 +1589,8 @@
     },
     {
       "id": "A39",
-      "status": "passed",
+      "taggedTestsStatus": "passed",
+      "contractCoverage": "not_established_by_reporter",
       "tests": [
         {
           "file": "tests/identity-merge-plan.test.ts",
@@ -1556,7 +1629,8 @@
     },
     {
       "id": "A40",
-      "status": "passed",
+      "taggedTestsStatus": "passed",
+      "contractCoverage": "not_established_by_reporter",
       "tests": [
         {
           "file": "tests/identity-merge.test.ts",
@@ -1579,7 +1653,8 @@
     },
     {
       "id": "A41",
-      "status": "passed",
+      "taggedTestsStatus": "passed",
+      "contractCoverage": "not_established_by_reporter",
       "tests": [
         {
           "file": "tests/identity-rollback.test.ts",
@@ -1599,7 +1674,8 @@
     },
     {
       "id": "A42",
-      "status": "passed",
+      "taggedTestsStatus": "passed",
+      "contractCoverage": "not_established_by_reporter",
       "tests": [
         {
           "file": "tests/identity-rollback.test.ts",
@@ -1636,7 +1712,8 @@
     },
     {
       "id": "A43",
-      "status": "passed",
+      "taggedTestsStatus": "passed",
+      "contractCoverage": "not_established_by_reporter",
       "tests": [
         {
           "file": "tests/identity-merge.test.ts",
@@ -1665,7 +1742,8 @@
     },
     {
       "id": "A44",
-      "status": "passed",
+      "taggedTestsStatus": "passed",
+      "contractCoverage": "not_established_by_reporter",
       "tests": [
         {
           "file": "tests/identity-adapters.test.ts",
@@ -1692,7 +1770,8 @@
     },
     {
       "id": "A45",
-      "status": "passed",
+      "taggedTestsStatus": "passed",
+      "contractCoverage": "not_established_by_reporter",
       "tests": [
         {
           "file": "tests/identity-acceptance-controls.test.ts",
@@ -1702,6 +1781,11 @@
         {
           "file": "tests/identity-schema.test.ts",
           "name": "identity additive migration A23/A45 invalid references, staged states and malformed JSON cannot persist",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-service.test.ts",
+          "name": "A45 a candidate cannot bind an unrelated entity decision even when both references exist",
           "status": "passed"
         },
         {
@@ -1717,12 +1801,13 @@
       "bootstrapRedLogs": []
     }
   ],
-  "sourceCodeSha": "00708ddbd43dc4a63f09eafbf2cef2420bec8293",
+  "authorReview": "Direct coverage gaps found by independent review were added; taggedTestsStatus is not a claim of exhaustive subcase or field acceptance.",
+  "sourceCodeSha": "6aa71d82f661ecee3f1b85cf9f645b3f2ecdf43b",
   "node": "v24.21.0",
   "command": "npx vitest run tests src --reporter=json --outputFile=.superpowers/sdd/IMPLEMENTATION/task9-vitest.json",
-  "reportSha256": "2d105d78d99a90f1ab197f48edb863ff9b9a2a9180f225635960b3b2e6c941b1",
-  "totalExecuted": 554,
-  "passed": 554,
+  "reportSha256": "d8d9bc19ebb42a2a6c39fba974ee02471f897040831cc3804d10888fa6198b64",
+  "totalExecuted": 562,
+  "passed": 562,
   "failed": 0,
   "pending": 0,
   "fullSuiteCommand": "npm test",

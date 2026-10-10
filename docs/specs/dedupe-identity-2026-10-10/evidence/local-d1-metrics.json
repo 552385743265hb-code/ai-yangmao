@@ -1,6 +1,6 @@
 {
   "environment": "synthetic-local-workerd-d1",
-  "sourceCodeSha": "9de8abb0b68786daac99f5aa283b5d2411aed288",
+  "sourceCodeSha": "082f02f1eee50decb8f2070881c75142afcb3151",
   "node": "v24.21.0",
   "operations": [
     {
@@ -12,7 +12,7 @@
       "rowsWritten": 154,
       "rowsArePartial": true,
       "errors": 0,
-      "elapsedMs": 55.15741400000002
+      "elapsedMs": 25.2742489999996
     },
     {
       "operation": "rollback10",
@@ -23,51 +23,51 @@
       "rowsWritten": 109,
       "rowsArePartial": true,
       "errors": 0,
-      "elapsedMs": 87.63683199999991
+      "elapsedMs": 28.00807900000109
     },
     {
       "operation": "carryProposal",
       "statements": 36,
       "metadataStatements": 33,
       "metadataMissing": 3,
-      "rowsRead": 296,
+      "rowsRead": 297,
       "rowsWritten": 73,
       "rowsArePartial": true,
       "errors": 0,
-      "elapsedMs": 40.37887399999954
+      "elapsedMs": 18.96166600000015
     },
     {
       "operation": "rollbackCarrier",
       "statements": 35,
       "metadataStatements": 32,
       "metadataMissing": 3,
-      "rowsRead": 338,
+      "rowsRead": 339,
       "rowsWritten": 51,
       "rowsArePartial": true,
       "errors": 0,
-      "elapsedMs": 33.44987800000035
+      "elapsedMs": 22.366419999999835
     },
     {
       "operation": "remergeCarrier",
       "statements": 35,
       "metadataStatements": 32,
       "metadataMissing": 3,
-      "rowsRead": 330,
+      "rowsRead": 331,
       "rowsWritten": 71,
       "rowsArePartial": true,
       "errors": 0,
-      "elapsedMs": 19.40183300000035
+      "elapsedMs": 18.84425000000033
     },
     {
       "operation": "resolveRetainedAlias",
-      "statements": 21,
+      "statements": 20,
       "metadataStatements": 12,
-      "metadataMissing": 9,
+      "metadataMissing": 8,
       "rowsRead": 38,
       "rowsWritten": 7,
       "rowsArePartial": true,
       "errors": 0,
-      "elapsedMs": 20.1849559999996
+      "elapsedMs": 20.436625000000276
     },
     {
       "operation": "rollbackConflict",
@@ -78,7 +78,73 @@
       "rowsWritten": 0,
       "rowsArePartial": true,
       "errors": 0,
-      "elapsedMs": 15.84400100000039
+      "elapsedMs": 12.14516599999979
+    },
+    {
+      "operation": "underExtractedClaim",
+      "statements": 22,
+      "metadataStatements": 15,
+      "metadataMissing": 7,
+      "rowsRead": 45,
+      "rowsWritten": 18,
+      "rowsArePartial": true,
+      "errors": 0,
+      "elapsedMs": 19.669624999999996
+    },
+    {
+      "operation": "concurrentRequest0",
+      "statements": 30,
+      "metadataStatements": 22,
+      "metadataMissing": 8,
+      "rowsRead": 70,
+      "rowsWritten": 41,
+      "rowsArePartial": true,
+      "errors": 0,
+      "elapsedMs": 83.5975849999993
+    },
+    {
+      "operation": "concurrentRequest1",
+      "statements": 31,
+      "metadataStatements": 22,
+      "metadataMissing": 9,
+      "rowsRead": 33,
+      "rowsWritten": 0,
+      "rowsArePartial": true,
+      "errors": 0,
+      "elapsedMs": 71.14779200000044
+    },
+    {
+      "operation": "concurrentRetry1",
+      "statements": 24,
+      "metadataStatements": 13,
+      "metadataMissing": 11,
+      "rowsRead": 52,
+      "rowsWritten": 9,
+      "rowsArePartial": true,
+      "errors": 0,
+      "elapsedMs": 20.40295799999967
+    },
+    {
+      "operation": "rejectRaceFixture",
+      "statements": 19,
+      "metadataStatements": 12,
+      "metadataMissing": 7,
+      "rowsRead": 38,
+      "rowsWritten": 23,
+      "rowsArePartial": true,
+      "errors": 0,
+      "elapsedMs": 8.232252999999673
+    },
+    {
+      "operation": "foreignDecisionGuard",
+      "statements": 4,
+      "metadataStatements": 0,
+      "metadataMissing": 4,
+      "rowsRead": null,
+      "rowsWritten": null,
+      "rowsArePartial": true,
+      "errors": 1,
+      "elapsedMs": 4.831249999999727
     }
   ],
   "retryBacklog": {
@@ -91,8 +157,8 @@
   "modelTokens": 0,
   "modelCostUsd": 0,
   "limitations": [
-    "Local D1 metadata only; first/raw omit row metadata and totals are partial.",
-    "Elapsed time is local client wall time, not production CPU/latency.",
+    "Local D1 metadata only; first/raw and failed statements omit row metadata and totals are partial.",
+    "elapsedMs sums DB call durations; overlapping calls can double count wall time. It is not operation latency or production CPU.",
     "No real workload, human corpus or production budget verification."
   ]
 }
