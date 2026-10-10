@@ -13,11 +13,11 @@ function proofEvidence(row:ProofRow,facts:CanonicalTermsV1):EvidenceContext {
 }
 export async function findClaimMemory(db:D1Database,candidateId:string,facts:CanonicalTermsV1,evidence:EvidenceContext):Promise<{match:ClaimMatch|null;unresolved:boolean}> {
  const key=claimIdentityKey(facts);if(!key)return {match:null,unresolved:false};
- const fields=`d.*,c.id proof_id,c.revision proof_revision,c.facts_json proof_facts,c.raw_candidate_json proof_raw,c.observation_id proof_observation,o.text proof_text,o.text_truncated proof_truncated,o.trust_json proof_trust`;
+ const fields=`d.*,c.id proof_id,c.revision proof_revision,c.facts_json proof_facts,c.raw_candidate_json proof_raw,c.observation_id proof_observation,o.text proof_text,coalesce(json_extract(f.provenance_json,'$.truncated'),o.text_truncated) proof_truncated,coalesce(f.provenance_json,o.trust_json) proof_trust`;
  const active="d.entity_id IS NULL AND d.action='reject' AND json_extract(d.scope_json,'$.kind')='claim' AND NOT EXISTS(SELECT 1 FROM review_decisions n WHERE n.supersedes_id=d.id)";
  const pages=await Promise.all([
-  db.prepare(`SELECT ${fields},c.id canonical_claim,'{}' identity_basis FROM intake_candidates c JOIN review_decisions d ON d.candidate_id=c.id JOIN source_observations o ON o.id=c.observation_id WHERE c.claim_identity_key=? AND ${active} ORDER BY d.id LIMIT 41`).bind(key).all<ProofRow>(),
-  db.prepare(`SELECT ${fields},a.canonical_candidate_id canonical_claim,a.identity_basis_json identity_basis FROM intake_candidates c JOIN identity_refusal_applications a ON a.candidate_id=c.id AND a.facts_hash=c.facts_hash JOIN review_decisions d ON d.id=a.decision_id JOIN source_observations o ON o.id=c.observation_id WHERE c.claim_identity_key=? AND a.canonical_candidate_id IS NOT NULL AND ${active} ORDER BY d.id,c.id LIMIT 41`).bind(key).all<ProofRow>(),
+  db.prepare(`SELECT ${fields},c.id canonical_claim,'{}' identity_basis FROM intake_candidates c JOIN review_decisions d ON d.candidate_id=c.id JOIN source_observations o ON o.id=c.observation_id LEFT JOIN source_observation_fetches f ON f.id=c.source_fetch_id AND f.observation_id=o.id WHERE c.claim_identity_key=? AND ${active} ORDER BY d.id LIMIT 41`).bind(key).all<ProofRow>(),
+  db.prepare(`SELECT ${fields},a.canonical_candidate_id canonical_claim,a.identity_basis_json identity_basis FROM intake_candidates c JOIN identity_refusal_applications a ON a.candidate_id=c.id AND a.facts_hash=c.facts_hash JOIN review_decisions d ON d.id=a.decision_id JOIN source_observations o ON o.id=c.observation_id LEFT JOIN source_observation_fetches f ON f.id=c.source_fetch_id AND f.observation_id=o.id WHERE c.claim_identity_key=? AND a.canonical_candidate_id IS NOT NULL AND ${active} ORDER BY d.id,c.id LIMIT 41`).bind(key).all<ProofRow>(),
  ]);
  if(pages.some(p=>p.results.length>40))return {match:null,unresolved:true};
  const matches=new Map<string,ClaimMatch>();let unresolved=false;

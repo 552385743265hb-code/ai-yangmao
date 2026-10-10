@@ -14,7 +14,7 @@ import { claimIdentityKey,hashTerms,sha256,stableJson } from '../../shared/ident
 import { IdentityStore,IdentityError,readReviewDecision } from './store';
 import { MutationBuilder,commitIdentityMutation,readIdentityReceipt,type Binding,type ExpectedRevision } from './commit';
 type OfferRow=typeof tables.offers.$inferSelect;
-type CandidateRow={id:string;observation_id:string;facts_json:string;facts_hash:string;raw_candidate_json:string;receipt_json:string|null;revision:number;entity_id:string|null;state:string;task_id:string|null;last_error:string|null;claim_family_key:string|null;assertion_facts_hash:string|null};
+type CandidateRow={id:string;observation_id:string;facts_json:string;facts_hash:string;raw_candidate_json:string;receipt_json:string|null;revision:number;entity_id:string|null;state:string;task_id:string|null;last_error:string|null;claim_family_key:string|null;assertion_facts_hash:string|null;source_fetch_id:string|null};
 type EntityRow={routing_generation?:number;id:string;platform_id:string;canonical_offer_id:string|null;business_revision:number;publication_revision:number;current_approved_version_id:string|null};
 type TaskRow={id:string;task_key:string;kind:string;entity_id:string|null;version_id:string|null;base_version_id:string|null;state:string;revision:number;material_revision:number;decision_id:string|null;lease_context_json?:string|null};
 type ResolutionControl={task:TaskRow;actor:string;action:'same'|'new';reason?:string;facts?:CanonicalTermsV1;entityId?:string};
@@ -36,7 +36,7 @@ export class IdentityService {
  private async entity(id:string){return this.db.prepare("SELECT * FROM benefit_entities WHERE id=? AND state='active'").bind(id).first<EntityRow>();}
  private async offer(id:string|null):Promise<OfferRow|null>{if(!id)return null;return (await drizzle(this.db,{schema:tables}).select().from(tables.offers).where(eq(tables.offers.id,id)))[0]??null;}
  private async evidence(candidate:CandidateRow):Promise<EvidenceContext> {
-  const row=await this.db.prepare('SELECT text,text_truncated,trust_json FROM source_observations WHERE id=?').bind(candidate.observation_id).first<{text:string;text_truncated:number;trust_json:string}>();
+  const row=await this.db.prepare("SELECT o.text,coalesce(json_extract(f.provenance_json,'$.truncated'),o.text_truncated) text_truncated,coalesce(f.provenance_json,o.trust_json) trust_json FROM source_observations o LEFT JOIN source_observation_fetches f ON f.id=? AND f.observation_id=o.id WHERE o.id=?").bind(candidate.source_fetch_id??null,candidate.observation_id).first<{text:string;text_truncated:number;trust_json:string}>();
   if(!row)throw new IdentityError(409,'candidate observation missing');
   const raw=JSON.parse(candidate.raw_candidate_json) as {quotes?:Array<{id:string;quote:string}>};
   const trust=z.object({sourceVerified:z.boolean(),productId:z.string().nullable()}).parse(JSON.parse(row.trust_json));

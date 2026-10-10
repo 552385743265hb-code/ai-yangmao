@@ -6,6 +6,8 @@ import {terms,known} from '../../tests/fixtures/identity/terms.ts';
 import {displayOffer} from '../../tests/fixtures/identity/offer.ts';
 import {measureD1} from './metrics.ts';
 import {hashTerms} from '../../src/shared/identity/normalize.ts';
+import {fetchPage} from '../../pipeline/lib.ts';
+import {toOffer} from '../../pipeline/offer-draft.ts';
 const path=process.env.IDENTITY_AUDIT_PERSIST;
 if(!path?.startsWith('.superpowers/sdd/acceptance-audit-4371ea0/d1-'))throw new Error('explicit fresh synthetic persistence required');
 const proxy=await getPlatformProxy({configPath:'tests/fixtures/identity/wrangler.jsonc',persist:{path:path+'/v3'}});
@@ -45,5 +47,16 @@ try{
  const free=terms();free.occurrenceAnchor=known('free-independent');free.costs=known({upfrontAmount:'0',currency:'USD',subscriptionRequired:false,autoRenewal:false});const freeCandidate=await freshCandidate('large-free',free,'Campaign free-independent grants 10 USD without a subscription.');const freeTask=await call('ingest/identity-candidates/'+freeCandidate.candidateId+'/resolve',{requestId:'large-free'});
  const pageRequest={requestId:'large-free-manual',expectedRevision:0,action:'new',candidateId:freeCandidate.candidateId,reason:'Synthetic independent grant with no subscription requirement.'};const firstPage=await call('admin/identity/tasks/'+freeTask.taskId+'/resolve',pageRequest,true);assert.equal(firstPage.outcome,'deferred');assert.equal(firstPage.retryable,true);const completed=await call('admin/identity/tasks/'+freeTask.taskId+'/resolve',pageRequest,true);assert.equal(completed.outcome,'created_pending');assert.deepEqual(await call('admin/identity/tasks/'+freeTask.taskId+'/resolve',pageRequest,true),completed);
  assert.deepEqual((await db.prepare('PRAGMA foreign_key_check').all()).results,[]);
- assert.ok(measurements.every(m=>m.statements<=50));console.log(JSON.stringify({environment:'fresh-local-workerd-d1',R01:'passed',R02:'passed',R03:'passed',productionOperations:0,modelCalls:0,messages:0,measurements}));
+
+ const savedFetch=globalThis.fetch;
+ try{
+  const sourceQuote='Campaign transport grants 10 USD for signup.';
+  globalThis.fetch=async(input,init)=>{const url=new URL(typeof input==='string'?input:input instanceof URL?input.href:input.url);if(url.hostname==='vendor.example')return new Response(url.pathname.endsWith('audit-jina')?'tiny':'<html><body><p>'+sourceQuote+'</p><p>'+'Documentation. '.repeat(100)+'</p></body></html>');if(url.hostname==='r.jina.ai')return new Response('URL Source: https://unrelated.example\nWarning: Target URL returned error 403\nMarkdown Content:\n'+sourceQuote);if(['127.0.0.1','localhost','[::1]'].includes(url.hostname))return savedFetch(input,init);throw new Error('unexpected external network in synthetic audit');};
+  for(const mode of ['direct','jina']){const url='https://vendor.example/audit-'+mode,page=await fetchPage(url,{tries:1}),draft=toOffer({id:'vendor-source',platformId:'vendor',kind:'web_list',tier:mode==='jina'?'media':'site'},{...displayOffer(),key:'transport-'+mode,excerpts:{benefit:sourceQuote}},page.finalUrl,page.text,page);
+   const posted=await call('ingest/offers',[{...draft,identityRequestId:'runtime-transport-'+mode}]);assert.equal(posted.results[0].error,undefined);const row=await db.prepare('SELECT o.id,o.trust_json,o.fetch_provenance_json FROM source_observations o JOIN source_documents d ON d.id=o.document_id WHERE d.original_url=? ORDER BY o.observed_at DESC LIMIT 1').bind(url).first();assert.equal(JSON.parse(row.trust_json).sourceVerified,mode==='direct');assert.equal(JSON.parse(row.fetch_provenance_json).method,mode==='jina'?'jina':page.via);assert.equal(JSON.parse(row.fetch_provenance_json).originalUrl,url);
+   const fetch=await db.prepare('SELECT id,provenance_json FROM source_observation_fetches WHERE observation_id=? LIMIT 1').bind(row.id).first();await assert.rejects(()=>db.prepare("UPDATE source_observation_fetches SET provenance_json='{}' WHERE id=?").bind(fetch.id).run(),/immutable/);assert.equal((await db.prepare('SELECT provenance_json FROM source_observation_fetches WHERE id=?').bind(fetch.id).first()).provenance_json,fetch.provenance_json);
+  }
+ }finally{globalThis.fetch=savedFetch;}
+ assert.deepEqual((await db.prepare('PRAGMA foreign_key_check').all()).results,[]);
+ assert.ok(measurements.every(m=>m.statements<=50));console.log(JSON.stringify({environment:'fresh-local-workerd-d1',R01:'passed',R02:'passed',R03:'passed',R07:'passed',productionOperations:0,modelCalls:0,messages:0,measurements}));
 }finally{await proxy.dispose();}

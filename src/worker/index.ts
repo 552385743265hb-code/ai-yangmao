@@ -303,7 +303,7 @@ ingest.post('/offers', async c => {
         continue; // Keep manual proposals and verification metadata; the /verify route verifies source health.
       }
     }
-    const { identityFacts: _identityFacts, identityRequestId: _identityRequestId, leadId, leadReviewJobId, officialReviewJobId, sameOccurrenceAs, sourceText, valuation: _pipelineValuation, ...od } = o;
+    const { identityFacts: _identityFacts, identityRequestId: _identityRequestId, leadId, leadReviewJobId, officialReviewJobId, sameOccurrenceAs, sourceFetch: _sourceFetch, sourceText, valuation: _pipelineValuation, ...od } = o;
     const row = {
       ...od, usdEstimate: o.usdEstimate ?? null, usdMax: o.usdMax ?? null, valuation: prev?.valuation ?? null, claimStart: o.claimStart ?? null, claimEnd: o.claimEnd ?? null,
       creditValidity: o.creditValidity ?? null, publishedAt: o.publishedAt ?? null, sourceId: o.sourceId ?? null,

@@ -1,3 +1,4 @@
+import {verifyFetchProvenance} from './fetch-provenance';
 import { commitIdentityMutation, commandGuard } from './commit';
 import { z } from 'zod';
 import { officialTier } from '../../shared/official-review';
@@ -113,10 +114,11 @@ export class IdentityStore {
     const urlKey = normalizeDocumentUrl(input.originalUrl);
     const documentId = `doc_${await sha256(urlKey)}`;
     const contentHash = await sha256(input.text);
-    const observationId = `obs_${await sha256(stableJson([documentId,contentHash,input.fetchKind]))}`;
-    const truncated = input.truncated || input.text.length > 250000;
+    const verifiedFetch=input.fetchEvidence?await verifyFetchProvenance(input.fetchEvidence,input.originalUrl,input.finalUrl,input.text):null;
+    if(verifiedFetch&&!verifiedFetch.valid)throw new IdentityError(400,'fetch provenance does not match source body or URLs');
+    const truncated = input.truncated || input.fetchEvidence?.truncated===true || input.text.length > 250000;
     let sourceVerified = false, productId: string | null = null;
-    if ((input.sourceId||input.issuerProductId) && input.fetchKind === 'direct' && new URL(input.originalUrl).hostname === new URL(input.finalUrl).hostname) {
+    if ((input.sourceId||input.issuerProductId) && input.fetchKind === 'direct' && !truncated && (!verifiedFetch||verifiedFetch.direct) && new URL(input.originalUrl).hostname === new URL(input.finalUrl).hostname) {
       const source = input.sourceId?await this.db.prepare('SELECT s.url,s.tier,p.id,p.name,p.site,p.x_handles,p.staff_handles FROM sources s JOIN platforms p ON p.id=s.platform_id WHERE s.id=?').bind(input.sourceId).first<{url:string;tier:string;id:string;name:string;site:string|null;x_handles:string;staff_handles:string}>():await this.db.prepare("SELECT site AS url,'site' AS tier,id,name,site,x_handles,staff_handles FROM platforms WHERE id=? AND site IS NOT NULL").bind(input.issuerProductId!).first<{url:string;tier:string;id:string;name:string;site:string|null;x_handles:string;staff_handles:string}>();
       if (source && (!input.issuerProductId||input.issuerProductId===source.id)) {
         const platform = {id:source.id,name:source.name,site:source.site,xHandles:JSON.parse(source.x_handles),staffHandles:JSON.parse(source.staff_handles)};
@@ -124,11 +126,16 @@ export class IdentityStore {
         if (sourceVerified) productId=source.id;
       }
     }
+    const fetchKind=input.fetchKind==='unavailable'?'unavailable':sourceVerified?'direct':'indirect';
+    const observationId = `obs_${await sha256(stableJson([documentId,contentHash,fetchKind]))}`;
+    const fetchId='fetch_'+await sha256(commandId);
     const trust = JSON.stringify({sourceVerified,productId,sourceId:input.sourceId??null});
-    const receipt = {observationId,documentId,contentHash,truncated};
+    const provenance=JSON.stringify({...input.fetchEvidence,originalUrl:input.originalUrl,finalUrl:input.finalUrl,fetchedUrl:input.fetchEvidence?.fetchedUrl??null,method:input.fetchEvidence?.method??input.fetchKind,reportedSourceVerified:input.fetchEvidence?.sourceVerified??null,sourceVerified,productId,truncated,contentHash});
+    const receipt = {observationId,documentId,contentHash,truncated,fetchId};
     return this.storageCommand(commandId,hash,receipt,(guard,args)=>[
       this.db.prepare(`INSERT INTO source_documents(id,original_url,url_key,first_seen_at,last_seen_at) SELECT ?,?,?,?,? WHERE ${guard} ON CONFLICT(url_key) DO UPDATE SET last_seen_at=max(last_seen_at,excluded.last_seen_at)`).bind(documentId,input.originalUrl,urlKey,input.observedAt,input.observedAt,...args),
-      this.db.prepare(`INSERT INTO source_observations(id,document_id,content_hash,text,text_truncated,fetch_kind,final_url,observed_at,last_seen_at,trust_json) SELECT ?,?,?,?,?,?,?,?,?,? WHERE ${guard} ON CONFLICT(document_id,content_hash,fetch_kind) DO UPDATE SET last_seen_at=max(last_seen_at,excluded.last_seen_at)`).bind(observationId,documentId,contentHash,input.text.slice(0,250000),Number(truncated),input.fetchKind,input.finalUrl,input.observedAt,input.observedAt,trust,...args),
+      this.db.prepare(`INSERT INTO source_observations(id,document_id,content_hash,text,text_truncated,fetch_kind,final_url,observed_at,last_seen_at,trust_json,fetch_provenance_json) SELECT ?,?,?,?,?,?,?,?,?,?,? WHERE ${guard} ON CONFLICT(document_id,content_hash,fetch_kind) DO UPDATE SET last_seen_at=max(last_seen_at,excluded.last_seen_at)`).bind(observationId,documentId,contentHash,input.text.slice(0,250000),Number(truncated),fetchKind,input.finalUrl,input.observedAt,input.observedAt,trust,provenance,...args),
+      this.db.prepare(`INSERT INTO source_observation_fetches(id,observation_id,request_id,provenance_json,observed_at) SELECT ?,?,?,?,? WHERE ${guard}`).bind(fetchId,observationId,commandId,provenance,input.observedAt,...args),
     ],'EXISTS(SELECT 1 FROM source_observations WHERE id=?)',[observationId]);
   }
 
@@ -139,6 +146,7 @@ export class IdentityStore {
     const observation = await this.db.prepare('SELECT id,text,text_truncated,fetch_kind,trust_json FROM source_observations WHERE id=?').bind(input.observationId).first<ObservationRow>();
     if (!observation) throw new IdentityError(404,'observation not found');
     for (const leadId of input.leadIds) if (!await this.db.prepare('SELECT id FROM leads WHERE id=?').bind(leadId).first()) throw new IdentityError(400,'lead not found');
+    if(input.sourceFetchId){const fetch=await this.db.prepare('SELECT provenance_json FROM source_observation_fetches WHERE id=? AND observation_id=?').bind(input.sourceFetchId,input.observationId).first<{provenance_json:string}>();if(!fetch)throw new IdentityError(400,'fetch does not belong to observation');if(JSON.parse(fetch.provenance_json).truncated)observation.text_truncated=1;}
     const readable = observation.fetch_kind !== 'unavailable' && !!observation.text && !observation.text_truncated;
     const nonBenefit = input.nonBenefitEvidence;
     const complete = input.extractionComplete && readable && (input.candidates.length > 0 || !!(nonBenefit && observation.text.slice(nonBenefit.start,nonBenefit.end) === nonBenefit.quote));
@@ -185,7 +193,7 @@ export class IdentityStore {
         if (ambiguous||conflictingAssertion) { receipt.reasonCodes=['ambiguous_subitems']; receipt.outcome='deferred'; receipt.retryable=true; }
         const command = `candidate:${await sha256(stableJson([input.requestId,candidate.inputId]))}`;
         const result = await this.storageCommand(command,payloadHash,receipt,(guard,args)=>[
-          this.db.prepare(`INSERT INTO intake_candidates(id,observation_id,extraction_version,span_key,candidate_key,claim_family_key,assertion_facts_hash,claim_identity_key,raw_candidate_json,facts_json,facts_hash,state,last_error,receipt_json) SELECT ?,?,?,?,?,?,?,?,?,?,?,'deferred',?,? WHERE ${guard} ON CONFLICT(candidate_key) DO NOTHING`).bind(candidateId,input.observationId,input.extractionVersion,spanKey,key,familyKey,factsHash,claimIdentityKey(facts),JSON.stringify({candidate:candidate.rawCandidate,quotes:candidate.quotes,span:candidate.span}),JSON.stringify(facts),factsHash,receipt.reasonCodes.join(','),JSON.stringify(receipt),...args),
+          this.db.prepare(`INSERT INTO intake_candidates(id,observation_id,extraction_version,span_key,candidate_key,claim_family_key,assertion_facts_hash,claim_identity_key,source_fetch_id,raw_candidate_json,facts_json,facts_hash,state,last_error,receipt_json) SELECT ?,?,?,?,?,?,?,?,?,?,?,?,'deferred',?,? WHERE ${guard} ON CONFLICT(candidate_key) DO NOTHING`).bind(candidateId,input.observationId,input.extractionVersion,spanKey,key,familyKey,factsHash,claimIdentityKey(facts),input.sourceFetchId??null,JSON.stringify({candidate:candidate.rawCandidate,quotes:candidate.quotes,span:candidate.span}),JSON.stringify(facts),factsHash,receipt.reasonCodes.join(','),JSON.stringify(receipt),...args),
           ...input.leadIds.map(leadId=>this.db.prepare(`INSERT INTO lead_candidate_links(lead_id,candidate_id) SELECT ?,? WHERE ${guard} ON CONFLICT DO NOTHING`).bind(leadId,candidateId,...args)),
         ],'EXISTS(SELECT 1 FROM intake_candidates WHERE id=?)',[candidateId]);
         receipts.push(result);
