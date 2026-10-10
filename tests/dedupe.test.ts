@@ -98,3 +98,21 @@ it('identifies Space Bunny aliases by the same model and official extension anno
 it('does not merge separate announcements, mechanisms, model scopes or channels',()=>{
  for(const delta of [{evidenceUrl:'https://x.com/opencode/status/2107398361733104103'}, {models:['Other Model']}, {title:'Space Bunny Zen API 免费期延长'}, {claimMethod:'code'}, {type:'new'}, {title:'Space Bunny 发布免费'}, {title:'Space Bunny 学生免费期延长'}, {eventDay:'2026-10-10'}])expect(findDuplicate({...spaceAlias,...delta},[spaceOriginal]),JSON.stringify(delta)).toBeUndefined();
 });
+
+
+it('remembers rejected API launch discounts despite percentage/fold wording and changed IDs',()=>{
+ const old={id:'rejected-launch',platformId:'higgsfield',reviewState:'rejected',type:'topup',title:'Higgsfield API 发布首发折扣优惠',valueText:'全场模型85折（15% off），自选4款模型最高5折（50% off）',evidenceUrl:'https://higgsfield.ai/creator-hub/changelog',requirements:['none'],models:[]};
+ expect(findDuplicate({...old,id:'new-key',type:'perk',title:'Higgsfield API 首发15%-50%折扣',valueText:'所有模型15%折扣，自选4个模型最高50%折扣。'},[old])?.id).toBe(old.id);
+ expect(findDuplicate({...old,id:'folded-key',type:'perk',title:'Higgsfield API 首发折扣',valueText:'所有模型8.5折，自选4个模型最高5折。'},[old])?.id).toBe(old.id);
+ expect(findDuplicate({...old,title:'Higgsfield API 学生认证专享5折',valueText:'学生认证用户50%折扣',requirements:['student']},[old])).toBeUndefined();
+ expect(findDuplicate({...old,title:'Higgsfield API 首发赠金',valueText:'额外赠送100积分'},[old])).toBeUndefined();
+});
+it('remembers rejected unquantified free-plan aliases without swallowing a new actual allowance',()=>{
+ const old={id:'rejected-free-plan',platformId:'meta',reviewState:'rejected',type:'standing',claimMethod:'signup',title:'Meta Muse 免费层额度',valueText:'免费调用带使用限制，可等额度刷新或升级付费。',evidenceUrl:'https://ai.meta.com/muse/',requirements:['none'],models:[]};
+ expect(findDuplicate({...old,id:'brand-new',title:'Muse 免费版使用限制',valueText:'Free tier with usage limits; wait for the limit to refresh.'},[old])?.id).toBe(old.id);
+ expect(findDuplicate({...old,title:'Muse 独立赠额',valueText:'每月赠送100积分'},[old])).toBeUndefined();
+});
+it('does not merge distinct Pixel device generations sharing a Google help page',()=>{
+ const base={id:'pixel10',platformId:'google',reviewState:'approved',type:'gift',claimMethod:'app',title:'买Pixel10Pro系列送12个月GoogleAIPro',valueText:'Pixel10Pro可领12个月会员',evidenceUrl:'https://support.google.com/gemini/answer/13529884'};
+ expect(findDuplicate({...base,id:'pixel9',title:'买Pixel9Pro系列送12个月GoogleAIPro',valueText:'Pixel9Pro可领12个月会员'},[base])).toBeUndefined();
+});

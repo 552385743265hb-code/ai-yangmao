@@ -112,11 +112,29 @@ export function sameModelAnnouncement(a:Incoming,b:DedupeCandidate):boolean {
   return qualifiers(a)===qualifiers(b);
 }
 
+// Rejected ordinary pricing/free-plan descriptions are remembered across short aliases.
+// Only the same official page and claim scope qualify; real quotas/gifts remain independent.
+function sameRejectedDescription(a:Incoming,b:DedupeCandidate):boolean {
+  if(b.reviewState!=='rejected'||a.eventDay||b.eventDay||normUrl(a.evidenceUrl)!==normUrl(b.evidenceUrl))return false;
+  const req=(o:Incoming)=>o.requirements?.map(titleKey).sort().join('|');
+  if(!a.requirements?.length||req(a)!==req(b)||a.models?.length||b.models?.length)return false;
+  const text=(o:Incoming)=>o.title+' '+o.valueText;
+  const gift=(o:Incoming)=>/赠送|赠金|奖励|额外赠|bonus|grant|free credits|free trial|首次|试用/i.test(text(o));
+  if(gift(a)||gift(b))return false;
+  const rates=(o:Incoming)=>[...new Set([...text(o).matchAll(/(\d+(?:\.\d+)?)\s*%/g)].map(m=>Number(m[1])).concat([...text(o).matchAll(/(\d+(?:\.\d+)?)\s*折/g)].map(m=>Number(m[1])).filter(n=>n>0&&n<=10).map(n=>Math.round((10-n)*10))))].sort((x,y)=>x-y).join('|');
+  const launch=(o:Incoming)=>/api/i.test(text(o))&&/首发|发布|上线|launch/i.test(text(o))&&/折|discount|off/i.test(text(o));
+  if(['perk','topup','trial'].includes(a.type??'')&&['perk','topup','trial'].includes(b.type??'')&&launch(a)&&launch(b)&&!/free|免费/i.test(text(a)+' '+text(b))&&rates(a)&&rates(a)===rates(b))return true;
+  const basic=(o:Incoming)=>o.type==='standing'&&['auto','signup'].includes(o.claimMethod??'')
+    && /免费层|免费档|免费版|free (?:tier|plan)/i.test(text(o))&&/限制|limited|limits?/i.test(text(o))
+    && !/(?:\d[\d,.]*|[一二两三四五六七八九十百千万亿]+)\s*(?:credits?|tokens?|积分|次|张|个视频|个图像|美元)/i.test(o.valueText);
+  return basic(a)&&basic(b);
+}
+
 export function findDuplicate<T extends DedupeCandidate>(o: Incoming, existing: T[]): T | undefined {
   // Prefer the accepted canonical record over a rejected duplicate alias.
   const ranked=[...existing].sort((a,b)=>(a.reviewState==='approved'?0:a.reviewState==='pending'?1:2)-(b.reviewState==='approved'?0:b.reviewState==='pending'?1:2));
   return ranked.find(e => e.platformId === o.platformId && !ambiguousReset(o,e) && (
-    sameModelAnnouncement(o,e) || sameRecurringCreditPlan(o,e) || (!o.eventDay&&!e.eventDay&&genericDailyCredits(o)&&genericDailyCredits(e)) || (!!monthlyApiScope(o)&&monthlyApiScope(o)===monthlyApiScope(e)) || sameRecurringAlias(o,e) || sameRepostedWeek(o,e) || (!differentOccurrence(o,e) && (
+    sameRejectedDescription(o,e) || sameModelAnnouncement(o,e) || sameRecurringCreditPlan(o,e) || (!o.eventDay&&!e.eventDay&&genericDailyCredits(o)&&genericDailyCredits(e)) || (!!monthlyApiScope(o)&&monthlyApiScope(o)===monthlyApiScope(e)) || sameRecurringAlias(o,e) || sameRepostedWeek(o,e) || (!differentOccurrence(o,e) && (
     (digits(e.title) === digits(o.title) && similarity(e.title, o.title) >= 0.85) ||
     (normUrl(e.evidenceUrl) === normUrl(o.evidenceUrl) && digits(e.valueText) === digits(o.valueText) && similarity(e.valueText, o.valueText) >= 0.85)))));
 }

@@ -52,6 +52,8 @@
 
 ## google
 
+- 2026-10-10待审查重：Pixel9Pro/XL/Fold的GoogleAIPro赠礼为2024-08-07至2025-11-15的历史活动，日本6个月、其它适用地区12个月；本次库内没有已批准9Pro同款。Pixel10/11的机型资格、时长及窗口不同，不因共享帮助页或都叫AIPro而合并。9Pro按gift、历史待审处理，不自动上架。
+
 - Pixel 9a 送的是 Google One Basic 100 GB 3 个月，Pixel 9 送的是 Google One Premium 2 TB 6 个月，均为存储会员，按 not_ai 不收；不能与 Pixel Pro 系列的 Google AI Pro 试用混同。以官方帮助页各机型的完整 Offer 名称为准：https://support.google.com/gemini/answer/13529884 （2026-10-07）
 - 学生和设备专享福利以 Google One / Gemini 帮助中心为准：美国大学生 AI Pro 12 个月（support.google.com/googleone/answer/17422238）、美国以外大学生 AI Plus 12 个月（2026-08-19 官方博客，2026-12-31 前领取）、Pixel 10 Pro 系列 12 个月 AI Pro（2025-08-20 至 2026-10-31 购买）、Pixel 11 Pro 系列 6 个月（2027-10-31 前领取），设备优惠表在 support.google.com/gemini/answer/13529884 。每年开学季会更新，届时复查。（2026-10-03）
 - Google AI Studio 免费版按主力模型 Gemini 3.8 Flash 的官方单价和 AI Studio 显示的速率上限（RPM / TPM / RPD）折算；上限未公开时留空，不要假设次数。
@@ -71,6 +73,8 @@
 - 本批核验入口：https://www.minimax.cn/blog/minimax-m2。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## gmi
+
+- 2026-10-10：qwen-day企业最高$10,000专项赠金是separate enterprise program，需公司邮箱、真实生产用量与人工审批，独立于开发者7天免费窗口，不混入后者$10余额门槛。申请上限不等于首30天可得额度。截止原文只有November5，未注明年份；不能沿模型误填2025，字段清空并保留月日说明。
 
 - 2026-10-08：qwen-day官方确认Qwen3.8 Max/Flash与Wan3.0-video七天免费窗口，已有$10余额无需再付款、新用户充值$10且此余额不扣；不自动标card。官网未写七天统一起止，删除模型捏造2025年日期，不把企业至11月5日赠额截止套到开发者活动。https://www.gmicloud.ai/qwen-day。
 - 其他厂商宣传的“在 GMI Cloud 上免费用”的活动，平台归 GMI；要找 GMI 自己（官网、@gmi_cloud）的原文。
@@ -197,6 +201,8 @@
 - 本批核验入口：https://portal.nousresearch.com/manage-subscription。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## higgsfield
+
+- 2026-10-10：API首发15%全模型/任选4模型最高50%折扣，是已拒的higgsfield-higgsfield-api-launch-offer，rgjd为换ID重报；折扣/几折换算、perk与topup改分类不构成新福利。普通付费定价折扣不收，原页有首发文本即可识别，不必因独立API再开一条。
 
 - 2026-10-09：API首次消费满$100送$15、30天消费阶梯5%–20%返利属于消费促销，不收；higgsfield-higgsfield-api-cashback-bonus已拒绝。
 - 2026-10-09：changelog中2026-10-02的AI Influencer条目写免费角色生成5次，as of October 3是状态参照，非截止，也不足以精确确定赠额开始日；publishedAt用10-02日精度、claimStart/End无明示则留空。仅Character Builder角色图像，不能套Face Swap每日5次或Seedance新人5段视频；视频Motion/Genjutsu另计，当前可用次数按账号Generate页。官方blog/new-ai-influencer标角色生成1.12积分/次及20积分/$1，5次比价$0.28。公告仍保留不等于每个账号现在都还有免费次数。
@@ -804,6 +810,8 @@
 - 2026-10-09：Kilo Code官网kilo.ai，官推@kilocode；与AWS Kiro（kiro.dev）是不同平台，不能按近似拼写归同一ID。官推2108557014913691902于2026-10-09T13:55:42Z宣布Step5Preview FREE for a week，是全局公告日起一周，非个人领取后7天；精确截止未公布，不造日期午夜。StepFun后续引用同一推文只补来源、不新建活动。平台已准入，官方句柄已登记，条目仍pending。
 
 ## meta
+
+- 2026-10-10：Muse免费层FAQ仅说明使用上限、可等待刷新或付费升级，无具体积分、Token、请求/生成次数或独立赠额；2px3按普通免费版不收拒绝。不是限时赞助模型或明确时长的付费会员试用；不能用unpriceable状态绕过收录口径。真实新增量化赠额或独立活动须提供新官方依据再核，不把同版摘要换ID重报。
 
 - 2026-10-09：Meta Muse复用meta平台并单独登记https://ai.meta.com/muse/作为信源。FAQ仅承诺有使用上限的免费版及上限刷新，未公开具体积分、次数、Token上限、刷新周期或独立赠额；按现行规则不把普通免费套餐写成羊毛。Meta Muse personal agent与Muse Spark模型、Muse Code、Meta Model API分开核验；Quest/VR的Meta Credits不是本产品AI额度。
 
