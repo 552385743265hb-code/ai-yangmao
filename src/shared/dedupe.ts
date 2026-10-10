@@ -24,7 +24,7 @@ export const normUrl = (value: string) => {
 // 档位、金额不同的标题（如 2,999 元档 / 4,999 元档）只差几个数字，不能当成同一条
 const digits = (s: string) => (s.normalize('NFKC').match(/\d[\d,.]*/g) ?? []).map(x => x.replace(/,/g, '')).sort().join('|');
 
-export interface DedupeCandidate { id: string; platformId: string; title: string; valueText: string; evidenceUrl: string; eventDay?: string | null; claimStart?: string | null; sameOccurrenceAs?:string; reviewState?:string }
+export interface DedupeCandidate { id: string; platformId: string; title: string; valueText: string; evidenceUrl: string; eventDay?: string | null; claimStart?: string | null; sameOccurrenceAs?:string; reviewState?:string; type?:string; claimMethod?:string; requirements?:string[]; audience?:string; models?:string[]; modalities?:string[] }
 type Incoming = Omit<DedupeCandidate,'id'> & {id?:string};
 const titleKey=(s:string)=>s.normalize('NFKC').toLowerCase().replace(/[\s\p{P}\p{S}]/gu,'');
 // Generic daily-credit descriptions may come from FAQ, pricing, or the account check-in page.
@@ -61,11 +61,44 @@ export const differentOccurrence = (a: Omit<DedupeCandidate, 'id'>, b: Omit<Dedu
   !!((a.eventDay && b.eventDay && a.eventDay !== b.eventDay) ||
     (a.claimStart && b.claimStart && a.claimStart !== b.claimStart && normUrl(a.evidenceUrl) !== normUrl(b.evidenceUrl)));
 
+// A free Token/Coding Plan can have a short pricing-card description and a longer
+// rules page. Match the recurring quota plus complete claim/model scope, not prose.
+function creditQuotas(text: string): Map<string, number> {
+  const out=new Map<string,number>();
+  const t=text.normalize('NFKC').toLowerCase().replace(/,/g,'');
+  const amount='(\\d+(?:\\.\\d+)?)\\s*(万|百万|k|m)?\\s*(?:积分|credits?|points?)';
+  const interval='(\\d+(?:\\.\\d+)?)\\s*(?:小时|hours?|hrs?)';
+  const add=(n:string,scale:string|undefined,hours:string)=>{
+    const value=Number(n)*({万:10000,百万:1000000,k:1000,m:1000000}[scale??'']??1);
+    const key=Number(hours)+'h';
+    // Contradictory same-period pools are not a safe identity signal.
+    if(out.has(key)&&out.get(key)!==value)out.set(key,NaN);else out.set(key,value);
+  };
+  for(const m of t.matchAll(new RegExp(amount+'\\s*(?:/|每|的滚动)\\s*'+interval,'g')))add(m[1],m[2],m[3]);
+  for(const m of t.matchAll(new RegExp('(?:每|滚动)\\s*'+interval+'\\s*(?:额度)?\\s*'+amount,'g')))add(m[2],m[3],m[1]);
+  return out;
+}
+export function sameRecurringCreditPlan(a: Incoming,b:DedupeCandidate):boolean {
+  if(a.eventDay||b.eventDay||differentOccurrence(a,b)||a.type!=='standing'||b.type!=='standing'||a.claimMethod!==b.claimMethod||!a.claimMethod||a.audience!==b.audience||!a.audience)return false;
+  const set=(xs:string[]|undefined)=>xs?.map(titleKey).sort().join('|');
+  if(!a.models?.length||!b.models?.length||set(a.models)!==set(b.models)||!a.requirements?.length||set(a.requirements)!==set(b.requirements)||!a.modalities?.length||set(a.modalities)!==set(b.modalities))return false;
+  const plan=(o:Incoming)=>{
+    const match=(o.title+' '+o.evidenceUrl).toLowerCase().match(/(token|coding)[\s-]*plan/);
+    return match?.[1];
+  };
+  if(!plan(a)||plan(a)!==plan(b))return false;
+  const qualifiers=(o:Incoming)=>(o.title.match(/国际|国内|海外|中国|美区|学生|教师|企业|团队|个人|专属|返赠|返利|邀请|推荐|注册|首次|international|global|student|team|enterprise|referral|cashback/gi)??[]).map(titleKey).sort().join('|');
+  if(qualifiers(a)!==qualifiers(b))return false;
+  const A=creditQuotas(a.valueText),B=creditQuotas(b.valueText);
+  const common=[...A.keys()].filter(key=>B.has(key));
+  return common.length>0&&common.every(key=>Number.isFinite(A.get(key))&&A.get(key)===B.get(key));
+}
+
 export function findDuplicate<T extends DedupeCandidate>(o: Incoming, existing: T[]): T | undefined {
   // Prefer the accepted canonical record over a rejected duplicate alias.
   const ranked=[...existing].sort((a,b)=>(a.reviewState==='approved'?0:a.reviewState==='pending'?1:2)-(b.reviewState==='approved'?0:b.reviewState==='pending'?1:2));
   return ranked.find(e => e.platformId === o.platformId && !ambiguousReset(o,e) && (
-    (!o.eventDay&&!e.eventDay&&genericDailyCredits(o)&&genericDailyCredits(e)) || (!!monthlyApiScope(o)&&monthlyApiScope(o)===monthlyApiScope(e)) || sameRecurringAlias(o,e) || sameRepostedWeek(o,e) || (!differentOccurrence(o,e) && (
+    sameRecurringCreditPlan(o,e) || (!o.eventDay&&!e.eventDay&&genericDailyCredits(o)&&genericDailyCredits(e)) || (!!monthlyApiScope(o)&&monthlyApiScope(o)===monthlyApiScope(e)) || sameRecurringAlias(o,e) || sameRepostedWeek(o,e) || (!differentOccurrence(o,e) && (
     (digits(e.title) === digits(o.title) && similarity(e.title, o.title) >= 0.85) ||
     (normUrl(e.evidenceUrl) === normUrl(o.evidenceUrl) && digits(e.valueText) === digits(o.valueText) && similarity(e.valueText, o.valueText) >= 0.85)))));
 }

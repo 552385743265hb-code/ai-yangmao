@@ -749,6 +749,8 @@
 
 ## sensenova
 
+- 2026-10-10重复复核：官网TokenPlan定价页的“Free · 公测、60,000积分/5小时”和文档的通用/Flash-Lite两池滚动5小时6万积分，是同一个免费档；复用volc-sensenova-token-plan-free-tier-extension（旧ID前缀是历史误归，不能为改前缀新建）。旧V2EX线索#546再次官方补证生成sensenova-sensenova-token-plan-free-tier，属于重复，不重新批准主项。不同官网页面、6万/60,000格式、概述省略每周额度均不是另一福利。无水印watermark=false免费是独立功能，不能因同属公测而合并；新人一次性礼、其他地区/模型/套餐/资格或真实新轮次须分别核实。硬去重按同平台、同计划、领取/资格/模型范围及滚动额度匹配，不再只看标题与URL。
+
 - 商汤 SenseNova TokenPlan 由商汤自己发放，不要挂到火山方舟等其他平台；社区帖只当线索，以 https://platform.sensenova.cn/docs “积分”一节和 https://www.sensenova.cn/token-plan 为准。
 - 2026-08-28 起为积分制：通用积分池与 Flash-Lite 专属积分池各滚动 5 小时 60,000、每周 600,000 积分；Flash-Lite 消费 1:1 返赠通用积分，30 天有效。公测期 ¥0/月，无截止日期；条目按常驻处理（type standing、endKind standing），规则变化看文档“积分”一节（2026-10-03 批量审核）。
 - 免费模型只列订阅页 Free 档点名的（目前 SenseNova 6.8 Flash Lite、SenseNova U1 Fast）；模型总览里的第三方模型未写入免费档，不列。积分无官方换算，美元留空。规则改动看文档“积分”一节，旧的“每 5 小时 N 次”是 7 月规则。（2026-10-02 管理员确认）
