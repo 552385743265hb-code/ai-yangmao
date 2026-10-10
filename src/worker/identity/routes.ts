@@ -56,6 +56,12 @@ identityAdminRoutes.onError((error,c)=>{
  if(error instanceof z.ZodError)return c.json({error:'invalid identity request'},400);
  return c.json({error:'identity operation unavailable',retryable:true},503);
 });
+identityAdminRoutes.get('/claim-decisions',async c=>{
+ const input=z.object({productId:z.string().min(1).max(200).optional(),cursor:z.string().max(200).default(''),limit:z.coerce.number().int().min(1).max(10).default(10)}).safeParse(c.req.query());if(!input.success)return c.json({error:'invalid claim cursor'},400);
+ const {productId,cursor,limit}=input.data;
+ const rows=await c.env.DB.prepare("SELECT d.id,d.candidate_id,d.reason_text,d.reason_code,d.scope_json,d.reopen_policy_json,c.facts_json,c.raw_candidate_json,o.final_url FROM review_decisions d JOIN intake_candidates c ON c.id=d.candidate_id JOIN source_observations o ON o.id=c.observation_id WHERE d.entity_id IS NULL AND d.action='reject' AND json_extract(d.scope_json,'$.kind')='claim' AND d.id>? AND (?2 IS NULL OR json_extract(c.facts_json,'$.issuerProductId.state')<>'known' OR json_extract(c.facts_json,'$.issuerProductId.value')=?2) AND NOT EXISTS(SELECT 1 FROM review_decisions n WHERE n.supersedes_id=d.id) ORDER BY d.id LIMIT ?3").bind(cursor,productId??null,limit+1).all<Record<string,unknown>>();
+ return c.json({decisions:rows.results.slice(0,limit).map(r=>({id:r.id,candidateId:r.candidate_id,reason:r.reason_text||r.reason_code,scope:JSON.parse(String(r.scope_json)),reopenPolicy:JSON.parse(String(r.reopen_policy_json)),facts:JSON.parse(String(r.facts_json)),quotes:(JSON.parse(String(r.raw_candidate_json)).quotes??[]).slice(0,5),url:r.final_url})),nextCursor:rows.results.length>limit?String(rows.results[limit-1].id):null});
+});
 identityAdminRoutes.get('/tasks',async c=>{
  const query=z.object({cursor:z.string().max(200).optional(),limit:z.coerce.number().int().min(1).max(5).default(5)}).safeParse(c.req.query());
  if(!query.success)return c.json({error:'invalid task cursor'},400);
@@ -75,6 +81,7 @@ identityAdminRoutes.get('/tasks',async c=>{
 identityAdminRoutes.post('/tasks/:id/resolve',async c=>{
  const raw=await c.req.json() as Record<string,unknown>;
  const service=new IdentityService(c.env.DB);
+ if(raw.action==='same_claim'){if(c.get('role')!=='admin')return c.json({error:'administrator required'},403);const {action:_action,...input}=raw;return c.json(await service.confirmRejectedClaim(c.req.param('id'),{...input,actor:c.get('who')}));}
  const result=raw.action==='same'||raw.action==='new'||raw.action==='distinct'
    ?await service.resolveIdentityTask(c.req.param('id'),{...raw,action:raw.action==='distinct'?'new':raw.action,actor:c.get('who')} as never)
    :await service.decideTask(c.req.param('id'),{...raw,actor:c.get('who'),role:c.get('role')} as never);

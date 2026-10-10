@@ -2,7 +2,7 @@ import { commitIdentityMutation, commandGuard } from './commit';
 import { z } from 'zod';
 import { officialTier } from '../../shared/official-review';
 import { candidateBatchInputSchema, observationInputSchema, observationReceiptSchema, intakeReceiptSchema, type CandidateBatchInput, type IntakeReceipt, type ObservationInput, type ObservationReceipt, type CanonicalTermsV1, type RetrievalPage, type VersionedEntity, reviewDecisionSchema, canonicalTermsSchema } from '../../shared/identity/types';
-import { identitySearchTokens, hashTerms, normalizeDocumentUrl, normalizeTerms, sha256, stableJson } from '../../shared/identity/normalize';
+import { claimIdentityKey, identitySearchTokens, hashTerms, normalizeDocumentUrl, normalizeTerms, sha256, stableJson } from '../../shared/identity/normalize';
 
 export class IdentityError extends Error {
   constructor(public status: 400 | 403 | 404 | 409 | 503, message: string) { super(message); }
@@ -185,7 +185,7 @@ export class IdentityStore {
         if (ambiguous||conflictingAssertion) { receipt.reasonCodes=['ambiguous_subitems']; receipt.outcome='deferred'; receipt.retryable=true; }
         const command = `candidate:${await sha256(stableJson([input.requestId,candidate.inputId]))}`;
         const result = await this.storageCommand(command,payloadHash,receipt,(guard,args)=>[
-          this.db.prepare(`INSERT INTO intake_candidates(id,observation_id,extraction_version,span_key,candidate_key,claim_family_key,assertion_facts_hash,raw_candidate_json,facts_json,facts_hash,state,last_error,receipt_json) SELECT ?,?,?,?,?,?,?,?,?,?,'deferred',?,? WHERE ${guard} ON CONFLICT(candidate_key) DO NOTHING`).bind(candidateId,input.observationId,input.extractionVersion,spanKey,key,familyKey,factsHash,JSON.stringify({candidate:candidate.rawCandidate,quotes:candidate.quotes,span:candidate.span}),JSON.stringify(facts),factsHash,receipt.reasonCodes.join(','),JSON.stringify(receipt),...args),
+          this.db.prepare(`INSERT INTO intake_candidates(id,observation_id,extraction_version,span_key,candidate_key,claim_family_key,assertion_facts_hash,claim_identity_key,raw_candidate_json,facts_json,facts_hash,state,last_error,receipt_json) SELECT ?,?,?,?,?,?,?,?,?,?,?,'deferred',?,? WHERE ${guard} ON CONFLICT(candidate_key) DO NOTHING`).bind(candidateId,input.observationId,input.extractionVersion,spanKey,key,familyKey,factsHash,claimIdentityKey(facts),JSON.stringify({candidate:candidate.rawCandidate,quotes:candidate.quotes,span:candidate.span}),JSON.stringify(facts),factsHash,receipt.reasonCodes.join(','),JSON.stringify(receipt),...args),
           ...input.leadIds.map(leadId=>this.db.prepare(`INSERT INTO lead_candidate_links(lead_id,candidate_id) SELECT ?,? WHERE ${guard} ON CONFLICT DO NOTHING`).bind(leadId,candidateId,...args)),
         ],'EXISTS(SELECT 1 FROM intake_candidates WHERE id=?)',[candidateId]);
         receipts.push(result);

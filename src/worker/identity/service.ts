@@ -1,3 +1,4 @@
+import {findClaimMemory} from './claim-memory';
 import {matchesEntityOfferVersion,differentCanonicalEntities} from './canonical';
 import { z } from 'zod';
 import { drizzle } from 'drizzle-orm/d1';
@@ -8,11 +9,11 @@ import { publicationError,validateStoredOffer } from '../publication';
 import { canonicalTermsSchema,resolutionResultSchema,decisionScopeSchema,reopenPolicySchema,intakeReceiptSchema,reviewDecisionSchema,type IntakeReceipt,type CanonicalTermsV1,type ResolutionResult,type EvidenceContext,type VersionedEntity } from '../../shared/identity/types';
 import { compareCandidate,evidenceGrounded,factSlots,RESOLVER_VERSION,RULES_VERSION } from '../../shared/identity/compare';
 import { decisionApplies,evaluateReopen,reviewTaskKey } from '../../shared/identity/decision-policy';
-import { hashTerms,sha256,stableJson } from '../../shared/identity/normalize';
+import { claimIdentityKey,hashTerms,sha256,stableJson } from '../../shared/identity/normalize';
 import { IdentityStore,IdentityError,readReviewDecision } from './store';
 import { MutationBuilder,commitIdentityMutation,readIdentityReceipt,type Binding,type ExpectedRevision } from './commit';
 type OfferRow=typeof tables.offers.$inferSelect;
-type CandidateRow={id:string;observation_id:string;facts_json:string;facts_hash:string;raw_candidate_json:string;receipt_json:string|null;revision:number;entity_id:string|null;state:string;last_error:string|null;claim_family_key:string|null;assertion_facts_hash:string|null};
+type CandidateRow={id:string;observation_id:string;facts_json:string;facts_hash:string;raw_candidate_json:string;receipt_json:string|null;revision:number;entity_id:string|null;state:string;task_id:string|null;last_error:string|null;claim_family_key:string|null;assertion_facts_hash:string|null};
 type EntityRow={routing_generation?:number;id:string;platform_id:string;canonical_offer_id:string|null;business_revision:number;publication_revision:number;current_approved_version_id:string|null};
 type TaskRow={id:string;task_key:string;kind:string;entity_id:string|null;version_id:string|null;base_version_id:string|null;state:string;revision:number;material_revision:number;decision_id:string|null;lease_context_json?:string|null};
 type ResolutionControl={task:TaskRow;actor:string;action:'same'|'new';reason?:string;facts?:CanonicalTermsV1;entityId?:string};
@@ -229,8 +230,37 @@ export class IdentityService {
    const receipt=intakeReceiptSchema.parse(JSON.parse(candidate.receipt_json!));receipt.outcome='duplicate_rejected';receipt.decisionId=decisionId;receipt.taskId=null;receipt.reasonCodes=['existing_refusal'];receipt.retryable=false;
    builder.update('intake_candidates',{state:'resolved_rejected',decision_id:decisionId,task_id:null,revision:candidate.revision+1,receipt_json:JSON.stringify(receipt)},'id=?',[candidate.id]);builder.assertOwnership('intake_candidates',candidate.id);
   }
+  const expected:ExpectedRevision[]=[{kind:'task',id:task.id,revision:task.revision}];
+  const keys=new Set(rows.results.map(c=>canonicalTermsSchema.parse(JSON.parse(c.facts_json))).flatMap(f=>f.issuerProductId.state==='known'&&f.mechanism.state==='known'?[f.issuerProductId.value+':'+f.mechanism.value]:[]));
+  for(const key of keys){const revision=(await this.db.prepare('SELECT revision FROM identity_blocks WHERE block_key=?').bind(key).first<{revision:number}>())?.revision??0;expected.push({kind:'block',id:key,revision});builder.insert('identity_blocks',{block_key:key,revision},'nothing');builder.update('identity_blocks',{revision:revision+1},'block_key=?',[key]);}
   builder.update('review_tasks',{state:'resolved',revision:task.revision+1,decision_id:firstDecision,lease_token:null,lease_until:null},'id=?',[task.id]);
-  return this.commit(builder,[{kind:'task',id:task.id,revision:task.revision}],{decisionId:firstDecision,publicationRevision:0});
+  return this.commit(builder,expected,{decisionId:firstDecision,publicationRevision:0});
+ }
+
+ async confirmRejectedClaim(taskId:string,raw:unknown):Promise<IntakeReceipt> {
+  const input=z.strictObject({requestId:z.string().min(1).max(160),expectedRevision:z.number().int().nonnegative(),candidateId:z.string(),decisionId:z.string(),facts:canonicalTermsSchema.optional(),reason:z.string().min(8).max(2000),actor:z.string().min(1)}).parse(raw);
+  const command='claim-same:'+input.requestId,payloadHash=await sha256(stableJson({taskId,...input}));const previous=await readIdentityReceipt<IntakeReceipt>(this.db,command,payloadHash);if(previous){if(previous.status==='conflict')throw new IdentityError(409,'request payload conflict');return previous.value!;}
+  const task=await this.db.prepare('SELECT * FROM review_tasks WHERE id=?').bind(taskId).first<TaskRow>();
+  const candidate=await this.db.prepare('SELECT * FROM intake_candidates WHERE id=?').bind(input.candidateId).first<CandidateRow>();
+  if(!task||task.entity_id||task.revision!==input.expectedRevision||!['open','manual','checking'].includes(task.state)||!candidate||candidate.entity_id||candidate.task_id!==taskId)throw new IdentityError(409,'unresolved claim task changed');
+  if(!await this.db.prepare('SELECT 1 FROM task_candidates WHERE task_id=? AND candidate_id=?').bind(taskId,candidate.id).first())throw new IdentityError(400,'candidate does not belong to task');
+  const row=await this.db.prepare("SELECT d.* FROM review_decisions d WHERE id=? AND action='reject' AND entity_id IS NULL AND NOT EXISTS(SELECT 1 FROM review_decisions n WHERE n.supersedes_id=d.id)").bind(input.decisionId).first<Record<string,unknown>>();
+  if(!row)throw new IdentityError(409,'active claim refusal missing');const decision=readReviewDecision(row);if(decision.scope.kind!=='claim'||!decision.candidateId)throw new IdentityError(403,'refusal scope cannot expand across observations');
+  const root=await this.db.prepare('SELECT * FROM intake_candidates WHERE id=?').bind(decision.candidateId).first<CandidateRow>();if(!root)throw new IdentityError(409,'original claim missing');
+  const facts=canonicalTermsSchema.parse(input.facts??JSON.parse(candidate.facts_json)),old=canonicalTermsSchema.parse(JSON.parse(root.facts_json)),evidence=await this.evidence({...candidate,facts_json:JSON.stringify(facts)});
+  const compared=compareCandidate(facts,{id:root.id,platformId:old.issuerProductId.state==='known'?old.issuerProductId.value:facts.issuerProductId.state==='known'?facts.issuerProductId.value:'unknown',revision:root.revision,publicationRevision:0,approvedVersionId:null,terms:old},{...evidence,confirmedEntityId:root.id});
+  if(compared.relation!=='SAME'||compared.conflicts.length)throw new IdentityError(409,'claim correspondence has conflicting or ungrounded facts');
+  const factsHash=await hashTerms(facts),reopen=await evaluateReopen(decision,facts,evidence),builder=new MutationBuilder(this.db,command,payloadHash),expected:ExpectedRevision[]=[{kind:'task',id:task.id,revision:task.revision}];
+  builder.require('EXISTS(SELECT 1 FROM intake_candidates WHERE id=? AND revision=?)',[candidate.id,candidate.revision]);builder.require('EXISTS(SELECT 1 FROM intake_candidates WHERE id=? AND revision=?)',[root.id,root.revision]);builder.require('NOT EXISTS(SELECT 1 FROM review_decisions WHERE supersedes_id=?)',[decision.id]);
+  if(facts.issuerProductId.state==='known'&&facts.mechanism.state==='known'){const key=facts.issuerProductId.value+':'+facts.mechanism.value,revision=(await this.db.prepare('SELECT revision FROM identity_blocks WHERE block_key=?').bind(key).first<{revision:number}>())?.revision??0;expected.push({kind:'block',id:key,revision});builder.insert('identity_blocks',{block_key:key,revision},'nothing');builder.update('identity_blocks',{revision:revision+1},'block_key=?',[key]);}
+  const receipt=intakeReceiptSchema.parse(JSON.parse(candidate.receipt_json!));Object.assign(receipt,{outcome:reopen.allowed?'evidence_reopen':'duplicate_rejected',entityId:null,versionId:null,canonicalOfferId:null,decisionId:decision.id,taskId:null,retryable:false,reasonCodes:reopen.allowed?reopen.reasonCodes:['human_confirmed_claim_refusal']});
+  if(reopen.allowed){const key=reviewTaskKey({kind:'evidence_reopen',entityId:'claim:'+root.id,refusalDecisionId:decision.id,basisHash:factsHash}),existing=await this.db.prepare("SELECT id FROM review_tasks WHERE task_key=? AND state IN ('open','manual','checking')").bind(key).first<{id:string}>();receipt.taskId=existing?.id??crypto.randomUUID();if(!existing){builder.insert('review_tasks',{id:receipt.taskId,task_key:key,kind:'evidence_reopen'});builder.insert('identity_events',{id:crypto.randomUUID(),event_key:`review:${receipt.taskId}:1:telegram`,task_id:receipt.taskId,kind:'review',payload_json:JSON.stringify({taskId:receipt.taskId,materialRevision:1,channel:'telegram'})});}builder.insert('task_candidates',{task_id:receipt.taskId,candidate_id:candidate.id},'nothing');}
+  builder.insert('identity_refusal_applications',{candidate_id:candidate.id,decision_id:decision.id,facts_hash:factsHash,rules_version:RULES_VERSION,canonical_candidate_id:root.id,identity_basis_json:JSON.stringify({humanConfirmed:true,reason:input.reason,actor:input.actor,observationId:candidate.observation_id})},'nothing');
+  const auditId=crypto.randomUUID();builder.insert('review_decisions',{id:auditId,candidate_id:candidate.id,action:'same',reason_code:'duplicate',reason_text:input.reason,basis_json:JSON.stringify({canonicalCandidateId:root.id,refusalDecisionId:decision.id}),scope_json:JSON.stringify({kind:'claim',candidateId:candidate.id}),reopen_policy_json:'{"kind":"manual","missingFacts":[]}',rules_version:RULES_VERSION,evidence_refs_json:JSON.stringify([candidate.observation_id]),actor:input.actor,idempotency_key:command});
+  const remaining=await this.db.prepare('SELECT 1 FROM intake_candidates WHERE task_id=? AND id<>? LIMIT 1').bind(task.id,candidate.id).first();builder.update('review_tasks',{state:remaining?'manual':'resolved',revision:task.revision+1,decision_id:remaining?null:auditId,lease_token:null,lease_until:null},'id=?',[task.id]);
+  if(!remaining)builder.update('identity_events',{status:'blocked'},"task_id=? AND kind='review' AND status='pending'",[task.id]);
+  builder.update('intake_candidates',{facts_json:JSON.stringify(facts),facts_hash:factsHash,claim_identity_key:claimIdentityKey(facts),decision_id:decision.id,task_id:receipt.taskId,state:reopen.allowed?'pending_identity':'resolved_rejected',receipt_json:JSON.stringify(receipt),revision:candidate.revision+1,last_error:null,next_attempt_at:null},'id=?',[candidate.id]);builder.assertOwnership('intake_candidates',candidate.id);
+  return this.commit(builder,expected,receipt);
  }
 
  async applyResolution(candidateId:string,suggestion:ResolutionResult,requestId:string):Promise<IntakeReceipt>{resolutionResultSchema.parse(suggestion);return this.resolveCandidate(candidateId,requestId,suggestion);}
@@ -263,11 +293,18 @@ export class IdentityService {
   const directRows=await this.db.prepare("SELECT d.* FROM review_decisions d WHERE candidate_id=? AND action='reject' AND NOT EXISTS(SELECT 1 FROM review_decisions newer WHERE newer.supersedes_id=d.id) LIMIT 41").bind(candidate.id).all<Record<string,unknown>>();
   const direct=directRows.results.map(readReviewDecision).filter(d=>decisionApplies(d,facts,{entityId:null,versionId:null,candidateId:candidate.id,observationId:candidate.observation_id}));
   if(direct.length===1&&!control){receipt.outcome='duplicate_rejected';receipt.decisionId=direct[0].id;receipt.reasonCodes=['existing_refusal'];builder.require('NOT EXISTS(SELECT 1 FROM review_decisions WHERE supersedes_id=?)',[direct[0].id]);}
-  let blockKey:string|null=null,blockRevision=0;
-  if(receipt.outcome!=='duplicate_rejected'&&productId&&mechanism&&!evidence.truncated&&!candidate.last_error?.includes('invalid_evidence')&&(control||(!candidate.last_error?.includes('ambiguous_subitems')&&!ambiguousFamily))) {
-   blockKey=productId+':'+mechanism;
-   blockRevision=(await this.db.prepare('SELECT revision FROM identity_blocks WHERE block_key=?').bind(blockKey).first<{revision:number}>())?.revision??0;
-   expected.push({kind:'block',id:blockKey,revision:blockRevision});
+  const blockKey=productId&&mechanism?productId+':'+mechanism:null;
+  const blockRevision=blockKey?(await this.db.prepare('SELECT revision FROM identity_blocks WHERE block_key=?').bind(blockKey).first<{revision:number}>())?.revision??0:0;
+  if(blockKey)expected.push({kind:'block',id:blockKey,revision:blockRevision});
+  const claimMemory=!control&&receipt.outcome!=='duplicate_rejected'&&!ambiguousFamily?await findClaimMemory(this.db,candidate.id,facts,evidence):{match:null,unresolved:false};
+  if(claimMemory.match){
+   const memory=claimMemory.match;receipt.decisionId=memory.decision.id;receipt.outcome=memory.reopen.allowed?'evidence_reopen':'duplicate_rejected';receipt.reasonCodes=memory.reopen.allowed?memory.reopen.reasonCodes:['existing_claim_refusal'];
+   builder.require('NOT EXISTS(SELECT 1 FROM review_decisions WHERE supersedes_id=?)',[memory.decision.id]);builder.require('EXISTS(SELECT 1 FROM intake_candidates WHERE id=? AND revision=?)',[memory.proofCandidateId,memory.proofRevision]);
+   builder.insert('identity_refusal_applications',{candidate_id:candidate.id,decision_id:memory.decision.id,facts_hash:candidate.facts_hash,rules_version:RULES_VERSION,canonical_candidate_id:memory.canonicalCandidateId,identity_basis_json:JSON.stringify({humanConfirmed:false,proofCandidateId:memory.proofCandidateId,observationId:candidate.observation_id})},'nothing');
+   if(memory.reopen.allowed){taskKind='evidence_reopen';taskKey=reviewTaskKey({kind:'evidence_reopen',entityId:'claim:'+memory.canonicalCandidateId,refusalDecisionId:memory.decision.id,basisHash:candidate.facts_hash});}
+  }
+  if(claimMemory.unresolved)receipt.reasonCodes.push('claim_identity_unproven');
+  if(!claimMemory.match&&!claimMemory.unresolved&&receipt.outcome!=='duplicate_rejected'&&productId&&mechanism&&!evidence.truncated&&!candidate.last_error?.includes('invalid_evidence')&&(control||(!candidate.last_error?.includes('ambiguous_subitems')&&!ambiguousFamily))) {
    const page=await this.store.retrieveCandidates(productId,facts);
    decisions=page.decisions;
    const revoked=await this.db.prepare("SELECT a.id,coalesce(owner.merged_into,owner.id) entity_id FROM identity_aliases a JOIN benefit_entities owner ON owner.id=a.entity_id WHERE a.status='revoked' AND ((a.namespace='official_campaign' AND a.alias_key=? AND a.scope_key=?) OR (a.namespace='manual' AND a.alias_key=?)) AND NOT EXISTS(SELECT 1 FROM identity_aliases active WHERE active.namespace=a.namespace AND active.alias_key=a.alias_key AND active.scope_key=a.scope_key AND active.status='active') ORDER BY a.id LIMIT 40").bind(facts.occurrenceAnchor.state==='known'?facts.occurrenceAnchor.value:'',blockKey,'candidate:'+candidate.id).all<{id:string;entity_id:string}>();
@@ -350,7 +387,7 @@ export class IdentityService {
     builder.assert("EXISTS(SELECT 1 FROM identity_aliases a JOIN benefit_entities owner ON owner.id=a.entity_id LEFT JOIN benefit_entities root ON root.id=owner.merged_into WHERE a.namespace='official_campaign' AND a.alias_key=? AND a.scope_key=? AND a.status='active' AND ((owner.state='active' AND owner.id=?) OR (owner.state='merged' AND root.state='active' AND root.id=? AND root.platform_id=owner.platform_id)))",[facts.occurrenceAnchor.value,blockKey!,entity.id,entity.id]);
    }
    builder.insert('entity_observations',{entity_id:entity.id,candidate_id:candidate.id,relation:comparison?.termsRelation==='CHANGED'?'changed':comparison?.termsRelation==='EQUIVALENT'?'same':'evidence_only',resolver_version:RESOLVER_VERSION,reason_json:JSON.stringify(receipt.reasonCodes)},'nothing');
-  } else if(receipt.outcome!=='duplicate_rejected'){receipt.outcome='needs_identity_review';receipt.entityId=null;receipt.versionId=null;receipt.reasonCodes.push('identity_unproven');}
+  } else if(!['duplicate_rejected','evidence_reopen'].includes(receipt.outcome)){receipt.outcome='needs_identity_review';receipt.entityId=null;receipt.versionId=null;receipt.reasonCodes.push('identity_unproven');}
   if(!['duplicate_approved','duplicate_rejected'].includes(receipt.outcome)) {
    const active=await this.db.prepare("SELECT * FROM review_tasks WHERE task_key=? AND state IN ('open','checking','manual')").bind(taskKey).first<TaskRow>();
    const taskId=active?.id??crypto.randomUUID();receipt.taskId=taskId;
@@ -390,7 +427,7 @@ export class IdentityService {
    const remaining=await this.db.prepare('SELECT 1 FROM task_candidates tc JOIN intake_candidates c ON c.id=tc.candidate_id WHERE tc.task_id=? AND c.task_id=? AND c.id<>? LIMIT 1').bind(control.task.id,control.task.id,candidate.id).first();
    builder.update('review_tasks',{state:remaining?'manual':'resolved',revision:control.task.revision+1,decision_id:remaining?null:decisionId,lease_token:null,lease_until:null},'id=?',[control.task.id]);
   }
-  builder.update('intake_candidates',{state:receipt.outcome==='duplicate_rejected'?'resolved_rejected':receipt.outcome==='duplicate_approved'||receipt.outcome==='duplicate_pending'?'resolved_same':receipt.outcome==='created_pending'?'pending_initial':receipt.outcome==='proposed_update'?'pending_change':'pending_identity',entity_id:receipt.entityId,version_id:receipt.versionId,task_id:receipt.taskId,decision_id:receipt.decisionId,revision:candidate.revision+1,receipt_json:JSON.stringify(receipt),last_error:null,next_attempt_at:null,lease_token:null,lease_until:null,...(control?.facts?{facts_json:JSON.stringify(facts),facts_hash:await hashTerms(facts)}:{})},'id=? AND revision=?',[candidate.id,candidate.revision]);
+  builder.update('intake_candidates',{state:receipt.outcome==='duplicate_rejected'?'resolved_rejected':receipt.outcome==='duplicate_approved'||receipt.outcome==='duplicate_pending'?'resolved_same':receipt.outcome==='created_pending'?'pending_initial':receipt.outcome==='proposed_update'?'pending_change':'pending_identity',entity_id:receipt.entityId,version_id:receipt.versionId,task_id:receipt.taskId,decision_id:receipt.decisionId,revision:candidate.revision+1,receipt_json:JSON.stringify(receipt),last_error:null,next_attempt_at:null,lease_token:null,lease_until:null,...(control?.facts?{facts_json:JSON.stringify(facts),facts_hash:await hashTerms(facts),claim_identity_key:claimIdentityKey(facts)}:{})},'id=? AND revision=?',[candidate.id,candidate.revision]);
   builder.assert('EXISTS(SELECT 1 FROM intake_candidates WHERE id=? AND revision=?)',[candidate.id,candidate.revision+1]);builder.assertOwnership('intake_candidates',candidate.id);
   return this.commit(builder,expected,receipt);
  }

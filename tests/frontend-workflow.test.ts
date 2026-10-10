@@ -13,7 +13,7 @@ function fixture(handle: (url: string, init?: RequestInit) => unknown | Promise<
   window.scrollTo = () => {};
   const charts = new Map<string, any>();
   const storage = { getItem: () => null, setItem() {}, removeItem() {} };
-  const context = createContext({ window, document, console, Intl, Date, Map, Set, URL, Response, FormData,
+  const context = createContext({ window, document, console, Intl, Date, Map, Set, URL, URLSearchParams, Response, FormData,
     location: { hash: '#admin' }, navigator: {}, getComputedStyle: () => ({ getPropertyValue: () => '#123456' }),
     matchMedia: () => ({ matches: false, addEventListener() {} }), MutationObserver: class { observe() {} },
     localStorage: storage, sessionStorage: storage, setTimeout, clearTimeout, setInterval() {},
@@ -559,4 +559,13 @@ it('A27 an unknown identity task can submit an explicitly confirmed product and 
  const f=fixture((url,init)=>{if(init?.method==='POST'){sent.push(JSON.parse(String(init.body)));return {};}return url.includes('/identity/tasks')?{tasks:[task]}:queue([]);});await f.run('admQueue()');const card=f.document.querySelector('[data-identity-task="unknown"]')!;
  expect(card.querySelector('[data-identity-product]')).not.toBeNull();(card.querySelector('[data-identity-product] option[value="vendor"]') as HTMLOptionElement).selected=true;(card.querySelector('[data-identity-mechanism] option[value="signup_grant"]') as HTMLOptionElement).selected=true;(card.querySelector('[data-identity-reason]') as HTMLInputElement).value='已核对官网注册礼';
  card.querySelector('[data-identity-action="new"]')!.dispatchEvent(new f.window.Event('click'));card.querySelector('[data-identity-confirm]')!.dispatchEvent(new f.window.Event('click'));await pause();expect(sent[0].facts).toMatchObject({issuerProductId:{state:'known',value:'vendor'},mechanism:{state:'known',value:'signup_grant'}});expect(sent[0].reason).toBe('已核对官网注册礼');
+});
+it('R02 offerless claim cards let administrators inspect and explicitly preview an original refusal',async()=>{
+ const sent:any[]=[];const task={id:'claim-task',kind:'identity',revision:2,sources:[{candidateId:'c-new',final_url:'https://vendor.example/new',quotes:[{id:'q',quote:'Campaign x grant'}],facts:{issuerProductId:{state:'known',value:'vendor'},mechanism:{state:'unknown'}}}]};
+ const f=fixture((url,init)=>{if(init?.method==='POST'){sent.push(JSON.parse(String(init.body)));return {};}if(url.includes('/claim-decisions'))return {decisions:[{id:'original-refusal',reason:'Original narrow refusal',facts:{},quotes:[{quote:'Original claim evidence'}],url:'https://vendor.example/old'}],nextCursor:null};return url.includes('/identity/tasks')?{tasks:[task]}:queue([]);});
+ await f.run('admQueue()');const card=f.document.querySelector('[data-identity-task="claim-task"]')!;expect(card.querySelector('[data-identity-claim-search]')).not.toBeNull();card.querySelector('[data-identity-claim-search]')!.dispatchEvent(new f.window.Event('click'));await pause();expect(card.textContent).toContain('Original claim evidence');card.querySelector('[data-identity-claim-choice]')!.dispatchEvent(new f.window.Event('click'));
+ (card.querySelector('[data-identity-reason]') as HTMLInputElement).value='核对两份官方原文确为同一项已拒奖励';card.querySelector('[data-identity-action="same_claim"]')!.dispatchEvent(new f.window.Event('click'));expect(sent).toHaveLength(0);expect(card.querySelector('[data-identity-preview]')!.textContent).toContain('原拒绝');card.querySelector('[data-identity-confirm]')!.dispatchEvent(new f.window.Event('click'));await pause();expect(sent[0]).toMatchObject({action:'same_claim',candidateId:'c-new',decisionId:'original-refusal',expectedRevision:2});
+});
+it('R02 an offerless evidence reopen requires identity resolution before any approval control',async()=>{
+ const task={id:'reopen-claim',kind:'evidence_reopen',entity:null,revision:0,sources:[{candidateId:'c',final_url:'https://vendor.example',quotes:[],facts:{}}]};const f=fixture(url=>url.includes('/identity/tasks')?{tasks:[task]}:queue([]));await f.run('admQueue()');const card=f.document.querySelector('[data-identity-task="reopen-claim"]')!;expect(card.querySelector('[data-identity-action="new"]')).not.toBeNull();expect(card.querySelector('[data-identity-action="approve"]')).toBeNull();
 });
