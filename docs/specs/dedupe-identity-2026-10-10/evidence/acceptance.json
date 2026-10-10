@@ -1,0 +1,1731 @@
+{
+  "schemaVersion": "identity-acceptance-v1",
+  "status": "passed",
+  "scope": "Executed synthetic assertions, with manual comparison to ACCEPTANCE.md; not human-corpus or production acceptance.",
+  "scenarios": [
+    {
+      "id": "A01",
+      "status": "passed",
+      "tests": [
+        {
+          "file": "tests/identity-normalize.test.ts",
+          "name": "canonical terms A01 decimal and NFKC normalize without touching evidence references or the input",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-normalize.test.ts",
+          "name": "canonical terms A01 hashes ignore provenance and set order but retain model versions",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-normalize.test.ts",
+          "name": "canonical terms A01 exact decimal normalization does not round large values",
+          "status": "passed"
+        }
+      ],
+      "redLogs": [
+        "task1-red-behavior.log"
+      ],
+      "bootstrapRedLogs": [
+        "task1-red.log"
+      ]
+    },
+    {
+      "id": "A02",
+      "status": "passed",
+      "tests": [
+        {
+          "file": "tests/identity-normalize.test.ts",
+          "name": "canonical terms A02 calendar and rolling cadences and independent currencies/pools never collapse",
+          "status": "passed"
+        }
+      ],
+      "redLogs": [],
+      "bootstrapRedLogs": [
+        "task1-red.log"
+      ]
+    },
+    {
+      "id": "A03",
+      "status": "passed",
+      "tests": [
+        {
+          "file": "tests/identity-normalize.test.ts",
+          "name": "canonical terms A03 URL identity strips tracking only and preserves content parameters/fragments",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-observations.test.ts",
+          "name": "observation and candidate shadow storage A03 ten fetches create one observation and advance only lastSeen, with no legacy side effects",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-observations.test.ts",
+          "name": "observation and candidate shadow storage A03 request response loss replays, payload reuse conflicts without changing the stored text",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-observations.test.ts",
+          "name": "observation and candidate shadow storage A03 cross-domain redirects and indirect fetches do not inherit official trust",
+          "status": "passed"
+        }
+      ],
+      "redLogs": [
+        "task1-red-behavior.log",
+        "task2-red.log"
+      ],
+      "bootstrapRedLogs": [
+        "task1-red.log"
+      ]
+    },
+    {
+      "id": "A04",
+      "status": "passed",
+      "tests": [
+        {
+          "file": "tests/identity-observations.test.ts",
+          "name": "observation and candidate shadow storage A04 a page retains signup, daily and paid subitems with independent candidate IDs and lead links",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-observations.test.ts",
+          "name": "A04 independent mechanisms sharing one exact sentence keep both candidates",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-observations.test.ts",
+          "name": "A04 unresolved subitems sharing a span are reported as ambiguous with both raw inputs retained",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-phase2-replay.test.ts",
+          "name": "A04/A06 frozen synthetic page preserves a refused item a pending item and a failed item through retry",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-shadow.test.ts",
+          "name": "A04/A05 shadow captures original text and stable spans within the per-request write budget without calling models or the legacy writer",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-shadow.test.ts",
+          "name": "A04 legacy structured mechanisms distinguish independent grants with shared wording",
+          "status": "passed"
+        }
+      ],
+      "redLogs": [
+        "p2a-ambiguous-red.log",
+        "p2a-review-red.log",
+        "task2-red.log",
+        "task2-shadow-red.log"
+      ],
+      "bootstrapRedLogs": []
+    },
+    {
+      "id": "A05",
+      "status": "passed",
+      "tests": [
+        {
+          "file": "tests/identity-adapters.test.ts",
+          "name": "A05 shadow and off modes preserve legacy behavior and never auto-create identity business state",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-observations.test.ts",
+          "name": "observation and candidate shadow storage A05 translated title and random input ID never change span identity; extraction revisions preserve both audits",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-shadow.test.ts",
+          "name": "A04/A05 shadow captures original text and stable spans within the per-request write budget without calling models or the legacy writer",
+          "status": "passed"
+        }
+      ],
+      "redLogs": [
+        "task2-red.log",
+        "task2-shadow-red.log"
+      ],
+      "bootstrapRedLogs": []
+    },
+    {
+      "id": "A06",
+      "status": "passed",
+      "tests": [
+        {
+          "file": "tests/identity-adapters.test.ts",
+          "name": "A06 lead aggregation keeps a durable identity task visible and never invents an offer ID",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-client.test.ts",
+          "name": "A06 fifty legacy candidates are split into ten-item requests with positional receipts intact",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-client.test.ts",
+          "name": "A06 a missing receipt never becomes a successful batch",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-observations.test.ts",
+          "name": "observation and candidate shadow storage A06 one failed write remains deferred; replay returns earlier receipts and retries only the missing row",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-observations.test.ts",
+          "name": "observation and candidate shadow storage A06 oversized batches reject all eleven and do not silently drop a candidate",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-observations.test.ts",
+          "name": "A06 invalid normalized facts reject the batch before declaring extraction complete",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-phase2-replay.test.ts",
+          "name": "A04/A06 frozen synthetic page preserves a refused item a pending item and a failed item through retry",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-retry.test.ts",
+          "name": "A06 resumes only server-selected deferred candidates without another extraction or search call",
+          "status": "passed"
+        }
+      ],
+      "redLogs": [
+        "p2a-review-red.log",
+        "task2-red.log",
+        "task5-client-red.log",
+        "task5-retry-red.log"
+      ],
+      "bootstrapRedLogs": []
+    },
+    {
+      "id": "A07",
+      "status": "passed",
+      "tests": [
+        {
+          "file": "tests/identity-adapters.test.ts",
+          "name": "A07 manual source supplementation preserves linked/rejected resolution without implicit reopening",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-service.test.ts",
+          "name": "A07 official enrichment updates only pending media evidence and preserves the same task and manual notes",
+          "status": "passed"
+        }
+      ],
+      "redLogs": [
+        "task5-adapters-red.log",
+        "task5-enrich-red.log"
+      ],
+      "bootstrapRedLogs": []
+    },
+    {
+      "id": "A08",
+      "status": "passed",
+      "tests": [
+        {
+          "file": "tests/identity-compare.test.ts",
+          "name": "A08 omissions never erase known facts; wholly vague candidates are insufficient",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-normalize.test.ts",
+          "name": "canonical terms A08 unknown is neither zero nor not applicable; omitted eligibility is not everyone",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-service.test.ts",
+          "name": "A08 missing facts do not mint a partial version or permit identity-task approval",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-service.test.ts",
+          "name": "A08 a partial duplicate reuses the pending version without reinserting it",
+          "status": "passed"
+        }
+      ],
+      "redLogs": [
+        "p2c-review-red.log",
+        "task4-protection-red.log"
+      ],
+      "bootstrapRedLogs": [
+        "task1-red.log"
+      ]
+    },
+    {
+      "id": "A09",
+      "status": "passed",
+      "tests": [
+        {
+          "file": "tests/identity-compare.test.ts",
+          "name": "A09 confirmed multilingual campaign with equivalent facts adds evidence without changing terms",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-service.test.ts",
+          "name": "A09 manual same confirmation links a weak source without another offer or publication",
+          "status": "passed"
+        }
+      ],
+      "redLogs": [
+        "task3-compare-red.log",
+        "task5-manual-red.log"
+      ],
+      "bootstrapRedLogs": []
+    },
+    {
+      "id": "A10",
+      "status": "passed",
+      "tests": [
+        {
+          "file": "tests/identity-compare.test.ts",
+          "name": "A10 same title/amount but independent eligibility cannot establish identity",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-compare.test.ts",
+          "name": "A10 independent mechanisms cannot be merged merely because the same umbrella campaign is quoted",
+          "status": "passed"
+        }
+      ],
+      "redLogs": [
+        "task3-extra-red.log"
+      ],
+      "bootstrapRedLogs": []
+    },
+    {
+      "id": "A11",
+      "status": "passed",
+      "tests": [
+        {
+          "file": "tests/identity-compare.test.ts",
+          "name": "A11 actual issuer wins over a common parent or a shared model",
+          "status": "passed"
+        }
+      ],
+      "redLogs": [
+        "task3-compare-red.log"
+      ],
+      "bootstrapRedLogs": []
+    },
+    {
+      "id": "A12",
+      "status": "passed",
+      "tests": [
+        {
+          "file": "tests/identity-compare.test.ts",
+          "name": "A12 unproven models scope replacement cannot merge",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-compare.test.ts",
+          "name": "A12 unproven pool scope replacement cannot merge",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-compare.test.ts",
+          "name": "A12 unproven geography scope replacement cannot merge",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-compare.test.ts",
+          "name": "A12 unproven channel scope replacement cannot merge",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-compare.test.ts",
+          "name": "A12 one pool replacement cannot authorize a change in a second pool",
+          "status": "passed"
+        }
+      ],
+      "redLogs": [
+        "p2b-review-red.log"
+      ],
+      "bootstrapRedLogs": []
+    },
+    {
+      "id": "A13",
+      "status": "passed",
+      "tests": [
+        {
+          "file": "tests/identity-compare.test.ts",
+          "name": "A13 same-day independent resets remain distinct despite otherwise equal facts",
+          "status": "passed"
+        }
+      ],
+      "redLogs": [
+        "task3-compare-red.log"
+      ],
+      "bootstrapRedLogs": []
+    },
+    {
+      "id": "A14",
+      "status": "passed",
+      "tests": [
+        {
+          "file": "tests/identity-compare.test.ts",
+          "name": "A14 same digits with a grounded cadence replacement are SAME CHANGED",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-service.test.ts",
+          "name": "A14/A17 approval is the only publication boundary, including restoring old terms",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-service.test.ts",
+          "name": "A14 different proposals remain visible as a conflict instead of replacing the first draft",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-service.test.ts",
+          "name": "A14 an edit to a published mapped offer creates a draft and preserves the approved projection",
+          "status": "passed"
+        }
+      ],
+      "redLogs": [
+        "task3-compare-red.log",
+        "task4-protection-red.log",
+        "task4-service-red.log",
+        "task5-edit-red.log"
+      ],
+      "bootstrapRedLogs": []
+    },
+    {
+      "id": "A15",
+      "status": "passed",
+      "tests": [
+        {
+          "file": "tests/identity-compare.test.ts",
+          "name": "A15 amounts and quoted text presentation drift do not constitute changed facts",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-model.test.ts",
+          "name": "A15 unrelated page text and observation IDs do not invalidate the reviewed evidence basis",
+          "status": "passed"
+        }
+      ],
+      "redLogs": [
+        "task3-compare-red.log",
+        "task3-extra-red.log"
+      ],
+      "bootstrapRedLogs": []
+    },
+    {
+      "id": "A16",
+      "status": "passed",
+      "tests": [
+        {
+          "file": "tests/identity-compare.test.ts",
+          "name": "A16 trusted scope replacement needs wording from the relevant quote",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-compare.test.ts",
+          "name": "A16 unrelated replacement wording cannot authorize an invented amount",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-compare.test.ts",
+          "name": "A16 explicit claim deadline and renewal replacements produce CHANGED without publishing",
+          "status": "passed"
+        }
+      ],
+      "redLogs": [
+        "p2b-proof-red.log",
+        "p2b-review-red.log",
+        "task3-compare-red.log"
+      ],
+      "bootstrapRedLogs": []
+    },
+    {
+      "id": "A17",
+      "status": "passed",
+      "tests": [
+        {
+          "file": "tests/identity-compare.test.ts",
+          "name": "A17 restored historical terms are compared with the current approved B version",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-decisions.test.ts",
+          "name": "A17 initial and base-to-target tasks are stable while restoring an old version is a new transition",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-merge.test.ts",
+          "name": "A17/A40 changed notices inherit a proven transition only at the merge publication boundary",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-notifications.test.ts",
+          "name": "A17/A20 publication marks use approved publicationRevision and ack consumes only their event",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-notifications.test.ts",
+          "name": "A17 an urgent initial announcement suppresses the same publication new event",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-service.test.ts",
+          "name": "A14/A17 approval is the only publication boundary, including restoring old terms",
+          "status": "passed"
+        }
+      ],
+      "redLogs": [
+        "p2b-proof-red.log",
+        "p3b-review-red2.log",
+        "task3-compare-red.log",
+        "task4-decisions-red.log",
+        "task4-service-red.log",
+        "task6-notify-red.log",
+        "task6-urgent-red.log",
+        "task8-transition-red.log"
+      ],
+      "bootstrapRedLogs": [
+        "task8-red.log"
+      ]
+    },
+    {
+      "id": "A18",
+      "status": "passed",
+      "tests": [
+        {
+          "file": "tests/identity-model.test.ts",
+          "name": "A18/A19 assist off, truncated input and incomplete history make no provider call",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-retrieval.test.ts",
+          "name": "A18 all states are visible in bounded keyset pages and overflow is never complete",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-retrieval.test.ts",
+          "name": "A18 exact aliases beyond top40 are returned from the main table and wrong product aliases are excluded",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-retrieval.test.ts",
+          "name": "A18 lookup faults propagate as retryable errors, never an empty successful history",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-retrieval.test.ts",
+          "name": "A18 product filtering and cursors cannot expose another product history",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-retrieval.test.ts",
+          "name": "A18 FTS uses bounded product-scoped Chinese recall while missing index entries stay in the structured page",
+          "status": "passed"
+        },
+        {
+          "file": "tests/pipeline-workflow.test.ts",
+          "name": "A18 official extraction never treats an unavailable identity index as empty history",
+          "status": "passed"
+        }
+      ],
+      "redLogs": [
+        "task3-fts-red.log",
+        "task3-model-red.log",
+        "task3-retrieval-red.log",
+        "task5-index-red.log"
+      ],
+      "bootstrapRedLogs": []
+    },
+    {
+      "id": "A19",
+      "status": "passed",
+      "tests": [
+        {
+          "file": "tests/identity-compare.test.ts",
+          "name": "A19 unverified/truncated/forged anchor references cannot prove identity or replacement",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-compare.test.ts",
+          "name": "A19 replacement direction must agree with the proposed after-value",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-model.test.ts",
+          "name": "A19 candidate-external IDs, fake quotes and injected approval fields are rejected",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-model.test.ts",
+          "name": "A18/A19 assist off, truncated input and incomplete history make no provider call",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-model.test.ts",
+          "name": "A19 a correct deterministic duplicate bypasses the model even with assistance enabled",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-model.test.ts",
+          "name": "A19 changing a fact citation binding invalidates cache and cannot override current quote validation",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-model.test.ts",
+          "name": "A19 inherited object properties cannot masquerade as evidence reference IDs",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-observations.test.ts",
+          "name": "observation and candidate shadow storage A19 fake quotes and candidate provenance cannot create trusted facts",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-service.test.ts",
+          "name": "A19 task results cannot name an existing entity outside the leased candidate set",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-service.test.ts",
+          "name": "A19 an existing campaign alias cannot validate a fabricated incoming anchor",
+          "status": "passed"
+        }
+      ],
+      "redLogs": [
+        "p2b-review-red.log",
+        "task2-red.log",
+        "task3-model-red.log",
+        "task5-anchor-red.log",
+        "task5-lease-scope-red.log",
+        "task5-reference-red.log"
+      ],
+      "bootstrapRedLogs": []
+    },
+    {
+      "id": "A20",
+      "status": "passed",
+      "tests": [
+        {
+          "file": "tests/identity-adapters.test.ts",
+          "name": "A20 enforce legacy adapter returns typed per-candidate receipts and never auto-approves",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-notifications.test.ts",
+          "name": "A17/A20 publication marks use approved publicationRevision and ack consumes only their event",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-schema.test.ts",
+          "name": "identity additive migration A20 fresh and 0016 upgrade preserve history and expose all identity tables",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-service.test.ts",
+          "name": "A20 request replay does not create another event or decision",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-service.test.ts",
+          "name": "A20/A28 task suggestion replay is idempotent and does not increment material revision",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-transaction.test.ts",
+          "name": "A20 same request/payload replays exactly one task and business revision",
+          "status": "passed"
+        }
+      ],
+      "redLogs": [
+        "task1-schema-red.log",
+        "task4-lease-red.log",
+        "task4-service-red.log",
+        "task4-transaction-red.log",
+        "task5-adapters-red.log",
+        "task6-notify-red.log"
+      ],
+      "bootstrapRedLogs": []
+    },
+    {
+      "id": "A21",
+      "status": "passed",
+      "tests": [
+        {
+          "file": "tests/identity-transaction.test.ts",
+          "name": "A21 same request with a different payload conflicts without changing original result",
+          "status": "passed"
+        }
+      ],
+      "redLogs": [
+        "task4-transaction-red.log"
+      ],
+      "bootstrapRedLogs": []
+    },
+    {
+      "id": "A22",
+      "status": "passed",
+      "tests": [
+        {
+          "file": "tests/identity-service.test.ts",
+          "name": "A22 stale task cards preserve proposals and produce no decision or outbox changes",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-service.test.ts",
+          "name": "A22 manual proposal edits block stale publication and preserve the edited draft",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-service.test.ts",
+          "name": "A22 rejecting a changed version atomically retains legacy refusal evidence and audit",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-service.test.ts",
+          "name": "A22 current manually refreshed proposal can approve",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-service.test.ts",
+          "name": "A22 current manually refreshed proposal can reject",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-service.test.ts",
+          "name": "A22 manual evidence reopen approve completes its owned proposal",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-service.test.ts",
+          "name": "A22 manual evidence reopen reject completes its owned proposal",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-transaction.test.ts",
+          "name": "A22 zero-row entity or task guard makes every dependent write a no-op",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-transaction.test.ts",
+          "name": "A22 an orphan staged row cannot arm writes after the head revision guard matches zero rows",
+          "status": "passed"
+        }
+      ],
+      "redLogs": [
+        "p2c-review-red.log",
+        "task4-protection-red.log",
+        "task4-service-red.log",
+        "task5-nonce-red.log"
+      ],
+      "bootstrapRedLogs": []
+    },
+    {
+      "id": "A23",
+      "status": "passed",
+      "tests": [
+        {
+          "file": "tests/identity-merge.test.ts",
+          "name": "A23/A35 a write between preflight and transaction is caught by in-batch legacy state guards",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-notifications.test.ts",
+          "name": "A23 notification ack failure rolls back both marks and event consumption",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-schema.test.ts",
+          "name": "identity additive migration A23/A45 invalid references, staged states and malformed JSON cannot persist",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-transaction.test.ts",
+          "name": "A23 SQL failure at statement 2 rolls back command and business writes",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-transaction.test.ts",
+          "name": "A23 SQL failure at statement 3 rolls back command and business writes",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-transaction.test.ts",
+          "name": "A23 SQL failure at statement 4 rolls back command and business writes",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-transaction.test.ts",
+          "name": "A23 final assertion failure is a CHECK violation inside the batch, never partial success",
+          "status": "passed"
+        }
+      ],
+      "redLogs": [
+        "task1-schema-red.log",
+        "task4-transaction-red.log"
+      ],
+      "bootstrapRedLogs": [
+        "task8-red.log"
+      ]
+    },
+    {
+      "id": "A24",
+      "status": "passed",
+      "tests": [
+        {
+          "file": "tests/identity-schema.test.ts",
+          "name": "identity additive migration A24 strong aliases enforce uniqueness, legacy offer identity is global, resolved task keys can be reused",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-service.test.ts",
+          "name": "A24 same strong campaign across two requests creates one entity/version/task and no publication",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-transaction.test.ts",
+          "name": "A24 concurrent identical requests return one applied receipt and one replay",
+          "status": "passed"
+        }
+      ],
+      "redLogs": [
+        "task1-schema-red.log",
+        "task4-service-red.log"
+      ],
+      "bootstrapRedLogs": []
+    },
+    {
+      "id": "A25",
+      "status": "passed",
+      "tests": [
+        {
+          "file": "tests/identity-transaction.test.ts",
+          "name": "A25 two new-identity conclusions cannot both commit from the same block revision",
+          "status": "passed"
+        }
+      ],
+      "redLogs": [
+        "task4-transaction-red.log"
+      ],
+      "bootstrapRedLogs": []
+    },
+    {
+      "id": "A26",
+      "status": "passed",
+      "tests": [
+        {
+          "file": "tests/identity-adapters.test.ts",
+          "name": "A26 ingest index includes rejected history with review state and bounded paging",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-decisions.test.ts",
+          "name": "A26 paid bundle scope does not suppress a genuinely independent grant",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-decisions.test.ts",
+          "name": "A26 only grounded official evidence for the specified missing slots permits reopening",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-decisions.test.ts",
+          "name": "A26 new observation date or unrelated page changes cannot create a new reopen basis",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-decisions.test.ts",
+          "name": "A26 other and expired decisions never turn into platform-wide blacklists or implicit reopening",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-decisions.test.ts",
+          "name": "A26 a paid recurring bundle refusal cannot suppress a free recurring grant on the same product",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-retrieval.test.ts",
+          "name": "A26 scoped lead-only rejection is retrieved even without an offer/entity",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-service.test.ts",
+          "name": "A26 rejected version repeat keeps its refusal and does not create another review task",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-service.test.ts",
+          "name": "A26 unpublishing a managed offer adds a scoped refusal without deleting historical proposals",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-service.test.ts",
+          "name": "A26 an unresolved claim can be rejected without manufacturing an offer or entity",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-service.test.ts",
+          "name": "A26 a lead-only prior refusal is consumed before any entity or offer is created",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-service.test.ts",
+          "name": "A26 explicit reopening preserves the refusal and remains pending until a new approval",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-service.test.ts",
+          "name": "A26 a superseded rejection is re-evaluated without losing identity links",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-service.test.ts",
+          "name": "A26 a mechanism scoped refusal suppresses another occurrence without cross-entity ownership",
+          "status": "passed"
+        }
+      ],
+      "redLogs": [
+        "p2c-review-red.log",
+        "p2c-scope-red.log",
+        "task3-retrieval-red.log",
+        "task4-decisions-red.log",
+        "task4-service-red.log",
+        "task5-index-red.log",
+        "task5-lead-refusal-red.log",
+        "task5-manual-red.log",
+        "task5-paid-scope-red.log",
+        "task5-reopen-revoke-red.log",
+        "task5-visibility-red.log"
+      ],
+      "bootstrapRedLogs": []
+    },
+    {
+      "id": "A27",
+      "status": "passed",
+      "tests": [
+        {
+          "file": "tests/frontend-workflow.test.ts",
+          "name": "A27 an unknown identity task can submit an explicitly confirmed product and mechanism",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-budget.test.ts",
+          "name": "A27 a request stays within fifty SQL statements and defers durable intake for a separate resolution request",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-model.test.ts",
+          "name": "A27 a worker run handles at most four jobs and preserves the remaining queue",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-model.test.ts",
+          "name": "A27 denied budget and malformed suggestions stay unresolved without a fail-open new decision",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-notifications.test.ts",
+          "name": "A27/A31 forty expired publication events cannot starve a later claimable offer",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-observations.test.ts",
+          "name": "observation and candidate shadow storage A27 stores full body hash and truncation without treating empty extraction as rejection",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-observations.test.ts",
+          "name": "A27 incomplete empty extraction durably retains source, leads, input and retry state",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-retry.test.ts",
+          "name": "A27 shadow/off modes do not resolve diagnostic intake or consume models",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-routes.test.ts",
+          "name": "A27 an incomplete empty batch is recorded without falsely closing a lead",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-service.test.ts",
+          "name": "A27 unknown product creates a durable identity task rather than an invented offer",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-shadow.test.ts",
+          "name": "A27 missing explicit endpoint or dry run performs no network writes",
+          "status": "passed"
+        }
+      ],
+      "redLogs": [
+        "p2a-review-red.log",
+        "p2d-review-red.log",
+        "task2-red.log",
+        "task2-routes-red.log",
+        "task2-shadow-red.log",
+        "task3-model-red.log",
+        "task4-service-red.log",
+        "task5-budget-red.log"
+      ],
+      "bootstrapRedLogs": []
+    },
+    {
+      "id": "A28",
+      "status": "passed",
+      "tests": [
+        {
+          "file": "tests/frontend-workflow.test.ts",
+          "name": "A28/A29 identity task card collects sources, protects manual fields and previews a versioned decision",
+          "status": "passed"
+        },
+        {
+          "file": "tests/frontend-workflow.test.ts",
+          "name": "A28 review facts use readable values without internal citation keys",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-cli.test.ts",
+          "name": "A28 legacy ym queue includes identity tasks even when the legacy pending list is empty",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-notifications.test.ts",
+          "name": "A28 one task has one stable reminder after another source and a metadata revision",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-notifications.test.ts",
+          "name": "A28/A39 an unknown reminder does not reappear or starve another task",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-service.test.ts",
+          "name": "A20/A28 task suggestion replay is idempotent and does not increment material revision",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-service.test.ts",
+          "name": "A28 a presentation-only edit does not create a new task or material reminder",
+          "status": "passed"
+        }
+      ],
+      "redLogs": [
+        "p2d-cli-red.log",
+        "p2d-review-red.log",
+        "task4-lease-red.log",
+        "task5-presentation-red.log",
+        "task6-notify-red.log",
+        "task6-ui-readable-red.log",
+        "task6-ui-red.log"
+      ],
+      "bootstrapRedLogs": []
+    },
+    {
+      "id": "A29",
+      "status": "passed",
+      "tests": [
+        {
+          "file": "tests/frontend-workflow.test.ts",
+          "name": "A28/A29 identity task card collects sources, protects manual fields and previews a versioned decision",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-adapters.test.ts",
+          "name": "A29 legacy approval routes must not bypass a mapped identity task revision",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-adapters.test.ts",
+          "name": "A29 an official-review job cannot write after identity revision changes even if offer timestamps match",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-adapters.test.ts",
+          "name": "A29 legacy show supplies the current identity version for the existing CLI",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-cli.test.ts",
+          "name": "A29 legacy ym approve sends the exact supplied review version without refreshing",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-compare.test.ts",
+          "name": "A29 manual different is a hard veto even over an exact campaign or model suggestion",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-merge.test.ts",
+          "name": "A29/A35 merge invalidates old live edit versions while a freshly read canonical version can edit",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-merge.test.ts",
+          "name": "A29 manual different constraints remain hard vetoes between canonical groups",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-merge.test.ts",
+          "name": "A29 an administrator can revoke a retained alias and invalidate its canonical entity",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-model.test.ts",
+          "name": "A29 cache identity changes with business revisions, rules and relevant evidence",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-notifications.test.ts",
+          "name": "A29 claim rechecks the task material revision after preview without reserving stale delivery",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-service.test.ts",
+          "name": "A29 decisions advance the product block and cannot attach a foreign scope",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-service.test.ts",
+          "name": "A29 task lease tokens expire and cannot overwrite a later human decision",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-service.test.ts",
+          "name": "A29 manual display edits are version guarded and cannot be overwritten by later ingestion",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-service.test.ts",
+          "name": "A29 a human can resolve an unknown-product task as a new pending activity atomically",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-service.test.ts",
+          "name": "A29 alias revocation is version guarded, audited, and invalidates entity business state",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-service.test.ts",
+          "name": "A29 revoking an identity alias invalidates later candidate reuse without rewriting old request receipts",
+          "status": "passed"
+        }
+      ],
+      "redLogs": [
+        "p2d-cli-red.log",
+        "p3b-review-red2.log",
+        "task3-compare-red.log",
+        "task3-model-red.log",
+        "task4-lease-red.log",
+        "task4-protection-red.log",
+        "task5-alias-cache-red.log",
+        "task5-edit-red.log",
+        "task5-legacy-approve-red.log",
+        "task5-manual-red.log",
+        "task5-official-red.log",
+        "task5-reopen-revoke-red.log",
+        "task6-legacy-red.log",
+        "task6-notify-red.log",
+        "task6-ui-red.log",
+        "task8-constraints-red.log",
+        "task8-live-version-red.log"
+      ],
+      "bootstrapRedLogs": [
+        "task8-red.log"
+      ]
+    },
+    {
+      "id": "A30",
+      "status": "passed",
+      "tests": [
+        {
+          "file": "tests/identity-history-cli.test.ts",
+          "name": "A30 merge CLI defaults to dry-run and rejects missing explicit input without production fallback",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-merge.test.ts",
+          "name": "A30 history mutation routes deny reviewer and disabled administrator execution",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-routes.test.ts",
+          "name": "A30 observations require ingest auth and reject forged trust metadata",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-service.test.ts",
+          "name": "A30 a reviewer cannot enlarge refusal scope or reopen an admin decision",
+          "status": "passed"
+        }
+      ],
+      "redLogs": [
+        "task2-routes-red.log",
+        "task4-service-red.log",
+        "task8-cli-red.log"
+      ],
+      "bootstrapRedLogs": [
+        "task8-red.log"
+      ]
+    },
+    {
+      "id": "A31",
+      "status": "passed",
+      "tests": [
+        {
+          "file": "tests/frontend-workflow.test.ts",
+          "name": "A31 old offer hashes replace the URL with the canonical public ID",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-merge.test.ts",
+          "name": "A31/A43 an existing edge cache entry cannot re-expose aliases after merge",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-merge.test.ts",
+          "name": "A31/A35 platform admission changes invalidate the promised public merge projection",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-notifications.test.ts",
+          "name": "A27/A31 forty expired publication events cannot starve a later claimable offer",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-public.test.ts",
+          "name": "A31/A43/A44 all public collections exclude merged rows in off mode and preserve unmapped offers",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-public.test.ts",
+          "name": "A31 old detail IDs resolve to visible canonical while hidden canonical returns 404",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-public.test.ts",
+          "name": "A31 corrupt routing cycles fail closed without exposing an alias",
+          "status": "passed"
+        }
+      ],
+      "redLogs": [
+        "p2d-review-red.log",
+        "task6-public-red.log",
+        "task6-ui-red.log",
+        "task8-cache-red.log",
+        "task8-platform-red.log"
+      ],
+      "bootstrapRedLogs": [
+        "task8-red.log"
+      ]
+    },
+    {
+      "id": "A32",
+      "status": "passed",
+      "tests": [
+        {
+          "file": "tests/identity-backfill.test.ts",
+          "name": "A32 historical offers rejected leads and rejected updates backfill independently and replay without rewriting originals",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-backfill.test.ts",
+          "name": "A32 dry-run requires explicit nonproduction input and apply rejects a changed legacy row",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-backfill.test.ts",
+          "name": "A32 a preserved legacy proposal has a candidate and an actionable versioned review task",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-backfill.test.ts",
+          "name": "A32 eleven linked historical leads are all represented without silent truncation",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-backfill.test.ts",
+          "name": "A32 a proposal keeps its own URL and original excerpt instead of borrowing approved evidence",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-backfill.test.ts",
+          "name": "A32 rejected updates retain their corresponding refusal and never inherit a later approval reason",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-backfill.test.ts",
+          "name": "A32 ambiguous or absent historical rejection association stays unknown instead of taking another reason",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-history-cli.test.ts",
+          "name": "A32 preview-backfill fails closed without explicit local input and environment",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-history-cli.test.ts",
+          "name": "A32 plan-merges fails closed without explicit local input and environment",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-history-cli.test.ts",
+          "name": "A32 preview command rejects apply before opening any input",
+          "status": "passed"
+        }
+      ],
+      "redLogs": [
+        "p3a-review-red.log",
+        "task7-proposal-red.log"
+      ],
+      "bootstrapRedLogs": [
+        "task7-red.log"
+      ]
+    },
+    {
+      "id": "A33",
+      "status": "passed",
+      "tests": [
+        {
+          "file": "tests/identity-backfill.test.ts",
+          "name": "A33 one hundred row pages resume a frozen snapshot and reject a cursor for another snapshot",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-backfill.test.ts",
+          "name": "A33 a new authorized snapshot reconciles unchanged objects and a new legacy offer without reusing its old checkpoint",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-backfill.test.ts",
+          "name": "A33 applying a later cursor without its durable preceding checkpoint is rejected before writes",
+          "status": "passed"
+        }
+      ],
+      "redLogs": [
+        "p3a-checkpoint-red.log"
+      ],
+      "bootstrapRedLogs": [
+        "task7-red.log"
+      ]
+    },
+    {
+      "id": "A34",
+      "status": "passed",
+      "tests": [
+        {
+          "file": "tests/identity-merge-plan.test.ts",
+          "name": "A34 preview captures exact revisions hashes evidence and conflicts without any writes",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-merge-plan.test.ts",
+          "name": "A34/A36 different constraints and oversized groups are explicit and never silently truncated",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-merge-plan.test.ts",
+          "name": "A34 a changed human proposal or valuation is reported instead of silently selecting a winner",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-merge-plan.test.ts",
+          "name": "A34 differing manual valuations and proposals are listed without picking the higher value",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-merge-plan.test.ts",
+          "name": "A34 ready plans and their exact hashes are deterministic and include pending/unknown notification impact",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-merge-plan.test.ts",
+          "name": "A34/A39 task-only unknown deliveries change the exact plan and remain visible",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-merge-plan.test.ts",
+          "name": "A34 a noncanonical-only manual note is a conflict including its empty canonical counterpart",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-merge-plan.test.ts",
+          "name": "A34 a protected manual business field difference is explicit even outside proposals",
+          "status": "passed"
+        }
+      ],
+      "redLogs": [
+        "p3a-manual-red.log",
+        "p3a-review-red.log"
+      ],
+      "bootstrapRedLogs": [
+        "task7-red.log"
+      ]
+    },
+    {
+      "id": "A35",
+      "status": "passed",
+      "tests": [
+        {
+          "file": "tests/identity-acceptance-controls.test.ts",
+          "name": "A35 completed groups keep individual receipts when a later group changes after preview",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-merge.test.ts",
+          "name": "A35/A37 an exact approved plan changes only logical routing and replays its immutable operation",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-merge.test.ts",
+          "name": "A35 an offer changed after preview rejects the whole group with no manifest or routing changes",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-merge.test.ts",
+          "name": "A23/A35 a write between preflight and transaction is caught by in-batch legacy state guards",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-merge.test.ts",
+          "name": "A29/A35 merge invalidates old live edit versions while a freshly read canonical version can edit",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-merge.test.ts",
+          "name": "A31/A35 platform admission changes invalidate the promised public merge projection",
+          "status": "passed"
+        }
+      ],
+      "redLogs": [
+        "task8-live-version-red.log",
+        "task8-platform-red.log"
+      ],
+      "bootstrapRedLogs": [
+        "task8-red.log"
+      ]
+    },
+    {
+      "id": "A36",
+      "status": "passed",
+      "tests": [
+        {
+          "file": "tests/identity-acceptance-controls.test.ts",
+          "name": "A36 preview/apply fail closed for cycle",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-acceptance-controls.test.ts",
+          "name": "A36 preview/apply fail closed for missing canonical",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-acceptance-controls.test.ts",
+          "name": "A36 preview/apply fail closed for cross product",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-merge-plan.test.ts",
+          "name": "A34/A36 different constraints and oversized groups are explicit and never silently truncated",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-merge.test.ts",
+          "name": "A36 a plan with hard identity conflicts or the wrong approval hash cannot apply",
+          "status": "passed"
+        }
+      ],
+      "redLogs": [],
+      "bootstrapRedLogs": [
+        "task7-red.log",
+        "task8-red.log"
+      ]
+    },
+    {
+      "id": "A37",
+      "status": "passed",
+      "tests": [
+        {
+          "file": "tests/identity-merge.test.ts",
+          "name": "A35/A37 an exact approved plan changes only logical routing and replays its immutable operation",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-merge.test.ts",
+          "name": "A37 subsequent identity retrieval resolves old aliases to one active entity",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-merge.test.ts",
+          "name": "A37 equal proposal tasks become one canonical card retaining both original drafts and sources",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-merge.test.ts",
+          "name": "A37 lead reads normalize old offer references and retain their original IDs",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-merge.test.ts",
+          "name": "A37 automatic verification queues and stale results cannot mutate a merged alias",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-merge.test.ts",
+          "name": "A37 new legacy lead links store the canonical ID and retain the submitted origin ID",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-merge.test.ts",
+          "name": "A37 retained official aliases accept new observations after their owner was merged",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-merge.test.ts",
+          "name": "A37 a source-only proposal is carried to the chosen canonical task without rewriting its original draft",
+          "status": "passed"
+        }
+      ],
+      "redLogs": [
+        "p3b-review-red.log",
+        "p3b-review-red2.log",
+        "task8-integration-red.log",
+        "task8-lead-red.log",
+        "task8-new-link-red.log",
+        "task8-verify-route-red.log"
+      ],
+      "bootstrapRedLogs": [
+        "task8-red.log"
+      ]
+    },
+    {
+      "id": "A38",
+      "status": "passed",
+      "tests": [
+        {
+          "file": "tests/identity-merge.test.ts",
+          "name": "A38/A40 a sent alias announcement is inherited by facts despite different publication counters without a fabricated sent row",
+          "status": "passed"
+        }
+      ],
+      "redLogs": [],
+      "bootstrapRedLogs": [
+        "task8-red.log"
+      ]
+    },
+    {
+      "id": "A39",
+      "status": "passed",
+      "tests": [
+        {
+          "file": "tests/identity-merge-plan.test.ts",
+          "name": "A34/A39 task-only unknown deliveries change the exact plan and remain visible",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-merge.test.ts",
+          "name": "A39 an alias pending delivery remains a blocker after merge",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-merge.test.ts",
+          "name": "A39 an alias unknown delivery remains a blocker after merge",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-merge.test.ts",
+          "name": "A39 claim detects a newly pending alias delivery even if it appears after preview",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-notifications.test.ts",
+          "name": "A28/A39 an unknown reminder does not reappear or starve another task",
+          "status": "passed"
+        }
+      ],
+      "redLogs": [
+        "p2d-review-red.log",
+        "p3a-review-red.log"
+      ],
+      "bootstrapRedLogs": [
+        "task7-red.log",
+        "task8-red.log"
+      ]
+    },
+    {
+      "id": "A40",
+      "status": "passed",
+      "tests": [
+        {
+          "file": "tests/identity-merge.test.ts",
+          "name": "A38/A40 a sent alias announcement is inherited by facts despite different publication counters without a fabricated sent row",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-merge.test.ts",
+          "name": "A17/A40 changed notices inherit a proven transition only at the merge publication boundary",
+          "status": "passed"
+        }
+      ],
+      "redLogs": [
+        "p3b-review-red2.log",
+        "task8-transition-red.log"
+      ],
+      "bootstrapRedLogs": [
+        "task8-red.log"
+      ]
+    },
+    {
+      "id": "A41",
+      "status": "passed",
+      "tests": [
+        {
+          "file": "tests/identity-rollback.test.ts",
+          "name": "A41 rollback restores active routes with monotonic revisions and an appended audit; replay is stable",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-rollback.test.ts",
+          "name": "A41 rollback cancels merge-derived carriers and restores the original single-sided draft",
+          "status": "passed"
+        }
+      ],
+      "redLogs": [],
+      "bootstrapRedLogs": [
+        "task8-red.log"
+      ]
+    },
+    {
+      "id": "A42",
+      "status": "passed",
+      "tests": [
+        {
+          "file": "tests/identity-rollback.test.ts",
+          "name": "A42 a later review makes rollback conflict without overwriting it",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-rollback.test.ts",
+          "name": "A42 a later delivery makes rollback conflict without overwriting it",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-rollback.test.ts",
+          "name": "A42 a later manual edit makes rollback conflict without overwriting it",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-rollback.test.ts",
+          "name": "A42 newly associated evidence after merge blocks rollback even without a business revision bump",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-rollback.test.ts",
+          "name": "A42 version-route changes after merge are not overwritten by rollback",
+          "status": "passed"
+        }
+      ],
+      "redLogs": [
+        "task8-routing-red.log"
+      ],
+      "bootstrapRedLogs": [
+        "task8-red.log"
+      ]
+    },
+    {
+      "id": "A43",
+      "status": "passed",
+      "tests": [
+        {
+          "file": "tests/identity-merge.test.ts",
+          "name": "A31/A43 an existing edge cache entry cannot re-expose aliases after merge",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-merge.test.ts",
+          "name": "A43 rollback mode preserves reads and defers legacy pipeline writes for a merged product",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-public.test.ts",
+          "name": "A31/A43/A44 all public collections exclude merged rows in off mode and preserve unmapped offers",
+          "status": "passed"
+        }
+      ],
+      "redLogs": [
+        "task6-public-red.log",
+        "task8-cache-red.log",
+        "task8-off-write-red.log"
+      ],
+      "bootstrapRedLogs": [
+        "task8-red.log"
+      ]
+    },
+    {
+      "id": "A44",
+      "status": "passed",
+      "tests": [
+        {
+          "file": "tests/identity-adapters.test.ts",
+          "name": "A44 an explicitly selected but unreconciled product cannot silently fall through to legacy intake",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-adapters.test.ts",
+          "name": "A44 unreconciled rejected leads block canary even when every offer is mapped",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-public.test.ts",
+          "name": "A31/A43/A44 all public collections exclude merged rows in off mode and preserve unmapped offers",
+          "status": "passed"
+        }
+      ],
+      "redLogs": [
+        "p2c-review-red.log",
+        "task5-adapters-red.log",
+        "task6-public-red.log"
+      ],
+      "bootstrapRedLogs": []
+    },
+    {
+      "id": "A45",
+      "status": "passed",
+      "tests": [
+        {
+          "file": "tests/identity-acceptance-controls.test.ts",
+          "name": "A45 public and ingest credentials cannot read administrator raw evidence/task cards",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-schema.test.ts",
+          "name": "identity additive migration A23/A45 invalid references, staged states and malformed JSON cannot persist",
+          "status": "passed"
+        },
+        {
+          "file": "tests/identity-transaction.test.ts",
+          "name": "A45 a version from another entity fails the batch ownership invariant",
+          "status": "passed"
+        }
+      ],
+      "redLogs": [
+        "task1-schema-red.log",
+        "task4-transaction-red.log"
+      ],
+      "bootstrapRedLogs": []
+    }
+  ],
+  "sourceCodeSha": "00708ddbd43dc4a63f09eafbf2cef2420bec8293",
+  "node": "v24.21.0",
+  "command": "npx vitest run tests src --reporter=json --outputFile=.superpowers/sdd/IMPLEMENTATION/task9-vitest.json",
+  "reportSha256": "2d105d78d99a90f1ab197f48edb863ff9b9a2a9180f225635960b3b2e6c941b1",
+  "totalExecuted": 554,
+  "passed": 554,
+  "failed": 0,
+  "pending": 0,
+  "fullSuiteCommand": "npm test",
+  "cliTests": 8,
+  "redEvidenceNote": "Historical red assertions or missing-module failures; new preservation controls that passed initially are not claimed as red. Full logs remain in the ignored verification directory."
+}

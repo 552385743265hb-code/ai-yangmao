@@ -1,0 +1,85 @@
+{
+  "schemaVersion": "identity-evaluation-v1",
+  "resolverVersion": "identity-v1",
+  "rulesVersion": "identity-rules-v1",
+  "environment": "synthetic",
+  "corpusHash": "fbc6b163bf6272ee51806488ee736239e7f57af021210af99f3b0f7b9235ba82",
+  "datasetVersion": "synthetic-example-1",
+  "counts": {
+    "SAME_EQUIVALENT": 1,
+    "DISTINCT": 1,
+    "SAME_CHANGED": 1,
+    "UNRESOLVED": 1
+  },
+  "crossLanguageOrSource": 0,
+  "cohortSufficient": false,
+  "metrics": {
+    "automaticPrecision": {
+      "numerator": 2,
+      "denominator": 2,
+      "rate": 1
+    },
+    "duplicateRecall": {
+      "numerator": 1,
+      "denominator": 1,
+      "rate": 1
+    },
+    "changedRecall": {
+      "numerator": 1,
+      "denominator": 1,
+      "rate": 1
+    },
+    "uncertainRate": {
+      "numerator": 1,
+      "denominator": 4,
+      "rate": 0.25
+    },
+    "falseMerge": 0,
+    "falseReject": null,
+    "duplicateReviewLeak": null
+  },
+  "semanticGate": "not_met",
+  "fieldAcceptance": "not_evaluated",
+  "limitations": [
+    "Pure resolver only: task/publication/refusal outcomes require separate workflow replay.",
+    "Synthetic labels cannot establish field quality.",
+    "Required labelled cohort is incomplete."
+  ],
+  "modelCalls": 0,
+  "modelTokens": 0,
+  "modelCostUsd": 0,
+  "rows": [
+    {
+      "id": "same",
+      "label": "SAME_EQUIVALENT",
+      "predicted": "SAME_EQUIVALENT",
+      "reasonCodes": [
+        "equivalent_facts"
+      ]
+    },
+    {
+      "id": "distinct",
+      "label": "DISTINCT",
+      "predicted": "DISTINCT",
+      "reasonCodes": [
+        "product_conflict"
+      ]
+    },
+    {
+      "id": "changed",
+      "label": "SAME_CHANGED",
+      "predicted": "SAME_CHANGED",
+      "reasonCodes": [
+        "official_replacement"
+      ]
+    },
+    {
+      "id": "unresolved",
+      "label": "UNRESOLVED",
+      "predicted": "UNRESOLVED",
+      "reasonCodes": [
+        "identity_unproven"
+      ]
+    }
+  ]
+}

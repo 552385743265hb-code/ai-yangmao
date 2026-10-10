@@ -1,0 +1,98 @@
+{
+  "environment": "synthetic-local-workerd-d1",
+  "sourceCodeSha": "9de8abb0b68786daac99f5aa283b5d2411aed288",
+  "node": "v24.21.0",
+  "operations": [
+    {
+      "operation": "merge10",
+      "statements": 30,
+      "metadataStatements": 27,
+      "metadataMissing": 3,
+      "rowsRead": 1155,
+      "rowsWritten": 154,
+      "rowsArePartial": true,
+      "errors": 0,
+      "elapsedMs": 55.15741400000002
+    },
+    {
+      "operation": "rollback10",
+      "statements": 31,
+      "metadataStatements": 28,
+      "metadataMissing": 3,
+      "rowsRead": 1188,
+      "rowsWritten": 109,
+      "rowsArePartial": true,
+      "errors": 0,
+      "elapsedMs": 87.63683199999991
+    },
+    {
+      "operation": "carryProposal",
+      "statements": 36,
+      "metadataStatements": 33,
+      "metadataMissing": 3,
+      "rowsRead": 296,
+      "rowsWritten": 73,
+      "rowsArePartial": true,
+      "errors": 0,
+      "elapsedMs": 40.37887399999954
+    },
+    {
+      "operation": "rollbackCarrier",
+      "statements": 35,
+      "metadataStatements": 32,
+      "metadataMissing": 3,
+      "rowsRead": 338,
+      "rowsWritten": 51,
+      "rowsArePartial": true,
+      "errors": 0,
+      "elapsedMs": 33.44987800000035
+    },
+    {
+      "operation": "remergeCarrier",
+      "statements": 35,
+      "metadataStatements": 32,
+      "metadataMissing": 3,
+      "rowsRead": 330,
+      "rowsWritten": 71,
+      "rowsArePartial": true,
+      "errors": 0,
+      "elapsedMs": 19.40183300000035
+    },
+    {
+      "operation": "resolveRetainedAlias",
+      "statements": 21,
+      "metadataStatements": 12,
+      "metadataMissing": 9,
+      "rowsRead": 38,
+      "rowsWritten": 7,
+      "rowsArePartial": true,
+      "errors": 0,
+      "elapsedMs": 20.1849559999996
+    },
+    {
+      "operation": "rollbackConflict",
+      "statements": 18,
+      "metadataStatements": 16,
+      "metadataMissing": 2,
+      "rowsRead": 94,
+      "rowsWritten": 0,
+      "rowsArePartial": true,
+      "errors": 0,
+      "elapsedMs": 15.84400100000039
+    }
+  ],
+  "retryBacklog": {
+    "candidates": [],
+    "extractions": [],
+    "ageSeconds": null,
+    "ageLimitation": "Candidates/extractions do not persist enqueue timestamps; scheduled retry is not age."
+  },
+  "modelCalls": 0,
+  "modelTokens": 0,
+  "modelCostUsd": 0,
+  "limitations": [
+    "Local D1 metadata only; first/raw omit row metadata and totals are partial.",
+    "Elapsed time is local client wall time, not production CPU/latency.",
+    "No real workload, human corpus or production budget verification."
+  ]
+}
