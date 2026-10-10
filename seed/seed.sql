@@ -231,6 +231,8 @@ INSERT INTO platforms (id, name, type, site, x_handles, staff_handles, wechat) V
   ON CONFLICT(id) DO UPDATE SET name=excluded.name, type=excluded.type, site=excluded.site, x_handles=excluded.x_handles, staff_handles=excluded.staff_handles, wechat=COALESCE(excluded.wechat, platforms.wechat), updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now');
 INSERT INTO platforms (id, name, type, site, x_handles, staff_handles, wechat) VALUES ('kilo', 'Kilo Code', 'tool', 'https://kilo.ai', '["@kilocode"]', '[]', NULL)
   ON CONFLICT(id) DO UPDATE SET name=excluded.name, type=excluded.type, site=excluded.site, x_handles=excluded.x_handles, staff_handles=excluded.staff_handles, wechat=COALESCE(excluded.wechat, platforms.wechat), updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now');
+INSERT INTO platforms (id, name, type, site, x_handles, staff_handles, wechat) VALUES ('instinct', 'Instinct（Spear Street Technology）', 'tool', 'https://instinct.com', '[]', '[]', NULL)
+  ON CONFLICT(id) DO UPDATE SET name=excluded.name, type=excluded.type, site=excluded.site, x_handles=excluded.x_handles, staff_handles=excluded.staff_handles, wechat=COALESCE(excluded.wechat, platforms.wechat), updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now');
 INSERT INTO sources (id, platform_id, kind, url, tier, config, enabled) VALUES ('aihot-resets', NULL, 'aihot', 'https://aihot.news/api/v1/codex-resets', 'lead', '{}', 1)
   ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
 INSERT INTO sources (id, platform_id, kind, url, tier, config, enabled) VALUES ('aihot-items', NULL, 'aihot', 'https://aihot.news/api/v1/items?mode=all&window=7d&limit=100', 'lead', '{}', 1)
@@ -692,4 +694,18 @@ INSERT INTO sources (id, platform_id, kind, url, tier, config, enabled) VALUES (
 INSERT INTO sources (id, platform_id, kind, url, tier, config, enabled) VALUES ('qoder-add-mv0pxjus', 'qoder', 'web_list', 'https://docs.qoder.com/events/flashoffer', 'docs', '{"addedBy":"admin"}', 1)
   ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
 INSERT INTO sources (id, platform_id, kind, url, tier, config, enabled) VALUES ('kilo-add-mv1ihjxl', 'kilo', 'web_list', 'https://x.com/kilocode', 'official', '{"addedBy":"admin"}', 1)
+  ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
+INSERT INTO sources (id, platform_id, kind, url, tier, config, enabled) VALUES ('meta-add-mv1qmzfc', 'meta', 'web_list', 'https://ai.meta.com/muse/', 'site', '{"addedBy":"admin"}', 1)
+  ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
+INSERT INTO sources (id, platform_id, kind, url, tier, config, enabled) VALUES ('cursor-add-mv1qmzy6', 'cursor', 'web_list', 'https://cursor.com/help/grok-bot/plans', 'docs', '{"addedBy":"admin"}', 1)
+  ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
+INSERT INTO sources (id, platform_id, kind, url, tier, config, enabled) VALUES ('xai-add-mv1qn0wb', 'xai', 'web_list', 'https://x.ai/changelog/bot', 'site', '{"addedBy":"admin"}', 1)
+  ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
+INSERT INTO sources (id, platform_id, kind, url, tier, config, enabled) VALUES ('openai-add-mv1qn1bm', 'openai', 'web_list', 'https://openai.com/index/introducing-dots/', 'site', '{"addedBy":"admin"}', 1)
+  ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
+INSERT INTO sources (id, platform_id, kind, url, tier, config, enabled) VALUES ('openai-add-mv1qn1ql', 'openai', 'web_list', 'https://help.openai.com/en/articles/20001530-getting-started-with-your-dot', 'docs', '{"addedBy":"admin"}', 1)
+  ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
+INSERT INTO sources (id, platform_id, kind, url, tier, config, enabled) VALUES ('instinct-add-mv1qn25i', 'instinct', 'web_list', 'https://instinct.com/', 'site', '{"addedBy":"admin"}', 1)
+  ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
+INSERT INTO sources (id, platform_id, kind, url, tier, config, enabled) VALUES ('instinct-add-mv1qn2jp', 'instinct', 'web_list', 'https://instinct.co/terms', 'site', '{"addedBy":"admin"}', 1)
   ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);

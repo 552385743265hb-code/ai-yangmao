@@ -1,5 +1,5 @@
 {
- "_note": "种子白名单草稿（Claude 起草，待管理员审核）。x 只填在 AIHOT 真实数据里出现过的官方账号；staff 是候选员工账号，进白名单前需要确认。官网为首页级链接，具体公告页在第 3 阶段逐个核实后加入 sources。 2026-09-30 管理员已审核：全部准入；主要面向企业、不给个人免费额度的平台（Palantir、Harvey、PixieBrix）不收。 2026-10-08新增平台不得套用全部准入旧快照；2026-10-09生产读回Qoder已准入，TokenRhythm仍须独立核对准入状态。Qoder、Qwen及Qwen Code同属阿里体系，具体产品的账号/额度独立记录。 2026-10-09管理员明确授权Cline平台准入，已批准平台；活动条目仍单独审核。 2026-10-09管理员明确授权OiiOii加入白名单；仅平台准入，福利条目保持待审。",
+ "_note": "种子白名单草稿（Claude 起草，待管理员审核）。x 只填在 AIHOT 真实数据里出现过的官方账号；staff 是候选员工账号，进白名单前需要确认。官网为首页级链接，具体公告页在第 3 阶段逐个核实后加入 sources。 2026-09-30 管理员已审核：全部准入；主要面向企业、不给个人免费额度的平台（Palantir、Harvey、PixieBrix）不收。 2026-10-08新增平台不得套用全部准入旧快照；2026-10-09生产读回Qoder已准入，TokenRhythm仍须独立核对准入状态。Qoder、Qwen及Qwen Code同属阿里体系，具体产品的账号/额度独立记录。 2026-10-09管理员明确授权Cline平台准入，已批准平台；活动条目仍单独审核。 2026-10-09管理员明确授权OiiOii加入白名单；仅平台准入，福利条目保持待审。 2026-10-09管理员授权personal agents准入：Instinct已在生产批准；Meta Muse、Grok Bot与OpenAI Dots复用已批准的Meta、Cursor/xAI、OpenAI平台，补七个官方信源；活动仍需独立审核。",
  "platforms": [
   {
    "id": "openai",
@@ -906,6 +906,14 @@
    "x": [
     "@kilocode"
    ]
+  },
+  {
+   "id": "instinct",
+   "name": "Instinct（Spear Street Technology）",
+   "type": "tool",
+   "site": "https://instinct.com",
+   "x": [],
+   "staff": []
   }
  ],
  "sources": [
@@ -2608,6 +2616,76 @@
    "kind": "web_list",
    "url": "https://x.com/kilocode",
    "tier": "official",
+   "config": {
+    "addedBy": "admin"
+   }
+  },
+  {
+   "id": "meta-add-mv1qmzfc",
+   "platform": "meta",
+   "kind": "web_list",
+   "url": "https://ai.meta.com/muse/",
+   "tier": "site",
+   "config": {
+    "addedBy": "admin"
+   }
+  },
+  {
+   "id": "cursor-add-mv1qmzy6",
+   "platform": "cursor",
+   "kind": "web_list",
+   "url": "https://cursor.com/help/grok-bot/plans",
+   "tier": "docs",
+   "config": {
+    "addedBy": "admin"
+   }
+  },
+  {
+   "id": "xai-add-mv1qn0wb",
+   "platform": "xai",
+   "kind": "web_list",
+   "url": "https://x.ai/changelog/bot",
+   "tier": "site",
+   "config": {
+    "addedBy": "admin"
+   }
+  },
+  {
+   "id": "openai-add-mv1qn1bm",
+   "platform": "openai",
+   "kind": "web_list",
+   "url": "https://openai.com/index/introducing-dots/",
+   "tier": "site",
+   "config": {
+    "addedBy": "admin"
+   }
+  },
+  {
+   "id": "openai-add-mv1qn1ql",
+   "platform": "openai",
+   "kind": "web_list",
+   "url": "https://help.openai.com/en/articles/20001530-getting-started-with-your-dot",
+   "tier": "docs",
+   "config": {
+    "addedBy": "admin"
+   }
+  },
+  {
+   "id": "instinct-add-mv1qn25i",
+   "platform": "instinct",
+   "kind": "web_list",
+   "url": "https://instinct.com/",
+   "tier": "site",
+   "config": {
+    "addedBy": "admin"
+   }
+  },
+  {
+   "id": "instinct-add-mv1qn2jp",
+   "platform": "instinct",
+   "kind": "web_list",
+   "url": "https://instinct.co/terms",
+   "tier": "site",
    "config": {
     "addedBy": "admin"
    }

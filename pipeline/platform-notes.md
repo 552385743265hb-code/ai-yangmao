@@ -283,6 +283,7 @@
 
 ## cursor
 
+- 2026-10-09：Grok Bot的usage-credit trial按agent步数和tokens消耗，最长7天，用尽可提前结束，不自动转为付费；不是完整付费会员，也不是每周订阅重置。额度数量未公开；当前计划文档未明确所有试用账号的绑卡/资格条件，留待核实，不宣传无需卡。取消会清除剩余额度且不能再次领取。iOS App Store intro offer是另一个自动续费订阅，Android无应用内试用。试用在Cursor账号计量，归cursor；xai已有企业历史试用/X API赠额不重建。来源：https://cursor.com/help/grok-bot/plans 。
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - Cursor Rollouts专页2026-09-23，原待审9月10日错误。10天窗口终止日期按发布日+10推算，确切时刻未公开。只能供Rollouts，大约50/500次变更，不是通用模型额度。
 - 本批核验入口：https://cursor.com/pricing；https://cursor.com/changelog/rollouts-and-security-reviewer。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
@@ -758,6 +759,7 @@
 
 ## openai
 
+- 2026-10-09：Dots于2026-09-29发布，官网/帮助页明确上线首月提高深度工作上限；只把首月临时加量作为待审候选，首个dot常规套餐内含不算额外优惠。Pro个人须18岁以上，且暂不覆盖EEA、瑞士、英国；Business Premium按支持地区开放，Enterprise beta需管理员启用但未明确同享首月加量。新增量、涨幅与精确截止未公开，不估美元、不把上线首月写成每个账号领取后一个月，不猜10月29日截止。来源：https://openai.com/index/introducing-dots/ ；https://help.openai.com/en/articles/20001530-getting-started-with-your-dot 。
 - 2026-10-08：Auto-review媒体来源追到Tibo原帖https://x.com/thsottiaux/status/2107368734981517634，明确通过ChatGPT账号登录免费开启、自动审核不消耗计划用量；只覆盖Auto-review，不是主Agent或全部ChatGPT免费。校准发布时间，保留待审，不编固定调用次数。
 - Codex / ChatGPT 重置按官方每次发放的实际语义记录，不按同名/同额度去重。单次自动重置或banked reset卡发放：claimStart与claimEnd为同一事件日；publishedAt保存Tibo（@thsottiaux）官方原公告精确时间，process/传播进度回复不能冒充新发放。明确tomorrow或指定执行日时，事件日按原文，发布时间另存；卡的使用期限不扩成发放窗口。若明确未来24小时重置两次、未来一周每天重置等多次安排，则保留公告覆盖的起止区间，不强制同日；new release、未来改进、next week本身不是持续重置证据。不同时间点的独立发放，即使同一天也可分别记录；同一次发放的预告、确认、延迟解释仍为同一事件，不能只按推文时间不同判成新福利。只有窗口明确才计算日期，不猜未公布的逐次process时刻。（2026-10-08）
 - 本次实读13个X来源及线程：7月9日未来24小时两次重置保留7月9–10日；8月22日tomorrow指8月23日；10月1日tomorrow 10am预告指10月2日，10月2日道歉回复不是10月3日新发放；10月7日banked reset主公告status/2107913674593644711，稍后status/2107913738791596286仅说当天美西EOD前到账。美西夏令时日期使用America/Los_Angeles；原文口语PST保留，不将其写法误算为确认实际执行时刻。原7月17日证据实际只回复“And now 100%”，不能伪造完整全员公告摘录。逐条凭证见docs/codex-reset-time-audit-2026-10-08.md。
@@ -794,3 +796,12 @@
 ## kilo
 
 - 2026-10-09：Kilo Code官网kilo.ai，官推@kilocode；与AWS Kiro（kiro.dev）是不同平台，不能按近似拼写归同一ID。官推2108557014913691902于2026-10-09T13:55:42Z宣布Step5Preview FREE for a week，是全局公告日起一周，非个人领取后7天；精确截止未公布，不造日期午夜。StepFun后续引用同一推文只补来源、不新建活动。平台已准入，官方句柄已登记，条目仍pending。
+
+## meta
+
+- 2026-10-09：Meta Muse复用meta平台并单独登记https://ai.meta.com/muse/作为信源。FAQ仅承诺有使用上限的免费版及上限刷新，未公开具体积分、次数、Token上限、刷新周期或独立赠额；按现行规则不把普通免费套餐写成羊毛。Meta Muse personal agent与Muse Spark模型、Muse Code、Meta Model API分开核验；Quest/VR的Meta Credits不是本产品AI额度。
+
+## instinct
+
+- 2026-10-09：Instinct由Spear Street Technology, Inc.运营；官网https://instinct.com/，历史https://instinct.co/链接/条款仍可用。管理员本次授权平台准入，已在生产批准，信源自动上架保持关闭。
+- 官网只说明通过短信/电话完成任务，terms要求18岁以上并保留收费权；没有价格不证明永久免费。媒体称邀请内测免费，目前缺发放方免费权益、数量、期限及资格原文，仅保留核验线索，不卖/买邀请码，不伪造官方摘录。官方条款：https://instinct.co/terms 。
