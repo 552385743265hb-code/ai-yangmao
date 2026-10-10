@@ -1,3 +1,4 @@
+import { canonicalTermsSchema } from './identity/types';
 // 写入接口的数据校验。采集管线（GitHub Actions）和网站共用这一份。
 import { z } from 'zod';
 import { OFFER_TYPES } from './lifecycle';
@@ -18,6 +19,8 @@ export const leadIn = z.object({
 });
 
 export const offerIn = z.object({
+  identityFacts: canonicalTermsSchema.optional(),
+  identityRequestId: z.string().min(1).max(160).optional(),
   id: z.string().regex(/^[a-z0-9][a-z0-9-]{2,80}$/, 'id 只能用小写字母、数字和短横线'),
   platformId: z.string().min(1),
   sourceId: z.string().optional(),

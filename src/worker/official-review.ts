@@ -16,7 +16,8 @@ async function context(env:Env,id:string) {
   const target=proposal?{...offer,...proposal.candidate} as typeof offer:offer;
   const [platform]=await d.select().from(s.platforms).where(eq(s.platforms.id,target.platformId));
   const sources=await d.select({url:s.sources.url,tier:s.sources.tier}).from(s.sources).where(eq(s.sources.platformId,target.platformId));
-  return {offer,target,platform,sources,version:`${offer.updatedAt}|${proposal?.updatedAt??''}`,eligible:!!platform&&platform.status==='approved'&&target.evidence.tier==='media'&&(offer.reviewState==='pending'||(offer.reviewState==='approved'&&!!proposal))};
+  const identity=await env.DB.prepare('SELECT business_revision FROM benefit_entities WHERE canonical_offer_id=?').bind(offer.id).first<{business_revision:number}>();
+  return {offer,target,platform,sources,identityRevision:identity?.business_revision,version:`${offer.updatedAt}|${proposal?.updatedAt??''}`,eligible:!!platform&&platform.status==='approved'&&target.evidence.tier==='media'&&(offer.reviewState==='pending'||(offer.reviewState==='approved'&&!!proposal))};
 }
 const proposalVersion = (id:string, version?:string) => version
   ? sql`EXISTS (SELECT 1 FROM offer_proposals WHERE offer_id=${id} AND updated_at=${version})`
@@ -57,7 +58,7 @@ officialReviewRoutes.post('/:id/claim',async c=>{
     return c.json({claimed:false,recovered:changed.length>0});
   }
   if(!state.eligible || !officialReviewDue(old,now,state.version))return c.json({claimed:false});
-  const review:OfficialReview={status:'checking',jobId:crypto.randomUUID(),inputVersion:state.version,originUrl:state.target.evidence.url,attempts:(state.offer.officialReview && state.offer.officialReview.inputVersion===state.version ? state.offer.officialReview.attempts : 0)+1,checkedAt:new Date(now).toISOString(),nextAttemptAt:null,reason:'正在搜索官方出处并核对原文',queries:[],candidates:[]};
+  const review:OfficialReview={identityRevision:state.identityRevision,status:'checking',jobId:crypto.randomUUID(),inputVersion:state.version,originUrl:state.target.evidence.url,attempts:(state.offer.officialReview && state.offer.officialReview.inputVersion===state.version ? state.offer.officialReview.attempts : 0)+1,checkedAt:new Date(now).toISOString(),nextAttemptAt:null,reason:'正在搜索官方出处并核对原文',queries:[],candidates:[]};
   review.unresolvedAttempts=old?.inputVersion===state.version?(old.unresolvedAttempts??(old.status==='unresolved'?old.attempts:0)):0;
   const changed=await db(c.env).update(s.offers).set({officialReview:review}).where(guard).returning({id:s.offers.id});
   return c.json(changed.length?{claimed:true,jobId:review.jobId,previousCandidates:old?.inputVersion===state.version?old.candidates:[],offer:state.target,platform:state.platform,sources:state.sources}:{claimed:false});
@@ -68,6 +69,7 @@ officialReviewRoutes.post('/:id/result',async c=>{
   const state=await context(c.env,c.req.param('id'));
   if(!state||state.offer.officialReview?.jobId!==parsed.data.jobId)return c.json({error:'官方复核任务已失效'},409);
   if(state.offer.officialReview.status!=='checking')return c.json({ok:true,status:state.offer.officialReview.status,nextAttemptAt:state.offer.officialReview.nextAttemptAt});
+  if(state.identityRevision!==undefined&&state.offer.officialReview.identityRevision!==state.identityRevision)return c.json({error:'身份版本已更新，旧官方复核结果已失效'},409);
   const old=state.offer.officialReview,now=Date.now();
   let {status,reason}=parsed.data;
   if(status==='matched'&&(!state.platform || state.target.evidence.url!==parsed.data.chosenUrl || state.target.evidence.tier==='media' || !officialTier(state.target.evidence.url,state.platform,state.sources))) {

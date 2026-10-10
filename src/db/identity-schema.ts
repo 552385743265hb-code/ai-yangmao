@@ -148,6 +148,8 @@ export const identityAliases = sqliteTable('identity_aliases', {
 ]);
 
 export const reviewDecisions = sqliteTable('review_decisions', {
+  reasonText:text('reason_text').notNull().default(''),
+  basisJson:text('basis_json').notNull().default('{}'),
   id: text('id').primaryKey().notNull(),
   entityId: text('entity_id').references((): AnySQLiteColumn => benefitEntities.id),
   candidateId: text('candidate_id').references((): AnySQLiteColumn => intakeCandidates.id),
@@ -178,6 +180,7 @@ export const reviewDecisions = sqliteTable('review_decisions', {
 
 export const reviewTasks = sqliteTable('review_tasks', {
   suggestionJson: text('suggestion_json'),
+  leaseContextJson: text('lease_context_json'),
   id: text('id').primaryKey().notNull(),
   taskKey: text('task_key').notNull(),
   kind: text('kind').notNull(),
@@ -236,6 +239,7 @@ export const identityBlocks = sqliteTable('identity_blocks', {
 ]);
 
 export const identityCommands = sqliteTable('identity_commands', {
+  executionToken:text('execution_token'),
   requestId: text('request_id').primaryKey().notNull(),
   payloadHash: text('payload_hash').notNull(),
   state: text('state').notNull(),
@@ -283,3 +287,8 @@ export const intakeExtractions = sqliteTable('intake_extractions', {
   check('extractions_complete',sql`extraction_complete IN (0,1)`),
   check('extractions_revision',sql`revision>=0`),
 ]);
+
+export const identityExtractionLeads=sqliteTable('identity_extraction_leads',{
+ requestId:text('request_id').notNull().references(()=>intakeExtractions.requestId),
+ leadId:integer('lead_id').notNull().references(()=>leads.id),
+},t=>[primaryKey({columns:[t.requestId,t.leadId]}),index('extraction_leads_lead_idx').on(t.leadId,t.requestId)]);

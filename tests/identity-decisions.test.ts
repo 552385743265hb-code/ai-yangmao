@@ -7,7 +7,7 @@ const evidence={observationId:'obs',fullText:'Signup grants 10 USD.',truncated:f
 it('A26 paid bundle scope does not suppress a genuinely independent grant',()=>{
  const d=decision();d.reasonCode='paid_bundle';d.scope={kind:'scoped_mechanism',productId:'vendor',mechanism:'recurring_quota',confirmedBy:'admin'};
  expect(decisionApplies(d,terms(),{entityId:'e1',candidateId:'different',versionId:'v1',observationId:'obs'})).toBe(false);
- const recurring=terms();recurring.mechanism=known('recurring_quota');
+ const recurring=terms();recurring.mechanism=known('recurring_quota');recurring.costs=known({upfrontAmount:'10',currency:'USD',subscriptionRequired:true,autoRenewal:true});
  expect(decisionApplies(d,recurring,{entityId:'e1',candidateId:'different',versionId:'v1',observationId:'obs'})).toBe(true);
 });
 it('A26 only grounded official evidence for the specified missing slots permits reopening',async()=>{
@@ -34,4 +34,9 @@ it('A17 initial and base-to-target tasks are stable while restoring an old versi
  expect(reviewTaskKey({kind:'initial',entityId:'e1'})).toBe('initial:e1');
  expect(reviewTaskKey({kind:'terms_change',entityId:'e1',baseVersionId:'vB',versionId:'vA'})).toBe('terms:e1:vB:vA');
  expect(reviewTaskKey({kind:'terms_change',entityId:'e1',baseVersionId:'vB',versionId:'vA'})).not.toBe(reviewTaskKey({kind:'terms_change',entityId:'e1',baseVersionId:'vA',versionId:'vB'}));
+});
+it('A26 a paid recurring bundle refusal cannot suppress a free recurring grant on the same product',()=>{
+ const d=decision();d.reasonCode='paid_bundle';d.scope={kind:'scoped_mechanism',productId:'vendor',mechanism:'recurring_quota',confirmedBy:'admin'};
+ const free=terms();free.mechanism=known('recurring_quota');free.costs=known({upfrontAmount:'0',currency:'USD',subscriptionRequired:false,autoRenewal:false});
+ expect(decisionApplies(d,free,{entityId:null,candidateId:'new-free',versionId:null,observationId:'new'})).toBe(false);
 });

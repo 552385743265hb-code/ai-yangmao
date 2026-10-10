@@ -1,3 +1,6 @@
+import { withIdentityQueryBudget,IdentityQueryBudgetError } from './identity/budget';
+import { aggregateIdentityLead } from './identity/leads';
+import { adaptLegacyOffer } from './identity/adapters';
 import { identityIngestRoutes } from './identity/routes';
 import {leadScopeMismatch} from '../shared/lead-scope';
 import { leadReviewRoutes } from './lead-review';
@@ -49,6 +52,7 @@ type OfferRow = typeof s.offers.$inferSelect;
 
 // 初期不让搜索引擎收录；接口不缓存旧状态太久
 app.use('/api/*', async (c, next) => {
+  if(c.env.IDENTITY_MODE==='enforce'||/\/api\/(?:ingest\/(?:identity-|observations|candidates)|admin\/identity)/.test(c.req.path))c.env={...c.env,DB:withIdentityQueryBudget(c.env.DB)};
   await next();
   c.header('X-Robots-Tag', 'noindex');
   if (c.req.method === 'GET' && !c.res.headers.get('Cache-Control')) c.header('Cache-Control', 'public, max-age=60');
@@ -202,17 +206,20 @@ ingest.post('/offers', async c => {
     const { valuation: _valuation, ...fields } = value as Record<string, unknown>;
     return fields;
   }, offerIn);
-  const body = z.array(extractionIn).max(50).safeParse(await c.req.json().catch(() => null));
+  const rawOffers = await c.req.json().catch(() => null);
+  const body = z.array(extractionIn).max(50).safeParse(rawOffers);
   if (!body.success) return c.json({ error: '数据格式不正确', issues: body.error.issues }, 400);
+  if(c.env.IDENTITY_MODE==='enforce'&&body.data.length>1)return c.json({error:'enforce intake accepts one item per request to stay within the D1 query budget'},400);
   const d = db(c.env);
   const pids = [...new Set(body.data.map(o => o.platformId))];
   const plats = pids.length ? await d.select().from(s.platforms).where(inArray(s.platforms.id, pids)) : [];
   const sids = [...new Set(body.data.map(o => o.sourceId).filter((x): x is string => !!x))];
   const srcs = sids.length ? await d.select().from(s.sources).where(inArray(s.sources.id, sids)) : [];
-  const results = [];
+  const results: Record<string,unknown>[] = [];
   // 硬性去重的比对范围：这些平台下的全部条目（含已拒绝，避免拒掉的换个 ID 又回来）
-  const peers = pids.length ? (await d.select({ id: s.offers.id, platformId: s.offers.platformId, title: s.offers.title, valueText: s.offers.valueText, evidence: s.offers.evidence, tags: s.offers.tags, publishedAt: s.offers.publishedAt, claimStart: s.offers.claimStart, claimEnd: s.offers.claimEnd, sourceTz: s.offers.sourceTz, reviewState: s.offers.reviewState, type:s.offers.type, claimMethod:s.offers.claimMethod, requirements:s.offers.requirements, audience:s.offers.audience, models:s.offers.models, modalities:s.offers.modalities })
+  const loadPeers = async () => pids.length ? (await d.select({ id: s.offers.id, platformId: s.offers.platformId, title: s.offers.title, valueText: s.offers.valueText, evidence: s.offers.evidence, tags: s.offers.tags, publishedAt: s.offers.publishedAt, claimStart: s.offers.claimStart, claimEnd: s.offers.claimEnd, sourceTz: s.offers.sourceTz, reviewState: s.offers.reviewState, type:s.offers.type, claimMethod:s.offers.claimMethod, requirements:s.offers.requirements, audience:s.offers.audience, models:s.offers.models, modalities:s.offers.modalities })
     .from(s.offers)).map(x => ({ ...x, evidenceUrl: x.evidence.url, eventDay: resetEventDay(x) })) : [];
+  let peersCache: Awaited<ReturnType<typeof loadPeers>> | null = null;
   for (const o of body.data) {
     if(o.leadReviewJobId){
       const [lead]=o.leadId?await d.select().from(s.leads).where(eq(s.leads.id,o.leadId)):[];
@@ -227,6 +234,11 @@ ingest.post('/offers', async c => {
       const mismatch=!lead||!issuer?'原线索或发放平台不存在':leadScopeMismatch(lead,issuer,officialSources,o);
       if(mismatch){results.push({id:o.id,error:mismatch});continue;}
     }
+    try {
+      const adapted=await adaptLegacyOffer(c.env,o,(rawOffers as unknown[])[body.data.indexOf(o)]);
+      if(adapted){results.push(adapted);continue;}
+    } catch(error){results.push({id:o.id,error:(error as Error).message,retryable:true});continue;}
+    const peers=peersCache??(peersCache=await loadPeers());
     const eventDay = resetEventDay(o);
     const sameId = peers.find(x=>x.id===o.id);
     const identity={...o,evidenceUrl:o.evidence.url,eventDay};
@@ -283,7 +295,7 @@ ingest.post('/offers', async c => {
         continue; // Keep manual proposals and verification metadata; the /verify route verifies source health.
       }
     }
-    const { leadId, leadReviewJobId, officialReviewJobId, sameOccurrenceAs, sourceText, valuation: _pipelineValuation, ...od } = o;
+    const { identityFacts: _identityFacts, identityRequestId: _identityRequestId, leadId, leadReviewJobId, officialReviewJobId, sameOccurrenceAs, sourceText, valuation: _pipelineValuation, ...od } = o;
     const row = {
       ...od, usdEstimate: o.usdEstimate ?? null, usdMax: o.usdMax ?? null, valuation: prev?.valuation ?? null, claimStart: o.claimStart ?? null, claimEnd: o.claimEnd ?? null,
       creditValidity: o.creditValidity ?? null, publishedAt: o.publishedAt ?? null, sourceId: o.sourceId ?? null,
@@ -420,7 +432,13 @@ ingest.post('/offers', async c => {
     if (existingProposal) await d.delete(s.offerProposals).where(and(eq(s.offerProposals.offerId, o.id),eq(s.offerProposals.updatedAt,existingProposal.updatedAt)));
     results.push({ id: o.id, changed: diff.map(x => x.field), reviewState, missingEvidence: missing });
   }
-  return c.json({ results });
+  const leadReconcilePending:number[]=[];
+  for(const leadId of new Set(body.data.flatMap(o=>o.leadId?[o.leadId]:[]))){
+    const failed=body.data.some((o,i)=>o.leadId===leadId&&'error' in results[i]);
+    if(results.some(r=>r.pendingResolution)){leadReconcilePending.push(leadId);continue;}
+    try {await aggregateIdentityLead(c.env.DB,leadId,failed);}catch(error){if(!(error instanceof IdentityQueryBudgetError))throw error;leadReconcilePending.push(leadId);}
+  }
+  return c.json({ results,leadReconcilePending });
 });
 
 /** 管线取待抓的信源，附带上次的内容哈希，用于判断有没有变化。 */
@@ -532,6 +550,8 @@ ingest.post('/leads/:id/status', async c => {
   if (!b.success) return c.json({ error: '数据格式不正确' }, 400);
   const [lead] = await db(c.env).select().from(s.leads).where(eq(s.leads.id, Number(c.req.param('id'))));
   if (!lead) return c.json({ error: '没有这条线索' }, 404);
+  const identity=await aggregateIdentityLead(c.env.DB,lead.id,b.data.status==='reviewing');
+  if(identity)return c.json({ok:true,identityHandled:true,...identity});
   if(lead.status!=='new')return c.json({error:'线索状态已变化，请使用线索复核结果接口'},409);
   if (b.data.status === 'linked') {
     if (!b.data.offerId) return c.json({ error: '已关联必须提供已入库条目' }, 400);
@@ -576,11 +596,16 @@ ingest.get('/corrections', async c => {
   return c.json({ corrections: items.slice(0, limit).map(x => x.line), total: items.length });
 });
 
-/** 所有尚未拒绝的条目索引；常驻福利不能在第 61 天从判重范围消失。 */
+/** Private compatibility index; rejected history and incomplete pages are explicit. */
 ingest.get('/offers-index', async c => {
-  const rows = await db(c.env).select({ id: s.offers.id, platformId: s.offers.platformId, title: s.offers.title, valueText: s.offers.valueText, claimStart:s.offers.claimStart, publishedAt:s.offers.publishedAt, tags:s.offers.tags, evidenceUrl:sql<string>`json_extract(${s.offers.evidence}, '$.url')` })
-    .from(s.offers).where(inArray(s.offers.reviewState, ['pending', 'approved']));
-  return c.json({ offers: rows });
+  const input=z.object({cursor:z.string().max(200).optional(),product:z.string().max(200).optional()}).safeParse(c.req.query());
+  if(!input.success)return c.json({error:'invalid index cursor'},400);
+  const {cursor,product}=input.data;
+  const rows=await c.env.DB.prepare(`SELECT o.id,o.platform_id AS platformId,o.title,o.value_text AS valueText,o.claim_start AS claimStart,o.published_at AS publishedAt,o.tags,o.review_state AS reviewState,json_extract(o.evidence,'$.url') AS evidenceUrl,
+    (SELECT d.scope_json FROM benefit_entities e JOIN review_decisions d ON d.entity_id=e.id WHERE e.canonical_offer_id=o.id AND d.action='reject' ORDER BY d.created_at DESC LIMIT 1) AS rejectionScope
+    FROM offers o WHERE o.id>? AND (? IS NULL OR o.platform_id=?) ORDER BY o.id LIMIT 251`).bind(cursor??'',product??null,product??null).all<Record<string,unknown>>();
+  const visible=rows.results.slice(0,250);
+  return c.json({offers:visible.map(row=>({...row,tags:JSON.parse(String(row.tags)),rejectionScope:row.rejectionScope?JSON.parse(String(row.rejectionScope)):null})),complete:rows.results.length<=250,nextCursor:rows.results.length>250?String(visible.at(-1)!.id):null});
 });
 
 /** 模型预算：今日 token、本月费用。 */

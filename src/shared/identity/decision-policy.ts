@@ -7,12 +7,20 @@ export function decisionApplies(raw:ReviewDecision,terms:CanonicalTermsV1,subjec
  if(d.action!=='reject')return false;
  const scope=d.scope;
  switch(scope.kind) {
-  case 'observation_only':return scope.observationId===subject.observationId;
+  case 'observation_only':return scope.observationId===subject.observationId&&(!d.candidateId||d.candidateId===subject.candidateId);
   case 'claim':return scope.candidateId===subject.candidateId;
   case 'exact_version':return scope.entityId===subject.entityId&&scope.versionId===subject.versionId;
   case 'entity_alias':return scope.entityId===subject.entityId;
   case 'occurrence':return terms.issuerProductId.state==='known'&&terms.issuerProductId.value===scope.productId&&terms.occurrenceAnchor.state==='known'&&terms.occurrenceAnchor.value===scope.anchor;
-  case 'scoped_mechanism':return terms.issuerProductId.state==='known'&&terms.issuerProductId.value===scope.productId&&terms.mechanism.state==='known'&&terms.mechanism.value===scope.mechanism;
+  case 'scoped_mechanism':{
+   const productMatches=terms.issuerProductId.state==='known'&&terms.issuerProductId.value===scope.productId&&terms.mechanism.state==='known'&&terms.mechanism.value===scope.mechanism;
+   if(!productMatches)return false;
+   if(d.reasonCode==='paid_bundle')return terms.costs.state==='known'&&terms.costs.value.subscriptionRequired;
+   // A mechanism label alone does not establish a discount or absence of AI.
+   if(d.reasonCode==='ordinary_discount')return false;
+   if(d.reasonCode==='not_ai')return terms.benefitPools.length>0&&terms.benefitPools.every(p=>p.models.state==='not_applicable'&&p.modalities.state==='not_applicable');
+   return true;
+  }
  }
 }
 export async function evaluateReopen(raw:ReviewDecision,incoming:CanonicalTermsV1,rawEvidence:EvidenceContext):Promise<ReopenEvaluation> {
@@ -29,7 +37,9 @@ export async function evaluateReopen(raw:ReviewDecision,incoming:CanonicalTermsV
     if(!fact||fact.state!=='known'||!evidenceGrounded(fact.evidenceRefs,evidence))return denied('missing_fact_not_proven');
     basis.push({field:key,fact:withoutEvidence(fact),quotes:[...new Set(fact.evidenceRefs.map(ref=>evidence.quoteById[ref].replace(/\s+/gu,' ').trim()))].sort()});
   }
-  return {allowed:true,reasonCodes:['missing_facts_supplied'],basisHash:await sha256(stableJson(basis))};
+  const basisHash=await sha256(stableJson(basis));
+  if(d.reopenPolicy.reviewedBasisHashes?.includes(basisHash))return denied('basis_already_reviewed');
+  return {allowed:true,reasonCodes:['missing_facts_supplied'],basisHash};
  }
  if(d.reopenPolicy.kind==='new_occurrence'&&d.reasonCode==='expired'&&d.scope.kind==='occurrence') {
   const anchor=terms.occurrenceAnchor,product=terms.issuerProductId;

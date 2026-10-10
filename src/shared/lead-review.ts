@@ -9,6 +9,8 @@ export interface LeadResolution {
   queries: string[];
   candidates: string[];
   offerIds?: string[];
+  identityTaskIds?: string[];
+  identityCandidateIds?: string[];
   evidenceUrl?: string;
   quote?: string;
 }

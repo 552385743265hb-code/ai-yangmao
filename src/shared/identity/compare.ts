@@ -5,7 +5,7 @@ export const RULES_VERSION = 'identity-rules-v1';
 const equal = (a: unknown,b: unknown) => stableJson(withoutEvidence(a))===stableJson(withoutEvidence(b));
 const knownValue = <T>(fact: Fact<T>) => fact.state==='known'?fact.value:undefined;
 export function evidenceGrounded(refs: string[], evidence: EvidenceContext): boolean {
-  return refs.length>0 && refs.every(ref=>!!evidence.quoteById[ref] && evidence.fullText.includes(evidence.quoteById[ref]));
+  return refs.length>0 && refs.every(ref=>Object.hasOwn(evidence.quoteById,ref) && typeof evidence.quoteById[ref]==='string' && evidence.fullText.includes(evidence.quoteById[ref]));
 }
 export function factSlots(terms: CanonicalTermsV1): Map<string,Fact<unknown>> {
   const slots = new Map<string,Fact<unknown>>();
@@ -22,6 +22,7 @@ export function compareCandidate(raw:CanonicalTermsV1,rawEntity:VersionedEntity,
   if(evidence.differentEntityIds?.includes(entity.id))return distinct('manual_different');
   const product=knownValue(candidate.issuerProductId);
   if(product && product!==entity.platformId)return distinct('product_conflict');
+  if(evidence.revokedEntityIds?.includes(entity.id))return unresolved('alias_revoked');
   if(!entity.terms)return unresolved('missing_fact_baseline');
   const before=normalizeTerms(entity.terms);
   if(knownValue(candidate.mechanism)&&knownValue(before.mechanism)&&!equal(candidate.mechanism,before.mechanism))return unresolved('mechanism_conflict');

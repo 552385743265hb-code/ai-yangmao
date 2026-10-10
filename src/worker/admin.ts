@@ -1,3 +1,7 @@
+import { identityAdminRoutes } from './identity/routes';
+import { IdentityService } from './identity/service';
+import { IdentityError } from './identity/store';
+import { sha256,stableJson } from '../shared/identity/normalize';
 import { publicationError, validateStoredOffer } from './publication';
 import {leadTask,leadReviewVersion,leadReviewDue,type LeadResolution} from '../shared/lead-review';
 import { leadPriority } from '../shared/leads';
@@ -50,6 +54,7 @@ export const admin = new Hono<{ Bindings: Env; Variables: { role: 'admin' | 'rev
 
 /** 审核员能用的接口：看待审、通过、拒绝、修改、核验记录、线索、补录、补信源、送交平台准入。 */
 const REVIEWER_ALLOWED: [string, RegExp][] = [
+  ['GET', /^\/identity\/tasks$/], ['POST', /^\/identity\/tasks\/[^/]+\/resolve$/],
   ['GET', /^\/(whoami|queue|leads)$/], ['GET', /^\/offers\/[^/]+$/],
   ['POST', /^\/offers\/[^/]+\/(approve|reject|edit|memo|note|retested|suggest|official-retry)$/],
   ['POST', /^\/leads\/\d+\/(dismiss|reviewing|retry|resolve)$/], ['POST', /^\/(manual|sources|platforms)$/],
@@ -74,6 +79,8 @@ admin.use('*', async (c, next) => {
   c.set('role', 'reviewer'); c.set('who', who);
   await next();
 });
+
+admin.route('/identity',identityAdminRoutes);
 
 admin.get('/whoami', c => c.json({ role: c.get('role'), who: c.get('who') }));
 
@@ -112,6 +119,8 @@ class AmbiguousShortCode extends Error {
   constructor(readonly ids: string[]) { super('短码不唯一，请改用完整活动 ID'); }
 }
 admin.onError((error, c) => {
+  if (error instanceof z.ZodError) return c.json({error:'身份请求格式不正确'},400);
+  if (error instanceof IdentityError) return c.json({error:error.message},error.status);
   if (error instanceof AmbiguousShortCode) return c.json({ error: error.message, ids: error.ids }, 409);
   throw error;
 });
@@ -161,6 +170,12 @@ admin.post('/offers/:ref/withdraw', async c => {
   const body = z.object({ reason: z.string().min(4).max(500), evidenceUrl: z.url().refine(url => /^https?:\/\//.test(url)), basis: z.enum(['official', 'tested']).default('official') })
     .safeParse(await c.req.json().catch(() => null));
   if (!body.success) return c.json({ error: '需要证据入口链接和具体理由', issues: body.error.issues }, 400);
+  if(await c.env.DB.prepare('SELECT id FROM benefit_entities WHERE canonical_offer_id=?').bind(o.id).first()){
+    const version=c.req.header('If-Match');if(!version)return c.json({error:'请携带当前活动版本 If-Match'},409);
+    const reason=(body.data.basis==='tested'?'管理员实测停止领取：':'')+body.data.reason;
+    const requestId=await sha256(stableJson({offerId:o.id,action:'withdraw',version,body:body.data,actor:c.get('who')}));
+    return c.json({ok:true,status:'ended',...await new IdentityService(c.env.DB).setVisibility(o.id,{requestId,expectedOfferVersion:version,action:'withdraw',reason,actor:c.get('who')})});
+  }
   const nowIso = new Date().toISOString();
   const previousEvidence = o.evidence;
   // 实测确认不能冒充官方撤回公告；原权益的官方历史证据及抓取日期保留。
@@ -192,6 +207,18 @@ admin.post('/offers/:ref/:action{approve|reject}', async c => {
   if (!o) return c.json({ error: '找不到这条羊毛' }, 404);
   const action = c.req.param('action') as 'approve' | 'reject';
   const body = await c.req.json().catch(() => ({})) as { reason?: string; reasonCode?: string; reviewer?: string; expectedReviewVersion?: string };
+  const entity=await c.env.DB.prepare('SELECT id FROM benefit_entities WHERE canonical_offer_id=?').bind(o.id).first<{id:string}>();
+  if(entity){
+    const transport=body as typeof body & {identityTaskId?:string;expectedIdentityRevision?:number;requestId?:string};
+    const encoded=transport.expectedReviewVersion?.match(/^identity:([^:]+):(\d+)$/);
+    const taskId=transport.identityTaskId??encoded?.[1],revision=transport.expectedIdentityRevision??(encoded?Number(encoded[2]):undefined);
+    if(!taskId||revision===undefined)return c.json({error:'请刷新身份审核任务，提交其当前版本'},409);
+    const belongs=await c.env.DB.prepare('SELECT id FROM review_tasks WHERE id=? AND entity_id=?').bind(taskId,entity.id).first();
+    if(!belongs)return c.json({error:'审核任务不属于这条活动'},409);
+    const requestId=transport.requestId??await sha256(stableJson({taskId,revision,action,actor:c.get('who'),reason:body.reason??null,reasonCode:body.reasonCode??'other'}));
+    const receipt=await new IdentityService(c.env.DB).decideTask(taskId,{requestId,expectedRevision:revision,action,actor:c.get('who'),role:c.get('role'),reason:body.reason,reasonCode:body.reasonCode as never});
+    return c.json({ok:true,code:shortCode(o.id),reviewState:action==='approve'?'approved':'rejected',identityDecision:receipt});
+  }
   const d = db(c.env);
   const [proposal] = await d.select().from(s.offerProposals).where(eq(s.offerProposals.offerId, o.id));
   if (body.expectedReviewVersion && body.expectedReviewVersion !== (proposal?.updatedAt ?? o.updatedAt)) return c.json({ error: '内容已更新，请刷新这条活动后再审核' }, 409);
@@ -272,6 +299,15 @@ admin.post('/offers/:ref/edit', async c => {
   const o = await findOffer(c.env, c.req.param('ref'));
   if (!o) return c.json({ error: '找不到这条羊毛' }, 404);
   const body = await c.req.json().catch(() => null) as { fields?: Record<string, unknown>; approve?: boolean; reason?: string; reasonCode?: string; expectedReviewVersion?: string } | null;
+  const identity=await c.env.DB.prepare('SELECT id FROM benefit_entities WHERE canonical_offer_id=?').bind(o.id).first();
+  if(identity){
+    if(body?.approve)return c.json({error:'请先保存身份草稿，再按其当前版本批准'},409);
+    const transport=body as typeof body & {requestId?:string;identityTaskId?:string;expectedIdentityRevision?:number;identityFacts?:unknown};
+    const encoded=transport?.expectedReviewVersion?.match(/^identity:([^:]+):(\d+)$/);
+    const requestId=transport?.requestId??await sha256(stableJson({offerId:o.id,...body,actor:c.get('who')}));
+    const result=await new IdentityService(c.env.DB).editManagedOffer(o.id,{requestId,taskId:transport?.identityTaskId??encoded?.[1],expectedTaskRevision:transport?.expectedIdentityRevision??(encoded?Number(encoded[2]):undefined),expectedOfferVersion:body?.expectedReviewVersion,fields:body?.fields??{},actor:c.get('who'),...(transport?.identityFacts?{identityFacts:transport.identityFacts as never}:{})});
+    return c.json({ok:true,approved:false,...result,reviewVersion:result.taskId?`identity:${result.taskId}:${result.revision}`:undefined});
+  }
   const patch = z.record(z.string(), z.unknown()).safeParse(body?.fields);
   if (!patch.success || Object.keys(patch.data).some(key => !EDITABLE_FIELDS.has(key))) return c.json({ error: '包含不可编辑的字段' }, 400);
   const d = db(c.env), nowIso = new Date().toISOString();
@@ -345,6 +381,11 @@ admin.post('/offers/:ref/unpublish', async c => {
   if (o.reviewState !== 'approved') return c.json({ error: '这条目前没有上架' }, 409);
   const body = z.object({ reasonCode: z.string().max(40).default('other'), reason: z.string().min(2).max(500) }).safeParse(await c.req.json().catch(() => null));
   if (!body.success) return c.json({ error: '请写明下架理由' }, 400);
+  if(await c.env.DB.prepare('SELECT id FROM benefit_entities WHERE canonical_offer_id=?').bind(o.id).first()){
+    const version=c.req.header('If-Match');if(!version)return c.json({error:'请携带当前活动版本 If-Match'},409);
+    const requestId=await sha256(stableJson({offerId:o.id,action:'unpublish',version,body:body.data,actor:c.get('who')}));
+    return c.json({ok:true,...await new IdentityService(c.env.DB).setVisibility(o.id,{requestId,expectedOfferVersion:version,action:'unpublish',reason:body.data.reason,reasonCode:body.data.reasonCode,actor:c.get('who')})});
+  }
   const d = db(c.env);
   await d.delete(s.offerProposals).where(eq(s.offerProposals.offerId, o.id));
   await d.update(s.offers).set({ reviewState: 'rejected', updatedAt: new Date().toISOString() }).where(eq(s.offers.id, o.id));
@@ -406,6 +447,7 @@ admin.post('/leads/:id/resolve',async c=>{
   if(!body.success)return c.json({error:'请填写处理依据并使用当前线索版本'},400);
   const d=db(c.env),[l]=await d.select().from(s.leads).where(eq(s.leads.id,Number(c.req.param('id'))));
   if(!l||!['new','reviewing'].includes(l.status)||leadReviewVersion(l)!==body.data.expectedVersion)return c.json({error:'线索状态已更新，请刷新'},409);
+  if(l.resolution?.identityTaskIds?.length)return c.json({error:'请逐项处理身份审核任务，不能用整条线索覆盖候选决定'},409);
   const b=body.data;
   if(b.outcome==='linked'&&(!b.offerId||!(await d.select().from(s.offers).where(eq(s.offers.id,b.offerId))).length))return c.json({error:'请填写已存在的完整活动ID'},400);
   const resolution:LeadResolution={status:b.outcome==='retry'?'retry':b.outcome,jobId:crypto.randomUUID(),attempts:0,inconclusive:0,checkedAt:new Date().toISOString(),nextAttemptAt:b.outcome==='retry'?new Date().toISOString():null,reason:b.reason,queries:l.resolution?.queries??[],candidates:l.resolution?.candidates??[],evidenceUrl:l.resolution?.evidenceUrl,quote:l.resolution?.quote,offerIds:b.offerId?[b.offerId]:(l.resolution?.offerIds??[])};
@@ -418,6 +460,7 @@ admin.post('/leads/:id/:action{dismiss|reviewing|retry}', async c => {
   if(!l)return c.json({error:'没有这条线索'},404);
   const body=await c.req.json().catch(()=>({}));
   if(!['new','reviewing'].includes(l.status)||body.expectedVersion!==leadReviewVersion(l))return c.json({error:'线索版本已变化或缺少版本，请刷新后处理'},409);
+  if(l.resolution?.identityTaskIds?.length)return c.json({error:'请使用身份任务或拒绝决定的显式重开接口'},409);
   const resolution:LeadResolution={status:action==='dismiss'?'closed':'retry',jobId:crypto.randomUUID(),attempts:0,inconclusive:0,checkedAt:new Date().toISOString(),nextAttemptAt:action==='dismiss'?null:new Date().toISOString(),reason:String(body.reason??(action==='dismiss'?'管理员忽略线索':'管理员要求重新官方核验')).slice(0,1000),queries:[],candidates:[]};
   const changed=await d.update(s.leads).set({status:action==='dismiss'?'rejected':'reviewing',resolution}).where(and(eq(s.leads.id,l.id),eq(s.leads.status,l.status),sql`COALESCE(${s.leads.resolution},'')=COALESCE(${l.resolution?JSON.stringify(l.resolution):null},'')`)).returning({id:s.leads.id});
   return changed.length?c.json({ok:true}):c.json({error:'线索已更新，请刷新'},409);
@@ -438,7 +481,7 @@ admin.post('/manual', async c => {
   if (!body.success) return c.json({ error: '链接不正确', issues: body.error.issues }, 400);
   const raw = JSON.stringify({ note: body.data.note ?? null, platformId: body.data.platformId ?? null });
   const res = await db(c.env).insert(s.leads).values({ origin: 'telegram', url: body.data.url, title: body.data.note ?? '补录链接', raw })
-    .onConflictDoUpdate({ target: s.leads.url, set: { status: 'new', resolution:null, origin: 'telegram', raw } }).returning({ id: s.leads.id });
+    .onConflictDoUpdate({ target: s.leads.url, set: { raw: sql`COALESCE(${s.leads.raw}, '') || '\n[补充链接备注] ' || ${raw}` } }).returning({ id: s.leads.id });
   return c.json({ ok: true, leadId: res[0]?.id });
 });
 

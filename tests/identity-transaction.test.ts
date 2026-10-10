@@ -60,3 +60,9 @@ it('A24 concurrent identical requests return one applied receipt and one replay'
  expect(result.map(r=>r.status).sort()).toEqual(['applied','replayed']);
  expect(f.sqlite.prepare('SELECT count(*) n FROM review_tasks').get()).toEqual({n:1});
 });
+it('A22 an orphan staged row cannot arm writes after the head revision guard matches zero rows',async()=>{
+ let injected=false;
+ f.inject(sql=>{if(!injected&&sql.startsWith('INSERT OR IGNORE INTO identity_commands')){injected=true;f.sqlite.exec("INSERT INTO identity_commands(request_id,payload_hash,state,expected_json) VALUES('request','payload','staged','[]'); UPDATE benefit_entities SET business_revision=99 WHERE id='e1'");}});
+ expect((await commitIdentityMutation(f.db,plan())).status).toBe('conflict');
+ expect(f.sqlite.prepare('SELECT count(*) n FROM review_tasks').get()).toEqual({n:0});
+});

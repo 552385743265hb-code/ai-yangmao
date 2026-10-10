@@ -121,3 +121,119 @@ it('A20/A28 task suggestion replay is idempotent and does not increment material
  expect(f.sqlite.prepare('SELECT state,material_revision FROM review_tasks').get()).toEqual({state:'manual',material_revision:1});
  expect(f.sqlite.prepare('SELECT count(*) n FROM identity_events').get()).toEqual({n:1});
 });
+it('A29 manual display edits are version guarded and cannot be overwritten by later ingestion',async()=>{
+ const a=await service.resolveCandidate(await intake('a'),'a');
+ const edited=await service.editManagedOffer(a.canonicalOfferId!,{requestId:'manual-edit',expectedTaskRevision:0,taskId:a.taskId!,fields:{valueText:'管理员确认的 15 美元额度'},actor:'admin'});
+ expect(edited.revision).toBe(1);
+ expect(f.sqlite.prepare('SELECT value_text FROM offers').get()).toEqual({value_text:'管理员确认的 15 美元额度'});
+ expect(f.sqlite.prepare('SELECT revision FROM review_tasks WHERE id=?').get(a.taskId)).toEqual({revision:1});
+ await service.resolveCandidate(await intake('repeat'),'repeat');
+ expect(f.sqlite.prepare('SELECT value_text FROM offers').get()).toEqual({value_text:'管理员确认的 15 美元额度'});
+});
+it('A14 an edit to a published mapped offer creates a draft and preserves the approved projection',async()=>{
+ const a=await service.resolveCandidate(await intake('a'),'a');await service.decideTask(a.taskId!,{requestId:'approve',expectedRevision:0,action:'approve',actor:'admin',role:'admin'});
+ const row=f.sqlite.prepare('SELECT updated_at FROM offers').get();
+ const result=await service.editManagedOffer(a.canonicalOfferId!,{requestId:'edit-published',expectedOfferVersion:String(row?.updated_at),fields:{valueText:'管理员待审新额度'},actor:'admin'});
+ expect(result.taskId).toEqual(expect.any(String));
+ expect(f.sqlite.prepare('SELECT value_text FROM offers').get()).toEqual({value_text:'注册赠送 10 美元 API 额度'});
+ expect(JSON.parse(String(f.sqlite.prepare('SELECT candidate FROM offer_proposals').get()?.candidate)).valueText).toBe('管理员待审新额度');
+});
+it('A28 a presentation-only edit does not create a new task or material reminder',async()=>{
+ const a=await service.resolveCandidate(await intake('a'),'a');await service.decideTask(a.taskId!,{requestId:'approve',expectedRevision:0,action:'approve',actor:'admin',role:'admin'});
+ const before=f.sqlite.prepare('SELECT updated_at FROM offers').get();
+ await service.editManagedOffer(a.canonicalOfferId!,{requestId:'title',expectedOfferVersion:String(before?.updated_at),fields:{title:'管理员更清楚的标题'},actor:'admin'});
+ expect(f.sqlite.prepare('SELECT title FROM offers').get()).toEqual({title:'管理员更清楚的标题'});
+ expect(f.sqlite.prepare('SELECT count(*) n FROM review_tasks').get()).toEqual({n:1});
+ expect(f.sqlite.prepare("SELECT count(*) n FROM identity_events WHERE kind='review'").get()).toEqual({n:1});
+});
+it('A26 unpublishing a managed offer adds a scoped refusal without deleting historical proposals',async()=>{
+ const a=await service.resolveCandidate(await intake('a'),'a');await service.decideTask(a.taskId!,{requestId:'approve',expectedRevision:0,action:'approve',actor:'admin',role:'admin'});
+ const original=f.sqlite.prepare('SELECT updated_at FROM offers').get();
+ f.sqlite.prepare("INSERT INTO offer_proposals(offer_id,candidate,diff,manual_fields) VALUES(?,?,'[]','[\"valueText\"]')").run(a.canonicalOfferId,JSON.stringify(displayOffer('尚待处理的人工草稿')));
+ await service.setVisibility(a.canonicalOfferId!,{requestId:'unpublish',expectedOfferVersion:String(original?.updated_at),action:'unpublish',reason:'付费套餐内含，不收录',reasonCode:'paid_bundle',actor:'admin'});
+ expect(f.sqlite.prepare('SELECT review_state FROM offers').get()).toEqual({review_state:'rejected'});
+ expect(f.sqlite.prepare('SELECT count(*) n FROM offer_proposals').get()).toEqual({n:1});
+ const repeat=await service.resolveCandidate(await intake('repeat'),'repeat');expect(repeat.outcome).toBe('duplicate_rejected');
+});
+it('A19 task results cannot name an existing entity outside the leased candidate set',async()=>{
+ const a=await service.resolveCandidate(await intake('a'),'a');
+ f.sqlite.exec("INSERT INTO platforms(id,name,type) VALUES('other','Other','lab'); INSERT INTO benefit_entities(id,platform_id) VALUES('foreign','other')");
+ const lease=await service.claimTask(a.taskId!,{requestId:'claim',expectedRevision:0});
+ await expect(service.submitTaskSuggestion(a.taskId!,{requestId:'forged',expectedRevision:lease.revision,leaseToken:lease.leaseToken,result:{relation:'SAME',entityId:'foreign',termsRelation:'EQUIVALENT',matchingVersionId:null,evidenceRefs:[],conflicts:[],reasonCodes:[],retrievalComplete:true,resolverVersion:'identity-v1',rulesVersion:'identity-rules-v1'}})).rejects.toMatchObject({status:400});
+});
+it('A29 a human can resolve an unknown-product task as a new pending activity atomically',async()=>{
+ const unknown=facts();unknown.issuerProductId={state:'unknown'};unknown.mechanism={state:'unknown'};
+ const a=await service.resolveCandidate(await intake('unknown','Campaign signup-2026 grants 10 USD.',unknown),'unknown');
+ const result=await service.resolveIdentityTask(a.taskId!,{requestId:'human-new',expectedRevision:0,action:'new',candidateId:a.candidateId,facts:facts(),actor:'admin'});
+ expect(result).toMatchObject({outcome:'created_pending',canonicalOfferId:expect.any(String)});
+ expect(f.sqlite.prepare('SELECT state FROM review_tasks WHERE id=?').get(a.taskId)).toEqual({state:'resolved'});
+ expect(f.sqlite.prepare('SELECT review_state FROM offers').get()).toEqual({review_state:'pending'});
+});
+it('A09 manual same confirmation links a weak source without another offer or publication',async()=>{
+ const a=await service.resolveCandidate(await intake('a'),'a');await service.decideTask(a.taskId!,{requestId:'approve',expectedRevision:0,action:'approve',actor:'admin',role:'admin'});
+ const unclear=facts();unclear.occurrenceAnchor={state:'unknown'};
+ const b=await service.resolveCandidate(await intake('weak','Signup grants 10 USD.',unclear),'weak');
+ expect(b.outcome).toBe('needs_identity_review');
+ const result=await service.resolveIdentityTask(b.taskId!,{requestId:'human-same',expectedRevision:0,action:'same',candidateId:b.candidateId,entityId:a.entityId!,actor:'admin'});
+ expect(result).toMatchObject({outcome:'duplicate_approved',entityId:a.entityId,canonicalOfferId:a.canonicalOfferId});
+ expect(f.sqlite.prepare('SELECT count(*) n FROM offers').get()).toEqual({n:1});
+ expect(f.sqlite.prepare('SELECT publication_revision FROM benefit_entities').get()).toEqual({publication_revision:1});
+});
+it('A26 an unresolved claim can be rejected without manufacturing an offer or entity',async()=>{
+ const unknown=facts();unknown.issuerProductId={state:'unknown'};
+ const a=await service.resolveCandidate(await intake('unknown','Campaign signup-2026 grants 10 USD.',unknown,{}),'unknown');
+ await service.decideTask(a.taskId!,{requestId:'reject-claim',expectedRevision:0,action:'reject',reasonCode:'other',reason:'原文只有新闻，没有独立权益',actor:'admin',role:'admin'});
+ expect(f.sqlite.prepare('SELECT entity_id,candidate_id FROM review_decisions').get()).toEqual({entity_id:null,candidate_id:a.candidateId});
+ expect(f.sqlite.prepare('SELECT count(*) n FROM benefit_entities').get()).toEqual({n:0});
+ expect(f.sqlite.prepare('SELECT count(*) n FROM offers').get()).toEqual({n:0});
+});
+it('A26 a lead-only prior refusal is consumed before any entity or offer is created',async()=>{
+ const candidateId=await intake('claim');
+ f.sqlite.prepare("INSERT INTO review_decisions(id,candidate_id,action,reason_code,scope_json,reopen_policy_json,rules_version,evidence_refs_json,actor,idempotency_key) VALUES('old-refusal',?,'reject','other',?,?,'rules-v1','[]','admin','old-refusal-command')").run(candidateId,JSON.stringify({kind:'claim',candidateId}),JSON.stringify({kind:'manual',missingFacts:[]}));
+ const receipt=await service.resolveCandidate(candidateId,'resolve-existing-refusal');
+ expect(receipt).toMatchObject({outcome:'duplicate_rejected',decisionId:'old-refusal',entityId:null,canonicalOfferId:null});
+ expect(f.sqlite.prepare('SELECT count(*) n FROM benefit_entities').get()).toEqual({n:0});
+});
+it('A26 explicit reopening preserves the refusal and remains pending until a new approval',async()=>{
+ const a=await service.resolveCandidate(await intake('a'),'a');const rejected=await service.decideTask(a.taskId!,{requestId:'reject',expectedRevision:0,action:'reject',reason:'需要更多证据',reasonCode:'insufficient_evidence',actor:'admin',role:'admin'});
+ const revision=Number(f.sqlite.prepare('SELECT business_revision FROM benefit_entities').get()?.business_revision);
+ const input={requestId:'reopen',expectedRevision:revision,reason:'管理员确认应补证再审',basis:{description:'New official claim instructions were located.'},actor:'admin'};
+ const reopened=await service.reopenDecision(rejected.decisionId,input);expect(await service.reopenDecision(rejected.decisionId,input)).toEqual(reopened);
+ expect(f.sqlite.prepare('SELECT count(*) n FROM review_decisions').get()).toEqual({n:2});
+ expect(f.sqlite.prepare('SELECT review_state FROM offers').get()).toEqual({review_state:'rejected'});
+ expect(f.sqlite.prepare('SELECT state FROM review_tasks WHERE id=?').get(reopened.taskId)).toEqual({state:'open'});
+});
+it('A29 alias revocation is version guarded, audited, and invalidates entity business state',async()=>{
+ const a=await service.resolveCandidate(await intake('a'),'a');const alias=f.sqlite.prepare('SELECT id,revision FROM identity_aliases').get();
+ const before=Number(f.sqlite.prepare('SELECT business_revision FROM benefit_entities').get()?.business_revision);
+ await service.revokeAlias(String(alias?.id),{requestId:'revoke',expectedRevision:Number(alias?.revision),expectedEntityRevision:before,reason:'管理员发现活动锚点关联错误',actor:'admin'});
+ expect(f.sqlite.prepare('SELECT status FROM identity_aliases WHERE id=?').get(alias?.id)).toEqual({status:'revoked'});
+ expect(Number(f.sqlite.prepare('SELECT business_revision FROM benefit_entities').get()?.business_revision)).toBe(before+1);
+ expect(f.sqlite.prepare("SELECT count(*) n FROM review_decisions WHERE action='revoke'").get()).toEqual({n:1});
+});
+it('A07 official enrichment updates only pending media evidence and preserves the same task and manual notes',async()=>{
+ const media=displayOffer();media.evidence={...media.evidence,tier:'media'};
+ const a=await service.resolveCandidate(await intake('media','Campaign signup-2026 grants 10 USD.',facts(),media),'media');
+ f.sqlite.prepare("UPDATE offers SET admin_note='人工心得保留' WHERE id=?").run(a.canonicalOfferId);
+ const b=await service.resolveCandidate(await intake('official'),'official');
+ expect(b).toMatchObject({outcome:'duplicate_pending',taskId:a.taskId,canonicalOfferId:a.canonicalOfferId});
+ const row=f.sqlite.prepare('SELECT evidence,admin_note,review_state FROM offers').get();
+ expect(JSON.parse(String(row?.evidence)).tier).toBe('site');expect(row).toMatchObject({admin_note:'人工心得保留',review_state:'pending'});
+ expect(f.sqlite.prepare('SELECT count(*) n FROM review_tasks').get()).toEqual({n:1});
+});
+it('A29 revoking an identity alias invalidates later candidate reuse without rewriting old request receipts',async()=>{
+ const a=await service.resolveCandidate(await intake('a'),'a');await service.decideTask(a.taskId!,{requestId:'approve',expectedRevision:0,action:'approve',actor:'admin',role:'admin'});
+ const alias=f.sqlite.prepare("SELECT id,revision FROM identity_aliases WHERE namespace='official_campaign'").get();
+ const revision=Number(f.sqlite.prepare('SELECT business_revision FROM benefit_entities').get()?.business_revision);
+ await service.revokeAlias(String(alias?.id),{requestId:'revoke',expectedRevision:Number(alias?.revision),expectedEntityRevision:revision,reason:'活动对应关系需要重新确认',actor:'admin'});
+ const newRequest=await service.resolveCandidate(a.candidateId,'after-revoke');
+ expect(newRequest.outcome).toBe('needs_identity_review');
+ expect(await service.resolveCandidate(a.candidateId,'a')).toEqual(a);
+});
+it('A19 an existing campaign alias cannot validate a fabricated incoming anchor',async()=>{
+ await service.resolveCandidate(await intake('a'),'a');
+ const text='Campaign unrelated-2026 grants 10 USD.';const display=displayOffer();display.evidence.excerpts.benefit=text;
+ const result=await service.resolveCandidate(await intake('unrelated',text,facts(),display),'unrelated');
+ expect(result.outcome).toBe('needs_identity_review');
+ expect(f.sqlite.prepare('SELECT count(*) n FROM offers').get()).toEqual({n:1});
+});

@@ -15,6 +15,7 @@ const rssSource = { id: 'rss', kind: 'rss', tier: 'site', platformId: 'vendor', 
 const json = (value: unknown) => new Response(JSON.stringify(value), { headers: { 'Content-Type': 'application/json' } });
 
 interface HarnessOptions {
+  indexFailure?: boolean;
   ingestResults?: Record<string, unknown>[];
   rescueJob?:boolean;
   rescuePlatforms?:Record<string,unknown>[];
@@ -62,7 +63,7 @@ function harness(options: HarnessOptions = {}) {
     if(url.includes('/official-reviews/')&&url.endsWith('/result'))return json({status:body.status});
     if(url==='https://mcp.exa.ai/mcp' && options.partialSearch && ++searchCalls>1)return new Response('quota',{status:429});
     if(url==='https://mcp.exa.ai/mcp')return options.officialSearchStatus?new Response('unavailable',{status:options.officialSearchStatus}):json({result:{content:[{type:'text',text:(options.officialUrls??['https://vendor.example/confirmed']).map(u=>'URL: '+u).join('\n')}]}});
-    if (url.endsWith('/offers-index')) return json({ offers: options.known ?? [] });
+    if (url.includes('/offers-index')) return options.indexFailure?new Response('unavailable',{status:503}):json({ offers: options.known ?? [], complete:true, nextCursor:null });
     if (url.includes('/corrections?')) return json({ corrections: [] });
     if (url.endsWith('/model-budget/reserve')) return options.budgetDenied ? jsonError() : json({ id: ++reservation });
     if (url.endsWith('/settle')) return json({ ok: true });
@@ -90,7 +91,7 @@ const rss = (...urls: string[]) => `<rss><channel>${urls.map(url => `<item><titl
 
 beforeEach(() => {
   vi.resetModules();
-  for (const [key, value] of Object.entries({ API_BASE: 'https://mock.local', INGEST_TOKEN: 'test-ingest', GEMINI_API_KEY: 'test-key', OPENROUTER_API_KEY: '', GLM_API_KEY: '', DEEPSEEK_API_KEY: '', FAST_LEADS: '1', FORCE: '0', DRY_RUN: '0', ONLY_SOURCES: '', DAILY_TOKEN_CAP: '0', MONTHLY_COST_CAP_CNY: '10', LLM_MIN_GAP_MS: '0' })) vi.stubEnv(key, value);
+  for (const [key, value] of Object.entries({ API_BASE: 'https://mock.local', IDENTITY_MODE:'shadow', IDENTITY_MODEL_ASSIST:'false', INGEST_TOKEN: 'test-ingest', GEMINI_API_KEY: 'test-key', OPENROUTER_API_KEY: '', GLM_API_KEY: '', DEEPSEEK_API_KEY: '', FAST_LEADS: '1', FORCE: '0', DRY_RUN: '0', ONLY_SOURCES: '', DAILY_TOKEN_CAP: '0', MONTHLY_COST_CAP_CNY: '10', LLM_MIN_GAP_MS: '0' })) vi.stubEnv(key, value);
   vi.spyOn(console, 'log').mockImplementation(() => undefined);
 });
 afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); vi.unstubAllEnvs(); vi.restoreAllMocks(); });
@@ -425,4 +426,12 @@ describe('phase1 duplicate intake', () => {
     await runPipeline();
     expect(h.payloads('/status')[0].status).toBe('reviewing');
   });
+});
+
+it('A18 official extraction never treats an unavailable identity index as empty history',async()=>{
+ vi.stubEnv('FAST_LEADS','0');
+ const h=harness({indexFailure:true,sources:[{...rssSource,kind:'web_list',url:'https://vendor.example/rewards'}]});
+ const {runPipeline}=await import('../pipeline/run');const result=await runPipeline();
+ expect(h.payloads('/offers')).toHaveLength(0);
+ expect(result.stats.coverageDegraded).toBe(true);
 });

@@ -1,0 +1,20 @@
+import { expect,it } from 'vitest';
+import worker from '../src/worker/index';
+import { identityDb } from './fixtures/identity/db';
+import { displayOffer } from './fixtures/identity/offer';
+import { terms } from './fixtures/identity/terms';
+it('A27 a request stays within fifty SQL statements and defers durable intake for a separate resolution request',async()=>{
+ const f=identityDb();let statements=0;f.inject(()=>{statements++;});
+ const remap=(v:any):any=>Array.isArray(v)?v.map(remap):v&&typeof v==='object'?Object.fromEntries(Object.entries(v).map(([k,x])=>[k,k==='evidenceRefs'?['benefit']:remap(x)])):v;
+ const facts=remap(terms());facts.occurrenceAnchor={state:'known',value:'signup-2026',evidenceRefs:['benefit']};
+ const env={DB:f.db,INGEST_TOKEN:'budget-test-token-123',IDENTITY_MODE:'enforce',IDENTITY_CANARY_PLATFORMS:'vendor'} as Parameters<typeof worker.fetch>[1];
+ const post=(path:string,body:unknown)=>worker.fetch(new Request('https://local.test/api/ingest/'+path,{method:'POST',headers:{Authorization:'Bearer budget-test-token-123','Content-Type':'application/json'},body:JSON.stringify(body)}),env,{} as ExecutionContext);
+ const response=await post('offers',[{...displayOffer(),sourceId:'vendor-source',sourceText:'Campaign signup-2026 grants 10 USD.',identityFacts:facts,identityRequestId:'budget-intake'}]);
+ const result=(await response.json() as any).results[0];
+ expect(statements).toBeLessThanOrEqual(50);
+ expect(result.pendingResolution).toMatchObject({candidateId:expect.any(String),requestId:expect.any(String)});
+ statements=0;
+ const resolved=await post('identity-candidates/'+result.pendingResolution.candidateId+'/resolve',result.pendingResolution);
+ expect(resolved.status).toBe(200);expect(await resolved.json()).toMatchObject({outcome:'created_pending'});
+ expect(statements).toBeLessThanOrEqual(50);f.sqlite.close();
+});

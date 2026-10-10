@@ -15,6 +15,8 @@ function parse<T>(schema: z.ZodType<T>, input: unknown): T {
 type CommandRow = { payload_hash: string; state: string; result_json: string | null };
 type ObservationRow = { id: string; text: string; text_truncated: number; fetch_kind: string; trust_json: string };
 
+export function readReviewDecision(row:Record<string,unknown>) { return reviewDecisionSchema.parse({id:row.id,entityId:row.entity_id,candidateId:row.candidate_id,versionId:row.version_id,action:row.action,reasonCode:row.reason_code,reasonText:row.reason_text,basis:JSON.parse(String(row.basis_json??'{}')),scope:JSON.parse(String(row.scope_json)),reopenPolicy:JSON.parse(String(row.reopen_policy_json)),rulesVersion:row.rules_version,evidenceRefs:JSON.parse(String(row.evidence_refs_json)),actor:row.actor,baseVersionId:row.base_version_id,targetVersionId:row.target_version_id,idempotencyKey:row.idempotency_key,supersedesId:row.supersedes_id,createdAt:row.created_at}); }
+
 export class IdentityStore {
   constructor(readonly db: D1Database) {}
 
@@ -78,7 +80,7 @@ export class IdentityStore {
       const ranked=await this.searchIdentity(productId,searchText.slice(0,2000));
       const rank=(id:string)=>id===exact?.id?-1:ranked.ids.includes(id)?ranked.ids.indexOf(id):41;
       entities.sort((a,b)=>rank(a.id)-rank(b.id));
-      const decisions=allDecisions.slice(0,40).map(row=>reviewDecisionSchema.parse({id:row.id,entityId:row.entity_id,candidateId:row.candidate_id,versionId:row.version_id,action:row.action,reasonCode:row.reason_code,scope:JSON.parse(String(row.scope_json)),reopenPolicy:JSON.parse(String(row.reopen_policy_json)),rulesVersion:row.rules_version,evidenceRefs:JSON.parse(String(row.evidence_refs_json)),actor:row.actor,baseVersionId:row.base_version_id,targetVersionId:row.target_version_id,idempotencyKey:row.idempotency_key,supersedesId:row.supersedes_id,createdAt:row.created_at}));
+      const decisions=allDecisions.slice(0,40).map(readReviewDecision);
       const complete=rows.results.length<=take&&allDecisions.length<=40;
       const nextCursor=complete?null:btoa(JSON.stringify({v:1,product:productId,entity:visible.at(-1)?.id??page.entity,decision:decisions.at(-1)?.id??page.decision,exactSeen:true}));
       return {entities,decisions,complete,nextCursor};
@@ -96,9 +98,8 @@ export class IdentityStore {
   // Shadow intake has no business revision dependency. Every statement is tied to
   // the staged command, including the final invariant; D1 rolls back on CHECK failure.
   private async storageCommand<T>(requestId: string, hash: string, receipt: T, writes: (guard: string, guardArgs: string[]) => D1PreparedStatement[], invariant = '1', invariantArgs: (string|number|null)[] = []): Promise<T> {
-    const prior = await this.prior(requestId,hash);
-    if (prior) return JSON.parse(prior.result_json!) as T;
-    const result=await commitIdentityMutation(this.db,{requestId,payloadHash:hash,expected:[],statements:writes(commandGuard,[requestId,hash]),receipt,assertions:[{sql:invariant,args:invariantArgs}]});
+    const executionToken=crypto.randomUUID();
+    const result=await commitIdentityMutation(this.db,{requestId,payloadHash:hash,executionToken,expected:[],statements:writes(commandGuard,[requestId,hash,executionToken]),receipt,assertions:[{sql:invariant,args:invariantArgs}]});
     if(result.status==='conflict'||result.value===null)throw new IdentityError(409,'intake command was not applied');
     return result.value;
   }
@@ -107,17 +108,15 @@ export class IdentityStore {
     const input = parse(observationInputSchema,raw);
     const hash = await sha256(stableJson(input));
     const commandId = `observation:${input.requestId}`;
-    const prior = await this.prior(commandId,hash);
-    if (prior) return observationReceiptSchema.parse(JSON.parse(prior.result_json!));
     const urlKey = normalizeDocumentUrl(input.originalUrl);
     const documentId = `doc_${await sha256(urlKey)}`;
     const contentHash = await sha256(input.text);
     const observationId = `obs_${await sha256(stableJson([documentId,contentHash,input.fetchKind]))}`;
     const truncated = input.truncated || input.text.length > 250000;
     let sourceVerified = false, productId: string | null = null;
-    if (input.sourceId && input.fetchKind === 'direct' && new URL(input.originalUrl).hostname === new URL(input.finalUrl).hostname) {
-      const source = await this.db.prepare('SELECT s.url,s.tier,p.id,p.name,p.site,p.x_handles,p.staff_handles FROM sources s JOIN platforms p ON p.id=s.platform_id WHERE s.id=?').bind(input.sourceId).first<{url:string;tier:string;id:string;name:string;site:string|null;x_handles:string;staff_handles:string}>();
-      if (source) {
+    if ((input.sourceId||input.issuerProductId) && input.fetchKind === 'direct' && new URL(input.originalUrl).hostname === new URL(input.finalUrl).hostname) {
+      const source = input.sourceId?await this.db.prepare('SELECT s.url,s.tier,p.id,p.name,p.site,p.x_handles,p.staff_handles FROM sources s JOIN platforms p ON p.id=s.platform_id WHERE s.id=?').bind(input.sourceId).first<{url:string;tier:string;id:string;name:string;site:string|null;x_handles:string;staff_handles:string}>():await this.db.prepare("SELECT site AS url,'site' AS tier,id,name,site,x_handles,staff_handles FROM platforms WHERE id=? AND site IS NOT NULL").bind(input.issuerProductId!).first<{url:string;tier:string;id:string;name:string;site:string|null;x_handles:string;staff_handles:string}>();
+      if (source && (!input.issuerProductId||input.issuerProductId===source.id)) {
         const platform = {id:source.id,name:source.name,site:source.site,xHandles:JSON.parse(source.x_handles),staffHandles:JSON.parse(source.staff_handles)};
         sourceVerified = !!officialTier(input.originalUrl,platform,[source]) && !!officialTier(input.finalUrl,platform,[source]);
         if (sourceVerified) productId=source.id;
@@ -145,6 +144,7 @@ export class IdentityStore {
     await this.storageCommand(request,payloadHash,{extractionComplete:complete,reasonCodes:complete?[]:['extraction_incomplete']},(guard,args)=>[
       this.db.prepare(`INSERT INTO intake_extractions(request_id,observation_id,extraction_version,input_json,state,extraction_complete,next_attempt_at,last_error) SELECT ?,?,?,?,'deferred',?,?,? WHERE ${guard}`)
         .bind(request,input.observationId,input.extractionVersion,JSON.stringify(input),Number(complete),new Date(Date.now()+20*60_000).toISOString(),'intake_pending',...args),
+      ...input.leadIds.map(leadId=>this.db.prepare(`INSERT INTO identity_extraction_leads(request_id,lead_id) SELECT ?,? WHERE ${guard} ON CONFLICT DO NOTHING`).bind(request,leadId,...args)),
     ]);
     const receipts: IntakeReceipt[]=[];
     for (const candidate of input.candidates) {

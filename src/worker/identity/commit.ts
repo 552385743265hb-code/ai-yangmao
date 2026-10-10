@@ -3,11 +3,11 @@ export type Binding = string | number | null;
 export type ExpectedRevision = {kind:'entity'|'task'|'block';id:string;revision:number};
 export interface Predicate {sql:string;args:Binding[]}
 export interface MutationPlan<T> {
- requestId:string;payloadHash:string;expected:ExpectedRevision[];statements:D1PreparedStatement[];receipt:T;
+ requestId:string;payloadHash:string;executionToken:string;replayChecked?:boolean;expected:ExpectedRevision[];statements:D1PreparedStatement[];receipt:T;
  guards?:Predicate[];assertions?:Predicate[];
 }
-export const commandGuard = "EXISTS(SELECT 1 FROM identity_commands WHERE request_id=? AND payload_hash=? AND state='staged')";
-const allowed=new Set(['source_documents','source_observations','intake_candidates','intake_extractions','lead_candidate_links','benefit_entities','benefit_versions','entity_observations','identity_aliases','review_decisions','review_tasks','task_candidates','identity_constraints','identity_blocks','identity_events','offers','offer_proposals','reviews','offer_revisions','rejected_offer_updates','leads']);
+export const commandGuard = "EXISTS(SELECT 1 FROM identity_commands WHERE request_id=? AND payload_hash=? AND state='staged' AND execution_token=?)";
+const allowed=new Set(['source_documents','source_observations','intake_candidates','intake_extractions','identity_extraction_leads','lead_candidate_links','benefit_entities','benefit_versions','entity_observations','identity_aliases','review_decisions','review_tasks','task_candidates','identity_constraints','identity_blocks','identity_events','offers','offer_proposals','reviews','offer_revisions','rejected_offer_updates','leads']);
 const identifier=(name:string)=>{if(!/^[a-z_]+$/.test(name))throw new Error('invalid internal SQL identifier');return '"'+name+'"';};
 const ownsVersion=(table:string,column:string,entity='entity_id')=>`(${column} IS NULL OR EXISTS(SELECT 1 FROM benefit_versions v WHERE v.id=${table}.${column} AND v.entity_id=${table}.${entity}))`;
 const ownership:Record<string,string>={
@@ -23,26 +23,30 @@ export class MutationBuilder {
  private statements:D1PreparedStatement[]=[];
  private assertions:Predicate[]=[];
  private guards:Predicate[]=[];
+ readonly executionToken=crypto.randomUUID();
  constructor(private db:D1Database,readonly requestId:string,readonly payloadHash:string){}
  private table(table:string) {if(!allowed.has(table))throw new Error('unsupported mutation table');return identifier(table);}
  insert(table:string,data:Record<string,Binding>,onConflict:'error'|'nothing'='error'):void {
   const keys=Object.keys(data);const name=this.table(table);
-  this.statements.push(this.db.prepare(`INSERT INTO ${name}(${keys.map(identifier).join(',')}) SELECT ${keys.map(()=>'?').join(',')} WHERE ${commandGuard}${onConflict==='nothing'?' ON CONFLICT DO NOTHING':''}`).bind(...keys.map(k=>data[k]),this.requestId,this.payloadHash));
+  this.statements.push(this.db.prepare(`INSERT INTO ${name}(${keys.map(identifier).join(',')}) SELECT ${keys.map(()=>'?').join(',')} WHERE ${commandGuard}${onConflict==='nothing'?' ON CONFLICT DO NOTHING':''}`).bind(...keys.map(k=>data[k]),this.requestId,this.payloadHash,this.executionToken));
   if(ownership[table]&&data.id!=null)this.assert(`NOT EXISTS(SELECT 1 FROM ${name} WHERE id=? AND NOT (${ownership[table]}))`,[data.id]);
  }
  update(table:string,data:Record<string,Binding>,where:string,args:Binding[]):void {
   const name=this.table(table),keys=Object.keys(data);
-  this.statements.push(this.db.prepare(`UPDATE ${name} SET ${keys.map(k=>identifier(k)+'=?').join(',')} WHERE (${where}) AND ${commandGuard}`).bind(...keys.map(k=>data[k]),...args,this.requestId,this.payloadHash));
+  this.statements.push(this.db.prepare(`UPDATE ${name} SET ${keys.map(k=>identifier(k)+'=?').join(',')} WHERE (${where}) AND ${commandGuard}`).bind(...keys.map(k=>data[k]),...args,this.requestId,this.payloadHash,this.executionToken));
  }
  remove(table:string,where:string,args:Binding[]):void {
-  this.statements.push(this.db.prepare(`DELETE FROM ${this.table(table)} WHERE (${where}) AND ${commandGuard}`).bind(...args,this.requestId,this.payloadHash));
+  this.statements.push(this.db.prepare(`DELETE FROM ${this.table(table)} WHERE (${where}) AND ${commandGuard}`).bind(...args,this.requestId,this.payloadHash,this.executionToken));
+ }
+ acknowledgeOfficialJob(offerId:string,originalJob:string,entityRevision:number):void {
+  this.statements.push(this.db.prepare(`UPDATE offers SET official_review=json_set(official_review,'$.identityRevision',?,'$.inputVersion',updated_at||'|'||coalesce((SELECT updated_at FROM offer_proposals WHERE offer_id=offers.id),'')) WHERE id=? AND official_review=? AND ${commandGuard}`).bind(entityRevision,offerId,originalJob,this.requestId,this.payloadHash,this.executionToken));
  }
  assert(sql:string,args:Binding[]=[]):void {this.assertions.push({sql,args});}
  require(sql:string,args:Binding[]=[]):void {this.guards.push({sql,args});}
  assertOwnership(table:string,id:string):void {
   if(ownership[table])this.assert(`NOT EXISTS(SELECT 1 FROM ${this.table(table)} WHERE id=? AND NOT (${ownership[table]}))`,[id]);
  }
- plan<T>(expected:ExpectedRevision[],receipt:T):MutationPlan<T> {return {requestId:this.requestId,payloadHash:this.payloadHash,expected,statements:this.statements,receipt,guards:this.guards,assertions:this.assertions};}
+ plan<T>(expected:ExpectedRevision[],receipt:T):MutationPlan<T> {return {requestId:this.requestId,payloadHash:this.payloadHash,executionToken:this.executionToken,expected,statements:this.statements,receipt,guards:this.guards,assertions:this.assertions};}
 }
 export async function readIdentityReceipt<T>(db:D1Database,requestId:string,payloadHash:string):Promise<MutationResult<T>|null> {
  const row=await db.prepare('SELECT payload_hash,state,result_json FROM identity_commands WHERE request_id=?').bind(requestId).first<{payload_hash:string;state:string;result_json:string|null}>();
@@ -51,7 +55,7 @@ export async function readIdentityReceipt<T>(db:D1Database,requestId:string,payl
  return {status:'replayed',value:JSON.parse(row.result_json) as T};
 }
 export async function commitIdentityMutation<T>(db:D1Database,plan:MutationPlan<T>):Promise<MutationResult<T>> {
- const prior=await readIdentityReceipt<T>(db,plan.requestId,plan.payloadHash);if(prior)return prior;
+ if(!plan.replayChecked){const prior=await readIdentityReceipt<T>(db,plan.requestId,plan.payloadHash);if(prior)return prior;}
  if(plan.expected.length>40||plan.statements.length>40)throw new Error('identity mutation exceeds bounded batch');
  const guards:Predicate[]=[...(plan.guards??[])];
  for(const item of [...plan.expected].sort((a,b)=>(a.kind+':'+a.id).localeCompare(b.kind+':'+b.id))) {
@@ -61,14 +65,16 @@ export async function commitIdentityMutation<T>(db:D1Database,plan:MutationPlan<
   else guards.push({sql:'coalesce((SELECT revision FROM identity_blocks WHERE block_key=?),0)=?',args:[item.id,item.revision]});
  }
  const assertions=plan.assertions??[];
- const firstArgs:Binding[]=[plan.requestId,plan.payloadHash,JSON.stringify(plan.expected),...guards.flatMap(g=>g.args)];
- const lastArgs:Binding[]=[...assertions.flatMap(g=>g.args),JSON.stringify(plan.receipt),plan.requestId,plan.payloadHash];
+ const firstArgs:Binding[]=[plan.requestId,plan.payloadHash,JSON.stringify(plan.expected),plan.executionToken,...guards.flatMap(g=>g.args)];
+ const lastArgs:Binding[]=[...assertions.flatMap(g=>g.args),JSON.stringify(plan.receipt),plan.requestId,plan.payloadHash,plan.executionToken];
  if(firstArgs.length>100||lastArgs.length>100)throw new Error('identity mutation exceeds D1 binding limit');
  const results=await db.batch([
-  db.prepare(`INSERT OR IGNORE INTO identity_commands(request_id,payload_hash,state,expected_json) SELECT ?,?,'staged',? WHERE ${guards.length?guards.map(g=>'('+g.sql+')').join(' AND '):'1'} RETURNING request_id`).bind(...firstArgs),
+  db.prepare(`INSERT OR IGNORE INTO identity_commands(request_id,payload_hash,state,expected_json,execution_token) SELECT ?,?,'staged',?,? WHERE ${guards.length?guards.map(g=>'('+g.sql+')').join(' AND '):'1'} RETURNING request_id`).bind(...firstArgs),
   ...plan.statements,
-  db.prepare(`UPDATE identity_commands SET state=CASE WHEN ${assertions.length?assertions.map(g=>'('+g.sql+')').join(' AND '):'1'} THEN 'applied' ELSE 'invalid' END,result_json=? WHERE request_id=? AND payload_hash=? AND state='staged' RETURNING request_id`).bind(...lastArgs),
+  db.prepare(`UPDATE identity_commands SET state=CASE WHEN ${assertions.length?assertions.map(g=>'('+g.sql+')').join(' AND '):'1'} THEN 'applied' ELSE 'invalid' END,result_json=? WHERE request_id=? AND payload_hash=? AND state='staged' AND execution_token=? RETURNING request_id,result_json`).bind(...lastArgs),
  ]);
+ const final=results.at(-1)?.results[0] as {result_json?:string}|undefined;
+ if(results[0].results.length&&final?.result_json)return {status:'applied',value:JSON.parse(final.result_json) as T};
  const applied=await readIdentityReceipt<T>(db,plan.requestId,plan.payloadHash);
  if(!applied)return {status:'conflict',value:null};
  return {...applied,status:applied.status==='replayed'&&results[0].results.length?'applied':applied.status};

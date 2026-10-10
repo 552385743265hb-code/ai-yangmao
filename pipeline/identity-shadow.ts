@@ -32,8 +32,8 @@ export async function captureIdentityShadow(input: ShadowInput): Promise<{record
     if(candidate.success)candidates.push(candidate.data);
   }
   let recorded=0;
-  for(let offset=0;offset<candidates.length||offset===0;offset+=10) {
-    const batch=candidates.slice(offset,offset+10);
+  for(let offset=0;offset<candidates.length||offset===0;offset+=1) {
+    const batch=candidates.slice(offset,offset+1);
     const result=z.object({receipts:z.array(intakeReceiptSchema)}).parse(await api('/candidates',{requestId:`${requestId}:${offset}`,observationId:observation.observationId,extractionVersion:'legacy-shadow-v1',extractionComplete:input.extractionComplete!==false&&candidates.length===input.candidates.length,leadIds:input.leadIds??[],candidates:batch}));
     if(result.receipts.length!==batch.length||result.receipts.some((r,i)=>r.inputId!==batch[i].inputId))throw new Error('incomplete shadow receipts');
     recorded+=result.receipts.filter(r=>!r.reasonCodes.includes('storage_unavailable')).length;
