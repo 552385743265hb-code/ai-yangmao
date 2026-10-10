@@ -29,3 +29,12 @@ it('A34 ready plans and their exact hashes are deterministic and include pending
  await entities(true);f.sqlite.prepare("INSERT INTO deliveries(id,fingerprint,channel,kind,status,payload) VALUES('d','d','telegram','digest','unknown',?)").run(JSON.stringify({items:{new:[{id:'offer-b'}]},marks:[{offerId:'offer-b',stage:'new'}]}));
  const a=await buildMergePlan(f.db,input()),b=await buildMergePlan(f.db,input());expect(a.planHash).toBe(b.planHash);expect(a.groups[0].status).toBe('ready');expect(a.groups[0].notificationImpact.unknown).toEqual(['d']);expect(a.groups[0].publicChange).toEqual({before:['offer-a','offer-b'],after:['offer-a']});
 });
+it('A34/A39 task-only unknown deliveries change the exact plan and remain visible',async()=>{
+ await entities(true);f.sqlite.exec("INSERT INTO review_tasks(id,task_key,kind,entity_id) VALUES('tb','initial:b','initial','b')");const before=await buildMergePlan(f.db,input());f.sqlite.prepare("INSERT INTO deliveries(id,fingerprint,channel,kind,status,payload) VALUES('review-delivery','review-delivery','telegram','digest','unknown',?)").run(JSON.stringify({marks:[],items:{},reviewAlerts:[{key:'review:tb:1:telegram',taskId:'tb',materialRevision:1}]}));const after=await buildMergePlan(f.db,input());expect(after.planHash).not.toBe(before.planHash);expect(after.groups[0].notificationImpact.unknown).toEqual(['review-delivery']);
+});
+it('A34 a noncanonical-only manual note is a conflict including its empty canonical counterpart',async()=>{
+ await entities(true);f.sqlite.exec("UPDATE offers SET admin_note='我亲测过的独有心得' WHERE id='offer-b'");expect((await buildMergePlan(f.db,input())).groups[0].conflicts.map(c=>c.code)).toContain('manual_note_conflict');
+});
+it('A34 a protected manual business field difference is explicit even outside proposals',async()=>{
+ await entities(true);f.sqlite.exec("UPDATE offers SET title='管理员补全的具体领取条件' WHERE id='offer-b'");f.sqlite.prepare("INSERT INTO offer_revisions(offer_id,diff,author) VALUES('offer-b',?,'admin')").run(JSON.stringify([{field:'title',from:'old',to:'管理员补全的具体领取条件'}]));expect((await buildMergePlan(f.db,input())).groups[0].conflicts.map(c=>c.code)).toContain('manual_field_conflict');
+});

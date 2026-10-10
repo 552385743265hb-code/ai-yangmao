@@ -38,6 +38,11 @@ export class MutationBuilder {
  remove(table:string,where:string,args:Binding[]):void {
   this.statements.push(this.db.prepare(`DELETE FROM ${this.table(table)} WHERE (${where}) AND ${commandGuard}`).bind(...args,this.requestId,this.payloadHash,this.executionToken));
  }
+ insertLeadLinks(leadIds:number[],candidateId:string):void {
+  if(leadIds.length>1000||leadIds.some(id=>!Number.isSafeInteger(id)||id<=0))throw new Error('oversized or invalid historical lead links');
+  this.statements.push(this.db.prepare(`INSERT INTO lead_candidate_links(lead_id,candidate_id) SELECT value,? FROM json_each(?) WHERE ${commandGuard} ON CONFLICT DO NOTHING`).bind(candidateId,JSON.stringify(leadIds),this.requestId,this.payloadHash,this.executionToken));
+  this.assert('NOT EXISTS(SELECT 1 FROM json_each(?) l WHERE NOT EXISTS(SELECT 1 FROM lead_candidate_links linked WHERE linked.lead_id=l.value AND linked.candidate_id=?))',[JSON.stringify(leadIds),candidateId]);
+ }
  acknowledgeOfficialJob(offerId:string,originalJob:string,entityRevision:number):void {
   this.statements.push(this.db.prepare(`UPDATE offers SET official_review=json_set(official_review,'$.identityRevision',?,'$.inputVersion',updated_at||'|'||coalesce((SELECT updated_at FROM offer_proposals WHERE offer_id=offers.id),'')) WHERE id=? AND official_review=? AND ${commandGuard}`).bind(entityRevision,offerId,originalJob,this.requestId,this.payloadHash,this.executionToken));
  }
