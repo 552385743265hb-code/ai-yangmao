@@ -42,8 +42,9 @@ let OFFERS = [];
 let META = { lastSuccessfulCollect: null };
 let COVERAGE = null;
 
-async function loadData() {
-  const get = async p => { const r = await fetch(p, { headers: { Accept: 'application/json' } }); if (!r.ok) throw new Error(`${p} ${r.status}`); return r.json(); };
+async function loadData({ fresh = false } = {}) {
+  const stamp = Date.now();
+  const get = async p => { const url = fresh ? `${p}${p.includes('?') ? '&' : '?'}fresh=${stamp}` : p; const r = await fetch(url, { ...(fresh ? { cache: 'no-store' } : {}), headers: { Accept: 'application/json' } }); if (!r.ok) throw new Error(`${p} ${r.status}`); return r.json(); };
   const [pl, of, meta, cov] = await Promise.all([get('/api/platforms'), get('/api/offers?view=all'), get('/api/meta'), get('/api/coverage').catch(() => null)]);
   const now = Date.now(), DAYMS = 864e5;
   const t0 = new Date(); t0.setHours(0, 0, 0, 0);

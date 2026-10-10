@@ -675,7 +675,28 @@ function pAll() {
   const draw = () => { const l = filtered(); $('#allCount').textContent = `共 ${l.length} 条${C.only ? '（已按你的条件过滤）' : ''}`; $('#allList').innerHTML = ocards(l); };
   $$('[data-f]').forEach(s => s.addEventListener('change', () => { ALLF[s.dataset.f] = s.value; draw(); }));
   $('#resetF').addEventListener('click', () => { ALLF = defaultAllF(); render(true); });
+  const platform = $('#f-p');
+  let refreshing = false;
+  const refresh = async () => {
+    if (refreshing) return;
+    refreshing = true;
+    const previous = { OFFERS, PLATFORMS, META, COVERAGE };
+    try {
+      await loadData({ fresh: true });
+      prepare();
+      if (!platform.isConnected || route()[0] !== 'all') return;
+      const choices = PLATFORMS.filter(p => OFFERS.some(o => o.p === p.id) || p.id === ALLF.p);
+      platform.innerHTML = `<option value="" ${!ALLF.p ? 'selected' : ''}>全部平台</option>` + choices.map(p =>
+        `<option value="${esc(p.id)}" ${ALLF.p === p.id ? 'selected' : ''}>${esc(p.name)}</option>`).join('');
+      draw();
+    } catch (_) {
+      ({ OFFERS, PLATFORMS, META, COVERAGE } = previous);
+      prepare(); // Preserve the loaded list and filter controls during network failures.
+    } finally { refreshing = false; }
+  };
+  platform.addEventListener('focus', refresh);
   draw();
+  refresh();
 }
 
 /* ---------- 常驻额度库 ---------- */

@@ -257,3 +257,25 @@ describe('admin platform catalog', () => {
     expect(form.querySelector('select[name="platformId"] option[value="unisound"]')).not.toBeNull();
   });
 });
+
+describe('public all-offers freshness', () => {
+  it('loads newly published platforms without replacing selected filters', async () => {
+    const calls:{url:string;init?:RequestInit}[]=[];
+    const raw={id:'new-free',platformId:'unisound',title:'新厂商限免',type:'free',modalities:['text'],claimMethod:'signup',requirements:['none'],audience:'all',valueText:'免费调用',claimEnd:'2026-10-31',endKind:'date',sourceTz:'Asia/Shanghai',lastVerifiedAt:new Date().toISOString(),discoveredAt:new Date().toISOString(),evidence:{tier:'site',url:'https://vendor.example',excerpts:{}}};
+    const f=fixture((url,init)=>{calls.push({url,init});return url.startsWith('/api/platforms')?{platforms:[{id:'unisound',name:'云知声',type:'lab'}]}:url.startsWith('/api/offers')?{offers:[raw]}:url.startsWith('/api/meta')?{lastSuccessfulCollect:null}:{};});
+    f.run("OFFERS=[];prepare();location.hash='#all';ALLF.m='text';pAll();");
+    const filter=f.document.querySelector('#f-m');
+    await pause();await pause();
+    expect(f.document.querySelector('#f-p option[value="unisound"]')).not.toBeNull();
+    expect(f.document.querySelector('#allList')!.textContent).toContain('新厂商限免');
+    expect(f.document.querySelector('#f-m')).toBe(filter);expect(f.run('ALLF.m')).toBe('text');
+    expect(calls.filter(x=>x.url.startsWith('/api/offers')&&x.init?.cache==='no-store')).toHaveLength(1);
+  });
+  it('keeps existing content and choices when fresh API requests fail', async () => {
+    const f=fixture(()=>{throw new Error('offline');});publicOffer(f.run);
+    f.run("location.hash='#all';ALLF.m='text';pAll();");
+    await pause();await pause();
+    expect(f.document.querySelector('#allList')!.textContent).toContain('常驻免费额度');
+    expect(f.document.querySelector('#f-p option[value="vendor"]')).not.toBeNull();
+  });
+});
