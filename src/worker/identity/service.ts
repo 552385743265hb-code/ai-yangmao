@@ -1,3 +1,4 @@
+import {matchesEntityOfferVersion,differentCanonicalEntities} from './canonical';
 import { z } from 'zod';
 import { drizzle } from 'drizzle-orm/d1';
 import { eq } from 'drizzle-orm';
@@ -12,7 +13,7 @@ import { IdentityStore,IdentityError,readReviewDecision } from './store';
 import { MutationBuilder,commitIdentityMutation,readIdentityReceipt,type Binding,type ExpectedRevision } from './commit';
 type OfferRow=typeof tables.offers.$inferSelect;
 type CandidateRow={id:string;observation_id:string;facts_json:string;facts_hash:string;raw_candidate_json:string;receipt_json:string|null;revision:number;entity_id:string|null;state:string;last_error:string|null};
-type EntityRow={id:string;platform_id:string;canonical_offer_id:string|null;business_revision:number;publication_revision:number;current_approved_version_id:string|null};
+type EntityRow={routing_generation?:number;id:string;platform_id:string;canonical_offer_id:string|null;business_revision:number;publication_revision:number;current_approved_version_id:string|null};
 type TaskRow={id:string;task_key:string;kind:string;entity_id:string|null;version_id:string|null;base_version_id:string|null;state:string;revision:number;material_revision:number;decision_id:string|null;lease_context_json?:string|null};
 type ResolutionControl={task:TaskRow;actor:string;action:'same'|'new';reason?:string;facts?:CanonicalTermsV1;entityId?:string};
 const decisionInput=z.strictObject({requestId:z.string().min(1).max(200),expectedRevision:z.number().int().nonnegative(),action:z.enum(['approve','reject']),actor:z.string().min(1),role:z.enum(['admin','reviewer']),reasonCode:reviewDecisionSchema.shape.reasonCode.optional(),reason:z.string().max(2000).optional(),scope:decisionScopeSchema.optional(),reopenPolicy:reopenPolicySchema.optional()});
@@ -88,7 +89,7 @@ export class IdentityService {
   const command='visibility:'+input.requestId,hash=await sha256(stableJson({offerId,...input}));
   const prior=await readIdentityReceipt<{decisionId:string}>(this.db,command,hash);if(prior){if(prior.status==='conflict')throw new IdentityError(409,'request payload conflict');return prior.value!;}
   const entity=await this.db.prepare("SELECT * FROM benefit_entities WHERE canonical_offer_id=? AND state='active'").bind(offerId).first<EntityRow>(),offer=await this.offer(offerId);
-  if(!entity||!offer||offer.updatedAt!==input.expectedOfferVersion||!entity.current_approved_version_id)throw new IdentityError(409,'visibility version changed');
+  if(!entity||!offer||!matchesEntityOfferVersion(entity,offer.updatedAt,input.expectedOfferVersion)||!entity.current_approved_version_id)throw new IdentityError(409,'visibility version changed');
   const version=await this.db.prepare('SELECT facts_json FROM benefit_versions WHERE id=? AND entity_id=?').bind(entity.current_approved_version_id,entity.id).first<{facts_json:string}>();
   if(!version)throw new IdentityError(409,'approved baseline missing');
   const facts=canonicalTermsSchema.parse(JSON.parse(version.facts_json)),builder=new MutationBuilder(this.db,command,hash),expected:ExpectedRevision[]=[{kind:'entity',id:entity.id,revision:entity.business_revision}];
@@ -113,7 +114,7 @@ export class IdentityService {
   const active=await this.db.prepare("SELECT * FROM review_tasks WHERE entity_id=? AND kind IN ('initial','terms_change','evidence_reopen') AND state IN ('open','checking','manual') ORDER BY created_at DESC LIMIT 2").bind(entity.id).all<TaskRow>();
   if(active.results.length>1)throw new IdentityError(409,'multiple review drafts need explicit conflict resolution');
   const task=active.results[0]??null;
-  if(task?(task.id!==input.taskId||task.revision!==input.expectedTaskRevision):original.updatedAt!==input.expectedOfferVersion)throw new IdentityError(409,'edit version changed');
+  if(task?(task.id!==input.taskId||task.revision!==input.expectedTaskRevision):!matchesEntityOfferVersion(entity,original.updatedAt,input.expectedOfferVersion))throw new IdentityError(409,'edit version changed');
   const oldVersion=await this.db.prepare('SELECT * FROM benefit_versions WHERE id=? AND entity_id=?').bind(task?.version_id??entity.current_approved_version_id,entity.id).first<{id:string;facts_json:string;display_candidate_json:string;revision:number}>();
   if(!oldVersion)throw new IdentityError(409,'editable fact baseline missing');
   const proposal=await this.db.prepare('SELECT candidate,manual_fields,updated_at FROM offer_proposals WHERE offer_id=?').bind(offerId).first<{candidate:string;manual_fields:string;updated_at:string}>();
@@ -275,7 +276,7 @@ export class IdentityService {
    if(control?.action==='same')evidence.confirmedEntityId=control.entityId;
    else if(manualAlias)evidence.confirmedEntityId=manualAlias;
    else if(alias&&facts.occurrenceAnchor.state==='known'&&evidence.sourceVerified&&!evidence.truncated&&evidenceGrounded(facts.occurrenceAnchor.evidenceRefs,evidence)&&facts.occurrenceAnchor.evidenceRefs.some(ref=>evidence.quoteById[ref].includes(facts.occurrenceAnchor.state==='known'?facts.occurrenceAnchor.value:'')))evidence.confirmedEntityId=alias;
-   if(candidate.entity_id){const veto=await this.db.prepare("SELECT entity_a,entity_b FROM identity_constraints WHERE relation='different' AND (entity_a=? OR entity_b=?) LIMIT 40").bind(candidate.entity_id,candidate.entity_id).all<{entity_a:string;entity_b:string}>();evidence.differentEntityIds=veto.results.map(r=>r.entity_a===candidate.entity_id?r.entity_b:r.entity_a);}
+   if(candidate.entity_id)evidence.differentEntityIds=await differentCanonicalEntities(this.db,candidate.entity_id);
    const compared=page.entities.map(e=>({entity:e,result:compareCandidate(facts,e,evidence)}));
    const matches=control?.action==='new'?[]:compared.filter(r=>r.result.relation==='SAME'&&(!control?.entityId||r.entity.id===control.entityId));
    if(control?.action==='same'&&matches.length===1&&matches[0].result.reasonCodes.includes('partial_facts'))matches[0].result={...matches[0].result,termsRelation:'EQUIVALENT',matchingVersionId:matches[0].entity.approvedVersionId};

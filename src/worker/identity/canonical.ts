@@ -21,3 +21,13 @@ export async function canonicalOfferMap(db:D1Database,ids:string[]){
  const rows=await db.prepare("SELECT o.id origin_id,e.state,e.id entity_id,r.id root_id,coalesce(r.canonical_offer_id,e.canonical_offer_id,o.id) offer_id,coalesce(r.routing_generation,e.routing_generation,0) generation FROM offers o LEFT JOIN benefit_entities e ON e.canonical_offer_id=o.id LEFT JOIN benefit_entities r ON r.id=e.merged_into AND r.state='active' AND r.platform_id=e.platform_id WHERE o.id IN (SELECT value FROM json_each(?))").bind(JSON.stringify(unique)).all<{origin_id:string;state:string|null;entity_id:string|null;root_id:string|null;offer_id:string;generation:number}>();
  for(const row of rows.results){if(row.state==='merged'&&!row.root_id)throw new IdentityError(409,'invalid lead canonical route');map.set(row.origin_id,{offerId:row.offer_id,generation:row.generation});}return map;
 }
+export function entityOfferVersion(entity:{id:string;business_revision:number},updatedAt:string){return `entity:${entity.id}:${entity.business_revision}:${updatedAt}`;}
+export function matchesEntityOfferVersion(entity:{id:string;business_revision:number;routing_generation?:number},updatedAt:string,input:string|undefined){
+ if(!input)return false;if(input.startsWith('entity:'))return input===entityOfferVersion(entity,updatedAt);
+ // Unmerged legacy callers retain their old contract; a routing change invalidates it.
+ return (entity.routing_generation??0)===0&&input===updatedAt;
+}
+export async function differentCanonicalEntities(db:D1Database,entityId:string):Promise<string[]>{
+ const rows=await db.prepare("WITH subject AS (SELECT coalesce(merged_into,id) id FROM benefit_entities WHERE id=?) SELECT DISTINCT CASE WHEN coalesce(a.merged_into,a.id)=subject.id THEN coalesce(b.merged_into,b.id) ELSE coalesce(a.merged_into,a.id) END id FROM identity_constraints c JOIN benefit_entities a ON a.id=c.entity_a JOIN benefit_entities b ON b.id=c.entity_b JOIN subject WHERE c.relation='different' AND (coalesce(a.merged_into,a.id)=subject.id OR coalesce(b.merged_into,b.id)=subject.id) ORDER BY id LIMIT 41").bind(entityId).all<{id:string}>();
+ if(rows.results.length>40)throw new IdentityError(503,'manual constraint retrieval incomplete');return rows.results.map(r=>r.id);
+}

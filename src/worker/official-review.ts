@@ -1,3 +1,4 @@
+import {canonicalOffers} from './identity/canonical';
 import { Hono } from 'hono';
 import { drizzle } from 'drizzle-orm/d1';
 import { and, eq, inArray, sql } from 'drizzle-orm';
@@ -10,7 +11,7 @@ import type { Env } from './index';
 const db=(env:Env)=>drizzle(env.DB,{schema:s});
 export const officialReviewRoutes=new Hono<{Bindings:Env}>();
 async function context(env:Env,id:string) {
-  const d=db(env),[offer]=await d.select().from(s.offers).where(eq(s.offers.id,id));
+  const d=db(env),[offer]=await d.select().from(s.offers).where(and(eq(s.offers.id,id),canonicalOffers));
   if(!offer)return null;
   const [proposal]=await d.select().from(s.offerProposals).where(eq(s.offerProposals.offerId,id));
   const target=proposal?{...offer,...proposal.candidate} as typeof offer:offer;
@@ -25,7 +26,7 @@ const proposalVersion = (id:string, version?:string) => version
 officialReviewRoutes.get('/queue',async c=>{
   const d=db(c.env),limit=Math.max(1,Math.min(20,Number(c.req.query('limit'))||8)),now=Date.now();
   const approved=new Set((await d.select({id:s.platforms.id}).from(s.platforms).where(eq(s.platforms.status,'approved'))).map(p=>p.id));
-  const rows=await d.select().from(s.offers).where(inArray(s.offers.reviewState,['pending','approved']));
+  const rows=await d.select().from(s.offers).where(and(inArray(s.offers.reviewState,['pending','approved']),canonicalOffers));
   const proposals=await d.select().from(s.offerProposals),byId=new Map(proposals.map(p=>[p.offerId,p]));
   const candidates=rows.map(o=>{
     const p=byId.get(o.id),target=p?{...o,...p.candidate} as typeof o:o;

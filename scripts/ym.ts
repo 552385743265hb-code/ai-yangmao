@@ -93,9 +93,9 @@ ${revisions.length ? `修订：${revisions.map((r: any) => r.diff.map((x: any) =
     break;
   }
   case 'withdraw': {
-    const [ref, evidenceUrl, ...reason] = rest;
+    const [ref, evidenceUrl, ...reason] = rest;const version=requireVersion();
     if (!ref || !evidenceUrl || !reason.length) { console.error('需要短码、官方撤回链接和具体理由'); process.exitCode = 2; break; }
-    const result = await call(`/offers/${ref}/withdraw`, { evidenceUrl, reason: reason.join(' ') });
+    const result = await call(`/offers/${ref}/withdraw`, { evidenceUrl, reason: reason.join(' '),expectedReviewVersion:version });
     console.log(`已结束活动 [${result.code}]；结束提醒会在下一次日报中处理。`);
     break;
   }

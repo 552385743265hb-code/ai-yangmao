@@ -1,7 +1,7 @@
 import {canonicalOffers,resolveCanonicalOffer} from './identity/canonical';
 import { withIdentityQueryBudget,IdentityQueryBudgetError } from './identity/budget';
 import { aggregateIdentityLead } from './identity/leads';
-import { adaptLegacyOffer } from './identity/adapters';
+import { adaptLegacyOffer,identitySelected } from './identity/adapters';
 import { identityIngestRoutes } from './identity/routes';
 import {leadScopeMismatch} from '../shared/lead-scope';
 import { leadReviewRoutes } from './lead-review';
@@ -57,6 +57,7 @@ app.use('/api/*', async (c, next) => {
   if(c.env.IDENTITY_MODE==='enforce'||/\/api\/(?:ingest\/(?:identity-|observations|candidates)|admin\/identity)/.test(c.req.path))c.env={...c.env,DB:withIdentityQueryBudget(c.env.DB)};
   await next();
   c.header('X-Robots-Tag', 'noindex');
+  if(c.req.method==='GET'&&c.req.path.startsWith('/api/offers'))c.header('Cache-Control','no-cache');
   if (c.req.method === 'GET' && !c.res.headers.get('Cache-Control')) c.header('Cache-Control', 'public, max-age=60');
 });
 
@@ -68,6 +69,7 @@ for (const path of ['/api/offers', '/api/platforms']) app.use(path, async (c, ne
   // Schema changes must not serve a cached pre-valuation response to the new UI.
   const cacheUrl = new URL(c.req.url);
   cacheUrl.searchParams.set('__response_schema', 'identity-canonical-v1');
+  if(path==='/api/offers'){const state=await c.env.DB.prepare('SELECT generation FROM identity_public_state WHERE id=1').first<{generation:number}>();if(!state)return next();cacheUrl.searchParams.set('__canonical_generation',String(state.generation));}
   const key = new Request(cacheUrl, { method: 'GET' });
   const hit = await caches.default.match(key);
   if (hit) return new Response(hit.body, hit);
@@ -168,7 +170,7 @@ app.get('/rss.xml', async c => {
   const offers = (await db(c.env).select().from(s.offers).where(and(eq(s.offers.reviewState, 'approved'),canonicalOffers)).orderBy(desc(s.offers.discoveredAt)).limit(100))
     .filter(offer => approvedPlatforms.has(offer.platformId) && isClaimable(liveStatus(offer, now)));
   const items = offers.map(offer => `<item><title>${xml(offer.title)}</title><link>https://ai-yangmao.com/#offer-${xml(offer.id)}</link><guid isPermaLink="false">${xml(offer.id)}</guid><pubDate>${new Date(offer.discoveredAt).toUTCString()}</pubDate><description>${xml(`${offer.valueText}；领取证据：${offer.evidence.url}`)}</description></item>`).join('');
-  return c.body(`<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>AI 羊毛牧场 · 当前可领</title><link>https://ai-yangmao.com/</link><description>经过审核且仍可领取的 AI 额度与权益</description>${items}</channel></rss>`, 200, { 'Content-Type': 'application/rss+xml; charset=utf-8', 'Cache-Control': 'public, max-age=300', 'X-Robots-Tag': 'noindex' });
+  return c.body(`<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>AI 羊毛牧场 · 当前可领</title><link>https://ai-yangmao.com/</link><description>经过审核且仍可领取的 AI 额度与权益</description>${items}</channel></rss>`, 200, { 'Content-Type': 'application/rss+xml; charset=utf-8', 'Cache-Control': 'no-cache', 'X-Robots-Tag': 'noindex' });
 });
 
 /* ---------- 写入接口（采集管线专用，Bearer 密钥） ---------- */
@@ -219,11 +221,14 @@ ingest.post('/offers', async c => {
   const sids = [...new Set(body.data.map(o => o.sourceId).filter((x): x is string => !!x))];
   const srcs = sids.length ? await d.select().from(s.sources).where(inArray(s.sources.id, sids)) : [];
   const results: Record<string,unknown>[] = [];
+  const legacyProducts=pids.filter(id=>!identitySelected(c.env,id));
+  const mergedProducts=new Set(legacyProducts.length?(await c.env.DB.prepare('SELECT value platformId FROM json_each(?) product WHERE EXISTS(SELECT 1 FROM benefit_entities e WHERE e.platform_id=product.value AND e.routing_generation>0)').bind(JSON.stringify(legacyProducts)).all<{platformId:string}>()).results.map(r=>r.platformId):[]);
   // 硬性去重的比对范围：这些平台下的全部条目（含已拒绝，避免拒掉的换个 ID 又回来）
   const loadPeers = async () => pids.length ? (await d.select({ id: s.offers.id, platformId: s.offers.platformId, title: s.offers.title, valueText: s.offers.valueText, evidence: s.offers.evidence, tags: s.offers.tags, publishedAt: s.offers.publishedAt, claimStart: s.offers.claimStart, claimEnd: s.offers.claimEnd, sourceTz: s.offers.sourceTz, reviewState: s.offers.reviewState, type:s.offers.type, claimMethod:s.offers.claimMethod, requirements:s.offers.requirements, audience:s.offers.audience, models:s.offers.models, modalities:s.offers.modalities })
-    .from(s.offers)).map(x => ({ ...x, evidenceUrl: x.evidence.url, eventDay: resetEventDay(x) })) : [];
+    .from(s.offers).where(canonicalOffers)).map(x => ({ ...x, evidenceUrl: x.evidence.url, eventDay: resetEventDay(x) })) : [];
   let peersCache: Awaited<ReturnType<typeof loadPeers>> | null = null;
   for (const o of body.data) {
+    if(mergedProducts.has(o.platformId)){results.push({id:o.id,error:'identity canonical writes paused; enable the reconciled product enforce path',retryable:true});continue;}
     if(o.leadReviewJobId){
       const [lead]=o.leadId?await d.select().from(s.leads).where(eq(s.leads.id,o.leadId)):[];
       if(!lead||lead.status!=='reviewing'||lead.resolution?.jobId!==o.leadReviewJobId||lead.resolution.status!=='checking'){
@@ -463,8 +468,8 @@ ingest.get('/verification-queue', async c => {
   const forced = c.req.query('force') === '1';
   const d = db(c.env);
   const approved = sourceId
-    ? and(eq(s.offers.reviewState, 'approved'), eq(s.offers.sourceId, sourceId))
-    : eq(s.offers.reviewState, 'approved');
+    ? and(eq(s.offers.reviewState, 'approved'), eq(s.offers.sourceId, sourceId),canonicalOffers)
+    : and(eq(s.offers.reviewState, 'approved'),canonicalOffers);
   const rows = await d.select().from(s.offers).where(approved);
   // Use a subquery: binding every approved ID exceeds D1's 100-parameter limit as the catalogue grows.
   const proposals = rows.length ? await d.select().from(s.offerProposals).where(inArray(s.offerProposals.offerId,
@@ -486,7 +491,7 @@ ingest.post('/verify', async c => {
     trustedDirect: z.boolean().optional(), pageHash: z.string().regex(/^[a-f0-9]{64}$/).optional(), processedChange: z.boolean().optional() }).safeParse(await c.req.json().catch(() => null));
   if (!body.success) return c.json({ error: '核验数据不正确', issues: body.error.issues }, 400);
   const d = db(c.env);
-  const [o] = await d.select().from(s.offers).where(eq(s.offers.id, body.data.offerId));
+  const [o] = await d.select().from(s.offers).where(and(eq(s.offers.id, body.data.offerId),canonicalOffers));
   if (!o || o.reviewState !== 'approved' || o.evidence.url !== body.data.url) return c.json({ error: '证据或活动不匹配' }, 404);
   if (body.data.trustedDirect !== true) return c.json({ verified: false, sourceUnverified: true });
   const currentVersion = and(eq(s.offers.id,o.id),eq(s.offers.updatedAt,o.updatedAt),eq(s.offers.reviewState,'approved'));
@@ -556,6 +561,8 @@ ingest.post('/leads/:id/status', async c => {
   const identity=await aggregateIdentityLead(c.env.DB,lead.id,b.data.status==='reviewing');
   if(identity)return c.json({ok:true,identityHandled:true,...identity});
   if(lead.status!=='new')return c.json({error:'线索状态已变化，请使用线索复核结果接口'},409);
+  const originOfferId=b.data.offerId;
+  if(b.data.offerId)b.data.offerId=(await resolveCanonicalOffer(c.env.DB,b.data.offerId)).offerId;
   if (b.data.status === 'linked') {
     if (!b.data.offerId) return c.json({ error: '已关联必须提供已入库条目' }, 400);
     const [saved] = await db(c.env).select().from(s.offers).where(eq(s.offers.id, b.data.offerId));
@@ -566,7 +573,8 @@ ingest.post('/leads/:id/status', async c => {
     if(mismatch)return c.json({error:mismatch},400);
   }
   const raw = b.data.note ? `${lead.raw ?? ''}\n[研判] ${b.data.note}`.slice(-20000) : lead.raw;
-  await db(c.env).update(s.leads).set({ status: b.data.status, resolution:null, offerId: b.data.offerId ?? lead.offerId, raw }).where(and(eq(s.leads.id, lead.id),eq(s.leads.status,'new')));
+  const resolution=b.data.status==='linked'&&b.data.offerId?{status:'linked' as const,jobId:'legacy-link-'+crypto.randomUUID(),attempts:0,inconclusive:0,checkedAt:new Date().toISOString(),nextAttemptAt:null,reason:b.data.note??'已关联现有活动',queries:[],candidates:[],offerIds:[b.data.offerId],originOfferIds:originOfferId?[originOfferId]:[]}:null;
+  await db(c.env).update(s.leads).set({ status: b.data.status, resolution, offerId: b.data.offerId ?? lead.offerId, raw }).where(and(eq(s.leads.id, lead.id),eq(s.leads.status,'new')));
   return c.json({ ok: true });
 });
 

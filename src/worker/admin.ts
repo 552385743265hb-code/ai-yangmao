@@ -1,7 +1,7 @@
 import {canonicalLeadProjection} from './identity/lead-projection';
 import {notificationInheritance} from './identity/notification-inheritance';
 import {noticeIdentities,pendingIdentityNotices,identityReviewAlerts,identityGuard,deliveryIdentityGuard} from './identity/notifications';
-import {canonicalOffers,resolveCanonicalOffer} from './identity/canonical';
+import {canonicalOffers,resolveCanonicalOffer,entityOfferVersion} from './identity/canonical';
 import { identityAdminRoutes } from './identity/routes';
 import { IdentityService } from './identity/service';
 import { IdentityError } from './identity/store';
@@ -137,8 +137,10 @@ admin.get('/queue', async c => {
   const originals = proposals.length ? await d.select().from(s.offers).where(inArray(s.offers.id, d.select({ id: s.offerProposals.offerId }).from(s.offerProposals))) : [];
   const codeCounts = new Map<string, number>();
   for (const { id } of await d.select({ id: s.offers.id }).from(s.offers)) codeCounts.set(shortCode(id), (codeCounts.get(shortCode(id)) ?? 0) + 1);
-  const managed=new Set((await c.env.DB.prepare("SELECT e.canonical_offer_id FROM benefit_entities e WHERE e.state='merged' OR EXISTS(SELECT 1 FROM review_tasks t WHERE t.entity_id=e.id AND t.state IN ('open','checking','manual'))").all<{canonical_offer_id:string}>()).results.map(r=>r.canonical_offer_id));
-  const queueView = (o: OfferRow) => ({ ...view(o, names[o.platformId] ?? o.platformId, now), code: codeCounts.get(shortCode(o.id))! > 1 ? o.id : shortCode(o.id) });
+  const entityRows=(await c.env.DB.prepare("SELECT e.id,e.canonical_offer_id,e.business_revision,e.state,EXISTS(SELECT 1 FROM review_tasks t WHERE t.entity_id=e.id AND t.state IN ('open','checking','manual')) active_task FROM benefit_entities e WHERE e.canonical_offer_id IS NOT NULL").all<{id:string;canonical_offer_id:string;business_revision:number;state:string;active_task:number}>()).results;
+  const managed=new Set(entityRows.filter(e=>e.state==='merged'||e.active_task).map(e=>e.canonical_offer_id));
+  const entityByOffer=new Map(entityRows.map(e=>[e.canonical_offer_id,e]));
+  const queueView = (o: OfferRow) => ({ ...view(o, names[o.platformId] ?? o.platformId, now),...(entityByOffer.has(o.id)?{reviewVersion:entityOfferVersion(entityByOffer.get(o.id)!,o.updatedAt)}:{}), code: codeCounts.get(shortCode(o.id))! > 1 ? o.id : shortCode(o.id) });
   const [{ n: newLeads }] = await d.select({ n: sql<number>`count(*)` }).from(s.leads).where(eq(s.leads.status, 'new'));
   const pendingPlatforms = await d.select().from(s.platforms).where(eq(s.platforms.status, 'pending'));
   const suggest = (await d.select().from(s.sources).where(and(gte(s.sources.cleanStreak, 5), eq(s.sources.autoPublish, false))))
@@ -172,11 +174,11 @@ admin.get('/queue', async c => {
 admin.post('/offers/:ref/withdraw', async c => {
   const o = await findOffer(c.env, c.req.param('ref'));
   if (!o) return c.json({ error: '找不到这条羊毛' }, 404);
-  const body = z.object({ reason: z.string().min(4).max(500), evidenceUrl: z.url().refine(url => /^https?:\/\//.test(url)), basis: z.enum(['official', 'tested']).default('official') })
+  const body = z.object({ reason: z.string().min(4).max(500), evidenceUrl: z.url().refine(url => /^https?:\/\//.test(url)), basis: z.enum(['official', 'tested']).default('official'),expectedReviewVersion:z.string().optional() })
     .safeParse(await c.req.json().catch(() => null));
   if (!body.success) return c.json({ error: '需要证据入口链接和具体理由', issues: body.error.issues }, 400);
   if(await c.env.DB.prepare('SELECT id FROM benefit_entities WHERE canonical_offer_id=?').bind(o.id).first()){
-    const version=c.req.header('If-Match');if(!version)return c.json({error:'请携带当前活动版本 If-Match'},409);
+    const version=c.req.header('If-Match')??body.data.expectedReviewVersion;if(!version)return c.json({error:'请携带当前活动版本 If-Match'},409);
     const reason=(body.data.basis==='tested'?'管理员实测停止领取：':'')+body.data.reason;
     const requestId=await sha256(stableJson({offerId:o.id,action:'withdraw',version,body:body.data,actor:c.get('who')}));
     return c.json({ok:true,status:'ended',...await new IdentityService(c.env.DB).setVisibility(o.id,{requestId,expectedOfferVersion:version,action:'withdraw',reason,actor:c.get('who')})});
@@ -201,11 +203,12 @@ admin.get('/offers/:ref', async c => {
   if (!o) return c.json({ error: '找不到这条羊毛' }, 404);
   const names = await platformNames(c.env);
   const [proposal] = await db(c.env).select().from(s.offerProposals).where(eq(s.offerProposals.offerId, o.id));
-  const revisions = await db(c.env).select().from(s.offerRevisions).where(eq(s.offerRevisions.offerId, o.id)).orderBy(desc(s.offerRevisions.at));
+  const revisions = await db(c.env).select().from(s.offerRevisions).where(sql`${s.offerRevisions.offerId}=${o.id} OR ${s.offerRevisions.offerId} IN (SELECT member.canonical_offer_id FROM benefit_entities member JOIN benefit_entities root ON root.id=member.merged_into WHERE root.canonical_offer_id=${o.id} AND member.state='merged')`).orderBy(desc(s.offerRevisions.at));
   const target = proposal ? proposalOffer(o, proposal.candidate) : o;
   const tasks=await c.env.DB.prepare("SELECT t.id,t.revision FROM review_tasks t JOIN benefit_entities e ON e.id=t.entity_id WHERE e.canonical_offer_id=? AND t.state IN ('open','checking','manual') AND t.kind IN ('initial','terms_change','evidence_reopen') ORDER BY t.id LIMIT 2").bind(o.id).all<{id:string;revision:number}>();
   const task=tasks.results.length===1?tasks.results[0]:null;
-  return c.json({ offer: { ...view(target, names[target.platformId] ?? target.platformId), reviewVersion:task?`identity:${task.id}:${task.revision}`:proposal?.updatedAt ?? o.updatedAt, ...(proposal ? {link:`https://ai-yangmao.com/#admin-offer-${encodeURIComponent(o.id)}`, pendingUpdate: true, updateDiff: proposalComparison(o, proposal.candidate)} : {}) }, pendingUpdate: !!proposal, revisions });
+  const entity=await c.env.DB.prepare('SELECT id,business_revision FROM benefit_entities WHERE canonical_offer_id=?').bind(o.id).first<{id:string;business_revision:number}>();
+  return c.json({ offer: { ...view(target, names[target.platformId] ?? target.platformId), reviewVersion:task?`identity:${task.id}:${task.revision}`:entity?entityOfferVersion(entity,o.updatedAt):proposal?.updatedAt ?? o.updatedAt, ...(proposal ? {link:`https://ai-yangmao.com/#admin-offer-${encodeURIComponent(o.id)}`, pendingUpdate: true, updateDiff: proposalComparison(o, proposal.candidate)} : {}) }, pendingUpdate: !!proposal, revisions });
 });
 
 /** 审核：通过 / 拒绝。原样通过会给信源的"连续原样通过"加一；拒绝清零。 */
@@ -306,6 +309,7 @@ admin.post('/offers/:ref/edit', async c => {
   const o = await findOffer(c.env, c.req.param('ref'));
   if (!o) return c.json({ error: '找不到这条羊毛' }, 404);
   const body = await c.req.json().catch(() => null) as { fields?: Record<string, unknown>; approve?: boolean; reason?: string; reasonCode?: string; expectedReviewVersion?: string } | null;
+  if(c.get('role')!=='admin'&&(body?.fields?.evidence as {tier?:string}|undefined)?.tier==='tested')return c.json({error:'管理员亲测需要管理员确认'},403);
   const identity=await c.env.DB.prepare('SELECT id FROM benefit_entities WHERE canonical_offer_id=?').bind(o.id).first();
   if(identity){
     if(body?.approve)return c.json({error:'请先保存身份草稿，再按其当前版本批准'},409);
@@ -313,7 +317,7 @@ admin.post('/offers/:ref/edit', async c => {
     const encoded=transport?.expectedReviewVersion?.match(/^identity:([^:]+):(\d+)$/);
     const requestId=transport?.requestId??await sha256(stableJson({offerId:o.id,...body,actor:c.get('who')}));
     const result=await new IdentityService(c.env.DB).editManagedOffer(o.id,{requestId,taskId:transport?.identityTaskId??encoded?.[1],expectedTaskRevision:transport?.expectedIdentityRevision??(encoded?Number(encoded[2]):undefined),expectedOfferVersion:body?.expectedReviewVersion,fields:body?.fields??{},actor:c.get('who'),...(transport?.identityFacts?{identityFacts:transport.identityFacts as never}:{})});
-    return c.json({ok:true,approved:false,...result,reviewVersion:result.taskId?`identity:${result.taskId}:${result.revision}`:undefined});
+    return c.json({ok:true,approved:false,code:shortCode(o.id),title:o.title,changed:Object.keys(body?.fields??{}),...result,reviewVersion:result.taskId?`identity:${result.taskId}:${result.revision}`:undefined});
   }
   const patch = z.record(z.string(), z.unknown()).safeParse(body?.fields);
   if (!patch.success || Object.keys(patch.data).some(key => !EDITABLE_FIELDS.has(key))) return c.json({ error: '包含不可编辑的字段' }, 400);
@@ -386,12 +390,12 @@ admin.post('/offers/:ref/unpublish', async c => {
   const o = await findOffer(c.env, c.req.param('ref'));
   if (!o) return c.json({ error: '找不到这条羊毛' }, 404);
   if (o.reviewState !== 'approved') return c.json({ error: '这条目前没有上架' }, 409);
-  const body = z.object({ reasonCode: z.string().max(40).default('other'), reason: z.string().min(2).max(500) }).safeParse(await c.req.json().catch(() => null));
+  const body = z.object({ reasonCode: z.string().max(40).default('other'), reason: z.string().min(2).max(500),expectedReviewVersion:z.string().optional() }).safeParse(await c.req.json().catch(() => null));
   if (!body.success) return c.json({ error: '请写明下架理由' }, 400);
   if(await c.env.DB.prepare('SELECT id FROM benefit_entities WHERE canonical_offer_id=?').bind(o.id).first()){
-    const version=c.req.header('If-Match');if(!version)return c.json({error:'请携带当前活动版本 If-Match'},409);
+    const version=c.req.header('If-Match')??body.data.expectedReviewVersion;if(!version)return c.json({error:'请携带当前活动版本 If-Match'},409);
     const requestId=await sha256(stableJson({offerId:o.id,action:'unpublish',version,body:body.data,actor:c.get('who')}));
-    return c.json({ok:true,...await new IdentityService(c.env.DB).setVisibility(o.id,{requestId,expectedOfferVersion:version,action:'unpublish',reason:body.data.reason,reasonCode:body.data.reasonCode,actor:c.get('who')})});
+    return c.json({ok:true,title:o.title,code:shortCode(o.id),...await new IdentityService(c.env.DB).setVisibility(o.id,{requestId,expectedOfferVersion:version,action:'unpublish',reason:body.data.reason,reasonCode:body.data.reasonCode,actor:c.get('who')})});
   }
   const d = db(c.env);
   await d.delete(s.offerProposals).where(eq(s.offerProposals.offerId, o.id));
@@ -528,7 +532,7 @@ export async function buildNotice(env: Env, kind: NoticeKind, channel: NoticeCha
   const inFlight = (await d.select({ payload: s.deliveries.payload, channel: s.deliveries.channel, status: s.deliveries.status }).from(s.deliveries).where(and(eq(s.deliveries.channel,channel),inArray(s.deliveries.status, ['pending', 'unknown']))));
   const blockedItems = new Set(inFlight.flatMap(delivery => Object.values((delivery.payload as {items?:Record<string,{id:string}[]>}).items ?? {}).flat().map(item=>item.id)));
   for(const id of inherited.blocked)blockedItems.add(id);
-  const identities=await noticeIdentities(env.DB,approved.map(o=>o.id)),identityEvents=await pendingIdentityNotices(env.DB,channel,approved.filter(o=>isClaimable(liveStatus(o,now))&&!blockedItems.has(o.id)).map(o=>o.id),[...inherited.sent.entries()].filter(([,stages])=>stages.has('new')||stages.has('urgent')).map(([id])=>id));
+  const identities=await noticeIdentities(env.DB,approved.map(o=>o.id)),identityEvents=await pendingIdentityNotices(env.DB,channel,approved.filter(o=>isClaimable(liveStatus(o,now))&&!blockedItems.has(o.id)).map(o=>o.id),[...inherited.sent.entries()].filter(([,stages])=>stages.has('new')||stages.has('urgent')).map(([id])=>id),[...inherited.sent.entries()].filter(([,stages])=>stages.has('changed')).map(([id])=>id));
   const sent = await d.select().from(s.notifications).where(eq(s.notifications.channel, channel));
   const has = (id: string, stage: string) => sent.find(n => n.offerId === id && n.stage === stage)??(inherited.sent.get(id)?.has(stage)?{sentAt:null,messageId:null}:undefined);
   const out: Record<string, (ReturnType<typeof view> & { score?: number })[]> = { new: [], changed: [], ending: [], ended: [], urgent: [], standing: [], rising: [], lastcall: [] };
@@ -542,7 +546,7 @@ export async function buildNotice(env: Env, kind: NoticeKind, channel: NoticeCha
     }
     if(identities.has(o.id)&&channel==='telegram'){
       const event=identityEvents.find(e=>e.entity_id===identities.get(o.id)!.id);
-      if(event&&isClaimable(st)&&(event.kind==='changed'||(!has(o.id,'new')&&!has(o.id,'urgent')))){out[event.kind].push(v);marks.push({offerId:o.id,stage:event.kind,eventId:event.id,eventKey:event.event_key});}
+      if(event&&!inherited.sent.get(o.id)?.has(event.kind)&&isClaimable(st)&&(event.kind==='changed'||(!has(o.id,'new')&&!has(o.id,'urgent')))){out[event.kind].push(v);marks.push({offerId:o.id,stage:event.kind,eventId:event.id,eventKey:event.event_key});}
       if(st==='ending'&&!has(o.id,'ending')&&!has(o.id,'urgent')){out.ending.push(v);marks.push({offerId:o.id,stage:'ending'});}
       if(st==='ended'&&!has(o.id,'ended')&&(has(o.id,'new')||has(o.id,'urgent'))){out.ended.push(v);marks.push({offerId:o.id,stage:'ended'});}
       continue;

@@ -4,7 +4,7 @@ import {canonicalTermsSchema} from '../../shared/identity/types';
 import {sha256,stableJson,withoutEvidence} from '../../shared/identity/normalize';
 import {RULES_VERSION} from '../../shared/identity/compare';
 import {buildMergePlan,readEntityManifests} from './merge-plan';
-import {guardMergeSnapshot} from './merge-guards';
+import {guardMergeSnapshot,guardRoutingSnapshot} from './merge-guards';
 import {MutationBuilder,commitIdentityMutation,readIdentityReceipt} from './commit';
 import {IdentityError} from './store';
 const optionsSchema=z.strictObject({environment:historyEnvironment,enabled:z.boolean(),actor:z.string().min(1).max(200)});
@@ -16,6 +16,7 @@ function eventRow(id:string,entity:LegacyRow,kind:'merge'|'rollback',operationId
 export class IdentityMergeService {
  private options:z.infer<typeof optionsSchema>;
  constructor(private db:D1Database,options:z.infer<typeof optionsSchema>){this.options=optionsSchema.parse(options);}
+ private async invalidatePublicCache(builder:MutationBuilder){const row=await this.db.prepare('SELECT generation FROM identity_public_state WHERE id=1').first<{generation:number}>();if(!row)throw new IdentityError(409,'public routing migration required');builder.require('EXISTS(SELECT 1 FROM identity_public_state WHERE id=1 AND generation=?)',[row.generation]);builder.update('identity_public_state',{generation:row.generation+1},'id=1',[]);}
  private enabled(){if(!this.options.enabled)throw new IdentityError(403,'historical merge disabled');}
  async applyMerge(plan:MergePlan,requestId:string,approvedPlanHash:string,groupId=plan?.groups?.[0]?.id):Promise<MergeReceipt>{
   this.enabled();z.string().min(1).max(150).parse(requestId);plan=mergePlanSchema.parse(plan);
@@ -31,7 +32,7 @@ export class IdentityMergeService {
   const fresh=current.groups[0];if(fresh.status!=='ready'||stableJson(fresh.expected)!==stableJson(group.expected))return conflict('revision_conflict','group changed after preview');
   const descendants=await this.db.prepare('SELECT id FROM benefit_entities WHERE merged_into IN (SELECT value FROM json_each(?)) LIMIT 1').bind(JSON.stringify(group.entityIds)).first();if(descendants)return conflict('existing_merge_conflict','combine prior merge groups only after explicit separate review');
   const before=group.expected,after=structuredClone(before),root=after.find(m=>m.entity.id===group.canonicalEntityId)!;
-  const operationId=crypto.randomUUID(),now=new Date().toISOString(),builder=new MutationBuilder(this.db,command,payloadHash);guardMergeSnapshot(builder,before);
+  const operationId=crypto.randomUUID(),now=new Date().toISOString(),builder=new MutationBuilder(this.db,command,payloadHash);guardMergeSnapshot(builder,before);await this.invalidatePublicCache(builder);
   const entityUpdates=after.map(m=>{Object.assign(m.entity,{state:m.entity.id===group.canonicalEntityId?'active':'merged',merged_into:m.entity.id===group.canonicalEntityId?null:group.canonicalEntityId,business_revision:Number(m.entity.business_revision)+1,routing_generation:Number(m.entity.routing_generation)+1});return {id:m.entity.id,state:m.entity.state,merged_into:m.entity.merged_into,business_revision:m.entity.business_revision,routing_generation:m.entity.routing_generation};});
   const taskUpdates:LegacyRow[]=[],taskSources:LegacyRow[]=[];
   const rootTasks=root.tasks.filter(active);
@@ -43,7 +44,7 @@ export class IdentityMergeService {
   }
   const mappings:LegacyRow[]=[];
   for(const m of before)for(const version of m.versions){const sourceFacts=canonicalTermsSchema.safeParse(JSON.parse(String(version.facts_json)));if(!sourceFacts.success||sourceFacts.data.occurrenceAnchor.state!=='known')continue;
-   const target=root.versions.find(v=>v.terms_hash===version.terms_hash&&stableJson(withoutEvidence(JSON.parse(String(v.facts_json))))===stableJson(withoutEvidence(sourceFacts.data)));if(target)mappings.push({operation_id:operationId,source_entity_id:m.entity.id,source_version_id:version.id,canonical_entity_id:root.entity.id,canonical_version_id:target.id,terms_hash:version.terms_hash,status:'active'});
+   const target=root.versions.find(v=>v.terms_hash===version.terms_hash&&stableJson(withoutEvidence(JSON.parse(String(v.facts_json))))===stableJson(withoutEvidence(sourceFacts.data)));if(target)mappings.push({operation_id:operationId,source_entity_id:m.entity.id,source_version_id:version.id,canonical_entity_id:root.entity.id,canonical_version_id:target.id,terms_hash:version.terms_hash,source_publication_revision:m.entity.publication_revision,canonical_publication_revision:root.entity.publication_revision,status:'active'});
   }
   const decision=auditRow(crypto.randomUUID(),command,root.entity,this.options.actor,'merge',group.canonicalReason,operationId,now),event=eventRow(crypto.randomUUID(),root.entity,'merge',operationId,now);root.decisions.push(decision);root.events.push(event);await rehash(after);
   builder.insert('merge_plans',{plan_hash:planHash,snapshot_hash:plan.snapshotHash,plan_json:JSON.stringify(plan),approved_by:this.options.actor,status:'approved'},'nothing');
@@ -68,7 +69,10 @@ export class IdentityMergeService {
   const plan=JSON.parse(String(op.plan_json)) as MergePlan;if(plan.environment!==this.options.environment)throw new IdentityError(403,'history environment mismatch');
   const before=entityManifestSchema.array().parse(JSON.parse(String(op.before_manifest)).expected),post=entityManifestSchema.array().parse(JSON.parse(String(op.after_manifest)).expected);
   const current=await readEntityManifests(this.db,post.map(m=>String(m.entity.id)));if(stableJson(current)!==stableJson(post))return fail('new review evidence routing proposal or delivery cannot be assigned back automatically');
-  const builder=new MutationBuilder(this.db,command,payloadHash);guardMergeSnapshot(builder,current);builder.require("EXISTS(SELECT 1 FROM merge_operations WHERE id=? AND state='applied' AND revision=?)",[operationId,expectedRevision]);
+  const routing=JSON.parse(String(op.after_manifest)) as {versionRoutes:LegacyRow[];taskSources:LegacyRow[]};
+  const routeRows=(await this.db.prepare('SELECT * FROM identity_version_routes WHERE operation_id=?').bind(operationId).all<LegacyRow>()).results,taskRows=(await this.db.prepare('SELECT * FROM merge_task_sources WHERE operation_id=?').bind(operationId).all<LegacyRow>()).results;
+  const sorted=(rows:LegacyRow[])=>rows.map(row=>stableJson(row)).sort();if(stableJson(sorted(routeRows))!==stableJson(sorted(routing.versionRoutes))||stableJson(sorted(taskRows))!==stableJson(sorted(routing.taskSources)))return fail('version or task routing changed after merge');
+  const builder=new MutationBuilder(this.db,command,payloadHash);guardMergeSnapshot(builder,current);guardRoutingSnapshot(builder,'identity_version_routes',routeRows,operationId);guardRoutingSnapshot(builder,'merge_task_sources',taskRows,operationId);await this.invalidatePublicCache(builder);builder.require("EXISTS(SELECT 1 FROM merge_operations WHERE id=? AND state='applied' AND revision=?)",[operationId,expectedRevision]);
   const updates=before.map(m=>{const now=current.find(c=>c.entity.id===m.entity.id)!.entity;return {id:m.entity.id,state:m.entity.state,merged_into:m.entity.merged_into,business_revision:Number(now.business_revision)+1,routing_generation:Number(now.routing_generation)+1};});
   builder.updateMany('benefit_entities',updates);
   const tasks=before.flatMap(m=>m.tasks.filter(active).map(t=>{const present=current.flatMap(c=>c.tasks).find(c=>c.id===t.id)!;return {id:t.id,state:t.state,revision:Number(present.revision)+1,lease_token:null,lease_until:null};}));builder.updateMany('review_tasks',tasks);

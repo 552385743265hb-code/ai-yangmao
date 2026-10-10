@@ -6,8 +6,11 @@ export interface MutationPlan<T> {
  requestId:string;payloadHash:string;executionToken:string;replayChecked?:boolean;expected:ExpectedRevision[];statements:D1PreparedStatement[];receipt:T;
  guards?:Predicate[];assertions?:Predicate[];
 }
+// D1 limits expression depth to 100. Keep wide guards logarithmic without
+// weakening any predicate or changing the left-to-right binding order.
+export function balancedAnd(parts:string[]):string {if(!parts.length)return '1';if(parts.length===1)return '('+parts[0]+')';const middle=Math.floor(parts.length/2);return '('+balancedAnd(parts.slice(0,middle))+' AND '+balancedAnd(parts.slice(middle))+')';}
 export const commandGuard = "EXISTS(SELECT 1 FROM identity_commands WHERE request_id=? AND payload_hash=? AND state='staged' AND execution_token=?)";
-const allowed=new Set(['source_documents','source_observations','intake_candidates','intake_extractions','identity_extraction_leads','identity_refusal_applications','identity_backfill_progress','merge_plans','merge_operations','merge_members','identity_version_routes','merge_task_sources','lead_candidate_links','benefit_entities','benefit_versions','entity_observations','identity_aliases','review_decisions','review_tasks','task_candidates','identity_constraints','identity_blocks','identity_events','offers','offer_proposals','reviews','offer_revisions','rejected_offer_updates','leads']);
+const allowed=new Set(['source_documents','source_observations','intake_candidates','intake_extractions','identity_extraction_leads','identity_refusal_applications','identity_backfill_progress','merge_plans','merge_operations','merge_members','identity_version_routes','merge_task_sources','identity_public_state','lead_candidate_links','benefit_entities','benefit_versions','entity_observations','identity_aliases','review_decisions','review_tasks','task_candidates','identity_constraints','identity_blocks','identity_events','offers','offer_proposals','reviews','offer_revisions','rejected_offer_updates','leads']);
 const identifier=(name:string)=>{if(!/^[a-z_]+$/.test(name))throw new Error('invalid internal SQL identifier');return '"'+name+'"';};
 const ownsVersion=(table:string,column:string,entity='entity_id')=>`(${column} IS NULL OR EXISTS(SELECT 1 FROM benefit_versions v WHERE v.id=${table}.${column} AND v.entity_id=${table}.${entity}))`;
 const ownership:Record<string,string>={
@@ -86,9 +89,9 @@ export async function commitIdentityMutation<T>(db:D1Database,plan:MutationPlan<
  const lastArgs:Binding[]=[...assertions.flatMap(g=>g.args),JSON.stringify(plan.receipt),plan.requestId,plan.payloadHash,plan.executionToken];
  if(firstArgs.length>100||lastArgs.length>100)throw new Error('identity mutation exceeds D1 binding limit');
  const results=await db.batch([
-  db.prepare(`INSERT OR IGNORE INTO identity_commands(request_id,payload_hash,state,expected_json,execution_token) SELECT ?,?,'staged',?,? WHERE ${guards.length?guards.map(g=>'('+g.sql+')').join(' AND '):'1'} RETURNING request_id`).bind(...firstArgs),
+  db.prepare(`INSERT OR IGNORE INTO identity_commands(request_id,payload_hash,state,expected_json,execution_token) SELECT ?,?,'staged',?,? WHERE ${balancedAnd(guards.map(g=>g.sql))} RETURNING request_id`).bind(...firstArgs),
   ...plan.statements,
-  db.prepare(`UPDATE identity_commands SET state=CASE WHEN ${assertions.length?assertions.map(g=>'('+g.sql+')').join(' AND '):'1'} THEN 'applied' ELSE 'invalid' END,result_json=? WHERE request_id=? AND payload_hash=? AND state='staged' AND execution_token=? RETURNING request_id,result_json`).bind(...lastArgs),
+  db.prepare(`UPDATE identity_commands SET state=CASE WHEN ${balancedAnd(assertions.map(g=>g.sql))} THEN 'applied' ELSE 'invalid' END,result_json=? WHERE request_id=? AND payload_hash=? AND state='staged' AND execution_token=? RETURNING request_id,result_json`).bind(...lastArgs),
  ]);
  const final=results.at(-1)?.results[0] as {result_json?:string}|undefined;
  if(results[0].results.length&&final?.result_json)return {status:'applied',value:JSON.parse(final.result_json) as T};

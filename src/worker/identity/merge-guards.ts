@@ -1,5 +1,5 @@
 import type {EntityManifest,LegacyRow} from '../../shared/identity/history-types';
-import {MutationBuilder} from './commit';
+import {MutationBuilder,balancedAnd} from './commit';
 import {IdentityError} from './store';
 const unique=(rows:LegacyRow[])=>[...new Map(rows.map(r=>[String(r.id??r.offer_id??r.entity_id)+':'+String(r.candidate_id??''),r])).values()];
 /** Compare raw values, including JSON TEXT bytes, inside the guarded transaction. */
@@ -7,6 +7,7 @@ export function guardMergeSnapshot(builder:MutationBuilder,manifests:EntityManif
  const ids=JSON.stringify(manifests.map(m=>m.entity.id)),offers=JSON.stringify(manifests.flatMap(m=>m.offer?[m.offer.id]:[]));
  const scopes:{table:string;rows:LegacyRow[];where:string;args:(string|number|null)[]}[]=[
   {table:'benefit_entities',rows:manifests.map(m=>m.entity),where:'t.id IN (SELECT value FROM json_each(?))',args:[ids]},
+  {table:'platforms',rows:unique(manifests.flatMap(m=>m.platform?[m.platform]:[])),where:'t.id IN (SELECT value FROM json_each(?))',args:[JSON.stringify([...new Set(manifests.map(m=>m.entity.platform_id))])]},
   {table:'offers',rows:manifests.flatMap(m=>m.offer?[m.offer]:[]),where:'t.id IN (SELECT value FROM json_each(?))',args:[offers]},
  ];
  const entityTables={benefit_versions:'versions',review_tasks:'tasks',identity_aliases:'aliases',review_decisions:'decisions',entity_observations:'observations',identity_events:'events'} as const;
@@ -19,7 +20,12 @@ export function guardMergeSnapshot(builder:MutationBuilder,manifests:EntityManif
  for(const scope of scopes){
   const columns=Object.keys(scope.rows[0]??{});if(columns.some(c=>!/^\w+$/.test(c)))throw new IdentityError(400,'invalid snapshot columns');
   // Using one scoped CTE avoids repeating scope bindings across two comparisons.
-  const comparison=columns.map(c=>`actual."${c}" IS json_extract(saved.value,'$.${c}')`).join(' AND ')||'0';
+  const comparison=columns.length?balancedAnd(columns.map(c=>`actual."${c}" IS json_extract(saved.value,'$.${c}')`)):'0';
   builder.require(`(WITH actual AS (SELECT t.* FROM ${scope.table} t WHERE ${scope.where}) SELECT (SELECT count(*) FROM actual)=? AND NOT EXISTS(SELECT 1 FROM actual WHERE NOT EXISTS(SELECT 1 FROM json_each(?) saved WHERE ${comparison})))`,[...scope.args,scope.rows.length,JSON.stringify(scope.rows)]);
  }
+}
+export function guardRoutingSnapshot(builder:MutationBuilder,table:'identity_version_routes'|'merge_task_sources',rows:LegacyRow[],operationId:string){
+ const columns=Object.keys(rows[0]??{});if(columns.some(c=>!/^\w+$/.test(c)))throw new IdentityError(400,'invalid routing snapshot columns');
+ const comparison=columns.length?balancedAnd(columns.map(c=>`actual."${c}" IS json_extract(saved.value,'$.${c}')`)):'0';
+ builder.require(`(WITH actual AS (SELECT * FROM ${table} WHERE operation_id=?) SELECT (SELECT count(*) FROM actual)=? AND NOT EXISTS(SELECT 1 FROM actual WHERE NOT EXISTS(SELECT 1 FROM json_each(?) saved WHERE ${comparison})))`,[operationId,rows.length,JSON.stringify(rows)]);
 }
