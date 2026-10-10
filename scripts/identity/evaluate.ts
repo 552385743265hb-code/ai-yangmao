@@ -2,7 +2,7 @@ import {z} from 'zod';
 import {readFileSync} from 'node:fs';
 import {pathToFileURL} from 'node:url';
 import {canonicalTermsSchema,evidenceContextSchema,versionedEntitySchema} from '../../src/shared/identity/types';
-import {compareCandidate} from '../../src/shared/identity/compare';
+import {compareCandidate,RESOLVER_VERSION,RULES_VERSION} from '../../src/shared/identity/compare';
 import {sha256,stableJson} from '../../src/shared/identity/normalize';
 import {argument} from './store';
 const labelSchema=z.enum(['SAME_EQUIVALENT','DISTINCT','SAME_CHANGED','UNRESOLVED']);
@@ -31,7 +31,7 @@ export async function evaluateCorpus(input:unknown,approvedHash:string){
  const cohortSufficient=counts.SAME_EQUIVALENT>=20&&counts.DISTINCT>=20&&counts.SAME_CHANGED>=10&&counts.UNRESOLVED>=10&&crossLanguageOrSource>=8;
  const metrics=summarizePredictions(rows);
  const semanticGate=cohortSufficient&&metrics.duplicateRecall.rate!>=0.9&&metrics.falseMerge===0&&metrics.changedRecall.rate===1&&rows.filter(p=>p.label==='UNRESOLVED').every(p=>p.predicted==='UNRESOLVED')&&rows.filter(p=>p.label==='SAME_EQUIVALENT').every(p=>p.predicted==='SAME_EQUIVALENT'||p.predicted==='UNRESOLVED');
- return {schemaVersion:'identity-evaluation-v1',environment:c.environment,corpusHash:hash,datasetVersion:c.datasetVersion,counts,crossLanguageOrSource,cohortSufficient,metrics,semanticGate:semanticGate?'passed':'not_met',fieldAcceptance:'not_evaluated',
+ return {schemaVersion:'identity-evaluation-v1',resolverVersion:RESOLVER_VERSION,rulesVersion:RULES_VERSION,environment:c.environment,corpusHash:hash,datasetVersion:c.datasetVersion,counts,crossLanguageOrSource,cohortSufficient,metrics,semanticGate:semanticGate?'passed':'not_met',fieldAcceptance:'not_evaluated',
   limitations:['Pure resolver only: task/publication/refusal outcomes require separate workflow replay.',...(c.environment==='synthetic'?['Synthetic labels cannot establish field quality.']:[]),...(!cohortSufficient?['Required labelled cohort is incomplete.']:[])],modelCalls:0,modelTokens:0,modelCostUsd:0,rows};
 }
 export async function main(args=process.argv.slice(2)){

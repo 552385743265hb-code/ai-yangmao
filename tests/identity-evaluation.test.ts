@@ -33,3 +33,9 @@ it('acceptance report cannot pass merely from scenario IDs when a covered test i
  assertions[0].status='failed';expect(acceptanceReport({success:false,testResults:[{name:'a',assertionResults:assertions}]}).status).toBe('failed');
  expect(acceptanceReport({success:true,testResults:[]}).status).toBe('incomplete');
 });
+it('the frozen four-pair synthetic example has a genuine old-to-new changed pair and remains below the field cohort',async()=>{
+ const {readFileSync}=await import('node:fs');const sample=JSON.parse(readFileSync(new URL('./fixtures/identity/evaluation-synthetic.json',import.meta.url),'utf8'));
+ const changed=sample.pairs.find((p:any)=>p.label==='SAME_CHANGED');expect(changed.entity.terms.benefitPools[0].amount.value.value).toBe('10');expect(changed.candidate.benefitPools[0].amount.value.value).toBe('20');
+ const distinct=sample.pairs.find((p:any)=>p.label==='DISTINCT');expect(distinct.entity.terms.issuerProductId.value).toBe(distinct.entity.platformId);expect(distinct.candidate.issuerProductId.value).toBe('other');
+ const report=await evaluateCorpus(sample,await corpusHash(sample));expect(report.metrics.changedRecall.rate).toBe(1);expect(report.fieldAcceptance).toBe('not_evaluated');
+});
