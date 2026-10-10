@@ -1055,3 +1055,39 @@ it('cannot close a lead using an unrelated official page as negative evidence',a
   const r=await call('ingest/lead-reviews/1312/result',{jobId:lease.body.jobId,outcome:'closed',reason:'该页面没有赠额',queries:[],candidates:[],evidenceUrl:'https://vendor.example/other',quote:'No bonus is offered on this unrelated page.',sourceText:'No bonus is offered on this unrelated page.'});
   expect(r.status).toBe(400);
 });
+
+
+describe('cross-page recurring plan identity',()=>{
+ const canonical={...offer,id:'vendor-tokenplan-original',title:'Vendor TokenPlan 公测免费：每5小时6万积分',type:'standing',claimMethod:'signup',requirements:['none'],audience:'all',modalities:['text','image'],models:['Model Flash Lite','Model Image'],valueText:'通用积分池与专属池各滚动5小时6万积分，每周60万积分',claimStart:'2026-08-28',endKind:'standing',tags:[],evidence:{...evidence,url:'https://vendor.example/docs'}};
+ const alias={...canonical,id:'completely-new-plan-id',title:'Vendor 免费公测积分',valueText:'Free公测档60,000积分 / 5小时',claimStart:null,evidence:{...canonical.evidence,url:'https://vendor.example/token-plan'}};
+ it('replaying a new ID preserves the approved row without a proposal',async()=>{
+  await call('ingest/offers',[canonical]);await call('admin/offers/'+canonical.id+'/approve',{},'admin');
+  const before=sqlite.prepare('SELECT * FROM offers WHERE id=?').get(canonical.id);
+  for(let i=0;i<2;i++){
+   const r=await call('ingest/offers',[{...alias,id:'replay-'+i}]);
+   expect(r.status).toBe(200);expect(r.body.results[0]).toMatchObject({id:canonical.id,unchanged:true});
+  }
+  expect(sqlite.prepare('SELECT * FROM offers WHERE id=?').get(canonical.id)).toEqual(before);
+  expect(sqlite.prepare('SELECT count(*) n FROM offers').get()).toMatchObject({n:1});
+  expect(sqlite.prepare('SELECT count(*) n FROM offer_proposals').get()).toMatchObject({n:0});
+ });
+ it('official recheck of an old community lead links the approved canonical instead of creating a draft',async()=>{
+  await call('ingest/offers',[canonical]);await call('admin/offers/'+canonical.id+'/approve',{},'admin');
+  const before=sqlite.prepare('SELECT * FROM offers WHERE id=?').get(canonical.id);
+  sqlite.prepare("INSERT INTO leads(id,origin,url,title,status) VALUES(546,'v2ex','https://community.example/original','免费公测积分','reviewing')").run();
+  const lease=await call('ingest/lead-reviews/546/claim',{});
+  const r=await call('ingest/offers',[{...alias,leadId:546,leadReviewJobId:lease.body.jobId}]);
+  expect(r.body.results[0]).toMatchObject({id:canonical.id,linkedExisting:true,reviewState:'approved'});
+  expect(sqlite.prepare('SELECT * FROM offers WHERE id=?').get(canonical.id)).toEqual(before);
+  const linked=await call('ingest/lead-reviews/546/result',{jobId:lease.body.jobId,outcome:'linked',reason:'同一TokenPlan免费档',offerIds:[canonical.id],queries:[],candidates:[alias.evidence.url]});
+  expect(linked.status).toBe(200);expect(sqlite.prepare('SELECT offer_id,status FROM leads WHERE id=546').get()).toMatchObject({offer_id:canonical.id,status:'linked'});
+  expect(sqlite.prepare('SELECT count(*) n FROM offers').get()).toMatchObject({n:1});
+ });
+ it('same-batch aliases reuse the draft, while a watermark feature remains separate',async()=>{
+  const watermark={...canonical,id:'vendor-watermark',title:'无水印图片生成限时免费',type:'free',claimStart:null,endKind:'unknown',claimMethod:'auto',valueText:'无水印生成当前免费公测',modalities:['image'],models:['Model Image']};
+  const r=await call('ingest/offers',[canonical,alias,watermark]);expect(r.status).toBe(200);
+  expect(sqlite.prepare('SELECT count(*) n FROM offers').get()).toMatchObject({n:2});
+  expect(sqlite.prepare('SELECT id FROM offers WHERE id=?').get(alias.id)).toBeUndefined();
+  expect(sqlite.prepare('SELECT id FROM offers WHERE id=?').get(watermark.id)).toBeDefined();
+ });
+});

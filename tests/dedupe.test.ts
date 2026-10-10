@@ -68,3 +68,26 @@ it('does not merge similar benefits from independent dated announcements',()=>{
   expect(findDuplicate(fast,[regular])).toBeUndefined();
   expect(findDuplicate({...regular,evidenceUrl:regular.evidenceUrl,claimStart:'2026-02-06'},[regular])?.id).toBe('regular');
 });
+
+const senseCanonical={id:'volc-sensenova-token-plan-free-tier-extension',platformId:'sensenova',reviewState:'approved',type:'standing',claimMethod:'signup',requirements:['none'],audience:'all',modalities:['text','image'],models:['SenseNova 6.8 Flash Lite','SenseNova U1 Fast'],title:'商汤 SenseNova TokenPlan 公测免费：每 5 小时 6 万积分',valueText:'公测期 ¥0/月：通用积分池和 Flash-Lite 专属积分池各给滚动 5 小时 6 万积分、每周 60 万积分',claimStart:'2026-08-28',evidenceUrl:'https://platform.sensenova.cn/docs'};
+const senseAlias={...senseCanonical,id:'fresh-random-key',reviewState:'pending',title:'商汤 SenseNova 免费公测积分',valueText:'Free · 公测档位提供 60,000 积分 / 5 小时，可用 SenseNova 6.8 Flash Lite 与 SenseNova U1 Fast',claimStart:null,evidenceUrl:'https://www.sensenova.cn/token-plan'};
+it('matches the same recurring free plan across pricing/docs and numeric formats',()=>{
+ expect(findDuplicate(senseAlias,[senseCanonical])?.id).toBe(senseCanonical.id);
+ expect(findDuplicate({...senseAlias,valueText:'Free公测：60000 credits / 5 hours',models:[...senseAlias.models].reverse()},[senseCanonical])?.id).toBe(senseCanonical.id);
+ expect(findDuplicate(senseAlias,[{...senseAlias,id:'rejected-alias',reviewState:'rejected'},senseCanonical])?.id).toBe(senseCanonical.id);
+});
+it('does not collapse independent mechanisms, pools, regions, models, amounts or rounds',()=>{
+ for (const change of [
+  {type:'new',title:'商汤新人礼',valueText:'注册一次赠60,000积分'},
+  {type:'free',title:'商汤无水印生成公测免费',valueText:'无水印生成免费'},
+  {title:'商汤 TokenPlan 学生公测积分',requirements:['student']},
+  {title:'商汤 TokenPlan 国际版公测积分'},
+  {title:'商汤 TokenPlan Flash Lite 专属积分奖励'},
+  {models:['SenseNova U1.5 Fast']},
+  {valueText:'Free公测：20,000积分 / 5 小时'},
+  {modalities:['text']},
+  {eventDay:'2026-10-10'},
+  {claimStart:'2026-11-01'},
+  {evidenceUrl:'https://www.sensenova.cn/another-product'},
+ ]) expect(findDuplicate({...senseAlias,...change},[senseCanonical]),JSON.stringify(change)).toBeUndefined();
+});
