@@ -240,10 +240,6 @@ export class IdentityService {
   if(!candidate)throw new IdentityError(404,'candidate not found');
   const stored=candidate.receipt_json?intakeReceiptSchema.parse(JSON.parse(candidate.receipt_json)):null;
   if(!stored)throw new IdentityError(409,'candidate lacks intake receipt');
-  if(!control&&!['received','deferred','resolving'].includes(candidate.state)){
-   const current=stored.entityId?await this.entity(stored.entityId):null;
-   if(!current||stored.entityRevision===current.business_revision)return this.commit(new MutationBuilder(this.db,command,payloadHash),[],stored);
-  }
   const facts=canonicalTermsSchema.parse(control?.facts??JSON.parse(candidate.facts_json)),evidence=await this.evidence({...candidate,facts_json:JSON.stringify(control?.facts??JSON.parse(candidate.facts_json))});
   const builder=new MutationBuilder(this.db,command,payloadHash),expected:ExpectedRevision[]=[];
   if(control){expected.push({kind:'task',id:control.task.id,revision:control.task.revision});builder.require("EXISTS(SELECT 1 FROM review_tasks WHERE id=? AND state IN ('open','checking','manual'))",[control.task.id]);}
@@ -254,7 +250,7 @@ export class IdentityService {
   const legacyRaw=JSON.parse(candidate.raw_candidate_json).candidate?._identityLegacyJob;
   const legacyJob=!control&&legacyRaw?z.strictObject({offerId:z.string(),entityId:z.string(),entityRevision:z.number().int().nonnegative(),originalJob:z.string()}).parse(legacyRaw):null;
   if(legacyJob){expected.push({kind:'entity',id:legacyJob.entityId,revision:legacyJob.entityRevision});builder.require("EXISTS(SELECT 1 FROM offers WHERE id=? AND official_review=? AND json_extract(official_review,'$.status')='checking')",[legacyJob.offerId,legacyJob.originalJob]);}
-  const receipt:IntakeReceipt={...stored,entityId:null,versionId:null,decisionId:null,taskId:null,canonicalOfferId:null,reasonCodes:[],retryable:false};
+  const receipt:IntakeReceipt={...stored,outcome:'deferred',entityId:null,versionId:null,decisionId:null,taskId:null,canonicalOfferId:null,reasonCodes:[],retryable:false};
   let entity:EntityRow|null=null,taskKind='identity',taskKey=reviewTaskKey({kind:'identity',clusterId:candidate.id}),versionId:string|null=null,baseVersionId:string|null=null,material=false;
   const productId=facts.issuerProductId.state==='known'?facts.issuerProductId.value:null;
   const mechanism=facts.mechanism.state==='known'?facts.mechanism.value:null;
@@ -294,7 +290,7 @@ export class IdentityService {
    if(control)material=true;
    receipt.entityId=entity.id;receipt.canonicalOfferId=entity.canonical_offer_id;
    const hash=await hashTerms(facts);
-   const version=control?.action==='same'&&comparison?.termsRelation==='EQUIVALENT'&&entity.current_approved_version_id?await this.db.prepare('SELECT id,state FROM benefit_versions WHERE id=? AND entity_id=?').bind(entity.current_approved_version_id,entity.id).first<{id:string;state:string}>():await this.db.prepare('SELECT id,state FROM benefit_versions WHERE entity_id=? AND terms_schema=? AND terms_hash=?').bind(entity.id,'terms-v1',hash).first<{id:string;state:string}>();
+   let version=control?.action==='same'&&comparison?.termsRelation==='EQUIVALENT'&&entity.current_approved_version_id?await this.db.prepare('SELECT id,state FROM benefit_versions WHERE id=? AND entity_id=?').bind(entity.current_approved_version_id,entity.id).first<{id:string;state:string}>():await this.db.prepare('SELECT id,state FROM benefit_versions WHERE entity_id=? AND terms_schema=? AND terms_hash=?').bind(entity.id,'terms-v1',hash).first<{id:string;state:string}>();
    versionId=version?.id??crypto.randomUUID();baseVersionId=entity.current_approved_version_id;
    receipt.versionId=versionId;
    const display=displayFromRaw(candidate.raw_candidate_json);
@@ -305,6 +301,7 @@ export class IdentityService {
    if(refusals.length===1&&sameVersionReopen?.allowed){taskKind='evidence_reopen';taskKey=reviewTaskKey({kind:'evidence_reopen',entityId:entity.id,refusalDecisionId:refusals[0].id,basisHash:sameVersionReopen.basisHash!});receipt.outcome='evidence_reopen';receipt.reasonCodes=sameVersionReopen.reasonCodes;}
    else if(refusals.length===1){
     receipt.outcome='duplicate_rejected';receipt.decisionId=refusals[0].id;receipt.taskId=null;receipt.reasonCodes=['existing_refusal'];builder.require('NOT EXISTS(SELECT 1 FROM review_decisions WHERE supersedes_id=?)',[refusals[0].id]);
+    if(refusals[0].entityId!==entity.id&&refusals[0].candidateId!==candidate.id)builder.insert('identity_refusal_applications',{candidate_id:candidate.id,decision_id:refusals[0].id,facts_hash:candidate.facts_hash,rules_version:RULES_VERSION},'nothing');
    } else if(refusals.length>1){taskKind='merge_conflict';taskKey='decision-conflict:'+entity.id;receipt.outcome='needs_identity_review';receipt.reasonCodes=['conflicting_decisions'];}
    else {
     const reopens=await Promise.all(decisions.filter(d=>d.action==='reject'&&!superseded.has(d.id)&&d.entityId===entity!.id).map(async d=>({decision:d,evaluation:await evaluateReopen(d,facts,evidence)})));
@@ -319,7 +316,7 @@ export class IdentityService {
    }
    if(receipt.outcome==='needs_identity_review'&&!entity.current_approved_version_id&&comparison?.relation==='SAME'&&comparison.reasonCodes.includes('partial_facts')){
     const pending=await this.db.prepare("SELECT id,version_id FROM review_tasks WHERE entity_id=? AND kind='initial' AND state IN ('open','checking','manual')").bind(entity.id).first<{id:string;version_id:string|null}>();
-    if(pending){receipt.outcome='duplicate_pending';taskKind='initial';taskKey=reviewTaskKey({kind:'initial',entityId:entity.id});versionId=pending.version_id;receipt.versionId=versionId;}
+    if(pending){receipt.outcome='duplicate_pending';taskKind='initial';taskKey=reviewTaskKey({kind:'initial',entityId:entity.id});versionId=pending.version_id;receipt.versionId=versionId;version=versionId?await this.db.prepare('SELECT id,state FROM benefit_versions WHERE id=? AND entity_id=?').bind(versionId,entity.id).first<{id:string;state:string}>():null;}
    }
    if(receipt.outcome==='needs_identity_review'){versionId=null;receipt.versionId=null;}
    if(!version&&versionId){builder.insert('benefit_versions',{id:versionId,entity_id:entity.id,terms_schema:'terms-v1',terms_hash:hash,facts_json:JSON.stringify(facts),display_candidate_json:JSON.stringify(display??{}),state:'pending',base_version_id:baseVersionId});material=true;}
@@ -408,7 +405,7 @@ export class IdentityService {
    if(scope.kind==='observation_only'&&!await this.db.prepare('SELECT 1 FROM task_candidates tc JOIN intake_candidates c ON c.id=tc.candidate_id WHERE tc.task_id=? AND c.observation_id=?').bind(task.id,scope.observationId).first())throw new IdentityError(400,'foreign observation scope');
   }
   const proposal=entity.canonical_offer_id?await this.db.prepare('SELECT candidate,diff,manual_fields,updated_at FROM offer_proposals WHERE offer_id=?').bind(entity.canonical_offer_id).first<{candidate:string;diff:string;manual_fields:string;updated_at:string}>():null;
-  if(task.kind==='terms_change'&&proposal&&JSON.parse(proposal.manual_fields).length)throw new IdentityError(409,'manual proposal edits require a refreshed identity version');
+  if(proposal&&JSON.parse(proposal.manual_fields).length&&stableJson(offerIn.parse(JSON.parse(proposal.candidate)))!==stableJson(offerIn.parse(JSON.parse(version.display_candidate_json))))throw new IdentityError(409,'manual proposal edits require a refreshed identity version');
   const original=await this.offer(entity.canonical_offer_id);
   let accepted:OfferIn|null=null;
   if(input.action==='approve') {
@@ -444,7 +441,8 @@ export class IdentityService {
    if(accepted)builder.update('offers',{...offerValues(accepted),review_state:'approved',updated_at:new Date().toISOString(),last_verified_at:new Date().toISOString(),verify_result:'审核员确认官方证据'},'id=?',[original.id]);
    else if(!entity.current_approved_version_id)builder.update('offers',{review_state:'rejected',updated_at:new Date().toISOString()},'id=?',[original.id]);
    builder.insert('reviews',{offer_id:original.id,action:input.action,reviewer:input.actor,reason:input.reason??null,reason_code:input.reasonCode??'other',decision_id:decisionId});
-   if(task.kind==='terms_change'){
+   if(task.kind==='terms_change'||(task.kind==='evidence_reopen'&&proposal)){
+    if(proposal&&task.kind==='evidence_reopen'&&stableJson(offerIn.parse(JSON.parse(proposal.candidate)))!==stableJson(offerIn.parse(JSON.parse(version.display_candidate_json))))throw new IdentityError(409,'proposal belongs to another review version');
     if(input.action==='reject'&&proposal)builder.insert('rejected_offer_updates',{offer_id:original.id,evidence:JSON.stringify(JSON.parse(proposal.candidate).evidence??original.evidence),diff:proposal.diff,decision_key:command});
     if(input.action==='approve'&&accepted)builder.insert('offer_revisions',{offer_id:original.id,diff:proposal?.diff??'[]',evidence_before:JSON.stringify(original.evidence),evidence_after:JSON.stringify(accepted.evidence),author:'pipeline'});
     builder.remove('offer_proposals','offer_id=?',[original.id]);

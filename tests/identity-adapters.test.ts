@@ -90,3 +90,9 @@ it('A29 an official-review job cannot write after identity revision changes even
  const result=await call('ingest/offers',[{...original,id:r.canonicalOfferId,identityRequestId:'stale-job',officialReviewJobId:jobId}],false,env);
  expect(result.body.results[0]).toMatchObject({error:expect.stringContaining('official review')});
 });
+it('A44 unreconciled rejected leads block canary even when every offer is mapped',async()=>{
+ f.sqlite.prepare("UPDATE leads SET status='rejected',resolution=? WHERE id=1").run(JSON.stringify({status:'closed',platformId:'vendor',reason:'paid bundle'}));
+ const response=await call('ingest/offers',[{...displayOffer(),identityRequestId:'rejected-lead-gate'}],false,{IDENTITY_MODE:'enforce',IDENTITY_CANARY_PLATFORMS:'vendor'});
+ expect(response.body.results[0]).toMatchObject({error:expect.stringContaining('backfill')});
+ expect(f.sqlite.prepare('SELECT count(*) n FROM benefit_entities').get()).toEqual({n:0});
+});

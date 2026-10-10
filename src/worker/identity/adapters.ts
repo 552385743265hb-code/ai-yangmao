@@ -16,7 +16,8 @@ export function identitySelected(env:Pick<Env,'IDENTITY_MODE'|'IDENTITY_CANARY_P
 export async function requireIdentityReady(db:D1Database,productId:string):Promise<void> {
  const missing=await db.prepare('SELECT 1 FROM offers o LEFT JOIN benefit_entities e ON e.canonical_offer_id=o.id WHERE o.platform_id=? AND e.id IS NULL LIMIT 1').bind(productId).first();
  const refusals=await db.prepare("SELECT 1 FROM rejected_offer_updates r JOIN offers o ON o.id=r.offer_id WHERE o.platform_id=? AND NOT EXISTS(SELECT 1 FROM review_decisions d WHERE d.idempotency_key='backfill:rejected_update:'||r.id OR d.idempotency_key=r.decision_key) LIMIT 1").bind(productId).first();
- if(missing||refusals)throw new IdentityError(409,'identity backfill reconciliation required');
+ const leads=await db.prepare("SELECT 1 FROM leads l LEFT JOIN offers o ON o.id=l.offer_id WHERE l.status='rejected' AND (coalesce(json_extract(l.resolution,'$.platformId'),o.platform_id) IS NULL OR coalesce(json_extract(l.resolution,'$.platformId'),o.platform_id)=?) AND NOT EXISTS(SELECT 1 FROM review_decisions d WHERE d.idempotency_key='backfill:lead:'||l.id AND json_extract(d.basis_json,'$.legacyResolution') IS l.resolution) AND NOT EXISTS(SELECT 1 FROM lead_candidate_links lc JOIN intake_candidates c ON c.id=lc.candidate_id JOIN review_decisions d ON d.id=c.decision_id WHERE lc.lead_id=l.id AND d.action='reject') LIMIT 1").bind(productId).first();
+ if(missing||refusals||leads)throw new IdentityError(409,'identity backfill reconciliation required');
 }
 export function unknownIdentityTerms(productId?:string):CanonicalTermsV1 {
  const unknown={state:'unknown'} as const;

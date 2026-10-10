@@ -292,3 +292,9 @@ export const identityExtractionLeads=sqliteTable('identity_extraction_leads',{
  requestId:text('request_id').notNull().references(()=>intakeExtractions.requestId),
  leadId:integer('lead_id').notNull().references(()=>leads.id),
 },t=>[primaryKey({columns:[t.requestId,t.leadId]}),index('extraction_leads_lead_idx').on(t.leadId,t.requestId)]);
+
+export const identityRefusalApplications=sqliteTable('identity_refusal_applications',{
+ candidateId:text('candidate_id').notNull().references(()=>intakeCandidates.id),
+ decisionId:text('decision_id').notNull().references(()=>reviewDecisions.id),
+ factsHash:text('facts_hash').notNull(),rulesVersion:text('rules_version').notNull(),
+},t=>[primaryKey({columns:[t.candidateId,t.decisionId]}),index('refusal_applications_decision_idx').on(t.decisionId,t.candidateId)]);

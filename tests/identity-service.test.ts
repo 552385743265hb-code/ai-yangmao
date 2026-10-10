@@ -237,3 +237,41 @@ it('A19 an existing campaign alias cannot validate a fabricated incoming anchor'
  expect(result.outcome).toBe('needs_identity_review');
  expect(f.sqlite.prepare('SELECT count(*) n FROM offers').get()).toEqual({n:1});
 });
+it('A26 a superseded rejection is re-evaluated without losing identity links',async()=>{
+ const a=await service.resolveCandidate(await intake('a'),'a');const rejected=await service.decideTask(a.taskId!,{requestId:'reject',expectedRevision:0,action:'reject',reasonCode:'other',actor:'admin',role:'admin'});
+ const candidateId=await intake('repeat');expect((await service.resolveCandidate(candidateId,'repeat')).outcome).toBe('duplicate_rejected');
+ const revision=Number(f.sqlite.prepare('SELECT business_revision FROM benefit_entities').get()?.business_revision);
+ const opened=await service.reopenDecision(rejected.decisionId,{requestId:'reopen',expectedRevision:revision,reason:'新证据复审',basis:{description:'Official terms were confirmed.'},actor:'admin'});
+ await service.decideTask(opened.taskId,{requestId:'approve',expectedRevision:0,action:'approve',actor:'admin',role:'admin'});
+ expect(await service.resolveCandidate(candidateId,'repeat-after-reopen')).toMatchObject({outcome:'duplicate_approved',entityId:a.entityId,versionId:a.versionId,canonicalOfferId:a.canonicalOfferId});
+});
+it('A08 a partial duplicate reuses the pending version without reinserting it',async()=>{
+ const a=await service.resolveCandidate(await intake('a'),'a');const partial=facts();partial.benefitPools[0].amount={state:'unknown'};
+ expect(await service.resolveCandidate(await intake('partial','Campaign signup-2026 is available.',partial),'partial')).toMatchObject({outcome:'duplicate_pending',entityId:a.entityId,versionId:a.versionId,taskId:a.taskId});
+ expect(f.sqlite.prepare('SELECT count(*) n FROM benefit_versions').get()).toEqual({n:1});
+});
+for(const action of ['approve','reject'] as const)it('A22 current manually refreshed proposal can '+action,async()=>{
+ const a=await service.resolveCandidate(await intake('a'),'a');await service.decideTask(a.taskId!,{requestId:'approve',expectedRevision:0,action:'approve',actor:'admin',role:'admin'});
+ const change=facts();change.benefitPools[0].amount=known({value:'20',unit:'currency',currency:'USD'});
+ const b=await service.resolveCandidate(await intake('b','Campaign signup-2026 replaces 10 USD with 20 USD.',change,displayOffer('注册赠送 20 美元 API 额度')),'b');
+ const edited=await service.editManagedOffer(a.canonicalOfferId!,{requestId:'edit',taskId:b.taskId!,expectedTaskRevision:0,fields:{valueText:'管理员确认赠送 20 美元 API 额度'},identityFacts:change,actor:'admin'});
+ await service.decideTask(edited.taskId!,{requestId:'decide-edited',expectedRevision:edited.revision,action,actor:'admin',role:'admin'});
+ expect(f.sqlite.prepare('SELECT count(*) n FROM offer_proposals').get()).toEqual({n:0});
+ expect(f.sqlite.prepare('SELECT value_text FROM offers').get()).toEqual({value_text:action==='approve'?'管理员确认赠送 20 美元 API 额度':'注册赠送 10 美元 API 额度'});
+});
+for(const action of ['approve','reject'] as const)it('A22 manual evidence reopen '+action+' completes its owned proposal',async()=>{
+ const a=await service.resolveCandidate(await intake('a'),'a');await service.decideTask(a.taskId!,{requestId:'approve',expectedRevision:0,action:'approve',actor:'admin',role:'admin'});
+ const version=String(f.sqlite.prepare('SELECT updated_at FROM offers').get()?.updated_at);
+ const edited=await service.editManagedOffer(a.canonicalOfferId!,{requestId:'edit',expectedOfferVersion:version,fields:{valueText:'管理员确认 10 美元 API 额度'},identityFacts:facts(),actor:'admin'});
+ await service.decideTask(edited.taskId!,{requestId:'decide-edited',expectedRevision:edited.revision,action,actor:'admin',role:'admin'});
+ expect(f.sqlite.prepare('SELECT count(*) n FROM offer_proposals').get()).toEqual({n:0});
+});
+it('A26 a mechanism scoped refusal suppresses another occurrence without cross-entity ownership',async()=>{
+ const paid=facts();paid.costs=known({upfrontAmount:"10",currency:"USD",subscriptionRequired:true,autoRenewal:null});
+ const a=await service.resolveCandidate(await intake('a','Campaign signup-2026 grants 10 USD to subscribers.',paid),'a');
+ const rejected=await service.decideTask(a.taskId!,{requestId:'reject',expectedRevision:0,action:'reject',reasonCode:'paid_bundle',scope:{kind:'scoped_mechanism',productId:'vendor',mechanism:'signup_grant',confirmedBy:'admin'},actor:'admin',role:'admin'});
+ const other=structuredClone(paid);other.occurrenceAnchor=known('signup-2027');
+ const b=await service.resolveCandidate(await intake('b','Independent campaign signup-2027 grants 10 USD to subscribers.',other),'b');
+ expect(b).toMatchObject({outcome:'duplicate_rejected',decisionId:rejected.decisionId,taskId:null});
+ expect(f.sqlite.prepare('SELECT count(*) n FROM offers').get()).toEqual({n:1});
+});
