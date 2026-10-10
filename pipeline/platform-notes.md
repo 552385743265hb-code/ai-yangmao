@@ -546,7 +546,7 @@
 
 ## xai
 
-- 2026-10-08：个人howie_serious所说Grok Bot采集推特每日1000次，未找到xAI/X官方免费模型额度证明。数据采集频控不等于Grok模型调用免费；不根据个人bot反馈推导人人通过X登录可领1000次。保留media和资格缺口。
+- 2026-10-09 管理员付费订阅亲测：连接 X connector 后赠 $15 X API credits，到账起一年有效；不是每日1000次免费Grok模型调用。2026-08-29官网只确认付费Grok Bot用户获起步X API credits；数量/有效期来自管理员实测，证据可用tested，不拼入官网原文。按会员加赠perk、连接后auto记录，具体订阅档/月费未确认。X API为数据接口额度，是否纳入AI收录范围仍需管理员决定；旧个人howie_serious的1000次频控不作额度依据。来源：https://x.ai/news/grok-bot-and-x 。
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - 个人Free官网写实时网页/X搜索、Voice mode和Connectors，没有明确免费模型版本与调用上限；$0/月是售价不等于福利价值0。SuperGrok标Grok4.6不能移植为Free模型。来源：https://x.ai/pricing
 - Grok Bot企业两周活动官方发布2026-09-03，“next two weeks”按日期加两周为2026-09-17，截止精确时刻未公告；这是历史活动不是每个企业加入就从当天试用14天。限Grok Enterprise/Cursor Enterprise，管理员后台启用并下载应用，整个组织可用。来源：https://x.ai/news/grok-bot-for-enterprise
