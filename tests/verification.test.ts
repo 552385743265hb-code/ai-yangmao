@@ -1048,3 +1048,10 @@ it('rejects a stale manual decision after automatic results arrive and prevents 
   await call('ingest/offers',[offer]);await call('admin/leads/1312/resolve',{expectedVersion:current,outcome:'linked',offerId:offer.id,reason:'人工已核对'},'admin');
   expect((await call('admin/leads/1312/retry',{expectedVersion:current},'admin')).status).toBe(409);
 });
+
+it('cannot close a lead using an unrelated official page as negative evidence',async()=>{
+  sqlite.prepare("INSERT INTO leads(id,origin,url,title,status) VALUES(1312,'aihot','https://vendor.example/original','新线索','reviewing')").run();
+  const lease=await call('ingest/lead-reviews/1312/claim',{});
+  const r=await call('ingest/lead-reviews/1312/result',{jobId:lease.body.jobId,outcome:'closed',reason:'该页面没有赠额',queries:[],candidates:[],evidenceUrl:'https://vendor.example/other',quote:'No bonus is offered on this unrelated page.',sourceText:'No bonus is offered on this unrelated page.'});
+  expect(r.status).toBe(400);
+});

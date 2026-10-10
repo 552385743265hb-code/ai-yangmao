@@ -1,3 +1,4 @@
+import {normUrl} from '../shared/dedupe';
 import {Hono} from 'hono';
 import {drizzle} from 'drizzle-orm/d1';
 import {and,eq,sql} from 'drizzle-orm';
@@ -46,7 +47,7 @@ leadReviewRoutes.post('/:id/result',async c=>{
     const platforms=await d.select().from(s.platforms).where(eq(s.platforms.status,'approved'));
     const sources=await d.select({platformId:s.sources.platformId,url:s.sources.url,tier:s.sources.tier}).from(s.sources);
     const norm=(v:string)=>v.replace(/\s+/g,' ').trim().toLowerCase();
-    if(!b.evidenceUrl||!b.quote||b.quote.trim().length<12||!b.sourceText||!norm(b.sourceText).includes(norm(b.quote))
+    if(!b.evidenceUrl||normUrl(b.evidenceUrl)!==normUrl(l.url)||!b.quote||b.quote.trim().length<12||!b.sourceText||!norm(b.sourceText).includes(norm(b.quote))
       ||!platforms.some(p=>officialTier(b.evidenceUrl!,p,sources.filter(x=>x.platformId===p.id))))return c.json({error:'结束线索需要可信官方原文与具体依据'},400);
   }
   const old=l.resolution,now=Date.now();
