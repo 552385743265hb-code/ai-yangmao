@@ -77,14 +77,22 @@ export class IdentityStore {
     const nonBenefit = input.nonBenefitEvidence;
     const complete = input.extractionComplete && readable && (input.candidates.length > 0 || !!(nonBenefit && observation.text.slice(nonBenefit.start,nonBenefit.end) === nonBenefit.quote));
     // An extraction marker records incomplete/empty work without rejecting a lead.
-    await this.storageCommand(request,payloadHash,{extractionComplete:complete,reasonCodes:complete?[]:['extraction_incomplete']},()=>[]);
+    await this.storageCommand(request,payloadHash,{extractionComplete:complete,reasonCodes:complete?[]:['extraction_incomplete']},(guard,args)=>[
+      this.db.prepare(`INSERT INTO intake_extractions(request_id,observation_id,extraction_version,input_json,state,extraction_complete,next_attempt_at,last_error) SELECT ?,?,?,?,'deferred',?,?,? WHERE ${guard}`)
+        .bind(request,input.observationId,input.extractionVersion,JSON.stringify(input),Number(complete),new Date(Date.now()+20*60_000).toISOString(),'intake_pending',...args),
+    ]);
     const receipts: IntakeReceipt[]=[];
     for (const candidate of input.candidates) {
       const facts = normalizeTerms(candidate.facts);
       const mechanism = facts.mechanism;
       const spanKey = `${candidate.span.start}:${candidate.span.end}`;
-      const key = await sha256(stableJson([input.observationId,input.extractionVersion,spanKey,mechanism.state==='known'?mechanism.value:null]));
+      const key = await sha256(stableJson([input.observationId,input.extractionVersion,spanKey,mechanism.state==='known'?mechanism.value:candidate.mechanismHint??null]));
       const candidateId = `candidate_${key}`;
+      const mechanismKey = mechanism.state==='known'?mechanism.value:candidate.mechanismHint??null;
+      const ambiguous = input.candidates.some(other => other.inputId !== candidate.inputId
+        && other.span.start === candidate.span.start && other.span.end === candidate.span.end
+        && (other.facts.mechanism.state==='known'?other.facts.mechanism.value:other.mechanismHint??null) === mechanismKey
+        && stableJson(other.rawCandidate) !== stableJson(candidate.rawCandidate));
       const base: IntakeReceipt = {inputId:candidate.inputId,candidateId,canonicalOfferId:null,entityId:null,versionId:null,decisionId:null,taskId:null,outcome:'deferred',retryable:true,reasonCodes:['shadow_pending_resolution']};
       try {
         const previous = await this.db.prepare('SELECT receipt_json FROM intake_candidates WHERE candidate_key=?').bind(key).first<{receipt_json:string|null}>();
@@ -103,6 +111,7 @@ export class IdentityStore {
         };
         checkRefs(facts);
         const receipt = previous?.receipt_json ? {...intakeReceiptSchema.parse(JSON.parse(previous.receipt_json)),inputId:candidate.inputId} : {...base,reasonCodes:!grounded?['invalid_evidence_reference']:!readable?['source_incomplete']:base.reasonCodes};
+        if (ambiguous) { receipt.reasonCodes=['ambiguous_subitems']; receipt.outcome='deferred'; receipt.retryable=true; }
         const command = `candidate:${await sha256(stableJson([input.requestId,candidate.inputId]))}`;
         const factsHash = await hashTerms(facts);
         const result = await this.storageCommand(command,payloadHash,receipt,(guard,args)=>[
@@ -115,6 +124,13 @@ export class IdentityStore {
         receipts.push({...base,reasonCodes:['storage_unavailable']});
       }
     }
+    const failed=receipts.some(r=>r.reasonCodes.some(code=>code!=='shadow_pending_resolution'));
+    const summary={state:complete&&!failed?'received':'deferred',reason:!complete?'extraction_incomplete':failed?'candidate_intake_incomplete':null};
+    // A failed child never turns the extraction record into an untraceable success.
+    await this.storageCommand(`batch-final:${await sha256(stableJson([input.requestId,summary]))}`,payloadHash,summary,(guard,args)=>[
+      this.db.prepare(`UPDATE intake_extractions SET state=?,last_error=?,next_attempt_at=? WHERE request_id=? AND ${guard}`)
+        .bind(summary.state,summary.reason,summary.state==='deferred'?new Date(Date.now()+20*60_000).toISOString():null,request,...args),
+    ]);
     return receipts;
   }
 }

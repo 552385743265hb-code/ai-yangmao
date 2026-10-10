@@ -1,7 +1,9 @@
 import { z } from 'zod';
 
 export const idSchema = z.string().min(1).max(200);
-const text = z.string().min(1).max(2000);
+const text = z.string().min(1).max(2000).refine(v => v.normalize('NFKC').trim().length > 0);
+const decimal = z.string().min(1).max(120).refine(v => /^\d+(?:\.\d+)?$/.test(v.normalize('NFKC').trim()), 'exact decimal required');
+const currency = z.string().max(20).refine(v => /^[A-Z]{3}$/.test(v.normalize('NFKC').trim().toUpperCase()), 'explicit currency required');
 const refs = z.array(idSchema).min(1).max(100);
 export const revisionSchema = z.number().int().nonnegative();
 export const factSchema = <T extends z.ZodType>(value: T) => z.discriminatedUnion('state', [
@@ -21,13 +23,13 @@ export type Cadence = z.infer<typeof cadenceSchema>;
 export const canonicalTermsSchema = z.strictObject({
   schemaVersion: z.literal('terms-v1'), issuerProductId: factSchema(idSchema), mechanism: factSchema(mechanismSchema),
   benefitPools: z.array(z.strictObject({ poolKey: idSchema,
-    amount: factSchema(z.strictObject({ value: z.string().min(1).max(120), unit: text, currency: z.string().max(20).nullable() })),
+    amount: factSchema(z.strictObject({ value: decimal, unit: text, currency: currency.nullable() })),
     cadence: factSchema(cadenceSchema), models: factSchema(z.array(text).max(100)), modalities: factSchema(z.array(text).max(30)),
     creditValidity: factSchema(z.strictObject({ kind: z.enum(['duration','absolute','no_expiry']), value: text.nullable() })),
-  })).max(40),
+  })).max(40).refine(pools => new Set(pools.map(p => p.poolKey.normalize('NFKC').trim())).size === pools.length, 'duplicate pools'),
   eligibility: factSchema(z.strictObject({ audience: z.enum(['new','old','all']), requirements: z.array(text).max(100) })),
   geography: factSchema(z.array(text).max(100)), claimChannels: factSchema(z.array(text).max(100)),
-  costs: factSchema(z.strictObject({ upfrontAmount: z.string().min(1).max(120), currency: text, subscriptionRequired: z.boolean(), autoRenewal: z.boolean().nullable() })),
+  costs: factSchema(z.strictObject({ upfrontAmount: decimal, currency, subscriptionRequired: z.boolean(), autoRenewal: z.boolean().nullable() })),
   claimWindow: factSchema(z.strictObject({ startsAt: text.nullable(), endsAt: text.nullable(), timezone: text.nullable() })),
   occurrenceAnchor: factSchema(text),
 });
@@ -64,7 +66,7 @@ export type ObservationInput = z.input<typeof observationInputSchema>;
 export const observationReceiptSchema = z.strictObject({ observationId: idSchema, documentId: idSchema, contentHash: z.string().regex(/^[a-f0-9]{64}$/), truncated: z.boolean() });
 export type ObservationReceipt = z.infer<typeof observationReceiptSchema>;
 export const quoteSchema = z.strictObject({ start: z.number().int().nonnegative(), end: z.number().int().positive(), quote: z.string().min(1).max(20000) }).refine(q => q.end > q.start, 'nonempty span required');
-export const candidateInputSchema = z.strictObject({ inputId: idSchema, span: quoteSchema, quotes: z.array(quoteSchema.safeExtend({id:idSchema})).min(1).max(100), rawCandidate: z.json().refine(v => JSON.stringify(v).length <= 50000, 'candidate too large'), facts: canonicalTermsSchema });
-export const candidateBatchInputSchema = z.strictObject({ requestId: idSchema, observationId: idSchema, extractionVersion: idSchema, extractionComplete: z.boolean(), nonBenefitEvidence: quoteSchema.optional(), leadIds: z.array(z.number().int().positive()).max(10).default([]), candidates: z.array(candidateInputSchema).max(10) }).refine(v => new Set(v.candidates.map(c => c.inputId)).size === v.candidates.length, 'inputId must be unique within a batch');
+export const candidateInputSchema = z.strictObject({ inputId: idSchema, mechanismHint: mechanismSchema.optional(), span: quoteSchema, quotes: z.array(quoteSchema.safeExtend({id:idSchema})).min(1).max(100), rawCandidate: z.json().refine(v => JSON.stringify(v).length <= 50000, 'candidate too large'), facts: canonicalTermsSchema });
+export const candidateBatchInputSchema = z.strictObject({ requestId: idSchema, observationId: idSchema, extractionVersion: idSchema, extractionComplete: z.boolean(), nonBenefitEvidence: quoteSchema.optional(), leadIds: z.array(z.number().int().positive()).max(10).default([]), candidates: z.array(candidateInputSchema).max(10) }).refine(v => new Set(v.candidates.map(c => c.inputId)).size === v.candidates.length, 'inputId must be unique within a batch').refine(v => JSON.stringify(v).length <= 1000000, 'candidate batch too large');
 export type CandidateBatchInput = z.input<typeof candidateBatchInputSchema>;
 export type CandidateInput = z.infer<typeof candidateInputSchema>;

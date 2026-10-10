@@ -20,5 +20,5 @@ it('A27 an incomplete empty batch is recorded without falsely closing a lead',as
  const receipt=await post('candidates',{requestId:'empty',observationId,extractionVersion:'v1',extractionComplete:false,leadIds:[1],candidates:[]});
  expect(receipt.status).toBe(200);
  expect(f.sqlite.prepare('SELECT status FROM leads WHERE id=1').get()).toEqual({status:'reviewing'});
- expect(f.sqlite.prepare('SELECT count(*) n FROM identity_commands').get()).toEqual({n:2});
+ expect(f.sqlite.prepare('SELECT count(*) n FROM identity_commands').get()).toEqual({n:3});
 });

@@ -21,3 +21,11 @@ it('A27 missing explicit endpoint or dry run performs no network writes',async()
  vi.stubEnv('API_BASE','https://mock.local');vi.stubEnv('DRY_RUN','1');
  expect(await captureIdentityShadow({url:'https://vendor.example',text:'',candidates:[]})).toMatchObject({recorded:0,reason:'disabled'});
 });
+it('A04 legacy structured mechanisms distinguish independent grants with shared wording',async()=>{
+ vi.stubEnv('API_BASE','https://mock.local');vi.stubEnv('DRY_RUN','0');
+ const bodies:any[]=[];
+ vi.stubGlobal('fetch',async(url:string,init:RequestInit)=>{const body=JSON.parse(String(init.body));bodies.push(body);return new Response(JSON.stringify(url.endsWith('/observations')?{observationId:'o',documentId:'d',contentHash:'a'.repeat(64),truncated:false}:{receipts:body.candidates.map((c:any)=>({inputId:c.inputId,candidateId:c.inputId,canonicalOfferId:null,entityId:null,versionId:null,decisionId:null,taskId:null,outcome:'deferred',retryable:true,reasonCodes:['shadow_pending_resolution']}))}));});
+ const text='Sign up for 10 credits and log in daily for 5 credits.';
+ await captureIdentityShadow({url:'https://vendor.example',text,candidates:[{claimMethod:'signup',evidence:{excerpts:{benefit:text}}},{claimMethod:'auto',tags:['daily'],evidence:{excerpts:{benefit:text}}}]});
+ expect(bodies[1].candidates.map((c:any)=>c.mechanismHint)).toEqual(['signup_grant','recurring_quota']);
+});

@@ -3,7 +3,7 @@ import { candidateInputSchema, observationReceiptSchema, intakeReceiptSchema, ty
 import { z } from 'zod';
 
 interface ShadowInput { url: string; text: string; sourceId?: string; leadIds?: number[]; candidates: unknown[]; extractionComplete?: boolean }
-const legacyExcerpt = z.object({evidence:z.object({excerpts:z.object({benefit:z.string().optional()})})});
+const legacyExcerpt = z.object({claimMethod:z.string().optional(),tags:z.array(z.string()).optional(),type:z.string().optional(),evidence:z.object({excerpts:z.object({benefit:z.string().optional()})})});
 // Legacy display strings do not supply canonical terms. The resolver will extract
 // supported facts later; collecting a raw candidate must not invent its scope.
 function unknownTerms(): CanonicalTermsV1 {
@@ -25,7 +25,10 @@ export async function captureIdentityShadow(input: ShadowInput): Promise<{record
     const start=input.text.indexOf(quote);
     if(start<0||start+quote.length>250000)continue;
     const span={start,end:start+quote.length,quote};
-    const candidate=candidateInputSchema.safeParse({inputId:`input-${index}`,span,quotes:[{id:'benefit',...span}],rawCandidate:raw,facts:unknownTerms()});
+    const fields=value.success?value.data:null;
+    // A retrieval hint partitions subitems; it does not assert a canonical fact.
+    const mechanismHint=fields?.tags?.includes('daily')?'recurring_quota':fields?.tags?.includes('referral')?'referral':fields?.tags?.includes('reset')?'extra_reset':fields?.claimMethod==='signup'?'signup_grant':fields?.type==='apply'?'application_grant':fields?.type==='trial'?'trial':undefined;
+    const candidate=candidateInputSchema.safeParse({inputId:`input-${index}`,mechanismHint,span,quotes:[{id:'benefit',...span}],rawCandidate:raw,facts:unknownTerms()});
     if(candidate.success)candidates.push(candidate.data);
   }
   let recorded=0;

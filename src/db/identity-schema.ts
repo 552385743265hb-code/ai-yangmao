@@ -265,3 +265,20 @@ export const identityEvents = sqliteTable('identity_events', {
   check('identity_events_check_2', sql`status IN ('pending','delivered','blocked')`),
 ]);
 
+export const intakeExtractions = sqliteTable('intake_extractions', {
+  requestId: text('request_id').primaryKey().notNull().references(() => identityCommands.requestId),
+  observationId: text('observation_id').notNull().references(() => sourceObservations.id),
+  extractionVersion: text('extraction_version').notNull(),
+  inputJson: text('input_json').notNull(),
+  state: text('state', { enum: ['received', 'deferred'] }).notNull(),
+  extractionComplete: integer('extraction_complete', { mode: 'boolean' }).notNull(),
+  nextAttemptAt: text('next_attempt_at'), lastError: text('last_error'),
+  revision: integer('revision').notNull().default(0),
+}, t => [
+  index('extractions_retry_idx').on(t.state,t.nextAttemptAt,t.requestId),
+  index('extractions_observation_idx').on(t.observationId,t.requestId),
+  check('extractions_json',sql`json_valid(input_json)`),
+  check('extractions_state',sql`state IN ('received','deferred')`),
+  check('extractions_complete',sql`extraction_complete IN (0,1)`),
+  check('extractions_revision',sql`revision>=0`),
+]);

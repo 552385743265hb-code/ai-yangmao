@@ -76,3 +76,37 @@ describe('observation and candidate shadow storage',()=>{
   expect(fixture.sqlite.prepare('SELECT count(*) n FROM intake_candidates').get()).toEqual({n:0});
  });
 });
+
+it('A04 independent mechanisms sharing one exact sentence keep both candidates',async()=>{
+ const text='Sign up for 10 credits and log in daily for 5 credits.';
+ const obs=await store.recordObservation({...observation(),text});
+ const facts=terms();facts.mechanism={state:'unknown'};
+ const shared={...candidate(),span:{start:0,end:text.length,quote:text},quotes:[{id:'quote-1',start:0,end:text.length,quote:text}],facts};
+ const results=await store.recordCandidates({requestId:'shared',observationId:obs.observationId,extractionVersion:'legacy-shadow-v1',extractionComplete:true,leadIds:[1],candidates:[{...shared,inputId:'signup',mechanismHint:'signup_grant',rawCandidate:{claimMethod:'signup'}},{...shared,inputId:'daily',mechanismHint:'recurring_quota',rawCandidate:{claimMethod:'auto',tags:['daily']}}]});
+ expect(new Set(results.map(r=>r.candidateId)).size).toBe(2);
+ expect(fixture.sqlite.prepare('SELECT count(*) n FROM intake_candidates').get()).toEqual({n:2});
+});
+it('A06 invalid normalized facts reject the batch before declaring extraction complete',async()=>{
+ const obs=await store.recordObservation(observation());
+ const invalid=candidate();invalid.facts.benefitPools[0].amount={state:'known',value:{value:'Infinity',unit:'currency',currency:'USD'},evidenceRefs:['quote-1']};
+ await expect(store.recordCandidates({requestId:'bad-facts',observationId:obs.observationId,extractionVersion:'v1',extractionComplete:true,leadIds:[1],candidates:[invalid,{...candidate('valid'),span:{start:22,end:50,quote:'Daily login grants 5 credits.'}}]})).rejects.toMatchObject({status:400});
+ expect(fixture.sqlite.prepare("SELECT count(*) n FROM identity_commands WHERE request_id='batch:bad-facts'").get()).toEqual({n:0});
+});
+it('A27 incomplete empty extraction durably retains source, leads, input and retry state',async()=>{
+ const obs=await store.recordObservation(observation());
+ await store.recordCandidates({requestId:'recover-empty',observationId:obs.observationId,extractionVersion:'v1',extractionComplete:false,leadIds:[1],candidates:[]});
+ expect(fixture.sqlite.prepare("SELECT name FROM sqlite_master WHERE name='intake_extractions'").get()).toBeDefined();
+ const row=fixture.sqlite.prepare('SELECT observation_id,extraction_version,input_json,state,next_attempt_at FROM intake_extractions').get();
+ expect(row).toMatchObject({observation_id:obs.observationId,extraction_version:'v1',state:'deferred',next_attempt_at:expect.any(String)});
+ expect(JSON.parse(String(row?.input_json))).toMatchObject({leadIds:[1],observationId:obs.observationId,candidates:[],extractionComplete:false});
+});
+it('A04 unresolved subitems sharing a span are reported as ambiguous with both raw inputs retained',async()=>{
+ const obs=await store.recordObservation(observation());
+ const first={...candidate('one'),rawCandidate:{title:'Benefit one'}};
+ const second={...candidate('two'),rawCandidate:{title:'Benefit two'}};
+ const receipts=await store.recordCandidates({requestId:'ambiguous',observationId:obs.observationId,extractionVersion:'v1',extractionComplete:true,leadIds:[1],candidates:[first,second]});
+ expect(receipts.every(r=>r.outcome==='deferred'&&r.reasonCodes.includes('ambiguous_subitems'))).toBe(true);
+ const row=fixture.sqlite.prepare("SELECT state,input_json FROM intake_extractions WHERE request_id='batch:ambiguous'").get();
+ expect(row?.state).toBe('deferred');
+ expect(JSON.parse(String(row?.input_json)).candidates.map((c:any)=>c.rawCandidate.title)).toEqual(['Benefit one','Benefit two']);
+});
