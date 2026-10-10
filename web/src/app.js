@@ -1369,9 +1369,36 @@ function bindLeadTasks(box,tasks){
     }));
   });
 }
+// Refresh only platform choices; never redraw an open editor or discard its draft.
+function adminPlatformOptions(id = '', name = '') {
+  const list = PLATFORMS.slice();
+  if (id && !list.some(p => p.id === id)) list.push({ id, name: name || id });
+  return list.sort((a, b) => a.name.localeCompare(b.name, 'zh')).map(p =>
+    `<option value="${esc(p.id)}" ${p.id === id ? 'selected' : ''}>${esc(p.name)}</option>`).join('');
+}
+let adminPlatformsRefresh = null;
+async function refreshAdminPlatforms() {
+  if (adminPlatformsRefresh) return adminPlatformsRefresh;
+  adminPlatformsRefresh = (async () => {
+    try {
+      const response = await fetch(`/api/platforms?fresh=${Date.now()}`, { cache: 'no-store', headers: { Accept: 'application/json' } });
+      if (!response.ok) throw new Error(`平台列表 ${response.status}`);
+      const data = await response.json();
+      if (!Array.isArray(data.platforms)) throw new Error('平台列表格式不正确');
+      PLATFORMS = data.platforms.map(p => ({ id: p.id, name: p.name, type: p.type, site: p.site || '', x: (p.xHandles || []).join(' · ') }));
+      PMAP = Object.fromEntries(PLATFORMS.map(p => [p.id, p]));
+      $$('#admBody select[name="platformId"]').forEach(select => {
+        const id = select.value, name = select.selectedOptions?.[0]?.textContent || id;
+        select.innerHTML = adminPlatformOptions(id, name);
+      });
+    } catch (_) { /* Keep cached choices and the current offer's explicit platform option. */ }
+  })();
+  try { await adminPlatformsRefresh; }
+  finally { adminPlatformsRefresh = null; }
+}
 async function admQueue() {
   const box = $('#admBody');
-  const q = await adm('/queue');
+  const [q] = await Promise.all([adm('/queue'), refreshAdminPlatforms()]);
   if (!box?.isConnected || ADM.tab !== 'queue') return;
   // live：已上架的条目（字段待补），只显示修改，不显示通过和拒绝
   const card = (o, live = false) => `<article class="card" data-code="${o.code}" data-offer-id="${esc(o.id)}" data-live="${live ? 1 : ''}" data-type="${esc(o.type)}" data-sug="${o.suggestion?.verdict || 'none'}" style="display:flex;flex-direction:column;gap:10px">
@@ -1413,7 +1440,7 @@ async function admQueue() {
       <label class="field">类型<select name="type">${Object.entries(TYPES).map(([k, v]) => `<option value="${k}" ${v.l === o.type ? 'selected' : ''}>${v.l}</option>`).join('')}</select></label>
       <label class="field">截止方式<select name="endKind">${[['date', '有截止日期'], ['unknown', '截止未知'], ['standing', '常驻 / 申请制']].map(([k, l]) => `<option value="${k}" ${o.endKind === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
       <label class="field">领取方式<select name="claimMethod">${Object.entries(CLAIM).map(([k, l]) => `<option value="${k}" ${o.claimMethod === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
-      <label class="field">平台<select name="platformId">${PLATFORMS.map(p => `<option value="${esc(p.id)}" ${o.platformId === p.id || (!o.platformId && o.platform === p.name) ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select></label>
+      <label class="field">平台<select name="platformId">${adminPlatformOptions(o.platformId || PLATFORMS.find(p => p.name === o.platform)?.id, o.platform)}</select></label>
       <label class="field">适用对象<select name="audience">${Object.entries(AUD).map(([k, l]) => `<option value="${k}" ${o.audience === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
       <label class="field" style="grid-column:1/-1">为什么这样改（可选，但强烈建议写）<input type="text" name="__reason" placeholder="例如：要先付费升级才送，属于充值赠送"></label>
       <div class="row review-actions" style="grid-column:1/-1;align-items:center"><button class="btn sm pri" type="submit">${live ? '保存' : o.pendingUpdate ? '保存并接受更新' : '保存并通过'}</button><span data-formmsg role="alert" class="small" style="font-weight:600"></span></div>
@@ -1493,6 +1520,9 @@ async function admQueue() {
         template.replaceWith(template.content.cloneNode(true));
         f = el.querySelector('[data-editform]');
         f.addEventListener('submit', submitEdit);
+        const platform = f.querySelector('select[name="platformId"]');
+        platform.innerHTML = adminPlatformOptions(o.platformId || PLATFORMS.find(p => p.name === o.platform)?.id, o.platform);
+        platform.addEventListener('focus', refreshAdminPlatforms);
       }
       f.hidden = !f.hidden;
     });
@@ -1618,12 +1648,14 @@ async function admLeads() {
   await load(true);
 }
 async function admManual() {
+  await refreshAdminPlatforms();
   $('#admBody').innerHTML = `<form id="admAdd" class="card" style="display:flex;flex-direction:column;gap:10px;max-width:640px"><p class="sub" style="margin:0">粘贴官网公告、公众号文章、推文或新闻链接。下一轮采集（最多 6 小时，也可以在 GitHub 手动触发）会抓取并研判，结果进待审。</p>
     <label class="field">链接<input type="url" name="url" required placeholder="https://"></label><label class="field">备注（可选）<input type="text" name="note" placeholder="比如：DeepSeek 桌面版送 6 元"></label><button class="btn pri" type="submit">补录</button></form>
     <form id="admSrc" class="card" style="display:flex;flex-direction:column;gap:10px;max-width:640px;margin-top:12px"><p class="sub" style="margin:0">补信源：给已登记的平台加一个官方页面（福利页、价格页、帮助文档、博客或 RSS），之后每轮采集都会抓它。只收发放方自己的官方页面。</p>
-    <label class="field">平台<select name="platformId" required>${PLATFORMS.slice().sort((a, b) => a.name.localeCompare(b.name, 'zh')).map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('')}</select></label><label class="field">官方链接<input type="url" name="url" required placeholder="https://"></label>
+    <label class="field">平台<select name="platformId" required>${adminPlatformOptions()}</select></label><label class="field">官方链接<input type="url" name="url" required placeholder="https://"></label>
     <label class="field">类型<select name="kind"><option value="web_list">网页</option><option value="rss">RSS</option><option value="json">官方接口</option></select></label>
     <label class="field">级别<select name="tier"><option value="site">官网页面</option><option value="docs">官方文档</option><option value="official">官方账号（博客、公众号、X）</option><option value="staff">员工账号</option></select></label><button class="btn pri" type="submit">加入信源</button></form>`;
+  $('#admSrc select[name="platformId"]').addEventListener('focus', refreshAdminPlatforms);
   $('#admSrc').addEventListener('submit', async e => { e.preventDefault(); const form = e.currentTarget; try { const r = await adm('/sources', Object.fromEntries(new FormData(form))); toast(`已加入信源 ${r.id}，下一轮采集开始抓取`); form.reset(); } catch (err) { toast(err.message); } });
   $('#admAdd').addEventListener('submit', async e => { e.preventDefault(); const form = e.currentTarget; const fd = Object.fromEntries(new FormData(form)); try { const r = await adm('/manual', { url: fd.url, note: fd.note || undefined }); toast(`已补录（线索 #${r.leadId}）`); form.reset(); } catch (err) { toast(err.message); } });
 }

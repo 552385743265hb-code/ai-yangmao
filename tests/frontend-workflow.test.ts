@@ -227,3 +227,33 @@ it('shows an actionable lead review task even when there are no pending offers',
   await pause();
   expect(writes[0]).toMatchObject({expectedVersion:'lead-version',outcome:'closed',reason:'官方只是说明传播进度'});
 });
+
+describe('admin platform catalog', () => {
+  it('refreshes the catalog before editing a newly admitted platform', async () => {
+    const calls: {url:string;init?:RequestInit}[]=[];
+    const f=fixture((url,init)=>{calls.push({url,init});return url.startsWith('/api/platforms')?{platforms:[{id:'vendor',name:'Vendor',type:'lab'},{id:'unisound',name:'云知声',type:'lab'}]}:queue([offer('new-platform',{platformId:'unisound',platform:'云知声'})]);});
+    await f.run('admQueue()');
+    f.document.querySelector('[data-act="edit"]')!.dispatchEvent(new f.window.Event('click'));
+    const option=f.document.querySelector('select[name="platformId"] option[value="unisound"]');
+    expect(option).not.toBeNull();expect(option!.hasAttribute('selected')).toBe(true);
+    expect(calls.find(x=>x.url.startsWith('/api/platforms'))?.init?.cache).toBe('no-store');
+  });
+  it('keeps the current platform selected when catalog refresh fails', async () => {
+    const f=fixture(url=>{if(url.startsWith('/api/platforms'))throw new Error('offline');return queue([offer('unknown-platform',{platformId:'unisound',platform:'云知声'})]);});
+    await f.run('admQueue()');
+    f.document.querySelector('[data-act="edit"]')!.dispatchEvent(new f.window.Event('click'));
+    expect(f.document.querySelector('select[name="platformId"] option[selected]')?.getAttribute('value')).toBe('unisound');
+  });
+  it('adds new choices to an open form without replacing its draft or selection', async () => {
+    let expanded=false;
+    const f=fixture(url=>url.startsWith('/api/platforms')?{platforms:[{id:'vendor',name:'Vendor',type:'lab'},...(expanded?[{id:'unisound',name:'云知声',type:'lab'}]:[])]}:queue([offer('editing')]));
+    await f.run('admQueue()');f.document.querySelector('[data-act="edit"]')!.dispatchEvent(new f.window.Event('click'));
+    const form=f.document.querySelector('[data-editform]')!;
+    (form.querySelector('[name="title"]') as HTMLInputElement).value='未保存草稿';
+    expanded=true;await f.run('refreshAdminPlatforms()');
+    expect(f.document.querySelector('[data-editform]')).toBe(form);
+    expect((form.querySelector('[name="title"]') as HTMLInputElement).value).toBe('未保存草稿');
+    expect(form.querySelector('select[name="platformId"] option[selected]')?.getAttribute('value')).toBe('vendor');
+    expect(form.querySelector('select[name="platformId"] option[value="unisound"]')).not.toBeNull();
+  });
+});
