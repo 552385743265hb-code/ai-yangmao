@@ -1,3 +1,4 @@
+import {retrieveManualHistory} from './manual-retrieval';
 import {findClaimMemory} from './claim-memory';
 import {matchesEntityOfferVersion,differentCanonicalEntities} from './canonical';
 import { z } from 'zod';
@@ -296,7 +297,8 @@ export class IdentityService {
   const blockKey=productId&&mechanism?productId+':'+mechanism:null;
   const blockRevision=blockKey?(await this.db.prepare('SELECT revision FROM identity_blocks WHERE block_key=?').bind(blockKey).first<{revision:number}>())?.revision??0:0;
   if(blockKey)expected.push({kind:'block',id:blockKey,revision:blockRevision});
-  const claimMemory=!control&&receipt.outcome!=='duplicate_rejected'&&!ambiguousFamily?await findClaimMemory(this.db,candidate.id,facts,evidence):{match:null,unresolved:false};
+  const claimMemory=receipt.outcome!=='duplicate_rejected'&&(control||!ambiguousFamily)?await findClaimMemory(this.db,candidate.id,facts,evidence):{match:null,unresolved:false};
+  if(control&&claimMemory.match)throw new IdentityError(409,'review the original claim refusal before resolving a different activity identity');
   if(claimMemory.match){
    const memory=claimMemory.match;receipt.decisionId=memory.decision.id;receipt.outcome=memory.reopen.allowed?'evidence_reopen':'duplicate_rejected';receipt.reasonCodes=memory.reopen.allowed?memory.reopen.reasonCodes:['existing_claim_refusal'];
    builder.require('NOT EXISTS(SELECT 1 FROM review_decisions WHERE supersedes_id=?)',[memory.decision.id]);builder.require('EXISTS(SELECT 1 FROM intake_candidates WHERE id=? AND revision=?)',[memory.proofCandidateId,memory.proofRevision]);
@@ -304,8 +306,11 @@ export class IdentityService {
    if(memory.reopen.allowed){taskKind='evidence_reopen';taskKey=reviewTaskKey({kind:'evidence_reopen',entityId:'claim:'+memory.canonicalCandidateId,refusalDecisionId:memory.decision.id,basisHash:candidate.facts_hash});}
   }
   if(claimMemory.unresolved)receipt.reasonCodes.push('claim_identity_unproven');
-  if(!claimMemory.match&&!claimMemory.unresolved&&receipt.outcome!=='duplicate_rejected'&&productId&&mechanism&&!evidence.truncated&&!candidate.last_error?.includes('invalid_evidence')&&(control||(!candidate.last_error?.includes('ambiguous_subitems')&&!ambiguousFamily))) {
-   const page=await this.store.retrieveCandidates(productId,facts);
+  if(!claimMemory.match&&(control||!claimMemory.unresolved)&&receipt.outcome!=='duplicate_rejected'&&productId&&mechanism&&!evidence.truncated&&!candidate.last_error?.includes('invalid_evidence')&&(control||(!candidate.last_error?.includes('ambiguous_subitems')&&!ambiguousFamily))) {
+   const manualHistory=control?await retrieveManualHistory(this.db,{command,payloadHash,candidateId:candidate.id,candidateRevision:candidate.revision,observationId:candidate.observation_id,taskId:control.task.id,taskRevision:control.task.revision,productId,facts,entityId:control.action==='same'?control.entityId??null:null,blockKey:blockKey!,blockRevision}):null;
+   if(manualHistory?.continued)return {...receipt,outcome:'deferred',retryable:true,taskId:control!.task.id,reasonCodes:['manual_history_continue']};
+   if(manualHistory)builder.require(manualHistory.guard.sql,manualHistory.guard.args);
+   const page=manualHistory?.page??await this.store.retrieveCandidates(productId,facts);
    decisions=page.decisions;
    const revoked=await this.db.prepare("SELECT a.id,coalesce(owner.merged_into,owner.id) entity_id FROM identity_aliases a JOIN benefit_entities owner ON owner.id=a.entity_id WHERE a.status='revoked' AND ((a.namespace='official_campaign' AND a.alias_key=? AND a.scope_key=?) OR (a.namespace='manual' AND a.alias_key=?)) AND NOT EXISTS(SELECT 1 FROM identity_aliases active WHERE active.namespace=a.namespace AND active.alias_key=a.alias_key AND active.scope_key=a.scope_key AND active.status='active') ORDER BY a.id LIMIT 40").bind(facts.occurrenceAnchor.state==='known'?facts.occurrenceAnchor.value:'',blockKey,'candidate:'+candidate.id).all<{id:string;entity_id:string}>();
    evidence.revokedEntityIds=revoked.results.map(a=>a.entity_id);
@@ -328,7 +333,7 @@ export class IdentityService {
    }));
    const matches=control?.action==='new'?[]:compared.filter(r=>r.result.relation==='SAME'&&(!control?.entityId||r.entity.id===control.entityId));
    if(control?.action==='same'&&matches.length===1&&matches[0].result.reasonCodes.includes('partial_facts'))matches[0].result={...matches[0].result,termsRelation:'EQUIVALENT',matchingVersionId:matches[0].entity.approvedVersionId};
-   if(page.complete&&matches.length===1){comparison=matches[0].result;entity=await this.entity(matches[0].entity.id);}
+   if(page.complete&&matches.length===1){comparison=matches[0].result;entity=await this.entity(matches[0].entity.id);if(!entity||entity.business_revision!==matches[0].entity.revision||entity.current_approved_version_id!==matches[0].entity.approvedVersionId)throw new IdentityError(409,'matched identity changed; retry retrieval');}
    else if(page.complete&&!matches.length&&(control?.action==='new'||compared.every(r=>r.result.relation==='DISTINCT'))) {
     const platform=await this.db.prepare('SELECT id FROM platforms WHERE id=?').bind(productId).first();
     if(platform){entity={id:crypto.randomUUID(),platform_id:productId,canonical_offer_id:null,business_revision:0,publication_revision:0,current_approved_version_id:null};builder.insert('benefit_entities',{id:entity.id,platform_id:productId});material=true;}
@@ -348,6 +353,7 @@ export class IdentityService {
    const superseded=new Set(decisions.flatMap(d=>d.supersedesId?[d.supersedesId]:[]));
    const refusals=decisions.filter(d=>!superseded.has(d.id)&&decisionApplies(d,facts,{entityId:entity!.id,versionId,candidateId:candidate.id,observationId:candidate.observation_id}));
    const sameVersionReopen=refusals.length===1?await evaluateReopen(refusals[0],facts,evidence):null;
+   if(control?.action==='new'&&refusals.length&&!sameVersionReopen?.allowed)throw new IdentityError(409,'active refusal requires explicit reopening: '+refusals.slice(0,3).map(d=>d.id).join(','));
    if(refusals.length===1&&sameVersionReopen?.allowed){taskKind='evidence_reopen';taskKey=reviewTaskKey({kind:'evidence_reopen',entityId:entity.id,refusalDecisionId:refusals[0].id,basisHash:sameVersionReopen.basisHash!});receipt.outcome='evidence_reopen';receipt.reasonCodes=sameVersionReopen.reasonCodes;}
    else if(refusals.length===1){
     receipt.outcome='duplicate_rejected';receipt.decisionId=refusals[0].id;receipt.taskId=null;receipt.reasonCodes=['existing_refusal'];builder.require('NOT EXISTS(SELECT 1 FROM review_decisions WHERE supersedes_id=?)',[refusals[0].id]);

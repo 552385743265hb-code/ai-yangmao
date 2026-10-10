@@ -73,9 +73,9 @@ export class IdentityStore {
       const entities=[...(exact&&!page.exactSeen?[view(exact)]:[]),...visible.map(view)];
       // Independent indexed streams cover entity and lead-only decisions in all states.
       const decisionRows=await Promise.all([
-        this.db.prepare("SELECT d.* FROM review_decisions d JOIN benefit_entities e ON e.id=d.entity_id WHERE e.platform_id=? AND d.id>? ORDER BY d.id LIMIT 41").bind(productId,page.decision).all<Record<string,unknown>>(),
-        this.db.prepare("SELECT d.* FROM intake_candidates c JOIN review_decisions d ON d.candidate_id=c.id WHERE json_extract(c.facts_json,'$.issuerProductId.value')=? AND d.id>? ORDER BY d.id LIMIT 41").bind(productId,page.decision).all<Record<string,unknown>>(),
-        this.db.prepare("SELECT * FROM review_decisions WHERE json_extract(scope_json,'$.productId')=? AND id>? ORDER BY id LIMIT 41").bind(productId,page.decision).all<Record<string,unknown>>(),
+        this.db.prepare("SELECT d.* FROM review_decisions d JOIN benefit_entities e ON e.id=d.entity_id WHERE e.platform_id=? AND d.id>? AND d.action='reject' AND NOT EXISTS(SELECT 1 FROM review_decisions n WHERE n.supersedes_id=d.id) ORDER BY d.id LIMIT 41").bind(productId,page.decision).all<Record<string,unknown>>(),
+        this.db.prepare("SELECT d.* FROM intake_candidates c JOIN review_decisions d ON d.candidate_id=c.id WHERE json_extract(c.facts_json,'$.issuerProductId.value')=? AND d.id>? AND d.action='reject' AND NOT EXISTS(SELECT 1 FROM review_decisions n WHERE n.supersedes_id=d.id) ORDER BY d.id LIMIT 41").bind(productId,page.decision).all<Record<string,unknown>>(),
+        this.db.prepare("SELECT d.* FROM review_decisions d WHERE json_extract(d.scope_json,'$.productId')=? AND d.id>? AND d.action='reject' AND NOT EXISTS(SELECT 1 FROM review_decisions n WHERE n.supersedes_id=d.id) ORDER BY d.id LIMIT 41").bind(productId,page.decision).all<Record<string,unknown>>(),
       ]);
       const allDecisions=[...new Map(decisionRows.flatMap(r=>r.results).map(row=>[String(row.id),row])).values()].sort((a,b)=>String(a.id)<String(b.id)?-1:1);
       const searchText=[facts.issuerProductId.state==='known'?facts.issuerProductId.value:'',...facts.benefitPools.flatMap(p=>[p.poolKey,...(p.models.state==='known'?p.models.value:[])])].join(' ');
