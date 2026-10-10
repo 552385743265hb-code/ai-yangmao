@@ -71,9 +71,9 @@ export class IdentityService {
  async revokeAlias(aliasId:string,raw:{requestId:string;expectedRevision:number;expectedEntityRevision:number;reason:string;actor:string}):Promise<{aliasId:string;decisionId:string}> {
   const input=z.strictObject({requestId:z.string().min(1).max(200),expectedRevision:z.number().int().nonnegative(),expectedEntityRevision:z.number().int().nonnegative(),reason:z.string().min(2).max(2000),actor:z.string().min(1)}).parse(raw);
   const command='alias-revoke:'+input.requestId,hash=await sha256(stableJson({aliasId,...input}));const prior=await readIdentityReceipt<{aliasId:string;decisionId:string}>(this.db,command,hash);if(prior){if(prior.status==='conflict')throw new IdentityError(409,'request payload conflict');return prior.value!;}
-  const alias=await this.db.prepare('SELECT * FROM identity_aliases WHERE id=?').bind(aliasId).first<{entity_id:string;revision:number;status:string;scope_key:string}>();
+  const alias=await this.db.prepare('SELECT * FROM identity_aliases WHERE id=?').bind(aliasId).first<{entity_id:string;revision:number;status:string;scope_key:string;namespace:'legacy_offer_id'|'official_campaign'|'manual';alias_key:string}>();
   if(!alias||alias.status!=='active'||alias.revision!==input.expectedRevision)throw new IdentityError(409,'alias changed');
-  const entity=await this.entity(alias.entity_id);if(!entity)throw new IdentityError(409,'alias entity missing');
+  const canonical=await this.store.lookupAlias(alias.namespace,alias.alias_key,alias.scope_key);const entity=canonical?await this.entity(canonical):null;if(!entity)throw new IdentityError(409,'alias entity missing');
   const builder=new MutationBuilder(this.db,command,hash),decisionId=crypto.randomUUID();
   builder.require("EXISTS(SELECT 1 FROM identity_aliases WHERE id=? AND revision=? AND status='active')",[aliasId,input.expectedRevision]);
   builder.update('identity_aliases',{status:'revoked',revision:input.expectedRevision+1},'id=?',[aliasId]);
@@ -269,7 +269,7 @@ export class IdentityService {
    const page=await this.store.retrieveCandidates(productId,facts);
    decisions=page.decisions;
    const alias=facts.occurrenceAnchor.state==='known'?await this.store.lookupAlias('official_campaign',facts.occurrenceAnchor.value,blockKey):null;
-   const revoked=await this.db.prepare("SELECT a.id,a.entity_id FROM identity_aliases a WHERE a.status='revoked' AND ((a.namespace='official_campaign' AND a.alias_key=? AND a.scope_key=?) OR (a.namespace='manual' AND a.alias_key=?)) AND NOT EXISTS(SELECT 1 FROM identity_aliases active WHERE active.namespace=a.namespace AND active.alias_key=a.alias_key AND active.scope_key=a.scope_key AND active.status='active') ORDER BY a.id LIMIT 40").bind(facts.occurrenceAnchor.state==='known'?facts.occurrenceAnchor.value:'',blockKey,'candidate:'+candidate.id).all<{id:string;entity_id:string}>();
+   const revoked=await this.db.prepare("SELECT a.id,coalesce(owner.merged_into,owner.id) entity_id FROM identity_aliases a JOIN benefit_entities owner ON owner.id=a.entity_id WHERE a.status='revoked' AND ((a.namespace='official_campaign' AND a.alias_key=? AND a.scope_key=?) OR (a.namespace='manual' AND a.alias_key=?)) AND NOT EXISTS(SELECT 1 FROM identity_aliases active WHERE active.namespace=a.namespace AND active.alias_key=a.alias_key AND active.scope_key=a.scope_key AND active.status='active') ORDER BY a.id LIMIT 40").bind(facts.occurrenceAnchor.state==='known'?facts.occurrenceAnchor.value:'',blockKey,'candidate:'+candidate.id).all<{id:string;entity_id:string}>();
    evidence.revokedEntityIds=revoked.results.map(a=>a.entity_id);
    if(revoked.results.length)taskKey='identity:revoked:'+revoked.results[0].id;
    const manualAlias=candidate.entity_id?await this.store.lookupAlias('manual','candidate:'+candidate.id,productId):null;
@@ -336,7 +336,7 @@ export class IdentityService {
    // Alias evidence is independently grounded; arbitrary model campaign IDs are never registered.
    if(!(control?.action==='new'&&control.entityId)&&facts.occurrenceAnchor.state==='known'&&evidence.sourceVerified&&!evidence.truncated&&facts.occurrenceAnchor.evidenceRefs.some(ref=>evidence.quoteById[ref]?.includes(facts.occurrenceAnchor.state==='known'?facts.occurrenceAnchor.value:''))) {
     builder.insert('identity_aliases',{id:crypto.randomUUID(),namespace:'official_campaign',alias_key:facts.occurrenceAnchor.value,scope_key:blockKey!,entity_id:entity.id,basis_json:JSON.stringify({observationId:candidate.observation_id,evidenceRefs:facts.occurrenceAnchor.evidenceRefs,rule:RESOLVER_VERSION})},'nothing');
-    builder.assert("EXISTS(SELECT 1 FROM identity_aliases WHERE namespace='official_campaign' AND alias_key=? AND scope_key=? AND entity_id=? AND status='active')",[facts.occurrenceAnchor.value,blockKey!,entity.id]);
+    builder.assert("EXISTS(SELECT 1 FROM identity_aliases a JOIN benefit_entities owner ON owner.id=a.entity_id LEFT JOIN benefit_entities root ON root.id=owner.merged_into WHERE a.namespace='official_campaign' AND a.alias_key=? AND a.scope_key=? AND a.status='active' AND ((owner.state='active' AND owner.id=?) OR (owner.state='merged' AND root.state='active' AND root.id=? AND root.platform_id=owner.platform_id)))",[facts.occurrenceAnchor.value,blockKey!,entity.id,entity.id]);
    }
    builder.insert('entity_observations',{entity_id:entity.id,candidate_id:candidate.id,relation:comparison?.termsRelation==='CHANGED'?'changed':comparison?.termsRelation==='EQUIVALENT'?'same':'evidence_only',resolver_version:RESOLVER_VERSION,reason_json:JSON.stringify(receipt.reasonCodes)},'nothing');
   } else if(receipt.outcome!=='duplicate_rejected'){receipt.outcome='needs_identity_review';receipt.entityId=null;receipt.versionId=null;receipt.reasonCodes.push('identity_unproven');}
@@ -428,7 +428,7 @@ export class IdentityService {
   const priorRefusal=await this.db.prepare("SELECT d.id FROM review_decisions d WHERE entity_id=? AND version_id=? AND action='reject' AND NOT EXISTS(SELECT 1 FROM review_decisions later WHERE later.supersedes_id=d.id) ORDER BY created_at DESC LIMIT 2").bind(entity.id,task.version_id).all<{id:string}>();
   if(priorRefusal.results.length>1)throw new IdentityError(409,'conflicting active refusals need explicit resolution');
   const policy=input.reopenPolicy??{kind:'manual' as const,missingFacts:[]};
-  const basisRows=await this.db.prepare('SELECT c.* FROM task_candidates tc JOIN intake_candidates c ON c.id=tc.candidate_id WHERE tc.task_id=? ORDER BY c.id LIMIT 10').bind(task.id).all<CandidateRow>();
+  const basisRows=await this.db.prepare("SELECT DISTINCT c.* FROM task_candidates tc JOIN intake_candidates c ON c.id=tc.candidate_id WHERE tc.task_id=?1 OR tc.task_id IN (SELECT source_task_id FROM merge_task_sources WHERE canonical_task_id=?1 AND status='active') ORDER BY c.id LIMIT 10").bind(task.id).all<CandidateRow>();
   const reviewedBasisHashes=[...(policy.reviewedBasisHashes??[])];
   if(input.action==='reject'&&policy.kind==='missing_facts')for(const basisCandidate of basisRows.results){
    const provisional=reviewDecisionSchema.parse({id:decisionId,entityId:entity.id,candidateId:basisCandidate.id,versionId:task.version_id,action:'reject',reasonCode:input.reasonCode??'other',scope:input.scope??{kind:'exact_version',entityId:entity.id,versionId:task.version_id},reopenPolicy:policy,rulesVersion:RULES_VERSION,evidenceRefs:[],actor:input.actor,baseVersionId:task.base_version_id,targetVersionId:task.version_id,idempotencyKey:command,supersedesId:null,createdAt:new Date().toISOString()});

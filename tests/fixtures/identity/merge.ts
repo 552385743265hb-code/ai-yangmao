@@ -19,3 +19,9 @@ export async function seedMerge(f:ReturnType<typeof identityDb>,count=2){
 }
 export const mergeInput=(ids:string[])=>({environment:'synthetic' as const,snapshotHash:'d'.repeat(64),sourceCodeSha:'c557eeff6a40b858ddb20090d469b7c6dca544a5',groups:[{entityIds:ids,canonicalEntityId:ids[0],canonicalReason:'已核对同次发放，保留原公开主链接',evidence:{relation:'same' as const,author:'fixture-admin',quote:'Both URLs describe the same campaign and the same terms.',sourceUrls:['https://vendor.example/campaign']}}]});
 export const mergePlan=(f:ReturnType<typeof identityDb>,ids:string[])=>buildMergePlan(f.db,mergeInput(ids));
+export async function seedSourceProposal(f:ReturnType<typeof identityDb>){
+ const facts=terms();facts.occurrenceAnchor=known('same-campaign');facts.benefitPools[0].amount=known({value:'20',unit:'currency',currency:'USD'});const display={...displayOffer('注册赠送 20 美元 API 额度'),id:'offer-1'};display.evidence.excerpts.benefit='Campaign same-campaign grants 20 USD.';
+ f.sqlite.prepare("INSERT INTO benefit_versions(id,entity_id,terms_schema,terms_hash,facts_json,display_candidate_json,state,base_version_id) VALUES('draft-source','entity-1','terms-v1',?,? ,?,'pending','version-1')").run(await hashTerms(facts),JSON.stringify(facts),JSON.stringify(display));
+ f.sqlite.exec("INSERT INTO review_tasks(id,task_key,kind,entity_id,version_id,base_version_id) VALUES('source-task','source-task','terms_change','entity-1','draft-source','version-1')");f.sqlite.prepare("INSERT INTO offer_proposals(offer_id,candidate,diff,manual_fields) VALUES('offer-1',?,'[]','[\"valueText\"]')").run(JSON.stringify(display));
+ return f.sqlite.prepare("SELECT * FROM offer_proposals WHERE offer_id='offer-1'").get();
+}

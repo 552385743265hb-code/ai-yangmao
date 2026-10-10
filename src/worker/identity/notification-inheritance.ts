@@ -25,7 +25,8 @@ export async function notificationInheritance(db:D1Database,offerIds:string[],ch
   // Only inherit publication `new`/urgent and proven lifecycle windows here.
   if(stage==='changed'){
    if(route.canonical_publication_revision!==a.canonical_publication_revision)return;
-   const source=transitions.find(t=>t.id===mark.eventId&&t.entity_id===a.source_entity_id&&t.version_id===version&&t.publication_revision===route.source_publication_revision);
+   const source=transitions.find(t=>t.id===mark.eventId&&t.entity_id===a.source_entity_id&&t.version_id===version);
+   if(source&&source.publication_revision!==route.source_publication_revision)return;
    const target=transitions.find(t=>t.entity_id===a.canonical_entity_id&&t.version_id===a.canonical_version_id&&t.publication_revision===a.canonical_publication_revision);
    if(!source?.base_version_id||!target?.base_version_id){block(canonical,'unknown_transition_mapping');return;}
    if(!routes.some(r=>r.source_entity_id===a.source_entity_id&&r.source_version_id===source.base_version_id&&r.canonical_version_id===target.base_version_id))return;

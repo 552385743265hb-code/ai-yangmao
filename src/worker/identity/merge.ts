@@ -1,3 +1,5 @@
+import {planTaskRoutes,equivalentVersion} from './task-routing';
+import {offerIn} from '../../shared/ingest';
 import {z} from 'zod';
 import {historyEnvironment,mergePlanSchema,entityManifestSchema,type MergePlan,type MergeReceipt,type RollbackReceipt,type EntityManifest,type LegacyRow} from '../../shared/identity/history-types';
 import {canonicalTermsSchema} from '../../shared/identity/types';
@@ -34,13 +36,30 @@ export class IdentityMergeService {
   const before=group.expected,after=structuredClone(before),root=after.find(m=>m.entity.id===group.canonicalEntityId)!;
   const operationId=crypto.randomUUID(),now=new Date().toISOString(),builder=new MutationBuilder(this.db,command,payloadHash);guardMergeSnapshot(builder,before);await this.invalidatePublicCache(builder);
   const entityUpdates=after.map(m=>{Object.assign(m.entity,{state:m.entity.id===group.canonicalEntityId?'active':'merged',merged_into:m.entity.id===group.canonicalEntityId?null:group.canonicalEntityId,business_revision:Number(m.entity.business_revision)+1,routing_generation:Number(m.entity.routing_generation)+1});return {id:m.entity.id,state:m.entity.state,merged_into:m.entity.merged_into,business_revision:m.entity.business_revision,routing_generation:m.entity.routing_generation};});
-  const taskUpdates:LegacyRow[]=[],taskSources:LegacyRow[]=[];
-  const rootTasks=root.tasks.filter(active);
-  for(const m of after)for(const task of m.tasks.filter(active)){
-   if(m===root){task.revision=Number(task.revision)+1;task.lease_token=null;task.lease_until=null;taskUpdates.push({id:task.id,revision:task.revision,lease_token:null,lease_until:null,state:task.state});continue;}
-   const version=m.versions.find(v=>v.id===task.version_id),rootTask=rootTasks.find(t=>t.kind===task.kind&&(version?root.versions.some(v=>v.id===t.version_id&&v.terms_hash===version.terms_hash):t.version_id===null));
-   if(!rootTask)return conflict('task_conflict','source review task has no equivalent canonical task');
-   taskSources.push({operation_id:operationId,canonical_task_id:rootTask.id,source_task_id:task.id,source_material_revision:task.material_revision,canonical_material_revision:rootTask.material_revision,status:'active'});Object.assign(task,{state:'cancelled',revision:Number(task.revision)+1,lease_token:null,lease_until:null});taskUpdates.push({id:task.id,state:task.state,revision:task.revision,lease_token:null,lease_until:null});
+  const taskUpdates:LegacyRow[]=[],taskSources:LegacyRow[]=[],newVersions:LegacyRow[]=[],newTasks:LegacyRow[]=[],newProposals:LegacyRow[]=[],newEvents:LegacyRow[]=[];
+  const routing=planTaskRoutes(before,group.canonicalEntityId);if(routing.conflicts.length)return {...empty,conflicts:routing.conflicts};const carriers=new Map<string,LegacyRow>();
+  for(const task of root.tasks.filter(active)){Object.assign(task,{revision:Number(task.revision)+1,lease_token:null,lease_until:null});taskUpdates.push({id:task.id,revision:task.revision,lease_token:null,lease_until:null,state:task.state});}
+  for(const action of routing.actions){
+   const member=after.find(m=>m.entity.id===action.sourceEntityId)!,task=member.tasks.find(t=>t.id===action.sourceTaskId)!,version=member.versions.find(v=>v.id===task.version_id)!;
+   if(action.kind!=='cancel_duplicate'){
+    let target=action.canonicalTaskId?root.tasks.find(t=>t.id===action.canonicalTaskId):action.kind==='map'?carriers.get(action.carrierSourceTaskId!):undefined;
+    if(action.kind==='carry'){
+     let targetVersion=root.versions.find(v=>equivalentVersion(v,version));
+     if(!targetVersion){targetVersion={id:crypto.randomUUID(),entity_id:root.entity.id,terms_schema:version.terms_schema,terms_hash:version.terms_hash,facts_json:version.facts_json,display_candidate_json:version.display_candidate_json,state:'pending',base_version_id:root.entity.current_approved_version_id,revision:0,created_at:now};newVersions.push(targetVersion);root.versions.push(targetVersion);}
+     target={id:crypto.randomUUID(),task_key:'merge-carried:'+root.entity.id+':'+task.id,kind:task.kind,entity_id:root.entity.id,version_id:targetVersion.id,base_version_id:root.entity.current_approved_version_id,state:'open',revision:0,material_revision:1,lease_token:null,lease_until:null,decision_id:null,created_at:task.created_at,suggestion_json:null,lease_context_json:null};
+     newTasks.push(target);root.tasks.push(target);carriers.set(action.sourceTaskId,target);
+     const reviewEvent:LegacyRow={id:crypto.randomUUID(),event_key:`review:${target.id}:1:telegram`,entity_id:root.entity.id,version_id:targetVersion.id,task_id:target.id,kind:'review',payload_json:JSON.stringify({taskId:target.id,materialRevision:1,channel:'telegram'}),status:'pending',created_at:now};newEvents.push(reviewEvent);root.events.push(reviewEvent);
+    }
+    if(!target)return conflict('task_conflict','canonical task carrier missing');
+    const proposal=member.proposals[0];if(proposal&&!root.proposals.length){
+     const display=root.versions.find(v=>v.id===target!.version_id)!.display_candidate_json;const parsed=offerIn.safeParse(JSON.parse(String(display)));if(!parsed.success)return conflict('proposal_conflict','source draft does not satisfy the offer contract');
+     const jsonFields=new Set(['modalities','models','tags','requirements','steps','evidence','valuation']);
+     const diff=Object.entries(parsed.data).filter(([key])=>!['id','platformId'].includes(key)).flatMap(([field,to])=>{const column=field.replace(/[A-Z]/g,c=>'_'+c.toLowerCase());if(!(column in root.offer!))return [];const raw=root.offer![column],from=jsonFields.has(field)&&typeof raw==='string'?JSON.parse(raw):raw;return stableJson(from)===stableJson(to)?[]:[{field,from:from??null,to}];});
+     const copy:LegacyRow={offer_id:root.offer!.id,candidate:String(display),diff:JSON.stringify(diff),manual_fields:proposal.manual_fields,detected_at:proposal.detected_at,updated_at:now};newProposals.push(copy);root.proposals.push(copy);
+    }
+    taskSources.push({operation_id:operationId,canonical_task_id:target.id,source_task_id:task.id,source_material_revision:task.material_revision,canonical_material_revision:target.material_revision,status:'active'});
+   }
+   Object.assign(task,{state:'cancelled',revision:Number(task.revision)+1,lease_token:null,lease_until:null});taskUpdates.push({id:task.id,state:task.state,revision:task.revision,lease_token:null,lease_until:null});
   }
   const mappings:LegacyRow[]=[];
   for(const m of before)for(const version of m.versions){const sourceFacts=canonicalTermsSchema.safeParse(JSON.parse(String(version.facts_json)));if(!sourceFacts.success||sourceFacts.data.occurrenceAnchor.state!=='known')continue;
@@ -49,8 +68,8 @@ export class IdentityMergeService {
   const decision=auditRow(crypto.randomUUID(),command,root.entity,this.options.actor,'merge',group.canonicalReason,operationId,now),event=eventRow(crypto.randomUUID(),root.entity,'merge',operationId,now);root.decisions.push(decision);root.events.push(event);await rehash(after);
   builder.insert('merge_plans',{plan_hash:planHash,snapshot_hash:plan.snapshotHash,plan_json:JSON.stringify(plan),approved_by:this.options.actor,status:'approved'},'nothing');
   builder.require("NOT EXISTS(SELECT 1 FROM merge_plans WHERE plan_hash=? AND plan_json<>?)",[planHash,JSON.stringify(plan)]);
-  builder.insert('merge_operations',{id:operationId,request_id:command,plan_hash:planHash,group_id:group.id,before_manifest:JSON.stringify({expected:before}),after_manifest:JSON.stringify({expected:after,taskSources,versionRoutes:mappings}),state:'applied',created_at:now});
-  builder.updateMany('benefit_entities',entityUpdates);builder.updateMany('review_tasks',taskUpdates);
+  builder.insert('merge_operations',{id:operationId,request_id:command,plan_hash:planHash,group_id:group.id,before_manifest:JSON.stringify({expected:before}),after_manifest:JSON.stringify({expected:after,taskSources,versionRoutes:mappings,created:{versions:newVersions.map(v=>v.id),tasks:newTasks.map(t=>t.id),proposals:newProposals.map(p=>p.offer_id),events:newEvents.map(e=>e.id)}}),state:'applied',created_at:now});
+  builder.updateMany('benefit_entities',entityUpdates);builder.insertMany('benefit_versions',newVersions);builder.insertMany('review_tasks',newTasks);builder.insertMany('offer_proposals',newProposals);builder.insertMany('identity_events',newEvents);builder.updateMany('review_tasks',taskUpdates);
   builder.insertMany('merge_members',before.map(m=>({operation_id:operationId,entity_id:m.entity.id,canonical_entity_id:group.canonicalEntityId,expected_revision:m.entity.business_revision,post_revision:Number(m.entity.business_revision)+1})));
   builder.insertMany('identity_version_routes',mappings);builder.insertMany('merge_task_sources',taskSources);
   builder.insert('review_decisions',decision);builder.insert('identity_events',event);
@@ -69,13 +88,17 @@ export class IdentityMergeService {
   const plan=JSON.parse(String(op.plan_json)) as MergePlan;if(plan.environment!==this.options.environment)throw new IdentityError(403,'history environment mismatch');
   const before=entityManifestSchema.array().parse(JSON.parse(String(op.before_manifest)).expected),post=entityManifestSchema.array().parse(JSON.parse(String(op.after_manifest)).expected);
   const current=await readEntityManifests(this.db,post.map(m=>String(m.entity.id)));if(stableJson(current)!==stableJson(post))return fail('new review evidence routing proposal or delivery cannot be assigned back automatically');
-  const routing=JSON.parse(String(op.after_manifest)) as {versionRoutes:LegacyRow[];taskSources:LegacyRow[]};
+  const routing=JSON.parse(String(op.after_manifest)) as {versionRoutes:LegacyRow[];taskSources:LegacyRow[];created?:{versions:string[];tasks:string[];proposals:string[];events:string[]}};
+  const created=z.object({versions:z.array(z.string()),tasks:z.array(z.string()),proposals:z.array(z.string()),events:z.array(z.string())}).parse(routing.created??{versions:[],tasks:[],proposals:[],events:[]});
   const routeRows=(await this.db.prepare('SELECT * FROM identity_version_routes WHERE operation_id=?').bind(operationId).all<LegacyRow>()).results,taskRows=(await this.db.prepare('SELECT * FROM merge_task_sources WHERE operation_id=?').bind(operationId).all<LegacyRow>()).results;
   const sorted=(rows:LegacyRow[])=>rows.map(row=>stableJson(row)).sort();if(stableJson(sorted(routeRows))!==stableJson(sorted(routing.versionRoutes))||stableJson(sorted(taskRows))!==stableJson(sorted(routing.taskSources)))return fail('version or task routing changed after merge');
   const builder=new MutationBuilder(this.db,command,payloadHash);guardMergeSnapshot(builder,current);guardRoutingSnapshot(builder,'identity_version_routes',routeRows,operationId);guardRoutingSnapshot(builder,'merge_task_sources',taskRows,operationId);await this.invalidatePublicCache(builder);builder.require("EXISTS(SELECT 1 FROM merge_operations WHERE id=? AND state='applied' AND revision=?)",[operationId,expectedRevision]);
   const updates=before.map(m=>{const now=current.find(c=>c.entity.id===m.entity.id)!.entity;return {id:m.entity.id,state:m.entity.state,merged_into:m.entity.merged_into,business_revision:Number(now.business_revision)+1,routing_generation:Number(now.routing_generation)+1};});
   builder.updateMany('benefit_entities',updates);
-  const tasks=before.flatMap(m=>m.tasks.filter(active).map(t=>{const present=current.flatMap(c=>c.tasks).find(c=>c.id===t.id)!;return {id:t.id,state:t.state,revision:Number(present.revision)+1,lease_token:null,lease_until:null};}));builder.updateMany('review_tasks',tasks);
+  const tasks=before.flatMap(m=>m.tasks.filter(active).map(t=>{const present=current.flatMap(c=>c.tasks).find(c=>c.id===t.id)!;return {id:t.id,state:t.state,revision:Number(present.revision)+1,lease_token:null,lease_until:null};}));builder.updateMany('review_tasks',[...tasks,...current.flatMap(m=>m.tasks.filter(t=>created.tasks.includes(String(t.id))).map(t=>({id:t.id,state:'cancelled',revision:Number(t.revision)+1,lease_token:null,lease_until:null})))]);
+  for(const id of created.proposals){const proposal=current.flatMap(m=>m.proposals).find(p=>p.offer_id===id)!;builder.remove('offer_proposals','offer_id=? AND candidate=? AND updated_at=?',[id,proposal.candidate,proposal.updated_at]);}
+  if(created.versions.length)builder.update('benefit_versions',{state:'superseded'},'id IN (SELECT value FROM json_each(?))',[JSON.stringify(created.versions)]);
+  if(created.events.length)builder.update('identity_events',{status:'blocked'},'id IN (SELECT value FROM json_each(?))',[JSON.stringify(created.events)]);
   builder.update('identity_version_routes',{status:'rolled_back'},'operation_id=?',[operationId]);builder.update('merge_task_sources',{status:'rolled_back'},'operation_id=?',[operationId]);builder.update('merge_operations',{state:'rolled_back',revision:expectedRevision+1},'id=?',[operationId]);builder.update('merge_plans',{status:'rolled_back'},"plan_hash=? AND NOT EXISTS(SELECT 1 FROM merge_operations WHERE plan_hash=? AND state='applied')",[String(op.plan_hash),String(op.plan_hash)]);
   const root=current.find(m=>m.entity.state==='active')!,now=new Date().toISOString();builder.insert('review_decisions',auditRow(crypto.randomUUID(),command,root.entity,this.options.actor,'rollback','Restore pre-merge routes without changing historical records',operationId,now));builder.insert('identity_events',eventRow(crypto.randomUUID(),root.entity,'rollback',operationId,now));
   const receipt:RollbackReceipt={status:'applied',operationId,beforeVersions:versions(current),afterVersions:updates.map(e=>({entityId:String(e.id),businessRevision:e.business_revision,generation:e.routing_generation})),conflicts:[]};
