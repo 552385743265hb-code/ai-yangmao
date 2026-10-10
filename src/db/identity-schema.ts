@@ -41,6 +41,7 @@ export const benefitEntities = sqliteTable('benefit_entities', {
   seriesId: text('series_id'),
   currentApprovedVersionId: text('current_approved_version_id').references((): AnySQLiteColumn => benefitVersions.id),
   state: text('state').notNull().default(sql`'active'`),
+  routingGeneration: integer('routing_generation').notNull().default(0),
   mergedInto: text('merged_into').references((): AnySQLiteColumn => benefitEntities.id),
   businessRevision: integer('business_revision').notNull().default(sql`0`),
   publicationRevision: integer('publication_revision').notNull().default(sql`0`),

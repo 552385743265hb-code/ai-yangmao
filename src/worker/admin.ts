@@ -1,3 +1,5 @@
+import {noticeIdentities,pendingIdentityNotices,identityReviewAlerts,identityGuard,deliveryIdentityGuard} from './identity/notifications';
+import {canonicalOffers,resolveCanonicalOffer} from './identity/canonical';
 import { identityAdminRoutes } from './identity/routes';
 import { IdentityService } from './identity/service';
 import { IdentityError } from './identity/store';
@@ -108,11 +110,11 @@ async function platformNames(env: Env) {
 async function findOffer(env: Env, ref: string): Promise<OfferRow | null> {
   const d = db(env);
   const [byId] = await d.select().from(s.offers).where(eq(s.offers.id, ref));
-  if (byId) return byId;
+  if (byId) {const route=await resolveCanonicalOffer(env.DB,byId.id);return route.offerId===byId.id?byId:(await d.select().from(s.offers).where(eq(s.offers.id,route.offerId)))[0]??null;}
   const all = await d.select().from(s.offers);
   const matches = all.filter(o => shortCode(o.id) === ref.toLowerCase());
   if (matches.length > 1) throw new AmbiguousShortCode(matches.map(o => o.id));
-  return matches[0] ?? null;
+  if(!matches[0])return null;const route=await resolveCanonicalOffer(env.DB,matches[0].id);return (await d.select().from(s.offers).where(eq(s.offers.id,route.offerId)))[0]??null;
 }
 
 class AmbiguousShortCode extends Error {
@@ -133,6 +135,7 @@ admin.get('/queue', async c => {
   const originals = proposals.length ? await d.select().from(s.offers).where(inArray(s.offers.id, d.select({ id: s.offerProposals.offerId }).from(s.offerProposals))) : [];
   const codeCounts = new Map<string, number>();
   for (const { id } of await d.select({ id: s.offers.id }).from(s.offers)) codeCounts.set(shortCode(id), (codeCounts.get(shortCode(id)) ?? 0) + 1);
+  const managed=new Set((await c.env.DB.prepare("SELECT e.canonical_offer_id FROM benefit_entities e WHERE EXISTS(SELECT 1 FROM review_tasks t WHERE t.entity_id=e.id AND t.state IN ('open','checking','manual'))").all<{canonical_offer_id:string}>()).results.map(r=>r.canonical_offer_id));
   const queueView = (o: OfferRow) => ({ ...view(o, names[o.platformId] ?? o.platformId, now), code: codeCounts.get(shortCode(o.id))! > 1 ? o.id : shortCode(o.id) });
   const [{ n: newLeads }] = await d.select({ n: sql<number>`count(*)` }).from(s.leads).where(eq(s.leads.status, 'new'));
   const pendingPlatforms = await d.select().from(s.platforms).where(eq(s.platforms.status, 'pending'));
@@ -145,8 +148,8 @@ admin.get('/queue', async c => {
   const incomplete = approvedRows.filter(o => checkOffer(o, now).some(i => i.level !== 'info'));
   return c.json({
     pending: [
-      ...pending.map(queueView),
-      ...proposals.flatMap(p => {
+      ...pending.filter(o=>!managed.has(o.id)).map(queueView),
+      ...proposals.filter(p=>!managed.has(p.offerId)).flatMap(p => {
         const original = originals.find(o => o.id === p.offerId);
         if (!original) return [];
         const updateDiff = proposalComparison(original, p.candidate);
@@ -198,7 +201,9 @@ admin.get('/offers/:ref', async c => {
   const [proposal] = await db(c.env).select().from(s.offerProposals).where(eq(s.offerProposals.offerId, o.id));
   const revisions = await db(c.env).select().from(s.offerRevisions).where(eq(s.offerRevisions.offerId, o.id)).orderBy(desc(s.offerRevisions.at));
   const target = proposal ? proposalOffer(o, proposal.candidate) : o;
-  return c.json({ offer: { ...view(target, names[target.platformId] ?? target.platformId), reviewVersion:proposal?.updatedAt ?? o.updatedAt, ...(proposal ? {link:`https://ai-yangmao.com/#admin-offer-${encodeURIComponent(o.id)}`, pendingUpdate: true, updateDiff: proposalComparison(o, proposal.candidate)} : {}) }, pendingUpdate: !!proposal, revisions });
+  const tasks=await c.env.DB.prepare("SELECT t.id,t.revision FROM review_tasks t JOIN benefit_entities e ON e.id=t.entity_id WHERE e.canonical_offer_id=? AND t.state IN ('open','checking','manual') AND t.kind IN ('initial','terms_change','evidence_reopen') ORDER BY t.id LIMIT 2").bind(o.id).all<{id:string;revision:number}>();
+  const task=tasks.results.length===1?tasks.results[0]:null;
+  return c.json({ offer: { ...view(target, names[target.platformId] ?? target.platformId), reviewVersion:task?`identity:${task.id}:${task.revision}`:proposal?.updatedAt ?? o.updatedAt, ...(proposal ? {link:`https://ai-yangmao.com/#admin-offer-${encodeURIComponent(o.id)}`, pendingUpdate: true, updateDiff: proposalComparison(o, proposal.candidate)} : {}) }, pendingUpdate: !!proposal, revisions });
 });
 
 /** 审核：通过 / 拒绝。原样通过会给信源的"连续原样通过"加一；拒绝清零。 */
@@ -507,14 +512,15 @@ type NoticeKind = 'digest' | 'urgent';
 const TOP = { standing: 5, rising: 3, lastcall: 3 }; // 飞书日报三个榜各推几条
 type NoticeChannel = 'telegram' | 'feishu';
 type NoticeStage = 'new' | 'changed' | 'ending' | 'ended' | 'urgent';
-type NoticeMark = { offerId: string; stage: NoticeStage; messageId?: string };
+type NoticeMark = { offerId: string; stage: NoticeStage; messageId?: string;eventId?:string;eventKey?:string;entityId?:string;versionId?:string|null;publicationRevision?:number;generation?:number };
 const FIELD_NAME: Record<string, string> = { title: '标题', type: '类型', modalities: '模态', claimMethod: '领取方式', requirements: '门槛', audience: '适用对象', valueText: '额度', usdEstimate: '价值估算', usdMax: '价值上限', models: '免费模型', tags: '标签', publishedAt: '发布时间', claimStart: '领取开始', claimEnd: '领取截止', endKind: '截止方式', creditValidity: '额度有效期', sourceTz: '官方时区', steps: '领取步骤', evidence: '官方证据' };
 const showValue = (value: unknown) => value == null ? '未写明' : Array.isArray(value) ? value.join('、') : typeof value === 'object' ? '已更新' : String(value);
 
 export async function buildNotice(env: Env, kind: NoticeKind, channel: NoticeChannel) {
   const d = db(env), names = await platformNames(env), now = new Date();
   const approvedPlatforms = new Set((await d.select({ id: s.platforms.id }).from(s.platforms).where(eq(s.platforms.status, 'approved'))).map(p => p.id));
-  const approved = (await d.select().from(s.offers).where(eq(s.offers.reviewState, 'approved'))).filter(o => approvedPlatforms.has(o.platformId));
+  const approved = (await d.select().from(s.offers).where(and(eq(s.offers.reviewState, 'approved'),canonicalOffers))).filter(o => approvedPlatforms.has(o.platformId));
+  const identities=await noticeIdentities(env.DB,approved.map(o=>o.id)),identityEvents=await pendingIdentityNotices(env.DB,channel);
   const sent = await d.select().from(s.notifications).where(eq(s.notifications.channel, channel));
   const has = (id: string, stage: string) => sent.find(n => n.offerId === id && n.stage === stage);
   const out: Record<string, (ReturnType<typeof view> & { score?: number })[]> = { new: [], changed: [], ending: [], ended: [], urgent: [], standing: [], rising: [], lastcall: [] };
@@ -524,6 +530,13 @@ export async function buildNotice(env: Env, kind: NoticeKind, channel: NoticeCha
     const st = liveStatus(o, now), v = view(o, names[o.platformId] ?? o.platformId, now), end = claimEndAt(o);
     if (kind === 'urgent') {
       if (st === 'ending' && end && end > now && end.getTime() - now.getTime() <= 48 * 3600_000 && !has(o.id, 'urgent') && !has(o.id, 'new')) { out.urgent.push(v); marks.push({ offerId: o.id, stage: 'urgent' }); }
+      continue;
+    }
+    if(identities.has(o.id)&&channel==='telegram'){
+      const event=identityEvents.find(e=>e.entity_id===identities.get(o.id)!.id);
+      if(event&&isClaimable(st)&&(event.kind==='changed'||(!has(o.id,'new')&&!has(o.id,'urgent')))){out[event.kind].push(v);marks.push({offerId:o.id,stage:event.kind,eventId:event.id,eventKey:event.event_key});}
+      if(st==='ending'&&!has(o.id,'ending')&&!has(o.id,'urgent')){out.ending.push(v);marks.push({offerId:o.id,stage:'ending'});}
+      if(st==='ended'&&!has(o.id,'ended')&&(has(o.id,'new')||has(o.id,'urgent'))){out.ended.push(v);marks.push({offerId:o.id,stage:'ended'});}
       continue;
     }
     if (!has(o.id, 'new') && !has(o.id, 'urgent') && isClaimable(st)) {
@@ -573,8 +586,8 @@ export async function buildNotice(env: Env, kind: NoticeKind, channel: NoticeCha
       ...[...rising, ...lastcall].filter(x => x.st === 'ending' && !has(x.o.id, 'ending')).map(x => ({ offerId: x.o.id, stage: 'ending' as const })),
     ].filter(mark => !blocked.has(key(mark)));
   }
-  const pendingOffers = (await d.select({ n: sql<number>`count(*)` }).from(s.offers).where(eq(s.offers.reviewState, 'pending')))[0].n;
-  const pendingProposals = (await d.select({ diff: s.offerProposals.diff }).from(s.offerProposals))
+  const pendingOffers = (await d.select({ n: sql<number>`count(*)` }).from(s.offers).where(and(eq(s.offers.reviewState, 'pending'),sql`NOT EXISTS(SELECT 1 FROM benefit_entities e WHERE e.canonical_offer_id=offers.id)`)))[0].n;
+  const pendingProposals = (await d.select({ diff: s.offerProposals.diff }).from(s.offerProposals).where(sql`NOT EXISTS(SELECT 1 FROM benefit_entities e WHERE e.canonical_offer_id=offer_proposals.offer_id)`))
     .filter(proposal => proposal.diff.some(change => isReviewField(change.field))).length;
   let pendingCount = pendingOffers + pendingProposals;
   let needsVerificationCount = 0; // 自动核验故障由健康监控处理，不要求管理员每天确认。
@@ -608,27 +621,28 @@ export async function buildNotice(env: Env, kind: NoticeKind, channel: NoticeCha
     }
   }
   // 审核提醒按对象身份去重，不能用“待审总数没增加”吞掉替换进来的新条目。
-  type ReviewAlert = { key: string; title: string; state: string; url: string; priority?: number };
+  type ReviewAlert = { key: string; title: string; state: string; url: string; priority?: number;eventId?:string;taskId?:string;materialRevision?:number };
   let reviewAlerts: ReviewAlert[] = [];
   let leadBacklog = 0;
   if (channel === 'telegram') {
     const receipts = await d.select({ payload: s.deliveries.payload }).from(s.deliveries)
       .where(and(eq(s.deliveries.channel, 'telegram'), inArray(s.deliveries.status, ['sent', 'pending', 'unknown'])));
     const announced = new Set(receipts.flatMap(r => ((r.payload as { reviewAlerts?: ReviewAlert[] }).reviewAlerts ?? []).map(a=>a.key)));
-    const awaiting = await d.select().from(s.offers).where(eq(s.offers.reviewState, 'pending')).orderBy(s.offers.discoveredAt);
+    const awaiting = await d.select().from(s.offers).where(and(eq(s.offers.reviewState, 'pending'),sql`NOT EXISTS(SELECT 1 FROM benefit_entities e WHERE e.canonical_offer_id=offers.id)`)).orderBy(s.offers.discoveredAt);
     const reviewRank = (o: OfferRow) => {
       const end = claimEndAt(o);
       if (end && end > now && end.getTime()-now.getTime() <= 48*3600_000) return 0;
       return leadPriority({id:0,origin:'aihot',title:o.title,raw:o.valueText}) <= 1 ? 1 : 2;
     };
     awaiting.sort((a,b)=>reviewRank(a)-reviewRank(b));
-    const proposals = await d.select().from(s.offerProposals);
+    const proposals = await d.select().from(s.offerProposals).where(sql`NOT EXISTS(SELECT 1 FROM benefit_entities e WHERE e.canonical_offer_id=offer_proposals.offer_id)`);
     const unresolved = await d.select().from(s.leads).where(inArray(s.leads.status,['new','reviewing']));
     leadBacklog = unresolved.length;
     reviewAlerts = [
+      ...await identityReviewAlerts(env.DB),
       ...awaiting.map(o=>({ key: o.officialReview && (o.officialReview.status === 'matched' || (o.officialReview.status!=='checking'&&!o.officialReview.nextAttemptAt)) ? `offer:${o.id}:official:${o.officialReview.jobId}` : `offer:${o.id}`, priority: reviewRank(o), title: `[${shortCode(o.id)}] ${o.title}`, state: o.officialReview?.status==='unresolved'&&!o.officialReview.nextAttemptAt?'官方复核待人工核对':'待审', url: `https://ai-yangmao.com/#admin-offer-${encodeURIComponent(o.id)}` })),
       ...proposals.filter(p=>p.diff.some(x=>isReviewField(x.field))).map(p=>({ key: `proposal:${p.offerId}:${JSON.stringify(p.diff)}`, priority: 2, title: String(p.candidate.title ?? p.offerId), state: '条款更新待审', url: `https://ai-yangmao.com/#admin-offer-${encodeURIComponent(p.offerId)}` })),
-      ...unresolved.filter(l=>leadPriority(l)<=1||l.resolution?.status==='manual').sort((a,b)=>leadPriority(a)-leadPriority(b)||b.id-a.id).map(l=>({ key: `lead:${l.id}:${l.resolution?.status==='manual'?'manual:'+l.resolution.jobId:l.status}`, priority: 1, title: `#${l.id} ${l.title ?? ''}`, state: l.status==='reviewing' ? (l.resolution?.status==='manual'?'线索待你判断':'线索正在自动复核') : '重要线索，尚未研判', url: 'https://ai-yangmao.com/#admin' })),
+      ...unresolved.filter(l=>!l.resolution?.identityTaskIds?.length&&(leadPriority(l)<=1||l.resolution?.status==='manual')).sort((a,b)=>leadPriority(a)-leadPriority(b)||b.id-a.id).map(l=>({ key: `lead:${l.id}:${l.resolution?.status==='manual'?'manual:'+l.resolution.jobId:l.status}`, priority: 1, title: `#${l.id} ${l.title ?? ''}`, state: l.status==='reviewing' ? (l.resolution?.status==='manual'?'线索待你判断':'线索正在自动复核') : '重要线索，尚未研判', url: 'https://ai-yangmao.com/#admin' })),
     ].filter(a=>!announced.has(a.key));
     // 重要线索先提醒，余下待审分批发完；单条失败不堵住其他审核提醒。
     reviewAlerts.sort((a,b)=>(a.priority ?? 2)-(b.priority ?? 2));
@@ -636,12 +650,15 @@ export async function buildNotice(env: Env, kind: NoticeKind, channel: NoticeCha
     const primary = reviewAlerts.slice(0,8);
     const selected = new Set(primary.map(a=>a.key));
     const backlog = reviewAlerts.filter(a=>!selected.has(a.key) && !a.key.startsWith('lead:')).slice(0,2);
-    reviewAlerts = [...primary,...backlog];
+    reviewAlerts = [
+      ...await identityReviewAlerts(env.DB),...primary,...backlog];
     const chosen = new Set(reviewAlerts.map(a=>a.key));
     reviewAlerts.push(...alertPool.filter(a=>!chosen.has(a.key)).slice(0,10-reviewAlerts.length));
   }
+  marks=marks.map(mark=>{const e=identities.get(mark.offerId);return e?{...mark,...identityGuard(e),eventKey:mark.eventKey??`offer:${e.id}:${e.publication_revision}:${mark.stage}:${channel}`}:mark;});
+  const itemIds=new Set(Object.values(out).flat().map(o=>o.id));const identityGuards=[...identities.values()].filter(e=>itemIds.has(e.canonical_offer_id)).map(identityGuard);
   const empty = !reviewAlerts.length && !d1Alert && !marks.length && !out.standing.length && !out.rising.length && !out.lastcall.length && (kind === 'urgent' || channel !== 'telegram' || (!pendingCount && !suggestAutoPublish.length && !needsVerificationCount && !coverageDegraded));
-  return { kind, channel, items: out, marks, moreCount, d1Alert, pendingCount, reviewAlerts, leadBacklog, suggestAutoPublish, needsVerificationCount, coverageDegraded, empty, blockedCount: blocked.size };
+  return { kind, channel, identityGuards, items: out, marks, moreCount, d1Alert, pendingCount, reviewAlerts, leadBacklog, suggestAutoPublish, needsVerificationCount, coverageDegraded, empty, blockedCount: blocked.size };
 }
 
 /** 预览是纯读取，不能仅凭获取消息就把内容记为已发送。 */
@@ -666,7 +683,7 @@ export async function claimNotice(env: Env, kind: NoticeKind, channel: NoticeCha
   const id = crypto.randomUUID();
   const created = await env.DB.prepare(`
     INSERT INTO deliveries(id,fingerprint,channel,kind,payload)
-    SELECT ?1,?2,?3,?4,?5 WHERE NOT EXISTS (
+    SELECT ?1,?2,?3,?4,?5 WHERE ${deliveryIdentityGuard} AND NOT EXISTS (
       SELECT 1 FROM deliveries prior WHERE prior.channel=?3 AND prior.status IN ('pending','unknown') AND (
         EXISTS (SELECT 1 FROM json_tree(prior.payload,'$.items') old_item, json_tree(?5,'$.items') new_item
           WHERE old_item.key='id' AND new_item.key='id' AND old_item.value=new_item.value)
@@ -682,25 +699,28 @@ admin.post('/notify/claim', async c => {
   return c.json(await claimNotice(c.env, parsed.data.kind, parsed.data.channel));
 });
 
-async function recordDeliveredMarks(env: Env, delivery: typeof s.deliveries.$inferSelect) {
-  const notice = delivery.payload as unknown as Awaited<ReturnType<typeof buildNotice>>;
-  const d = db(env), nowIso = new Date().toISOString();
-  for (const mark of notice.marks) {
-    await d.insert(s.notifications).values({ offerId: mark.offerId, stage: mark.stage, channel: delivery.channel, status: 'sent', sentAt: nowIso, messageId: mark.messageId ?? null })
-      .onConflictDoUpdate({ target: [s.notifications.offerId, s.notifications.stage, s.notifications.channel], set: { status: 'sent', sentAt: nowIso, messageId: mark.messageId ?? null } });
-  }
+async function recordDeliveryResult(env:Env,delivery:typeof s.deliveries.$inferSelect,status:'sent'|'unknown',error?:string,manual=false) {
+ const notice=delivery.payload as unknown as Awaited<ReturnType<typeof buildNotice>>,now=new Date().toISOString();
+ const eligible=manual?"status IN ('pending','unknown')":"status='pending'";
+ const gate=`EXISTS(SELECT 1 FROM deliveries WHERE id=? AND ${eligible})`,statements:D1PreparedStatement[]=[];
+ if(status==='sent'){
+  for(const mark of notice.marks??[])statements.push(env.DB.prepare(`INSERT INTO notifications(offer_id,stage,channel,status,sent_at,message_id) SELECT ?,?,?,'sent',?,? WHERE ${gate} ON CONFLICT(offer_id,stage,channel) DO UPDATE SET status='sent',sent_at=excluded.sent_at,message_id=excluded.message_id`).bind(mark.offerId,mark.stage,delivery.channel,now,mark.messageId??null,delivery.id));
+  const ids=[...(notice.marks??[]).flatMap(m=>m.eventId?[m.eventId]:[]),...(notice.reviewAlerts??[]).flatMap(a=>a.eventId?[a.eventId]:[])];
+  if(ids.length)statements.push(env.DB.prepare(`UPDATE identity_events SET status='delivered' WHERE id IN (SELECT value FROM json_each(?)) AND ${gate}`).bind(JSON.stringify(ids),delivery.id));
+ }
+ statements.push(env.DB.prepare(`UPDATE deliveries SET status=?,error=?,updated_at=? WHERE id=? AND ${eligible}`).bind(status,error??null,now,delivery.id));
+ await env.DB.batch(statements);
 }
-
-/** 回报一次发送的结果：sent 才写入通知台账；unknown 留待人工核对，不自动重发。 */
+/** Unknown delivery stays blocked until an explicit administrator resolution. */
 export async function ackDelivery(env: Env, id: string, status: 'sent' | 'unknown', error?: string): Promise<{ ok: boolean; code?: number; error?: string; alreadyAcknowledged?: boolean; status?: string }> {
-  const d = db(env);
-  const [delivery] = await d.select().from(s.deliveries).where(eq(s.deliveries.id, id));
-  if (!delivery) return { ok: false, code: 404, error: '没有这次发送' };
-  if (delivery.status === 'sent') return { ok: true, alreadyAcknowledged: true };
-  if (delivery.status === 'unknown' && status !== 'unknown') return { ok: false, code: 409, error: '结果不明的消息需要先人工核对' };
-  if (status === 'sent') await recordDeliveredMarks(env, delivery);
-  await d.update(s.deliveries).set({ status, error: error ?? null, updatedAt: new Date().toISOString() }).where(eq(s.deliveries.id, id));
-  return { ok: true, status };
+ const [delivery]=await db(env).select().from(s.deliveries).where(eq(s.deliveries.id,id));
+ if(!delivery)return {ok:false,code:404,error:'没有这次发送'};
+ if(delivery.status==='sent')return {ok:true,alreadyAcknowledged:true};
+ if(delivery.status==='unknown'&&status==='unknown')return {ok:true,alreadyAcknowledged:true,status:'unknown'};
+ if(delivery.status!=='pending')return {ok:false,code:409,error:'结果不明或已释放的消息需要先人工核对'};
+ await recordDeliveryResult(env,delivery,status,error);
+ const current=await env.DB.prepare('SELECT status FROM deliveries WHERE id=?').bind(id).first<{status:string}>();
+ return current?.status===status?{ok:true,status}:{ok:false,code:409,error:'发送状态已改变'};
 }
 admin.post('/notify/:id/ack', async c => {
   const body = z.object({ status: z.enum(['sent', 'unknown']), error: z.string().max(500).optional() }).safeParse(await c.req.json().catch(() => null));
@@ -719,8 +739,7 @@ admin.post('/notify/:id/resolve', async c => {
   if (!delivery || !['unknown', 'pending'].includes(delivery.status)) return c.json({ error: '没有需要核对的发送记录' }, 404);
   if (delivery.status === 'pending' && Date.now() - Date.parse(delivery.createdAt) < 10 * 60_000) return c.json({ error: '发送仍可能进行中，十分钟后再人工核对' }, 409);
   if (body.data.outcome === 'delivered') {
-    await recordDeliveredMarks(c.env, delivery);
-    await d.update(s.deliveries).set({ status: 'sent', error: `人工确认已送达：${body.data.reason}`, updatedAt: new Date().toISOString() }).where(eq(s.deliveries.id, delivery.id));
+    await recordDeliveryResult(c.env,delivery,'sent',`人工确认已送达：${body.data.reason}`,true);
   } else {
     await d.update(s.deliveries).set({ status: 'released', fingerprint: `${delivery.fingerprint}:released:${delivery.id}`, error: `人工确认未送达：${body.data.reason}`, updatedAt: new Date().toISOString() }).where(eq(s.deliveries.id, delivery.id));
   }

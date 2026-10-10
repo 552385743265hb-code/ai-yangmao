@@ -1140,9 +1140,18 @@ const STEPS = {
 };
 const NOTE_DRAFTS = new Map();
 const NOTE_SAVES = new Set();
+async function resolveOfferHash(id) {
+  const hash=location.hash;
+  try {const response=await fetch('/api/offers/'+encodeURIComponent(id),{headers:{Accept:'application/json'}});if(!response.ok)throw new Error('not found');const data=await response.json();if(location.hash!==hash)return;
+    if(!data.canonicalOfferId||data.canonicalOfferId===id)throw new Error('not found');
+    if(!OMAP[data.canonicalOfferId]){await loadData({fresh:true});prepare();}
+    if(location.hash!==hash)return;if(!OMAP[data.canonicalOfferId])throw new Error('not found');
+    history.replaceState(null,'','#offer-'+encodeURIComponent(data.canonicalOfferId));render(false);
+  }catch{if(location.hash===hash)main().innerHTML=ribbon()+emptySheep('没找到这条羊毛。<a href="#today">回到今天</a>');}
+}
 function pOffer(id) {
   const o = OMAP[id];
-  if (!o) { main().innerHTML = ribbon() + emptySheep('没找到这条羊毛。<a href="#today">回到今天</a>'); return; }
+  if (!o) { main().innerHTML=ribbon()+emptySheep('正在查找活动…');resolveOfferHash(id);return; }
   const st = statusOf(o), d = dims(o), sc = score(o), miss = missing(o);
   const tzName = TZ[o.tz] || o.tz, viewerTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
   let timeBlock;
@@ -1541,9 +1550,44 @@ async function refreshAdminPlatforms() {
   try { await adminPlatformsRefresh; }
   finally { adminPlatformsRefresh = null; }
 }
+const IDENTITY_KIND={initial:'新活动',terms_change:'条款变更',evidence_reopen:'补足证据',identity:'身份不明',merge_conflict:'身份冲突'};
+function identityFactsTable(previous,current){
+ const names={issuerProductId:'发放产品',mechanism:'领取机制',benefitPools:'额度与周期',eligibility:'资格',geography:'地区',claimChannels:'领取渠道',costs:'费用与续费',claimWindow:'领取窗口',occurrenceAnchor:'独立活动依据'};
+ const words={once:'单次',calendar:'自然周期',rolling:'滚动周期',daily:'每日',monthly:'每月',signup_grant:'注册赠额',recurring_quota:'周期额度',poolKey:'额度池',amount:'额度',cadence:'重置周期',models:'模型',modalities:'模态',creditValidity:'额度有效期',kind:'周期方式',unit:'单位',period:'周期',upfrontAmount:'预付金额',currency:'币种',subscriptionRequired:'需订阅',autoRenewal:'自动续费',start:'开始',end:'结束',timezone:'时区',text:'文本',day:'天',month:'月'};
+ const show=v=>{if(v==null||v.state==='unknown')return '未确认';if(v.state==='not_applicable')return '不适用';if(v.state==='known')return show(v.value);if(Array.isArray(v))return v.map(show).join('；\n');if(typeof v==='object'){if(v.unit&&v.value!==undefined)return v.value+' '+(v.currency||words[v.unit]||v.unit);return Object.entries(v).filter(([k])=>k!=='evidenceRefs').map(([k,x])=>(words[k]||k)+'：'+show(x)).join('\n');}if(typeof v==='boolean')return v?'是':'否';return words[v]||String(v);};
+ return `<div style="overflow:auto"><table class="small"><thead><tr><th>关键事实</th><th>已批准</th><th>本次待审</th></tr></thead><tbody>${Object.keys(current||{}).filter(k=>k!=='schemaVersion').map(k=>`<tr><th>${esc(names[k]||k)}</th><td style="white-space:pre-wrap">${esc(show(previous?.[k]))}</td><td style="white-space:pre-wrap">${esc(show(current[k]))}</td></tr>`).join('')}</tbody></table></div>`;
+}
+function renderIdentityTasks(box,data,append=false){
+ if(!append)box.innerHTML='<h3>活动审核</h3>'+(data.error?`<p role="alert">${esc(data.error)}，请刷新重试。</p>`:'');
+ for(const t of data.tasks||[]){
+ const card=document.createElement('article');card.className='card';card.dataset.identityTask=t.id;card.dataset.offerId=t.entity?.canonical_offer_id||'';card.style.marginBottom='14px';
+ const candidate=t.sources?.[0];
+ card.innerHTML=`<div class="row" style="justify-content:space-between"><b>${esc(t.display?.title||IDENTITY_KIND[t.kind]||'活动审核')}</b><span class="chip">${esc(IDENTITY_KIND[t.kind]||t.kind)}</span></div><p>${esc(t.display?.valueText||'先确认实际发放活动，再决定是否收录。')}</p>
+ ${identityFactsTable(t.previousFacts,t.facts||candidate?.facts)}
+ <p class="small">人工保留字段（只读）：${(t.protectedFields||[]).map(x=>esc(FIELD_L[x]||x)).join('、')||'无'}</p>
+ <details><summary>过往决定</summary>${(t.decisions||[]).map(d=>`<p>${esc(d.action)}：${esc(d.reason_text||d.reason_code)}<br><small>${esc(d.scope_json)}</small></p>`).join('')||'<p>暂无决定</p>'}</details>
+ <details open><summary>来源与原文（${t.sources?.length||0}${t.sourcesComplete===false?'＋':''}）</summary>${(t.sources||[]).map(source=>`<p><a href="${esc(source.final_url)}" target="_blank" rel="noopener">${esc(source.final_url)}</a></p>${(source.quotes||[]).map(q=>`<blockquote style="white-space:pre-wrap">${esc(q.quote)}</blockquote>`).join('')}`).join('')}${t.sourcesComplete===false?'<p>更多来源已保存；当前显示前 10 条。</p>':''}</details>
+ <label class="field">决定说明<input data-identity-reason placeholder="拒绝或身份判断时填写依据"></label>
+ ${['identity','merge_conflict'].includes(t.kind)?`<label class="field">本次处理的候选<select data-identity-candidate>${(t.sources||[]).map(c=>`<option value="${esc(c.candidateId)}">${esc(c.final_url)}</option>`).join('')}</select></label><label class="field">已核对的活动身份 ID<input data-identity-target></label>`:''}
+ <div class="row review-actions">${(['initial','terms_change','evidence_reopen'].includes(t.kind)?[['approve','预览通过'],['reject','预览拒绝']]:[['same','关联同一活动'],['new','建立独立待审活动'],['distinct','确认不同活动'],['reject','预览拒绝']]).map(([a,l])=>`<button type="button" class="btn sm" data-identity-action="${a}">${l}</button>`).join('')}</div>
+ <div data-identity-preview hidden></div><p role="status" data-identity-feedback></p>`;
+ box.append(card);
+ card.querySelectorAll('[data-identity-action]').forEach(button=>button.addEventListener('click',()=>{
+  const action=button.dataset.identityAction,reason=card.querySelector('[data-identity-reason]').value.trim(),target=card.querySelector('[data-identity-target]')?.value.trim();const feedback=card.querySelector('[data-identity-feedback]');
+  if(action!=='approve'&&reason.length<2){feedback.textContent='请先填写决定说明';return;}if(['same','distinct'].includes(action)&&!target){feedback.textContent='请填写已核对的活动身份 ID';return;}
+  const payload={action,requestId:'ui-'+Date.now()+'-'+Math.random().toString(36).slice(2),expectedRevision:t.revision,...(reason?{reason}:{}),...(action==='reject'?{reasonCode:'other'}:{}),...(['same','new','distinct'].includes(action)?{candidateId:card.querySelector('[data-identity-candidate]').value,...(target?{entityId:target}:{})}: {})};
+  // Identity resolution stores its own audit; its strict API does not accept publication reason fields.
+  if(['same','new','distinct'].includes(action))delete payload.reason;
+  const preview=card.querySelector('[data-identity-preview]');preview.hidden=false;preview.innerHTML=`<p>将按当前审核版本 ${t.revision} ${action==='approve'?'确认通过，发布本次条款':action==='reject'?'确认拒绝本次候选，保留历史决定':'确认活动身份，保留待审状态'}。</p><button class="btn sm pri" data-identity-confirm>确认${action==='approve'?'通过':action==='reject'?'拒绝':'身份判断'}</button>`;
+  preview.querySelector('button').addEventListener('click',async event=>{event.currentTarget.disabled=true;try{await adm('/identity/tasks/'+encodeURIComponent(t.id)+'/resolve',payload);feedback.textContent='决定已保存';card.querySelectorAll('button,input,select').forEach(b=>b.disabled=true);}catch(error){feedback.textContent=error.message;event.currentTarget.disabled=false;}});
+ }));
+ }
+ if(data.nextCursor){const more=document.createElement('button');more.className='btn sm';more.textContent='加载更多活动';box.append(more);more.addEventListener('click',async()=>{more.disabled=true;try{const page=await adm('/identity/tasks?cursor='+encodeURIComponent(data.nextCursor));more.remove();renderIdentityTasks(box,page,true);}catch(error){more.disabled=false;more.textContent=error.message;}});}
+}
+
 async function admQueue() {
   const box = $('#admBody');
-  const [q] = await Promise.all([adm('/queue'), refreshAdminPlatforms()]);
+  const [q,identity] = await Promise.all([adm('/queue'), adm('/identity/tasks').catch(error=>({tasks:[],error:error.message})), refreshAdminPlatforms()]);
   if (!box?.isConnected || ADM.tab !== 'queue') return;
   // live：已上架的条目（字段待补），只显示修改，不显示通过和拒绝
   const card = (o, live = false) => `<article class="card" data-code="${o.code}" data-offer-id="${esc(o.id)}" data-live="${live ? 1 : ''}" data-type="${esc(o.type)}" data-sug="${o.suggestion?.verdict || 'none'}" style="display:flex;flex-direction:column;gap:10px">
@@ -1600,8 +1644,9 @@ async function admQueue() {
     ${q.pendingPlatforms.length ? `<div class="card" style="margin-bottom:12px"><h3>新平台待准入</h3>${q.pendingPlatforms.map(p => `<div class="row" style="justify-content:space-between;padding:6px 0"><span>${esc(p.name)}（${esc(p.id)}）${p.site ? ` · <a href="${esc(p.site)}" target="_blank" rel="noopener">官网</a>` : ''}</span><span class="row"><button class="btn sm good" data-plat="${p.id}:approve">准入</button><button class="btn sm bad" data-plat="${p.id}:reject">拒绝</button></span></div>`).join('')}</div>` : ''}
     ${q.suggestAutoPublish.map(x => `<div class="card" style="margin-bottom:12px"><span class="st warn"><b>!</b>建议放开</span> 信源 ${esc(x.id)} 已连续原样通过 ${x.cleanStreak} 条 <button class="btn sm" data-autopub="${x.id}">放开自动上架</button></div>`).join('')}
     ${q.needsVerification?.length ? `<section>${secH('证据待核验', '旧版已退出当前可领；核对官方页面后才能确认结束或恢复')}${q.needsVerification.map(o => `<form class="card" data-withdraw="${esc(o.code)}" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px"><b>${esc(o.title)}</b><a href="${esc(o.evidenceUrl)}" target="_blank" rel="noopener">打开当前证据 ↗</a><label class="field">官方撤回链接<input type="url" name="evidenceUrl" value="${esc(o.evidenceUrl)}" required></label><label class="field">官方撤回说明<input name="reason" required minlength="4" placeholder="请引用官方明确撤回或停止发放的文字"></label><div class="row"><button class="btn sm good" type="button" data-retest="${esc(o.code)}">我核对过，仍有效</button><button class="btn sm bad" type="submit">核实后结束</button></div></form>`).join('')}</section>` : ''}
-    <div class="grid g2">${q.pending.map(o => card(o)).join('') || emptySheep('待审队列是空的。')}</div>
+    <div class="grid g2">${q.pending.map(o => card(o)).join('') || emptySheep(identity.tasks?.length?'其余待审条目为空。':'待审队列是空的。')}</div>
     ${q.incomplete?.length ? `<section><details data-incomplete><summary style="cursor:pointer">${secH('已上架、字段待补', `${q.incomplete.length} 条：补齐后日历、时间线、按模型找、价值统计等栏目才完整`)}</summary><div class="grid g2" data-incomplete-body></div></details></section>` : ''}`;
+  const identityBox=document.createElement('section');identityBox.dataset.identityReview='';box.prepend(identityBox);renderIdentityTasks(identityBox,identity);
   bindLeadTasks(box,q.leadTasks||[]);
   const applySug = () => $$('[data-sug]', box).forEach(el => { if (el.closest('details')) return; el.style.display = !ADM.sug || ADM.sug === 'all' || el.dataset.sug === ADM.sug ? '' : 'none'; });
   $$('[data-sugtab]', box).forEach(b => b.addEventListener('click', () => { ADM.sug = b.dataset.sugtab; $$('[data-sugtab]', box).forEach(x => x.setAttribute('aria-pressed', x === b)); applySug(); }));

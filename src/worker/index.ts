@@ -1,3 +1,4 @@
+import {canonicalOffers,resolveCanonicalOffer} from './identity/canonical';
 import { withIdentityQueryBudget,IdentityQueryBudgetError } from './identity/budget';
 import { aggregateIdentityLead } from './identity/leads';
 import { adaptLegacyOffer } from './identity/adapters';
@@ -65,7 +66,7 @@ for (const path of ['/api/offers', '/api/platforms']) app.use(path, async (c, ne
   if (c.req.method !== 'GET' || typeof caches === 'undefined') return next();
   // Schema changes must not serve a cached pre-valuation response to the new UI.
   const cacheUrl = new URL(c.req.url);
-  cacheUrl.searchParams.set('__response_schema', 'valuation-v1-apply-window');
+  cacheUrl.searchParams.set('__response_schema', 'identity-canonical-v1');
   const key = new Request(cacheUrl, { method: 'GET' });
   const hit = await caches.default.match(key);
   if (hit) return new Response(hit.body, hit);
@@ -124,7 +125,7 @@ app.get('/api/offers', async c => {
   const now = new Date();
   const d = db(c.env);
   const approvedPlatforms = new Set((await d.select({ id: s.platforms.id }).from(s.platforms).where(eq(s.platforms.status, 'approved'))).map(p => p.id));
-  const conds = [eq(s.offers.reviewState, 'approved')];
+  const conds = [eq(s.offers.reviewState, 'approved'),canonicalOffers];
   if (type) conds.push(eq(s.offers.type, type as OfferRow['type']));
   if (platform) conds.push(eq(s.offers.platformId, platform));
   let rows = (await d.select().from(s.offers).where(and(...conds))).filter(o => approvedPlatforms.has(o.platformId)).map(o => withStatus(o, now));
@@ -136,12 +137,13 @@ app.get('/api/offers', async c => {
 
 app.get('/api/offers/:id', async c => {
   const d = db(c.env);
-  const [o] = await d.select().from(s.offers).where(and(eq(s.offers.id, c.req.param('id')), eq(s.offers.reviewState, 'approved')));
+  let route;try{route=await resolveCanonicalOffer(c.env.DB,c.req.param('id'));}catch{return c.json({error:'没有这条羊毛'},404);}
+  const [o] = await d.select().from(s.offers).where(and(eq(s.offers.id, route.offerId), eq(s.offers.reviewState, 'approved'),canonicalOffers));
   if (!o) return c.json({ error: '没有这条羊毛' }, 404);
   const [platform] = await d.select().from(s.platforms).where(eq(s.platforms.id, o.platformId));
   if (platform?.status !== 'approved') return c.json({ error: '没有这条羊毛' }, 404);
   // 修订包含旧的审核文案和人工纠错，完整记录只由管理员接口提供。
-  return c.json({ offer: withStatus(o, new Date()), platform });
+  return c.json({ offer: withStatus(o, new Date()), platform,requestedOfferId:c.req.param('id'),canonicalOfferId:route.offerId });
 });
 
 app.get('/api/platforms', async c => {
@@ -154,7 +156,7 @@ app.get('/api/platforms/:id', async c => {
   const [p] = await d.select().from(s.platforms).where(and(eq(s.platforms.id, c.req.param('id')), eq(s.platforms.status, 'approved')));
   if (!p) return c.json({ error: '没有这个平台' }, 404);
   const now = new Date();
-  const rows = (await d.select().from(s.offers).where(and(eq(s.offers.platformId, p.id), eq(s.offers.reviewState, 'approved')))).map(o => withStatus(o, now));
+  const rows = (await d.select().from(s.offers).where(and(eq(s.offers.platformId, p.id), eq(s.offers.reviewState, 'approved'),canonicalOffers))).map(o => withStatus(o, now));
   return c.json({ platform: p, offers: rows });
 });
 
@@ -162,7 +164,7 @@ const xml = (value: unknown) => String(value ?? '').replace(/[&<>"']/g, char => 
 app.get('/rss.xml', async c => {
   const now = new Date();
   const approvedPlatforms = new Set((await db(c.env).select({ id: s.platforms.id }).from(s.platforms).where(eq(s.platforms.status, 'approved'))).map(p => p.id));
-  const offers = (await db(c.env).select().from(s.offers).where(eq(s.offers.reviewState, 'approved')).orderBy(desc(s.offers.discoveredAt)).limit(100))
+  const offers = (await db(c.env).select().from(s.offers).where(and(eq(s.offers.reviewState, 'approved'),canonicalOffers)).orderBy(desc(s.offers.discoveredAt)).limit(100))
     .filter(offer => approvedPlatforms.has(offer.platformId) && isClaimable(liveStatus(offer, now)));
   const items = offers.map(offer => `<item><title>${xml(offer.title)}</title><link>https://ai-yangmao.com/#offer-${xml(offer.id)}</link><guid isPermaLink="false">${xml(offer.id)}</guid><pubDate>${new Date(offer.discoveredAt).toUTCString()}</pubDate><description>${xml(`${offer.valueText}；领取证据：${offer.evidence.url}`)}</description></item>`).join('');
   return c.body(`<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>AI 羊毛牧场 · 当前可领</title><link>https://ai-yangmao.com/</link><description>经过审核且仍可领取的 AI 额度与权益</description>${items}</channel></rss>`, 200, { 'Content-Type': 'application/rss+xml; charset=utf-8', 'Cache-Control': 'public, max-age=300', 'X-Robots-Tag': 'noindex' });

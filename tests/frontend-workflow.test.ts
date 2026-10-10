@@ -536,3 +536,21 @@ describe('public all-offers freshness', () => {
     expect(f.document.querySelector('#f-p option[value="vendor"]')).not.toBeNull();
   });
 });
+
+it('A28/A29 identity task card collects sources, protects manual fields and previews a versioned decision',async()=>{
+ const writes:any[]=[];const task={id:'task-a',kind:'terms_change',revision:4,material_revision:2,entity:{canonical_offer_id:'offer-a',id:'entity-a'},display:{title:'同一活动额度更新',valueText:'20 USD'},facts:{amount:'20'},previousFacts:{amount:'10'},protectedFields:['usdEstimate'],sources:[{candidateId:'c-a',final_url:'https://vendor.example',quotes:[{quote:'Original 20 USD.'}]},{candidateId:'c-b',final_url:'https://vendor.example/faq',quotes:[{quote:'Same campaign.'}]}],sourcesComplete:true,decisions:[{action:'reject',reason_text:'旧证据不足',scope_json:'{}'}]};
+ const f=fixture((url,init)=>{if(init?.method==='POST'){writes.push(JSON.parse(String(init.body)));return {decisionId:'d'};}return url.includes('/identity/tasks')?{tasks:[task],nextCursor:null}:queue([]);});
+ await f.run('admQueue()');
+ const card=f.document.querySelector('[data-identity-task="task-a"]')!;expect(card).not.toBeNull();expect(card.textContent).toContain('Original 20 USD.');expect(card.textContent).toContain('人工保留');expect(card.textContent).toContain('旧证据不足');
+ card.querySelector('[data-identity-action="approve"]')!.dispatchEvent(new f.window.Event('click'));await pause();expect(writes).toHaveLength(0);expect(card.querySelector('[data-identity-preview]')!.textContent).toContain('确认通过');
+ card.querySelector('[data-identity-confirm]')!.dispatchEvent(new f.window.Event('click'));await pause();expect(writes[0]).toMatchObject({action:'approve',expectedRevision:4});
+});
+it('A31 old offer hashes replace the URL with the canonical public ID',async()=>{
+ const f=fixture(url=>({canonicalOfferId:'public-offer',requestedOfferId:'old',offer:{id:'public-offer'}}));publicOffer(f.run);const changed:string[]=[];
+ (f.context as any).history={replaceState:(_a:any,_b:any,url:string)=>{changed.push(url);(f.context as any).location.hash=url;}};
+ f.run("location.hash='#offer-old';pOffer('old')");await pause();expect(changed).toEqual(['#offer-public-offer']);
+});
+it('A28 review facts use readable values without internal citation keys',()=>{
+ const f=fixture(()=>queue([]));const html=f.run(`identityFactsTable(null,{benefitPools:[{poolKey:'api',amount:{state:'known',value:{value:'10',unit:'currency',currency:'USD'},evidenceRefs:['private-quote-key']},cadence:{state:'known',value:{kind:'once'},evidenceRefs:['private-quote-key']}}]})`);
+ expect(html).toContain('10 USD');expect(html).toContain('单次');expect(html).not.toContain('private-quote-key');
+});

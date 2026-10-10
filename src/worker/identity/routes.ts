@@ -54,7 +54,7 @@ identityAdminRoutes.onError((error,c)=>{
  return c.json({error:'identity operation unavailable',retryable:true},503);
 });
 identityAdminRoutes.get('/tasks',async c=>{
- const query=z.object({cursor:z.string().max(200).optional(),limit:z.coerce.number().int().min(1).max(8).default(5)}).safeParse(c.req.query());
+ const query=z.object({cursor:z.string().max(200).optional(),limit:z.coerce.number().int().min(1).max(5).default(5)}).safeParse(c.req.query());
  if(!query.success)return c.json({error:'invalid task cursor'},400);
  const rows=await c.env.DB.prepare("SELECT * FROM review_tasks WHERE state IN ('open','checking','manual') AND id>? ORDER BY id LIMIT ?").bind(query.data.cursor??'',query.data.limit+1).all<Record<string,unknown>>();
  const tasks=[];
@@ -63,8 +63,9 @@ identityAdminRoutes.get('/tasks',async c=>{
   const version=task.version_id?await c.env.DB.prepare('SELECT facts_json,display_candidate_json FROM benefit_versions WHERE id=? AND entity_id=?').bind(task.version_id,task.entity_id).first<Record<string,unknown>>():null;
   const entity=task.entity_id?await c.env.DB.prepare('SELECT id,canonical_offer_id,current_approved_version_id,business_revision,publication_revision FROM benefit_entities WHERE id=?').bind(task.entity_id).first<Record<string,unknown>>():null;
   const previous=entity?.current_approved_version_id?await c.env.DB.prepare('SELECT facts_json FROM benefit_versions WHERE id=? AND entity_id=?').bind(entity.current_approved_version_id,entity.id).first<{facts_json:string}>():null;
-  const decisions=task.entity_id?await c.env.DB.prepare('SELECT id,action,reason_code,scope_json,reopen_policy_json,actor,created_at FROM review_decisions WHERE entity_id=? ORDER BY created_at DESC LIMIT 10').bind(task.entity_id).all():{results:[]};
-  tasks.push({...task,entity,previousFacts:previous?JSON.parse(previous.facts_json):null,facts:version?JSON.parse(String(version.facts_json)):null,display:version?JSON.parse(String(version.display_candidate_json)):null,sources:sources.results.slice(0,10).map(row=>({...row,facts:JSON.parse(String(row.facts_json)),raw:JSON.parse(String(row.raw_candidate_json))})),sourcesComplete:sources.results.length<=10,decisions:decisions.results,reviewVersion:`identity:${task.id}:${task.revision}`});
+  const decisions=task.entity_id?await c.env.DB.prepare('SELECT id,action,reason_code,reason_text,scope_json,reopen_policy_json,actor,created_at FROM review_decisions WHERE entity_id=? ORDER BY created_at DESC LIMIT 10').bind(task.entity_id).all():{results:[]};
+  const proposal=entity?.canonical_offer_id?await c.env.DB.prepare('SELECT manual_fields FROM offer_proposals WHERE offer_id=?').bind(entity.canonical_offer_id).first<{manual_fields:string}>():null;
+  tasks.push({...task,protectedFields:proposal?JSON.parse(proposal.manual_fields):[],entity,previousFacts:previous?JSON.parse(previous.facts_json):null,facts:version?JSON.parse(String(version.facts_json)):null,display:version?JSON.parse(String(version.display_candidate_json)):null,sources:sources.results.slice(0,10).map(row=>({...row,facts:JSON.parse(String(row.facts_json)),quotes:JSON.parse(String(row.raw_candidate_json)).quotes??[]})),sourcesComplete:sources.results.length<=10,decisions:decisions.results,reviewVersion:`identity:${task.id}:${task.revision}`});
  }
  return c.json({tasks,nextCursor:rows.results.length>query.data.limit?String(rows.results[query.data.limit-1]?.id):null});
 });
