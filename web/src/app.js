@@ -1706,7 +1706,7 @@ async function admQueue() {
       if (!rc && !reason) { toast('选一个理由或写一句说明，模型才能从这次拒绝里学到东西'); return; }
       try {
         // 已上架的卡片：下架（对已上架条目调用 reject 只会丢弃更新提案，不会撤下）
-        if (live) { if (!reason) { toast('写一句下架理由'); return; } const r = await adm(`/offers/${code}/unpublish`, { reason, reasonCode: rc || 'other',expectedReviewVersion:o?.reviewVersion }); done(el, `已下架：${r.title}`); return; }
+        if (live) { if (!reason) { toast('写一句下架理由'); return; } const r = await adm(`/offers/${code}/unpublish`, { reason, reasonCode: rc || 'other',expectedReviewVersion:o?.visibilityVersion??o?.reviewVersion }); done(el, `已下架：${r.title}`); return; }
         const r = await adm(`/offers/${code}/reject`, { expectedReviewVersion:o?.reviewVersion, reason: reason || undefined, reasonCode: rc || 'other' }); done(el, o?.pendingUpdate ? `已拒绝更新，保留已上架内容：${r.title}` : `已拒绝收录：${r.title}`);
       } catch (e) { toast(e.message); }
     });
@@ -1779,7 +1779,7 @@ async function admQueue() {
   $$('[data-plat]', box).forEach(b => b.addEventListener('click', async () => { const [id, act] = b.dataset.plat.split(':'); await adm(`/platforms/${id}/${act}`, {}); toast('已处理'); admQueue(); }));
   $$('[data-autopub]', box).forEach(b => b.addEventListener('click', async () => { await adm(`/sources/${b.dataset.autopub}/auto-publish`, { on: true }); toast('已放开自动上架'); admQueue(); }));
   $$('[data-retest]', box).forEach(b => b.addEventListener('click', async () => { try { await adm(`/offers/${b.dataset.retest}/retested`, {}); toast('已记录：管理员核对仍有效'); admQueue(); } catch (err) { toast(err.message); } }));
-  $$('[data-withdraw]', box).forEach(form => form.addEventListener('submit', async e => { e.preventDefault(); const values = Object.fromEntries(new FormData(form)); try { await adm(`/offers/${form.dataset.withdraw}/withdraw`, {...values,expectedReviewVersion:q.needsVerification?.find(o=>o.code===form.dataset.withdraw)?.reviewVersion}); toast('已记录官方撤回并结束活动'); admQueue(); } catch (err) { toast(err.message); } }));
+  $$('[data-withdraw]', box).forEach(form => form.addEventListener('submit', async e => { e.preventDefault(); const values = Object.fromEntries(new FormData(form)); try { await adm(`/offers/${form.dataset.withdraw}/withdraw`, {...values,expectedReviewVersion:q.needsVerification?.find(o=>o.code===form.dataset.withdraw)?.visibilityVersion??q.needsVerification?.find(o=>o.code===form.dataset.withdraw)?.reviewVersion}); toast('已记录官方撤回并结束活动'); admQueue(); } catch (err) { toast(err.message); } }));
 }
 async function admQuality() {
   const q = await adm('/quality?days=30');

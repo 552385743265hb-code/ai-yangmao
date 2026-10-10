@@ -42,7 +42,7 @@ const endText = (o: OfferRow) => (o.endKind === 'date' && o.claimEnd ? `${md(o.c
 
 function view(o: OfferRow, platformName: string, now = new Date()) {
   return {
-    reviewVersion: o.updatedAt, code: shortCode(o.id), id: o.id, platformId: o.platformId, platform: platformName, title: o.title, type: TYPE_L[o.type] ?? o.type,
+    reviewVersion: o.updatedAt, visibilityVersion:o.updatedAt, code: shortCode(o.id), id: o.id, platformId: o.platformId, platform: platformName, title: o.title, type: TYPE_L[o.type] ?? o.type,
     value: o.valueText, usd: o.usdEstimate, end: endText(o), status: liveStatus(o, now), reviewState: o.reviewState,
     requirements: o.requirements, audience: o.audience, claimMethod: o.claimMethod, creditValidity: o.creditValidity,
     sourceTz: o.sourceTz, claimStart: o.claimStart, claimEnd: o.claimEnd, endKind: o.endKind,
@@ -140,7 +140,7 @@ admin.get('/queue', async c => {
   const entityRows=(await c.env.DB.prepare("SELECT e.id,e.canonical_offer_id,e.business_revision,e.state,EXISTS(SELECT 1 FROM review_tasks t WHERE t.entity_id=e.id AND t.state IN ('open','checking','manual')) active_task FROM benefit_entities e WHERE e.canonical_offer_id IS NOT NULL").all<{id:string;canonical_offer_id:string;business_revision:number;state:string;active_task:number}>()).results;
   const managed=new Set(entityRows.filter(e=>e.state==='merged'||e.active_task).map(e=>e.canonical_offer_id));
   const entityByOffer=new Map(entityRows.map(e=>[e.canonical_offer_id,e]));
-  const queueView = (o: OfferRow) => ({ ...view(o, names[o.platformId] ?? o.platformId, now),...(entityByOffer.has(o.id)?{reviewVersion:entityOfferVersion(entityByOffer.get(o.id)!,o.updatedAt)}:{}), code: codeCounts.get(shortCode(o.id))! > 1 ? o.id : shortCode(o.id) });
+  const queueView = (o: OfferRow) => ({ ...view(o, names[o.platformId] ?? o.platformId, now),...(entityByOffer.has(o.id)?{reviewVersion:entityOfferVersion(entityByOffer.get(o.id)!,o.updatedAt),visibilityVersion:entityOfferVersion(entityByOffer.get(o.id)!,o.updatedAt)}:{}), code: codeCounts.get(shortCode(o.id))! > 1 ? o.id : shortCode(o.id) });
   const [{ n: newLeads }] = await d.select({ n: sql<number>`count(*)` }).from(s.leads).where(eq(s.leads.status, 'new'));
   const pendingPlatforms = await d.select().from(s.platforms).where(eq(s.platforms.status, 'pending'));
   const suggest = (await d.select().from(s.sources).where(and(gte(s.sources.cleanStreak, 5), eq(s.sources.autoPublish, false))))
@@ -181,7 +181,7 @@ admin.post('/offers/:ref/withdraw', async c => {
     const version=c.req.header('If-Match')??body.data.expectedReviewVersion;if(!version)return c.json({error:'请携带当前活动版本 If-Match'},409);
     const reason=(body.data.basis==='tested'?'管理员实测停止领取：':'')+body.data.reason;
     const requestId=await sha256(stableJson({offerId:o.id,action:'withdraw',version,body:body.data,actor:c.get('who')}));
-    return c.json({ok:true,status:'ended',...await new IdentityService(c.env.DB).setVisibility(o.id,{requestId,expectedOfferVersion:version,action:'withdraw',reason,actor:c.get('who')})});
+    return c.json({ok:true,status:'ended',...await new IdentityService(c.env.DB).setVisibility(o.id,{requestId,expectedOfferVersion:version,action:'withdraw',reason,evidenceUrl:body.data.evidenceUrl,basis:body.data.basis,actor:c.get('who')})});
   }
   const nowIso = new Date().toISOString();
   const previousEvidence = o.evidence;
@@ -208,7 +208,7 @@ admin.get('/offers/:ref', async c => {
   const tasks=await c.env.DB.prepare("SELECT t.id,t.revision FROM review_tasks t JOIN benefit_entities e ON e.id=t.entity_id WHERE e.canonical_offer_id=? AND t.state IN ('open','checking','manual') AND t.kind IN ('initial','terms_change','evidence_reopen') ORDER BY t.id LIMIT 2").bind(o.id).all<{id:string;revision:number}>();
   const task=tasks.results.length===1?tasks.results[0]:null;
   const entity=await c.env.DB.prepare('SELECT id,business_revision FROM benefit_entities WHERE canonical_offer_id=?').bind(o.id).first<{id:string;business_revision:number}>();
-  return c.json({ offer: { ...view(target, names[target.platformId] ?? target.platformId), reviewVersion:task?`identity:${task.id}:${task.revision}`:entity?entityOfferVersion(entity,o.updatedAt):proposal?.updatedAt ?? o.updatedAt, ...(proposal ? {link:`https://ai-yangmao.com/#admin-offer-${encodeURIComponent(o.id)}`, pendingUpdate: true, updateDiff: proposalComparison(o, proposal.candidate)} : {}) }, pendingUpdate: !!proposal, revisions });
+  return c.json({ offer: { ...view(target, names[target.platformId] ?? target.platformId), visibilityVersion:entity?entityOfferVersion(entity,o.updatedAt):o.updatedAt,reviewVersion:task?`identity:${task.id}:${task.revision}`:entity?entityOfferVersion(entity,o.updatedAt):proposal?.updatedAt ?? o.updatedAt, ...(proposal ? {link:`https://ai-yangmao.com/#admin-offer-${encodeURIComponent(o.id)}`, pendingUpdate: true, updateDiff: proposalComparison(o, proposal.candidate)} : {}) }, pendingUpdate: !!proposal, revisions });
 });
 
 /** 审核：通过 / 拒绝。原样通过会给信源的"连续原样通过"加一；拒绝清零。 */
@@ -389,7 +389,6 @@ admin.post('/offers/:ref/memo', async c => {
 admin.post('/offers/:ref/unpublish', async c => {
   const o = await findOffer(c.env, c.req.param('ref'));
   if (!o) return c.json({ error: '找不到这条羊毛' }, 404);
-  if (o.reviewState !== 'approved') return c.json({ error: '这条目前没有上架' }, 409);
   const body = z.object({ reasonCode: z.string().max(40).default('other'), reason: z.string().min(2).max(500),expectedReviewVersion:z.string().optional() }).safeParse(await c.req.json().catch(() => null));
   if (!body.success) return c.json({ error: '请写明下架理由' }, 400);
   if(await c.env.DB.prepare('SELECT id FROM benefit_entities WHERE canonical_offer_id=?').bind(o.id).first()){
@@ -397,6 +396,7 @@ admin.post('/offers/:ref/unpublish', async c => {
     const requestId=await sha256(stableJson({offerId:o.id,action:'unpublish',version,body:body.data,actor:c.get('who')}));
     return c.json({ok:true,title:o.title,code:shortCode(o.id),...await new IdentityService(c.env.DB).setVisibility(o.id,{requestId,expectedOfferVersion:version,action:'unpublish',reason:body.data.reason,reasonCode:body.data.reasonCode,actor:c.get('who')})});
   }
+  if (o.reviewState !== 'approved') return c.json({ error: '这条目前没有上架' }, 409);
   const d = db(c.env);
   await d.delete(s.offerProposals).where(eq(s.offerProposals.offerId, o.id));
   await d.update(s.offers).set({ reviewState: 'rejected', updatedAt: new Date().toISOString() }).where(eq(s.offers.id, o.id));

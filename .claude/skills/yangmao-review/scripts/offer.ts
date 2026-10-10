@@ -8,7 +8,7 @@
 //   approve <短码或ID> --version <reviewVersion> [--dry-run]
 //   reject <短码或ID> --version <reviewVersion> --code <理由代码> --reason "理由" [--dry-run]
 //   retest <短码或ID> [--dry-run]                管理员核对仍有效（更新核验时间）
-//   unpublish <短码或ID> --code <代码> --reason "理由"   把已上架但不该收的条目撤下（仅管理员）
+//   unpublish <短码或ID> --version <visibilityVersion> --code <代码> --reason "理由"   把已上架但不该收的条目撤下（仅管理员）
 //   suggest <短码或ID> approve|history|reject|judge|clear [--code 理由代码] --reason "理由"   给审批卡片标审核建议（不改状态）
 // 管理员密钥从 .prod.secrets 读取，不会打印。写入命令加 --dry-run 只打印请求内容。
 import { readFileSync, existsSync } from 'node:fs';
@@ -24,7 +24,7 @@ const positional = args.filter((a, i) => !a.startsWith('--') && !(i > 0 && ['--r
 const DRY = flag('--dry-run');
 function reviewedVersion(): string {
   const version = opt('--version');
-  if (!version || version.startsWith('--')) throw new Error('edit/approve/reject 必须传 --version <show 中已审核的 reviewVersion>；版本变化后重新核对差异，不要原样重放');
+  if (!version || version.startsWith('--')) throw new Error('edit/approve/reject/unpublish 必须传 --version <show 中已核对的版本；下架用 visibilityVersion>；版本变化后重新核对差异，不要原样重放');
   return version;
 }
 
@@ -124,6 +124,7 @@ async function main() {
     const { offer: v, revisions, pendingUpdate } = await call<{ offer: View; revisions: { at: string; author?: string; diff: { field: string }[] }[]; pendingUpdate: boolean }>(`/offers/${encodeURIComponent(ref)}`);
     const r = raw(v);
     console.log(`reviewVersion：${v.reviewVersion}`);
+    if(v.visibilityVersion)console.log(`visibilityVersion（下架）：${v.visibilityVersion}`);
     if (pendingUpdate) console.log('注意：下列字段是候选；批准基线差异（from → to）：\n' + JSON.stringify(v.updateDiff ?? [], null, 2));
     console.log(`# [${v.code}] ${v.title}\nID：${v.id}｜平台：${v.platform}（${v.platformId}）｜审核：${v.reviewState}｜状态：${v.status}${pendingUpdate ? '｜有条款更新待审' : ''}`);
     for (const k of ['type', 'valueText', 'usdEstimate', 'usdMax', 'claimMethod', 'requirements', 'audience', 'claimStart', 'claimEnd', 'endKind', 'sourceTz', 'creditValidity', 'modalities', 'models', 'tags', 'publishedAt', 'steps']) console.log(`- ${k}：${JSON.stringify(r[k])}`);
@@ -166,8 +167,9 @@ async function main() {
     return;
   }
   if (cmd === 'unpublish') {
+    const version=reviewedVersion();
     const reason = opt('--reason'); if (!reason) throw new Error('unpublish <短码> --code <理由代码> --reason "理由"');
-    await write(`/offers/${encodeURIComponent(ref)}/unpublish`, { reasonCode: opt('--code') ?? 'other', reason });
+    await write(`/offers/${encodeURIComponent(ref)}/unpublish`, { reasonCode: opt('--code') ?? 'other', reason,expectedReviewVersion:version });
     return;
   }
   if (cmd === 'suggest') {
