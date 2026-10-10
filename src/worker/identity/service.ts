@@ -4,7 +4,7 @@ import { eq } from 'drizzle-orm';
 import * as tables from '../../db/schema';
 import { offerIn,type OfferIn } from '../../shared/ingest';
 import { publicationError } from '../publication';
-import { canonicalTermsSchema,decisionScopeSchema,reopenPolicySchema,intakeReceiptSchema,reviewDecisionSchema,type IntakeReceipt,type CanonicalTermsV1,type ResolutionResult,type EvidenceContext } from '../../shared/identity/types';
+import { canonicalTermsSchema,resolutionResultSchema,decisionScopeSchema,reopenPolicySchema,intakeReceiptSchema,reviewDecisionSchema,type IntakeReceipt,type CanonicalTermsV1,type ResolutionResult,type EvidenceContext } from '../../shared/identity/types';
 import { compareCandidate,RESOLVER_VERSION,RULES_VERSION } from '../../shared/identity/compare';
 import { decisionApplies,evaluateReopen,reviewTaskKey } from '../../shared/identity/decision-policy';
 import { hashTerms,sha256,stableJson } from '../../shared/identity/normalize';
@@ -41,9 +41,35 @@ export class IdentityService {
  }
  private async commit<T>(builder:MutationBuilder,expected:ExpectedRevision[],receipt:T):Promise<T>{const result=await commitIdentityMutation(this.db,builder.plan(expected,receipt));if(result.status==='conflict'||result.value===null)throw new IdentityError(409,'identity revisions changed; retry retrieval');return result.value;}
 
- async applyResolution(candidateId:string,_suggestion:ResolutionResult,requestId:string):Promise<IntakeReceipt>{return this.resolveCandidate(candidateId,requestId);}
- async resolveCandidate(candidateId:string,requestId:string):Promise<IntakeReceipt> {
-  const payloadHash=await sha256(stableJson({candidateId})),command='resolve:'+requestId;
+ async claimTask(taskId:string,raw:{requestId:string;expectedRevision:number}):Promise<{leaseToken:string;revision:number;leaseUntil:string}> {
+  const input=z.strictObject({requestId:z.string().min(1).max(200),expectedRevision:z.number().int().nonnegative()}).parse(raw);
+  const hash=await sha256(stableJson({taskId,...input})),command='task-claim:'+input.requestId;
+  const prior=await readIdentityReceipt<{leaseToken:string;revision:number;leaseUntil:string}>(this.db,command,hash);if(prior){if(prior.status==='conflict')throw new IdentityError(409,'request payload conflict');return prior.value!;}
+  const now=new Date().toISOString(),leaseToken=crypto.randomUUID(),leaseUntil=new Date(Date.now()+20*60_000).toISOString();
+  const builder=new MutationBuilder(this.db,command,hash);
+  builder.require("EXISTS(SELECT 1 FROM review_tasks WHERE id=? AND state IN ('open','manual','checking') AND (lease_until IS NULL OR lease_until<?))",[taskId,now]);
+  builder.update('review_tasks',{state:'checking',revision:input.expectedRevision+1,lease_token:leaseToken,lease_until:leaseUntil},'id=?',[taskId]);
+  builder.assert('EXISTS(SELECT 1 FROM review_tasks WHERE id=? AND lease_token=?)',[taskId,leaseToken]);
+  return this.commit(builder,[{kind:'task',id:taskId,revision:input.expectedRevision}],{leaseToken,revision:input.expectedRevision+1,leaseUntil});
+ }
+ async submitTaskSuggestion(taskId:string,raw:{requestId:string;expectedRevision:number;leaseToken:string;result:ResolutionResult}):Promise<{taskId:string;revision:number;state:string}> {
+  const input=z.strictObject({requestId:z.string().min(1).max(200),expectedRevision:z.number().int().nonnegative(),leaseToken:z.string().uuid(),result:resolutionResultSchema}).parse(raw);
+  const hash=await sha256(stableJson({taskId,...input})),command='task-result:'+input.requestId;
+  const prior=await readIdentityReceipt<{taskId:string;revision:number;state:string}>(this.db,command,hash);if(prior){if(prior.status==='conflict')throw new IdentityError(409,'request payload conflict');return prior.value!;}
+  const task=await this.db.prepare('SELECT * FROM review_tasks WHERE id=?').bind(taskId).first<TaskRow>();
+  if(!task||task.revision!==input.expectedRevision)throw new IdentityError(409,'task changed');
+  // Ingest workers may add a suggestion, never approve, invent an alias or merge.
+  if(input.result.entityId&&!await this.entity(input.result.entityId))throw new IdentityError(400,'unknown suggested entity');
+  const builder=new MutationBuilder(this.db,command,hash);
+  builder.require("EXISTS(SELECT 1 FROM review_tasks WHERE id=? AND state='checking' AND lease_token=? AND lease_until>=?)",[taskId,input.leaseToken,new Date().toISOString()]);
+  builder.update('review_tasks',{state:'manual',revision:input.expectedRevision+1,lease_token:null,lease_until:null,suggestion_json:JSON.stringify(input.result)},'id=?',[taskId]);
+  builder.assert("EXISTS(SELECT 1 FROM review_tasks WHERE id=? AND state='manual' AND revision=?)",[taskId,input.expectedRevision+1]);
+  return this.commit(builder,[{kind:'task',id:taskId,revision:input.expectedRevision}],{taskId,revision:input.expectedRevision+1,state:'manual'});
+ }
+
+ async applyResolution(candidateId:string,suggestion:ResolutionResult,requestId:string):Promise<IntakeReceipt>{resolutionResultSchema.parse(suggestion);return this.resolveCandidate(candidateId,requestId,suggestion);}
+ async resolveCandidate(candidateId:string,requestId:string,suggestion?:ResolutionResult):Promise<IntakeReceipt> {
+  const payloadHash=await sha256(stableJson({candidateId,suggestion:suggestion??null})),command='resolve:'+requestId;
   const previous=await readIdentityReceipt<IntakeReceipt>(this.db,command,payloadHash);
   if(previous){if(previous.status==='conflict')throw new IdentityError(409,'request payload conflict');return intakeReceiptSchema.parse(previous.value);}
   const candidate=await this.db.prepare('SELECT * FROM intake_candidates WHERE id=?').bind(candidateId).first<CandidateRow>();

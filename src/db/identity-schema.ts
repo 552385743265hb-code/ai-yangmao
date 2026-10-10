@@ -177,6 +177,7 @@ export const reviewDecisions = sqliteTable('review_decisions', {
 ]);
 
 export const reviewTasks = sqliteTable('review_tasks', {
+  suggestionJson: text('suggestion_json'),
   id: text('id').primaryKey().notNull(),
   taskKey: text('task_key').notNull(),
   kind: text('kind').notNull(),

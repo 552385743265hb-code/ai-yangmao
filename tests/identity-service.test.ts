@@ -104,3 +104,20 @@ it('A14 different proposals remain visible as a conflict instead of replacing th
  expect(JSON.parse(String(f.sqlite.prepare('SELECT candidate FROM offer_proposals').get()?.candidate)).valueText).toBe('注册赠送 20 美元 API 额度');
  expect(f.sqlite.prepare("SELECT count(*) n FROM review_tasks WHERE kind='merge_conflict'").get()).toEqual({n:1});
 });
+it('A29 task lease tokens expire and cannot overwrite a later human decision',async()=>{
+ const a=await service.resolveCandidate(await intake('a'),'a');
+ const lease=await service.claimTask(a.taskId!,{requestId:'claim',expectedRevision:0});
+ expect(lease).toMatchObject({revision:1,leaseToken:expect.any(String)});
+ await service.decideTask(a.taskId!,{requestId:'approve',expectedRevision:1,action:'approve',actor:'admin',role:'admin'});
+ await expect(service.submitTaskSuggestion(a.taskId!,{requestId:'late',expectedRevision:1,leaseToken:lease.leaseToken,result:{relation:'UNRESOLVED',entityId:null,termsRelation:'INSUFFICIENT',matchingVersionId:null,evidenceRefs:[],conflicts:[],reasonCodes:['uncertain'],retrievalComplete:true,resolverVersion:'identity-v1',rulesVersion:'identity-rules-v1'}})).rejects.toMatchObject({status:409});
+ expect(f.sqlite.prepare('SELECT review_state FROM offers').get()).toEqual({review_state:'approved'});
+});
+it('A20/A28 task suggestion replay is idempotent and does not increment material revision',async()=>{
+ const v=facts();v.issuerProductId={state:'unknown'};
+ const a=await service.resolveCandidate(await intake('a','Campaign signup-2026 grants 10 USD.',v,{}),'a');
+ const lease=await service.claimTask(a.taskId!,{requestId:'claim',expectedRevision:0});
+ const input={requestId:'result',expectedRevision:lease.revision,leaseToken:lease.leaseToken,result:{relation:'UNRESOLVED' as const,entityId:null,termsRelation:'INSUFFICIENT' as const,matchingVersionId:null,evidenceRefs:[],conflicts:[],reasonCodes:['uncertain'],retrievalComplete:true,resolverVersion:'identity-v1',rulesVersion:'identity-rules-v1'}};
+ const one=await service.submitTaskSuggestion(a.taskId!,input);expect(await service.submitTaskSuggestion(a.taskId!,input)).toEqual(one);
+ expect(f.sqlite.prepare('SELECT state,material_revision FROM review_tasks').get()).toEqual({state:'manual',material_revision:1});
+ expect(f.sqlite.prepare('SELECT count(*) n FROM identity_events').get()).toEqual({n:1});
+});
