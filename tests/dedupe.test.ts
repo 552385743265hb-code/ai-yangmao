@@ -116,3 +116,44 @@ it('does not merge distinct Pixel device generations sharing a Google help page'
  const base={id:'pixel10',platformId:'google',reviewState:'approved',type:'gift',claimMethod:'app',title:'买Pixel10Pro系列送12个月GoogleAIPro',valueText:'Pixel10Pro可领12个月会员',evidenceUrl:'https://support.google.com/gemini/answer/13529884'};
  expect(findDuplicate({...base,id:'pixel9',title:'买Pixel9Pro系列送12个月GoogleAIPro',valueText:'Pixel9Pro可领12个月会员'},[base])).toBeUndefined();
 });
+
+const studentEvidence = {url:'https://mistral.ai/pricing/',tier:'site',pageHash:'a'.repeat(64),excerpts:{
+ benefit:'Verified students can get Mistral Pro for $5.99 / month (normally $14.99).',
+ eligibility:"Valid for a maximum of 12 months for verified students at accredited higher institutions and if you haven't used Vibe (or Le Chat) before. Price not inclusive of taxes."
+}};
+const studentMain={id:'student-main',platformId:'mistral',reviewState:'approved',type:'topup',claimMethod:'member',requirements:['student','pay:5.99'],models:[],title:'Mistral Pro 学生价 $5.99/月（原价 $14.99，约四折，最多 12 个月）',valueText:'认证学生可按 $5.99/月订阅，原价 $14.99，最多12个月，每月省$9。',evidenceUrl:studentEvidence.url,evidence:studentEvidence};
+const studentAlias={...studentMain,id:'new-key',requirements:['student'],models:['Mistral Medium','Vibe'],title:'Mistral Pro 学生价 $5.99/月（最多 12 个月）',valueText:'高等院校学生通过验证后可享四折订阅，最长一年。',evidence:{...studentEvidence,excerpts:{benefit:studentEvidence.excerpts.eligibility,eligibility:studentEvidence.excerpts.benefit}}};
+it('matches approved source claims across field swaps, abbreviated prose and missing inferred fields',()=>{
+ expect(findDuplicate(studentAlias,[studentMain])?.id).toBe(studentMain.id);
+});
+it('does not equate a whole-page hash with a benefit identity',()=>{
+ const api={...studentAlias,title:'Mistral Studio 免费API月度额度',valueText:'每月免费调用API',type:'standing',claimMethod:'signup',evidence:{...studentEvidence,excerpts:{benefit:'Free Studio users receive $10 each month for API calls.',eligibility:studentEvidence.excerpts.eligibility}}};
+ expect(findDuplicate(api,[studentMain])).toBeUndefined();
+});
+it('rejects shared boilerplate, fabricated hash equality, new rounds and nonofficial evidence as identity',()=>{
+ const boilerplate={eligibility:studentEvidence.excerpts.eligibility,validity:'All subscriptions are subject to our current terms and fair use policy for twelve months.'};
+ const old={...studentMain,evidence:{...studentEvidence,excerpts:{...boilerplate,benefit:studentEvidence.excerpts.benefit}}};
+ for(const changed of [
+  {title:'Mistral Team全新计划',valueText:'团队专用会员',evidence:{...studentEvidence,excerpts:{...boilerplate,benefit:'Teams can access the special subscription for $99 per month.'}}},
+  {evidence:{...studentAlias.evidence,tier:'media'}},
+  {eventDay:'2026-11-01'},
+  {evidence:{...studentEvidence,excerpts:{benefit:studentEvidence.excerpts.benefit,eligibility:studentEvidence.excerpts.benefit}}},
+ ])expect(findDuplicate({...studentAlias,...changed},[old])).toBeUndefined();
+});
+it('handles independent text transformations without treating evidence field labels as identity',()=>{
+ const titles=['Mistral 学生身份专属优惠','Pro认证学生特价','学生价最多一年','学生每月可省九美元'];
+ for(const title of titles)for(const requirements of [['student'],['student','card'],['student','pay:5.99']]){
+  expect(findDuplicate({...studentAlias,title,requirements,evidence:{...studentAlias.evidence,pageHash:'b'.repeat(64)}},[studentMain])?.id).toBe(studentMain.id);
+ }
+});
+it('separates real policy text changes and independent date windows',()=>{
+ for(const change of [
+  {evidence:{...studentAlias.evidence,excerpts:{benefit:studentEvidence.excerpts.eligibility,eligibility:studentEvidence.excerpts.benefit.replace('$5.99','$4.99')}}},
+  {claimStart:'2027-01-01',evidence:{...studentAlias.evidence,excerpts:{...studentAlias.evidence.excerpts,validity:'January 1 through December 31, 2027.'}}},
+  {claimEnd:'2027-12-31',evidence:{...studentAlias.evidence,excerpts:{...studentAlias.evidence.excerpts,validity:'January 1 through December 31, 2027.'}}},
+ ])expect(findDuplicate({...studentAlias,...change},[{...studentMain,claimStart:'2026-01-01',claimEnd:'2026-12-31',evidence:{...studentEvidence,excerpts:{...studentEvidence.excerpts,validity:'January 1 through December 31, 2026.'}}}])).toBeUndefined();
+});
+
+it('does not let fabricated date metadata bypass identical official claims',()=>{
+ expect(findDuplicate({...studentAlias,claimStart:'2027-01-01',claimEnd:'2027-12-31'},[{...studentMain,claimStart:'2026-01-01',claimEnd:'2026-12-31'}])?.id).toBe(studentMain.id);
+});

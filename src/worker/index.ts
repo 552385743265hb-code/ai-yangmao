@@ -1,3 +1,4 @@
+import {leadScopeMismatch} from '../shared/lead-scope';
 import { leadReviewRoutes } from './lead-review';
 import { officialReviewRoutes } from './official-review';
 import { sameBenefit, ambiguousReset } from '../shared/dedupe';
@@ -14,7 +15,7 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import * as s from '../db/schema';
 import { isoDate, leadIn, offerIn, runIn } from '../shared/ingest';
-import { differentOccurrence, findDuplicate, crossPlatformDuplicate, sameRecurringCreditPlan, sameModelAnnouncement } from '../shared/dedupe';
+import { differentOccurrence, findDuplicate, crossPlatformDuplicate, sameRecurringCreditPlan, sameModelAnnouncement, sameEvidenceBenefit } from '../shared/dedupe';
 import { activeOnDate, isClaimable, liveStatus, missingEvidence } from '../shared/lifecycle';
 import { admin } from './admin';
 import { feishuAdmin, runScheduled } from './feishu';
@@ -204,7 +205,7 @@ ingest.post('/offers', async c => {
   const srcs = sids.length ? await d.select().from(s.sources).where(inArray(s.sources.id, sids)) : [];
   const results = [];
   // 硬性去重的比对范围：这些平台下的全部条目（含已拒绝，避免拒掉的换个 ID 又回来）
-  const peers = pids.length ? (await d.select({ id: s.offers.id, platformId: s.offers.platformId, title: s.offers.title, valueText: s.offers.valueText, evidence: s.offers.evidence, tags: s.offers.tags, publishedAt: s.offers.publishedAt, claimStart: s.offers.claimStart, sourceTz: s.offers.sourceTz, reviewState: s.offers.reviewState, type:s.offers.type, claimMethod:s.offers.claimMethod, requirements:s.offers.requirements, audience:s.offers.audience, models:s.offers.models, modalities:s.offers.modalities })
+  const peers = pids.length ? (await d.select({ id: s.offers.id, platformId: s.offers.platformId, title: s.offers.title, valueText: s.offers.valueText, evidence: s.offers.evidence, tags: s.offers.tags, publishedAt: s.offers.publishedAt, claimStart: s.offers.claimStart, claimEnd: s.offers.claimEnd, sourceTz: s.offers.sourceTz, reviewState: s.offers.reviewState, type:s.offers.type, claimMethod:s.offers.claimMethod, requirements:s.offers.requirements, audience:s.offers.audience, models:s.offers.models, modalities:s.offers.modalities })
     .from(s.offers)).map(x => ({ ...x, evidenceUrl: x.evidence.url, eventDay: resetEventDay(x) })) : [];
   for (const o of body.data) {
     if(o.leadReviewJobId){
@@ -212,6 +213,13 @@ ingest.post('/offers', async c => {
       if(!lead||lead.status!=='reviewing'||lead.resolution?.jobId!==o.leadReviewJobId||lead.resolution.status!=='checking'){
         results.push({id:o.id,error:'线索复核任务已失效'});continue;
       }
+    }
+    if(o.leadId){
+      const [lead]=await d.select().from(s.leads).where(eq(s.leads.id,o.leadId));
+      const issuer=plats.find(p=>p.id===o.platformId);
+      const officialSources=issuer?await d.select().from(s.sources).where(eq(s.sources.platformId,issuer.id)):[];
+      const mismatch=!lead||!issuer?'原线索或发放平台不存在':leadScopeMismatch(lead,issuer,officialSources,o);
+      if(mismatch){results.push({id:o.id,error:mismatch});continue;}
     }
     const eventDay = resetEventDay(o);
     const sameId = peers.find(x=>x.id===o.id);
@@ -235,7 +243,7 @@ ingest.post('/offers', async c => {
       if (dup) o.id = dup.id; // 并入已有条目，走正常的更新和人工字段保护
     }
     // 同一批里后面的条目也要和前面的比
-    if (!peers.some(x => x.id === o.id)) peers.push({ id: o.id, platformId: o.platformId, title: o.title, valueText: o.valueText, evidence: o.evidence as never, reviewState: 'pending',type:o.type,claimMethod:o.claimMethod,requirements:o.requirements,audience:o.audience,models:o.models??[],modalities:o.modalities, evidenceUrl: o.evidence.url, eventDay, tags:o.tags ?? [],publishedAt:o.publishedAt ?? null,claimStart:o.claimStart ?? null,sourceTz:o.sourceTz ?? 'UTC' });
+    if (!peers.some(x => x.id === o.id)) peers.push({ id: o.id, platformId: o.platformId, title: o.title, valueText: o.valueText, evidence: o.evidence as never, reviewState: 'pending',type:o.type,claimMethod:o.claimMethod,requirements:o.requirements,audience:o.audience,models:o.models??[],modalities:o.modalities, evidenceUrl: o.evidence.url, eventDay, tags:o.tags ?? [],publishedAt:o.publishedAt ?? null,claimStart:o.claimStart ?? null,claimEnd:o.claimEnd ?? null,sourceTz:o.sourceTz ?? 'UTC' });
     if (!plat) { results.push({ id: o.id, error: `平台 ${o.platformId} 不在白名单里，先建平台` }); continue; }
     if (o.evidence.tier === 'tested') { results.push({ id: o.id, error: '“管理员实测”只能在后台人工设置' }); continue; }
     const src = srcs.find(x => x.id === o.sourceId);
@@ -246,7 +254,7 @@ ingest.post('/offers', async c => {
       && !o.officialReviewJobId && !o.leadReviewJobId && !ambiguous && missing.length === 0 && !/未写明|不明确/.test(o.valueText) && !o.requirements.some(requirement => requirement === 'unknown' || /未写明/.test(requirement));
     const [prev] = await d.select().from(s.offers).where(eq(s.offers.id, o.id));
     if(o.leadReviewJobId&&prev){
-      if(o.sameOccurrenceAs!==prev.id&&!sameBenefit(o,prev)&&!sameRecurringCreditPlan(identity,{...prev,evidenceUrl:prev.evidence.url,eventDay:resetEventDay(prev)})&&!sameModelAnnouncement(identity,{...prev,evidenceUrl:prev.evidence.url,eventDay:resetEventDay(prev)})){results.push({id:o.id,error:'生成的ID与已有活动冲突，尚未证明同一活动，请人工核对'});continue;}
+      if(o.sameOccurrenceAs!==prev.id&&!sameEvidenceBenefit(identity,{...prev,evidenceUrl:prev.evidence.url,eventDay:resetEventDay(prev)})&&!sameBenefit(o,prev)&&!sameRecurringCreditPlan(identity,{...prev,evidenceUrl:prev.evidence.url,eventDay:resetEventDay(prev)})&&!sameModelAnnouncement(identity,{...prev,evidenceUrl:prev.evidence.url,eventDay:resetEventDay(prev)})){results.push({id:o.id,error:'生成的ID与已有活动冲突，尚未证明同一活动，请人工核对'});continue;}
       results.push({id:prev.id,linkedExisting:true,reviewState:prev.reviewState});continue;
     }
     const [existingProposal] = prev ? await d.select().from(s.offerProposals).where(eq(s.offerProposals.offerId, o.id)) : [];
@@ -526,8 +534,12 @@ ingest.post('/leads/:id/status', async c => {
   if(lead.status!=='new')return c.json({error:'线索状态已变化，请使用线索复核结果接口'},409);
   if (b.data.status === 'linked') {
     if (!b.data.offerId) return c.json({ error: '已关联必须提供已入库条目' }, 400);
-    const [saved] = await db(c.env).select({ id: s.offers.id }).from(s.offers).where(eq(s.offers.id, b.data.offerId));
+    const [saved] = await db(c.env).select().from(s.offers).where(eq(s.offers.id, b.data.offerId));
     if (!saved) return c.json({ error: '条目尚未成功入库，线索不能标记已关联' }, 409);
+    const [platform]=await db(c.env).select().from(s.platforms).where(eq(s.platforms.id,saved.platformId));
+    const sources=await db(c.env).select().from(s.sources).where(eq(s.sources.platformId,saved.platformId));
+    const mismatch=platform?leadScopeMismatch(lead,platform,sources,saved):'发放平台不存在';
+    if(mismatch)return c.json({error:mismatch},400);
   }
   const raw = b.data.note ? `${lead.raw ?? ''}\n[研判] ${b.data.note}`.slice(-20000) : lead.raw;
   await db(c.env).update(s.leads).set({ status: b.data.status, resolution:null, offerId: b.data.offerId ?? lead.offerId, raw }).where(and(eq(s.leads.id, lead.id),eq(s.leads.status,'new')));

@@ -3,6 +3,7 @@ import {extract,modelAvailable,DeferError} from './llm';
 import {modelBudget,BudgetExhaustedError,BudgetLedgerError} from './budget';
 import {searchOfficial} from './official-review';
 import {officialTier,officialActivityMismatch,type OfficialPlatform,type OfficialSource} from '../src/shared/official-review';
+import {platformMentioned,leadScopeMismatch} from '../src/shared/lead-scope';
 import {normUrl} from '../src/shared/dedupe';
 import {offerIn} from '../src/shared/ingest';
 import {toOffer} from './offer-draft';
@@ -27,9 +28,7 @@ export async function runLeadReviews(options:LeadReviewOptions){
       const targetText=`${lead.title??''}\n${(lead.raw??'').split('[研判]')[0]}`;
       const authority=(url:string)=>platforms.filter(p=>officialTier(url,p,sources.filter(s=>s.platformId===p.id)));
       const primaryOwners=authority(lead.url);
-      const identified=primaryOwners.length?primaryOwners:platforms.filter(p=>[p.id,...p.name.split(/[（）()\/·、\s]+/)].some(n=>n.length>=2&&targetText.toLowerCase().includes(n.toLowerCase()))).slice(0,4);
-      const relevant=job.existing.filter(o=>identified.some(p=>p.id===o.platformId));
-      const existing=relevant.map(o=>`${o.id}｜${o.platformId}｜${o.reviewState}｜${o.title}｜${o.valueText.slice(0,80)}｜开始:${o.claimStart??'未知'}｜发布:${o.publishedAt??'未知'}｜证据:${o.evidenceUrl}`).join('\n');
+      const identified=primaryOwners.length?primaryOwners:platforms.filter(p=>platformMentioned(targetText,p)).slice(0,4);
       const {corrections}=await api<{corrections:string[]}>('/corrections?limit=10');
       const urls=[lead.url,...(targetText.match(/https?:\/\/[^\s<>"）)]+/g)??[])];
       const processed=new Set<string>();
@@ -66,7 +65,7 @@ export async function runLeadReviews(options:LeadReviewOptions){
           if(!owner||(page.via==='jina'&&!page.sourceVerified)){technical=true;reasons.push('正文来源无法确认：'+url);continue;}
           readable++;
           const result=await extract(owner.name,page.finalUrl,page.text.slice(0,22000),options.log,{allowPaid:options.allowPaid,deadlineAt,budget:modelBudget,
-            evidenceText:page.text,platformIds:[owner.id],platformList:platforms.map(p=>p.id+'='+p.name).join('；'),existing,corrections,leadTarget:JSON.stringify({title:lead.title,originUrl:lead.url,summary:targetText.slice(0,2500)})});
+            evidenceText:page.text,platformIds:[owner.id],platformList:platforms.map(p=>p.id+'='+p.name).join('；'),existing:job.existing.filter(o=>o.platformId===owner.id).map(o=>`${o.id}｜${o.title}｜${o.valueText}｜证据:${o.evidenceUrl}`).join('\n'),corrections,leadTarget:JSON.stringify({title:lead.title,originUrl:lead.url,summary:targetText.slice(0,2500)})});
           options.account(result.tokens,result.costCny);
           if(result.offers.length){
             if(result.offers.length>50){hadInvalid=true;reasons.push('候选超过单轮上限，需人工拆分核对');continue;}
@@ -79,6 +78,8 @@ export async function runLeadReviews(options:LeadReviewOptions){
               }
               const issuer=platforms.find(p=>p.id===next.platformId)||(!next.platformId?owner:undefined);
               if(!issuer){hadInvalid=true;reasons.push('发放平台尚未准入');continue;}
+              const mismatch=leadScopeMismatch(lead,issuer,sources.filter(s=>s.platformId===issuer.id),{...next,evidence:{url:page.finalUrl,excerpts:next.excerpts}});
+              if(mismatch){hadInvalid=true;reasons.push(mismatch);continue;}
               const tier=officialTier(page.finalUrl,issuer,sources.filter(s=>s.platformId===issuer.id));
               if(!tier||!next.excerpts.benefit?.trim()){hadInvalid=true;reasons.push('未获得发放方权益原文');continue;}
               const prior=next.sameAs?job.existing.find(o=>o.id===next.sameAs&&o.platformId===issuer.id):undefined;
@@ -93,7 +94,10 @@ export async function runLeadReviews(options:LeadReviewOptions){
             if(offerIds.length&&!hadInvalid){outcome='linked';reason='官方复核已形成待审条目或关联已有活动；未自动批准';break;}
           }else if(result.leadAssessment){
             const a=result.leadAssessment;
-            if(!hadInvalid&&a.outcome==='existing'&&job.existing.some(o=>o.id===a.offerId&&o.platformId===owner.id)){
+            const matched=job.existing.find(o=>o.id===a.offerId&&o.platformId===owner.id);
+            const mismatch=matched?leadScopeMismatch(lead,owner,sources.filter(s=>s.platformId===owner.id),{...matched,type:'',evidence:{url:matched.evidenceUrl}}):null;
+            if(mismatch){hadInvalid=true;reasons.push(mismatch);continue;}
+            if(!hadInvalid&&a.outcome==='existing'&&matched){
               offerIds.push(a.offerId!);outcome='linked';reason=a.reason;evidenceUrl=page.finalUrl;quote=a.quote;sourceText=page.text;break;
             }
             // 仅原始官方帖可直接认定“无独立福利”，相关搜索页没有提及不能证明原线索无效。

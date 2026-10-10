@@ -28,7 +28,7 @@ export function officialStatusKey(value:string):string|null {
 // 档位、金额不同的标题（如 2,999 元档 / 4,999 元档）只差几个数字，不能当成同一条
 const digits = (s: string) => (s.normalize('NFKC').match(/\d[\d,.]*/g) ?? []).map(x => x.replace(/,/g, '')).sort().join('|');
 
-export interface DedupeCandidate { id: string; platformId: string; title: string; valueText: string; evidenceUrl: string; eventDay?: string | null; claimStart?: string | null; sameOccurrenceAs?:string; reviewState?:string; type?:string; claimMethod?:string; requirements?:string[]; audience?:string; models?:string[]; modalities?:string[] }
+export interface DedupeCandidate { id: string; platformId: string; title: string; valueText: string; evidenceUrl: string; eventDay?: string | null; claimStart?: string | null; sameOccurrenceAs?:string; reviewState?:string; type?:string; claimMethod?:string; requirements?:string[]; audience?:string; models?:string[]; modalities?:string[]; evidence?:{tier?:string;pageHash?:string|null;excerpts?:Record<string,string|undefined>}; claimEnd?:string|null }
 type Incoming = Omit<DedupeCandidate,'id'> & {id?:string};
 const titleKey=(s:string)=>s.normalize('NFKC').toLowerCase().replace(/[\s\p{P}\p{S}]/gu,'');
 // Generic daily-credit descriptions may come from FAQ, pricing, or the account check-in page.
@@ -130,11 +130,31 @@ function sameRejectedDescription(a:Incoming,b:DedupeCandidate):boolean {
   return basic(a)&&basic(b);
 }
 
+/** Two independent official claims identify an entitlement even when the model swaps fields.
+ * The page hash alone never identifies an offer: pricing pages contain multiple benefits.
+ */
+export function sameEvidenceBenefit(a:Incoming,b:DedupeCandidate):boolean {
+  if(a.platformId!==b.platformId||a.eventDay||b.eventDay||normUrl(a.evidenceUrl)!==normUrl(b.evidenceUrl))return false;
+  if(!a.evidence||!b.evidence||[a.evidence.tier,b.evidence.tier].some(t=>!['site','docs','official'].includes(t??'')))return false;
+  const normalize=(v:string)=>v.normalize('NFKC').toLowerCase().replace(/[\s`*_]+/g,' ').trim();
+  const av=normalize(a.evidence.excerpts?.validity??''),bv=normalize(b.evidence.excerpts?.validity??'');
+  const differentWindow=(a.claimStart&&b.claimStart&&a.claimStart!==b.claimStart)||(a.claimEnd&&b.claimEnd&&a.claimEnd!==b.claimEnd);
+  if(differentWindow&&av&&bv&&av!==bv)return false; // Dates without new official window text are extraction drift.
+  const quotes=(o:Incoming)=>[...new Set(['benefit','eligibility','validity'].map(k=>normalize(o.evidence?.excerpts?.[k]??'')).filter(q=>q.length>=40))];
+  const left=quotes(a),right=quotes(b);
+  const shared=left.filter(q=>right.some(p=>p.includes(q)||q.includes(p)));
+  // Repeating one sentence in several fields is still only one claim.
+  const independent=shared.filter((q,i)=>!shared.some((p,j)=>j!==i&&p.includes(q)&&(p.length>q.length||j<i)));
+  const anchors=[a,b].map(o=>normalize(o.evidence?.excerpts?.benefit??''));
+  return independent.length>=2&&independent.some(q=>/\d/.test(q))
+    && anchors.every(anchor=>anchor.length>=40&&shared.some(q=>q.includes(anchor)||anchor.includes(q)));
+}
+
 export function findDuplicate<T extends DedupeCandidate>(o: Incoming, existing: T[]): T | undefined {
   // Prefer the accepted canonical record over a rejected duplicate alias.
   const ranked=[...existing].sort((a,b)=>(a.reviewState==='approved'?0:a.reviewState==='pending'?1:2)-(b.reviewState==='approved'?0:b.reviewState==='pending'?1:2));
   return ranked.find(e => e.platformId === o.platformId && !ambiguousReset(o,e) && (
-    sameRejectedDescription(o,e) || sameModelAnnouncement(o,e) || sameRecurringCreditPlan(o,e) || (!o.eventDay&&!e.eventDay&&genericDailyCredits(o)&&genericDailyCredits(e)) || (!!monthlyApiScope(o)&&monthlyApiScope(o)===monthlyApiScope(e)) || sameRecurringAlias(o,e) || sameRepostedWeek(o,e) || (!differentOccurrence(o,e) && (
+    sameEvidenceBenefit(o,e) || sameRejectedDescription(o,e) || sameModelAnnouncement(o,e) || sameRecurringCreditPlan(o,e) || (!o.eventDay&&!e.eventDay&&genericDailyCredits(o)&&genericDailyCredits(e)) || (!!monthlyApiScope(o)&&monthlyApiScope(o)===monthlyApiScope(e)) || sameRecurringAlias(o,e) || sameRepostedWeek(o,e) || (!differentOccurrence(o,e) && (
     (digits(e.title) === digits(o.title) && similarity(e.title, o.title) >= 0.85) ||
     (normUrl(e.evidenceUrl) === normUrl(o.evidenceUrl) && digits(e.valueText) === digits(o.valueText) && similarity(e.valueText, o.valueText) >= 0.85)))));
 }

@@ -1,3 +1,4 @@
+import {platformMentioned,leadScopeMismatch} from '../src/shared/lead-scope';
 import {runLeadReviews} from './lead-review';
 import { toOffer } from './offer-draft';
 import { runOfficialReviews } from './official-review';
@@ -265,7 +266,7 @@ async function triageLeads(plats: Plat[]) {
   // 线索原文提到了哪些白名单平台（按名称里的各个部分或 id 匹配），就附上这些平台的抽取要点
   const mentionedPlatforms = (text: string) => {
     const t = text.toLowerCase();
-    return plats.filter(p => [p.id, ...p.name.split(/[（）()\/·、\s]+/)].some(k => k.length >= 2 && t.includes(k.toLowerCase()))).map(p => p.id).slice(0, 6);
+    return plats.filter(p => platformMentioned(t,p)).map(p => p.id).slice(0, 6);
   };
   const { offers: known } = await api<{ offers: IndexedOffer[] }>('/offers-index');
   const knownIds = new Set(known.map(k => k.id));
@@ -324,6 +325,8 @@ async function triageLeads(plats: Plat[]) {
         if (prev.platformId === p.id) { o.id = prev.id; o.sameOccurrenceAs=prev.id; log(`  #${l.id} 与已有条目 ${prev.id} 是同一活动，合并`); }
       }
       if (e.officialUrl && tier === 'media') o.steps = [...(o.steps ?? []), `官方出处：${e.officialUrl}`].slice(0, 6);
+      const scopeError=p&&leadScopeMismatch(l,{...p,staffHandles:[]},[],o);
+      if(scopeError){invalidCount++;log(`  #${l.id} ${scopeError}`);continue;}
       const v = offerIn.safeParse(o);
       if (v.success) valid.push(v.data); else { invalidCount++; log(`  #${l.id} 字段不合规「${e.title}」：${v.error.issues.map(i => i.path.join('.') + ' ' + i.message).join('；').slice(0, 120)}`); }
     }

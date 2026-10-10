@@ -210,7 +210,12 @@ describe('bounded lead processing and paid fallback', () => {
   ])('uses the budgeted paid fallback after free quota failure for an eligible lead %o', async details => {
     vi.useFakeTimers();
     vi.stubEnv('DEEPSEEK_API_KEY', 'test-key');
-    const h = harness({ leads: [{ ...lead, ...details }], geminiStatus: 429 });
+    const resetBenefit='A reset card has been granted to all Vendor Codex members.';
+    const matchingOutput=/重置/.test(details.title)?{
+      modelOutput:JSON.stringify({offers:[{...candidate,title:'Vendor Codex 重置卡',type:'perk',tags:['reset'],valueText:'已发放重置卡',excerpts:{benefit:resetBenefit}}]}),
+      pages:{[lead.url]:`<html><body><article>${resetBenefit} ${'Documentation. '.repeat(50)}</article></body></html>`},
+    }:{};
+    const h = harness({ leads: [{ ...lead, ...details }], geminiStatus: 429, ...matchingOutput });
     const { runPipeline } = await import('../pipeline/run');
     const run = runPipeline();
     await vi.runAllTimersAsync();
@@ -366,4 +371,24 @@ it('keeps official-origin rescue search scoped to its issuer instead of similarl
   const {runPipeline}=await import('../pipeline/run');await runPipeline();
   const queries=h.writes.filter(r=>r.url==='https://mcp.exa.ai/mcp').map(r=>r.body.params.arguments.query);
   expect(queries.length).toBeGreaterThan(0);expect(queries.join(' ')).not.toContain('site:other.example');
+});
+
+it('does not turn a reseller rescue into an unrelated student offer despite an official search hit',async()=>{
+ const student={...candidate,platformId:'mistral',key:'student',title:'Mistral Pro 学生价',type:'topup',requirements:['student'],valueText:'每月5.99美元，最多12个月'};
+ const h=harness({rescueJob:true,leads:[{...lead,url:'https://community.example/post',title:'PQH AI 号池充值福利',raw:'API Code Studio https://pqh.example'}],rescuePlatforms:[{id:'mistral',name:'Mistral AI',site:'https://mistral.ai',xHandles:[],staffHandles:[]}],officialUrls:['https://mistral.ai/pricing'],pages:{'https://mistral.ai/pricing':page},modelOutput:JSON.stringify({offers:[student]})});
+ const {runPipeline}=await import('../pipeline/run');await runPipeline();
+ expect(h.payloads('/offers')).toHaveLength(0);
+ expect(h.payloads('/lead-reviews/1312/result')[0].outcome).not.toBe('linked');
+});
+it('refuses a hallucinated existing-offer link during rescue',async()=>{
+ const known={id:'student-main',platformId:'vendor',title:'Vendor 学生折扣',valueText:'认证学生专属',evidenceUrl:lead.url,reviewState:'approved'};
+ const h=harness({rescueJob:true,leads:[{...lead,url:'https://community.example/post',title:'Vendor 模型发布',raw:'无赠额的模型发布'}],known:[known],modelOutput:JSON.stringify({offers:[],leadAssessment:{outcome:'existing',reason:'模型错误关联',offerId:known.id,quote:benefit}})});
+ const {runPipeline}=await import('../pipeline/run');await runPipeline();
+ expect(h.payloads('/offers')).toHaveLength(0);
+ expect(h.payloads('/lead-reviews/1312/result')[0].outcome).not.toBe('linked');
+});
+it('blocks replacing a reset lead with a monthly plan even after paid fallback succeeds',async()=>{
+ const h=harness({leads:[{...lead,title:'Vendor Codex重置卡已发放'}]});
+ const {runPipeline}=await import('../pipeline/run');await runPipeline();
+ expect(h.payloads('/offers')).toHaveLength(0);
 });

@@ -838,7 +838,7 @@ describe('lead to review workflow', () => {
 
 
 it('refuses to consume a lead when its supposed offer did not persist', async () => {
-  sqlite.prepare("INSERT INTO leads(origin,url,title) VALUES ('aihot','https://example.org/max','Max API credits')").run();
+  sqlite.prepare("INSERT INTO leads(origin,url,title) VALUES ('aihot','https://example.org/max','Vendor Max API credits')").run();
   expect((await call('ingest/leads/1/status',{status:'linked',offerId:'missing'})).status).toBe(409);
   expect((sqlite.prepare('SELECT status FROM leads WHERE id=1').get() as {status:string}).status).toBe('new');
   await call('ingest/offers',[{...offer,leadId:1}]);
@@ -1146,7 +1146,7 @@ describe('cross-page recurring plan identity',()=>{
  it('official recheck of an old community lead links the approved canonical instead of creating a draft',async()=>{
   await call('ingest/offers',[canonical]);await call('admin/offers/'+canonical.id+'/approve',{},'admin');
   const before=sqlite.prepare('SELECT * FROM offers WHERE id=?').get(canonical.id);
-  sqlite.prepare("INSERT INTO leads(id,origin,url,title,status) VALUES(546,'v2ex','https://community.example/original','免费公测积分','reviewing')").run();
+  sqlite.prepare("INSERT INTO leads(id,origin,url,title,status) VALUES(546,'v2ex','https://community.example/original','Vendor 免费公测积分','reviewing')").run();
   const lease=await call('ingest/lead-reviews/546/claim',{});
   const r=await call('ingest/offers',[{...alias,leadId:546,leadReviewJobId:lease.body.jobId}]);
   expect(r.body.results[0]).toMatchObject({id:canonical.id,linkedExisting:true,reviewState:'approved'});
@@ -1183,10 +1183,53 @@ it('links a model-extension status alias during old lead recheck without creatin
  const original={...offer,id:'model-extension',type:'free',claimMethod:'auto',models:['Space Bunny'],title:'Vendor Space Bunny 模型免费期延长数日',valueText:'免费期延长数日',evidence:{...evidence,tier:'official',url:'https://x.com/vendor/status/2107398361733104102'}};
  await call('ingest/offers',[original]);const approval=await call('admin/offers/'+original.id+'/approve',{},'admin');expect(approval.body.error).toBeUndefined();expect(approval.status).toBe(200);
  const before=sqlite.prepare('SELECT * FROM offers WHERE id=?').get(original.id);
- sqlite.prepare("INSERT INTO leads(id,origin,url,title,status) VALUES(99,'v2ex','https://community.example/post','Space Bunny免费期延长','reviewing')").run();
+ sqlite.prepare("INSERT INTO leads(id,origin,url,title,status) VALUES(99,'v2ex','https://community.example/post','Vendor Space Bunny免费期延长','reviewing')").run();
  const lease=await call('ingest/lead-reviews/99/claim',{});
  const r=await call('ingest/offers',[{...original,id:'another-extension-key',claimMethod:'signup',title:'Space Bunny 免费期延长',valueText:'免费tier开放，未写具体天数',leadId:99,leadReviewJobId:lease.body.jobId}]);
  expect(r.body.results[0]).toMatchObject({id:original.id,linkedExisting:true,reviewState:'approved'});
  expect(sqlite.prepare('SELECT * FROM offers WHERE id=?').get(original.id)).toEqual(before);
+ expect(sqlite.prepare('SELECT count(*) n FROM offers').get()).toMatchObject({n:1});
+});
+
+it('rejects unrelated student offers from an unadmitted reseller lead before insertion',async()=>{
+ sqlite.prepare("UPDATE platforms SET name='Vendor AI',site='https://vendor.example' WHERE id='vendor'").run();
+ sqlite.prepare("INSERT INTO leads(id,origin,url,title,raw,status) VALUES(2321,'linuxdo','https://community.example/pool','PQH AI 号池促销','账号池充值送额度 https://pqh.example','reviewing')").run();
+ const lease=await call('ingest/lead-reviews/2321/claim',{});
+ const r=await call('ingest/offers',[{...offer,id:'vendor-student',title:'Vendor Pro 学生优惠',type:'topup',claimMethod:'member',requirements:['student'],leadId:2321,leadReviewJobId:lease.body.jobId}]);
+ expect((r.body.results as any[])[0].error).toMatch(/线索|平台|活动/);
+ expect((sqlite.prepare('SELECT count(*) n FROM offers').get() as any).n).toBe(0);
+});
+
+const studentQuote='Verified students can get Vendor Pro for $5.99 / month (normally $14.99).';
+const studentTerms='Valid for a maximum of 12 months for verified students at accredited higher institutions who have never subscribed before.';
+const canonicalStudent={...offer,id:'vendor-student-main',title:'Vendor Pro 学生价 $5.99/月（原价 $14.99，最多12个月）',valueText:'认证学生优惠每月5.99美元，最多12个月，每月省9美元',type:'topup',claimMethod:'member',requirements:['student','pay:5.99'],evidence:{...evidence,pageHash:'a'.repeat(64),excerpts:{benefit:studentQuote,eligibility:studentTerms}}};
+const studentReplay={...canonicalStudent,id:'student-alias',title:'认证学生四折订阅',valueText:'订阅优惠最多一年',requirements:['student'],models:['New model'],evidence:{...canonicalStudent.evidence,excerpts:{benefit:studentTerms,eligibility:studentQuote}}};
+it('preserves the approved student baseline without creating proposals through cross-ID replays',async()=>{
+ await call('ingest/offers',[canonicalStudent]);await call('admin/offers/'+canonicalStudent.id+'/approve',{},'admin');
+ const before=sqlite.prepare('SELECT * FROM offers WHERE id=?').get(canonicalStudent.id);
+ for(const change of [{},{title:'学生认证专属权益',requirements:['student','card']},{models:[],evidence:{...studentReplay.evidence,pageHash:'b'.repeat(64)}}]){
+  const r=await call('ingest/offers',[{...studentReplay,...change}]);
+  expect(r.body.results[0]).toMatchObject({id:canonicalStudent.id,unchanged:true});
+ }
+ expect(sqlite.prepare('SELECT * FROM offers WHERE id=?').get(canonicalStudent.id)).toEqual(before);
+ expect(sqlite.prepare('SELECT count(*) n FROM offers').get()).toMatchObject({n:1});
+ expect(sqlite.prepare('SELECT count(*) n FROM offer_proposals').get()).toMatchObject({n:0});
+});
+it('remembers rejected source claims and allows a separate same-page benefit',async()=>{
+ await call('ingest/offers',[canonicalStudent]);await call('admin/offers/'+canonicalStudent.id+'/reject',{reasonCode:'duplicate',reason:'已审核同一权益'},'admin');
+ const replay=await call('ingest/offers',[studentReplay]);expect(replay.body.results[0].duplicateId).toBe(canonicalStudent.id);
+ const separate={...offer,id:'different-api-grant',title:'科研API资助',valueText:'研究机构可申请50000token',type:'apply',claimMethod:'form',endKind:'standing',requirements:['biz'],evidence:{...canonicalStudent.evidence,excerpts:{benefit:'Research teams can apply for 50,000 API tokens for an approved project.',eligibility:'An accredited research institution must submit a project proposal.'}}};
+ const saved=await call('ingest/offers',[separate]);expect(saved.body.results[0]).toMatchObject({id:separate.id,reviewState:'pending'});
+ expect(sqlite.prepare('SELECT count(*) n FROM offers').get()).toMatchObject({n:2});
+});
+it('blocks scope bypass through ordinary ingestion and both automatic link endpoints',async()=>{
+ await call('ingest/offers',[canonicalStudent]);
+ sqlite.prepare("INSERT INTO leads(id,origin,url,title,status) VALUES(2322,'linuxdo','https://community.example/unrelated','Vendor API 新模型发布','new')").run();
+ const insert=await call('ingest/offers',[{...studentReplay,leadId:2322}]);expect(insert.body.results[0].error).toBeTruthy();
+ const link=await call('ingest/leads/2322/status',{status:'linked',offerId:canonicalStudent.id});expect(link.status).toBe(400);
+ sqlite.prepare("UPDATE leads SET status='reviewing' WHERE id=2322").run();
+ const lease=await call('ingest/lead-reviews/2322/claim',{});
+ const result=await call('ingest/lead-reviews/2322/result',{jobId:lease.body.jobId,outcome:'linked',reason:'模型声称已收录',offerIds:[canonicalStudent.id],queries:[],candidates:[]});expect(result.status).toBe(400);
+ expect(sqlite.prepare('SELECT status FROM leads WHERE id=2322').get()).toMatchObject({status:'reviewing'});
  expect(sqlite.prepare('SELECT count(*) n FROM offers').get()).toMatchObject({n:1});
 });

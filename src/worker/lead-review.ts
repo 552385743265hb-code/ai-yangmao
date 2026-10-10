@@ -1,3 +1,4 @@
+import {leadScopeMismatch} from '../shared/lead-scope';
 import {normUrl} from '../shared/dedupe';
 import {Hono} from 'hono';
 import {drizzle} from 'drizzle-orm/d1';
@@ -41,7 +42,14 @@ leadReviewRoutes.post('/:id/result',async c=>{
   const b=body.data,d=db(c.env),[l]=await d.select().from(s.leads).where(eq(s.leads.id,Number(c.req.param('id'))));
   if(!l||l.resolution?.jobId!==b.jobId||l.status!=='reviewing')return c.json({error:'线索已由其他操作处理，请刷新'},409);
   if(l.resolution.status!=='checking')return c.json({ok:true,status:l.resolution.status,nextAttemptAt:l.resolution.nextAttemptAt});
-  for(const id of b.offerIds){if(!(await d.select({id:s.offers.id}).from(s.offers).where(eq(s.offers.id,id))).length)return c.json({error:'关联条目尚未入库'},400);}
+  for(const id of b.offerIds){
+    const [offer]=await d.select().from(s.offers).where(eq(s.offers.id,id));
+    if(!offer)return c.json({error:'关联条目尚未入库'},400);
+    const [platform]=await d.select().from(s.platforms).where(eq(s.platforms.id,offer.platformId));
+    const sources=await d.select().from(s.sources).where(eq(s.sources.platformId,offer.platformId));
+    const mismatch=platform?leadScopeMismatch(l,platform,sources,offer):'发放平台不存在';
+    if(mismatch)return c.json({error:mismatch},400);
+  }
   if(b.outcome==='linked'&&!b.offerIds.length)return c.json({error:'缺少关联条目'},400);
   if(b.outcome==='closed'){
     const platforms=await d.select().from(s.platforms).where(eq(s.platforms.status,'approved'));
