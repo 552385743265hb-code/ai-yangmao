@@ -5,6 +5,7 @@ export function identityDb() {
   const sqlite = new DatabaseSync(':memory:'); sqlite.exec('PRAGMA foreign_keys=ON');
   for (const name of readdirSync(new URL('../../../migrations/',import.meta.url)).filter(n=>/^\d+_.+\.sql$/.test(n)).sort()) sqlite.exec(readFileSync(new URL(`../../../migrations/${name}`,import.meta.url),'utf8'));
   let fault: ((sql:string)=>void) | undefined;
+  let queue:Promise<unknown>=Promise.resolve();
   const db = {
     prepare(sql:string) {
       let args: (string|number|null)[]=[];
@@ -16,7 +17,7 @@ export function identityDb() {
         async raw() { fault?.(sql); const q=sqlite.prepare(sql); q.setReturnArrays(true);return q.all(...args); },
       };
     },
-    async batch(stmts:{all():Promise<unknown>}[]) {sqlite.exec('BEGIN');try {const result=[];for(const s of stmts)result.push(await s.all());sqlite.exec('COMMIT');return result;}catch(e){sqlite.exec('ROLLBACK');throw e;}},
+    async batch(stmts:{all():Promise<unknown>}[]) {const run=async()=>{sqlite.exec('BEGIN');try {const result=[];for(const s of stmts)result.push(await s.all());sqlite.exec('COMMIT');return result;}catch(e){sqlite.exec('ROLLBACK');throw e;}};const result=queue.then(run);queue=result.catch(()=>undefined);return result;},
   } as unknown as D1Database;
   sqlite.exec("INSERT INTO platforms(id,name,type,status,site) VALUES('vendor','Vendor','lab','approved','https://vendor.example'); INSERT INTO sources(id,platform_id,kind,url,tier) VALUES('vendor-source','vendor','web_list','https://vendor.example/rewards','site'); INSERT INTO leads(id,origin,url,status) VALUES(1,'manual','https://community.example/story','reviewing')");
   return { sqlite, db, inject: (fn?: (sql:string)=>void) => {fault=fn;} };

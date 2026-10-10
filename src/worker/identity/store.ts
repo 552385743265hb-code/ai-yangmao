@@ -1,3 +1,4 @@
+import { commitIdentityMutation, commandGuard } from './commit';
 import { z } from 'zod';
 import { officialTier } from '../../shared/official-review';
 import { candidateBatchInputSchema, observationInputSchema, observationReceiptSchema, intakeReceiptSchema, type CandidateBatchInput, type IntakeReceipt, type ObservationInput, type ObservationReceipt, type CanonicalTermsV1, type RetrievalPage, type VersionedEntity, reviewDecisionSchema, canonicalTermsSchema } from '../../shared/identity/types';
@@ -97,15 +98,9 @@ export class IdentityStore {
   private async storageCommand<T>(requestId: string, hash: string, receipt: T, writes: (guard: string, guardArgs: string[]) => D1PreparedStatement[], invariant = '1', invariantArgs: (string|number|null)[] = []): Promise<T> {
     const prior = await this.prior(requestId,hash);
     if (prior) return JSON.parse(prior.result_json!) as T;
-    const guard = "EXISTS(SELECT 1 FROM identity_commands WHERE request_id=? AND payload_hash=? AND state='staged')";
-    await this.db.batch([
-      this.db.prepare("INSERT OR IGNORE INTO identity_commands(request_id,payload_hash,state,expected_json) VALUES(?,?,'staged','[]')").bind(requestId,hash),
-      ...writes(guard,[requestId,hash]),
-      this.db.prepare(`UPDATE identity_commands SET state=CASE WHEN (${invariant}) THEN 'applied' ELSE 'invalid' END,result_json=? WHERE request_id=? AND payload_hash=? AND state='staged'`).bind(...invariantArgs,JSON.stringify(receipt),requestId,hash),
-    ]);
-    const applied = await this.prior(requestId,hash);
-    if (!applied) throw new IdentityError(409,'intake command was not applied');
-    return JSON.parse(applied.result_json!) as T;
+    const result=await commitIdentityMutation(this.db,{requestId,payloadHash:hash,expected:[],statements:writes(commandGuard,[requestId,hash]),receipt,assertions:[{sql:invariant,args:invariantArgs}]});
+    if(result.status==='conflict'||result.value===null)throw new IdentityError(409,'intake command was not applied');
+    return result.value;
   }
 
   async recordObservation(raw: ObservationInput): Promise<ObservationReceipt> {

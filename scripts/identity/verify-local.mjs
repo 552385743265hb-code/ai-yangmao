@@ -1,6 +1,7 @@
 // Run with `npx tsx scripts/identity/verify-local.mjs`; no remote D1 API is used.
 import assert from 'node:assert/strict';
 import { getPlatformProxy } from 'wrangler';
+import { MutationBuilder,commitIdentityMutation } from '../../src/worker/identity/commit.ts';
 import { IdentityStore } from '../../src/worker/identity/store.ts';
 const proxy=await getPlatformProxy({configPath:'tests/fixtures/identity/wrangler.jsonc',persist:{path:'.superpowers/sdd/IMPLEMENTATION/d1/v3'}});
 try {
@@ -18,5 +19,17 @@ try {
  ]));
  assert.equal((await db.prepare('SELECT revision FROM identity_blocks WHERE block_key=?').bind(id).first()).revision,0);
  assert.deepEqual((await db.prepare('PRAGMA foreign_key_check').all()).results,[]);
- console.log(JSON.stringify({environment:'local-workerd-d1',observationReplay:'passed',returning:'passed',batchCheckRollback:'passed',foreignKeys:'passed',externalMessages:0,modelCalls:0}));
+ await db.prepare("INSERT INTO platforms(id,name,type) VALUES('identity-local-vendor','Synthetic','lab') ON CONFLICT DO NOTHING").run();
+ const entityId='runtime-entity-'+id;
+ await db.prepare('INSERT INTO benefit_entities(id,platform_id) VALUES(?,?)').bind(entityId,'identity-local-vendor').run();
+ const makePlan=()=>{const b=new MutationBuilder(db,'runtime-command-'+id,'hash');b.insert('review_tasks',{id:'runtime-task-'+id,task_key:'initial:'+entityId,kind:'initial',entity_id:entityId});b.update('benefit_entities',{business_revision:1},'id=?',[entityId]);return b.plan([{kind:'entity',id:entityId,revision:0}],{entityId});};
+ const concurrent=await Promise.all([commitIdentityMutation(db,makePlan()),commitIdentityMutation(db,makePlan())]);
+ assert.deepEqual(concurrent.map(r=>r.status).sort(),['applied','replayed']);
+ const stale=new MutationBuilder(db,'stale-'+id,'hash');stale.insert('review_tasks',{id:'stale-task-'+id,task_key:'stale:'+entityId,kind:'identity',entity_id:entityId});
+ assert.equal((await commitIdentityMutation(db,stale.plan([{kind:'entity',id:entityId,revision:0}],{}))).status,'conflict');
+ assert.equal(await db.prepare('SELECT id FROM review_tasks WHERE id=?').bind('stale-task-'+id).first(),null);
+ const failed=new MutationBuilder(db,'failed-'+id,'hash');failed.insert('review_tasks',{id:'failed-task-'+id,task_key:'failed:'+entityId,kind:'identity',entity_id:entityId});failed.assert('0');
+ await assert.rejects(()=>commitIdentityMutation(db,failed.plan([],{})));
+ assert.equal(await db.prepare('SELECT id FROM review_tasks WHERE id=?').bind('failed-task-'+id).first(),null);
+ console.log(JSON.stringify({environment:'local-workerd-d1',observationReplay:'passed',concurrentReceipt:'passed',zeroGuard:'passed',finalAssertionRollback:'passed',returning:'passed',batchCheckRollback:'passed',foreignKeys:'passed',externalMessages:0,modelCalls:0}));
 } finally { await proxy.dispose(); }
