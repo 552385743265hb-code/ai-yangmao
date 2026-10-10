@@ -116,3 +116,5 @@
 - 新增栏目：先在 `SECTIONS` 加一项，在 `checkOffer` 里给它依赖的字段加检查，再改前端。
 - 新增字段：数据库迁移 → `offerIn` 校验 → `EDITABLE_FIELDS` → 审批表单 → 抽取提示词 → `checkOffer` → 本文第二节。
 - 新增标签：`TAGS`（spec.ts）、`offerIn` 枚举、审批表单 `TAG_L`、抽取提示词，四处一起改。
+
+线索处理过程另存于`leads.resolution`，不混进公开权益。`reviewing`会自动官方复核；技术受阻带下次重试，无法裁决转可操作审核任务，linked/rejected保留原因和关联。`leadReviewJobId`为入库传输控制，禁止自动上架，不能把相同生成ID当成同一活动。

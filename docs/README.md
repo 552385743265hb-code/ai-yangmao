@@ -30,6 +30,8 @@
 - [WorkBuddy邀请审核](workbuddy-invite-review-2026-10-09.md)：邀请门槛、人工提案及最新审核元数据读取。
 - [Higgsfield试用停止领取](higgsfield-ai-influencer-end-2026-10-09.md)：管理员实测结束与未知实际截止日期。
 
+- [受阻线索复核闭环](lead-rescue-2026-10-09.md)：尚未形成条目的reviewing积压、自动重试及人工结案入口。
+
 ## 条目审核与厂商接入记录
 
 这些文件是核验与操作记录，不能覆盖通用规则、平台要点或后台当前状态。

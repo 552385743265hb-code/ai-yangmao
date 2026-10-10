@@ -29,7 +29,7 @@ const HELP = `用法：ym <命令>
   reject <短码> [理由]  拒绝。理由开头可加快捷分类：付费套餐 / 非AI / 平台错 / 重复 / 过期 / 额度不明 / 证据不足 / 分类错
   edit <短码> 字段=值 … [--approve] [--reason 理由]  修改字段（可同时通过）；写上理由，模型以后学得更快。字段：title type valueText usdEstimate claimStart claimEnd endKind creditValidity audience requirements modalities platformId sourceTz claimMethod
   leads [数量]          看最新线索
-  dismiss <线索id>      忽略线索
+  dismiss <线索id>      忽略线索（需 --version <reviewVersion>）
   add <链接> [备注]     补录链接（下一轮采集抓取并抽取，进待审）
   today                 今天能领的羊毛
   on <YYYY-MM-DD>       某一天有效的限时羊毛
@@ -49,8 +49,9 @@ const rest = args.filter(a => !a.startsWith('--'));
 switch (cmd) {
   case 'queue': {
     const q = await call('/queue');
-    if (!q.pending.length && !q.pendingPlatforms.length && !q.suggestAutoPublish.length && !q.needsVerification?.length) { console.log(`待审队列是空的。新线索 ${q.newLeads} 条。`); break; }
-    console.log(`待审 ${q.pending.length} 条（新线索 ${q.newLeads} 条）`);
+    if (!q.pending.length && !q.pendingPlatforms.length && !q.suggestAutoPublish.length && !q.needsVerification?.length && !q.leadTasks?.length) { console.log(`待审队列是空的。新线索 ${q.newLeads} 条。`); break; }
+    console.log(`待审 ${q.pending.length} 条 · 线索复核 ${q.leadTasks?.length??0} 条（新线索 ${q.newLeads} 条）`);
+    for(const l of q.leadTasks??[])console.log(`#${l.id} ${l.title} · ${l.resolution?.status??'等待自动复核'}${l.resolution?.nextAttemptAt?' · 下次 '+l.resolution.nextAttemptAt:''}\n${l.note??''}\nhttps://ai-yangmao.com/#admin`);
     const TIER: Record<string, string> = { site: '官网', docs: '官方文档', official: '官方账号', staff: '员工账号', media: '媒体/社区转述，需核对官方', tested: '管理员实测' };
     for (const o of q.pending) console.log(`${line(o)}
      门槛：${req(o.requirements)} · 证据：${TIER[o.evidenceTier] ?? o.evidenceTier}${o.missingEvidence.length ? `（缺 ${o.missingEvidence.join('、')}）` : ''}
@@ -106,10 +107,10 @@ ${revisions.length ? `修订：${revisions.map((r: any) => r.diff.map((x: any) =
   }
   case 'leads': {
     const { leads } = await call(`/leads?limit=${rest[0] ?? 15}`);
-    console.log(leads.length ? leads.map((l: any) => `#${l.id} ${l.origin}｜${l.title}\n     ${l.url}`).join('\n') : '没有新线索。');
+    console.log(leads.length ? leads.map((l: any) => `#${l.id} ${l.origin}｜${l.title}\n     ${l.url}\n     版本：${l.reviewVersion} · ${l.resolution?.reason??l.note??l.status}`).join('\n') : '没有新线索。');
     break;
   }
-  case 'dismiss': { await call(`/leads/${rest[0]}/dismiss`, {}); console.log(`已忽略线索 #${rest[0]}`); break; }
+  case 'dismiss': { const versionIndex=args.indexOf('--version');if(versionIndex<0||!args[versionIndex+1]){console.error('请先查看线索并使用 dismiss <ID> --version <reviewVersion>');process.exitCode=2;break;} await call(`/leads/${rest[0]}/dismiss`, {expectedVersion:args[versionIndex+1]}); console.log(`已忽略线索 #${rest[0]}`); break; }
   case 'add': {
     const r = await call('/manual', { url: rest[0], note: rest.slice(1).join(' ') || undefined });
     console.log(`已补录（线索 #${r.leadId}），下一轮采集会抓取并抽取，结果进待审。`);
@@ -155,7 +156,7 @@ ${revisions.length ? `修订：${revisions.map((r: any) => r.diff.map((x: any) =
     const leadStalled = h.leadWorkflow?.oldestImportantNewAt && Date.now()-Date.parse(h.leadWorkflow.oldestImportantNewAt)>2*3600_000;
     const bad = h.officialReviewCounts?.stalled || h.officialReviewCounts?.exhausted || h.coverageDegraded || leadStalled || h.leadWorkflow?.lastRun?.ok === false || h.collectStale || h.failingSources.length || uncertain.length;
     if (!bad && !flag('--verbose')) break;
-    console.log(`${bad ? '🚨 采集或投递告警' : '✅ 采集正常'}：最近一次完整成功采集 ${h.lastSuccessfulCollect ? `${h.hoursSince.toFixed(1)} 小时前` : '从未成功'}${h.coverageDegraded ? `\n⚠️ 最近采集覆盖不完整：核验失败 ${h.lastCollectAttempt?.stats?.verificationFailed ?? '未记录'}、核验延期 ${h.lastCollectAttempt?.stats?.verificationDeferred ?? '未记录'}，其余失败见采集健康页` : ''}${h.officialReviewCounts ? `\n官方出处复核：待处理 ${h.officialReviewCounts.waiting ?? 0} · 重试中 ${h.officialReviewCounts.retrying ?? 0} · 耗尽待人工 ${h.officialReviewCounts.exhausted ?? 0} · 占位超时 ${h.officialReviewCounts.stalled ?? 0} · 进行中 ${h.officialReviewCounts.checking} · 已匹配 ${h.officialReviewCounts.matched} · 待补证 ${h.officialReviewCounts.unresolved} · 受阻 ${h.officialReviewCounts.failed}` : ''}${h.leadWorkflow ? `\n线索：新 ${h.leadWorkflow.new} · 人工处理 ${h.leadWorkflow.reviewing} · 重要 ${h.leadWorkflow.important}${leadStalled ? '；重要线索已积压超过 2 小时' : ''}${h.leadWorkflow.lastRun?.ok === false ? '；快速研判最近一次失败' : ''}` : ''}${h.failingSources.length ? `\n失效或连续失败的信源：\n${h.failingSources.map((s: any) => `• ${s.id}（${s.failStreak} 次）：${s.lastError ?? '超过 12 小时未成功'}`).join('\n')}` : ''}${uncertain.length ? `\n需人工核对的推送：\n${uncertain.map((d: any) => `• ${d.id}（${d.kind} / ${d.status}）：ym delivery-delivered ${d.id} <理由> 或 ym delivery-unsent ${d.id} <理由>`).join('\n')}` : ''}`);
+    console.log(`${bad ? '🚨 采集或投递告警' : '✅ 采集正常'}：最近一次完整成功采集 ${h.lastSuccessfulCollect ? `${h.hoursSince.toFixed(1)} 小时前` : '从未成功'}${h.coverageDegraded ? `\n⚠️ 最近采集覆盖不完整：核验失败 ${h.lastCollectAttempt?.stats?.verificationFailed ?? '未记录'}、核验延期 ${h.lastCollectAttempt?.stats?.verificationDeferred ?? '未记录'}，其余失败见采集健康页` : ''}${h.officialReviewCounts ? `\n官方出处复核：待处理 ${h.officialReviewCounts.waiting ?? 0} · 重试中 ${h.officialReviewCounts.retrying ?? 0} · 耗尽待人工 ${h.officialReviewCounts.exhausted ?? 0} · 占位超时 ${h.officialReviewCounts.stalled ?? 0} · 进行中 ${h.officialReviewCounts.checking} · 已匹配 ${h.officialReviewCounts.matched} · 待补证 ${h.officialReviewCounts.unresolved} · 受阻 ${h.officialReviewCounts.failed}` : ''}${h.leadWorkflow ? `\n线索：新 ${h.leadWorkflow.new} · 线索复核 ${h.leadWorkflow.reviewing} · 需人工判断 ${h.leadWorkflow.rescueManual??0} · 定时重试 ${h.leadWorkflow.rescueRetrying??0} · 重要 ${h.leadWorkflow.important}${leadStalled ? '；重要线索已积压超过 2 小时' : ''}${h.leadWorkflow.lastRun?.ok === false ? '；快速研判最近一次失败' : ''}` : ''}${h.failingSources.length ? `\n失效或连续失败的信源：\n${h.failingSources.map((s: any) => `• ${s.id}（${s.failStreak} 次）：${s.lastError ?? '超过 12 小时未成功'}`).join('\n')}` : ''}${uncertain.length ? `\n需人工核对的推送：\n${uncertain.map((d: any) => `• ${d.id}（${d.kind} / ${d.status}）：ym delivery-delivered ${d.id} <理由> 或 ym delivery-unsent ${d.id} <理由>`).join('\n')}` : ''}`);
     break;
   }
   case 'delivery-delivered': case 'delivery-unsent': {

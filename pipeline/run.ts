@@ -1,3 +1,4 @@
+import {runLeadReviews} from './lead-review';
 import { toOffer } from './offer-draft';
 import { runOfficialReviews } from './official-review';
 import { leadPriority } from '../src/shared/leads';
@@ -386,6 +387,12 @@ export async function runPipeline() {
     const { platforms } = await fetch(`${(process.env.API_BASE ?? 'https://ai-yangmao.com').replace(/\/$/, '')}/api/platforms`, { signal: AbortSignal.timeout(30000) }).then(r => r.json()) as { platforms: Plat[] };
     await triageLeads(platforms);
   } catch (e) { stats.errors.push(`线索研判：${(e as Error).message}`); stats.deferred++; log('线索研判出错', (e as Error).message); }
+  try {
+    const leadReview=await runLeadReviews({limit:Number(process.env.LEAD_REVIEW_LIMIT??4),ids:(process.env.LEAD_REVIEW_IDS??'').split(',').filter(Boolean).map(Number),deadlineAt:Math.min(deadline,Date.now()+12*60_000),dry:DRY,
+      allowPaid:paidAvailable()&&costLeft>0.05,canContinue:()=>!needsWrapUp()&&tokensLeft>=8000,
+      account:(tokens,cost)=>{tokensLeft-=tokens;costLeft-=cost;stats.tokens+=tokens;stats.costCny+=cost;},log});
+    Object.assign(stats,{leadReview});if(leadReview.retry||leadReview.deferred)stats.deferred++;
+  }catch(e){stats.deferred++;stats.errors.push('受阻线索复核：'+(e as Error).message);}
   try {
   const officialReview = await runOfficialReviews({limit:Number(process.env.OFFICIAL_REVIEW_LIMIT ?? 8),deadlineAt:deadline,dry:DRY,
     allowPaid:paidAvailable()&&costLeft>0.05,canContinue:()=>!needsWrapUp()&&tokensLeft>=8000,

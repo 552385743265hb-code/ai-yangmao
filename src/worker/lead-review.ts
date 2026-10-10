@@ -1,0 +1,63 @@
+import {Hono} from 'hono';
+import {drizzle} from 'drizzle-orm/d1';
+import {and,eq,sql} from 'drizzle-orm';
+import {z} from 'zod';
+import * as s from '../db/schema';
+import {leadPriority} from '../shared/leads';
+import {leadReviewDue,type LeadResolution} from '../shared/lead-review';
+import {officialTier} from '../shared/official-review';
+import type {Env} from './index';
+const db=(env:Env)=>drizzle(env.DB,{schema:s});
+export const leadReviewRoutes=new Hono<{Bindings:Env}>();
+leadReviewRoutes.get('/queue',async c=>{
+  const limit=Math.max(1,Math.min(10,Number(c.req.query('limit'))||4));
+  const ids=(c.req.query('ids')??'').split(',').filter(Boolean).map(Number);
+  const rows=(await db(c.env).select().from(s.leads).where(eq(s.leads.status,'reviewing')))
+    .filter(l=>(!ids.length||ids.includes(l.id))&&leadReviewDue(l))
+    .sort((a,b)=>leadPriority(a)-leadPriority(b)||(a.resolution?.attempts??0)-(b.resolution?.attempts??0)||a.id-b.id);
+  const selected=rows.slice(0,limit);
+  if(limit>=4&&rows.length>limit){const oldest=[...rows].sort((a,b)=>a.id-b.id)[0];if(!selected.includes(oldest))selected[limit-1]=oldest;}
+  return c.json({jobs:selected.map(l=>({id:l.id,title:l.title})),remaining:rows.length});
+});
+leadReviewRoutes.post('/:id/claim',async c=>{
+  const d=db(c.env),[l]=await d.select().from(s.leads).where(eq(s.leads.id,Number(c.req.param('id'))));
+  if(!l||!leadReviewDue(l))return c.json({claimed:false});
+  const resolution:LeadResolution={status:'checking',jobId:crypto.randomUUID(),attempts:(l.resolution?.attempts??0)+1,inconclusive:l.resolution?.inconclusive??0,
+    checkedAt:new Date().toISOString(),nextAttemptAt:null,reason:'正在读取原文并搜索官方出处',queries:[],candidates:[],offerIds:l.resolution?.offerIds??[]};
+  const changed=await d.update(s.leads).set({resolution}).where(and(eq(s.leads.id,l.id),eq(s.leads.status,'reviewing'),
+    sql`COALESCE(${s.leads.resolution},'')=COALESCE(${l.resolution?JSON.stringify(l.resolution):null},'')`)).returning({id:s.leads.id});
+  if(!changed.length)return c.json({claimed:false});
+  const platforms=await d.select().from(s.platforms).where(eq(s.platforms.status,'approved'));
+  const sources=await d.select({platformId:s.sources.platformId,url:s.sources.url,tier:s.sources.tier}).from(s.sources);
+  const existing=await d.select({id:s.offers.id,platformId:s.offers.platformId,title:s.offers.title,valueText:s.offers.valueText,claimStart:s.offers.claimStart,publishedAt:s.offers.publishedAt,reviewState:s.offers.reviewState,evidenceUrl:sql<string>`json_extract(${s.offers.evidence},'$.url')`}).from(s.offers);
+  return c.json({claimed:true,jobId:resolution.jobId,lead:l,platforms,sources,existing,previousCandidates:l.resolution?.candidates??[]});
+});
+leadReviewRoutes.post('/:id/result',async c=>{
+  const body=z.object({jobId:z.string().uuid(),outcome:z.enum(['linked','closed','retry','manual']),reason:z.string().min(2).max(1000),
+    offerIds:z.array(z.string()).max(10).default([]),queries:z.array(z.string().max(350)).max(4),candidates:z.array(z.url()).max(12),
+    evidenceUrl:z.url().optional(),quote:z.string().max(2000).optional(),sourceText:z.string().max(250000).optional()}).safeParse(await c.req.json().catch(()=>null));
+  if(!body.success)return c.json({error:'线索复核结果不完整'},400);
+  const b=body.data,d=db(c.env),[l]=await d.select().from(s.leads).where(eq(s.leads.id,Number(c.req.param('id'))));
+  if(!l||l.resolution?.jobId!==b.jobId||l.status!=='reviewing')return c.json({error:'线索已由其他操作处理，请刷新'},409);
+  if(l.resolution.status!=='checking')return c.json({ok:true,status:l.resolution.status,nextAttemptAt:l.resolution.nextAttemptAt});
+  for(const id of b.offerIds){if(!(await d.select({id:s.offers.id}).from(s.offers).where(eq(s.offers.id,id))).length)return c.json({error:'关联条目尚未入库'},400);}
+  if(b.outcome==='linked'&&!b.offerIds.length)return c.json({error:'缺少关联条目'},400);
+  if(b.outcome==='closed'){
+    const platforms=await d.select().from(s.platforms).where(eq(s.platforms.status,'approved'));
+    const sources=await d.select({platformId:s.sources.platformId,url:s.sources.url,tier:s.sources.tier}).from(s.sources);
+    const norm=(v:string)=>v.replace(/\s+/g,' ').trim().toLowerCase();
+    if(!b.evidenceUrl||!b.quote||b.quote.trim().length<12||!b.sourceText||!norm(b.sourceText).includes(norm(b.quote))
+      ||!platforms.some(p=>officialTier(b.evidenceUrl!,p,sources.filter(x=>x.platformId===p.id))))return c.json({error:'结束线索需要可信官方原文与具体依据'},400);
+  }
+  const old=l.resolution,now=Date.now();
+  const inconclusive=old.inconclusive+(b.outcome==='manual'?1:0);
+  const status=b.outcome==='manual'&&inconclusive<3?'retry':b.outcome;
+  const delayHours=leadPriority(l)<=1?1:Math.min(24,2**Math.min(5,old.attempts-1));
+  const resolution:LeadResolution={status,jobId:b.jobId,attempts:old.attempts,inconclusive,checkedAt:new Date(now).toISOString(),
+    nextAttemptAt:status==='retry'?new Date(now+delayHours*3600_000).toISOString():null,
+    reason:status==='manual'?'已转为线索审核任务：'+b.reason:b.reason,queries:b.queries,candidates:b.candidates,
+    offerIds:[...new Set([...(old.offerIds??[]),...b.offerIds])],evidenceUrl:b.evidenceUrl,quote:b.quote};
+  const changed=await d.update(s.leads).set({resolution,status:status==='linked'?'linked':status==='closed'?'rejected':'reviewing',offerId:resolution.offerIds?.[0]??l.offerId})
+    .where(and(eq(s.leads.id,l.id),eq(s.leads.status,'reviewing'),sql`json_extract(${s.leads.resolution},'$.jobId')=${b.jobId}`,sql`json_extract(${s.leads.resolution},'$.status')='checking'`)).returning({id:s.leads.id});
+  return changed.length?c.json({ok:true,status,nextAttemptAt:resolution.nextAttemptAt}):c.json({error:'线索已被其他操作处理'},409);
+});

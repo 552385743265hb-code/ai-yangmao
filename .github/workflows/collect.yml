@@ -24,6 +24,14 @@ on:
         description: '本轮官方复核条数（留空用仓库配置，0跳过）'
         type: string
         default: ''
+      lead_review_limit:
+        description: '受阻线索官方复核条数（默认4，0跳过）'
+        type: string
+        default: '4'
+      lead_review_ids:
+        description: '诊断时仅复核这些受阻线索ID（逗号分隔，留空全部）'
+        type: string
+        default: ''
       lead_limit:
         description: '本轮最多研判多少条线索'
         type: string
@@ -71,4 +79,6 @@ jobs:
           FORCE: ${{ inputs.force && '1' || '0' }}
           LEAD_LIMIT: ${{ inputs.lead_limit || '50' }}
           FAST_LEADS: ${{ inputs.fast_leads && '1' || '0' }}
+          LEAD_REVIEW_LIMIT: ${{ inputs.lead_review_limit || vars.LEAD_REVIEW_LIMIT || '4' }}
+          LEAD_REVIEW_IDS: ${{ inputs.lead_review_ids }}
           OFFICIAL_REVIEW_LIMIT: ${{ inputs.official_review_limit || vars.OFFICIAL_REVIEW_LIMIT || '8' }}

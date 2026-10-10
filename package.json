@@ -13,7 +13,7 @@
     "seed:local": "npm run seed:sql && wrangler d1 execute ai-yangmao --local --file seed/seed.sql",
     "seed": "npm run seed:sql && wrangler d1 execute ai-yangmao --remote --file seed/seed.sql",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.node.json",
-    "test": "vitest run",
+    "test": "vitest run tests src && node --test .claude/skills/yangmao-review/evals/cli.test.mjs",
     "collect": "tsx pipeline/run.ts"
   },
   "dependencies": {

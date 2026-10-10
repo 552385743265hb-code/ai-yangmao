@@ -69,7 +69,7 @@ describe('frontend review workflow', () => {
       officialReviewCounts:{waiting:7,checking:1,retrying:3,matched:4,exhausted:2,stalled:1},leadWorkflow:{new:5,reviewing:6,important:1},coverageDegraded:true,lastCollectAttempt:{stats:{verificationFailed:9,verificationDeferred:0}}}));
     await page.run('admHealth()');
     const text=page.document.querySelector('#admBody')!.textContent;
-    expect(text).toContain('待处理 7');expect(text).toContain('重试耗尽待人工 2');expect(text).toContain('核验失败 9 次');expect(text).toContain('人工处理 6');
+    expect(text).toContain('待处理 7');expect(text).toContain('重试耗尽待人工 2');expect(text).toContain('核验失败 9 次');expect(text).toContain('线索复核 6');
   });
   it('keeps a review deep link through login and focuses the pending card', async () => {
     const page = fixture(url => url.endsWith('/whoami') ? { role: 'admin', who: 'admin' } : queue([offer('target'), offer('other')]));
@@ -211,4 +211,19 @@ it('shows automatic official review provenance and lets reviewers requeue withou
   expect(block.textContent).toContain('暂未找到充分官方证据');expect(block.textContent).toContain('Vendor credits');
   block.querySelector('[data-official-retry]')!.dispatchEvent(new page.window.Event('click'));
   await pause();expect(requests).toContain('/api/admin/offers/check/official-retry');expect(requests.some(p=>p.endsWith('/approve'))).toBe(false);
+});
+
+it('shows an actionable lead review task even when there are no pending offers',async()=>{
+  const writes:any[]=[];
+  const page=fixture((_url,init)=>{
+    if(init?.body){writes.push(JSON.parse(String(init.body)));return {ok:true};}
+    return {...queue([]),leadTasks:[{id:1312,title:'额度重置预告',url:'https://example.org/post',status:'reviewing',reviewVersion:'lead-version',note:'证据不足，需判断是否已有活动',resolution:{status:'manual',attempts:3,nextAttemptAt:null}}]};
+  });
+  await page.run('admQueue()');
+  const task=page.document.querySelector('[data-lead-task="1312"]');
+  expect(task).not.toBeNull();expect(task!.textContent).toContain('关联已有活动');
+  (task!.querySelector('[data-lead-reason]') as HTMLInputElement).value='官方只是说明传播进度';
+  task!.querySelector('[data-lead-resolve="closed"]')!.dispatchEvent(new page.window.Event('click'));
+  await pause();
+  expect(writes[0]).toMatchObject({expectedVersion:'lead-version',outcome:'closed',reason:'官方只是说明传播进度'});
 });

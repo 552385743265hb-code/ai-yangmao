@@ -1,3 +1,4 @@
+import {leadTask,leadReviewVersion,leadReviewDue,type LeadResolution} from '../shared/lead-review';
 import { leadPriority } from '../shared/leads';
 import { isReviewField } from '../shared/spec';
 // 管理接口（Bearer ADMIN_TOKEN）：审核、编辑、补录、日报、健康检查。
@@ -49,7 +50,7 @@ export const admin = new Hono<{ Bindings: Env; Variables: { role: 'admin' | 'rev
 const REVIEWER_ALLOWED: [string, RegExp][] = [
   ['GET', /^\/(whoami|queue|leads)$/], ['GET', /^\/offers\/[^/]+$/],
   ['POST', /^\/offers\/[^/]+\/(approve|reject|edit|memo|note|retested|suggest|official-retry)$/],
-  ['POST', /^\/leads\/\d+\/(dismiss|reviewing|retry)$/], ['POST', /^\/(manual|sources|platforms)$/],
+  ['POST', /^\/leads\/\d+\/(dismiss|reviewing|retry|resolve)$/], ['POST', /^\/(manual|sources|platforms)$/],
 ];
 export function reviewerFor(env: Env, token: string | undefined): string | null {
   if (!token || token.length < 16) return null;
@@ -174,6 +175,7 @@ admin.get('/queue', async c => {
         return [{ ...queueView(proposalOffer(original, p.candidate)), link:`https://ai-yangmao.com/#admin-offer-${encodeURIComponent(p.offerId)}`, reviewVersion: p.updatedAt, pendingUpdate: true, changedFields: updateDiff.map(x => x.field), updateDiff }];
       }),
     ],
+    leadTasks: (await d.select().from(s.leads).where(eq(s.leads.status,'reviewing'))).sort((a,b)=>Number(b.resolution?.status==='manual')-Number(a.resolution?.status==='manual')||leadPriority(a)-leadPriority(b)||a.id-b.id).map(leadTask),
     priorityLeads: (await d.select().from(s.leads).where(inArray(s.leads.status,['new','reviewing'])))
       .filter(l=>leadPriority(l)<=1).sort((a,b)=>leadPriority(a)-leadPriority(b)||b.id-a.id).slice(0,10)
       .map(l=>({ id:l.id,title:l.title,url:l.url,status:l.status,note:l.status==='reviewing'?l.raw?.split('[研判]').at(-1)?.slice(0,500):null })),
@@ -402,7 +404,7 @@ admin.post('/offers/:ref/note', async c => {
 
 admin.get('/leads', async c => {
   const params = z.object({limit:z.coerce.number().int().min(1).max(100).default(30),
-    before:z.coerce.number().int().positive().optional(), status:z.enum(['all','new','reviewing']).default('all')})
+    before:z.coerce.number().int().positive().optional(), status:z.enum(['all','new','reviewing','linked','rejected']).default('all')})
     .safeParse(c.req.query());
   if (!params.success) return c.json({error:'线索分页参数不正确'},400);
   const {limit,before,status}=params.data, d=db(c.env);
@@ -410,14 +412,30 @@ admin.get('/leads', async c => {
   const [{total}] = await d.select({total:sql<number>`count(*)`}).from(s.leads).where(state);
   const rows=await d.select().from(s.leads).where(and(state,before ? lt(s.leads.id,before):undefined)).orderBy(desc(s.leads.id)).limit(limit+1);
   const page=rows.slice(0,limit);
-  return c.json({total,nextCursor:rows.length>limit ? page.at(-1)!.id:null,leads:page.map(l=>({id:l.id,origin:l.origin,title:l.title,url:l.url,status:l.status,
-    note:l.status==='reviewing'?l.raw?.split('[研判]').at(-1)?.slice(0,500):null,createdAt:l.createdAt}))});
+  return c.json({total,nextCursor:rows.length>limit ? page.at(-1)!.id:null,leads:page.map(l=>({...leadTask(l),origin:l.origin,
+    note:l.resolution?.reason??(l.status==='reviewing'?l.raw?.split('[研判]').at(-1)?.slice(0,500):null),createdAt:l.createdAt}))});
 });
 
+admin.post('/leads/:id/resolve',async c=>{
+  const body=z.object({expectedVersion:z.string(),outcome:z.enum(['linked','closed','retry']),offerId:z.string().optional(),reason:z.string().min(2).max(1000)}).safeParse(await c.req.json().catch(()=>null));
+  if(!body.success)return c.json({error:'请填写处理依据并使用当前线索版本'},400);
+  const d=db(c.env),[l]=await d.select().from(s.leads).where(eq(s.leads.id,Number(c.req.param('id'))));
+  if(!l||!['new','reviewing'].includes(l.status)||leadReviewVersion(l)!==body.data.expectedVersion)return c.json({error:'线索状态已更新，请刷新'},409);
+  const b=body.data;
+  if(b.outcome==='linked'&&(!b.offerId||!(await d.select().from(s.offers).where(eq(s.offers.id,b.offerId))).length))return c.json({error:'请填写已存在的完整活动ID'},400);
+  const resolution:LeadResolution={status:b.outcome==='retry'?'retry':b.outcome,jobId:crypto.randomUUID(),attempts:0,inconclusive:0,checkedAt:new Date().toISOString(),nextAttemptAt:b.outcome==='retry'?new Date().toISOString():null,reason:b.reason,queries:[],candidates:[],offerIds:b.offerId?[b.offerId]:[]};
+  const changed=await d.update(s.leads).set({status:b.outcome==='linked'?'linked':b.outcome==='closed'?'rejected':'reviewing',resolution,offerId:b.offerId??l.offerId})
+    .where(and(eq(s.leads.id,l.id),eq(s.leads.status,l.status),sql`COALESCE(${s.leads.resolution},'')=COALESCE(${l.resolution?JSON.stringify(l.resolution):null},'')`)).returning({id:s.leads.id});
+  return changed.length?c.json({ok:true}):c.json({error:'线索已更新，请刷新'},409);
+});
 admin.post('/leads/:id/:action{dismiss|reviewing|retry}', async c => {
-  const target = c.req.param('action') === 'dismiss' ? 'rejected' : c.req.param('action') === 'retry' ? 'new' : 'reviewing';
-  await db(c.env).update(s.leads).set({ status: target }).where(eq(s.leads.id, Number(c.req.param('id'))));
-  return c.json({ ok: true });
+  const action=c.req.param('action'),d=db(c.env),[l]=await d.select().from(s.leads).where(eq(s.leads.id,Number(c.req.param('id'))));
+  if(!l)return c.json({error:'没有这条线索'},404);
+  const body=await c.req.json().catch(()=>({}));
+  if(!['new','reviewing'].includes(l.status)||body.expectedVersion!==leadReviewVersion(l))return c.json({error:'线索版本已变化或缺少版本，请刷新后处理'},409);
+  const resolution:LeadResolution={status:action==='dismiss'?'closed':'retry',jobId:crypto.randomUUID(),attempts:0,inconclusive:0,checkedAt:new Date().toISOString(),nextAttemptAt:action==='dismiss'?null:new Date().toISOString(),reason:String(body.reason??(action==='dismiss'?'管理员忽略线索':'管理员要求重新官方核验')).slice(0,1000),queries:[],candidates:[]};
+  const changed=await d.update(s.leads).set({status:action==='dismiss'?'rejected':'reviewing',resolution}).where(and(eq(s.leads.id,l.id),eq(s.leads.status,l.status),sql`COALESCE(${s.leads.resolution},'')=COALESCE(${l.resolution?JSON.stringify(l.resolution):null},'')`)).returning({id:s.leads.id});
+  return changed.length?c.json({ok:true}):c.json({error:'线索已更新，请刷新'},409);
 });
 
 admin.post('/platforms', async c => {
@@ -435,7 +453,7 @@ admin.post('/manual', async c => {
   if (!body.success) return c.json({ error: '链接不正确', issues: body.error.issues }, 400);
   const raw = JSON.stringify({ note: body.data.note ?? null, platformId: body.data.platformId ?? null });
   const res = await db(c.env).insert(s.leads).values({ origin: 'telegram', url: body.data.url, title: body.data.note ?? '补录链接', raw })
-    .onConflictDoUpdate({ target: s.leads.url, set: { status: 'new', origin: 'telegram', raw } }).returning({ id: s.leads.id });
+    .onConflictDoUpdate({ target: s.leads.url, set: { status: 'new', resolution:null, origin: 'telegram', raw } }).returning({ id: s.leads.id });
   return c.json({ ok: true, leadId: res[0]?.id });
 });
 
@@ -582,7 +600,7 @@ export async function buildNotice(env: Env, kind: NoticeKind, channel: NoticeCha
     reviewAlerts = [
       ...awaiting.map(o=>({ key: o.officialReview && (o.officialReview.status === 'matched' || (o.officialReview.status!=='checking'&&!o.officialReview.nextAttemptAt)) ? `offer:${o.id}:official:${o.officialReview.jobId}` : `offer:${o.id}`, priority: reviewRank(o), title: `[${shortCode(o.id)}] ${o.title}`, state: o.officialReview?.status==='unresolved'&&!o.officialReview.nextAttemptAt?'官方复核待人工核对':'待审', url: `https://ai-yangmao.com/#admin-offer-${encodeURIComponent(o.id)}` })),
       ...proposals.filter(p=>p.diff.some(x=>isReviewField(x.field))).map(p=>({ key: `proposal:${p.offerId}:${JSON.stringify(p.diff)}`, priority: 2, title: String(p.candidate.title ?? p.offerId), state: '条款更新待审', url: `https://ai-yangmao.com/#admin-offer-${encodeURIComponent(p.offerId)}` })),
-      ...unresolved.filter(l=>leadPriority(l)<=1).sort((a,b)=>leadPriority(a)-leadPriority(b)||b.id-a.id).map(l=>({ key: `lead:${l.id}:${l.status}`, priority: 1, title: `#${l.id} ${l.title ?? ''}`, state: l.status==='reviewing' ? '抽取受阻，需人工核验' : '重要线索，尚未研判', url: l.url })),
+      ...unresolved.filter(l=>leadPriority(l)<=1||l.resolution?.status==='manual').sort((a,b)=>leadPriority(a)-leadPriority(b)||b.id-a.id).map(l=>({ key: `lead:${l.id}:${l.resolution?.status==='manual'?'manual:'+l.resolution.jobId:l.status}`, priority: 1, title: `#${l.id} ${l.title ?? ''}`, state: l.status==='reviewing' ? (l.resolution?.status==='manual'?'线索待你判断':'线索正在自动复核') : '重要线索，尚未研判', url: 'https://ai-yangmao.com/#admin' })),
     ].filter(a=>!announced.has(a.key));
     // 重要线索先提醒，余下待审分批发完；单条失败不堵住其他审核提醒。
     reviewAlerts.sort((a,b)=>(a.priority ?? 2)-(b.priority ?? 2));
@@ -733,7 +751,7 @@ admin.get('/health', async c => {
   const [lastLeadRun] = await d.select().from(s.runs).where(eq(s.runs.kind,'sweep')).orderBy(desc(s.runs.startedAt)).limit(1);
   const backlog = await d.select().from(s.leads).where(inArray(s.leads.status,['new','reviewing']));
   const important = backlog.filter(l=>leadPriority(l)<=1);
-  const leadWorkflow = { new: backlog.filter(l=>l.status==='new').length, reviewing: backlog.filter(l=>l.status==='reviewing').length,
+  const leadWorkflow = { rescueQueued:backlog.filter(l=>leadReviewDue(l)).length, rescueChecking:backlog.filter(l=>l.resolution?.status==='checking').length, rescueManual:backlog.filter(l=>l.resolution?.status==='manual').length, rescueRetrying:backlog.filter(l=>l.resolution?.status==='retry'&&!leadReviewDue(l)).length, new: backlog.filter(l=>l.status==='new').length, reviewing: backlog.filter(l=>l.status==='reviewing').length,
     important: important.length, oldestImportantNewAt: important.filter(l=>l.status==='new').map(l=>l.createdAt).sort()[0] ?? null, oldestAt: backlog.map(l=>l.createdAt).sort()[0] ?? null,
     lastRun: lastLeadRun ? { startedAt:lastLeadRun.startedAt,finishedAt:lastLeadRun.finishedAt,ok:lastLeadRun.ok,stats:lastLeadRun.stats } : null };
   const officialReviewRows = await d.select().from(s.offers).where(inArray(s.offers.reviewState,['pending','approved']));

@@ -975,3 +975,76 @@ it('official review cannot silently discard a pending update when official terms
   expect((result.body.results as any[])[0].skipped).toBeTruthy();
   expect((await call('admin/offers/vendor-free',undefined,'admin')).body.pendingUpdate).toBe(true);
 });
+
+describe('stuck lead rescue lifecycle',()=>{
+  const seed=()=>sqlite.prepare("INSERT INTO leads(id,origin,url,title,status,raw) VALUES(1312,'aihot','https://vendor.example/free','Vendor 额度重置预告','reviewing','原始线索')").run();
+  it('automatically queues legacy reviewing leads that have no offer',async()=>{
+    seed();const q=await call('ingest/lead-reviews/queue?limit=4');
+    expect(q.status).toBe(200);expect(q.body.jobs).toMatchObject([{id:1312}]);
+    const jobs=await Promise.all([1,2].map(()=>call('ingest/lead-reviews/1312/claim',{})));
+    expect(jobs.filter(r=>r.body.claimed)).toHaveLength(1);
+  });
+  it('records a timed retry then exposes an actionable manual task instead of losing the lead',async()=>{
+    seed();const lease=await call('ingest/lead-reviews/1312/claim',{});
+    const result=await call('ingest/lead-reviews/1312/result',{jobId:lease.body.jobId,outcome:'retry',reason:'官方页面暂时不可达',candidates:[],queries:[]});
+    expect(result.status).toBe(200);expect(result.body.nextAttemptAt).toBeTruthy();
+    expect((await call('ingest/lead-reviews/queue')).body.jobs).toEqual([]);
+    const admin=await call('admin/queue',undefined,'admin');
+    expect(admin.body.leadTasks).toMatchObject([{id:1312,resolution:{status:'retry'}}]);
+  });
+  it('ignores stale task results after an administrator ends a lead',async()=>{
+    seed();const lease=await call('ingest/lead-reviews/1312/claim',{});
+    await call('admin/leads/1312/dismiss',{expectedVersion:((await call('admin/queue',undefined,'admin')).body.leadTasks as any[])[0].reviewVersion,reason:'并非独立发放，管理员核对原文'},'admin');
+    const result=await call('ingest/lead-reviews/1312/result',{jobId:lease.body.jobId,outcome:'manual',reason:'旧任务',queries:[],candidates:[]});
+    expect(result.status).toBe(409);
+    expect((sqlite.prepare('SELECT status FROM leads WHERE id=1312').get() as any).status).toBe('rejected');
+  });
+  it('offers a versioned link-to-existing action and records an explicit final resolution',async()=>{
+    seed();await call('ingest/offers',[offer]);
+    const q=await call('admin/queue',undefined,'admin');const task=(q.body.leadTasks as any[])[0];
+    const linked=await call('admin/leads/1312/resolve',{expectedVersion:task.reviewVersion,outcome:'linked',offerId:offer.id,reason:'同一次活动的进度回复'},'admin');
+    expect(linked.status).toBe(200);
+    expect(sqlite.prepare('SELECT status,offer_id FROM leads WHERE id=1312').get()).toMatchObject({status:'linked',offer_id:offer.id});
+    expect((await call('admin/queue',undefined,'admin')).body.leadTasks).toEqual([]);
+    const history=await call('admin/leads?status=linked',undefined,'admin');
+    expect((history.body.leads as any[])[0].resolution.reason).toContain('进度回复');
+  });
+});
+
+it('leased lead extraction cannot publish automatically or overwrite an existing approved offer',async()=>{
+  sqlite.prepare("INSERT INTO leads(id,origin,url,title,status) VALUES(1312,'aihot','https://vendor.example/free','Vendor 免费额度','reviewing')").run();
+  const lease=await call('ingest/lead-reviews/1312/claim',{});
+  sqlite.prepare('UPDATE sources SET auto_publish=1').run();
+  const saved=await call('ingest/offers',[{...offer,leadId:1312,leadReviewJobId:lease.body.jobId}]);
+  expect((saved.body.results as any[])[0].reviewState).toBe('pending');
+  await call('admin/offers/vendor-free/approve',{},'admin');
+  const update=await call('ingest/offers',[{...changedOffer(),sameOccurrenceAs:offer.id,leadId:1312,leadReviewJobId:lease.body.jobId}]);
+  expect((update.body.results as any[])[0].linkedExisting).toBe(true);
+  expect((sqlite.prepare('SELECT value_text FROM offers').get() as any).value_text).toBe(offer.valueText);
+});
+it('dismissal during lead processing stops a late new draft insert',async()=>{
+  sqlite.prepare("INSERT INTO leads(id,origin,url,title,status) VALUES(1312,'aihot','https://vendor.example/free','Vendor 免费额度','reviewing')").run();
+  const lease=await call('ingest/lead-reviews/1312/claim',{});
+  await call('admin/leads/1312/dismiss',{expectedVersion:((await call('admin/queue',undefined,'admin')).body.leadTasks as any[])[0].reviewVersion},'admin');
+  const result=await call('ingest/offers',[{...offer,leadId:1312,leadReviewJobId:lease.body.jobId}]);
+  expect((result.body.results as any[])[0].error).toBeTruthy();
+  expect((sqlite.prepare('SELECT count(*) n FROM offers').get() as any).n).toBe(0);
+});
+
+it('does not mistake a generated ID collision for a related activity',async()=>{
+  await call('ingest/offers',[offer]);await call('admin/offers/vendor-free/approve',{},'admin');
+  sqlite.prepare("INSERT INTO leads(id,origin,url,title,status) VALUES(1312,'aihot','https://vendor.example/grant','独立资助','reviewing')").run();
+  const lease=await call('ingest/lead-reviews/1312/claim',{});
+  const r=await call('ingest/offers',[{...offer,type:'apply',endKind:'standing',claimMethod:'form',title:'开发者独立研究资助',valueText:'最高1000美元',evidence:{...evidence,url:'https://vendor.example/grant'},leadId:1312,leadReviewJobId:lease.body.jobId}]);
+  expect((r.body.results as any[])[0].error).toContain('ID');
+});
+it('rejects a stale manual decision after automatic results arrive and prevents reopening a linked lead',async()=>{
+  sqlite.prepare("INSERT INTO leads(id,origin,url,title,status) VALUES(1312,'aihot','https://vendor.example/free','线索','reviewing')").run();
+  const lease=await call('ingest/lead-reviews/1312/claim',{});
+  const old=((await call('admin/queue',undefined,'admin')).body.leadTasks as any[])[0].reviewVersion;
+  await call('ingest/lead-reviews/1312/result',{jobId:lease.body.jobId,outcome:'retry',reason:'新找到的证据需要稍后重试',queries:[],candidates:[]});
+  expect((await call('admin/leads/1312/resolve',{expectedVersion:old,outcome:'closed',reason:'旧卡片结论'},'admin')).status).toBe(409);
+  const current=((await call('admin/queue',undefined,'admin')).body.leadTasks as any[])[0].reviewVersion;
+  await call('ingest/offers',[offer]);await call('admin/leads/1312/resolve',{expectedVersion:current,outcome:'linked',offerId:offer.id,reason:'人工已核对'},'admin');
+  expect((await call('admin/leads/1312/retry',{expectedVersion:current},'admin')).status).toBe(409);
+});

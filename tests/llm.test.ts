@@ -180,3 +180,17 @@ describe('provider cooldown within a collection run', () => {
     expect(Date.now() - started).toBeLessThan(60_000);
   });
 });
+
+it('requires a grounded reason for a lead-resolution decision without weakening normal extraction envelopes',async()=>{
+  const text='We are investigating a display issue. No new credits are being granted.';
+  vi.stubGlobal('fetch',vi.fn(async()=>gemini(JSON.stringify({offers:[],leadAssessment:{outcome:'not_benefit',reason:'仅额度显示异常，未新发放额度',quote:text}}))));
+  const {extract}=await import('../pipeline/llm');
+  const result=await extract('Vendor','https://vendor.example/post',text,undefined,{leadTarget:'额度重置异常'} as any);
+  expect((result as any).leadAssessment).toMatchObject({outcome:'not_benefit',quote:text});
+});
+
+it('does not accept fabricated quotes as a reason to close a stuck lead',async()=>{
+  vi.stubGlobal('fetch',vi.fn(async()=>gemini(JSON.stringify({offers:[],leadAssessment:{outcome:'not_benefit',reason:'无福利',quote:'This quote is fabricated'}}))));
+  const {extract}=await import('../pipeline/llm');
+  await expect(extract('Vendor','https://vendor.example/post','Actual official text',undefined,{leadTarget:'异常'} as any)).rejects.toThrow();
+});

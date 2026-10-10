@@ -1,3 +1,4 @@
+import { leadReviewRoutes } from './lead-review';
 import { officialReviewRoutes } from './official-review';
 import { sameBenefit, ambiguousReset } from '../shared/dedupe';
 import { officialTier, officialActivityMismatch } from '../shared/official-review';
@@ -6,7 +7,7 @@ import { selectLeads } from '../shared/leads';
 import { changedOfficialTerms, rejectedTermsStillPresent } from '../shared/review-stability';
 import { isReviewField, reviewChanges } from '../shared/spec';
 // Cloudflare Worker 入口：/api/* 走这里，其余由静态资源（网站页面）处理。
-import { and, desc, eq, gte, inArray, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray, sql, getTableColumns } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
 import { Hono } from 'hono';
 import { z } from 'zod';
@@ -158,6 +159,7 @@ ingest.use('*', async (c, next) => {
 });
 
 ingest.route('/official-reviews', officialReviewRoutes);
+ingest.route('/lead-reviews', leadReviewRoutes);
 
 ingest.post('/leads', async c => {
   const body = z.array(leadIn).max(100).safeParse(await c.req.json().catch(() => null));
@@ -190,6 +192,12 @@ ingest.post('/offers', async c => {
   const peers = pids.length ? (await d.select({ id: s.offers.id, platformId: s.offers.platformId, title: s.offers.title, valueText: s.offers.valueText, evidence: s.offers.evidence, tags: s.offers.tags, publishedAt: s.offers.publishedAt, claimStart: s.offers.claimStart, sourceTz: s.offers.sourceTz, reviewState: s.offers.reviewState })
     .from(s.offers)).map(x => ({ ...x, evidenceUrl: x.evidence.url, eventDay: resetEventDay(x) })) : [];
   for (const o of body.data) {
+    if(o.leadReviewJobId){
+      const [lead]=o.leadId?await d.select().from(s.leads).where(eq(s.leads.id,o.leadId)):[];
+      if(!lead||lead.status!=='reviewing'||lead.resolution?.jobId!==o.leadReviewJobId||lead.resolution.status!=='checking'){
+        results.push({id:o.id,error:'线索复核任务已失效'});continue;
+      }
+    }
     const eventDay = resetEventDay(o);
     const sameId = peers.find(x=>x.id===o.id);
     const identity={...o,evidenceUrl:o.evidence.url,eventDay};
@@ -206,9 +214,9 @@ ingest.post('/offers', async c => {
     const plat = plats.find(p => p.id === o.platformId);
     if (!peers.some(x => x.id === o.id)) {
       const cross = crossPlatformDuplicate(identity,peers);
-      if(cross){results.push({id:o.id,skipped:`与已上架的 ${cross.id} 重复，实际平台为 ${cross.platformId}`});continue;}
+      if(cross){results.push({id:o.id,duplicateId:cross.id,skipped:`与已上架的 ${cross.id} 重复，实际平台为 ${cross.platformId}`});continue;}
       const dup = findDuplicate({ id:o.id, platformId: o.platformId, title: o.title, valueText: o.valueText, evidenceUrl: o.evidence.url, eventDay, claimStart:o.claimStart, sameOccurrenceAs:o.sameOccurrenceAs }, peers);
-      if (dup?.reviewState === 'rejected') { results.push({ id: o.id, skipped: `与已拒绝的 ${dup.id} 重复` }); continue; }
+      if (dup?.reviewState === 'rejected') { results.push({ id: o.id, duplicateId:dup.id,skipped: `与已拒绝的 ${dup.id} 重复` }); continue; }
       if (dup) o.id = dup.id; // 并入已有条目，走正常的更新和人工字段保护
     }
     // 同一批里后面的条目也要和前面的比
@@ -220,8 +228,12 @@ ingest.post('/offers', async c => {
     const sameOfficialHost = src && (() => { try { return new URL(src.url).hostname.toLowerCase() === new URL(o.evidence.url).hostname.toLowerCase(); } catch { return false; } })();
     const auto = plat.status === 'approved' && !!src?.enabled && sameOfficialHost && src.platformId === o.platformId && src.autoPublish && !!officialTier(o.evidence.url,plat,[src])
       && ['site', 'docs', 'official'].includes(src.tier) && src.tier === o.evidence.tier
-      && !o.officialReviewJobId && !ambiguous && missing.length === 0 && !/未写明|不明确/.test(o.valueText) && !o.requirements.some(requirement => requirement === 'unknown' || /未写明/.test(requirement));
+      && !o.officialReviewJobId && !o.leadReviewJobId && !ambiguous && missing.length === 0 && !/未写明|不明确/.test(o.valueText) && !o.requirements.some(requirement => requirement === 'unknown' || /未写明/.test(requirement));
     const [prev] = await d.select().from(s.offers).where(eq(s.offers.id, o.id));
+    if(o.leadReviewJobId&&prev){
+      if(o.sameOccurrenceAs!==prev.id&&!sameBenefit(o,prev)){results.push({id:o.id,error:'生成的ID与已有活动冲突，尚未证明同一活动，请人工核对'});continue;}
+      results.push({id:prev.id,linkedExisting:true,reviewState:prev.reviewState});continue;
+    }
     const [existingProposal] = prev ? await d.select().from(s.offerProposals).where(eq(s.offerProposals.offerId, o.id)) : [];
     const nowIso = new Date().toISOString();
     if (o.officialReviewJobId && (prev?.officialReview?.jobId !== o.officialReviewJobId || prev.officialReview.status !== 'checking' || prev.officialReview.inputVersion !== `${prev.updatedAt}|${existingProposal?.updatedAt??''}`)) { results.push({id:o.id,error:'官方复核任务已失效'}); continue; }
@@ -242,7 +254,7 @@ ingest.post('/offers', async c => {
         continue; // Keep manual proposals and verification metadata; the /verify route verifies source health.
       }
     }
-    const { leadId, officialReviewJobId, sameOccurrenceAs, sourceText, ...od } = o;
+    const { leadId, leadReviewJobId, officialReviewJobId, sameOccurrenceAs, sourceText, ...od } = o;
     const row = {
       ...od, usdEstimate: o.usdEstimate ?? null, claimStart: o.claimStart ?? null, claimEnd: o.claimEnd ?? null,
       creditValidity: o.creditValidity ?? null, publishedAt: o.publishedAt ?? null, sourceId: o.sourceId ?? null,
@@ -275,6 +287,16 @@ ingest.post('/offers', async c => {
       }
     }
     if (!prev) {
+      if(o.leadReviewJobId){
+        const values={...row,...(ambiguous?{reviewMemo:`同日另有重置记录 ${ambiguous.id}，请区分独立发放和同次活动的进度回复。`}:{}),reviewState:'pending'};
+        const columns=getTableColumns(s.offers);
+        const pairs=Object.entries(values).filter(([key,value])=>value!==undefined&&key in columns)
+          .map(([key,value])=>{const column=columns[key as keyof typeof columns];return {name:column.name,value:value===null?null:column.mapToDriverValue(value as never)};});
+        const saved=await c.env.DB.prepare(`INSERT INTO offers (${pairs.map(p=>p.name).join(',')}) SELECT ${pairs.map(()=>'?').join(',')} WHERE EXISTS (SELECT 1 FROM leads WHERE id=? AND status='reviewing' AND json_extract(resolution,'$.jobId')=? AND json_extract(resolution,'$.status')='checking') ON CONFLICT(id) DO NOTHING RETURNING id`)
+          .bind(...pairs.map(p=>p.value),o.leadId!,o.leadReviewJobId).all<{id:string}>();
+        if(!saved.results.length){results.push({id:o.id,error:'线索状态已变化或条目已存在，请读回'});continue;}
+        results.push({id:o.id,created:true,reviewState:'pending',missingEvidence:missing});continue;
+      }
       await d.insert(s.offers).values({ ...row, ...(ambiguous?{reviewMemo:`同日另有重置记录 ${ambiguous.id}。不同公告尚不能证明独立发放，请区分第二次发放与同次活动的预告/确认/进度回复。`}:{}), reviewState: auto ? 'approved' : 'pending' });
       // 调用方在整条线索的所有候选完成后才确认关联，部分失败不能提前吞掉线索。
       results.push({ id: o.id, created: true, reviewState: auto ? 'approved' : 'pending', missingEvidence: missing });
@@ -481,13 +503,14 @@ ingest.post('/leads/:id/status', async c => {
   if (!b.success) return c.json({ error: '数据格式不正确' }, 400);
   const [lead] = await db(c.env).select().from(s.leads).where(eq(s.leads.id, Number(c.req.param('id'))));
   if (!lead) return c.json({ error: '没有这条线索' }, 404);
+  if(lead.status!=='new')return c.json({error:'线索状态已变化，请使用线索复核结果接口'},409);
   if (b.data.status === 'linked') {
     if (!b.data.offerId) return c.json({ error: '已关联必须提供已入库条目' }, 400);
     const [saved] = await db(c.env).select({ id: s.offers.id }).from(s.offers).where(eq(s.offers.id, b.data.offerId));
     if (!saved) return c.json({ error: '条目尚未成功入库，线索不能标记已关联' }, 409);
   }
   const raw = b.data.note ? `${lead.raw ?? ''}\n[研判] ${b.data.note}`.slice(-20000) : lead.raw;
-  await db(c.env).update(s.leads).set({ status: b.data.status, offerId: b.data.offerId ?? lead.offerId, raw }).where(eq(s.leads.id, lead.id));
+  await db(c.env).update(s.leads).set({ status: b.data.status, resolution:null, offerId: b.data.offerId ?? lead.offerId, raw }).where(and(eq(s.leads.id, lead.id),eq(s.leads.status,'new')));
   return c.json({ ok: true });
 });
 

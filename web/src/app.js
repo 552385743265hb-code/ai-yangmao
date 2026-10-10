@@ -1344,6 +1344,31 @@ function officialReviewBlock(o) {
     ${r?.changedFields?.length?`<p>补全字段：${r.changedFields.map(f=>esc(FIELD_L[f]||f)).join('、')}</p>`:''}
     ${o.evidenceTier==='media'&&r?.status!=='checking'?'<button class="btn sm" type="button" data-official-retry>重新排入官方复核</button>':''}</details>`;
 }
+function leadTaskCard(l) {
+  const r=l.resolution, labels={checking:'正在自动核验',retry:'等待自动重试',manual:'需要你判断',linked:'已关联活动',closed:'已结束线索'};
+  const when=r?.nextAttemptAt?new Date(r.nextAttemptAt).toLocaleString('zh-CN'):null;
+  return `<div class="card" data-lead-task="${l.id}" style="margin-bottom:8px"><b>#${l.id} ${esc(l.title||'线索')}</b><p class="small">${labels[r?.status]||'已排入自动官方复核'}${when?` · 下次 ${esc(when)}`:''}${r?` · 已尝试 ${r.attempts} 次`:''}</p>
+    <p class="small">${esc(l.note||'将读取原文、核对官方出处及已有活动')}</p><a href="${esc(l.url)}" target="_blank" rel="noopener">查看原始线索 ↗</a>
+    ${r?.evidenceUrl?`<p class="small"><a href="${esc(r.evidenceUrl)}" target="_blank" rel="noopener">处理依据 ↗</a> ${esc(r.quote||'')}</p>`:''}
+    <details style="margin-top:8px"><summary>处理这条线索</summary><label class="field">处理依据<input data-lead-reason placeholder="例如：同一次发放的进度说明"></label>
+    <label class="field">关联活动ID<input data-lead-offer placeholder="已核对的完整活动 ID"></label>
+    <div class="row"><button class="btn sm" data-lead-resolve="retry">重新官方核验</button><button class="btn sm" data-lead-resolve="linked">关联已有活动</button><button class="btn sm" data-lead-resolve="closed">结束线索</button></div><p class="small" role="status" data-lead-feedback></p></details></div>`;
+}
+function bindLeadTasks(box,tasks){
+  box.querySelectorAll('[data-lead-task]').forEach(card=>{
+    const l=tasks.find(x=>String(x.id)===card.dataset.leadTask);if(!l)return;
+    card.querySelectorAll('[data-lead-resolve]').forEach(button=>button.addEventListener('click',async()=>{
+      const outcome=button.dataset.leadResolve,reason=card.querySelector('[data-lead-reason]').value.trim(),offerId=card.querySelector('[data-lead-offer]').value.trim(),message=card.querySelector('[data-lead-feedback]');
+      if(outcome!=='retry'&&reason.length<2){message.textContent='请先填写处理依据';return;}
+      if(outcome==='linked'&&!offerId){message.textContent='请填写已核对的活动ID';return;}
+      const buttons=card.querySelectorAll('[data-lead-resolve]');buttons.forEach(b=>b.disabled=true);
+      try{await adm(`/leads/${l.id}/resolve`,{expectedVersion:l.reviewVersion,outcome,reason:reason||'管理员要求重新官方核验',...(offerId?{offerId}:{})});
+        message.textContent=outcome==='retry'?'已排入自动官方复核，下轮处理':outcome==='linked'?'已关联，处理结果已保存':'已结束，处理依据已保存';
+        card.dataset.resolved='1';
+      }catch(e){message.textContent=e.message;buttons.forEach(b=>b.disabled=false);}
+    }));
+  });
+}
 async function admQueue() {
   const box = $('#admBody');
   const q = await adm('/queue');
@@ -1396,14 +1421,16 @@ async function admQueue() {
   </article>`;
   const sugCount = k => q.pending.filter(o => (o.suggestion?.verdict || 'none') === k).length;
   const sugTabs = [['all', '全部', q.pending.length], ['approve', '建议通过', sugCount('approve')], ['history', '建议作为历史', sugCount('history')], ['reject', '建议拒绝', sugCount('reject')], ['judge', '需要你判断', sugCount('judge')], ['none', '未标注', sugCount('none')]].filter(([k, , n]) => k === 'all' || n);
-  box.innerHTML = `<p class="small muted">待审 ${q.pending.length} 条 · 新线索 ${q.newLeads} 条</p>
-    ${q.priorityLeads?.length ? `<section><h3>重要线索 · 尚未进入待审</h3><p class="small muted">这些内容尚未批准。每小时优先研判；抽取受阻的请到“线索”处理。</p>${q.priorityLeads.map(l=>`<div class="card" style="margin-bottom:8px"><b>#${l.id} ${esc(l.title || '')}</b><p class="small">${l.status==='reviewing'?'需人工核验':'等待优先研判'}${l.note?` · ${esc(l.note)}`:''}</p><a href="${esc(l.url)}" target="_blank" rel="noopener">查看原始线索 ↗</a></div>`).join('')}</section>`:''}
+  box.innerHTML = `<p class="small muted">待审条目 ${q.pending.length} 条 · 线索复核 ${(q.leadTasks||[]).length} 条 · 新线索 ${q.newLeads} 条</p>
+    ${q.leadTasks?.length?`<section><h3>线索复核</h3><p class="small muted">尚未形成条目的线索会自动读取原文、搜索官方出处并查重。暂时受阻会按时重试；需要判断的可在这里关联已有活动、结束线索或重新核验。</p>${q.leadTasks.slice(0,10).map(leadTaskCard).join('')}${q.leadTasks.length>10?`<details><summary>其余 ${q.leadTasks.length-10} 条线索复核</summary>${q.leadTasks.slice(10).map(leadTaskCard).join('')}</details>`:''}</section>`:''}
+    ${q.priorityLeads?.filter(l=>l.status==='new').length?`<section><h3>重要新线索 · 等待研判</h3>${q.priorityLeads.filter(l=>l.status==='new').map(l=>`<p>#${l.id} ${esc(l.title||'')} · 将在下一轮研判</p>`).join('')}</section>`:''}
     ${sugTabs.length > 2 ? `<div class="seg" role="tablist" style="margin-bottom:12px;flex-wrap:wrap">${sugTabs.map(([k, l, n]) => `<button type="button" data-sugtab="${k}" aria-pressed="${(ADM.sug || 'all') === k}">${l} ${n}</button>`).join('')}</div>` : ''}
     ${q.pendingPlatforms.length ? `<div class="card" style="margin-bottom:12px"><h3>新平台待准入</h3>${q.pendingPlatforms.map(p => `<div class="row" style="justify-content:space-between;padding:6px 0"><span>${esc(p.name)}（${esc(p.id)}）${p.site ? ` · <a href="${esc(p.site)}" target="_blank" rel="noopener">官网</a>` : ''}</span><span class="row"><button class="btn sm good" data-plat="${p.id}:approve">准入</button><button class="btn sm bad" data-plat="${p.id}:reject">拒绝</button></span></div>`).join('')}</div>` : ''}
     ${q.suggestAutoPublish.map(x => `<div class="card" style="margin-bottom:12px"><span class="st warn"><b>!</b>建议放开</span> 信源 ${esc(x.id)} 已连续原样通过 ${x.cleanStreak} 条 <button class="btn sm" data-autopub="${x.id}">放开自动上架</button></div>`).join('')}
     ${q.needsVerification?.length ? `<section>${secH('证据待核验', '旧版已退出当前可领；核对官方页面后才能确认结束或恢复')}${q.needsVerification.map(o => `<form class="card" data-withdraw="${esc(o.code)}" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px"><b>${esc(o.title)}</b><a href="${esc(o.evidenceUrl)}" target="_blank" rel="noopener">打开当前证据 ↗</a><label class="field">官方撤回链接<input type="url" name="evidenceUrl" value="${esc(o.evidenceUrl)}" required></label><label class="field">官方撤回说明<input name="reason" required minlength="4" placeholder="请引用官方明确撤回或停止发放的文字"></label><div class="row"><button class="btn sm good" type="button" data-retest="${esc(o.code)}">我核对过，仍有效</button><button class="btn sm bad" type="submit">核实后结束</button></div></form>`).join('')}</section>` : ''}
     <div class="grid g2">${q.pending.map(o => card(o)).join('') || emptySheep('待审队列是空的。')}</div>
     ${q.incomplete?.length ? `<section><details data-incomplete><summary style="cursor:pointer">${secH('已上架、字段待补', `${q.incomplete.length} 条：补齐后日历、时间线、按模型找、价值统计等栏目才完整`)}</summary><div class="grid g2" data-incomplete-body></div></details></section>` : ''}`;
+  bindLeadTasks(box,q.leadTasks||[]);
   const applySug = () => $$('[data-sug]', box).forEach(el => { if (el.closest('details')) return; el.style.display = !ADM.sug || ADM.sug === 'all' || el.dataset.sug === ADM.sug ? '' : 'none'; });
   $$('[data-sugtab]', box).forEach(b => b.addEventListener('click', () => { ADM.sug = b.dataset.sugtab; $$('[data-sugtab]', box).forEach(x => x.setAttribute('aria-pressed', x === b)); applySug(); }));
   applySug();
@@ -1548,9 +1575,9 @@ async function admQuality() {
 }
 async function admLeads() {
   const box = $('#admBody');
-  box.innerHTML = `<p class="small muted">每小时优先研判重置、赠额和限时福利；每轮保留名额消化旧线索。“需人工处理”保留了未能匹配平台或暂时取不到原文的线索。核实平台并准入后，可重新研判。</p>
+  box.innerHTML = `<p class="small muted">每小时优先研判重置、赠额和限时福利；每轮保留名额消化旧线索。受阻线索会进入官方复核；具体进度和处理按钮在“待审”的线索复核区。已关联/已结束可在这里追溯处理原因。</p>
     <form id="admPlatform" class="card" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"><input name="name" placeholder="平台名称" required><select name="type"><option value="lab">模型厂商</option><option value="cloud">云厂商</option><option value="infra">推理平台</option><option value="tool">AI 工具</option><option value="new">新玩家</option></select><input name="site" type="url" placeholder="经核验的官网 https://" required><button class="btn sm" type="submit">送交平台准入</button></form>
-    <div class="row" style="gap:12px;margin-bottom:12px"><label class="field">线索状态<select data-lead-status>${[['all','全部未处理'],['new','新线索'],['reviewing','需人工处理']].map(([value,label])=>`<option value="${value}" ${value === (ADM.leadStatus || 'all') ? 'selected' : ''}>${label}</option>`).join('')}</select></label><span data-lead-count class="small muted"></span></div>
+    <div class="row" style="gap:12px;margin-bottom:12px"><label class="field">线索状态<select data-lead-status>${[['all','全部未处理'],['new','新线索'],['reviewing','自动复核/待判断'],['linked','已关联'],['rejected','已结束']].map(([value,label])=>`<option value="${value}" ${value === (ADM.leadStatus || 'all') ? 'selected' : ''}>${label}</option>`).join('')}</select></label><span data-lead-count class="small muted"></span></div>
     <div class="rows" data-lead-rows></div><div class="row" style="gap:10px;margin-top:12px"><button class="btn sm" type="button" data-lead-more hidden>加载更早的线索</button><span data-lead-message role="status" class="small"></span></div>`;
   $('#admPlatform').addEventListener('submit', async e => { e.preventDefault(); const form = e.currentTarget; const fields = Object.fromEntries(new FormData(form)); try { const host = new URL(fields.site).hostname.replace(/^www\./, '').split('.'); fields.id = (host.length > 2 && !['com', 'cn', 'ai', 'io', 'dev', 'co'].includes(host.at(-2)) ? host.at(-2) : host[0]).toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/^-+/, '') || 'new-platform'; const r = await adm('/platforms', fields); toast(`平台 ${r.id} 已进入待准入，先在待审页核实后准入`); form.reset(); } catch (err) { toast(err.message); } });
   const rows = box.querySelector('[data-lead-rows]'), more = box.querySelector('[data-lead-more]'), message = box.querySelector('[data-lead-message]'), select = box.querySelector('[data-lead-status]');
@@ -1566,15 +1593,15 @@ async function admLeads() {
       const existing = new Set($$('[data-lead]', rows).map(row => Number(row.dataset.lead)));
       for (const l of result.leads.filter(l => !existing.has(l.id))) {
         const row = document.createElement('div'); row.className = 'orow'; row.dataset.lead = l.id; row.style.gridTemplateColumns = 'auto minmax(0,1fr) auto';
-        row.innerHTML = `<span class="when">#${l.id}</span><span class="t">${esc(l.title || '(无标题)')}<small><span class="chip">${esc(l.origin)}</span> <span class="chip">${l.status === 'reviewing' ? '需人工处理' : '新线索'}</span> <a href="${esc(l.url)}" target="_blank" rel="noopener" style="text-decoration:underline;word-break:break-all">${esc(l.url)}</a>${l.note ? `<br>${esc(l.note)}` : ''}</small></span><span class="row">${l.status === 'reviewing' ? '<button class="btn sm" type="button" data-retry>重新研判</button>' : ''}<button class="btn sm" type="button" data-dismiss>忽略</button></span>`;
+        row.innerHTML = `<span class="when">#${l.id}</span><span class="t">${esc(l.title || '(无标题)')}<small><span class="chip">${esc(l.origin)}</span> <span class="chip">${l.status === 'reviewing' ? (l.resolution?.status==='manual'?'需要你判断':'自动官方复核') : l.status==='linked'?'已关联':l.status==='rejected'?'已结束':'新线索'}</span> <a href="${esc(l.url)}" target="_blank" rel="noopener" style="text-decoration:underline;word-break:break-all">${esc(l.url)}</a>${l.note ? `<br>${esc(l.note)}` : ''}</small></span><span class="row">${l.status === 'reviewing' ? '<button class="btn sm" type="button" data-retry>重新研判</button>' : ''}${['new','reviewing'].includes(l.status)?'<button class="btn sm" type="button" data-dismiss>忽略</button>':''}</span>`;
         row.querySelectorAll('[data-dismiss],[data-retry]').forEach(button => button.addEventListener('click', async () => {
           if (button.disabled) return;
           button.disabled = true;
           try {
             const retry = button.hasAttribute('data-retry');
-            await adm(`/leads/${l.id}/${retry ? 'retry' : 'dismiss'}`, {});
-            if (retry) toast('已放回下一轮研判队列');
-            if (retry && select.value === 'all') { row.querySelector('.chip + .chip').textContent = '新线索'; button.remove(); }
+            await adm(`/leads/${l.id}/${retry ? 'retry' : 'dismiss'}`, {expectedVersion:l.reviewVersion});
+            if (retry) toast('已排入下一轮官方复核');
+            if (retry && select.value === 'all') { row.querySelector('.chip + .chip').textContent = '自动官方复核'; button.remove(); }
             else { row.remove(); total = Math.max(0, total - 1); }
             count();
           } catch (err) { message.textContent = err.message; button.disabled = false; }
@@ -1609,7 +1636,7 @@ async function admHealth() {
       <div class="kpi"><span class="k-l">今日数据库读取（UTC）</span><span class="k-v">${h.d1Usage?.rowsRead != null ? `${(h.d1Usage.rowsRead / 10000).toFixed(0)}<small>万 / ${h.d1Usage.limits.rowsRead / 10000} 万行</small>` : '—<small>' + (h.d1Usage?.configured ? '读取失败' : '未配置') + '</small>'}</span></div>
       <div class="kpi"><span class="k-l">本月付费兜底</span><span class="k-v">¥${h.costMonthCny.toFixed(2)}<small>/ ¥10</small></span></div></section>
     ${h.officialReviewCounts?`<div class="card" style="margin-bottom:12px"><b>官方出处复核</b><p class="small">待处理 ${h.officialReviewCounts.waiting??0} · 进行中 ${h.officialReviewCounts.checking} · 退避重试 ${h.officialReviewCounts.retrying??0} · 已匹配 ${h.officialReviewCounts.matched} · 重试耗尽待人工 ${h.officialReviewCounts.exhausted??0} · 占位超时 ${h.officialReviewCounts.stalled??0}</p><p class="small muted">条目内可查看原线索、搜索出处、失败原因和下次重试时间。自动补全后仍需审核。</p></div>`:''}
-    ${h.leadWorkflow?`<div class="card" style="margin-bottom:12px"><b>线索到审核</b><p class="small">待研判 ${h.leadWorkflow.new} · 人工处理 ${h.leadWorkflow.reviewing} · 重要线索 ${h.leadWorkflow.important}</p><p class="small muted">人工处理中的线索不会自动批准；到“线索”查看具体原因，补齐平台或材料后可重试。</p></div>`:''}
+    ${h.leadWorkflow?`<div class="card" style="margin-bottom:12px"><b>线索到审核</b><p class="small">待研判 ${h.leadWorkflow.new} · 线索复核 ${h.leadWorkflow.reviewing} · 需你判断 ${h.leadWorkflow.rescueManual??0} · 等待重试 ${h.leadWorkflow.rescueRetrying??0} · 重要线索 ${h.leadWorkflow.important}</p><p class="small muted">受阻线索会自动复核；在“待审”的线索复核区查看下次时间和处理原因，可关联已有活动或结束线索。</p></div>`:''}
     ${h.coverageDegraded?`<div class="card" style="margin-bottom:12px"><span class="st warn"><b>!</b>最近全量采集覆盖不完整</span><p class="small">核验失败 ${h.lastCollectAttempt?.stats?.verificationFailed??'未记录'} 次 · 核验延期 ${h.lastCollectAttempt?.stats?.verificationDeferred??'未记录'} 条。抓到网页不代表其中每项福利仍有效。</p></div>`:''}
     ${h.d1Usage?.rowsRead != null && h.d1Usage.rowsRead > h.d1Usage.limits.rowsRead * 0.7 ? `<div class="card" style="margin-bottom:12px"><span class="st warn"><b>!</b>数据库读取接近免费额度</span><p class="small" style="margin:6px 0 0">今天已读 ${Math.round(h.d1Usage.rowsRead / 10000)} 万行，免费版每天上限 500 万行，超了全站会无法加载，到 UTC 0 点（东京 9 点）才恢复。先停掉手动采集和批量操作，或在 Cloudflare 升级 Workers 付费版。</p></div>` : ''}
     ${h.dispatchFailures?.length ? `<div class="card" style="margin-bottom:12px"><span class="st warn"><b>!</b>定时采集没能触发</span><p class="small" style="margin:6px 0 0">最近 48 小时有 ${h.dispatchFailures.length} 次触发 GitHub 采集失败（已自动重试一次）：</p><ul class="small">${h.dispatchFailures.map(f => `<li>${esc(f.at.slice(0, 16).replace('T', ' '))} UTC：${esc(f.error || '')}</li>`).join('')}</ul><p class="small muted" style="margin:0">常见原因：GitHub 令牌过期或被重新生成。换上新令牌后在这里会恢复正常。</p></div>` : ''}

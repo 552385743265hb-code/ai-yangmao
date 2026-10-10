@@ -15,6 +15,7 @@ const rssSource = { id: 'rss', kind: 'rss', tier: 'site', platformId: 'vendor', 
 const json = (value: unknown) => new Response(JSON.stringify(value), { headers: { 'Content-Type': 'application/json' } });
 
 interface HarnessOptions {
+  rescueJob?:boolean;
   officialJob?: boolean;
   officialJobIds?:string[];
   officialSteps?: string[];
@@ -48,6 +49,9 @@ function harness(options: HarnessOptions = {}) {
     if (url === aihotSource.url) return json({ items: [] });
     if (url.endsWith('/snapshots')) return json({ changed: false });
     if (url.endsWith('/api/platforms')) return json({ platforms: [{ id: 'vendor', name: 'Vendor', site: 'https://vendor.example', xHandles: [], staffHandles: [] }] });
+    if(url.includes('/lead-reviews/queue'))return json({jobs:options.rescueJob?[{id:1312}]:[]});
+    if(url.endsWith('/lead-reviews/1312/claim'))return json({claimed:true,jobId:'12345678-1234-4234-8234-123456789012',previousCandidates:options.previousCandidates,lead:{...lead,...options.leads?.[0],id:1312,status:'reviewing'},platforms:[{id:'vendor',name:'Vendor',site:'https://vendor.example',xHandles:[],staffHandles:[]}],sources:[],existing:options.known??[]});
+    if(url.endsWith('/lead-reviews/1312/result'))return json({status:body.outcome,nextAttemptAt:body.outcome==='retry'?'2030-01-01T00:00:00Z':null});
     if (url.includes('/leads?')) return json({ leads: options.leads ?? [] });
     if (url.includes('/official-reviews/queue')) return json({jobs:(options.officialJobIds??(options.officialJob?['vendor-max-api']:[])).map(id=>({id,title:candidate.title})),remaining:options.officialJobIds?.length??(options.officialJob?1:0)});
     if(url.includes('/official-reviews/')&&url.endsWith('/claim'))return json({claimed:true,jobId:'12345678-1234-4234-8234-123456789012',previousCandidates:options.previousCandidates,offer:{...candidate,steps:options.officialSteps??[],id:url.split('/').at(-2),firstChannel:'reddit',evidence:{url:'https://community.example/post',tier:'media',capturedAt:new Date().toISOString(),excerpts:{}}},platform:{id:'vendor',name:'Vendor',site:'https://vendor.example',xHandles:options.partialSearch?['@vendor']:[],staffHandles:[]},sources:[]});
@@ -321,4 +325,37 @@ it('cools down a limited search service but still reads known official sources f
   expect(h.reads.filter(url=>url==='https://mcp.exa.ai/mcp')).toHaveLength(1);
   expect(h.payloads('/offers')).toHaveLength(2);
   expect((result.stats as any).officialReview).toMatchObject({checked:2,matched:2,failed:0,searches:1});
+});
+
+
+it('automatically rescues a reviewing lead into a pending offer in the hourly workflow',async()=>{
+  const h=harness({rescueJob:true});
+  const {runPipeline}=await import('../pipeline/run');await runPipeline();
+  expect(h.payloads('/offers')[0]?.[0]).toMatchObject({leadId:1312,leadReviewJobId:'12345678-1234-4234-8234-123456789012'});
+  expect(h.payloads('/lead-reviews/1312/result')[0]).toMatchObject({outcome:'linked'});
+});
+it('closes an explicit non-benefit official post with its grounded explanation',async()=>{
+  const h=harness({rescueJob:true,modelOutput:JSON.stringify({offers:[],leadAssessment:{outcome:'not_benefit',reason:'这是异常说明，不是独立赠额',quote:benefit}})});
+  const {runPipeline}=await import('../pipeline/run');await runPipeline();
+  expect(h.payloads('/offers')).toEqual([]);
+  expect(h.payloads('/lead-reviews/1312/result')[0]).toMatchObject({outcome:'closed',quote:benefit,evidenceUrl:lead.url});
+});
+it('records a technical retry when a stuck lead has no readable primary source',async()=>{
+  const h=harness({rescueJob:true,officialSearchStatus:429,pages:{[lead.url]:403}});
+  const {runPipeline}=await import('../pipeline/run');const result=await runPipeline();
+  expect(h.payloads('/lead-reviews/1312/result')[0]).toMatchObject({outcome:'retry'});
+  expect(result.stats.coverageDegraded).toBe(true);
+});
+
+it('does not silently truncate six recovered benefits and mark the lead complete',async()=>{
+  const h=harness({rescueJob:true,modelOutput:JSON.stringify({offers:Array.from({length:6},(_,n)=>({...candidate,key:'benefit-'+n,title:'独立权益'+n}))})});
+  const {runPipeline}=await import('../pipeline/run');await runPipeline();
+  expect(h.payloads('/offers')).toHaveLength(6);
+  expect(h.payloads('/lead-reviews/1312/result')[0].offerIds).toHaveLength(6);
+});
+it('advances to a fourth official page instead of rereading all raw links before search',async()=>{
+  const urls=['one','two','three','four'].map(n=>'https://vendor.example/'+n);
+  const h=harness({rescueJob:true,leads:[{...lead,url:urls[0],raw:urls[1]+' '+urls[2]}],previousCandidates:urls.slice(0,3),officialUrls:[urls[3]],modelOutput:'{"offers":[]}'});
+  const {runPipeline}=await import('../pipeline/run');await runPipeline();
+  expect(h.reads).toContain(urls[3]);
 });

@@ -30,7 +30,7 @@ cd /Volumes/AI/MyWorkspace/AI_Freebies && ./node_modules/.bin/tsx scripts/ym.ts 
 | 拒绝 a3f9 [理由] | `ym reject a3f9 <理由>`。理由尽量以这些词开头，便于统计：付费套餐 / 非AI / 平台错 / 重复 / 日期无法确认 / 额度不明 / 分类错 |
 | 改 a3f9 的截止日期为 10-31 并通过 | `ym edit a3f9 claimEnd=2026-10-31 endKind=date --approve --reason <用户说的原因>` |
 | 看线索 / 有什么新线索 | `ym leads` |
-| 忽略线索 #12 | `ym dismiss 12` |
+| 忽略线索 #12 | 先从`ym leads`读取版本，再`ym dismiss 12 --version <reviewVersion>` |
 | 补录 <链接> [备注] / 转发来一个链接说"收一下" | `ym add <链接> <备注>` |
 | 今天有什么羊毛 | `ym today` |
 | 某天能薅什么（10 月 5 日） | `ym on 2026-10-05`（年份默认今年） |

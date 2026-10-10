@@ -1,3 +1,4 @@
+import type { LeadResolution } from '../shared/lead-review';
 import type { OfficialReview } from '../shared/official-review';
 // D1 表结构。字段含义见 docs/design.md §5。
 // JSON 字段存为 TEXT，读取时再解析。
@@ -98,6 +99,7 @@ export const snapshots = sqliteTable('snapshots', {
 }, t => [index('snapshots_source_idx').on(t.sourceId, t.fetchedAt)]);
 
 export const leads = sqliteTable('leads', {
+  resolution: text('resolution', { mode: 'json' }).$type<LeadResolution | null>(),
   id: integer('id').primaryKey({ autoIncrement: true }),
   origin: text('origin', { enum: ['aihot', 'email', 'sweep', 'manual', 'telegram', 'hn', 'reddit', 'discord', 'media', 'linuxdo', 'ithome', 'v2ex'] }).notNull(),
   url: text('url').notNull(),
