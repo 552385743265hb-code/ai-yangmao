@@ -30,7 +30,7 @@ function displayFromRaw(raw:string):OfferIn|null {
 export class IdentityService {
  private store:IdentityStore;
  constructor(private db:D1Database){this.store=new IdentityStore(db);}
- private async entity(id:string){return this.db.prepare('SELECT * FROM benefit_entities WHERE id=?').bind(id).first<EntityRow>();}
+ private async entity(id:string){return this.db.prepare("SELECT * FROM benefit_entities WHERE id=? AND state='active'").bind(id).first<EntityRow>();}
  private async offer(id:string|null):Promise<OfferRow|null>{if(!id)return null;return (await drizzle(this.db,{schema:tables}).select().from(tables.offers).where(eq(tables.offers.id,id)))[0]??null;}
  private async evidence(candidate:CandidateRow):Promise<EvidenceContext> {
   const row=await this.db.prepare('SELECT text,text_truncated,trust_json FROM source_observations WHERE id=?').bind(candidate.observation_id).first<{text:string;text_truncated:number;trust_json:string}>();
@@ -49,6 +49,7 @@ export class IdentityService {
   const row=await this.db.prepare('SELECT * FROM review_decisions WHERE id=?').bind(decisionId).first<Record<string,unknown>>();if(!row)throw new IdentityError(404,'decision missing');
   const decision=readReviewDecision(row);if(decision.action!=='reject')throw new IdentityError(400,'only a refusal can be reopened');
   const entity=decision.entityId?await this.entity(decision.entityId):null;
+  if(decision.entityId&&!entity)throw new IdentityError(409,'decision belongs to a merged or missing entity; review its canonical activity');
   const basisHash=await sha256(stableJson(input.basis)),taskKey=reviewTaskKey({kind:'evidence_reopen',entityId:decision.entityId??'claim-'+decision.candidateId,refusalDecisionId:decisionId,basisHash});
   const existing=await this.db.prepare('SELECT id,decision_id FROM review_tasks WHERE task_key=? ORDER BY created_at DESC LIMIT 1').bind(taskKey).first<{id:string;decision_id:string|null}>();
   if(existing)return this.commit(new MutationBuilder(this.db,command,hash),[],{taskId:existing.id,decisionId:existing.decision_id??decisionId});
@@ -86,7 +87,7 @@ export class IdentityService {
   const input=z.strictObject({requestId:z.string().min(1).max(200),expectedOfferVersion:z.string().min(1),action:z.enum(['unpublish','withdraw']),reason:z.string().min(2).max(2000),reasonCode:reviewDecisionSchema.shape.reasonCode.optional(),actor:z.string().min(1)}).parse(raw);
   const command='visibility:'+input.requestId,hash=await sha256(stableJson({offerId,...input}));
   const prior=await readIdentityReceipt<{decisionId:string}>(this.db,command,hash);if(prior){if(prior.status==='conflict')throw new IdentityError(409,'request payload conflict');return prior.value!;}
-  const entity=await this.db.prepare('SELECT * FROM benefit_entities WHERE canonical_offer_id=?').bind(offerId).first<EntityRow>(),offer=await this.offer(offerId);
+  const entity=await this.db.prepare("SELECT * FROM benefit_entities WHERE canonical_offer_id=? AND state='active'").bind(offerId).first<EntityRow>(),offer=await this.offer(offerId);
   if(!entity||!offer||offer.updatedAt!==input.expectedOfferVersion||!entity.current_approved_version_id)throw new IdentityError(409,'visibility version changed');
   const version=await this.db.prepare('SELECT facts_json FROM benefit_versions WHERE id=? AND entity_id=?').bind(entity.current_approved_version_id,entity.id).first<{facts_json:string}>();
   if(!version)throw new IdentityError(409,'approved baseline missing');
@@ -107,7 +108,7 @@ export class IdentityService {
   if(Object.keys(input.fields).some(key=>!(key in columns)||key==='platformId'))throw new IdentityError(400,'identity edit requires controlled fields; product corrections need explicit identity resolution');
   const command='edit:'+input.requestId,hash=await sha256(stableJson({offerId,...input}));
   const prior=await readIdentityReceipt<{taskId:string|null;revision:number;pendingUpdate:boolean}>(this.db,command,hash);if(prior){if(prior.status==='conflict')throw new IdentityError(409,'request payload conflict');return prior.value!;}
-  const entity=await this.db.prepare('SELECT * FROM benefit_entities WHERE canonical_offer_id=?').bind(offerId).first<EntityRow>(),original=await this.offer(offerId);
+  const entity=await this.db.prepare("SELECT * FROM benefit_entities WHERE canonical_offer_id=? AND state='active'").bind(offerId).first<EntityRow>(),original=await this.offer(offerId);
   if(!entity||!original)throw new IdentityError(404,'managed offer missing');
   const active=await this.db.prepare("SELECT * FROM review_tasks WHERE entity_id=? AND kind IN ('initial','terms_change','evidence_reopen') AND state IN ('open','checking','manual') ORDER BY created_at DESC LIMIT 2").bind(entity.id).all<TaskRow>();
   if(active.results.length>1)throw new IdentityError(409,'multiple review drafts need explicit conflict resolution');

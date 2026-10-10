@@ -33,6 +33,7 @@ export interface Env {
   IDENTITY_CANARY_PLATFORMS?: string;
   IDENTITY_MODEL_ASSIST?: string;
   HISTORICAL_MERGE_ENABLED?: string;
+  IDENTITY_HISTORY_ENVIRONMENT?: 'synthetic'|'redacted_local';
   ADMIN_TOKEN: string;
   CF_ANALYTICS_TOKEN?: string; // Cloudflare 账户分析只读令牌，采集健康页显示今日 D1 读取量
   CF_ACCOUNT_ID?: string;

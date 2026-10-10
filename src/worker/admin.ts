@@ -1,3 +1,5 @@
+import {canonicalLeadProjection} from './identity/lead-projection';
+import {notificationInheritance} from './identity/notification-inheritance';
 import {noticeIdentities,pendingIdentityNotices,identityReviewAlerts,identityGuard,deliveryIdentityGuard} from './identity/notifications';
 import {canonicalOffers,resolveCanonicalOffer} from './identity/canonical';
 import { identityAdminRoutes } from './identity/routes';
@@ -130,18 +132,18 @@ admin.onError((error, c) => {
 admin.get('/queue', async c => {
   const d = db(c.env), names = await platformNames(c.env), now = new Date();
   // 先抓到的在前，新抓取的排在最后（管理员按顺序审，新来的不打乱已预审的条目，2026-10-03）
-  const pending = await d.select().from(s.offers).where(eq(s.offers.reviewState, 'pending')).orderBy(s.offers.discoveredAt, s.offers.id);
+  const pending = await d.select().from(s.offers).where(and(eq(s.offers.reviewState, 'pending'),canonicalOffers)).orderBy(s.offers.discoveredAt, s.offers.id);
   const proposals = await d.select().from(s.offerProposals).orderBy(desc(s.offerProposals.updatedAt));
   const originals = proposals.length ? await d.select().from(s.offers).where(inArray(s.offers.id, d.select({ id: s.offerProposals.offerId }).from(s.offerProposals))) : [];
   const codeCounts = new Map<string, number>();
   for (const { id } of await d.select({ id: s.offers.id }).from(s.offers)) codeCounts.set(shortCode(id), (codeCounts.get(shortCode(id)) ?? 0) + 1);
-  const managed=new Set((await c.env.DB.prepare("SELECT e.canonical_offer_id FROM benefit_entities e WHERE EXISTS(SELECT 1 FROM review_tasks t WHERE t.entity_id=e.id AND t.state IN ('open','checking','manual'))").all<{canonical_offer_id:string}>()).results.map(r=>r.canonical_offer_id));
+  const managed=new Set((await c.env.DB.prepare("SELECT e.canonical_offer_id FROM benefit_entities e WHERE e.state='merged' OR EXISTS(SELECT 1 FROM review_tasks t WHERE t.entity_id=e.id AND t.state IN ('open','checking','manual'))").all<{canonical_offer_id:string}>()).results.map(r=>r.canonical_offer_id));
   const queueView = (o: OfferRow) => ({ ...view(o, names[o.platformId] ?? o.platformId, now), code: codeCounts.get(shortCode(o.id))! > 1 ? o.id : shortCode(o.id) });
   const [{ n: newLeads }] = await d.select({ n: sql<number>`count(*)` }).from(s.leads).where(eq(s.leads.status, 'new'));
   const pendingPlatforms = await d.select().from(s.platforms).where(eq(s.platforms.status, 'pending'));
   const suggest = (await d.select().from(s.sources).where(and(gte(s.sources.cleanStreak, 5), eq(s.sources.autoPublish, false))))
     .filter(source => source.enabled && ['site', 'docs', 'official'].includes(source.tier));
-  const approvedRows = await d.select().from(s.offers).where(eq(s.offers.reviewState, 'approved'));
+  const approvedRows = await d.select().from(s.offers).where(and(eq(s.offers.reviewState, 'approved'),canonicalOffers));
   // 抓取/证据匹配失败留在健康页自动重试，不转成人工审批任务。
   const needsVerification: OfferRow[] = [];
   // 已上架但字段不全：和待审用同一份检查，补齐后各栏目才完整
@@ -157,7 +159,7 @@ admin.get('/queue', async c => {
         return [{ ...queueView(proposalOffer(original, p.candidate)), link:`https://ai-yangmao.com/#admin-offer-${encodeURIComponent(p.offerId)}`, reviewVersion: p.updatedAt, pendingUpdate: true, changedFields: updateDiff.map(x => x.field), updateDiff }];
       }),
     ],
-    leadTasks: (await d.select().from(s.leads).where(eq(s.leads.status,'reviewing'))).sort((a,b)=>Number(b.resolution?.status==='manual')-Number(a.resolution?.status==='manual')||leadPriority(a)-leadPriority(b)||a.id-b.id).map(leadTask),
+    leadTasks: (await canonicalLeadProjection(c.env.DB,await d.select().from(s.leads).where(eq(s.leads.status,'reviewing')))).sort((a,b)=>Number(b.resolution?.status==='manual')-Number(a.resolution?.status==='manual')||leadPriority(a)-leadPriority(b)||a.id-b.id).map(leadTask),
     priorityLeads: (await d.select().from(s.leads).where(inArray(s.leads.status,['new','reviewing'])))
       .filter(l=>leadPriority(l)<=1).sort((a,b)=>leadPriority(a)-leadPriority(b)||b.id-a.id).slice(0,10)
       .map(l=>({ id:l.id,title:l.title,url:l.url,status:l.status,note:l.status==='reviewing'?l.raw?.split('[研判]').at(-1)?.slice(0,500):null })),
@@ -442,7 +444,7 @@ admin.get('/leads', async c => {
   const state = status==='all' ? inArray(s.leads.status,['new','reviewing']) : eq(s.leads.status,status);
   const [{total}] = await d.select({total:sql<number>`count(*)`}).from(s.leads).where(state);
   const rows=await d.select().from(s.leads).where(and(state,before ? lt(s.leads.id,before):undefined)).orderBy(desc(s.leads.id)).limit(limit+1);
-  const page=rows.slice(0,limit);
+  const page=await canonicalLeadProjection(c.env.DB,rows.slice(0,limit));
   return c.json({total,nextCursor:rows.length>limit ? page.at(-1)!.id:null,leads:page.map(l=>({...leadTask(l),origin:l.origin,
     note:l.resolution?.reason??(l.status==='reviewing'?l.raw?.split('[研判]').at(-1)?.slice(0,500):null),createdAt:l.createdAt}))});
 });
@@ -454,8 +456,10 @@ admin.post('/leads/:id/resolve',async c=>{
   if(!l||!['new','reviewing'].includes(l.status)||leadReviewVersion(l)!==body.data.expectedVersion)return c.json({error:'线索状态已更新，请刷新'},409);
   if(l.resolution?.identityTaskIds?.length)return c.json({error:'请逐项处理身份审核任务，不能用整条线索覆盖候选决定'},409);
   const b=body.data;
+  const originOfferId=b.offerId;
+  if(b.offerId)b.offerId=(await resolveCanonicalOffer(c.env.DB,b.offerId)).offerId;
   if(b.outcome==='linked'&&(!b.offerId||!(await d.select().from(s.offers).where(eq(s.offers.id,b.offerId))).length))return c.json({error:'请填写已存在的完整活动ID'},400);
-  const resolution:LeadResolution={status:b.outcome==='retry'?'retry':b.outcome,jobId:crypto.randomUUID(),attempts:0,inconclusive:0,checkedAt:new Date().toISOString(),nextAttemptAt:b.outcome==='retry'?new Date().toISOString():null,reason:b.reason,queries:l.resolution?.queries??[],candidates:l.resolution?.candidates??[],evidenceUrl:l.resolution?.evidenceUrl,quote:l.resolution?.quote,offerIds:b.offerId?[b.offerId]:(l.resolution?.offerIds??[])};
+  const resolution:LeadResolution={status:b.outcome==='retry'?'retry':b.outcome,jobId:crypto.randomUUID(),attempts:0,inconclusive:0,checkedAt:new Date().toISOString(),nextAttemptAt:b.outcome==='retry'?new Date().toISOString():null,reason:b.reason,queries:l.resolution?.queries??[],candidates:l.resolution?.candidates??[],evidenceUrl:l.resolution?.evidenceUrl,quote:l.resolution?.quote,offerIds:b.offerId?[b.offerId]:(l.resolution?.offerIds??[]),originOfferIds:originOfferId?[originOfferId]:(l.resolution?.originOfferIds??l.resolution?.offerIds??[])};
   const changed=await d.update(s.leads).set({status:b.outcome==='linked'?'linked':b.outcome==='closed'?'rejected':'reviewing',resolution,offerId:b.offerId??l.offerId})
     .where(and(eq(s.leads.id,l.id),eq(s.leads.status,l.status),sql`COALESCE(${s.leads.resolution},'')=COALESCE(${l.resolution?JSON.stringify(l.resolution):null},'')`)).returning({id:s.leads.id});
   return changed.length?c.json({ok:true}):c.json({error:'线索已更新，请刷新'},409);
@@ -520,11 +524,13 @@ export async function buildNotice(env: Env, kind: NoticeKind, channel: NoticeCha
   const d = db(env), names = await platformNames(env), now = new Date();
   const approvedPlatforms = new Set((await d.select({ id: s.platforms.id }).from(s.platforms).where(eq(s.platforms.status, 'approved'))).map(p => p.id));
   const approved = (await d.select().from(s.offers).where(and(eq(s.offers.reviewState, 'approved'),canonicalOffers))).filter(o => approvedPlatforms.has(o.platformId));
+  const inherited=await notificationInheritance(env.DB,approved.map(o=>o.id),channel);
   const inFlight = (await d.select({ payload: s.deliveries.payload, channel: s.deliveries.channel, status: s.deliveries.status }).from(s.deliveries).where(and(eq(s.deliveries.channel,channel),inArray(s.deliveries.status, ['pending', 'unknown']))));
   const blockedItems = new Set(inFlight.flatMap(delivery => Object.values((delivery.payload as {items?:Record<string,{id:string}[]>}).items ?? {}).flat().map(item=>item.id)));
-  const identities=await noticeIdentities(env.DB,approved.map(o=>o.id)),identityEvents=await pendingIdentityNotices(env.DB,channel,approved.filter(o=>isClaimable(liveStatus(o,now))&&!blockedItems.has(o.id)).map(o=>o.id));
+  for(const id of inherited.blocked)blockedItems.add(id);
+  const identities=await noticeIdentities(env.DB,approved.map(o=>o.id)),identityEvents=await pendingIdentityNotices(env.DB,channel,approved.filter(o=>isClaimable(liveStatus(o,now))&&!blockedItems.has(o.id)).map(o=>o.id),[...inherited.sent.entries()].filter(([,stages])=>stages.has('new')||stages.has('urgent')).map(([id])=>id));
   const sent = await d.select().from(s.notifications).where(eq(s.notifications.channel, channel));
-  const has = (id: string, stage: string) => sent.find(n => n.offerId === id && n.stage === stage);
+  const has = (id: string, stage: string) => sent.find(n => n.offerId === id && n.stage === stage)??(inherited.sent.get(id)?.has(stage)?{sentAt:null,messageId:null}:undefined);
   const out: Record<string, (ReturnType<typeof view> & { score?: number })[]> = { new: [], changed: [], ending: [], ended: [], urgent: [], standing: [], rising: [], lastcall: [] };
   let marks: NoticeMark[] = [];
   const revs = approved.length ? await d.select().from(s.offerRevisions).where(and(inArray(s.offerRevisions.offerId, d.select({ id: s.offers.id }).from(s.offers).where(eq(s.offers.reviewState, 'approved'))), eq(s.offerRevisions.author, 'pipeline'))) : [];
@@ -638,7 +644,7 @@ export async function buildNotice(env: Env, kind: NoticeKind, channel: NoticeCha
     const unresolved = await d.select().from(s.leads).where(inArray(s.leads.status,['new','reviewing']));
     leadBacklog = unresolved.length;
     reviewAlerts = [
-      ...await identityReviewAlerts(env.DB,[...announced]),
+      ...await identityReviewAlerts(env.DB,[...announced,...inherited.announcedReviewKeys]),
       ...awaiting.map(o=>({ key: o.officialReview && (o.officialReview.status === 'matched' || (o.officialReview.status!=='checking'&&!o.officialReview.nextAttemptAt)) ? `offer:${o.id}:official:${o.officialReview.jobId}` : `offer:${o.id}`, priority: reviewRank(o), title: `[${shortCode(o.id)}] ${o.title}`, state: o.officialReview?.status==='unresolved'&&!o.officialReview.nextAttemptAt?'官方复核待人工核对':'待审', url: `https://ai-yangmao.com/#admin-offer-${encodeURIComponent(o.id)}` })),
       ...proposals.filter(p=>p.diff.some(x=>isReviewField(x.field))).map(p=>({ key: `proposal:${p.offerId}:${JSON.stringify(p.diff)}`, priority: 2, title: String(p.candidate.title ?? p.offerId), state: '条款更新待审', url: `https://ai-yangmao.com/#admin-offer-${encodeURIComponent(p.offerId)}` })),
       ...unresolved.filter(l=>!l.resolution?.identityTaskIds?.length&&(leadPriority(l)<=1||l.resolution?.status==='manual')).sort((a,b)=>leadPriority(a)-leadPriority(b)||b.id-a.id).map(l=>({ key: `lead:${l.id}:${l.resolution?.status==='manual'?'manual:'+l.resolution.jobId:l.status}`, priority: 1, title: `#${l.id} ${l.title ?? ''}`, state: l.status==='reviewing' ? (l.resolution?.status==='manual'?'线索待你判断':'线索正在自动复核') : '重要线索，尚未研判', url: 'https://ai-yangmao.com/#admin' })),
@@ -656,7 +662,7 @@ export async function buildNotice(env: Env, kind: NoticeKind, channel: NoticeCha
   marks=marks.map(mark=>{const e=identities.get(mark.offerId);return e?{...mark,...identityGuard(e),eventKey:mark.eventKey??`offer:${e.id}:${e.publication_revision}:${mark.stage}:${channel}`}:mark;});
   const itemIds=new Set(Object.values(out).flat().map(o=>o.id));const identityGuards=[...identities.values()].filter(e=>itemIds.has(e.canonical_offer_id)).map(identityGuard);
   const empty = !reviewAlerts.length && !d1Alert && !marks.length && !out.standing.length && !out.rising.length && !out.lastcall.length && (kind === 'urgent' || channel !== 'telegram' || (!pendingCount && !suggestAutoPublish.length && !needsVerificationCount && !coverageDegraded));
-  return { kind, channel, identityGuards, items: out, marks, moreCount, d1Alert, pendingCount, reviewAlerts, leadBacklog, suggestAutoPublish, needsVerificationCount, coverageDegraded, empty, blockedCount: blocked.size };
+  return { kind, channel, identityGuards, items: out, marks, moreCount, d1Alert, pendingCount, reviewAlerts, leadBacklog, suggestAutoPublish, needsVerificationCount, coverageDegraded, empty, blockedCount: blocked.size+inherited.blocked.size,identityDeliveryConflicts:inherited.conflicts };
 }
 
 /** 预览是纯读取，不能仅凭获取消息就把内容记为已发送。 */
@@ -684,9 +690,10 @@ export async function claimNotice(env: Env, kind: NoticeKind, channel: NoticeCha
     SELECT ?1,?2,?3,?4,?5 WHERE ${deliveryIdentityGuard} AND NOT EXISTS (
       SELECT 1 FROM deliveries prior WHERE prior.channel=?3 AND prior.status IN ('pending','unknown') AND (
         EXISTS (SELECT 1 FROM json_tree(prior.payload,'$.items') old_item, json_tree(?5,'$.items') new_item
-          WHERE old_item.key='id' AND new_item.key='id' AND old_item.value=new_item.value)
+          WHERE old_item.key='id' AND new_item.key='id' AND coalesce((SELECT root.canonical_offer_id FROM benefit_entities old JOIN benefit_entities root ON root.id=old.merged_into WHERE old.canonical_offer_id=old_item.value AND old.state='merged'),old_item.value)=new_item.value)
+        OR EXISTS (SELECT 1 FROM json_each(prior.payload,'$.marks') old_mark,json_tree(?5,'$.items') new_item WHERE new_item.key='id' AND coalesce((SELECT root.canonical_offer_id FROM benefit_entities old JOIN benefit_entities root ON root.id=old.merged_into WHERE old.canonical_offer_id=json_extract(old_mark.value,'$.offerId') AND old.state='merged'),json_extract(old_mark.value,'$.offerId'))=new_item.value)
         OR EXISTS (SELECT 1 FROM json_each(prior.payload,'$.reviewAlerts') old_alert, json_each(?5,'$.reviewAlerts') new_alert
-          WHERE json_extract(old_alert.value,'$.key')=json_extract(new_alert.value,'$.key'))
+          WHERE (json_extract(old_alert.value,'$.key')=json_extract(new_alert.value,'$.key') OR EXISTS(SELECT 1 FROM merge_task_sources m WHERE m.status='active' AND m.source_task_id=json_extract(old_alert.value,'$.taskId') AND m.canonical_task_id=json_extract(new_alert.value,'$.taskId'))))
       )) ON CONFLICT(fingerprint) DO NOTHING RETURNING id`)
     .bind(id,fingerprint,channel,kind,JSON.stringify(notice)).all<{id:string}>();
   return created.results.length ? { ...notice, deliveryId: id } : { ...notice, empty: true, alreadyClaimed: true };

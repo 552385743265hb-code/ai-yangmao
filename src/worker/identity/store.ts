@@ -41,8 +41,10 @@ export class IdentityStore {
 
   async lookupAlias(namespace: 'legacy_offer_id'|'official_campaign'|'manual', key: string, scope: string): Promise<string|null> {
     try {
-      const row=await this.db.prepare("SELECT entity_id FROM identity_aliases WHERE namespace=? AND alias_key=? AND status='active' AND (namespace='legacy_offer_id' OR scope_key=?) LIMIT 1").bind(namespace,key,scope).first<{entity_id:string}>();
-      return row?.entity_id??null;
+      const row=await this.db.prepare("SELECT e.id,e.state,e.platform_id,r.id root_id,r.state root_state,r.platform_id root_platform FROM identity_aliases a JOIN benefit_entities e ON e.id=a.entity_id LEFT JOIN benefit_entities r ON r.id=e.merged_into WHERE a.namespace=? AND a.alias_key=? AND a.status='active' AND (a.namespace='legacy_offer_id' OR a.scope_key=?) LIMIT 1").bind(namespace,key,scope).first<{id:string;state:string;platform_id:string;root_id:string|null;root_state:string|null;root_platform:string|null}>();
+      if(!row)return null;if(row.state==='active')return row.id;
+      if(row.root_state==='active'&&row.root_platform===row.platform_id)return row.root_id;
+      throw new IdentityError(503,'invalid canonical alias route');
     } catch { throw new IdentityError(503,'alias retrieval unavailable'); }
   }
 
@@ -66,7 +68,7 @@ export class IdentityStore {
       const alias=anchor?await this.lookupAlias('official_campaign',anchor,scope):null;
       const exact=alias?await this.db.prepare(select+' WHERE e.id=? AND e.platform_id=?').bind(alias,productId).first<EntityRow>():null;
       const take=exact&&!page.exactSeen?39:40;
-      const rows=await this.db.prepare(select+' WHERE e.platform_id=? AND e.id>? AND e.id<>? ORDER BY e.id LIMIT ?').bind(productId,page.entity,exact?.id??'',take+1).all<EntityRow>();
+      const rows=await this.db.prepare(select+" WHERE e.state='active' AND e.platform_id=? AND e.id>? AND e.id<>? ORDER BY e.id LIMIT ?").bind(productId,page.entity,exact?.id??'',take+1).all<EntityRow>();
       const visible=rows.results.slice(0,take);
       const entities=[...(exact&&!page.exactSeen?[view(exact)]:[]),...visible.map(view)];
       // Independent indexed streams cover entity and lead-only decisions in all states.

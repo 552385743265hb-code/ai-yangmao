@@ -70,3 +70,5 @@ export const candidateInputSchema = z.strictObject({ inputId: idSchema, mechanis
 export const candidateBatchInputSchema = z.strictObject({ requestId: idSchema, observationId: idSchema, extractionVersion: idSchema, extractionComplete: z.boolean(), nonBenefitEvidence: quoteSchema.optional(), leadIds: z.array(z.number().int().positive()).max(10).default([]), candidates: z.array(candidateInputSchema).max(10) }).refine(v => new Set(v.candidates.map(c => c.inputId)).size === v.candidates.length, 'inputId must be unique within a batch').refine(v => JSON.stringify(v).length <= 1000000, 'candidate batch too large');
 export type CandidateBatchInput = z.input<typeof candidateBatchInputSchema>;
 export type CandidateInput = z.infer<typeof candidateInputSchema>;
+
+export type {MergePlan,MergePreviewInput,MergeReceipt,RollbackReceipt} from './history-types';

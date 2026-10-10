@@ -7,7 +7,7 @@ export interface MutationPlan<T> {
  guards?:Predicate[];assertions?:Predicate[];
 }
 export const commandGuard = "EXISTS(SELECT 1 FROM identity_commands WHERE request_id=? AND payload_hash=? AND state='staged' AND execution_token=?)";
-const allowed=new Set(['source_documents','source_observations','intake_candidates','intake_extractions','identity_extraction_leads','identity_refusal_applications','identity_backfill_progress','merge_plans','merge_operations','merge_members','lead_candidate_links','benefit_entities','benefit_versions','entity_observations','identity_aliases','review_decisions','review_tasks','task_candidates','identity_constraints','identity_blocks','identity_events','offers','offer_proposals','reviews','offer_revisions','rejected_offer_updates','leads']);
+const allowed=new Set(['source_documents','source_observations','intake_candidates','intake_extractions','identity_extraction_leads','identity_refusal_applications','identity_backfill_progress','merge_plans','merge_operations','merge_members','identity_version_routes','merge_task_sources','lead_candidate_links','benefit_entities','benefit_versions','entity_observations','identity_aliases','review_decisions','review_tasks','task_candidates','identity_constraints','identity_blocks','identity_events','offers','offer_proposals','reviews','offer_revisions','rejected_offer_updates','leads']);
 const identifier=(name:string)=>{if(!/^[a-z_]+$/.test(name))throw new Error('invalid internal SQL identifier');return '"'+name+'"';};
 const ownsVersion=(table:string,column:string,entity='entity_id')=>`(${column} IS NULL OR EXISTS(SELECT 1 FROM benefit_versions v WHERE v.id=${table}.${column} AND v.entity_id=${table}.${entity}))`;
 const ownership:Record<string,string>={
@@ -37,6 +37,18 @@ export class MutationBuilder {
  }
  remove(table:string,where:string,args:Binding[]):void {
   this.statements.push(this.db.prepare(`DELETE FROM ${this.table(table)} WHERE (${where}) AND ${commandGuard}`).bind(...args,this.requestId,this.payloadHash,this.executionToken));
+ }
+ insertMany(table:string,rows:Record<string,Binding>[]):void {
+  if(!rows.length)return;if(rows.length>1000||JSON.stringify(rows).length>750000)throw new Error('oversized mutation rows');
+  const keys=Object.keys(rows[0]);if(rows.some(row=>Object.keys(row).join('|')!==keys.join('|')))throw new Error('inconsistent bulk columns');
+  this.statements.push(this.db.prepare(`INSERT INTO ${this.table(table)}(${keys.map(identifier).join(',')}) SELECT ${keys.map(k=>`json_extract(value,'$.${k}')`).join(',')} FROM json_each(?) WHERE ${commandGuard}`).bind(JSON.stringify(rows),this.requestId,this.payloadHash,this.executionToken));
+  for(const row of rows)if(ownership[table]&&row.id!=null)this.assertOwnership(table,String(row.id));
+ }
+ updateMany(table:string,rows:Record<string,Binding>[]):void {
+  if(!rows.length)return;if(rows.length>1000||JSON.stringify(rows).length>750000)throw new Error('oversized mutation rows');const keys=Object.keys(rows[0]).filter(k=>k!=='id');const name=this.table(table);
+  if(rows.some(row=>!row.id||keys.some(k=>!(k in row))))throw new Error('bulk update requires stable IDs');
+  this.statements.push(this.db.prepare(`UPDATE ${name} SET ${keys.map(k=>`${identifier(k)}=(SELECT json_extract(r.value,'$.${k}') FROM json_each(?1) r WHERE json_extract(r.value,'$.id')=${name}.id)`).join(',')} WHERE id IN (SELECT json_extract(value,'$.id') FROM json_each(?1)) AND ${commandGuard}`).bind(JSON.stringify(rows),this.requestId,this.payloadHash,this.executionToken));
+  for(const row of rows)if(ownership[table])this.assertOwnership(table,String(row.id));
  }
  insertLeadLinks(leadIds:number[],candidateId:string):void {
   if(leadIds.length>1000||leadIds.some(id=>!Number.isSafeInteger(id)||id<=0))throw new Error('oversized or invalid historical lead links');

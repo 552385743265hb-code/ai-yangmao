@@ -1,3 +1,6 @@
+import {IdentityMergeService} from './merge';
+import {buildMergePlan} from './merge-plan';
+import {mergePlanSchema} from '../../shared/identity/history-types';
 import { z } from 'zod';
 import { mechanismSchema,canonicalTermsSchema } from '../../shared/identity/types';
 import { sha256 } from '../../shared/identity/normalize';
@@ -56,10 +59,10 @@ identityAdminRoutes.onError((error,c)=>{
 identityAdminRoutes.get('/tasks',async c=>{
  const query=z.object({cursor:z.string().max(200).optional(),limit:z.coerce.number().int().min(1).max(5).default(5)}).safeParse(c.req.query());
  if(!query.success)return c.json({error:'invalid task cursor'},400);
- const rows=await c.env.DB.prepare("SELECT * FROM review_tasks WHERE state IN ('open','checking','manual') AND id>? ORDER BY id LIMIT ?").bind(query.data.cursor??'',query.data.limit+1).all<Record<string,unknown>>();
+ const rows=await c.env.DB.prepare("SELECT * FROM review_tasks WHERE state IN ('open','checking','manual') AND (entity_id IS NULL OR EXISTS(SELECT 1 FROM benefit_entities e WHERE e.id=review_tasks.entity_id AND e.state='active')) AND id>? ORDER BY id LIMIT ?").bind(query.data.cursor??'',query.data.limit+1).all<Record<string,unknown>>();
  const tasks=[];
  for(const task of rows.results.slice(0,query.data.limit)){
-  const sources=await c.env.DB.prepare('SELECT c.id AS candidateId,c.facts_json,c.raw_candidate_json,o.id AS observationId,o.final_url,o.trust_json,o.text_truncated FROM task_candidates tc JOIN intake_candidates c ON c.id=tc.candidate_id JOIN source_observations o ON o.id=c.observation_id WHERE tc.task_id=? ORDER BY c.id LIMIT 11').bind(task.id).all<Record<string,unknown>>();
+  const sources=await c.env.DB.prepare("SELECT DISTINCT c.id AS candidateId,c.facts_json,c.raw_candidate_json,o.id AS observationId,o.final_url,o.trust_json,o.text_truncated FROM task_candidates tc JOIN intake_candidates c ON c.id=tc.candidate_id JOIN source_observations o ON o.id=c.observation_id WHERE tc.task_id=?1 OR tc.task_id IN (SELECT source_task_id FROM merge_task_sources WHERE canonical_task_id=?1 AND status='active') ORDER BY c.id LIMIT 11").bind(task.id).all<Record<string,unknown>>();
   const version=task.version_id?await c.env.DB.prepare('SELECT facts_json,display_candidate_json FROM benefit_versions WHERE id=? AND entity_id=?').bind(task.version_id,task.entity_id).first<Record<string,unknown>>():null;
   const entity=task.entity_id?await c.env.DB.prepare('SELECT id,canonical_offer_id,current_approved_version_id,business_revision,publication_revision FROM benefit_entities WHERE id=?').bind(task.entity_id).first<Record<string,unknown>>():null;
   const previous=entity?.current_approved_version_id?await c.env.DB.prepare('SELECT facts_json FROM benefit_versions WHERE id=? AND entity_id=?').bind(entity.current_approved_version_id,entity.id).first<{facts_json:string}>():null;
@@ -110,4 +113,21 @@ identityIngestRoutes.get('/identity-retries',async c=>{
  if(!products.length)return c.json({candidates:[]});
  const rows=await c.env.DB.prepare(`SELECT id,revision FROM intake_candidates WHERE state='deferred' AND (next_attempt_at IS NULL OR next_attempt_at<=?) AND (json_extract(facts_json,'$.issuerProductId.state')='unknown' OR json_extract(facts_json,'$.issuerProductId.value') IN (${products.map(()=>'?').join(',')})) ORDER BY attempts,id LIMIT 4`).bind(new Date().toISOString(),...products).all();
  return c.json({candidates:rows.results});
+});
+
+identityAdminRoutes.post('/merges/preview',async c=>{
+ if(c.get('role')!=='admin'||!c.env.IDENTITY_HISTORY_ENVIRONMENT)return c.json({error:'explicit nonproduction administrator environment required'},403);
+ const raw=await c.req.json();if(raw.environment!==c.env.IDENTITY_HISTORY_ENVIRONMENT)return c.json({error:'history environment mismatch'},403);
+ if(!Array.isArray(raw.groups)||raw.groups.length!==1)return c.json({error:'preview one complete group per Worker request; offline preview supports up to ten'},400);
+ return c.json(await buildMergePlan(c.env.DB,raw));
+});
+identityAdminRoutes.post('/merges/apply',async c=>{
+ if(c.get('role')!=='admin'||c.env.HISTORICAL_MERGE_ENABLED!=='true'||!c.env.IDENTITY_HISTORY_ENVIRONMENT)return c.json({error:'historical merge disabled or unauthorized'},403);
+ const body=z.strictObject({plan:mergePlanSchema,requestId:z.string().min(1).max(150),approvedPlanHash:z.string(),groupId:z.string().optional()}).parse(await c.req.json());
+ const r=await new IdentityMergeService(c.env.DB,{environment:c.env.IDENTITY_HISTORY_ENVIRONMENT,enabled:true,actor:c.get('who')}).applyMerge(body.plan,body.requestId,body.approvedPlanHash,body.groupId);return c.json(r,r.status==='conflict'?409:200);
+});
+identityAdminRoutes.post('/merges/rollback',async c=>{
+ if(c.get('role')!=='admin'||c.env.HISTORICAL_MERGE_ENABLED!=='true'||!c.env.IDENTITY_HISTORY_ENVIRONMENT)return c.json({error:'historical rollback disabled or unauthorized'},403);
+ const body=z.strictObject({operationId:z.string(),expectedRevision:z.number().int().nonnegative(),requestId:z.string().min(1).max(150)}).parse(await c.req.json());
+ const r=await new IdentityMergeService(c.env.DB,{environment:c.env.IDENTITY_HISTORY_ENVIRONMENT,enabled:true,actor:c.get('who')}).rollbackMerge(body.operationId,body.expectedRevision,body.requestId);return c.json(r,r.status==='conflict'?409:200);
 });

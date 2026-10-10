@@ -1,3 +1,4 @@
+import {canonicalOffers} from './identity/canonical';
 import { drizzle } from 'drizzle-orm/d1';
 import { and,eq } from 'drizzle-orm';
 import * as s from '../db/schema';
@@ -21,7 +22,7 @@ export async function publicationError(env: Pick<Env, 'DB'>, offer: OfferRow): P
   const [platform] = await db(env).select().from(s.platforms).where(eq(s.platforms.id, offer.platformId));
   if (!platform || platform.status !== 'approved') return '平台尚未准入';
   if (offer.evidence.tier === 'media') return '媒体或社区转述不能作为上架证据，请先补齐官方出处';
-  const published=await db(env).select().from(s.offers).where(and(eq(s.offers.platformId,offer.platformId),eq(s.offers.reviewState,'approved')));
+  const published=await db(env).select().from(s.offers).where(and(eq(s.offers.platformId,offer.platformId),eq(s.offers.reviewState,'approved'),canonicalOffers));
   const duplicate=published.find(other=>other.id!==offer.id&&sameBenefit(offer,other));
   if(duplicate)return `与已上架的 ${duplicate.id} 是同一活动，请先核对合并，避免重复上架`;
   const block = blocking(checkOffer(offer));

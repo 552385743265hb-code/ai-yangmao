@@ -16,3 +16,8 @@ export async function resolveCanonicalOffer(db:D1Database,offerId:string):Promis
  }
  throw new IdentityError(404,'canonical route unavailable');
 }
+export async function canonicalOfferMap(db:D1Database,ids:string[]){
+ const unique=[...new Set(ids)];if(unique.length>2000)throw new IdentityError(400,'too many offer references');const map=new Map<string,{offerId:string;generation:number}>();if(!unique.length)return map;
+ const rows=await db.prepare("SELECT o.id origin_id,e.state,e.id entity_id,r.id root_id,coalesce(r.canonical_offer_id,e.canonical_offer_id,o.id) offer_id,coalesce(r.routing_generation,e.routing_generation,0) generation FROM offers o LEFT JOIN benefit_entities e ON e.canonical_offer_id=o.id LEFT JOIN benefit_entities r ON r.id=e.merged_into AND r.state='active' AND r.platform_id=e.platform_id WHERE o.id IN (SELECT value FROM json_each(?))").bind(JSON.stringify(unique)).all<{origin_id:string;state:string|null;entity_id:string|null;root_id:string|null;offer_id:string;generation:number}>();
+ for(const row of rows.results){if(row.state==='merged'&&!row.root_id)throw new IdentityError(409,'invalid lead canonical route');map.set(row.origin_id,{offerId:row.offer_id,generation:row.generation});}return map;
+}
