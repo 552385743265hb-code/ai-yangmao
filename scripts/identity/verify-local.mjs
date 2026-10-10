@@ -2,6 +2,9 @@
 import assert from 'node:assert/strict';
 import { getPlatformProxy } from 'wrangler';
 import { MutationBuilder,commitIdentityMutation } from '../../src/worker/identity/commit.ts';
+import { IdentityService } from '../../src/worker/identity/service.ts';
+import { terms } from '../../tests/fixtures/identity/terms.ts';
+import { displayOffer } from '../../tests/fixtures/identity/offer.ts';
 import { IdentityStore } from '../../src/worker/identity/store.ts';
 const proxy=await getPlatformProxy({configPath:'tests/fixtures/identity/wrangler.jsonc',persist:{path:'.superpowers/sdd/IMPLEMENTATION/d1/v3'}});
 try {
@@ -31,5 +34,20 @@ try {
  const failed=new MutationBuilder(db,'failed-'+id,'hash');failed.insert('review_tasks',{id:'failed-task-'+id,task_key:'failed:'+entityId,kind:'identity',entity_id:entityId});failed.assert('0');
  await assert.rejects(()=>commitIdentityMutation(db,failed.plan([],{})));
  assert.equal(await db.prepare('SELECT id FROM review_tasks WHERE id=?').bind('failed-task-'+id).first(),null);
- console.log(JSON.stringify({environment:'local-workerd-d1',observationReplay:'passed',concurrentReceipt:'passed',zeroGuard:'passed',finalAssertionRollback:'passed',returning:'passed',batchCheckRollback:'passed',foreignKeys:'passed',externalMessages:0,modelCalls:0}));
+ const product='runtime-product-'+id,source='runtime-source-'+id,url='https://'+id+'.synthetic.example/rewards',anchor='campaign-'+id;
+ await db.prepare("INSERT INTO platforms(id,name,type,status,site) VALUES(?,'Synthetic','lab','approved',?)").bind(product,new URL(url).origin).run();
+ await db.prepare("INSERT INTO sources(id,platform_id,kind,url,tier) VALUES(?,?,'web_list',?,'site')").bind(source,product,url).run();
+ const facts=terms();facts.issuerProductId={state:'known',value:product,evidenceRefs:['quote-1']};facts.benefitPools[0].poolKey=product+':api';facts.occurrenceAnchor={state:'known',value:anchor,evidenceRefs:['quote-1']};
+ const quote='Campaign '+anchor+' grants 10 USD.';
+ const observed=await store.recordObservation({requestId:'service-ob-'+id,originalUrl:url,finalUrl:url,text:quote,sourceId:source,fetchKind:'direct',observedAt:'2026-10-10T10:00:00.000Z'});
+ const display={...displayOffer(),platformId:product,evidence:{...displayOffer().evidence,url}};
+ const [candidate]=await store.recordCandidates({requestId:'service-batch-'+id,observationId:observed.observationId,extractionVersion:'test-v1',extractionComplete:true,leadIds:[],candidates:[{inputId:'candidate',facts,span:{start:0,end:quote.length,quote},quotes:[{id:'quote-1',start:0,end:quote.length,quote}],rawCandidate:display}]});
+ const service=new IdentityService(db);
+ const resolved=await service.resolveCandidate(candidate.candidateId,'service-resolve-'+id);
+ assert.equal(resolved.outcome,'created_pending');
+ const decision=await service.decideTask(resolved.taskId,{requestId:'service-approve-'+id,expectedRevision:0,action:'approve',actor:'local-test-admin',role:'admin'});
+ assert.equal(decision.publicationRevision,1);
+ assert.equal((await db.prepare('SELECT review_state FROM offers WHERE id=?').bind(resolved.canonicalOfferId).first()).review_state,'approved');
+ assert.equal((await db.prepare("SELECT count(*) n FROM identity_events WHERE entity_id=? AND kind='new'").bind(resolved.entityId).first()).n,1);
+ console.log(JSON.stringify({environment:'local-workerd-d1',observationReplay:'passed',concurrentReceipt:'passed',initialApprovalOutbox:'passed',zeroGuard:'passed',finalAssertionRollback:'passed',returning:'passed',batchCheckRollback:'passed',foreignKeys:'passed',externalMessages:0,modelCalls:0}));
 } finally { await proxy.dispose(); }
