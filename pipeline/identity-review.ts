@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { canonicalTermsSchema,evidenceContextSchema,versionedEntitySchema,resolutionResultSchema,type ResolutionResult } from '../src/shared/identity/types';
-import { compareCandidate,evidenceGrounded,RESOLVER_VERSION,RULES_VERSION } from '../src/shared/identity/compare';
+import { compareCandidate,evidenceGrounded,factSlots,RESOLVER_VERSION,RULES_VERSION } from '../src/shared/identity/compare';
 import { hashTerms,sha256,stableJson } from '../src/shared/identity/normalize';
 import { completeIdentityPrompt,parseModelJson } from './llm';
 const reviewInputSchema=z.strictObject({candidate:canonicalTermsSchema,entities:z.array(versionedEntitySchema).max(8),evidence:evidenceContextSchema,retrievalComplete:z.boolean()});
@@ -13,7 +13,7 @@ export function validateIdentitySuggestion(raw:unknown,input:IdentityReviewInput
  return result;
 }
 export async function identityCacheKey(input:IdentityReviewInput):Promise<string> {
- return sha256(stableJson({factsHash:await hashTerms(input.candidate),entities:input.entities.map(e=>[e.id,e.revision,e.approvedVersionId,e.terms]),evidence:{truncated:input.evidence.truncated,sourceVerified:input.evidence.sourceVerified,quotes:Object.entries(input.evidence.quoteById).sort(([a],[b])=>a.localeCompare(b)).map(([id,quote])=>[id,quote,input.evidence.fullText.includes(quote)]),differentEntityIds:input.evidence.differentEntityIds??[],confirmedEntityId:input.evidence.confirmedEntityId??null},resolverVersion:RESOLVER_VERSION,rulesVersion:RULES_VERSION}));
+ return sha256(stableJson({factsHash:await hashTerms(input.candidate),citations:[...factSlots(input.candidate)].map(([field,fact])=>[field,fact.state==='unknown'?[]:[...fact.evidenceRefs].sort()]),entities:input.entities.map(e=>[e.id,e.revision,e.approvedVersionId,e.terms]),evidence:{truncated:input.evidence.truncated,sourceVerified:input.evidence.sourceVerified,quotes:Object.entries(input.evidence.quoteById).sort(([a],[b])=>a.localeCompare(b)).map(([id,quote])=>[id,quote,input.evidence.fullText.includes(quote)]),differentEntityIds:input.evidence.differentEntityIds??[],confirmedEntityId:input.evidence.confirmedEntityId??null},resolverVersion:RESOLVER_VERSION,rulesVersion:RULES_VERSION}));
 }
 const cache=new Map<string,ResolutionResult>();
 const unresolved=(reason:string,retrievalComplete=true):ResolutionResult=>({relation:'UNRESOLVED',entityId:null,termsRelation:'INSUFFICIENT',matchingVersionId:null,evidenceRefs:[],conflicts:[],reasonCodes:[reason],retrievalComplete,resolverVersion:RESOLVER_VERSION,rulesVersion:RULES_VERSION});
@@ -21,6 +21,7 @@ export async function reviewIdentity(raw:IdentityReviewInput,deadlineAt=Date.now
  const input=reviewInputSchema.parse(raw);
  if(!input.retrievalComplete)return unresolved('retrieval_incomplete',false);
  const comparisons=input.entities.map(e=>compareCandidate(input.candidate,e,input.evidence));
+ if(comparisons.some(r=>r.reasonCodes.includes('invalid_evidence_reference')))return unresolved('invalid_evidence_reference');
  const matches=comparisons.filter(r=>r.relation==='SAME');
  if(matches.length===1&&matches[0].termsRelation!=='INSUFFICIENT')return matches[0];
  if(matches.length>1)return unresolved('multiple_identity_matches');

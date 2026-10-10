@@ -49,8 +49,92 @@ export function compareCandidate(raw:CanonicalTermsV1,rawEntity:VersionedEntity,
   const poolScopeChanged=poolKeys.some(key=>!newPoolKeys.includes(key))||newPoolKeys.some(key=>!poolKeys.includes(key));
   if(poolScopeChanged)return unresolved('pool_scope_unproven');
   const replacement=validSource&&result.conflicts.length>0&&result.conflicts.every(conflict=>evidenceGrounded(conflict.evidenceRefs,evidence)
-    && conflict.evidenceRefs.some(ref=>/\breplac(?:e|es|ed|ing)\b|\bnow\b.{0,80}\binstead\b|改为|调整为|取代/iu.test(evidence.quoteById[ref])));
+    && provesFieldReplacement(conflict.field,oldSlots.get(conflict.field)!,incomingSlots.get(conflict.field)!,candidate,evidence));
   if(result.conflicts.length&&!replacement)return unresolved('replacement_unproven');
   if(incomplete||added)return {...result,relation:'SAME',entityId:entity.id,reasonCodes:[incomplete?'partial_facts':'new_fact_evidence'],evidenceRefs:incomingRefs};
   return {...result,relation:'SAME',entityId:entity.id,termsRelation:replacement?'CHANGED':'EQUIVALENT',matchingVersionId:replacement?null:entity.approvedVersionId,evidenceRefs:incomingRefs,reasonCodes:[replacement?'official_replacement':'equivalent_facts']};
+}
+
+const escapePattern=(value:string)=>value.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+const normalizedQuote=(value:string)=>value.normalize('NFKC').toLowerCase().replace(/\s+/gu,' ').trim();
+function hasLiteral(text:string,value:string):boolean {
+  const token=normalizedQuote(value);
+  return new RegExp(`(?<![\\p{L}\\p{N}])${escapePattern(token)}(?![\\p{L}\\p{N}])`,'u').test(text);
+}
+function hasCadence(text:string,value:unknown):boolean {
+  if(!value||typeof value!=='object')return false;
+  const cadence=value as Record<string,unknown>;
+  if(cadence.kind==='once')return /\bonce\b|one[- ]time|一次性/u.test(text);
+  if(cadence.kind==='calendar') {
+    if(cadence.count!==1)return false;
+    if(cadence.unit==='day')return /\bdaily\b|per day|each day|每日|每天/u.test(text);
+    if(cadence.unit==='week')return /\bweekly\b|per week|每周/u.test(text);
+    if(cadence.unit==='month')return /\bmonthly\b|per month|每月/u.test(text);
+  }
+  // Rolling/timezone/action changes need explicit structured/manual review in v1.
+  return false;
+}
+function amountPresent(text:string,value:unknown):boolean {
+  if(!value||typeof value!=='object')return false;
+  const amount=value as Record<string,unknown>;
+  if(typeof amount.value!=='string'||typeof amount.unit!=='string')return false;
+  const number=escapePattern(amount.value)+(/\./.test(amount.value)?'0*':'(?:\\.0+)?');
+  const unit=amount.currency?escapePattern(String(amount.currency).toLowerCase()):escapePattern(amount.unit.toLowerCase())+'s?';
+  return new RegExp(`(?<![\\d.])${number}(?!\\d|\\.\\d)\\s*${unit}(?![\\p{L}\\p{N}])|${unit}\\s*${number}(?!\\d|\\.\\d)`,'u').test(text);
+}
+function changedValuesPresent(text:string,before:unknown,after:unknown):boolean {
+  if(equal(before,after))return true;
+  if(Array.isArray(before)&&Array.isArray(after)) {
+    const removed=before.filter(x=>!after.includes(x)),added=after.filter(x=>!before.includes(x));
+    return [...removed,...added].every(v=>typeof v==='string'&&hasLiteral(text,v));
+  }
+  if(typeof before==='string'&&typeof after==='string')return hasLiteral(text,before)&&hasLiteral(text,after);
+  return false;
+}
+/** Deliberately narrow automatic proof: replacement wording, old/new values and
+ * the changed slot must share one sentence. Unsupported forms remain reviewable. */
+function provesFieldReplacement(field:string,old:Fact<unknown>,incoming:Fact<unknown>,terms:CanonicalTermsV1,evidence:EvidenceContext):boolean {
+  if(old.state!=='known'||incoming.state!=='known')return false;
+  return incoming.evidenceRefs.some(ref=>evidence.quoteById[ref].split(/(?<=[.!?。！？])\s+|\n/u).some(raw=>{
+    const sentence=normalizedQuote(raw);
+    const replacement=sentence.match(/\breplac(?:e|es|ed|ing)\s+(.{1,180}?)\s+(?:with|by)\s+(.{1,180})/u)
+      ?? sentence.match(/\bfrom\s+(.{1,180}?)\s+to\s+(.{1,180})/u)
+      ?? sentence.match(/(.{1,180}?)(?:改为|调整为)(.{1,180})/u);
+    if(!replacement)return false;
+    const beforeText=replacement[1],afterText=replacement[2];
+    if(field.startsWith('benefitPools.')) {
+      const pool=terms.benefitPools.find(p=>field.startsWith(`benefitPools.${p.poolKey}.`));
+      if(!pool)return false;
+      if(terms.benefitPools.length>1&&(!sentence.includes(pool.poolKey.toLowerCase())||terms.benefitPools.some(p=>p.poolKey!==pool.poolKey&&sentence.includes(p.poolKey.toLowerCase()))))return false;
+      if(field.endsWith('.amount'))return amountPresent(beforeText,old.value)&&amountPresent(afterText,incoming.value);
+      if(field.endsWith('.cadence'))return hasCadence(beforeText,old.value)&&hasCadence(afterText,incoming.value);
+      if(field.endsWith('.models')||field.endsWith('.modalities'))return changedValuesPresent(sentence,old.value,incoming.value);
+      return false;
+    }
+    if(field==='eligibility') {
+      if(!/eligib|audience|qualif|资格|适用|对象/u.test(sentence))return false;
+      const a=old.value as {audience:string;requirements:string[]},b=incoming.value as {audience:string;requirements:string[]};
+      const audience=(value:string)=>value==='all'?/all[- ]users?|everyone|所有用户/u.test(sentence):value==='new'?/new[- ](?:users?|accounts?|student)|新用户/u.test(sentence):/existing[- ](?:users?|accounts?)|老用户/u.test(sentence);
+      return (a.audience===b.audience||(audience(a.audience)&&audience(b.audience)))&&changedValuesPresent(sentence,a.requirements,b.requirements);
+    }
+    if(field==='geography'||field==='claimChannels')return changedValuesPresent(sentence,old.value,incoming.value);
+    if(field==='claimWindow') {
+      const a=old.value as Record<string,unknown>,b=incoming.value as Record<string,unknown>;
+      return Object.keys(a).filter(key=>a[key]!==b[key]).every(key=>{
+        const label=key==='startsAt'?/start|begin|开始/u:key==='endsAt'?/deadline|end|until|截止/u:/timezone|时区/u;
+        return label.test(sentence)&&typeof a[key]==='string'&&typeof b[key]==='string'&&hasLiteral(beforeText,String(a[key]))&&hasLiteral(afterText,String(b[key]));
+      });
+    }
+    if(field==='costs') {
+      const a=old.value as Record<string,unknown>,b=incoming.value as Record<string,unknown>;
+      return Object.keys(a).filter(key=>a[key]!==b[key]).every(key=>{
+        if(key==='upfrontAmount'||key==='currency')return /upfront|cost|pay|费用|支付/u.test(sentence)
+          &&amountPresent(beforeText,{value:a.upfrontAmount,unit:'currency',currency:a.currency})&&amountPresent(afterText,{value:b.upfrontAmount,unit:'currency',currency:b.currency});
+        const label=key==='autoRenewal'?/automatic renewal|auto[- ]?renew|自动续费/u:key==='subscriptionRequired'?/subscription|订阅/u:null;
+        const proof=(value:unknown,text:string)=>typeof value==='boolean'&&!!label?.test(text)&&(/\bno\b|without|not required|不|无需/u.test(text)?value===false:value===true);
+        return proof(a[key],beforeText)&&proof(b[key],afterText);
+      });
+    }
+    return false;
+  }));
 }

@@ -40,7 +40,7 @@ it('A15 amounts and quoted text presentation drift do not constitute changed fac
 });
 it('A16 trusted scope replacement needs wording from the relevant quote',()=>{
  const {candidate,old}=anchored();candidate.eligibility=known({audience:'new',requirements:['student']});old.terms!.eligibility=known({audience:'all',requirements:[]});
- expect(compareCandidate(candidate,old,context('Campaign signup-2026 now replaces all-user eligibility with students only.'))).toMatchObject({relation:'SAME',termsRelation:'CHANGED'});
+ expect(compareCandidate(candidate,old,context('Campaign signup-2026 now replaces all-user eligibility with new student accounts only.'))).toMatchObject({relation:'SAME',termsRelation:'CHANGED'});
  const proof=context('Campaign signup-2026 is available to students.');proof.fullText+=' Other campaign now replaces old terms.';
  expect(compareCandidate(candidate,old,proof).termsRelation).toBe('INSUFFICIENT');
 });
@@ -65,4 +65,26 @@ it('A29 manual different is a hard veto even over an exact campaign or model sug
 it('A10 independent mechanisms cannot be merged merely because the same umbrella campaign is quoted',()=>{
  const {candidate,old}=anchored();candidate.mechanism=known('recurring_quota');
  expect(compareCandidate(candidate,old,context('Campaign signup-2026 replaces an unrelated page notice.'))).toMatchObject({relation:'UNRESOLVED',reasonCodes:expect.arrayContaining(['mechanism_conflict'])});
+});
+it('A16 unrelated replacement wording cannot authorize an invented amount',()=>{
+ const {candidate,old}=anchored();candidate.benefitPools[0].amount=known({value:'999',unit:'currency',currency:'USD'});
+ expect(compareCandidate(candidate,old,context('Campaign signup-2026 grants 10 USD. A new logo replaces the old logo.')).termsRelation).toBe('INSUFFICIENT');
+});
+it('A12 one pool replacement cannot authorize a change in a second pool',()=>{
+ const {candidate,old}=anchored();
+ candidate.benefitPools.push({...structuredClone(candidate.benefitPools[0]),poolKey:'vendor:video'});
+ old.terms!.benefitPools.push({...structuredClone(old.terms!.benefitPools[0]),poolKey:'vendor:video'});
+ candidate.benefitPools[1].amount=known({value:'20',unit:'currency',currency:'USD'});
+ expect(compareCandidate(candidate,old,context('Campaign signup-2026 vendor:api replaces 10 USD with 20 USD. vendor:video remains 10 USD.')).termsRelation).toBe('INSUFFICIENT');
+});
+it('A16 explicit claim deadline and renewal replacements produce CHANGED without publishing',()=>{
+ const {candidate,old}=anchored();
+ old.terms!.claimWindow=known({startsAt:null,endsAt:'2026-10-31',timezone:'UTC'});candidate.claimWindow=known({startsAt:null,endsAt:'2026-11-30',timezone:'UTC'});
+ expect(compareCandidate(candidate,old,context('Campaign signup-2026 replaces the claim deadline 2026-10-31 with claim deadline 2026-11-30.'))).toMatchObject({relation:'SAME',termsRelation:'CHANGED'});
+ const a=anchored();a.old.terms!.costs=known({upfrontAmount:'0',currency:'USD',subscriptionRequired:false,autoRenewal:false});a.candidate.costs=known({upfrontAmount:'0',currency:'USD',subscriptionRequired:false,autoRenewal:true});
+ expect(compareCandidate(a.candidate,a.old,context('Campaign signup-2026 replaces no automatic renewal with automatic renewal.'))).toMatchObject({relation:'SAME',termsRelation:'CHANGED'});
+});
+it('A19 replacement direction must agree with the proposed after-value',()=>{
+ const {candidate,old}=anchored();candidate.benefitPools[0].amount=known({value:'20',unit:'currency',currency:'USD'});
+ expect(compareCandidate(candidate,old,context('Campaign signup-2026 replaces 20 USD with 10 USD.')).termsRelation).toBe('INSUFFICIENT');
 });

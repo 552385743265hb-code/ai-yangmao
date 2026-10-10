@@ -47,3 +47,7 @@ it('A15 unrelated page text and observation IDs do not invalidate the reviewed e
  const a=input(),b=input();b.evidence.observationId='later-observation';b.evidence.fullText+=' Unrelated navigation and status update.';
  expect(await identityCacheKey(a)).toBe(await identityCacheKey(b));
 });
+it('A19 changing a fact citation binding invalidates cache and cannot override current quote validation',async()=>{
+ const a=input(),b=input();b.candidate.issuerProductId={state:'known',value:'vendor',evidenceRefs:['forged-ref']};
+ expect(await identityCacheKey(a)).not.toBe(await identityCacheKey(b));
+});
