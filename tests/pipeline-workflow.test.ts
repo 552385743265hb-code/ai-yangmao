@@ -16,6 +16,7 @@ const json = (value: unknown) => new Response(JSON.stringify(value), { headers: 
 
 interface HarnessOptions {
   rescueJob?:boolean;
+  rescuePlatforms?:Record<string,unknown>[];
   officialJob?: boolean;
   officialJobIds?:string[];
   officialSteps?: string[];
@@ -50,7 +51,7 @@ function harness(options: HarnessOptions = {}) {
     if (url.endsWith('/snapshots')) return json({ changed: false });
     if (url.endsWith('/api/platforms')) return json({ platforms: [{ id: 'vendor', name: 'Vendor', site: 'https://vendor.example', xHandles: [], staffHandles: [] }] });
     if(url.includes('/lead-reviews/queue'))return json({jobs:options.rescueJob?[{id:1312}]:[]});
-    if(url.endsWith('/lead-reviews/1312/claim'))return json({claimed:true,jobId:'12345678-1234-4234-8234-123456789012',previousCandidates:options.previousCandidates,lead:{...lead,...options.leads?.[0],id:1312,status:'reviewing'},platforms:[{id:'vendor',name:'Vendor',site:'https://vendor.example',xHandles:[],staffHandles:[]}],sources:[],existing:options.known??[]});
+    if(url.endsWith('/lead-reviews/1312/claim'))return json({claimed:true,jobId:'12345678-1234-4234-8234-123456789012',previousCandidates:options.previousCandidates,lead:{...lead,...options.leads?.[0],id:1312,status:'reviewing'},platforms:options.rescuePlatforms??[{id:'vendor',name:'Vendor',site:'https://vendor.example',xHandles:[],staffHandles:[]}],sources:[],existing:options.known??[]});
     if(url.endsWith('/lead-reviews/1312/result'))return json({status:body.outcome,nextAttemptAt:body.outcome==='retry'?'2030-01-01T00:00:00Z':null});
     if (url.includes('/leads?')) return json({ leads: options.leads ?? [] });
     if (url.includes('/official-reviews/queue')) return json({jobs:(options.officialJobIds??(options.officialJob?['vendor-max-api']:[])).map(id=>({id,title:candidate.title})),remaining:options.officialJobIds?.length??(options.officialJob?1:0)});
@@ -358,4 +359,11 @@ it('advances to a fourth official page instead of rereading all raw links before
   const h=harness({rescueJob:true,leads:[{...lead,url:urls[0],raw:urls[1]+' '+urls[2]}],previousCandidates:urls.slice(0,3),officialUrls:[urls[3]],modelOutput:'{"offers":[]}'});
   const {runPipeline}=await import('../pipeline/run');await runPipeline();
   expect(h.reads).toContain(urls[3]);
+});
+
+it('keeps official-origin rescue search scoped to its issuer instead of similarly named products',async()=>{
+  const h=harness({rescueJob:true,modelOutput:'{"offers":[]}',rescuePlatforms:[{id:'vendor',name:'Vendor',site:'https://vendor.example',xHandles:[],staffHandles:[]},{id:'other',name:'Vendor compatible API',site:'https://other.example',xHandles:[],staffHandles:[]}]});
+  const {runPipeline}=await import('../pipeline/run');await runPipeline();
+  const queries=h.writes.filter(r=>r.url==='https://mcp.exa.ai/mcp').map(r=>r.body.params.arguments.query);
+  expect(queries.length).toBeGreaterThan(0);expect(queries.join(' ')).not.toContain('site:other.example');
 });

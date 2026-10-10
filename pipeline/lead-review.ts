@@ -26,7 +26,8 @@ export async function runLeadReviews(options:LeadReviewOptions){
       const {lead,platforms,sources}=job;
       const targetText=`${lead.title??''}\n${(lead.raw??'').split('[研判]')[0]}`;
       const authority=(url:string)=>platforms.filter(p=>officialTier(url,p,sources.filter(s=>s.platformId===p.id)));
-      const identified=platforms.filter(p=>authority(lead.url).includes(p)||[p.id,...p.name.split(/[（）()\/·、\s]+/)].some(n=>n.length>=2&&targetText.toLowerCase().includes(n.toLowerCase()))).slice(0,4);
+      const primaryOwners=authority(lead.url);
+      const identified=primaryOwners.length?primaryOwners:platforms.filter(p=>[p.id,...p.name.split(/[（）()\/·、\s]+/)].some(n=>n.length>=2&&targetText.toLowerCase().includes(n.toLowerCase()))).slice(0,4);
       const relevant=job.existing.filter(o=>identified.some(p=>p.id===o.platformId));
       const existing=relevant.map(o=>`${o.id}｜${o.platformId}｜${o.reviewState}｜${o.title}｜${o.valueText.slice(0,80)}｜开始:${o.claimStart??'未知'}｜发布:${o.publishedAt??'未知'}｜证据:${o.evidenceUrl}`).join('\n');
       const {corrections}=await api<{corrections:string[]}>('/corrections?limit=10');
@@ -40,7 +41,9 @@ export async function runLeadReviews(options:LeadReviewOptions){
             const domains=identified.flatMap(p=>[p.site,...sources.filter(s=>s.platformId===p.id&&['docs','site','official'].includes(s.tier)).map(s=>s.url)])
               .filter((v):v is string=>!!v).flatMap(v=>{try{return [new URL(v).hostname];}catch{return [];}});
             const query=`${lead.title??targetText.slice(0,160)} 官方 原文 ${[...new Set(domains)].slice(0,3).map(d=>'site:'+d).join(' OR ')}`.slice(0,350);
-            const handles=identified.flatMap(p=>[...p.xHandles,...p.staffHandles]).slice(0,3);
+            const originHandle=/^https?:\/\/(?:www\.)?(?:x\.com|twitter\.com)\/([^/]+)\/status/.exec(lead.url)?.[1];
+            const knownHandles=identified.flatMap(p=>[...p.staffHandles,...p.xHandles]);
+            const handles=[...new Set([...(originHandle&&knownHandles.some(h=>h.toLowerCase()==='@'+originHandle.toLowerCase())?['@'+originHandle]:[]),...knownHandles])].slice(0,3);
             const planned=[query,...(handles.length?[`${lead.title??''} ${handles.map(h=>'site:x.com/'+h.replace(/^@/,'')+'/status').join(' OR ')}`.slice(0,350)]:[])];
             for(const search of planned){
               queries.push(search);
@@ -66,6 +69,7 @@ export async function runLeadReviews(options:LeadReviewOptions){
             evidenceText:page.text,platformIds:[owner.id],platformList:platforms.map(p=>p.id+'='+p.name).join('；'),existing,corrections,leadTarget:JSON.stringify({title:lead.title,originUrl:lead.url,summary:targetText.slice(0,2500)})});
           options.account(result.tokens,result.costCny);
           if(result.offers.length){
+            if(result.offers.length>50){hadInvalid=true;reasons.push('候选超过单轮上限，需人工拆分核对');continue;}
             for(const next of result.offers){
               if(Date.now()>=deadlineAt){hadInvalid=true;technical=true;reasons.push('本轮只完成部分候选，剩余权益下轮继续');break;}
               const signal=lead.title??'';

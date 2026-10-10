@@ -34,7 +34,7 @@ leadReviewRoutes.post('/:id/claim',async c=>{
 });
 leadReviewRoutes.post('/:id/result',async c=>{
   const body=z.object({jobId:z.string().uuid(),outcome:z.enum(['linked','closed','retry','manual']),reason:z.string().min(2).max(1000),
-    offerIds:z.array(z.string()).max(10).default([]),queries:z.array(z.string().max(350)).max(4),candidates:z.array(z.url()).max(12),
+    offerIds:z.array(z.string()).max(50).default([]),queries:z.array(z.string().max(350)).max(4),candidates:z.array(z.url()).max(12),
     evidenceUrl:z.url().optional(),quote:z.string().max(2000).optional(),sourceText:z.string().max(250000).optional()}).safeParse(await c.req.json().catch(()=>null));
   if(!body.success)return c.json({error:'线索复核结果不完整'},400);
   const b=body.data,d=db(c.env),[l]=await d.select().from(s.leads).where(eq(s.leads.id,Number(c.req.param('id'))));
