@@ -1,3 +1,4 @@
+import { identityIngestRoutes } from './identity/routes';
 import {leadScopeMismatch} from '../shared/lead-scope';
 import { leadReviewRoutes } from './lead-review';
 import { officialReviewRoutes } from './official-review';
@@ -24,6 +25,10 @@ export interface Env {
   DB: D1Database;
   ASSETS: Fetcher;
   INGEST_TOKEN: string;
+  IDENTITY_MODE?: 'off' | 'shadow' | 'enforce';
+  IDENTITY_CANARY_PLATFORMS?: string;
+  IDENTITY_MODEL_ASSIST?: string;
+  HISTORICAL_MERGE_ENABLED?: string;
   ADMIN_TOKEN: string;
   CF_ANALYTICS_TOKEN?: string; // Cloudflare 账户分析只读令牌，采集健康页显示今日 D1 读取量
   CF_ACCOUNT_ID?: string;
@@ -168,6 +173,7 @@ ingest.use('*', async (c, next) => {
   await next();
 });
 
+ingest.route('/', identityIngestRoutes);
 ingest.route('/official-reviews', officialReviewRoutes);
 ingest.route('/lead-reviews', leadReviewRoutes);
 

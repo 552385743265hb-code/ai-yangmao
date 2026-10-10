@@ -1,3 +1,4 @@
+import { captureIdentityShadow } from './identity-shadow';
 import {platformMentioned,leadScopeMismatch} from '../src/shared/lead-scope';
 import {runLeadReviews} from './lead-review';
 import { toOffer } from './offer-draft';
@@ -85,6 +86,11 @@ async function extractAndPostUnlocked(src: Source, url: string, text: string, so
   tokensLeft -= r.tokens; stats.tokens += r.tokens; costLeft -= r.costCny; stats.costCny += r.costCny;
   if (r.costCny) log(`  动用付费兜底，花费 ¥${r.costCny.toFixed(4)}（本月剩 ¥${costLeft.toFixed(2)}）`);
   log(`  ${r.provider} 抽出 ${r.offers.length} 条，用 ${r.tokens} tokens`);
+  if (!DRY) {
+    try {
+      await captureIdentityShadow({url,text:sourceText??text,sourceId:src.id,candidates:r.offers.map(e=>toOffer(src,e,url,text)),extractionComplete:true});
+    } catch { stats.errors.push(`${src.id}: identity shadow capture deferred`); }
+  }
   if (!r.offers.length) return true;
   // 逐条校验：不合格的只丢这一条，并记下原因
   const offers: OfferIn[] = [];

@@ -49,6 +49,8 @@ function harness(options: HarnessOptions = {}) {
     if (url.endsWith('/budget')) return json({ tokensToday: 0, costMonthCny: options.costMonthCny ?? 0 });
     if (url.endsWith('/sources')) return json({ sources: options.sources ?? [aihotSource] });
     if (url === aihotSource.url) return json({ items: [] });
+    if (url.endsWith('/observations')) return json({observationId:'obs-test',documentId:'doc-test',contentHash:'a'.repeat(64),truncated:false});
+    if (url.endsWith('/candidates')) return json({receipts:body.candidates.map((c:any)=>({inputId:c.inputId,candidateId:'c-'+c.inputId,canonicalOfferId:null,entityId:null,versionId:null,decisionId:null,taskId:null,outcome:'deferred',retryable:true,reasonCodes:['shadow_pending_resolution']}))});
     if (url.endsWith('/snapshots')) return json({ changed: false });
     if (url.endsWith('/api/platforms')) return json({ platforms: [{ id: 'vendor', name: 'Vendor', site: 'https://vendor.example', xHandles: [], staffHandles: [] }] });
     if(url.includes('/lead-reviews/queue'))return json({jobs:options.rescueJob?[{id:1312}]:[]});
