@@ -554,3 +554,9 @@ it('A28 review facts use readable values without internal citation keys',()=>{
  const f=fixture(()=>queue([]));const html=f.run(`identityFactsTable(null,{benefitPools:[{poolKey:'api',amount:{state:'known',value:{value:'10',unit:'currency',currency:'USD'},evidenceRefs:['private-quote-key']},cadence:{state:'known',value:{kind:'once'},evidenceRefs:['private-quote-key']}}]})`);
  expect(html).toContain('10 USD');expect(html).toContain('单次');expect(html).not.toContain('private-quote-key');
 });
+it('A27 an unknown identity task can submit an explicitly confirmed product and mechanism',async()=>{
+ const sent:any[]=[];const task={id:'unknown',kind:'identity',revision:0,sources:[{candidateId:'c',final_url:'https://vendor.example',quotes:[{id:'q',quote:'Vendor signup grant'}],facts:{issuerProductId:{state:'unknown'},mechanism:{state:'unknown'}}}]};
+ const f=fixture((url,init)=>{if(init?.method==='POST'){sent.push(JSON.parse(String(init.body)));return {};}return url.includes('/identity/tasks')?{tasks:[task]}:queue([]);});await f.run('admQueue()');const card=f.document.querySelector('[data-identity-task="unknown"]')!;
+ expect(card.querySelector('[data-identity-product]')).not.toBeNull();(card.querySelector('[data-identity-product] option[value="vendor"]') as HTMLOptionElement).selected=true;(card.querySelector('[data-identity-mechanism] option[value="signup_grant"]') as HTMLOptionElement).selected=true;(card.querySelector('[data-identity-reason]') as HTMLInputElement).value='已核对官网注册礼';
+ card.querySelector('[data-identity-action="new"]')!.dispatchEvent(new f.window.Event('click'));card.querySelector('[data-identity-confirm]')!.dispatchEvent(new f.window.Event('click'));await pause();expect(sent[0].facts).toMatchObject({issuerProductId:{state:'known',value:'vendor'},mechanism:{state:'known',value:'signup_grant'}});expect(sent[0].reason).toBe('已核对官网注册礼');
+});

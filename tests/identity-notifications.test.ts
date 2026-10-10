@@ -40,3 +40,14 @@ it('A17 an urgent initial announcement suppresses the same publication new event
  f.sqlite.prepare("INSERT INTO notifications(offer_id,stage,channel,status,sent_at) VALUES(?,'urgent','telegram','sent',?)").run(a.canonicalOfferId,new Date().toISOString());
  expect((await buildNotice(env(),'digest','telegram')).marks.filter(m=>m.stage==='new')).toHaveLength(0);
 });
+it('A28/A39 an unknown reminder does not reappear or starve another task',async()=>{
+ f.sqlite.exec("UPDATE leads SET status='linked'");const a=await intake('a');const n=await claimNotice(env(),'digest','telegram');expect(n.reviewAlerts).toHaveLength(1);await ackDelivery(env(),n.deliveryId!,'unknown');
+ f.sqlite.exec("INSERT INTO review_tasks(id,task_key,kind) VALUES('b','identity:b','identity'); INSERT INTO identity_events(id,event_key,task_id,kind,payload_json) VALUES('eb','review:b:1:telegram','b','review','{\"taskId\":\"b\",\"materialRevision\":1,\"channel\":\"telegram\"}')");
+ const next=await claimNotice(env(),'digest','telegram');expect(next.reviewAlerts.map(r=>r.key)).toEqual(['review:b:1:telegram']);expect(next.deliveryId).toBeDefined();expect(next.reviewAlerts.some(r=>r.taskId===a.taskId)).toBe(false);
+});
+it('A27/A31 forty expired publication events cannot starve a later claimable offer',async()=>{
+ const a=await intake('a');await service.decideTask(a.taskId!,{requestId:'approve',expectedRevision:0,action:'approve',actor:'admin',role:'admin'});
+ const original=f.sqlite.prepare('SELECT * FROM offers').get()!;const keys=Object.keys(original);
+ for(let i=0;i<40;i++){const offer='old-'+i,e='e-'+i,v='v-'+i;f.sqlite.prepare(`INSERT INTO offers(${keys.join(',')}) VALUES(${keys.map(()=>'?').join(',')})`).run(...keys.map(k=>k==='id'?offer:k==='end_kind'?'date':k==='claim_end'?'2020-01-01':original[k]));f.sqlite.prepare("INSERT INTO benefit_entities(id,platform_id,canonical_offer_id,publication_revision) VALUES(?,'vendor',?,1)").run(e,offer);f.sqlite.prepare("INSERT INTO benefit_versions(id,entity_id,terms_schema,terms_hash,facts_json,display_candidate_json,state) VALUES(?,?,'terms-v1',?,'{}','{}','approved')").run(v,e,v);f.sqlite.prepare('UPDATE benefit_entities SET current_approved_version_id=? WHERE id=?').run(v,e);f.sqlite.prepare("INSERT INTO identity_events(id,event_key,entity_id,version_id,kind,payload_json,created_at) VALUES(?,?,?,?,'new',?,'2020-01-01')").run('ev-'+i,'old:'+i,e,v,JSON.stringify({entityId:e,versionId:v,publicationRevision:1,decisionId:'d',channel:'telegram'}));}
+ expect((await buildNotice(env(),'digest','telegram')).marks.some(m=>m.offerId===a.canonicalOfferId&&m.stage==='new')).toBe(true);
+});

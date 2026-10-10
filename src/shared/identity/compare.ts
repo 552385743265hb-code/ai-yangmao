@@ -25,13 +25,13 @@ export function compareCandidate(raw:CanonicalTermsV1,rawEntity:VersionedEntity,
   if(evidence.revokedEntityIds?.includes(entity.id))return unresolved('alias_revoked');
   if(!entity.terms)return unresolved('missing_fact_baseline');
   const before=normalizeTerms(entity.terms);
-  if(knownValue(candidate.mechanism)&&knownValue(before.mechanism)&&!equal(candidate.mechanism,before.mechanism))return unresolved('mechanism_conflict');
   const anchor=knownValue(candidate.occurrenceAnchor),oldAnchor=knownValue(before.occurrenceAnchor);
   const incomingSlots=factSlots(candidate),oldSlots=factSlots(before);
   const validSource=evidence.sourceVerified&&!evidence.truncated;
   const anchorRefs=candidate.occurrenceAnchor.state==='known'?candidate.occurrenceAnchor.evidenceRefs:[];
   const anchorGrounded=!!anchor&&validSource&&evidenceGrounded(anchorRefs,evidence)&&anchorRefs.some(ref=>evidence.quoteById[ref].includes(anchor));
   if(anchorGrounded&&oldAnchor&&anchor!==oldAnchor)return distinct('occurrence_conflict');
+  if(knownValue(candidate.mechanism)&&knownValue(before.mechanism)&&!equal(candidate.mechanism,before.mechanism))return unresolved('mechanism_conflict');
   const confirmed = evidence.confirmedEntityId===entity.id;
   const same = confirmed || (anchorGrounded&&!!oldAnchor&&anchor===oldAnchor);
   if(!same)return unresolved('identity_unproven');

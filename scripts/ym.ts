@@ -25,7 +25,7 @@ const today = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Shanghai'
 const HELP = `用法：ym <命令>
   queue                 看待审（羊毛、新平台、可放开自动上架的信源）
   show <短码>           看一条羊毛的全部字段和官方证据
-  approve <短码>        通过
+  approve <短码> --version <审核版本> 通过
   reject <短码> [理由]  拒绝。理由开头可加快捷分类：付费套餐 / 非AI / 平台错 / 重复 / 过期 / 额度不明 / 证据不足 / 分类错
   edit <短码> 字段=值 … [--approve] [--reason 理由]  修改字段（可同时通过）；写上理由，模型以后学得更快。字段：title type valueText usdEstimate claimStart claimEnd endKind creditValidity audience requirements modalities platformId sourceTz claimMethod
   leads [数量]          看最新线索
@@ -44,13 +44,19 @@ const HELP = `用法：ym <命令>
 
 const [cmd, ...args] = process.argv.slice(2);
 const flag = (f: string) => args.includes(f);
-const rest = args.filter(a => !a.startsWith('--'));
+const vi=args.indexOf('--version');
+const reviewVersion=vi>=0?args[vi+1]:undefined;
+const rest = args.filter((a,i) => !a.startsWith('--')&&(vi<0||i!==vi+1));
+const requireVersion=()=>{if(!reviewVersion){console.error('请先 show 查看审核版本，再传 --version <审核版本>；不自动刷新旧版本');process.exit(2);}return reviewVersion;};
 
 switch (cmd) {
   case 'queue': {
     const q = await call('/queue');
-    if (!q.pending.length && !q.pendingPlatforms.length && !q.suggestAutoPublish.length && !q.needsVerification?.length && !q.leadTasks?.length) { console.log(`待审队列是空的。新线索 ${q.newLeads} 条。`); break; }
-    console.log(`待审 ${q.pending.length} 条 · 线索复核 ${q.leadTasks?.length??0} 条（新线索 ${q.newLeads} 条）`);
+    const identity=await call('/identity/tasks');
+    for(const task of identity.tasks??[])console.log(`身份任务 ${task.id}｜${task.display?.title??task.kind}\n     审核版本：identity:${task.id}:${task.revision}\n     ${task.entity?.canonical_offer_id?'活动 ID：'+task.entity.canonical_offer_id:'请到后台确认身份与事实'}\n     https://ai-yangmao.com/#admin`);
+    if(identity.nextCursor)console.log('仍有更多身份任务，请在后台加载下一页。');
+    if (!(identity.tasks??[]).length && !q.pending.length && !q.pendingPlatforms.length && !q.suggestAutoPublish.length && !q.needsVerification?.length && !q.leadTasks?.length) { console.log(`待审队列是空的。新线索 ${q.newLeads} 条。`); break; }
+    console.log(`身份任务 ${(identity.tasks??[]).length} 条 · 旧待审 ${q.pending.length} 条 · 线索复核 ${q.leadTasks?.length??0} 条（新线索 ${q.newLeads} 条）`);
     for(const l of q.leadTasks??[])console.log(`#${l.id} ${l.title} · ${l.resolution?.status??'等待自动复核'}${l.resolution?.nextAttemptAt?' · 下次 '+l.resolution.nextAttemptAt:''}\n${l.note??''}\nhttps://ai-yangmao.com/#admin`);
     const TIER: Record<string, string> = { site: '官网', docs: '官方文档', official: '官方账号', staff: '员工账号', media: '媒体/社区转述，需核对官方', tested: '管理员实测' };
     for (const o of q.pending) console.log(`${line(o)}
@@ -65,7 +71,7 @@ switch (cmd) {
   case 'show': {
     const { offer: o, revisions } = await call(`/offers/${rest[0]}`);
     console.log(`[${o.code}] ${o.title}（${o.platform}）
-类型：${o.type}　状态：${o.status}　审核：${o.reviewState}
+审核版本：${o.reviewVersion}\n类型：${o.type}　状态：${o.status}　审核：${o.reviewState}
 额度：${o.value}${o.usd != null ? `（约 $${o.usd}）` : ''}
 领取：${o.claimMethod}　${o.claimStart ?? '已开放'} → ${o.end}（官方时区 ${o.sourceTz}）　额度有效期：${o.creditValidity ?? '未写'}
 资格：${AUD[o.audience]}；${req(o.requirements)}
@@ -78,10 +84,11 @@ ${revisions.length ? `修订：${revisions.map((r: any) => r.diff.map((x: any) =
     break;
   }
   case 'approve': case 'reject': {
+    const version=requireVersion();
     const text = rest.slice(1).join(' ');
     const CODES: [RegExp, string][] = [[/证据不足|缺少官方证据/, 'insufficient_evidence'], [/付费套餐|套餐自带/, 'paid_bundle'], [/非\s*AI|不是\s*AI/, 'not_ai'], [/平台(错|归属)/, 'wrong_platform'], [/重复/, 'duplicate'], [/过期|已结束/, 'expired'], [/额度不明|没写额度/, 'vague'], [/分类错|类型错/, 'wrong_type']];
     const reasonCode = cmd === 'reject' ? (CODES.find(([re]) => re.test(text))?.[1] ?? (text ? 'other' : undefined)) : undefined;
-    const r = await call(`/offers/${rest[0]}/${cmd}`, { reason: text || undefined, reasonCode });
+    const r = await call(`/offers/${rest[0]}/${cmd}`, { reason: text || undefined, reasonCode,expectedReviewVersion:version });
     console.log(`${cmd === 'approve' ? '已通过' : '已拒绝'}：[${r.code}] ${r.title}${r.sourceCleanStreak != null ? `（该信源连续原样通过 ${r.sourceCleanStreak} 条）` : ''}${r.urgent ? '\n⚠️ 48 小时内截止，下一次整点检查会发加急提醒' : ''}`);
     break;
   }
@@ -93,6 +100,8 @@ ${revisions.length ? `修订：${revisions.map((r: any) => r.diff.map((x: any) =
     break;
   }
   case 'edit': {
+    const version=requireVersion();
+    if(version.startsWith('identity:')&&flag('--approve')){console.error('身份草稿请先保存，再按新审核版本批准');process.exitCode=2;break;}
     const fields: Record<string, unknown> = {};
     const ri = args.indexOf('--reason');
     const reason = ri >= 0 ? args.slice(ri + 1).filter(a => !a.startsWith('--')).join(' ') : undefined;
@@ -101,8 +110,8 @@ ${revisions.length ? `修订：${revisions.map((r: any) => r.diff.map((x: any) =
       const k = kv.slice(0, i), v = kv.slice(i + 1);
       fields[k] = ['requirements', 'modalities'].includes(k) ? v.split(',') : k === 'usdEstimate' ? (v === 'null' ? null : Number(v)) : v === 'null' ? null : v;
     }
-    const r = await call(`/offers/${rest[0]}/edit`, { fields, approve: flag('--approve'), reason, reasonCode: Object.keys(fields).includes('type') ? 'wrong_type' : 'wrong_field' });
-    console.log(`已修改 [${r.code}]：${r.changed.join('、')}${r.approved ? '，并已通过' : ''}`);
+    const r = await call(`/offers/${rest[0]}/edit`, { fields, approve: flag('--approve'), expectedReviewVersion:version, reason, reasonCode: Object.keys(fields).includes('type') ? 'wrong_type' : 'wrong_field' });
+    console.log(`已修改 [${r.code}]：${(r.changed??Object.keys(fields)).join('、')}${r.approved ? '，并已通过' : ''}${r.reviewVersion?' · 新审核版本：'+r.reviewVersion:''}`);
     break;
   }
   case 'leads': {

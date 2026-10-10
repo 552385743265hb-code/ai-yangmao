@@ -14,7 +14,7 @@ type OfferRow=typeof tables.offers.$inferSelect;
 type CandidateRow={id:string;observation_id:string;facts_json:string;facts_hash:string;raw_candidate_json:string;receipt_json:string|null;revision:number;entity_id:string|null;state:string;last_error:string|null};
 type EntityRow={id:string;platform_id:string;canonical_offer_id:string|null;business_revision:number;publication_revision:number;current_approved_version_id:string|null};
 type TaskRow={id:string;task_key:string;kind:string;entity_id:string|null;version_id:string|null;base_version_id:string|null;state:string;revision:number;material_revision:number;decision_id:string|null;lease_context_json?:string|null};
-type ResolutionControl={task:TaskRow;actor:string;action:'same'|'new';facts?:CanonicalTermsV1;entityId?:string};
+type ResolutionControl={task:TaskRow;actor:string;action:'same'|'new';reason?:string;facts?:CanonicalTermsV1;entityId?:string};
 const decisionInput=z.strictObject({requestId:z.string().min(1).max(200),expectedRevision:z.number().int().nonnegative(),action:z.enum(['approve','reject']),actor:z.string().min(1),role:z.enum(['admin','reviewer']),reasonCode:reviewDecisionSchema.shape.reasonCode.optional(),reason:z.string().max(2000).optional(),scope:decisionScopeSchema.optional(),reopenPolicy:reopenPolicySchema.optional()});
 export type TaskDecisionInput=z.infer<typeof decisionInput>;
 const columns:Record<string,string>={platformId:'platform_id',title:'title',type:'type',modalities:'modalities',models:'models',tags:'tags',claimMethod:'claim_method',requirements:'requirements',audience:'audience',valueText:'value_text',usdEstimate:'usd_estimate',usdMax:'usd_max',valuation:'valuation',claimStart:'claim_start',claimEnd:'claim_end',endKind:'end_kind',creditValidity:'credit_validity',sourceTz:'source_tz',publishedAt:'published_at',steps:'steps',evidence:'evidence',sourceId:'source_id',firstChannel:'first_channel'};
@@ -202,15 +202,15 @@ export class IdentityService {
   return this.commit(builder,[{kind:'task',id:taskId,revision:input.expectedRevision},...context.entities.map(e=>({kind:'entity' as const,id:e.id,revision:e.revision}))],{taskId,revision:input.expectedRevision+1,state:'manual'});
  }
 
- async resolveIdentityTask(taskId:string,raw:{requestId:string;expectedRevision:number;action:'same'|'new';candidateId:string;entityId?:string;facts?:CanonicalTermsV1;actor:string}):Promise<IntakeReceipt> {
-  const input=z.strictObject({requestId:z.string().min(1).max(200),expectedRevision:z.number().int().nonnegative(),action:z.enum(['same','new']),candidateId:z.string(),entityId:z.string().optional(),facts:canonicalTermsSchema.optional(),actor:z.string().min(1)}).parse(raw);
-  const payload=await sha256(stableJson({candidateId:input.candidateId,suggestion:null,control:{taskId,revision:input.expectedRevision,actor:input.actor,action:input.action,facts:input.facts??null,entityId:input.entityId??null}}));
+ async resolveIdentityTask(taskId:string,raw:{requestId:string;expectedRevision:number;action:'same'|'new';candidateId:string;entityId?:string;facts?:CanonicalTermsV1;reason?:string;actor:string}):Promise<IntakeReceipt> {
+  const input=z.strictObject({requestId:z.string().min(1).max(200),expectedRevision:z.number().int().nonnegative(),action:z.enum(['same','new']),candidateId:z.string(),entityId:z.string().optional(),facts:canonicalTermsSchema.optional(),reason:z.string().min(2).max(2000).optional(),actor:z.string().min(1)}).parse(raw);
+  const payload=await sha256(stableJson({candidateId:input.candidateId,suggestion:null,control:{taskId,revision:input.expectedRevision,actor:input.actor,action:input.action,facts:input.facts??null,entityId:input.entityId??null,reason:input.reason??null}}));
   const prior=await readIdentityReceipt<IntakeReceipt>(this.db,'resolve:human:'+input.requestId,payload);if(prior){if(prior.status==='conflict')throw new IdentityError(409,'request payload conflict');return intakeReceiptSchema.parse(prior.value);}
   const task=await this.db.prepare('SELECT * FROM review_tasks WHERE id=?').bind(taskId).first<TaskRow>();
   if(!task||!['identity','merge_conflict','evidence_reopen'].includes(task.kind)||task.revision!==input.expectedRevision||!['open','manual','checking'].includes(task.state))throw new IdentityError(409,'identity task changed');
   if(!await this.db.prepare('SELECT 1 FROM task_candidates tc JOIN intake_candidates c ON c.id=tc.candidate_id WHERE tc.task_id=? AND tc.candidate_id=? AND c.task_id=tc.task_id').bind(taskId,input.candidateId).first())throw new IdentityError(400,'candidate does not belong to task');
   if(input.action==='same'&&!input.entityId)throw new IdentityError(400,'same requires a target entity');
-  return this.resolveCandidate(input.candidateId,'human:'+input.requestId,undefined,{task,actor:input.actor,action:input.action,facts:input.facts,entityId:input.entityId});
+  return this.resolveCandidate(input.candidateId,'human:'+input.requestId,undefined,{task,actor:input.actor,action:input.action,facts:input.facts,entityId:input.entityId,reason:input.reason});
  }
 
  private async rejectClaimTask(task:TaskRow,input:TaskDecisionInput,command:string,hash:string):Promise<{decisionId:string;publicationRevision:number}> {
@@ -233,7 +233,7 @@ export class IdentityService {
 
  async applyResolution(candidateId:string,suggestion:ResolutionResult,requestId:string):Promise<IntakeReceipt>{resolutionResultSchema.parse(suggestion);return this.resolveCandidate(candidateId,requestId,suggestion);}
  async resolveCandidate(candidateId:string,requestId:string,suggestion?:ResolutionResult,control?:ResolutionControl):Promise<IntakeReceipt> {
-  const payloadHash=await sha256(stableJson({candidateId,suggestion:suggestion??null,control:control?{taskId:control.task.id,revision:control.task.revision,actor:control.actor,action:control.action,facts:control.facts??null,entityId:control.entityId??null}:null})),command='resolve:'+requestId;
+  const payloadHash=await sha256(stableJson({candidateId,suggestion:suggestion??null,control:control?{taskId:control.task.id,revision:control.task.revision,actor:control.actor,action:control.action,facts:control.facts??null,entityId:control.entityId??null,reason:control.reason??null}:null})),command='resolve:'+requestId;
   const previous=await readIdentityReceipt<IntakeReceipt>(this.db,command,payloadHash);
   if(previous){if(previous.status==='conflict')throw new IdentityError(409,'request payload conflict');return intakeReceiptSchema.parse(previous.value);}
   const candidate=await this.db.prepare('SELECT * FROM intake_candidates WHERE id=?').bind(candidateId).first<CandidateRow>();
@@ -371,7 +371,7 @@ export class IdentityService {
   if(control){
    if(!entity||receipt.taskId===control.task.id)throw new IdentityError(400,'identity remains unproven; provide scoped canonical facts or choose a verified entity');
    const decisionId=crypto.randomUUID();
-   builder.insert('review_decisions',{id:decisionId,entity_id:entity.id,candidate_id:candidate.id,version_id:receipt.versionId,action:control.action==='same'?'same':'distinct',reason_code:control.action==='same'?'duplicate':'other',scope_json:JSON.stringify({kind:'claim',candidateId:candidate.id}),reopen_policy_json:JSON.stringify({kind:'manual',missingFacts:[]}),rules_version:RULES_VERSION,evidence_refs_json:JSON.stringify([candidate.observation_id]),actor:control.actor,idempotency_key:command+':manual'});
+   builder.insert('review_decisions',{id:decisionId,entity_id:entity.id,candidate_id:candidate.id,version_id:receipt.versionId,action:control.action==='same'?'same':'distinct',reason_code:control.action==='same'?'duplicate':'other',reason_text:control.reason??'',scope_json:JSON.stringify({kind:'claim',candidateId:candidate.id}),reopen_policy_json:JSON.stringify({kind:'manual',missingFacts:[]}),rules_version:RULES_VERSION,evidence_refs_json:JSON.stringify([candidate.observation_id]),actor:control.actor,idempotency_key:command+':manual'});
    if(control.action==='new'&&control.entityId&&control.entityId!==entity.id){const other=await this.entity(control.entityId);if(!other)throw new IdentityError(400,'distinct target missing');expected.push({kind:'entity',id:other.id,revision:other.business_revision});const pair=[entity.id,other.id].sort();builder.insert('identity_constraints',{id:crypto.randomUUID(),entity_a:pair[0],entity_b:pair[1],relation:'different',basis_json:JSON.stringify({taskId:control.task.id,candidateId:candidate.id}),actor:control.actor});builder.update('benefit_entities',{business_revision:other.business_revision+1},'id=?',[other.id]);}
    builder.insert('identity_aliases',{id:crypto.randomUUID(),namespace:'manual',alias_key:'candidate:'+candidate.id,scope_key:entity.platform_id,entity_id:entity.id,basis_json:JSON.stringify({decisionId,actor:control.actor})},'nothing');
    const remaining=await this.db.prepare('SELECT 1 FROM task_candidates tc JOIN intake_candidates c ON c.id=tc.candidate_id WHERE tc.task_id=? AND c.task_id=? AND c.id<>? LIMIT 1').bind(control.task.id,control.task.id,candidate.id).first();

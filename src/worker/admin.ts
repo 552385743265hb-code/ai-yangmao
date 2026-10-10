@@ -520,7 +520,9 @@ export async function buildNotice(env: Env, kind: NoticeKind, channel: NoticeCha
   const d = db(env), names = await platformNames(env), now = new Date();
   const approvedPlatforms = new Set((await d.select({ id: s.platforms.id }).from(s.platforms).where(eq(s.platforms.status, 'approved'))).map(p => p.id));
   const approved = (await d.select().from(s.offers).where(and(eq(s.offers.reviewState, 'approved'),canonicalOffers))).filter(o => approvedPlatforms.has(o.platformId));
-  const identities=await noticeIdentities(env.DB,approved.map(o=>o.id)),identityEvents=await pendingIdentityNotices(env.DB,channel);
+  const inFlight = (await d.select({ payload: s.deliveries.payload, channel: s.deliveries.channel, status: s.deliveries.status }).from(s.deliveries).where(and(eq(s.deliveries.channel,channel),inArray(s.deliveries.status, ['pending', 'unknown']))));
+  const blockedItems = new Set(inFlight.flatMap(delivery => Object.values((delivery.payload as {items?:Record<string,{id:string}[]>}).items ?? {}).flat().map(item=>item.id)));
+  const identities=await noticeIdentities(env.DB,approved.map(o=>o.id)),identityEvents=await pendingIdentityNotices(env.DB,channel,approved.filter(o=>isClaimable(liveStatus(o,now))&&!blockedItems.has(o.id)).map(o=>o.id));
   const sent = await d.select().from(s.notifications).where(eq(s.notifications.channel, channel));
   const has = (id: string, stage: string) => sent.find(n => n.offerId === id && n.stage === stage);
   const out: Record<string, (ReturnType<typeof view> & { score?: number })[]> = { new: [], changed: [], ending: [], ended: [], urgent: [], standing: [], rising: [], lastcall: [] };
@@ -556,9 +558,6 @@ export async function buildNotice(env: Env, kind: NoticeKind, channel: NoticeCha
     // 只通知推送过“上架”的条目；作为历史数据补录的已结束活动不推送
     if (st === 'ended' && !has(o.id, 'ended') && (has(o.id, 'new') || has(o.id, 'urgent')) && (!end || now.getTime() - end.getTime() < 7 * 86400_000)) { out.ended.push(v); marks.push({ offerId: o.id, stage: 'ended' }); }
   }
-  const inFlight = (await d.select({ payload: s.deliveries.payload, channel: s.deliveries.channel, status: s.deliveries.status }).from(s.deliveries)
-    .where(inArray(s.deliveries.status, ['pending', 'unknown']))).filter(delivery => delivery.channel === channel);
-  const blockedItems = new Set(inFlight.flatMap(delivery => Object.values((delivery.payload as {items?:Record<string,{id:string}[]>}).items ?? {}).flat().map(item=>item.id)));
   const key = (mark: NoticeMark) => `${mark.offerId}\u0000${mark.stage}\u0000${mark.messageId ?? ''}`;
   const blocked = new Set(inFlight.flatMap(delivery => ((delivery.payload as { marks?: NoticeMark[] }).marks ?? []).map(key)));
   marks = marks.filter(mark => !blocked.has(key(mark)) && !blockedItems.has(mark.offerId)).sort((a, b) => key(a).localeCompare(key(b)));
@@ -639,7 +638,7 @@ export async function buildNotice(env: Env, kind: NoticeKind, channel: NoticeCha
     const unresolved = await d.select().from(s.leads).where(inArray(s.leads.status,['new','reviewing']));
     leadBacklog = unresolved.length;
     reviewAlerts = [
-      ...await identityReviewAlerts(env.DB),
+      ...await identityReviewAlerts(env.DB,[...announced]),
       ...awaiting.map(o=>({ key: o.officialReview && (o.officialReview.status === 'matched' || (o.officialReview.status!=='checking'&&!o.officialReview.nextAttemptAt)) ? `offer:${o.id}:official:${o.officialReview.jobId}` : `offer:${o.id}`, priority: reviewRank(o), title: `[${shortCode(o.id)}] ${o.title}`, state: o.officialReview?.status==='unresolved'&&!o.officialReview.nextAttemptAt?'官方复核待人工核对':'待审', url: `https://ai-yangmao.com/#admin-offer-${encodeURIComponent(o.id)}` })),
       ...proposals.filter(p=>p.diff.some(x=>isReviewField(x.field))).map(p=>({ key: `proposal:${p.offerId}:${JSON.stringify(p.diff)}`, priority: 2, title: String(p.candidate.title ?? p.offerId), state: '条款更新待审', url: `https://ai-yangmao.com/#admin-offer-${encodeURIComponent(p.offerId)}` })),
       ...unresolved.filter(l=>!l.resolution?.identityTaskIds?.length&&(leadPriority(l)<=1||l.resolution?.status==='manual')).sort((a,b)=>leadPriority(a)-leadPriority(b)||b.id-a.id).map(l=>({ key: `lead:${l.id}:${l.resolution?.status==='manual'?'manual:'+l.resolution.jobId:l.status}`, priority: 1, title: `#${l.id} ${l.title ?? ''}`, state: l.status==='reviewing' ? (l.resolution?.status==='manual'?'线索待你判断':'线索正在自动复核') : '重要线索，尚未研判', url: 'https://ai-yangmao.com/#admin' })),
@@ -650,8 +649,7 @@ export async function buildNotice(env: Env, kind: NoticeKind, channel: NoticeCha
     const primary = reviewAlerts.slice(0,8);
     const selected = new Set(primary.map(a=>a.key));
     const backlog = reviewAlerts.filter(a=>!selected.has(a.key) && !a.key.startsWith('lead:')).slice(0,2);
-    reviewAlerts = [
-      ...await identityReviewAlerts(env.DB),...primary,...backlog];
+    reviewAlerts = [...primary,...backlog];
     const chosen = new Set(reviewAlerts.map(a=>a.key));
     reviewAlerts.push(...alertPool.filter(a=>!chosen.has(a.key)).slice(0,10-reviewAlerts.length));
   }
