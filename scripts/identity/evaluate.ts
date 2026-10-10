@@ -13,24 +13,26 @@ export const corpusSchema=z.strictObject({
 }).refine(c=>new Set(c.pairs.map(p=>p.id)).size===c.pairs.length,'pair IDs must be unique');
 export async function corpusHash(input:unknown){return sha256(stableJson(corpusSchema.parse(input)));}
 const ratio=(numerator:number,denominator:number)=>({numerator,denominator,rate:denominator?numerator/denominator:null});
-export function summarizePredictions(rows: {label:Label;predicted:Label}[]){
+export function summarizePredictions(rows: {label:Label;predicted:Label;relation:'SAME'|'DISTINCT'|'UNRESOLVED';termsRelation:'EQUIVALENT'|'CHANGED'|'INSUFFICIENT'}[]){
  const same=(x:Label)=>x==='SAME_EQUIVALENT'||x==='SAME_CHANGED';
- return {automaticPrecision:ratio(rows.filter(r=>same(r.predicted)&&r.predicted===r.label).length,rows.filter(r=>same(r.predicted)).length),
+ return {identityPrecision:ratio(rows.filter(r=>r.relation==='SAME'&&same(r.label)).length,rows.filter(r=>r.relation==='SAME').length),automaticPrecision:ratio(rows.filter(r=>same(r.predicted)&&r.predicted===r.label).length,rows.filter(r=>r.relation==='SAME').length),
  duplicateRecall:ratio(rows.filter(r=>r.label==='SAME_EQUIVALENT'&&r.predicted===r.label).length,rows.filter(r=>r.label==='SAME_EQUIVALENT').length),
  changedRecall:ratio(rows.filter(r=>r.label==='SAME_CHANGED'&&r.predicted===r.label).length,rows.filter(r=>r.label==='SAME_CHANGED').length),
  uncertainRate:ratio(rows.filter(r=>r.predicted==='UNRESOLVED').length,rows.length),
- falseMerge:rows.filter(r=>r.label==='DISTINCT'&&same(r.predicted)).length,
+ identityUncertainRate:ratio(rows.filter(r=>r.relation==='UNRESOLVED').length,rows.length),
+ falseMerge:rows.filter(r=>r.label==='DISTINCT'&&r.relation==='SAME').length,
+ falseSame:rows.filter(r=>!same(r.label)&&r.relation==='SAME').length,
  // The pure resolver does not execute decisions/tasks. Never infer these workflow metrics.
  falseReject:null,duplicateReviewLeak:null};
 }
 export async function evaluateCorpus(input:unknown,approvedHash:string){
  const c=corpusSchema.parse(input),hash=await corpusHash(c);if(hash!==approvedHash)throw new Error('frozen corpus hash mismatch');
- const rows=c.pairs.map(p=>{const verdict=compareCandidate(p.candidate,p.entity,p.evidence);const predicted:Label=verdict.relation==='SAME'&&verdict.termsRelation!=='INSUFFICIENT'?`SAME_${verdict.termsRelation}`:verdict.relation==='DISTINCT'?'DISTINCT':'UNRESOLVED';return {id:p.id,label:p.label,predicted,reasonCodes:verdict.reasonCodes};});
+ const rows=c.pairs.map(p=>{const verdict=compareCandidate(p.candidate,p.entity,p.evidence);const predicted:Label=verdict.relation==='SAME'&&verdict.termsRelation!=='INSUFFICIENT'?`SAME_${verdict.termsRelation}`:verdict.relation==='DISTINCT'?'DISTINCT':'UNRESOLVED';return {id:p.id,label:p.label,predicted,relation:verdict.relation,termsRelation:verdict.termsRelation,entityId:verdict.entityId,reasonCodes:verdict.reasonCodes};});
  const counts=Object.fromEntries(labelSchema.options.map(label=>[label,rows.filter(p=>p.label===label).length])) as Record<Label,number>;
  const crossLanguageOrSource=c.pairs.filter(p=>p.label==='SAME_EQUIVALENT'&&p.crossLanguageOrSource).length;
  const cohortSufficient=counts.SAME_EQUIVALENT>=20&&counts.DISTINCT>=20&&counts.SAME_CHANGED>=10&&counts.UNRESOLVED>=10&&crossLanguageOrSource>=8;
  const metrics=summarizePredictions(rows);
- const semanticGate=cohortSufficient&&metrics.duplicateRecall.rate!>=0.9&&metrics.falseMerge===0&&metrics.changedRecall.rate===1&&rows.filter(p=>p.label==='UNRESOLVED').every(p=>p.predicted==='UNRESOLVED')&&rows.filter(p=>p.label==='SAME_EQUIVALENT').every(p=>p.predicted==='SAME_EQUIVALENT'||p.predicted==='UNRESOLVED');
+ const semanticGate=cohortSufficient&&metrics.duplicateRecall.rate!>=0.9&&metrics.falseSame===0&&metrics.changedRecall.rate===1&&rows.filter(p=>p.label==='UNRESOLVED').every(p=>p.relation==='UNRESOLVED')&&rows.filter(p=>p.label==='SAME_EQUIVALENT').every(p=>p.predicted==='SAME_EQUIVALENT'||p.predicted==='UNRESOLVED');
  return {schemaVersion:'identity-evaluation-v1',resolverVersion:RESOLVER_VERSION,rulesVersion:RULES_VERSION,environment:c.environment,corpusHash:hash,datasetVersion:c.datasetVersion,counts,crossLanguageOrSource,cohortSufficient,metrics,semanticGate:semanticGate?'passed':'not_met',fieldAcceptance:'not_evaluated',
   limitations:['Pure resolver only: task/publication/refusal outcomes require separate workflow replay.',...(c.environment==='synthetic'?['Synthetic labels cannot establish field quality.']:[]),...(!cohortSufficient?['Required labelled cohort is incomplete.']:[])],modelCalls:0,modelTokens:0,modelCostUsd:0,rows};
 }

@@ -1,6 +1,6 @@
 import { canonicalTermsSchema, evidenceContextSchema, versionedEntitySchema, type CanonicalTermsV1, type EvidenceContext, type VersionedEntity, type ResolutionResult, type Fact } from './types';
 import { normalizeTerms, stableJson, withoutEvidence } from './normalize';
-export const RESOLVER_VERSION = 'identity-v1';
+export const RESOLVER_VERSION = 'identity-v2';
 export const RULES_VERSION = 'identity-rules-v1';
 const equal = (a: unknown,b: unknown) => stableJson(withoutEvidence(a))===stableJson(withoutEvidence(b));
 const knownValue = <T>(fact: Fact<T>) => fact.state==='known'?fact.value:undefined;
@@ -52,6 +52,9 @@ export function compareCandidate(raw:CanonicalTermsV1,rawEntity:VersionedEntity,
   const replacement=validSource&&result.conflicts.length>0&&result.conflicts.every(conflict=>evidenceGrounded(conflict.evidenceRefs,evidence)
     && provesFieldReplacement(conflict.field,oldSlots.get(conflict.field)!,incomingSlots.get(conflict.field)!,candidate,evidence));
   if(result.conflicts.length&&!replacement)return unresolved('replacement_unproven');
+  // An automatic campaign anchor cannot disambiguate an under-extracted sub-benefit.
+  // Only a server-owned human confirmation may attach incomplete/new facts.
+  if((incomplete||added)&&!confirmed)return unresolved(incomplete?'partial_identity_facts':'new_identity_facts');
   if(incomplete||added)return {...result,relation:'SAME',entityId:entity.id,reasonCodes:[incomplete?'partial_facts':'new_fact_evidence'],evidenceRefs:incomingRefs};
   return {...result,relation:'SAME',entityId:entity.id,termsRelation:replacement?'CHANGED':'EQUIVALENT',matchingVersionId:replacement?null:entity.approvedVersionId,evidenceRefs:incomingRefs,reasonCodes:[replacement?'official_replacement':'equivalent_facts']};
 }

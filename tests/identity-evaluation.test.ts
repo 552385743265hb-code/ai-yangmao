@@ -11,7 +11,7 @@ it('frozen corpus hash rejects tampered labels and duplicate IDs; synthetic data
  const repeated=structuredClone(input);repeated.pairs.push(repeated.pairs[0]);await expect(corpusHash(repeated)).rejects.toThrow('unique');
 });
 it('precision recall and uncertain rates expose denominators and false merges instead of hiding abstentions',()=>{
- const result=summarizePredictions([{label:'SAME_EQUIVALENT',predicted:'SAME_EQUIVALENT'},{label:'SAME_EQUIVALENT',predicted:'UNRESOLVED'},{label:'DISTINCT',predicted:'SAME_EQUIVALENT'},{label:'SAME_CHANGED',predicted:'SAME_CHANGED'},{label:'UNRESOLVED',predicted:'UNRESOLVED'}]);
+ const result=summarizePredictions([{label:'SAME_EQUIVALENT',predicted:'SAME_EQUIVALENT'},{label:'SAME_EQUIVALENT',predicted:'UNRESOLVED'},{label:'DISTINCT',predicted:'SAME_EQUIVALENT'},{label:'SAME_CHANGED',predicted:'SAME_CHANGED'},{label:'UNRESOLVED',predicted:'UNRESOLVED'}].map(r=>({...r,relation:r.predicted.startsWith('SAME')?'SAME':r.predicted,termsRelation:r.predicted.startsWith('SAME')?r.predicted.slice(5):'INSUFFICIENT'})) as any);
  expect(result.automaticPrecision).toEqual({numerator:2,denominator:3,rate:2/3});expect(result.duplicateRecall).toEqual({numerator:1,denominator:2,rate:0.5});expect(result.uncertainRate.rate).toBe(0.4);expect(result.falseMerge).toBe(1);expect(result.falseReject).toBeNull();expect(result.duplicateReviewLeak).toBeNull();expect(summarizePredictions([]).automaticPrecision.rate).toBeNull();
 });
 it('D1 metrics preserve duplicate-column raw results and count batch statements once; absent metadata is unknown',async()=>{
@@ -28,14 +28,22 @@ it('D1 metrics aggregate measured row metadata without converting failures to ze
 it('acceptance report cannot pass merely from scenario IDs when a covered test is skipped or fails',async()=>{
  const {acceptanceReport}=await import('../scripts/identity/acceptance-report');
  const assertions=Array.from({length:45},(_,i)=>({fullName:`A${String(i+1).padStart(2,'0')} real behavior`,status:'passed'}));
- const result=acceptanceReport({success:true,testResults:[{name:'tests/identity-example.test.ts',assertionResults:assertions}]});expect(result.status).toBe('passed');expect(result.scenarios).toHaveLength(45);
- assertions[44].status='pending';expect(acceptanceReport({success:true,testResults:[{name:'a',assertionResults:assertions}]}).status).toBe('incomplete');
- assertions[0].status='failed';expect(acceptanceReport({success:false,testResults:[{name:'a',assertionResults:assertions}]}).status).toBe('failed');
- expect(acceptanceReport({success:true,testResults:[]}).status).toBe('incomplete');
+ const result=acceptanceReport({success:true,testResults:[{name:'tests/identity-example.test.ts',assertionResults:assertions}]});expect(result.taggedTestsStatus).toBe('passed');expect(result.scenarios).toHaveLength(45);
+ assertions[44].status='pending';expect(acceptanceReport({success:true,testResults:[{name:'a',assertionResults:assertions}]}).taggedTestsStatus).toBe('incomplete');
+ assertions[0].status='failed';expect(acceptanceReport({success:false,testResults:[{name:'a',assertionResults:assertions}]}).taggedTestsStatus).toBe('failed');
+ expect(acceptanceReport({success:true,testResults:[]}).taggedTestsStatus).toBe('incomplete');
 });
 it('the frozen four-pair synthetic example has a genuine old-to-new changed pair and remains below the field cohort',async()=>{
  const {readFileSync}=await import('node:fs');const sample=JSON.parse(readFileSync(new URL('./fixtures/identity/evaluation-synthetic.json',import.meta.url),'utf8'));
  const changed=sample.pairs.find((p:any)=>p.label==='SAME_CHANGED');expect(changed.entity.terms.benefitPools[0].amount.value.value).toBe('10');expect(changed.candidate.benefitPools[0].amount.value.value).toBe('20');
  const distinct=sample.pairs.find((p:any)=>p.label==='DISTINCT');expect(distinct.entity.terms.issuerProductId.value).toBe(distinct.entity.platformId);expect(distinct.candidate.issuerProductId.value).toBe('other');
  const report=await evaluateCorpus(sample,await corpusHash(sample));expect(report.metrics.changedRecall.rate).toBe(1);expect(report.fieldAcceptance).toBe('not_evaluated');
+});
+it('raw SAME with insufficient terms still counts as a false identity match for a DISTINCT gold control',async()=>{
+ const input=corpus();input.pairs[0].entity.terms=structuredClone(input.pairs[0].entity.terms);input.pairs[0].label='DISTINCT';Object.assign(input.pairs[0].evidence,{confirmedEntityId:'old'});input.pairs[0].candidate.benefitPools[0].amount={state:'unknown'} as any;
+ input.pairs[0].evidence.fullText='Umbrella campaign campaign: a separate student signup bonus grants 20 USD.';input.pairs[0].evidence.quoteById['quote-1']=input.pairs[0].evidence.fullText;
+ const report=await evaluateCorpus(input,await corpusHash(input));expect(report.metrics.falseMerge).toBe(1);expect(report.metrics.automaticPrecision.denominator).toBe(1);expect(report.rows[0]).toMatchObject({relation:'SAME',termsRelation:'INSUFFICIENT'});expect(report.semanticGate).toBe('not_met');
+});
+it('tagged test results never assert complete contract subcase coverage',async()=>{
+ const {acceptanceReport}=await import('../scripts/identity/acceptance-report');const report=acceptanceReport({success:true,testResults:[{name:'a',assertionResults:[{fullName:'A24 one sequential case',status:'passed'}]}]});expect(report.scenarios[23].taggedTestsStatus).toBe('passed');expect(report.scenarios[23].contractCoverage).toBe('not_established_by_reporter');expect(report.scenarios[23]).not.toHaveProperty('status');
 });

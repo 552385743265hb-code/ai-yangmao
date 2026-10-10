@@ -6,7 +6,7 @@ import * as tables from '../../db/schema';
 import { offerIn,type OfferIn } from '../../shared/ingest';
 import { publicationError,validateStoredOffer } from '../publication';
 import { canonicalTermsSchema,resolutionResultSchema,decisionScopeSchema,reopenPolicySchema,intakeReceiptSchema,reviewDecisionSchema,type IntakeReceipt,type CanonicalTermsV1,type ResolutionResult,type EvidenceContext,type VersionedEntity } from '../../shared/identity/types';
-import { compareCandidate,evidenceGrounded,RESOLVER_VERSION,RULES_VERSION } from '../../shared/identity/compare';
+import { compareCandidate,evidenceGrounded,factSlots,RESOLVER_VERSION,RULES_VERSION } from '../../shared/identity/compare';
 import { decisionApplies,evaluateReopen,reviewTaskKey } from '../../shared/identity/decision-policy';
 import { hashTerms,sha256,stableJson } from '../../shared/identity/normalize';
 import { IdentityStore,IdentityError,readReviewDecision } from './store';
@@ -268,16 +268,25 @@ export class IdentityService {
    expected.push({kind:'block',id:blockKey,revision:blockRevision});
    const page=await this.store.retrieveCandidates(productId,facts);
    decisions=page.decisions;
-   const alias=facts.occurrenceAnchor.state==='known'?await this.store.lookupAlias('official_campaign',facts.occurrenceAnchor.value,blockKey):null;
    const revoked=await this.db.prepare("SELECT a.id,coalesce(owner.merged_into,owner.id) entity_id FROM identity_aliases a JOIN benefit_entities owner ON owner.id=a.entity_id WHERE a.status='revoked' AND ((a.namespace='official_campaign' AND a.alias_key=? AND a.scope_key=?) OR (a.namespace='manual' AND a.alias_key=?)) AND NOT EXISTS(SELECT 1 FROM identity_aliases active WHERE active.namespace=a.namespace AND active.alias_key=a.alias_key AND active.scope_key=a.scope_key AND active.status='active') ORDER BY a.id LIMIT 40").bind(facts.occurrenceAnchor.state==='known'?facts.occurrenceAnchor.value:'',blockKey,'candidate:'+candidate.id).all<{id:string;entity_id:string}>();
    evidence.revokedEntityIds=revoked.results.map(a=>a.entity_id);
    if(revoked.results.length)taskKey='identity:revoked:'+revoked.results[0].id;
    const manualAlias=candidate.entity_id?await this.store.lookupAlias('manual','candidate:'+candidate.id,productId):null;
    if(control?.action==='same')evidence.confirmedEntityId=control.entityId;
    else if(manualAlias)evidence.confirmedEntityId=manualAlias;
-   else if(alias&&facts.occurrenceAnchor.state==='known'&&evidence.sourceVerified&&!evidence.truncated&&evidenceGrounded(facts.occurrenceAnchor.evidenceRefs,evidence)&&facts.occurrenceAnchor.evidenceRefs.some(ref=>evidence.quoteById[ref].includes(facts.occurrenceAnchor.state==='known'?facts.occurrenceAnchor.value:'')))evidence.confirmedEntityId=alias;
    if(candidate.entity_id)evidence.differentEntityIds=await differentCanonicalEntities(this.db,candidate.entity_id);
-   const compared=page.entities.map(e=>({entity:e,result:compareCandidate(facts,e,evidence)}));
+   const compared=await Promise.all(page.entities.map(async e=>{
+    let result=compareCandidate(facts,e,evidence);
+    // A prior human refusal can authorize exactly its named missing facts to be
+    // reconsidered. It does not authorize other scope enrichment or publication.
+    if(result.reasonCodes.includes('new_identity_facts')&&e.terms){
+     const baseline=factSlots(e.terms),introduced=[...factSlots(facts)].filter(([key,value])=>value.state!=='unknown'&&(!baseline.has(key)||baseline.get(key)!.state==='unknown')).map(([key])=>key);
+     const superseded=new Set(decisions.flatMap(d=>d.supersedesId?[d.supersedesId]:[]));
+     const eligible=decisions.filter(d=>d.entityId===e.id&&!superseded.has(d.id)&&d.reopenPolicy.kind==='missing_facts'&&introduced.length>0&&introduced.every(key=>d.reopenPolicy.missingFacts.includes(key)));
+     if(eligible.length===1&&(await evaluateReopen(eligible[0],facts,evidence)).allowed)result=compareCandidate(facts,e,{...evidence,confirmedEntityId:e.id});
+    }
+    return {entity:e,result};
+   }));
    const matches=control?.action==='new'?[]:compared.filter(r=>r.result.relation==='SAME'&&(!control?.entityId||r.entity.id===control.entityId));
    if(control?.action==='same'&&matches.length===1&&matches[0].result.reasonCodes.includes('partial_facts'))matches[0].result={...matches[0].result,termsRelation:'EQUIVALENT',matchingVersionId:matches[0].entity.approvedVersionId};
    if(page.complete&&matches.length===1){comparison=matches[0].result;entity=await this.entity(matches[0].entity.id);}
