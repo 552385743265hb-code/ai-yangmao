@@ -1,5 +1,5 @@
 {
- "_note": "种子白名单草稿（Claude 起草，待管理员审核）。x 只填在 AIHOT 真实数据里出现过的官方账号；staff 是候选员工账号，进白名单前需要确认。官网为首页级链接，具体公告页在第 3 阶段逐个核实后加入 sources。 2026-09-30 管理员已审核：全部准入；主要面向企业、不给个人免费额度的平台（Palantir、Harvey、PixieBrix）不收。 2026-10-08新增平台不得套用全部准入旧快照；2026-10-09生产读回Qoder已准入，TokenRhythm仍须独立核对准入状态。Qoder、Qwen及Qwen Code同属阿里体系，具体产品的账号/额度独立记录。 2026-10-09管理员明确授权Cline平台准入，已批准平台；活动条目仍单独审核。 2026-10-09管理员明确授权OiiOii加入白名单；仅平台准入，福利条目保持待审。 2026-10-09管理员授权personal agents准入：Instinct已在生产批准；Meta Muse、Grok Bot与OpenAI Dots复用已批准的Meta、Cursor/xAI、OpenAI平台，补七个官方信源；活动仍需独立审核。",
+ "_note": "种子白名单草稿（Claude 起草，待管理员审核）。x 只填在 AIHOT 真实数据里出现过的官方账号；staff 是候选员工账号，进白名单前需要确认。官网为首页级链接，具体公告页在第 3 阶段逐个核实后加入 sources。 2026-09-30 管理员已审核：全部准入；主要面向企业、不给个人免费额度的平台（Palantir、Harvey、PixieBrix）不收。 2026-10-08新增平台不得套用全部准入旧快照；2026-10-09生产读回Qoder已准入，TokenRhythm仍须独立核对准入状态。Qoder、Qwen及Qwen Code同属阿里体系，具体产品的账号/额度独立记录。 2026-10-09管理员明确授权Cline平台准入，已批准平台；活动条目仍单独审核。 2026-10-09管理员明确授权OiiOii加入白名单；仅平台准入，福利条目保持待审。 2026-10-09管理员授权personal agents准入：Instinct已在生产批准；Meta Muse、Grok Bot与OpenAI Dots复用已批准的Meta、Cursor/xAI、OpenAI平台，补七个官方信源；活动仍需独立审核。 2026-10-09管理员授权云知声Unisound平台准入，生产已批准并补6个官方信源；U2-Flash API限免活动独立保持待审。",
  "platforms": [
   {
    "id": "openai",
@@ -914,6 +914,17 @@
    "site": "https://instinct.com",
    "x": [],
    "staff": []
+  },
+  {
+   "id": "unisound",
+   "name": "云知声 Unisound（Token Hub）",
+   "type": "lab",
+   "site": "https://maas.unisound.com/",
+   "x": [
+    "@unisound219649"
+   ],
+   "staff": [],
+   "wechat": "http://weixin.qq.com/r/b3XTywHEo1zcrUWo9yB9"
   }
  ],
  "sources": [
@@ -2685,6 +2696,66 @@
    "platform": "instinct",
    "kind": "web_list",
    "url": "https://instinct.co/terms",
+   "tier": "site",
+   "config": {
+    "addedBy": "admin"
+   }
+  },
+  {
+   "id": "unisound-add-mv1uxjqm",
+   "platform": "unisound",
+   "kind": "web_list",
+   "url": "https://maas.unisound.com/",
+   "tier": "site",
+   "config": {
+    "addedBy": "admin"
+   }
+  },
+  {
+   "id": "unisound-add-mv1uxkcl",
+   "platform": "unisound",
+   "kind": "web_list",
+   "url": "https://maas.unisound.com/model-hub/u2-flash",
+   "tier": "site",
+   "config": {
+    "addedBy": "admin"
+   }
+  },
+  {
+   "id": "unisound-add-mv1uxkqy",
+   "platform": "unisound",
+   "kind": "web_list",
+   "url": "https://maas.unisound.com/docs/price/overview",
+   "tier": "docs",
+   "config": {
+    "addedBy": "admin"
+   }
+  },
+  {
+   "id": "unisound-add-mv1uxl41",
+   "platform": "unisound",
+   "kind": "web_list",
+   "url": "https://maas.unisound.com/docs/guide/quickstart",
+   "tier": "docs",
+   "config": {
+    "addedBy": "admin"
+   }
+  },
+  {
+   "id": "unisound-add-mv1uxlju",
+   "platform": "unisound",
+   "kind": "web_list",
+   "url": "https://maas.unisound.com/docs/api/text/openai-compatible",
+   "tier": "docs",
+   "config": {
+    "addedBy": "admin"
+   }
+  },
+  {
+   "id": "unisound-add-mv1uxly8",
+   "platform": "unisound",
+   "kind": "web_list",
+   "url": "https://www.unisound.com/",
    "tier": "site",
    "config": {
     "addedBy": "admin"

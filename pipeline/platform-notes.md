@@ -805,3 +805,12 @@
 
 - 2026-10-09：Instinct由Spear Street Technology, Inc.运营；官网https://instinct.com/，历史https://instinct.co/链接/条款仍可用。管理员本次授权平台准入，已在生产批准，信源自动上架保持关闭。
 - 官网只说明通过短信/电话完成任务，terms要求18岁以上并保留收费权；没有价格不证明永久免费。媒体称邀请内测免费，目前缺发放方免费权益、数量、期限及资格原文，仅保留核验线索，不卖/买邀请码，不伪造官方摘录。官方条款：https://instinct.co/terms 。
+
+## unisound
+
+- 2026-10-09核实：云知声MaaS/Token Hub平台https://maas.unisound.com/，企业官网https://www.unisound.com/，本次管理员授权准入，生产status=approved；所有新增信源autoPublish=false。
+- U2 Flash（API model id: u2-flash）本平台2026-09-30至2026-10-31新老用户限免，输入/输出/缓存命中均0元；不是其它调用平台或其它U系列模型都免费。活动期Token Plan同模型不消耗Credits的说明不另建重复活动。官网宣传无限量，但模型页明确100RPM、10,000,000TPM、512K上下文与128K最大输出，不写成无限速率。来源：https://maas.unisound.com/model-hub/u2-flash ；https://maas.unisound.com/docs/price/overview 。
+- 官方页只给活动日精度，按中国平台Asia/Shanghai记录，不猜精确终止时刻，也不把模型更新时间2026-09-14当活动开始或发布时间。免费的是API调用，不是固定赠金/Token包；美元暂留空，不能以速率上限乘整月充作价值。
+- 开通走手机号验证码注册/登录、普通按量计费与资源包API Key；Token Plan订阅Key是另一通道，不把付费订阅写成普通API限免的前提。快速开始列有个人/企业实名认证及认证礼包，但未直接明确认证是否为活动必需门槛；待审requirements保留unknown，不宣传零门槛，也不将国内手机号标成海外phone。来源：https://maas.unisound.com/docs/guide/quickstart ；https://maas.unisound.com/docs/api/text/openai-compatible 。
+- 认证礼包另有各文本/视觉模型500万tokens、ASR5小时、TTS5万字、Clone/Design各2万字；首页进群500M与旧缓存1亿Token/六折是其它机制或旧页面，不并入本次U2 Flash限免，也不凭缓存覆盖当前日期/零价。
+- 官方账号：企业站页脚直接链接X https://x.com/unisound219649，已登记@unisound219649。企业站公众号二维码与MaaS /images/imgFooter394.png解码均为http://weixin.qq.com/r/b3XTywHEo1zcrUWo9yB9；wechat字段保存已证实的二维码入口，不猜公众号微信号/gh ID。微博二维码解码UID2941129227，对应https://weibo.com/u/2941129227。X/微博正文当前读取受限不代表账号不存在；官方归属证据为企业官网直接链接与二维码，未添加员工账号。

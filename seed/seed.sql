@@ -233,6 +233,8 @@ INSERT INTO platforms (id, name, type, site, x_handles, staff_handles, wechat) V
   ON CONFLICT(id) DO UPDATE SET name=excluded.name, type=excluded.type, site=excluded.site, x_handles=excluded.x_handles, staff_handles=excluded.staff_handles, wechat=COALESCE(excluded.wechat, platforms.wechat), updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now');
 INSERT INTO platforms (id, name, type, site, x_handles, staff_handles, wechat) VALUES ('instinct', 'Instinct（Spear Street Technology）', 'tool', 'https://instinct.com', '[]', '[]', NULL)
   ON CONFLICT(id) DO UPDATE SET name=excluded.name, type=excluded.type, site=excluded.site, x_handles=excluded.x_handles, staff_handles=excluded.staff_handles, wechat=COALESCE(excluded.wechat, platforms.wechat), updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now');
+INSERT INTO platforms (id, name, type, site, x_handles, staff_handles, wechat) VALUES ('unisound', '云知声 Unisound（Token Hub）', 'lab', 'https://maas.unisound.com/', '["@unisound219649"]', '[]', 'http://weixin.qq.com/r/b3XTywHEo1zcrUWo9yB9')
+  ON CONFLICT(id) DO UPDATE SET name=excluded.name, type=excluded.type, site=excluded.site, x_handles=excluded.x_handles, staff_handles=excluded.staff_handles, wechat=COALESCE(excluded.wechat, platforms.wechat), updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now');
 INSERT INTO sources (id, platform_id, kind, url, tier, config, enabled) VALUES ('aihot-resets', NULL, 'aihot', 'https://aihot.news/api/v1/codex-resets', 'lead', '{}', 1)
   ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
 INSERT INTO sources (id, platform_id, kind, url, tier, config, enabled) VALUES ('aihot-items', NULL, 'aihot', 'https://aihot.news/api/v1/items?mode=all&window=7d&limit=100', 'lead', '{}', 1)
@@ -708,4 +710,16 @@ INSERT INTO sources (id, platform_id, kind, url, tier, config, enabled) VALUES (
 INSERT INTO sources (id, platform_id, kind, url, tier, config, enabled) VALUES ('instinct-add-mv1qn25i', 'instinct', 'web_list', 'https://instinct.com/', 'site', '{"addedBy":"admin"}', 1)
   ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
 INSERT INTO sources (id, platform_id, kind, url, tier, config, enabled) VALUES ('instinct-add-mv1qn2jp', 'instinct', 'web_list', 'https://instinct.co/terms', 'site', '{"addedBy":"admin"}', 1)
+  ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
+INSERT INTO sources (id, platform_id, kind, url, tier, config, enabled) VALUES ('unisound-add-mv1uxjqm', 'unisound', 'web_list', 'https://maas.unisound.com/', 'site', '{"addedBy":"admin"}', 1)
+  ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
+INSERT INTO sources (id, platform_id, kind, url, tier, config, enabled) VALUES ('unisound-add-mv1uxkcl', 'unisound', 'web_list', 'https://maas.unisound.com/model-hub/u2-flash', 'site', '{"addedBy":"admin"}', 1)
+  ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
+INSERT INTO sources (id, platform_id, kind, url, tier, config, enabled) VALUES ('unisound-add-mv1uxkqy', 'unisound', 'web_list', 'https://maas.unisound.com/docs/price/overview', 'docs', '{"addedBy":"admin"}', 1)
+  ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
+INSERT INTO sources (id, platform_id, kind, url, tier, config, enabled) VALUES ('unisound-add-mv1uxl41', 'unisound', 'web_list', 'https://maas.unisound.com/docs/guide/quickstart', 'docs', '{"addedBy":"admin"}', 1)
+  ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
+INSERT INTO sources (id, platform_id, kind, url, tier, config, enabled) VALUES ('unisound-add-mv1uxlju', 'unisound', 'web_list', 'https://maas.unisound.com/docs/api/text/openai-compatible', 'docs', '{"addedBy":"admin"}', 1)
+  ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
+INSERT INTO sources (id, platform_id, kind, url, tier, config, enabled) VALUES ('unisound-add-mv1uxly8', 'unisound', 'web_list', 'https://www.unisound.com/', 'site', '{"addedBy":"admin"}', 1)
   ON CONFLICT(id) DO UPDATE SET platform_id=excluded.platform_id, kind=excluded.kind, url=excluded.url, tier=excluded.tier, config=json_patch(sources.config, excluded.config);
