@@ -69,3 +69,11 @@ export function normalizeDocumentUrl(input: string): string {
   url.searchParams.sort();
   return `url-v1:${url.href}`;
 }
+
+/** Bounded lexical recall tokens; Chinese bigrams avoid treating a whole sentence as one word. */
+export function identitySearchTokens(text: string): string[] {
+  const normalized=canonicalText(text).toLowerCase();
+  const tokens: string[]=[...(normalized.match(/[\p{L}\p{N}]+/gu)??[])];
+  for(const run of normalized.match(/[\p{Script=Han}]+/gu)??[]) for(let i=0;i<run.length-1;i++)tokens.push(run.slice(i,i+2));
+  return [...new Set(tokens)].slice(0,128);
+}

@@ -412,3 +412,24 @@ export async function extract(platformName: string, url: string, text: string, l
   if (lastErr instanceof ModelOutputError) throw lastErr;
   throw new DeferError(`本轮可用模型已耗尽，推迟到下一轮：${(lastErr as Error)?.message?.slice(0, 80) ?? ''}`);
 }
+
+/** Bounded identity assistance shares the existing provider catalog, pacing and budget ledger. */
+export async function completeIdentityPrompt(system: string, user: string, deadlineAt: number): Promise<string> {
+  const provider=providers().find(p=>!p.paid&&!unavailableProviders.has(p.name));
+  if(!provider || Date.now()>=deadlineAt)throw new DeferError('identity model unavailable');
+  const { modelBudget }=await import('./budget');
+  const reservation=await modelBudget.reserve(provider.name,system,user,provider.price);
+  try {
+    await pace();
+    const remaining=deadlineAt-Date.now();
+    if(remaining<=0){await modelBudget.settle(reservation,provider.name,0,0);throw new DeferError('identity deadline reached');}
+    const result=await provider.call(system,user,Math.min(remaining,90000));
+    if(result.usageKnown)await modelBudget.settle(reservation,provider.name,result.tokens,result.costCny??0);
+    // Unknown billing keeps the reservation occupied; never refund an ambiguous call.
+    return result.text;
+  } catch(error) {
+    const status=(error as {httpStatus?:number}).httpStatus;
+    if(status)await modelBudget.settle(reservation,provider.name,0,0);
+    throw error;
+  }
+}

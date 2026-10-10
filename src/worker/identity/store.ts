@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { officialTier } from '../../shared/official-review';
-import { candidateBatchInputSchema, observationInputSchema, observationReceiptSchema, intakeReceiptSchema, type CandidateBatchInput, type IntakeReceipt, type ObservationInput, type ObservationReceipt } from '../../shared/identity/types';
-import { hashTerms, normalizeDocumentUrl, normalizeTerms, sha256, stableJson } from '../../shared/identity/normalize';
+import { candidateBatchInputSchema, observationInputSchema, observationReceiptSchema, intakeReceiptSchema, type CandidateBatchInput, type IntakeReceipt, type ObservationInput, type ObservationReceipt, type CanonicalTermsV1, type RetrievalPage, type VersionedEntity, reviewDecisionSchema, canonicalTermsSchema } from '../../shared/identity/types';
+import { identitySearchTokens, hashTerms, normalizeDocumentUrl, normalizeTerms, sha256, stableJson } from '../../shared/identity/normalize';
 
 export class IdentityError extends Error {
   constructor(public status: 400 | 403 | 404 | 409 | 503, message: string) { super(message); }
@@ -16,6 +16,76 @@ type ObservationRow = { id: string; text: string; text_truncated: number; fetch_
 
 export class IdentityStore {
   constructor(readonly db: D1Database) {}
+
+  async indexEntity(id:string,productId:string,text:string):Promise<void> {
+    if(text.length>25000)throw new IdentityError(400,'search document too large');
+    const tokens=identitySearchTokens(text).join(' ');
+    await this.db.batch([
+      this.db.prepare('DELETE FROM identity_search WHERE entity_id=? AND platform_id=?').bind(id,productId),
+      this.db.prepare('INSERT INTO identity_search(entity_id,platform_id,search_text) SELECT id,platform_id,? FROM benefit_entities WHERE id=? AND platform_id=?').bind(tokens,id,productId),
+    ]);
+  }
+  async searchIdentity(productId:string,text:string):Promise<{ids:string[];complete:boolean}> {
+    if(text.length>2000)throw new IdentityError(400,'search input too large');
+    const tokens=identitySearchTokens(text);
+    if(!tokens.length)return {ids:[],complete:true};
+    const match=tokens.map(token=>'"'+token.replaceAll('"','""')+'"').join(' OR ');
+    try {
+      const rows=await this.db.prepare('SELECT entity_id FROM identity_search WHERE identity_search MATCH ? AND platform_id=? ORDER BY rank,entity_id LIMIT 41').bind(match,productId).all<{entity_id:string}>();
+      return {ids:rows.results.slice(0,40).map(row=>row.entity_id),complete:rows.results.length<=40};
+    } catch {throw new IdentityError(503,'search index unavailable');}
+  }
+
+  async lookupAlias(namespace: 'legacy_offer_id'|'official_campaign'|'manual', key: string, scope: string): Promise<string|null> {
+    try {
+      const row=await this.db.prepare("SELECT entity_id FROM identity_aliases WHERE namespace=? AND alias_key=? AND status='active' AND (namespace='legacy_offer_id' OR scope_key=?) LIMIT 1").bind(namespace,key,scope).first<{entity_id:string}>();
+      return row?.entity_id??null;
+    } catch { throw new IdentityError(503,'alias retrieval unavailable'); }
+  }
+
+  async retrieveCandidates(productId: string, raw: CanonicalTermsV1, cursor?: string): Promise<RetrievalPage> {
+    const facts=normalizeTerms(canonicalTermsSchema.parse(raw));
+    const cursorSchema=z.strictObject({v:z.literal(1),product:z.string(),entity:z.string(),decision:z.string(),exactSeen:z.boolean()});
+    let page={v:1 as const,product:productId,entity:'',decision:'',exactSeen:false};
+    if(cursor) {
+      try { page=cursorSchema.parse(JSON.parse(atob(cursor))); }
+      catch { throw new IdentityError(400,'invalid retrieval cursor'); }
+      if(page.product!==productId)throw new IdentityError(400,'cursor product mismatch');
+    }
+    const select=`SELECT e.id,e.platform_id,e.business_revision,e.publication_revision,e.current_approved_version_id,v.facts_json
+      FROM benefit_entities e LEFT JOIN benefit_versions v ON v.id=coalesce(e.current_approved_version_id,
+        (SELECT id FROM benefit_versions WHERE entity_id=e.id ORDER BY created_at DESC,id DESC LIMIT 1))`;
+    type EntityRow={id:string;platform_id:string;business_revision:number;publication_revision:number;current_approved_version_id:string|null;facts_json:string|null};
+    const view=(row:EntityRow):VersionedEntity=>({id:row.id,platformId:row.platform_id,revision:row.business_revision,publicationRevision:row.publication_revision,approvedVersionId:row.current_approved_version_id,terms:row.facts_json?canonicalTermsSchema.parse(JSON.parse(row.facts_json)):null});
+    try {
+      const anchor=facts.occurrenceAnchor.state==='known'?facts.occurrenceAnchor.value:null;
+      const scope=productId+':'+(facts.mechanism.state==='known'?facts.mechanism.value:'unknown');
+      const alias=anchor?await this.lookupAlias('official_campaign',anchor,scope):null;
+      const exact=alias?await this.db.prepare(select+' WHERE e.id=? AND e.platform_id=?').bind(alias,productId).first<EntityRow>():null;
+      const take=exact&&!page.exactSeen?39:40;
+      const rows=await this.db.prepare(select+' WHERE e.platform_id=? AND e.id>? AND e.id<>? ORDER BY e.id LIMIT ?').bind(productId,page.entity,exact?.id??'',take+1).all<EntityRow>();
+      const visible=rows.results.slice(0,take);
+      const entities=[...(exact&&!page.exactSeen?[view(exact)]:[]),...visible.map(view)];
+      // Independent indexed streams cover entity and lead-only decisions in all states.
+      const decisionRows=await Promise.all([
+        this.db.prepare("SELECT d.* FROM review_decisions d JOIN benefit_entities e ON e.id=d.entity_id WHERE e.platform_id=? AND d.id>? ORDER BY d.id LIMIT 41").bind(productId,page.decision).all<Record<string,unknown>>(),
+        this.db.prepare("SELECT d.* FROM intake_candidates c JOIN review_decisions d ON d.candidate_id=c.id WHERE json_extract(c.facts_json,'$.issuerProductId.value')=? AND d.id>? ORDER BY d.id LIMIT 41").bind(productId,page.decision).all<Record<string,unknown>>(),
+        this.db.prepare("SELECT * FROM review_decisions WHERE json_extract(scope_json,'$.productId')=? AND id>? ORDER BY id LIMIT 41").bind(productId,page.decision).all<Record<string,unknown>>(),
+      ]);
+      const allDecisions=[...new Map(decisionRows.flatMap(r=>r.results).map(row=>[String(row.id),row])).values()].sort((a,b)=>String(a.id)<String(b.id)?-1:1);
+      const searchText=[facts.issuerProductId.state==='known'?facts.issuerProductId.value:'',...facts.benefitPools.flatMap(p=>[p.poolKey,...(p.models.state==='known'?p.models.value:[])])].join(' ');
+      const ranked=await this.searchIdentity(productId,searchText.slice(0,2000));
+      const rank=(id:string)=>id===exact?.id?-1:ranked.ids.includes(id)?ranked.ids.indexOf(id):41;
+      entities.sort((a,b)=>rank(a.id)-rank(b.id));
+      const decisions=allDecisions.slice(0,40).map(row=>reviewDecisionSchema.parse({id:row.id,entityId:row.entity_id,candidateId:row.candidate_id,versionId:row.version_id,action:row.action,reasonCode:row.reason_code,scope:JSON.parse(String(row.scope_json)),reopenPolicy:JSON.parse(String(row.reopen_policy_json)),rulesVersion:row.rules_version,evidenceRefs:JSON.parse(String(row.evidence_refs_json)),actor:row.actor,baseVersionId:row.base_version_id,targetVersionId:row.target_version_id,idempotencyKey:row.idempotency_key,supersedesId:row.supersedes_id,createdAt:row.created_at}));
+      const complete=rows.results.length<=take&&allDecisions.length<=40;
+      const nextCursor=complete?null:btoa(JSON.stringify({v:1,product:productId,entity:visible.at(-1)?.id??page.entity,decision:decisions.at(-1)?.id??page.decision,exactSeen:true}));
+      return {entities,decisions,complete,nextCursor};
+    } catch(error) {
+      if(error instanceof IdentityError)throw error;
+      throw new IdentityError(503,'identity retrieval incomplete');
+    }
+  }
 
   private async prior(requestId: string, hash: string): Promise<CommandRow | null> {
     const row = await this.db.prepare('SELECT payload_hash,state,result_json FROM identity_commands WHERE request_id=?').bind(requestId).first<CommandRow>();

@@ -34,7 +34,7 @@ export const canonicalTermsSchema = z.strictObject({
   occurrenceAnchor: factSchema(text),
 });
 export type CanonicalTermsV1 = z.infer<typeof canonicalTermsSchema>;
-export const evidenceContextSchema = z.strictObject({ observationId: idSchema, fullText: z.string().max(250000), truncated: z.boolean(), sourceVerified: z.boolean(), quoteById: z.record(idSchema, z.string().min(1).max(20000)) });
+export const evidenceContextSchema = z.strictObject({ observationId: idSchema, fullText: z.string().max(250000), truncated: z.boolean(), sourceVerified: z.boolean(), quoteById: z.record(idSchema, z.string().min(1).max(20000)), differentEntityIds: z.array(idSchema).max(40).optional(), confirmedEntityId: idSchema.optional() });
 export type EvidenceContext = z.infer<typeof evidenceContextSchema>;
 export const versionedEntitySchema = z.strictObject({ id: idSchema, platformId: idSchema, revision: revisionSchema, publicationRevision: revisionSchema, approvedVersionId: idSchema.nullable(), terms: canonicalTermsSchema.nullable() });
 export type VersionedEntity = z.infer<typeof versionedEntitySchema>;
@@ -44,7 +44,7 @@ export type IdentityRelation = ResolutionResult['relation'];
 export type TermsRelation = ResolutionResult['termsRelation'];
 export const intakeReceiptSchema = z.strictObject({ inputId: idSchema, candidateId: idSchema, canonicalOfferId: idSchema.nullable(), entityId: idSchema.nullable(), versionId: idSchema.nullable(), decisionId: idSchema.nullable(), taskId: idSchema.nullable(), outcome: z.enum(['duplicate_approved','duplicate_pending','duplicate_rejected','created_pending','proposed_update','needs_identity_review','evidence_reopen','deferred']), retryable: z.boolean(), reasonCodes: z.array(text).max(100) });
 export type IntakeReceipt = z.infer<typeof intakeReceiptSchema>;
-export interface RetrievalPage { entities: VersionedEntity[]; nextCursor: string | null; complete: boolean }
+export interface RetrievalPage { entities: VersionedEntity[]; nextCursor: string | null; complete: boolean; decisions: ReviewDecision[] }
 export interface MutationResult<T> { status: 'applied' | 'replayed' | 'conflict'; value: T | null }
 export const decisionScopeSchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('observation_only'), observationId: idSchema }),
