@@ -1,6 +1,7 @@
 // 写入接口的数据校验。采集管线（GitHub Actions）和网站共用这一份。
 import { z } from 'zod';
 import { OFFER_TYPES } from './lifecycle';
+import { valuationSchema, valuationMatchesAmounts } from './valuation';
 
 export const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, '日期格式应为 YYYY-MM-DD').refine(value => {
   const [year, month, day] = value.split('-').map(Number);
@@ -33,6 +34,8 @@ export const offerIn = z.object({
   valueText: z.string().min(1).max(200),
   usdEstimate: z.number().nonnegative().nullable().optional(),
   usdMax: z.number().nonnegative().nullable().optional(),
+  // Pipeline never supplies or clears reviewed valuation; administrator/stored validation uses this field.
+  valuation: valuationSchema.nullable().optional(),
   claimStart: isoDate.nullable().optional(),
   claimEnd: isoDate.nullable().optional(),
   endKind: z.enum(['date', 'unknown', 'standing']),
@@ -57,7 +60,10 @@ export const offerIn = z.object({
     excerpts: z.object({ benefit: z.string().optional(), eligibility: z.string().optional(), claim: z.string().optional(), validity: z.string().optional() }),
   }),
 }).refine(o => o.endKind !== 'date' || !!o.claimEnd, { message: 'endKind=date 时必须有 claimEnd', path: ['claimEnd'] })
-  .refine(o => o.usdMax == null || (o.usdEstimate != null && o.usdMax >= o.usdEstimate), { message: '价值上限必须不小于保守估值', path: ['usdMax'] })
+  .refine(o => o.usdMax == null || (o.usdEstimate != null && o.usdMax >= o.usdEstimate)
+    || (o.type === 'apply' && o.valuation?.period === 'apply_max' && o.valuation.usdMax === o.usdMax), { message: '价值上限必须不小于确定金额；无保底申请须明确申请上限估值', path: ['usdMax'] })
+  .refine(o => !o.valuation || valuationMatchesAmounts(o.valuation, o), { message: '估值元数据金额须与条目美元字段一致', path: ['valuation'] })
+  .refine(o => !o.valuation || (o.valuation.period === 'apply_max') === (o.type === 'apply'), { message: '申请制估值须使用申请口径，其他活动不能使用申请上限口径', path: ['valuation', 'period'] })
   .refine(o => !o.claimStart || !o.claimEnd || o.claimStart <= o.claimEnd, { message: '领取开始日期不能晚于截止日期', path: ['claimEnd'] })
   .refine(o => (o.type === 'standing' || o.type === 'apply') === (o.endKind === 'standing'), { message: '常驻额度和申请制的 endKind 必须为 standing，其他类型不能是 standing', path: ['endKind'] });
 

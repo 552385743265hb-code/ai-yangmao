@@ -91,7 +91,7 @@ describe('飞书群日报', () => {
     const notice = await buildNotice(env, 'digest', 'feishu');
     const [card] = await buildCards(env, notice) as { elements: { tag: string; text?: { content: string }; actions?: { url: string }[] }[] }[];
     const text = card.elements.filter(e => e.tag === 'div').map(e => e.text!.content).join('\n');
-    expect(text).toContain('🎁 **福利**：【译】$20 credited toward your subscription（约 $20–40）');
+    expect(text).toContain('🎁 **福利**：【译】$20 credited toward your subscription（旧参考值 $20–$40 · 待统一 V1 口径）');
     expect(text).toContain('📥 **怎么领**：充值后赠送');
     expect(text).toContain('💬 **牧场心得**：升级后才到账， 注意先绑卡');
     expect(text).toContain('　1. 【译】Sign in with social login or AWS Builder ID');
@@ -104,6 +104,32 @@ describe('飞书群日报', () => {
     const before = calls.filter(c => c.url.includes('generativelanguage')).length;
     await buildCards(env, notice);
     expect(calls.filter(c => c.url.includes('generativelanguage')).length).toBe(before);
+  });
+
+  it('shows V1 first30 membership value, unpriced beta and application ceiling without sending a message', async () => {
+    vi.stubGlobal('fetch', vi.fn());
+    const noTranslation = { ...env, GEMINI_API_KEY: undefined };
+    const base = { version: 'v1', status: 'priced', method: 'official_price', period: 'first30', usdEstimate: 20,
+      usdMax: null, fullValue: 240, formula: '1 × $20', inputs: {}, sources: [{ url: 'https://kiro.dev/pricing/',
+        checkedAt: '2026-10-09', excerpt: '$20 per month.', priceBasis: '官方月价' }], assumptions: [], reviewedAt: '2026-10-09' };
+    const cardText = async () => {
+      const notice = await buildNotice(noTranslation, 'digest', 'feishu');
+      const cards = await buildCards(noTranslation, notice) as any[];
+      return cards.flatMap(card => card.elements).filter(element => element.tag === 'div').map(element => element.text.content).join('\n');
+    };
+    sqlite.prepare('UPDATE offers SET valuation=?').run(JSON.stringify(base));
+    const first = await cardText();
+    expect(first).toContain('官方价格折算 · 前 30 天 $20');
+    expect(first).not.toContain('$240');
+    sqlite.prepare('UPDATE offers SET usd_estimate=NULL, valuation=?').run(JSON.stringify({ ...base, status: 'beta_unpriced', method: 'none', usdEstimate: null, fullValue: null, formula: null }));
+    expect(await cardText()).toContain('公测免费 · 价值待定');
+    const notice = await buildNotice(noTranslation, 'digest', 'feishu');
+    // The scheduler's existing application exclusion stays unchanged; exercise only card rendering.
+    const application = { ...notice.items.rising[0], type: '申请制', usdEstimate: null, usdMax: 100_000,
+      valuation: { ...base, method: 'face_value', period: 'apply_max', usdEstimate: null, usdMax: 100_000, fullValue: null } };
+    const cards = await buildCards(noTranslation, { kind: 'digest', items: { rising: [application] } } as any) as any[];
+    expect(JSON.stringify(cards)).toContain('最高可申请 $100,000（审批决定，无保底）');
+    expect(fetch).not.toHaveBeenCalled();
   });
 
   it('加急只推 48 小时内截止、仍然有效的条目；已发过的新上架不重复加急', async () => {

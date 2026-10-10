@@ -49,6 +49,78 @@ beforeEach(() => {
 });
 afterEach(() => sqlite.close());
 
+describe('V1 persisted valuation integration', () => {
+  const unpriced = { version: 'v1', status: 'beta_unpriced', method: 'none', period: 'first30',
+    usdEstimate: null, usdMax: null, fullValue: null, formula: null, inputs: {},
+    sources: [{ url: 'https://vendor.example/pricing', checkedAt: '2026-10-09', excerpt: 'Public beta pricing is not announced.', priceBasis: '发放方价格页' }],
+    assumptions: [], reviewedAt: '2026-10-09' };
+  const priced = { ...unpriced, status: 'priced', method: 'face_value', period: 'one_time', usdEstimate: 5, fullValue: 5,
+    formula: '注册赠送 $5', inputs: { amount: 5, currency: 'USD' }, sources: [{ ...unpriced.sources[0], excerpt: 'Free $5 credit.' }] };
+
+  it('stores a conclusion without approving or renewing evidence, and leaves another row unchanged', async () => {
+    await call('ingest/offers', [offer, { ...offer, id: 'vendor-unrelated', title: '另一项独立赠送', valueText: '777 tokens', evidence: { ...evidence, url: 'https://vendor.example/other', excerpts: { benefit: 'Free 777 tokens.', eligibility: 'All users.', validity: 'No end date.' } } }]);
+    const before = sqlite.prepare('SELECT * FROM offers WHERE id=?').get(offer.id) as any;
+    const unrelated = sqlite.prepare("SELECT * FROM offers WHERE id='vendor-unrelated'").get();
+    const edit = await call(`admin/offers/${offer.id}/edit`, { fields: { usdEstimate: null, usdMax: null, valuation: unpriced }, reason: 'V1 公测未定价' }, 'admin');
+    expect(edit.status).toBe(200);
+    const after = sqlite.prepare('SELECT * FROM offers WHERE id=?').get(offer.id) as any;
+    expect(after.review_state).toBe('pending');
+    expect(after.last_verified_at).toBe(before.last_verified_at);
+    expect(after.evidence).toBe(before.evidence);
+    expect(JSON.parse(after.valuation)).toEqual(unpriced);
+    expect(sqlite.prepare("SELECT * FROM offers WHERE id='vendor-unrelated'").get()).toEqual(unrelated);
+    const detail = (await call(`admin/offers/${offer.id}`, undefined, 'admin')).body.offer as any;
+    expect(detail.valuation).toEqual(unpriced);
+    expect(detail.checks.some((issue: any) => issue.field === 'usdEstimate')).toBe(false);
+    expect(sqlite.prepare("SELECT author,diff FROM offer_revisions WHERE offer_id=?").get(offer.id)).toMatchObject({ author: 'admin' });
+    expect(JSON.parse((sqlite.prepare('SELECT edited_fields FROM reviews WHERE offer_id=?').get(offer.id) as any).edited_fields)).toContain('valuation');
+  });
+
+  it('filters internal public keys and invalid amounts consistently across all public offer routes', async () => {
+    await call('ingest/offers', [offer]);
+    await call(`admin/offers/${offer.id}/approve`, {}, 'admin');
+    const raw = { ...priced, reason: 'internal reason', sources: [{ ...priced.sources[0], oldUsd: 100 }],
+      inputs: { amount: 5, currency: 'USD', reviewMemo: 'internal input', limits: { days: 30, previousAmount: 123 } } };
+    sqlite.prepare('UPDATE offers SET valuation=?,usd_estimate=5,review_memo=?,review_suggestion=? WHERE id=?')
+      .run(JSON.stringify(raw), 'private audit', JSON.stringify({ reason: 'private suggestion' }), offer.id);
+    for (const path of ['offers?view=all', `offers/${offer.id}`, 'platforms/vendor']) {
+      const publicBody = (await call(path)).body as any;
+      const published = publicBody.offer ?? publicBody.offers[0];
+      expect(published.valuation).toMatchObject({ status: 'priced', usdEstimate: 5, inputs: { amount: 5, currency: 'USD', limits: { days: 30 } } });
+      expect(published).not.toHaveProperty('reviewMemo');
+      expect(published).not.toHaveProperty('reviewSuggestion');
+      expect(JSON.stringify(publicBody)).not.toMatch(/internal reason|internal input|private audit|oldUsd|previousAmount/);
+    }
+    sqlite.prepare('UPDATE offers SET usd_estimate=8 WHERE id=?').run(offer.id);
+    expect(((await call(`offers/${offer.id}`)).body.offer as any).valuation).toBeNull();
+  });
+
+  it('preserves reviewed USD and metadata through a real official terms update and an unrelated edit', async () => {
+    await call('ingest/offers', [offer]);
+    await call(`admin/offers/${offer.id}/approve`, {}, 'admin');
+    expect((await call(`admin/offers/${offer.id}/edit`, { fields: { usdEstimate: 5, usdMax: null, valuation: priced } }, 'admin')).status).toBe(200);
+    const nextEvidence = { ...evidence, excerpts: { ...evidence.excerpts, benefit: 'Free 200 tokens.' } };
+    const next = await call('ingest/offers', [{ ...offer, usdEstimate: 99, usdMax: 100,
+      valuation: { ...priced, usdEstimate: 99, usdMax: 100 }, valueText: '200 tokens', evidence: nextEvidence,
+      sourceText: 'Free 200 tokens. All users. No published end date.' }]);
+    expect((next.body.results as any[])[0].reviewState).toBe('pending_update');
+    const proposed = JSON.parse((sqlite.prepare('SELECT candidate FROM offer_proposals WHERE offer_id=?').get(offer.id) as any).candidate);
+    expect(proposed).toMatchObject({ usdEstimate: 5, usdMax: null, valuation: priced });
+    expect((await call(`admin/offers/${offer.id}/edit`, { fields: { title: '保留已核实估值的标题' } }, 'admin')).status).toBe(200);
+    expect(JSON.parse((sqlite.prepare('SELECT candidate FROM offer_proposals WHERE offer_id=?').get(offer.id) as any).candidate).valuation).toEqual(priced);
+    const stored = sqlite.prepare('SELECT usd_estimate,usd_max,valuation FROM offers WHERE id=?').get(offer.id) as any;
+    expect(stored).toMatchObject({ usd_estimate: 5, usd_max: null });
+    expect(JSON.parse(stored.valuation)).toEqual(priced);
+  });
+
+  it('rejects inconsistent administrator amounts while ignoring extractor-supplied valuation on a new draft', async () => {
+    await call('ingest/offers', [{ ...offer, valuation: { ...unpriced, reason: 'model generated audit' } }]);
+    expect((sqlite.prepare('SELECT valuation FROM offers WHERE id=?').get(offer.id) as any).valuation).toBeNull();
+    expect((await call(`admin/offers/${offer.id}/edit`, { fields: { valuation: priced, usdEstimate: 9 } }, 'admin')).status).toBe(400);
+    expect((sqlite.prepare('SELECT valuation FROM offers WHERE id=?').get(offer.id) as any).valuation).toBeNull();
+  });
+});
+
 describe('workflow recovery and race regressions',()=>{
   it('refuses an official review changing a reset into unrelated monthly plan benefits',async()=>{
     const reset={...offer,type:'perk',title:'赠送重置卡',tags:['reset'],evidence:{...evidence,tier:'media'}};

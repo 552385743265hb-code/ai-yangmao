@@ -42,9 +42,11 @@ let OFFERS = [];
 let META = { lastSuccessfulCollect: null };
 let COVERAGE = null;
 
-async function loadData() {
-  const get = async p => { const r = await fetch(p, { headers: { Accept: 'application/json' } }); if (!r.ok) throw new Error(`${p} ${r.status}`); return r.json(); };
-  const [pl, of, meta, cov] = await Promise.all([get('/api/platforms'), get('/api/offers?view=all'), get('/api/meta'), get('/api/coverage').catch(() => null)]);
+async function loadData({ fresh = false } = {}) {
+  const stamp = Date.now();
+  const get = async p => { const url = fresh ? `${p}${p.includes('?') ? '&' : '?'}fresh=${stamp}` : p; const r = await fetch(url, { ...(fresh ? { cache: 'no-store' } : {}), headers: { Accept: 'application/json' } }); if (!r.ok) throw new Error(`${p} ${r.status}`); return r.json(); };
+  // A new response contract must not reuse a browser/CDN entry without valuation metadata.
+  const [pl, of, meta, cov] = await Promise.all([get('/api/platforms'), get('/api/offers?view=all&valuation=v1&schema=apply-window'), get('/api/meta'), get('/api/coverage').catch(() => null)]);
   const now = Date.now(), DAYMS = 864e5;
   const t0 = new Date(); t0.setHours(0, 0, 0, 0);
   const rel = d => (d ? Math.round((new Date(d + 'T00:00:00') - t0) / DAYMS) : null);
@@ -53,7 +55,8 @@ async function loadData() {
     const overseas = o.requirements.some(r => ['phone', 'card', 'net'].includes(r.split(':')[0]));
     return {
       id: o.id, p: o.platformId, t: o.title, ty: o.type, m: [...new Set(o.modalities.map(x => x === 'code' ? 'text' : x))], c: o.claimMethod, r: o.requirements.length ? o.requirements : ['none'],
-      v: o.valueText, usd: o.usdEstimate ?? 0, usdMax: o.usdMax ?? null, noUsd: o.usdEstimate == null,
+      v: o.valueText, usd: o.usdEstimate ?? null, usdMax: o.usdMax ?? null, noUsd: o.usdEstimate == null,
+      valuation: o.valuation || null,
       s: rel(o.claimStart), e: o.endKind === 'date' ? rel(o.claimEnd) : null, ek: o.endKind,
       vf: o.lastVerifiedAt ? -(now - Date.parse(o.lastVerifiedAt)) / DAYMS : -99,
       vfDay: o.lastVerifiedAt ? dayIdx(new Date(o.lastVerifiedAt)) : null,

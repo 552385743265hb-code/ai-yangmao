@@ -88,6 +88,15 @@ describe('model result contract', () => {
     expect(system).not.toContain('Qoder不等于Qwen');
     expect(system).toContain('steps只写用户操作，不写审核员待办');
     expect(system).toContain('仅作内部判断依据，不得将核验经过、历史错误或审核待办复制到公开字段');
+    expect(system).toContain('权益估值V1');
+    expect(system).toContain('金额来源依据保留在同页连续原文excerpts');
+    expect(system).toContain('本次模型不输出此字段');
+    expect(system).toContain('视频600秒生成素材');
+    expect(system).toContain('输入输出各按对应单价');
+    expect(system).toContain('不代表$0');
+    expect(system).not.toContain('Token 按官方输入价');
+    expect(system).not.toContain('人民币按 7.1 折算');
+    expect(system).not.toContain('每分钟 Token 数 × 1440');
     expect(system).not.toContain('写"官方未写明具体额度："加原文说法');
     expect(system).not.toContain('只输出免费档里可量化的 AI 额度，以及写明');
     if (!triage) expect(system).toContain('6j7x/lpen/v4sd');

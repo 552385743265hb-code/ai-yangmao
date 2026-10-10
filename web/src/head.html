@@ -65,9 +65,11 @@ button,input,select,textarea{font:inherit;color:inherit}
 .brand{display:flex;align-items:center;gap:9px;font-family:var(--f-display);font-size:21px;line-height:1;color:var(--ink);white-space:nowrap}
 .brand svg{width:34px;height:34px;flex:none}
 main{padding-inline:16px;padding-block:14px 112px;min-width:0;width:100%;max-width:1180px;margin-inline:auto}
-.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:30;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
-.tabbar a,.tabbar button{display:flex;flex-direction:column;align-items:center;gap:1px;padding:7px 0 6px;font-size:11px;color:var(--muted);background:none;border:0;cursor:pointer}
-.tabbar svg{width:23px;height:23px}
+.tabbar{position:fixed;left:0;right:0;bottom:0;width:100%;max-width:100vw;min-width:0;z-index:30;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));background:var(--surface);border-top:1px solid var(--line);padding:0 env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
+.tabbar a,.tabbar button{min-width:0;width:100%;min-height:56px;display:flex;flex-direction:column;align-items:center;gap:1px;padding:7px 0 6px;font-size:11px;color:var(--muted);background:none;border:0;cursor:pointer}
+.tabbar svg{width:23px;height:23px;flex:none}
+.tabbar span{max-width:100%;white-space:nowrap}
+@media (max-width:959px){.app{max-width:100%;overflow-x:clip}.grave .chip{min-width:0;max-width:100%;white-space:normal;overflow-wrap:anywhere;text-align:center}}
 .tabbar .on{color:var(--ink);font-weight:600}
 .tabbar .on .ic-dot{fill:var(--tag)}
 .cond-btn{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border-radius:999px;border:1px solid var(--line-2);background:var(--surface);cursor:pointer;font-size:13px;white-space:nowrap}
@@ -136,6 +138,23 @@ section{margin-block:28px}
 .st.good{color:var(--good-ink)} .st.warn{color:var(--warn-ink)} .st.serious{color:var(--serious-ink)} .st.critical{color:var(--critical-ink)}
 .score{display:inline-flex;align-items:baseline;gap:3px;font-family:var(--f-num);font-weight:700;font-size:13px;padding:2px 8px;border-radius:8px;background:var(--tag-soft);color:var(--ink)}
 .score small{font-weight:500;font-size:10.5px;color:var(--ink-2)}
+.value-tag{display:inline-block;font-family:var(--f-body);font-size:11px;font-weight:500;line-height:1.4;padding:2px 7px;border-radius:6px;background:var(--surface-2);color:var(--ink-2);vertical-align:middle;white-space:normal}
+.value-tag.official{background:var(--tag-soft)}
+.value-tag.scenario{border:1px dashed var(--line-2)}
+.oc-val .value-tag,.bigval .value-tag{display:table;margin-top:5px}
+.bigval small{font-size:13px;color:var(--muted);font-weight:500;font-family:var(--f-body);margin-left:6px}
+.value-unknown{font-size:.65em;font-family:var(--f-body);line-height:1.5}
+.value-assumption{margin-top:5px;overflow-wrap:anywhere}
+.valuation-summary{display:flex;flex-wrap:wrap;gap:5px 18px;margin:10px 0 14px;line-height:1.5}
+.valuation-summary>span{font-size:13px}
+.valuation-summary b{font-family:var(--f-num);font-size:20px}
+.valuation-summary>small{flex-basis:100%;font-size:12px;color:var(--muted)}
+.hero .valuation-summary{max-width:470px;margin-top:3px}
+.value-formula{padding:10px;background:var(--surface-2);border-radius:9px;white-space:pre-wrap;overflow-wrap:anywhere;font-family:var(--f-num);font-size:13px;margin:10px 0}
+.value-inputs{margin:8px 0;font-size:13px}.value-inputs>div{display:grid;grid-template-columns:minmax(100px,1fr) 2fr;gap:10px;padding:6px 0;border-bottom:1px solid var(--line)}
+.value-inputs dt{color:var(--muted)}.value-inputs dd{margin:0;overflow-wrap:anywhere;white-space:pre-wrap}
+.value-source{padding:10px 0;border-bottom:1px solid var(--line);font-size:13px}.value-source a{text-decoration:underline}.value-source small{display:block;color:var(--muted);margin-top:4px}.value-source blockquote{margin:8px 0 0;padding-left:10px;border-left:2px solid var(--line-2);white-space:pre-wrap;overflow-wrap:anywhere}
+.value-assumptions{padding-left:18px;font-size:13px}.value-progress{display:flex;flex-wrap:wrap;gap:16px}.value-progress .prog{flex:1;min-width:160px}
 
 /* ---------- buttons & inputs ---------- */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 14px;border-radius:999px;border:1px solid var(--line-2);background:var(--surface);cursor:pointer;font-size:14px;font-weight:500;white-space:nowrap}

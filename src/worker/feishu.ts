@@ -5,6 +5,7 @@ import { drizzle } from 'drizzle-orm/d1';
 import { Hono, type Context, type Next } from 'hono';
 import * as s from '../db/schema';
 import { zonedTime } from '../shared/lifecycle';
+import { valuationSummary } from '../shared/valuation';
 import { ackDelivery, buildNotice, claimNotice, type ClaimedNotice } from './admin';
 import type { Env } from './index';
 
@@ -99,7 +100,10 @@ function itemBlock(it: Item, n: number, tr: Map<string, string>, section: string
   lines.push(`**${n}. ${safe(zh(tr, it.title))}**`);
   lines.push(`<font color='grey'>${it.score != null ? `薅度分 ${it.score} · ` : ''}${safe(it.platform)} · ${it.type}${it.modalities?.length ? ` · ${it.modalities.map(m => MODAL[m] ?? m).join(' / ')}` : ''}</font>`);
   if (section === 'changed') lines.push(`🔄 **有变化**：${safe(zh(tr, it.value))}`);
-  else lines.push(`🎁 **福利**：${safe(zh(tr, it.value))}${it.usdEstimate != null ? `（约 $${it.usdEstimate}${it.usdMax != null && it.usdMax > it.usdEstimate ? `–${it.usdMax}` : ''}）` : ''}`);
+  else {
+    const valuation = valuationSummary(it);
+    lines.push(`🎁 **福利**：${safe(zh(tr, it.value))}${valuation ? `（${safe(valuation)}）` : ''}`);
+  }
   const benefit = it.excerpts?.benefit;
   // 管理员实测、媒体转述的摘录不是官方原话，不能标成“官方原文”
   const official = !['media', 'tested'].includes(it.evidenceTier);

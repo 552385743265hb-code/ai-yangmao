@@ -5,6 +5,7 @@ import { officialTier, officialActivityMismatch } from '../shared/official-revie
 import { resetEventDay } from '../shared/reset-event';
 import { selectLeads } from '../shared/leads';
 import { changedOfficialTerms, rejectedTermsStillPresent } from '../shared/review-stability';
+import { publicSafeValuation, valuationMatchesAmounts } from '../shared/valuation';
 import { isReviewField, reviewChanges } from '../shared/spec';
 // Cloudflare Worker 入口：/api/* 走这里，其余由静态资源（网站页面）处理。
 import { and, desc, eq, gte, inArray, sql, getTableColumns } from 'drizzle-orm';
@@ -52,7 +53,10 @@ app.use('/api/*', async (c, next) => {
 const EDGE_TTL = 300;
 for (const path of ['/api/offers', '/api/platforms']) app.use(path, async (c, next) => {
   if (c.req.method !== 'GET' || typeof caches === 'undefined') return next();
-  const key = new Request(c.req.url, { method: 'GET' });
+  // Schema changes must not serve a cached pre-valuation response to the new UI.
+  const cacheUrl = new URL(c.req.url);
+  cacheUrl.searchParams.set('__response_schema', 'valuation-v1-apply-window');
+  const key = new Request(cacheUrl, { method: 'GET' });
   const hit = await caches.default.match(key);
   if (hit) return new Response(hit.body, hit);
   await next();
@@ -63,7 +67,12 @@ for (const path of ['/api/offers', '/api/platforms']) app.use(path, async (c, ne
 });
 
 // 公开接口不输出内部核验记录
-const withStatus = (o: OfferRow, now: Date) => { const { reviewMemo: _memo, reviewSuggestion: _suggestion, officialReview: _officialReview, ...pub } = o; return { ...pub, status: liveStatus(o, now), missingEvidence: missingEvidence(o.evidence.excerpts) }; };
+const withStatus = (o: OfferRow, now: Date) => {
+  const { reviewMemo: _memo, reviewSuggestion: _suggestion, officialReview: _officialReview, valuation: rawValuation, ...pub } = o;
+  const valuation = publicSafeValuation(rawValuation);
+  return { ...pub, valuation: valuation && valuationMatchesAmounts(valuation, o) ? valuation : null,
+    status: liveStatus(o, now), missingEvidence: missingEvidence(o.evidence.excerpts) };
+};
 
 app.get('/api/health', c => c.json({ ok: true, time: new Date().toISOString() }));
 
@@ -180,7 +189,13 @@ ingest.post('/leads', async c => {
  * 已上架的羊毛内容变化时写修订记录，并重新进待审（除非满足自动上架条件）。
  */
 ingest.post('/offers', async c => {
-  const body = z.array(offerIn).max(50).safeParse(await c.req.json().catch(() => null));
+  // Valuation is reviewed data. Drop a collector/model-supplied copy before amount validation.
+  const extractionIn = z.preprocess(value => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
+    const { valuation: _valuation, ...fields } = value as Record<string, unknown>;
+    return fields;
+  }, offerIn);
+  const body = z.array(extractionIn).max(50).safeParse(await c.req.json().catch(() => null));
   if (!body.success) return c.json({ error: '数据格式不正确', issues: body.error.issues }, 400);
   const d = db(c.env);
   const pids = [...new Set(body.data.map(o => o.platformId))];
@@ -254,14 +269,16 @@ ingest.post('/offers', async c => {
         continue; // Keep manual proposals and verification metadata; the /verify route verifies source health.
       }
     }
-    const { leadId, leadReviewJobId, officialReviewJobId, sameOccurrenceAs, sourceText, ...od } = o;
+    const { leadId, leadReviewJobId, officialReviewJobId, sameOccurrenceAs, sourceText, valuation: _pipelineValuation, ...od } = o;
     const row = {
-      ...od, usdEstimate: o.usdEstimate ?? null, claimStart: o.claimStart ?? null, claimEnd: o.claimEnd ?? null,
+      ...od, usdEstimate: o.usdEstimate ?? null, usdMax: o.usdMax ?? null, valuation: prev?.valuation ?? null, claimStart: o.claimStart ?? null, claimEnd: o.claimEnd ?? null,
       creditValidity: o.creditValidity ?? null, publishedAt: o.publishedAt ?? null, sourceId: o.sourceId ?? null,
       lastVerifiedAt: o.evidence.tier === 'media' ? null : nowIso, verifyResult: o.evidence.tier === 'media' ? '线索待核验，尚无可采信的官方证据' : '官方页面已抽取字段', updatedAt: nowIso,
     };
     // 人工改过的字段是已经核准的事实，后续模型提案不得静默覆盖。
     if (prev) {
+      // Structured reviewed values belong to the administrator; extraction cannot recalculate them.
+      if (prev.valuation) { row.usdEstimate = prev.usdEstimate; row.usdMax = prev.usdMax; }
       const adminRevisions = await d.select({ diff: s.offerRevisions.diff }).from(s.offerRevisions)
         .where(and(eq(s.offerRevisions.offerId, prev.id), eq(s.offerRevisions.author, 'admin')));
       const protectedFields = new Set([

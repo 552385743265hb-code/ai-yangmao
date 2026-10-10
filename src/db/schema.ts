@@ -1,5 +1,6 @@
 import type { LeadResolution } from '../shared/lead-review';
 import type { OfficialReview } from '../shared/official-review';
+import type { Valuation } from '../shared/valuation';
 // D1 表结构。字段含义见 docs/design.md §5。
 // JSON 字段存为 TEXT，读取时再解析。
 import { sql } from 'drizzle-orm';
@@ -52,8 +53,9 @@ export const offers = sqliteTable('offers', {
   audience: text('audience', { enum: ['new', 'old', 'all', 'unclear'] }).notNull().default('unclear'),
   valueText: text('value_text').notNull(),
   usdEstimate: real('usd_estimate'),
-  // 价值是一个范围时的上限（如 OpenCode Go $10–60、按套餐档位不同的重置卡）；排序和图表仍用保守的 usdEstimate
+  // V1 的真实权益上限；申请无保底时 usdEstimate 可为空，不用于模型成本范围。
   usdMax: real('usd_max'),
+  valuation: text('valuation', { mode: 'json' }).$type<Valuation | null>(),
   claimStart: text('claim_start'),
   claimEnd: text('claim_end'),
   endKind: text('end_kind', { enum: ['date', 'unknown', 'standing'] }).notNull(),

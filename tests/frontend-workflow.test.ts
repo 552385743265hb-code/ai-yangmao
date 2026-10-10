@@ -17,7 +17,7 @@ function fixture(handle: (url: string, init?: RequestInit) => unknown | Promise<
     location: { hash: '#admin' }, navigator: {}, getComputedStyle: () => ({ getPropertyValue: () => '#123456' }),
     matchMedia: () => ({ matches: false, addEventListener() {} }), MutationObserver: class { observe() {} },
     localStorage: storage, sessionStorage: storage, setTimeout, clearTimeout, setInterval() {},
-    echarts: { init: (element: HTMLElement) => ({ setOption: (options: any) => charts.set(element.id, options), on() {}, dispose() {} }) },
+    echarts: { getInstanceByDom: () => null, init: (element: HTMLElement) => ({ setOption: (options: any) => charts.set(element.id, options), on() {}, dispose() {}, isDisposed: () => false }) },
     fetch: async (url: string, init?: RequestInit) => new Response(JSON.stringify(await handle(url, init))),
   });
   const app = readFileSync('web/src/app.js', 'utf8');
@@ -226,4 +226,313 @@ it('shows an actionable lead review task even when there are no pending offers',
   task!.querySelector('[data-lead-resolve="closed"]')!.dispatchEvent(new page.window.Event('click'));
   await pause();
   expect(writes[0]).toMatchObject({expectedVersion:'lead-version',outcome:'closed',reason:'官方只是说明传播进度'});
+});
+
+const valuation = (extra: Record<string, unknown> = {}) => ({ version: 'v1', status: 'priced', method: 'face_value', period: 'one_time', usdEstimate: 20, usdMax: null, fullValue: null, formula: '官方赠送 $20', inputs: {}, sources: [{ url: 'https://vendor.example/pricing', checkedAt: '2026-10-09', excerpt: 'Monthly price: $20', priceBasis: '官方售价' }], assumptions: [], reviewedAt: '2026-10-09', ...extra });
+function valuedOffers(page: ReturnType<typeof fixture>, rows: Record<string, unknown>[]) {
+  publicOffer(page.run);
+  page.run(`OFFERS=${JSON.stringify(rows)}.map(row=>({...OFFERS[0],ty:'free',s:-7,e:7,ek:'date',st:'tested',...row}));prepare()`);
+}
+
+describe('V1 valuation across public pages', () => {
+  it('reuses timezone formatters across a full calendar while preserving zoned date changes', () => {
+    const page = fixture(() => ({}));
+    let constructions = 0;
+    page.context.Intl = { DateTimeFormat: class extends Intl.DateTimeFormat {
+      constructor(...args: ConstructorParameters<typeof Intl.DateTimeFormat>) { super(...args); constructions++; }
+    } };
+    valuedOffers(page, [{ id: 'ny', s: -2, e: 40, ek: 'date', tz: 'America/New_York', valuation: valuation() },
+      { id: 'cn', s: -2, e: 40, ek: 'date', tz: 'Asia/Shanghai', valuation: valuation() }]);
+    page.run('pCalendar()');
+    const before = page.run('endInstant(OMAP.ny).getTime()');
+    page.run('OMAP.ny.e++;');
+    expect(page.run('endInstant(OMAP.ny).getTime()')).toBeGreaterThan(before);
+    expect(constructions).toBeLessThanOrEqual(2);
+  });
+  it('requests the V1 response contract rather than reusing a cached legacy offer list', async () => {
+    const old = { id: 'cached', platformId: 'vendor', title: '额度', type: 'standing', valueText: '每月20美元', usdEstimate: 20, usdMax: null,
+      modalities: ['text'], requirements: ['none'], claimMethod: 'auto', endKind: 'standing',
+      lastVerifiedAt: new Date().toISOString(), discoveredAt: new Date().toISOString(), evidence: { tier: 'docs', excerpts: {} } };
+    const page = fixture(url => url === '/api/platforms' ? { platforms: [{ id: 'vendor', name: 'Vendor', type: 'lab' }] }
+      : url.startsWith('/api/offers') ? { offers: [{ ...old, valuation: new URL(url, 'https://ai-yangmao.com').searchParams.get('valuation') === 'v1' ? valuation() : null }] } : {});
+    await page.run('loadData()'); page.run('prepare();pToday()');
+    expect(page.run('valueSummary(OFFERS)')).toMatchObject({ official: 20, priced: 1, legacy: 0 });
+    expect(page.document.querySelector('.total')!.textContent).toContain('已计价 1/1');
+  });
+  it('switches evidenced model plans only in the detail amount and formula, leaving the baseline totals intact', () => {
+    const page = fixture(() => ({}));
+    valuedOffers(page, [{ id: 'models', valuation: valuation({ method: 'scenario', usdEstimate: 4, baselineModel: 'Model A', formula: '默认工作量 × Model A价格 = $4', inputs: { alternatives: [{ model: 'Model A', amount: 4, formula: '默认工作量 × Model A价格 = $4' }, { model: 'Model B', amount: 8, formula: '配额内工作量 × Model B价格 = $8' }] } }) }]);
+    const original = page.run('JSON.stringify(valueSummary(OFFERS))');
+    page.run("pOffer('models')");
+    const select = page.document.querySelector('#valueModel') as HTMLSelectElement;
+    expect(select.selectedOptions?.[0]?.textContent || select.querySelector('[selected]')!.textContent).toContain('Model A · 默认基准');
+    (select.querySelector('option[value="1"]') as HTMLOptionElement).selected = true;
+    select.dispatchEvent(new page.window.Event('change', { bubbles: true }));
+    expect(page.document.querySelector('[data-detail-value]')!.textContent).toContain('≈ $8');
+    expect(page.document.querySelector('[data-detail-formula]')!.textContent).toBe('配额内工作量 × Model B价格 = $8');
+    expect(page.document.querySelector('[data-model-note]')!.textContent).toContain('另一个使用方案：Model B');
+    expect(page.run('JSON.stringify(valueSummary(OFFERS))')).toBe(original);
+    expect(page.run('OMAP.models.valuation.usdEstimate')).toBe(4);
+    (select.querySelector('option[value="default"]') as HTMLOptionElement).selected = true;
+    select.dispatchEvent(new page.window.Event('change'));
+    expect(page.document.querySelector('[data-detail-value]')!.textContent).toContain('≈ $4');
+    expect(page.document.querySelector('[data-detail-formula]')!.textContent).toBe('默认工作量 × Model A价格 = $4');
+    page.run('pToday()'); expect(page.document.querySelector('.total')!.textContent).toContain('用量估算 ≈ $4');
+  });
+
+  it('keeps unpriced activities unpriced even when alternative inputs contain a number, and invents no choices without evidence', () => {
+    const page = fixture(() => ({}));
+    valuedOffers(page, [{ id: 'beta', valuation: valuation({ status: 'beta_unpriced', method: 'none', usdEstimate: null, formula: null, inputs: { alternatives: [{ model: 'Unpriced Model', amount: 99, formula: 'not a price for this model' }] } }) }, { id: 'plain', valuation: valuation() }]);
+    page.run("pOffer('beta')");
+    expect(page.document.querySelector('#valueModel')).toBeNull();
+    expect(page.document.querySelector('[data-detail-value]')!.textContent).toContain('公测免费 · 价值待定');
+    expect(page.document.querySelector('[data-valuation]')!.textContent).not.toContain('$99');
+    page.run("pOffer('plain')"); expect(page.document.querySelector('#valueModel')).toBeNull();
+  });
+
+  it('renders alternative formulas, model names and price excerpts as text, and rejects unsafe source links', () => {
+    const page = fixture(() => ({}));
+    const formula = '<svg onload=alert(1)> × $8', model = '<img src=x onerror=alert(1)>';
+    valuedOffers(page, [{ id: 'safe-models', valuation: valuation({ method: 'scenario', baselineModel: 'Model A', inputs: { alternatives: [{ model, amount: 8, formula }] }, sources: [{ url: 'https://vendor.example/pricing', checkedAt: '2026-10-09', excerpt: '<img src=x onerror=alert(1)>', priceBasis: '官方价格' }, { url: 'javascript:alert(1)', checkedAt: '2026-10-09', excerpt: 'unsafe', priceBasis: 'unsafe' }] }) }]);
+    page.run("pOffer('safe-models')");
+    const select = page.document.querySelector('#valueModel') as HTMLSelectElement;
+    expect(select.textContent).toContain(model);
+    (select.querySelector('option[value="0"]') as HTMLOptionElement).selected = true;
+    select.dispatchEvent(new page.window.Event('change'));
+    const block = page.document.querySelector('[data-valuation]')!;
+    expect(page.document.querySelector('[data-detail-formula]')!.textContent).toBe(formula);
+    expect(block.querySelector('img')).toBeNull(); expect(block.querySelector('svg')).toBeNull();
+    expect(block.querySelectorAll('a')).toHaveLength(1);
+    expect(block.querySelector('a')!.getAttribute('href')).toBe('https://vendor.example/pricing');
+  });
+
+  it('keeps a verified zero distinct from an unknown value and an unreviewed legacy amount', () => {
+    const page = fixture(() => ({}));
+    valuedOffers(page, [{ id: 'zero', valuation: valuation({ usdEstimate: 0 }) }, { id: 'beta', valuation: valuation({ method: 'none', status: 'beta_unpriced', usdEstimate: null }) }, { id: 'legacy', usd: 999, valuation: null }]);
+    page.run("ALLF={...defaultAllF(),sort:'value'};pAll()");
+    expect(page.run('valueSummary(OFFERS)')).toMatchObject({ official: 0, officialN: 1, priced: 1, unknown: 2, legacy: 1 });
+    expect(page.run('valLabel(OMAP.zero)')).toContain('$0');
+    expect(page.run('valLabel(OMAP.beta)')).not.toContain('$0');
+    expect(page.run('filtered()[0].id')).toBe('zero');
+    expect(page.run('summaryText(valueSummary([OMAP.beta]))')).not.toContain('$0');
+  });
+
+  it('preserves API nulls and uses separate first-30 totals, including an annual membership without its full value', async () => {
+    const raw = (id: string, v: unknown, usdEstimate: number | null) => ({ id, platformId: 'vendor', title: id, type: 'standing', valueText: '免费权益', usdEstimate, usdMax: null, valuation: v, modalities: ['text'], requirements: ['none'], claimMethod: 'auto', claimStart: null, claimEnd: null, endKind: 'standing', lastVerifiedAt: new Date().toISOString(), discoveredAt: new Date().toISOString(), audience: 'all', sourceTz: 'UTC', evidence: { tier: 'docs', excerpts: {} } });
+    const page = fixture(url => url === '/api/platforms' ? { platforms: [{ id: 'vendor', name: 'Vendor', type: 'lab' }] } : url.startsWith('/api/offers') ? { offers: [
+      raw('official', valuation(), 20), raw('annual', valuation({ method: 'official_price', period: 'first30', fullValue: 240 }), 20),
+      raw('scenario', valuation({ method: 'scenario', status: 'provisional', usdEstimate: 0.93, period: 'first30' }), 0.93),
+      raw('beta', valuation({ method: 'none', status: 'beta_unpriced', usdEstimate: null }), null), raw('legacy', null, 999),
+    ] } : {});
+    await page.run('loadData()'); page.run('prepare();pToday()');
+    expect(page.run('OMAP.beta.usd')).toBeNull();
+    expect(page.run('valueSummary(OFFERS)')).toMatchObject({ official: 40, scenario: 0.93, priced: 3, total: 5, unknown: 2, legacy: 1 });
+    const hero = page.document.querySelector('.total')!.textContent;
+    expect(hero).toContain('官方口径 $40'); expect(hero).toContain('用量估算 ≈ $0.93'); expect(hero).not.toContain('$240'); expect(hero).not.toContain('$999');
+    expect(hero).toContain('已计价 3/5'); expect(page.run('valLabel(OMAP.beta)')).toContain('公测免费 · 价值待定');
+    expect(page.run('valLabel(OMAP.beta)')).not.toContain('$0');
+    expect(page.run('dims(OMAP.beta)[0]')).toBeNull(); expect(Number.isFinite(page.run('score(OMAP.beta)'))).toBe(true);
+    page.run("pOffer('annual')"); expect(page.document.querySelector('[data-valuation]')!.textContent).toContain('完整权益参考值：$240');
+  });
+
+  it('splits standing matrices and ranking by method and keeps unknown modality coverage', () => {
+    const page = fixture(() => ({}));
+    valuedOffers(page, [
+      { id: 'official', ty: 'standing', ek: 'standing', valuation: valuation({ period: 'monthly' }) },
+      { id: 'scenario', ty: 'standing', ek: 'standing', valuation: valuation({ method: 'scenario', usdEstimate: 4, period: 'first30' }) },
+      { id: 'beta', ty: 'standing', ek: 'standing', m: ['video'], valuation: valuation({ status: 'beta_unpriced', method: 'none', usdEstimate: null }) },
+    ]);
+    page.run('pLibrary()');
+    const rank = page.charts.get('cRank');
+    expect(rank.series.map((s: any) => [s.name, s.data[0].value])).toEqual([['官方口径', 20], ['用量估算', 4]]);
+    expect(page.charts.get('cMatrix-official').series[0].data.find((r: any) => r[0] === 2)[2]).toBeNull();
+    expect(page.charts.get('cMatrix-scenario').series[0].data[0][2]).toBe(4);
+    expect(page.document.querySelector('main')!.textContent).toContain('已计价 2/3');
+    page.run("OFFERS=OFFERS.filter(o=>o.id==='beta');prepare();pLibrary()");
+    expect(page.charts.get('cRank').series[0].data).toEqual([]);
+    expect(page.document.querySelector('main')!.textContent).toContain('公测免费 · 价值待定');
+  });
+
+  it('uses application maximum with no synthetic floor and omits unknown applications from the dollar chart', () => {
+    const page = fixture(() => ({}));
+    valuedOffers(page, [
+      { id: 'grant', ty: 'apply', ek: 'standing', valuation: valuation({ period: 'apply_max', usdEstimate: null, usdMax: 100000, inputs: { first30Max: 10000, fullApplyMax: 100000 } }) },
+      { id: 'grant-small', ty: 'apply', ek: 'standing', valuation: valuation({ period: 'apply_max', usdEstimate: 10, usdMax: 500, inputs: { first30Max: 100, fullApplyMax: 500 } }) },
+      { id: 'unknown', ty: 'apply', ek: 'standing', valuation: valuation({ period: 'apply_max', status: 'needs_judgment', method: 'none', usdEstimate: null }) },
+    ]);
+    page.run('pApply()');
+    expect(page.charts.get('cApply').series[0].data.map((x: any) => [x.id, x.value])).toEqual([['grant', 10000], ['grant-small', 100]]);
+    page.document.querySelector('[data-apply-period="full"]')!.dispatchEvent(new page.window.Event('click'));
+    expect(page.charts.get('cApply').series[0].data.map((x: any) => [x.id, x.value])).toEqual([['grant', 100000], ['grant-small', 500]]);
+    expect(page.run("valLabel(OMAP.grant)")).toContain('最高 $100k');
+    expect(page.run('valueSummary(OFFERS).total')).toBe(0);
+    page.run("pOffer('grant')");
+    expect(page.document.querySelector('[data-valuation]')!.textContent).toContain('没有保证可得的下限');
+    expect(page.charts.get('cRadar').radar.indicator).toHaveLength(5);
+  });
+
+  it('compares application first-30 upper limits by default and switches to whole-plan caps without treating unknown as zero', () => {
+    const page = fixture(() => ({}));
+    valuedOffers(page, [
+      { id: 'gcloud', ty: 'apply', ek: 'standing', val: '2 年', valuation: valuation({ period: 'apply_max', usdEstimate: null, usdMax: 350000, inputs: { first30Max: null, fullApplyMax: 350000 } }) },
+      { id: 'oss', ty: 'apply', ek: 'standing', val: '6 个月', valuation: valuation({ period: 'apply_max', usdEstimate: null, usdMax: 1200, inputs: { first30Max: 200, fullApplyMax: 1200 } }) },
+      { id: 'baichuan', ty: 'apply', ek: 'standing', valuation: valuation({ period: 'apply_max', status: 'needs_judgment', method: 'none', usdEstimate: null, usdMax: null, inputs: { first30Max: null, fullApplyMax: null } }) },
+      { id: 'zero', ty: 'apply', ek: 'standing', valuation: valuation({ period: 'apply_max', usdEstimate: null, usdMax: 0, inputs: { first30Max: 0, fullApplyMax: 0 } }) },
+    ]);
+    page.run('pApply()');
+    expect(page.charts.get('cApply').series[0].data.map((x: any) => [x.id, x.value])).toEqual([['oss', 200]]);
+    expect(page.document.querySelector('[data-apply-period="first30"]')!.getAttribute('aria-pressed')).toBe('true');
+    expect(page.document.querySelectorAll('.ocard')).toHaveLength(4);
+    expect(page.document.querySelector('main')!.textContent).toContain('已计价 2/4');
+    expect(page.run('valLabel(OMAP.oss)')).toContain('最高 $1.2k');
+    expect(page.run('valLabel(OMAP.oss)')).toContain('完整申请权益上限');
+    expect(page.run('valLabel(OMAP.oss)')).not.toContain('最高 $200');
+    expect(page.run('valLabel(OMAP.baichuan)')).not.toContain('$0');
+    expect(page.run('applyFirst30Maximum(OMAP.gcloud)')).toBeNull();
+    page.document.querySelector('[data-apply-period="full"]')!.dispatchEvent(new page.window.Event('click'));
+    expect(page.charts.get('cApply').series[0].data.map((x: any) => [x.id, x.value])).toEqual([['gcloud', 350000], ['oss', 1200]]);
+    expect(page.document.querySelector('main')!.textContent).toContain('各计划期限不同');
+    page.document.querySelector('[data-apply-period="first30"]')!.dispatchEvent(new page.window.Event('click'));
+    expect(page.charts.get('cApply').series[0].data.map((x: any) => x.value)).toEqual([200]);
+    page.run("pOffer('oss')");
+    const values = page.document.querySelector('[data-apply-values]')!.textContent;
+    expect(values).toContain('首 30 天参考上限 $200');
+    expect(values).toContain('完整申请权益上限 $1.2k');
+    expect(values).toContain('6 个月');
+    expect(page.charts.get('cRadar').radar.indicator).toHaveLength(5);
+    expect(page.run('valueSummary(OFFERS).total')).toBe(0);
+    page.run("pOffer('gcloud')");
+    expect(page.document.querySelector('[data-apply-values]')!.textContent).toContain('首 30 天参考上限 价值待定');
+    page.run("ALLF={...defaultAllF(),st:'',sort:'value'}");
+    expect(page.run('filtered()[0].id')).toBe('oss');
+  });
+
+  it('keeps small positive values inside the quadrant axis without an unrelated million-dollar ceiling', () => {
+    const page = fixture(() => ({}));
+    valuedOffers(page, [{ id: 'small', valuation: valuation({ method: 'scenario', usdEstimate: 0.046722 }) },
+      { id: 'large', valuation: valuation({ usdEstimate: 300 }) }, { id: 'zero', valuation: valuation({ usdEstimate: 0 }) }]);
+    page.run('pInsights()');
+    const q = page.charts.get('cQuad');
+    expect(q.yAxis.min).toBeLessThanOrEqual(0.046722);
+    expect(q.yAxis.max).toBeGreaterThan(300);
+    expect(q.yAxis.max).toBeLessThanOrEqual(1000);
+    expect(q.series.flatMap((s: any) => s.data.map((d: any) => d.id))).toEqual(['large', 'small']);
+    expect(q.series[0].markArea.data[0][1].yAxis).toBe(q.yAxis.max);
+  });
+
+  it('keeps historical values in grouped insight charts, but excludes unknown values from quadrants', () => {
+    const page = fixture(() => ({}));
+    valuedOffers(page, [
+      { id: 'official', valuation: valuation() }, { id: 'scenario', valuation: valuation({ method: 'scenario', usdEstimate: 4 }) },
+      { id: 'history', withdrawnAt: new Date(Date.now() - 3 * 864e5).toISOString(), valuation: valuation({ usdEstimate: 50 }) },
+      { id: 'beta', valuation: valuation({ status: 'beta_unpriced', method: 'none', usdEstimate: null }) },
+    ]);
+    page.run('pInsights()');
+    expect(page.charts.get('cQuad').series.flatMap((s: any) => s.data.map((d: any) => d.id))).toEqual(['official', 'scenario']);
+    expect(page.charts.get('cTree').series[0].data.map((group: any) => [group.name, group.children[0].value])).toEqual([['官方口径', 70], ['用量估算', 4]]);
+    const tree = page.charts.get('cTree');
+    expect(tree.series[0].label.formatter({ name: '', value: 74, data: {} })).toBe('');
+    expect(tree.tooltip.formatter({ name: '', value: 74, data: {} })).not.toContain('$74');
+    expect(page.charts.get('cRace').series.map((s: any) => [s.name, s.data[0].value])).toEqual([['官方口径', 70], ['用量估算', 4]]);
+    expect(page.document.querySelector('.grave')!.textContent).toContain('常驻免费额度');
+    page.run("pPlatform('vendor')");
+    expect(page.document.querySelector('main')!.textContent).toContain('官方口径 $70');
+    expect(page.charts.get('cPRadar').series[0].data.map((d: any) => d.name)).toEqual(['官方口径', '用量估算']);
+    expect(page.charts.get('cPHist').series[0].data).toHaveLength(4);
+  });
+
+  it('renders unknown calendar days without zero and applies the official-only filter through its change event', () => {
+    const page = fixture(() => ({}));
+    valuedOffers(page, [
+      { id: 'official', valuation: valuation() }, { id: 'scenario', valuation: valuation({ method: 'scenario', usdEstimate: 4 }) },
+      { id: 'beta', valuation: valuation({ status: 'beta_unpriced', method: 'none', usdEstimate: null }) },
+    ]);
+    page.run("CAL.metric='official';pCalendar()");
+    const date = page.run('ymd(T0)');
+    expect(page.charts.get('cal1').series[0].data.find((r: any) => r[0] === date)[1]).toBe(20);
+    page.run("OFFERS=OFFERS.filter(o=>o.id==='beta');prepare();pCalendar()");
+    const cal = page.charts.get('cal1'), index = cal.series[0].data.findIndex((r: any) => r[0] === date);
+    expect(cal.series[0].data[index][1]).toBeNull();
+    expect(cal.tooltip.formatter({ dataIndex: index })).not.toContain('$0');
+    expect(page.document.querySelector('#dayList')!.textContent).toContain('公测免费 · 价值待定');
+    valuedOffers(page, [{ id: 'official', valuation: valuation() }, { id: 'scenario', valuation: valuation({ method: 'scenario', usdEstimate: 4 }) }]);
+    page.run('pAll()');
+    const filter = page.document.querySelector('#f-value') as HTMLSelectElement;
+    (filter.querySelector('option[value="official"]') as HTMLOptionElement).selected = true;
+    filter.dispatchEvent(new page.window.Event('change'));
+    expect(page.document.querySelectorAll('#allList .ocard')).toHaveLength(1);
+    expect(page.document.querySelector('#allList .stretch')!.getAttribute('href')).toBe('#offer-official');
+  });
+
+  it('snapshots the method and nullable value when claiming, and renders personal progress separately', () => {
+    const page = fixture(() => ({}));
+    valuedOffers(page, [{ id: 'official', valuation: valuation() }, { id: 'scenario', valuation: valuation({ method: 'scenario', usdEstimate: 4 }) }, { id: 'beta', valuation: valuation({ status: 'beta_unpriced', method: 'none', usdEstimate: null }) }]);
+    for (const id of ['official', 'scenario', 'beta']) {
+      page.run(`location.hash='#offer-${id}';pOffer('${id}')`);
+      page.document.querySelector('[data-got]')!.dispatchEvent(new page.window.Event('click', { bubbles: true }));
+    }
+    expect(page.run('MINE.claimed.map(x=>x.usd)')).toEqual([20, 4, null]);
+    expect(page.run('MINE.claimed[1].valuation.method')).toBe('scenario');
+    page.run('pMine()');
+    const progress = page.document.querySelector('.value-progress')!.textContent;
+    expect(progress).toContain('本月已记领 · 官方口径$20'); expect(progress).toContain('本月已记领 · 用量估算≈ $4');
+    expect(page.document.querySelector('main')!.textContent).toContain('已计价 2/3');
+    expect(page.document.querySelector('main')!.textContent).toContain('不代表已实际节省');
+    page.run("pOffer('beta')");
+    const explanation = page.document.querySelector('[data-valuation]')!;
+    expect(explanation.querySelector('a')!.getAttribute('href')).toBe('https://vendor.example/pricing');
+    expect(page.charts.get('cRadar').radar.indicator).toHaveLength(5);
+  });
+});
+
+describe('admin platform catalog', () => {
+  it('refreshes the catalog before editing a newly admitted platform', async () => {
+    const calls: {url:string;init?:RequestInit}[]=[];
+    const f=fixture((url,init)=>{calls.push({url,init});return url.startsWith('/api/platforms')?{platforms:[{id:'vendor',name:'Vendor',type:'lab'},{id:'unisound',name:'云知声',type:'lab'}]}:queue([offer('new-platform',{platformId:'unisound',platform:'云知声'})]);});
+    await f.run('admQueue()');
+    f.document.querySelector('[data-act="edit"]')!.dispatchEvent(new f.window.Event('click'));
+    const option=f.document.querySelector('select[name="platformId"] option[value="unisound"]');
+    expect(option).not.toBeNull();expect(option!.hasAttribute('selected')).toBe(true);
+    expect(calls.find(x=>x.url.startsWith('/api/platforms'))?.init?.cache).toBe('no-store');
+  });
+  it('keeps the current platform selected when catalog refresh fails', async () => {
+    const f=fixture(url=>{if(url.startsWith('/api/platforms'))throw new Error('offline');return queue([offer('unknown-platform',{platformId:'unisound',platform:'云知声'})]);});
+    await f.run('admQueue()');
+    f.document.querySelector('[data-act="edit"]')!.dispatchEvent(new f.window.Event('click'));
+    expect(f.document.querySelector('select[name="platformId"] option[selected]')?.getAttribute('value')).toBe('unisound');
+  });
+  it('adds new choices to an open form without replacing its draft or selection', async () => {
+    let expanded=false;
+    const f=fixture(url=>url.startsWith('/api/platforms')?{platforms:[{id:'vendor',name:'Vendor',type:'lab'},...(expanded?[{id:'unisound',name:'云知声',type:'lab'}]:[])]}:queue([offer('editing')]));
+    await f.run('admQueue()');f.document.querySelector('[data-act="edit"]')!.dispatchEvent(new f.window.Event('click'));
+    const form=f.document.querySelector('[data-editform]')!;
+    (form.querySelector('[name="title"]') as HTMLInputElement).value='未保存草稿';
+    expanded=true;await f.run('refreshAdminPlatforms()');
+    expect(f.document.querySelector('[data-editform]')).toBe(form);
+    expect((form.querySelector('[name="title"]') as HTMLInputElement).value).toBe('未保存草稿');
+    expect(form.querySelector('select[name="platformId"] option[selected]')?.getAttribute('value')).toBe('vendor');
+    expect(form.querySelector('select[name="platformId"] option[value="unisound"]')).not.toBeNull();
+  });
+});
+
+describe('public all-offers freshness', () => {
+  it('loads newly published platforms without replacing selected filters', async () => {
+    const calls:{url:string;init?:RequestInit}[]=[];
+    const raw={id:'new-free',platformId:'unisound',title:'新厂商限免',type:'free',modalities:['text'],claimMethod:'signup',requirements:['none'],audience:'all',valueText:'免费调用',claimEnd:'2026-10-31',endKind:'date',sourceTz:'Asia/Shanghai',lastVerifiedAt:new Date().toISOString(),discoveredAt:new Date().toISOString(),evidence:{tier:'site',url:'https://vendor.example',excerpts:{}}};
+    const f=fixture((url,init)=>{calls.push({url,init});return url.startsWith('/api/platforms')?{platforms:[{id:'unisound',name:'云知声',type:'lab'}]}:url.startsWith('/api/offers')?{offers:[raw]}:url.startsWith('/api/meta')?{lastSuccessfulCollect:null}:{};});
+    f.run("OFFERS=[];prepare();location.hash='#all';ALLF.m='text';pAll();");
+    const filter=f.document.querySelector('#f-m');
+    await pause();await pause();
+    expect(f.document.querySelector('#f-p option[value="unisound"]')).not.toBeNull();
+    expect(f.document.querySelector('#allList')!.textContent).toContain('新厂商限免');
+    expect(f.document.querySelector('#f-m')).toBe(filter);expect(f.run('ALLF.m')).toBe('text');
+    expect(calls.filter(x=>x.url.startsWith('/api/offers')&&x.init?.cache==='no-store')).toHaveLength(1);
+  });
+  it('keeps existing content and choices when fresh API requests fail', async () => {
+    const f=fixture(()=>{throw new Error('offline');});publicOffer(f.run);
+    f.run("location.hash='#all';ALLF.m='text';pAll();");
+    await pause();await pause();
+    expect(f.document.querySelector('#allList')!.textContent).toContain('常驻免费额度');
+    expect(f.document.querySelector('#f-p option[value="vendor"]')).not.toBeNull();
+  });
 });

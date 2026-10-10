@@ -2,6 +2,7 @@
 // 服务器审核（能否通过）、审批卡片（上架前检查）、采集抽取（要填哪些字段）共用这一份，保证“一条羊毛审一次，所有栏目都对”。
 // 对照表见 docs/data-contract.md。
 import { isLimited, liveStatus, type OfferType } from './lifecycle';
+import { parseValuation, valuationClosesUsdGap, valuationMatchesAmounts } from './valuation';
 
 /** 受控标签：不新增类型，用标签表达横切的特征。 */
 export const TAGS = {
@@ -41,6 +42,8 @@ export interface SpecInput {
   title: string;
   valueText: string;
   usdEstimate?: number | null;
+  usdMax?: number | null;
+  valuation?: unknown;
   claimStart?: string | null;
   claimEnd?: string | null;
   endKind: 'date' | 'unknown' | 'standing';
@@ -81,7 +84,9 @@ export function checkOffer(o: SpecInput, now = new Date()): SpecIssue[] {
 
   if (o.requirements.includes('unknown')) add('requirements', '门槛', 'block', '门槛写的是“待确认”，要按官方原文写清', ['mine', 'all', 'score', 'insights', 'push']);
 
-  if (o.usdEstimate == null) add('usdEstimate', '折合美元', 'warn', '没有折合美元，不计入总价值和价值类图表，薅度分的价值项按最低算',
+  const valuation = parseValuation(o.valuation);
+  if (o.valuation != null && (!valuation || !valuationMatchesAmounts(valuation, o))) add('valuation', '估值依据', 'block', '估值元数据无效或与美元字段不一致，请核对金额、状态与规则版本', ['all', 'insights', 'detail', 'score']);
+  if (o.usdEstimate == null && !valuationClosesUsdGap(o.valuation, o)) add('usdEstimate', '折合美元', 'warn', '美元参考价值待核实，不计入金额排名和合计，评分仅使用已知维度',
     o.type === 'apply' ? ['apply', 'score'] : o.type === 'standing' ? ['today', 'library', 'insights', 'score', 'mine'] : ['today', 'calendar', 'insights', 'score', 'mine']);
 
   if (limited) {
@@ -111,7 +116,7 @@ export const blocking = (issues: SpecIssue[]) => issues.filter(i => i.level === 
 
 /** 已通过条目只有这些业务字段变化才需要复核；见 data-contract.md 第二节。 */
 export const REVIEW_FIELDS = [
-  'platformId', 'title', 'type', 'valueText', 'requirements', 'usdEstimate', 'usdMax',
+  'platformId', 'title', 'type', 'valueText', 'requirements', 'usdEstimate', 'usdMax', 'valuation',
   'claimStart', 'claimEnd', 'endKind', 'sourceTz', 'models', 'tags', 'publishedAt',
   'modalities', 'claimMethod', 'audience',
 ] as const;

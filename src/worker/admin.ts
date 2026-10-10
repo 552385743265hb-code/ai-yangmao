@@ -14,6 +14,7 @@ import { SECTIONS, blocking, checkOffer } from '../shared/spec';
 import { haoScore } from '../shared/score';
 import { officialTier, officialReviewDue } from '../shared/official-review';
 import { sameBenefit } from '../shared/dedupe';
+import { parseValuation } from '../shared/valuation';
 import type { Env } from './index';
 
 type OfferRow = typeof s.offers.$inferSelect;
@@ -37,7 +38,7 @@ function view(o: OfferRow, platformName: string, now = new Date()) {
     requirements: o.requirements, audience: o.audience, claimMethod: o.claimMethod, creditValidity: o.creditValidity,
     sourceTz: o.sourceTz, claimStart: o.claimStart, claimEnd: o.claimEnd, endKind: o.endKind,
     evidenceUrl: o.evidence.url, evidenceTier: o.evidence.tier, excerpts: o.evidence.excerpts, missingEvidence: missingEvidence(o.evidence.excerpts),
-    steps: o.steps, models: o.models ?? [], tags: o.tags ?? [], publishedAt: o.publishedAt ?? null, modalities: o.modalities, usdEstimate: o.usdEstimate, usdMax: o.usdMax ?? null, adminNote: o.adminNote ?? null, reviewMemo: o.reviewMemo ?? null, officialReview: o.officialReview ?? null, suggestion: o.reviewSuggestion ?? null,
+    steps: o.steps, models: o.models ?? [], tags: o.tags ?? [], publishedAt: o.publishedAt ?? null, modalities: o.modalities, usdEstimate: o.usdEstimate, usdMax: o.usdMax ?? null, valuation: parseValuation(o.valuation), adminNote: o.adminNote ?? null, reviewMemo: o.reviewMemo ?? null, officialReview: o.officialReview ?? null, suggestion: o.reviewSuggestion ?? null,
     // 上架前检查：缺了哪些字段、影响哪些栏目（规格见 src/shared/spec.ts）
     checks: checkOffer(o, now).map(i => ({ ...i, sections: i.sections.map(k => SECTIONS[k]) })),
     link: `https://ai-yangmao.com/#${o.reviewState === 'pending' ? 'admin-offer-' : 'offer-'}${encodeURIComponent(o.id)}`,
@@ -269,7 +270,7 @@ admin.post('/offers/:ref/:action{approve|reject}', async c => {
 });
 
 /** 补丁只允许编辑业务字段；补丁合并后仍由 offerIn 校验完整活动。 */
-const EDITABLE_FIELDS = new Set(['title', 'type', 'valueText', 'usdEstimate', 'usdMax', 'models', 'tags', 'claimStart', 'claimEnd', 'endKind', 'creditValidity',
+const EDITABLE_FIELDS = new Set(['title', 'type', 'valueText', 'usdEstimate', 'usdMax', 'valuation', 'models', 'tags', 'claimStart', 'claimEnd', 'endKind', 'creditValidity',
   'audience', 'requirements', 'modalities', 'platformId', 'sourceTz', 'claimMethod', 'steps', 'evidence', 'publishedAt', 'sourceId']);
 /** 旧提案可能含整行快照；只覆盖业务字段，审核建议、核验记录及当前状态始终读原条目。 */
 function proposalOffer(original: OfferRow, candidate: Record<string, unknown>): OfferRow {
@@ -308,7 +309,7 @@ admin.post('/offers/:ref/edit', async c => {
 
   if (proposal) {
     const manualFields = [...new Set([...proposal.manualFields, ...diff.map(x => x.field)])];
-    const proposedDiff = Object.keys(proposal.candidate)
+    const proposedDiff = [...new Set([...Object.keys(proposal.candidate), ...Object.keys(patch.data)])]
       .filter(field => JSON.stringify((o as Record<string, unknown>)[field] ?? null) !== JSON.stringify((candidate as Record<string, unknown>)[field] ?? null))
       .map(field => ({ field, from: (o as Record<string, unknown>)[field], to: (candidate as Record<string, unknown>)[field] }));
     if (body?.approve) {
