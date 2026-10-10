@@ -7,7 +7,7 @@ export interface MutationPlan<T> {
  guards?:Predicate[];assertions?:Predicate[];
 }
 export const commandGuard = "EXISTS(SELECT 1 FROM identity_commands WHERE request_id=? AND payload_hash=? AND state='staged' AND execution_token=?)";
-const allowed=new Set(['source_documents','source_observations','intake_candidates','intake_extractions','identity_extraction_leads','identity_refusal_applications','lead_candidate_links','benefit_entities','benefit_versions','entity_observations','identity_aliases','review_decisions','review_tasks','task_candidates','identity_constraints','identity_blocks','identity_events','offers','offer_proposals','reviews','offer_revisions','rejected_offer_updates','leads']);
+const allowed=new Set(['source_documents','source_observations','intake_candidates','intake_extractions','identity_extraction_leads','identity_refusal_applications','identity_backfill_progress','merge_plans','merge_operations','merge_members','lead_candidate_links','benefit_entities','benefit_versions','entity_observations','identity_aliases','review_decisions','review_tasks','task_candidates','identity_constraints','identity_blocks','identity_events','offers','offer_proposals','reviews','offer_revisions','rejected_offer_updates','leads']);
 const identifier=(name:string)=>{if(!/^[a-z_]+$/.test(name))throw new Error('invalid internal SQL identifier');return '"'+name+'"';};
 const ownsVersion=(table:string,column:string,entity='entity_id')=>`(${column} IS NULL OR EXISTS(SELECT 1 FROM benefit_versions v WHERE v.id=${table}.${column} AND v.entity_id=${table}.${entity}))`;
 const ownership:Record<string,string>={
