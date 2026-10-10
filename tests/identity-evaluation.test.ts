@@ -47,3 +47,9 @@ it('raw SAME with insufficient terms still counts as a false identity match for 
 it('tagged test results never assert complete contract subcase coverage',async()=>{
  const {acceptanceReport}=await import('../scripts/identity/acceptance-report');const report=acceptanceReport({success:true,testResults:[{name:'a',assertionResults:[{fullName:'A24 one sequential case',status:'passed'}]}]});expect(report.scenarios[23].taggedTestsStatus).toBe('passed');expect(report.scenarios[23].contractCoverage).toBe('not_established_by_reporter');expect(report.scenarios[23]).not.toHaveProperty('status');
 });
+it('a count-complete mechanical cohort cannot pass semantic gate with one raw false SAME',async()=>{
+ const {readFileSync}=await import('node:fs');const sample=JSON.parse(readFileSync(new URL('./fixtures/identity/evaluation-synthetic.json',import.meta.url),'utf8'));const sizes=[20,20,10,10];
+ sample.pairs=sample.pairs.flatMap((p:any,i:number)=>Array.from({length:sizes[i]},(_,j)=>({...structuredClone(p),id:`${i}-${j}`,crossLanguageOrSource:i===0})));
+ const bad=sample.pairs[20],eq=structuredClone(sample.pairs[0]);Object.assign(bad,{candidate:eq.candidate,entity:eq.entity,evidence:{...eq.evidence,confirmedEntityId:eq.entity.id}});bad.candidate.benefitPools[0].amount={state:'unknown'};
+ const report=await evaluateCorpus(sample,await corpusHash(sample));expect(report.cohortSufficient).toBe(true);expect(report.metrics.falseMerge).toBe(1);expect(report.metrics.automaticPrecision).toEqual({numerator:30,denominator:31,rate:30/31});expect(report.semanticGate).toBe('not_met');expect(report.fieldAcceptance).toBe('not_evaluated');
+});
