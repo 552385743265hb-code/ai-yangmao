@@ -8,7 +8,7 @@ import {IdentityError} from '../../src/worker/identity/store';
 import {offerIn} from '../../src/shared/ingest';
 
 export async function captureLocalSnapshot(db:D1Database,raw:HistoryContext):Promise<IdentitySnapshot>{
- const context=historyContextSchema.parse(raw),tables={} as IdentitySnapshot['tables'];
+ const context=historyContextSchema.parse(raw);if(context.environment==='production')throw new IdentityError(403,'production snapshots require bounded Worker preview');const tables={} as IdentitySnapshot['tables'];
  for(const table of legacyTables)tables[table]=(await db.prepare(`SELECT * FROM ${table} ORDER BY ${table==='offer_proposals'?'offer_id':'id'} LIMIT 50001`).all<LegacyRow>()).results;
  const body={schemaVersion:'identity-snapshot-v1' as const,context,tables,confirmedFacts:{}};
  return snapshotSchema.parse({...body,snapshotHash:await sha256(stableJson(body))});
@@ -16,10 +16,11 @@ export async function captureLocalSnapshot(db:D1Database,raw:HistoryContext):Pro
 export async function validateSnapshot(raw:IdentitySnapshot){const s=snapshotSchema.parse(raw),{snapshotHash,...body}=s;if(await sha256(stableJson(body))!==snapshotHash)throw new IdentityError(409,'snapshot hash mismatch');return s;}
 export interface BackfillCursor {snapshotHash:string;lastProcessedId:string}
 interface BackfillItem {key:string;table:'offers'|'leads'|'rejected_offer_updates';row:LegacyRow}
+export function makeBackfillItem(table:BackfillItem['table'],row:LegacyRow):BackfillItem{return {key:table==='offers'?'1-offer:'+row.id:(table==='leads'?'2-lead:':'3-update:')+String(row.id).padStart(16,'0'),table,row};}
 export interface BackfillPlan {schemaVersion:'identity-backfill-plan-v1';snapshot:IdentitySnapshot;manifest:{environment:string;snapshotHash:string;sourceCodeSha:string;resolverVersion:string;rulesVersion:string;highWaterMarks:Record<string,string|null>;counts:Record<string,number>;scanCursor:BackfillCursor|null};items:BackfillItem[];nextCursor:BackfillCursor|null;conflicts:{key:string;reason:string}[];estimatedWrites:number;planHash:string}
 export async function buildBackfillPlan(raw:IdentitySnapshot,cursor?:BackfillCursor|null):Promise<BackfillPlan>{
  const snapshot=await validateSnapshot(raw);if(cursor&&cursor.snapshotHash!==snapshot.snapshotHash)throw new IdentityError(409,'cursor snapshot mismatch');
- const all:BackfillItem[]=[...snapshot.tables.offers.map(row=>({key:'1-offer:'+row.id,table:'offers' as const,row})),...snapshot.tables.leads.filter(r=>r.status==='rejected').map(row=>({key:'2-lead:'+String(row.id).padStart(16,'0'),table:'leads' as const,row})),...snapshot.tables.rejected_offer_updates.map(row=>({key:'3-update:'+String(row.id).padStart(16,'0'),table:'rejected_offer_updates' as const,row}))].sort((a,b)=>a.key<b.key?-1:a.key>b.key?1:0);
+ const all:BackfillItem[]=[...snapshot.tables.offers.map(row=>makeBackfillItem('offers',row)),...snapshot.tables.leads.filter(r=>r.status==='rejected').map(row=>makeBackfillItem('leads',row)),...snapshot.tables.rejected_offer_updates.map(row=>makeBackfillItem('rejected_offer_updates',row))].sort((a,b)=>a.key<b.key?-1:a.key>b.key?1:0);
  if(cursor&&!all.some(i=>i.key===cursor.lastProcessedId))throw new IdentityError(409,'snapshot cursor not found');
  const rest=all.filter(i=>!cursor||i.key>cursor.lastProcessedId),items=rest.slice(0,100),nextCursor=rest.length>100?{snapshotHash:snapshot.snapshotHash,lastProcessedId:items.at(-1)!.key}:null;
  const manifest={environment:snapshot.context.environment,snapshotHash:snapshot.snapshotHash,sourceCodeSha:snapshot.context.sourceCodeSha,resolverVersion:RESOLVER_VERSION,rulesVersion:RULES_VERSION,highWaterMarks:Object.fromEntries(legacyTables.map(t=>[t,snapshot.tables[t].length?String(snapshot.tables[t].at(-1)![t==='offer_proposals'?'offer_id':'id']):null])),counts:Object.fromEntries(legacyTables.map(t=>[t,snapshot.tables[t].length])),scanCursor:cursor??null};
@@ -34,7 +35,7 @@ async function snapshotObservation(db:D1Database,builder:MutationBuilder,url:str
  builder.insert('source_documents',{id:doc,original_url:url,url_key:urlKey},'nothing');
  builder.insert('source_observations',{id:observation,document_id:doc,content_hash:contentHash,text:body.slice(0,250000),text_truncated:Number(body.length>250000),fetch_kind:'indirect',final_url:url,observed_at:at,last_seen_at:at,trust_json:JSON.stringify({sourceVerified:false,productId:null,reason:'legacy_snapshot',snapshotHash})},'nothing');return observation;
 }
-async function backfillItem(db:D1Database,plan:BackfillPlan,item:BackfillItem,actor:string){
+export async function backfillItem(db:D1Database,plan:BackfillPlan,item:BackfillItem,actor:string,guards:{sql:string;args:(string|number|null)[]}[]=[]){
  const {row,table}=item,id=String(row.id),command='backfill:'+({offers:'offer',leads:'lead',rejected_offer_updates:'rejected_update'}[table])+':'+id,hash=await sha256(stableJson({backfillVersion:'v1',item,confirmedFacts:plan.snapshot.confirmedFacts[id]??null}));
  const replay=await readIdentityReceipt(db,command,hash);if(replay){if(replay.status==='conflict')throw new IdentityError(409,'backfill object conflict');return replay.status;}
  const current=await db.prepare(`SELECT * FROM ${table} WHERE id=?`).bind(row.id).first<LegacyRow>();if(stableJson(current)!==stableJson(row))throw new IdentityError(409,'legacy row changed');
@@ -43,7 +44,7 @@ async function backfillItem(db:D1Database,plan:BackfillPlan,item:BackfillItem,ac
  if(table!=='offers'&&entity&&!await db.prepare('SELECT 1 FROM benefit_entities WHERE id=?').bind(entity).first())throw new IdentityError(409,'offer backfill required first');
  const evidence=offer?json(offer.evidence):null,body=table==='leads'?String(row.raw??row.title??'Legacy rejected claim'):table==='rejected_offer_updates'?stableJson({evidence:json(row.evidence),diff:json(row.diff)}):Object.values(evidence?.excerpts??{}).filter(v=>typeof v==='string').join('\n');
  const url=table==='leads'?String(row.url):String(evidence?.url??'https://snapshot.invalid/'+id),candidate='legacy-candidate-'+await sha256(table+':'+id);
- const builder=new MutationBuilder(db,command,hash);unchanged(builder,table,row);
+ const builder=new MutationBuilder(db,command,hash);for(const guard of guards)builder.require(guard.sql,guard.args);unchanged(builder,table,row);
  const observation=await snapshotObservation(db,builder,url,body,String(row.created_at??row.at??offer?.discovered_at??'1970-01-01T00:00:00.000Z'),plan.snapshot.snapshotHash);
  const facts=canonicalTermsSchema.parse(table==='offers'?plan.snapshot.confirmedFacts[id]?.facts??unknownIdentityTerms():unknownIdentityTerms()),factsHash=await hashTerms(facts),version=entity&&table==='offers'?'legacy-version-'+await sha256(entity+':'+factsHash):null;
  const state=table==='offers'?String(row.review_state):'rejected',decision='legacy-decision-'+await sha256(command),task=state==='pending'?'legacy-task-'+await sha256(command):null;
@@ -82,6 +83,7 @@ async function backfillItem(db:D1Database,plan:BackfillPlan,item:BackfillItem,ac
 }
 /** Only explicit isolated callers may mutate. The CLI below this module defaults to pure plans. */
 export async function applyBackfillPage(db:D1Database,plan:BackfillPlan,permission:{environment:HistoryContext['environment'];approvedPlanHash:string;actor:string}){
+ if(permission.environment==='production')throw new IdentityError(403,'production backfill requires the bounded Worker object endpoint');
  const {planHash,...body}=plan;if(permission.environment!==plan.snapshot.context.environment||permission.approvedPlanHash!==planHash||await sha256(stableJson(body))!==planHash||!permission.actor)throw new IdentityError(403,'exact isolated backfill plan approval required');
  const rebuilt=await buildBackfillPlan(plan.snapshot,plan.manifest.scanCursor);if(rebuilt.planHash!==planHash)throw new IdentityError(409,'backfill plan content conflict');
  if(plan.items.length>100||plan.conflicts.length)throw new IdentityError(409,'backfill plan conflict');const receipts=[];

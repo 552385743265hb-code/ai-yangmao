@@ -1,3 +1,4 @@
+import {closeIdentityLead} from './identity/lead-closure';
 import { aggregateIdentityLead } from './identity/leads';
 import {leadScopeMismatch} from '../shared/lead-scope';
 import {normUrl} from '../shared/dedupe';
@@ -69,6 +70,7 @@ leadReviewRoutes.post('/:id/result',async c=>{
     nextAttemptAt:status==='retry'?new Date(now+delayHours*3600_000).toISOString():null,
     reason:status==='manual'?'已转为线索审核任务：'+b.reason:b.reason,queries:b.queries,candidates:b.candidates,
     offerIds:[...new Set([...(old.offerIds??[]),...b.offerIds])],evidenceUrl:b.evidenceUrl,quote:b.quote};
+  if(c.env.IDENTITY_MODE==='enforce'&&status==='closed'){await closeIdentityLead(c.env.DB,l,resolution,b.sourceText!);return c.json({ok:true,status:'closed',nextAttemptAt:null,identityHandled:true});}
   const changed=await d.update(s.leads).set({resolution,status:status==='linked'?'linked':status==='closed'?'rejected':'reviewing',offerId:resolution.offerIds?.[0]??l.offerId})
     .where(and(eq(s.leads.id,l.id),eq(s.leads.status,'reviewing'),sql`json_extract(${s.leads.resolution},'$.jobId')=${b.jobId}`,sql`json_extract(${s.leads.resolution},'$.status')='checking'`)).returning({id:s.leads.id});
   return changed.length?c.json({ok:true,status,nextAttemptAt:resolution.nextAttemptAt}):c.json({error:'线索已被其他操作处理'},409);

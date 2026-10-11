@@ -1,3 +1,4 @@
+import {closeIdentityLead} from './identity/lead-closure';
 import {visibilityState,visibilityView} from './identity/visibility';
 import {canonicalLeadProjection} from './identity/lead-projection';
 import {notificationInheritance} from './identity/notification-inheritance';
@@ -471,6 +472,7 @@ admin.post('/leads/:id/resolve',async c=>{
   if(b.offerId)b.offerId=(await resolveCanonicalOffer(c.env.DB,b.offerId)).offerId;
   if(b.outcome==='linked'&&(!b.offerId||!(await d.select().from(s.offers).where(eq(s.offers.id,b.offerId))).length))return c.json({error:'请填写已存在的完整活动ID'},400);
   const resolution:LeadResolution={status:b.outcome==='retry'?'retry':b.outcome,jobId:crypto.randomUUID(),attempts:0,inconclusive:0,checkedAt:new Date().toISOString(),nextAttemptAt:b.outcome==='retry'?new Date().toISOString():null,reason:b.reason,queries:l.resolution?.queries??[],candidates:l.resolution?.candidates??[],evidenceUrl:l.resolution?.evidenceUrl,quote:l.resolution?.quote,offerIds:b.offerId?[b.offerId]:(l.resolution?.offerIds??[]),originOfferIds:originOfferId?[originOfferId]:(l.resolution?.originOfferIds??l.resolution?.offerIds??[])};
+  if(c.env.IDENTITY_MODE==='enforce'&&b.outcome==='closed'){await closeIdentityLead(c.env.DB,l,resolution,l.raw??l.title??resolution.reason??'管理员关闭线索',{actor:c.get('who')});return c.json({ok:true,identityHandled:true});}
   const changed=await d.update(s.leads).set({status:b.outcome==='linked'?'linked':b.outcome==='closed'?'rejected':'reviewing',resolution,offerId:b.offerId??l.offerId})
     .where(and(eq(s.leads.id,l.id),eq(s.leads.status,l.status),sql`COALESCE(${s.leads.resolution},'')=COALESCE(${l.resolution?JSON.stringify(l.resolution):null},'')`)).returning({id:s.leads.id});
   return changed.length?c.json({ok:true}):c.json({error:'线索已更新，请刷新'},409);
@@ -482,6 +484,7 @@ admin.post('/leads/:id/:action{dismiss|reviewing|retry}', async c => {
   if(!['new','reviewing'].includes(l.status)||body.expectedVersion!==leadReviewVersion(l))return c.json({error:'线索版本已变化或缺少版本，请刷新后处理'},409);
   if(l.resolution?.identityTaskIds?.length)return c.json({error:'请使用身份任务或拒绝决定的显式重开接口'},409);
   const resolution:LeadResolution={status:action==='dismiss'?'closed':'retry',jobId:crypto.randomUUID(),attempts:0,inconclusive:0,checkedAt:new Date().toISOString(),nextAttemptAt:action==='dismiss'?null:new Date().toISOString(),reason:String(body.reason??(action==='dismiss'?'管理员忽略线索':'管理员要求重新官方核验')).slice(0,1000),queries:[],candidates:[]};
+  if(c.env.IDENTITY_MODE==='enforce'&&action==='dismiss'){await closeIdentityLead(c.env.DB,l,resolution,l.raw??l.title??resolution.reason??'管理员关闭线索',{actor:c.get('who')});return c.json({ok:true,identityHandled:true});}
   const changed=await d.update(s.leads).set({status:action==='dismiss'?'rejected':'reviewing',resolution}).where(and(eq(s.leads.id,l.id),eq(s.leads.status,l.status),sql`COALESCE(${s.leads.resolution},'')=COALESCE(${l.resolution?JSON.stringify(l.resolution):null},'')`)).returning({id:s.leads.id});
   return changed.length?c.json({ok:true}):c.json({error:'线索已更新，请刷新'},409);
 });

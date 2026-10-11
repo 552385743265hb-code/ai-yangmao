@@ -1,3 +1,4 @@
+import {closeIdentityLead} from './identity/lead-closure';
 import {canonicalOffers,resolveCanonicalOffer} from './identity/canonical';
 import { withIdentityQueryBudget,IdentityQueryBudgetError } from './identity/budget';
 import { aggregateIdentityLead } from './identity/leads';
@@ -33,7 +34,8 @@ export interface Env {
   IDENTITY_CANARY_PLATFORMS?: string;
   IDENTITY_MODEL_ASSIST?: string;
   HISTORICAL_MERGE_ENABLED?: string;
-  IDENTITY_HISTORY_ENVIRONMENT?: 'synthetic'|'redacted_local';
+  IDENTITY_HISTORY_ENVIRONMENT?: 'synthetic'|'redacted_local'|'production';
+  IDENTITY_HISTORY_SOURCE_SHA?: string;
   ADMIN_TOKEN: string;
   CF_ANALYTICS_TOKEN?: string; // Cloudflare 账户分析只读令牌，采集健康页显示今日 D1 读取量
   CF_ACCOUNT_ID?: string;
@@ -574,6 +576,7 @@ ingest.post('/leads/:id/status', async c => {
   }
   const raw = b.data.note ? `${lead.raw ?? ''}\n[研判] ${b.data.note}`.slice(-20000) : lead.raw;
   const resolution=b.data.status==='linked'&&b.data.offerId?{status:'linked' as const,jobId:'legacy-link-'+crypto.randomUUID(),attempts:0,inconclusive:0,checkedAt:new Date().toISOString(),nextAttemptAt:null,reason:b.data.note??'已关联现有活动',queries:[],candidates:[],offerIds:[b.data.offerId],originOfferIds:originOfferId?[originOfferId]:[]}:null;
+  if(c.env.IDENTITY_MODE==='enforce'&&b.data.status==='rejected'){const closed={status:'closed' as const,jobId:crypto.randomUUID(),attempts:0,inconclusive:0,checkedAt:new Date().toISOString(),nextAttemptAt:null,reason:b.data.note??'既有研判拒绝线索',queries:[],candidates:[],offerIds:b.data.offerId?[b.data.offerId]:[]};await closeIdentityLead(c.env.DB,lead,closed,raw??lead.title??closed.reason,{actor:'pipeline:triage',raw});return c.json({ok:true,identityHandled:true});}
   await db(c.env).update(s.leads).set({ status: b.data.status, resolution, offerId: b.data.offerId ?? lead.offerId, raw }).where(and(eq(s.leads.id, lead.id),eq(s.leads.status,'new')));
   return c.json({ ok: true });
 });

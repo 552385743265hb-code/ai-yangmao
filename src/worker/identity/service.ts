@@ -1,3 +1,4 @@
+import {findReviewedLegacy} from './reviewed-legacy';
 import {visibilityState,activeVisibilityPredicate} from './visibility';
 import {taskSourcesCte} from './task-sources';
 import {retrieveManualHistory} from './manual-retrieval';
@@ -335,6 +336,20 @@ export class IdentityService {
   const blockKey=productId&&mechanism?productId+':'+mechanism:null;
   const blockRevision=blockKey?(await this.db.prepare('SELECT revision FROM identity_blocks WHERE block_key=?').bind(blockKey).first<{revision:number}>())?.revision??0:0;
   if(blockKey)expected.push({kind:'block',id:blockKey,revision:blockRevision});
+  if(!control&&!ambiguousFamily&&!candidate.task_id&&receipt.outcome!=='duplicate_rejected'){
+   const reviewed=await findReviewedLegacy(this.db,candidate.raw_candidate_json,facts);
+   if(reviewed){
+    if(legacyJob){if(reviewed.entityId!==legacyJob.entityId)throw new IdentityError(409,'official review resolved a different activity');builder.acknowledgeOfficialJob(legacyJob.offerId,legacyJob.originalJob,reviewed.revision);}
+    expected.push(...reviewed.relatedRevisions.map(r=>({kind:'entity' as const,id:r.id,revision:r.revision})));
+    builder.require('EXISTS(SELECT 1 FROM offers WHERE id=? AND updated_at=?)',[reviewed.offerId,reviewed.updatedAt]);
+    builder.require('EXISTS(SELECT 1 FROM benefit_versions WHERE id=? AND display_candidate_json=?)',[reviewed.versionId,reviewed.display]);
+    builder.require('NOT EXISTS(SELECT 1 FROM review_decisions WHERE supersedes_id=?)',[reviewed.decisionId]);
+    Object.assign(receipt,{entityId:reviewed.entityId,versionId:reviewed.versionId,decisionId:reviewed.decisionId,canonicalOfferId:reviewed.offerId,taskId:null,entityRevision:reviewed.revision,outcome:reviewed.action==='approve'?'duplicate_approved':'duplicate_rejected',reasonCodes:['reviewed_legacy_assertion'],retryable:false});
+    builder.insert('entity_observations',{entity_id:reviewed.entityId,candidate_id:candidate.id,relation:'same',resolver_version:RESOLVER_VERSION,reason_json:JSON.stringify({reason:'reviewed_legacy_assertion',decisionId:reviewed.decisionId})},'nothing');
+    builder.update('intake_candidates',{entity_id:reviewed.entityId,version_id:reviewed.versionId,decision_id:reviewed.decisionId,task_id:null,state:reviewed.action==='approve'?'resolved_same':'resolved_rejected',revision:candidate.revision+1,receipt_json:JSON.stringify(receipt),last_error:null,next_attempt_at:null,lease_token:null,lease_until:null},'id=? AND revision=?',[candidate.id,candidate.revision]);builder.assertOwnership('intake_candidates',candidate.id);
+    return this.commit(builder,expected,receipt);
+   }
+  }
   const claimMemory=receipt.outcome!=='duplicate_rejected'&&(control||!ambiguousFamily)?await findClaimMemory(this.db,candidate.id,facts,evidence):{match:null,unresolved:false};
   const claimReopen=!!(control&&claimMemory.match?.reopen.allowed&&control.task.kind==='evidence_reopen'&&!control.task.entity_id&&control.task.task_key===reviewTaskKey({kind:'evidence_reopen',entityId:'claim:'+claimMemory.match.canonicalCandidateId,refusalDecisionId:claimMemory.match.decision.id,basisHash:candidate.facts_hash})&&await hashTerms(facts)===candidate.facts_hash);
   if(control&&claimMemory.match&&!claimReopen)throw new IdentityError(409,'review the original claim refusal before resolving a different activity identity');
