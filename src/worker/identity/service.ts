@@ -371,7 +371,14 @@ export class IdentityService {
     return {entity:e,result};
    }));
    const matches=control?.action==='new'?[]:compared.filter(r=>r.result.relation==='SAME'&&(!control?.entityId||r.entity.id===control.entityId));
-   if(control?.action==='same'&&matches.length===1&&matches[0].result.reasonCodes.includes('partial_facts'))matches[0].result={...matches[0].result,termsRelation:'EQUIVALENT',matchingVersionId:matches[0].entity.approvedVersionId};
+   if(control?.action==='same'&&matches.length===1&&matches[0].entity.terms&&matches[0].result.termsRelation==='INSUFFICIENT'){
+    const match=matches[0],baseline=factSlots(match.entity.terms!);
+    const added=[...factSlots(facts)].some(([key,value])=>value.state!=='unknown'&&(!baseline.has(key)||baseline.get(key)!.state==='unknown'));
+    const changed=match.result.conflicts.length>0||added;
+    // Human identity confirmation never erases a known change or new fact.
+    // Pure omissions may attach evidence; changed partial terms stay pending.
+    match.result={...match.result,termsRelation:changed?'CHANGED':'EQUIVALENT',matchingVersionId:changed?null:match.entity.approvedVersionId};
+   }
    if(page.complete&&matches.length===1){comparison=matches[0].result;entity=await this.entity(matches[0].entity.id);if(!entity||entity.business_revision!==matches[0].entity.revision||entity.current_approved_version_id!==matches[0].entity.approvedVersionId)throw new IdentityError(409,'matched identity changed; retry retrieval');}
    else if(page.complete&&!matches.length&&(control?.action==='new'||compared.every(r=>r.result.relation==='DISTINCT'))) {
     const platform=await this.db.prepare('SELECT id FROM platforms WHERE id=?').bind(productId).first();
@@ -501,6 +508,12 @@ export class IdentityService {
    if(scope.kind==='occurrence'&&(scope.productId!==entity.platform_id||versionFacts.occurrenceAnchor.state!=='known'||scope.anchor!==versionFacts.occurrenceAnchor.value))throw new IdentityError(400,'foreign occurrence scope');
    if(scope.kind==='claim'&&!await this.db.prepare('SELECT 1 FROM task_candidates WHERE task_id=? AND candidate_id=?').bind(task.id,scope.candidateId).first())throw new IdentityError(400,'foreign candidate scope');
    if(scope.kind==='observation_only'&&!await this.db.prepare('SELECT 1 FROM task_candidates tc JOIN intake_candidates c ON c.id=tc.candidate_id WHERE tc.task_id=? AND c.observation_id=?').bind(task.id,scope.observationId).first())throw new IdentityError(400,'foreign observation scope');
+  }
+  if(input.action==='approve'&&task.base_version_id&&task.version_id!==task.base_version_id){
+   const baseline=await this.db.prepare('SELECT facts_json FROM benefit_versions WHERE id=? AND entity_id=?').bind(task.base_version_id,entity.id).first<{facts_json:string}>();
+   if(!baseline)throw new IdentityError(409,'approved fact baseline missing');
+   const incoming=factSlots(versionFacts),missing=[...factSlots(canonicalTermsSchema.parse(JSON.parse(baseline.facts_json)))].filter(([key,value])=>value.state!=='unknown'&&(!incoming.has(key)||incoming.get(key)!.state==='unknown'));
+   if(missing.length)throw new IdentityError(409,'complete the missing approved facts before publication: '+missing.map(([key])=>key).join(', '));
   }
   const proposal=entity.canonical_offer_id?await this.db.prepare('SELECT candidate,diff,manual_fields,updated_at FROM offer_proposals WHERE offer_id=?').bind(entity.canonical_offer_id).first<{candidate:string;diff:string;manual_fields:string;updated_at:string}>():null;
   if(proposal&&JSON.parse(proposal.manual_fields).length&&stableJson(offerIn.parse(JSON.parse(proposal.candidate)))!==stableJson(offerIn.parse(JSON.parse(version.display_candidate_json))))throw new IdentityError(409,'manual proposal edits require a refreshed identity version');

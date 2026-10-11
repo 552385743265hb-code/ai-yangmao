@@ -71,5 +71,17 @@ try{
  await call('admin/identity/tasks/'+restored.taskId+'/resolve',{requestId:'approve-restoration',expectedRevision:0,action:'approve'},true);
  assert.deepEqual(await db.prepare('SELECT review_state,withdrawn_at FROM offers WHERE id=?').bind(created.canonicalOfferId).first(),{review_state:'approved',withdrawn_at:null});
  assert.deepEqual((await db.prepare('PRAGMA foreign_key_check').all()).results,[]);
- assert.ok(measurements.every(m=>m.statements<=50));console.log(JSON.stringify({environment:'fresh-local-workerd-d1',R01:'passed',R02:'passed',R03:'passed',R07:'passed',R04:'passed',R05:'passed',productionOperations:0,modelCalls:0,messages:0,measurements}));
+
+ const partial=structuredClone(a);partial.eligibility={state:'unknown'};partial.benefitPools[0].amount=known({value:'20',unit:'currency',currency:'USD'});
+ const partialCandidate=await freshCandidate('partial-change',partial,'Campaign shared replaces 10 USD with 20 USD.');
+ const partialTask=await call('ingest/identity-candidates/'+partialCandidate.candidateId+'/resolve',{requestId:'partial-resolve'});
+ const sameBody={requestId:'partial-confirm',expectedRevision:0,action:'same',candidateId:partialCandidate.candidateId,entityId:created.entityId,reason:'Identity confirmed, real terms change remains pending.'};
+ let partialResult;for(let i=0;i<3;i++){partialResult=await call('admin/identity/tasks/'+partialTask.taskId+'/resolve',sameBody,true);if(!partialResult.retryable)break;}
+ assert.equal(partialResult.outcome,'proposed_update');assert.notEqual(partialResult.versionId,created.versionId);
+ const pendingRevision=(await db.prepare('SELECT revision FROM review_tasks WHERE id=?').bind(partialResult.taskId).first()).revision;
+ await call('admin/identity/tasks/'+partialResult.taskId+'/resolve',{requestId:'incomplete-approval',expectedRevision:pendingRevision,action:'approve'},true,409);
+ partial.eligibility=a.eligibility;
+ const completedEdit=await call('admin/offers/'+created.canonicalOfferId+'/edit',{requestId:'complete-partial',identityTaskId:partialResult.taskId,expectedIdentityRevision:pendingRevision,fields:{},identityFacts:partial},true);
+ await call('admin/identity/tasks/'+partialResult.taskId+'/resolve',{requestId:'completed-approval',expectedRevision:completedEdit.revision,action:'approve'},true);
+ assert.ok(measurements.every(m=>m.statements<=50));console.log(JSON.stringify({environment:'fresh-local-workerd-d1',R01:'passed',R02:'passed',R03:'passed',R07:'passed',R04:'passed',R05:'passed',R06:'passed',productionOperations:0,modelCalls:0,messages:0,measurements}));
 }finally{await proxy.dispose();}
