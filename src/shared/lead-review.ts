@@ -9,10 +9,13 @@ export interface LeadResolution {
   queries: string[];
   candidates: string[];
   offerIds?: string[];
+  originOfferIds?: string[];
+  identityTaskIds?: string[];
+  identityCandidateIds?: string[];
   evidenceUrl?: string;
   quote?: string;
 }
-export interface ReviewableLead {id:number;status:string;url:string;title:string|null;raw:string|null;createdAt:string;resolution:LeadResolution|null;offerId?:string|null}
+export interface ReviewableLead {id:number;status:string;url:string;title:string|null;raw:string|null;createdAt:string;resolution:LeadResolution|null;offerId?:string|null;originOfferId?:string|null;identityReadVersion?:string}
 export const LEAD_LEASE_MS=20*60_000;
 export function leadReviewDue(l:ReviewableLead,now=Date.now()):boolean {
   if(l.status!=='reviewing')return false;
@@ -27,7 +30,7 @@ export const leadReviewVersion=(l:ReviewableLead)=>{
   return `${l.id}-${(hash>>>0).toString(36)}`;
 };
 export function leadTask(l:ReviewableLead){
-  return {id:l.id,title:l.title,url:l.url,status:l.status,createdAt:l.createdAt,offerId:l.offerId??null,
+  return {id:l.id,title:l.title,url:l.url,status:l.status,createdAt:l.createdAt,offerId:l.offerId??null,originOfferId:l.originOfferId??l.offerId??null,
     note:l.resolution?.reason??l.raw?.split('[研判]').at(-1)?.slice(0,500)??null,
-    resolution:l.resolution,reviewVersion:leadReviewVersion(l)};
+    resolution:l.resolution,reviewVersion:l.identityReadVersion??leadReviewVersion(l)};
 }

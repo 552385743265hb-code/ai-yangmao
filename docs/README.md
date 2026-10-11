@@ -18,6 +18,10 @@
 
 ## 方案与实施范围
 
+- [去重第二、三阶段正式入口](specs/dedupe-identity-2026-10-10/README.md)：七个增量、九项任务的源码与本地验证；独立 PR 尚未合并或部署。
+- [主规格](specs/dedupe-identity-2026-10-10/SPEC.md) / [实施任务](specs/dedupe-identity-2026-10-10/IMPLEMENTATION.md) / [45 组验收](specs/dedupe-identity-2026-10-10/ACCEPTANCE.md)。旧草稿只供历史追溯。
+- [交付证据](specs/dedupe-identity-2026-10-10/P3-C-EVIDENCE.md) / [发布与兼容回滚](specs/dedupe-identity-2026-10-10/RELEASE.md)：区分本地工程验证、尚缺人工语料的现场验收及生产授权。
+- [第一阶段去重修复验证](phase1-dedupe-fix-2026-10-10.md)：三个具体缺陷的修复与测试；包含0016增量迁移，部署前须先迁移。远端提交不等于生产上线。
 - [权益估值与存量字段补全方案 V1](plans/benefit-valuation-and-field-completion-v1.md)：首 30 天口径、创作者标准用量、多模型成本中位选择、公测未定价与字段结案设计；美元与图表部分已实施，管理员研判及其他字段工作仍按范围推进，现役规则以数据合同和通用规则为准。
 
 ## 美元估值核查

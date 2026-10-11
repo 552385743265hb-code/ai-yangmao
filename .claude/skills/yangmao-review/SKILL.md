@@ -26,7 +26,8 @@ npx tsx $S memo <短码> memo.txt           # 内部核验记录（仅管理员�
 npx tsx $S approve <短码> --version <reviewVersion>
 npx tsx $S reject <短码> --version <reviewVersion> --code <代码> --reason "理由"
 npx tsx $S retest <短码>
-npx tsx $S unpublish <短码> --code <代码> --reason "理由"   # 撤下已上架但不该收的条目（对已上架条目用 reject 只会丢弃更新提案）
+npx tsx $S reopen <短码> --version <visibilityVersion> --reason "明确重开依据"  # 只新建恢复审核，不直接发布
+npx tsx $S unpublish <短码> --version <visibilityVersion> --code <代码> --reason "理由"   # 撤下已上架但不该收的条目（对已上架条目用 reject 只会丢弃更新提案）
 npx tsx $S suggest <短码> approve|history|reject|judge [--code 代码] --reason "理由"   # 只给审批卡片标建议，不改状态（批量预审用）
 ```
 
@@ -121,7 +122,7 @@ npx tsx $S suggest <短码> approve|history|reject|judge [--code 代码] --reaso
 批量审核时每条一个小节，最后汇总：建议通过几条、作为历史几条、拒绝几条。
 
 ### 6. 按授权写入并读回
-1. 写入前重新读取 `reviewVersion` 和差异，确认仍是刚审核的版本；发生并发变化重新比较，不能覆盖新人工修改。使用管理接口写 edit/approve/reject 时带 `expectedReviewVersion`（辅助脚本的 apply/approve/reject 强制要求 `--version`，取自完成审核时的 show；不要改为提交前自动取最新版）。
+1. 写入前重新读取 `reviewVersion` 和差异，确认仍是刚审核的版本；发生并发变化重新比较，不能覆盖新人工修改。使用管理接口写 edit/approve/reject/unpublish/withdraw 时带 `expectedReviewVersion`（辅助脚本的 apply/approve/reject/unpublish 强制要求 `--version`，取自完成审核时的 show；下架/撤回使用 visibilityVersion，提案审核使用 reviewVersion；不要改为提交前自动取最新版）。
 2. `apply <短码> patch.json --version <reviewVersion> --reason "…" [--approve]`：理由写清楚为什么这样改（模型以后学得更快）；改类型用 `--code wrong_type`。
 3. `memo`：写内部核验记录（核验程度、证据来源、截图位置、漏抓原因）。
 4. 字段已齐且获得首次上架或真实变更批准授权时用 `approve`；拒绝更新与拒绝新条目用 `reject`，已上架误收要用 `unpublish`，不能删主条目逃避历史。`retest` 仅记录确已核实仍有效，不用于绕过证据拦截；管理员亲测权益与人工读官网是两回事。

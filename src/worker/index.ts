@@ -1,3 +1,8 @@
+import {canonicalOffers,resolveCanonicalOffer} from './identity/canonical';
+import { withIdentityQueryBudget,IdentityQueryBudgetError } from './identity/budget';
+import { aggregateIdentityLead } from './identity/leads';
+import { adaptLegacyOffer,identitySelected } from './identity/adapters';
+import { identityIngestRoutes } from './identity/routes';
 import {leadScopeMismatch} from '../shared/lead-scope';
 import { leadReviewRoutes } from './lead-review';
 import { officialReviewRoutes } from './official-review';
@@ -5,7 +10,7 @@ import { sameBenefit, ambiguousReset } from '../shared/dedupe';
 import { officialTier, officialActivityMismatch } from '../shared/official-review';
 import { resetEventDay } from '../shared/reset-event';
 import { selectLeads } from '../shared/leads';
-import { changedOfficialTerms, rejectedTermsStillPresent } from '../shared/review-stability';
+import { changedOfficialTerms, changedOfficialBenefit, rejectedTermsStillPresent } from '../shared/review-stability';
 import { publicSafeValuation, valuationMatchesAmounts } from '../shared/valuation';
 import { isReviewField, reviewChanges } from '../shared/spec';
 // Cloudflare Worker 入口：/api/* 走这里，其余由静态资源（网站页面）处理。
@@ -24,6 +29,11 @@ export interface Env {
   DB: D1Database;
   ASSETS: Fetcher;
   INGEST_TOKEN: string;
+  IDENTITY_MODE?: 'off' | 'shadow' | 'enforce';
+  IDENTITY_CANARY_PLATFORMS?: string;
+  IDENTITY_MODEL_ASSIST?: string;
+  HISTORICAL_MERGE_ENABLED?: string;
+  IDENTITY_HISTORY_ENVIRONMENT?: 'synthetic'|'redacted_local';
   ADMIN_TOKEN: string;
   CF_ANALYTICS_TOKEN?: string; // Cloudflare 账户分析只读令牌，采集健康页显示今日 D1 读取量
   CF_ACCOUNT_ID?: string;
@@ -44,8 +54,10 @@ type OfferRow = typeof s.offers.$inferSelect;
 
 // 初期不让搜索引擎收录；接口不缓存旧状态太久
 app.use('/api/*', async (c, next) => {
+  if(c.env.IDENTITY_MODE==='enforce'||/\/api\/(?:ingest\/(?:identity-|observations|candidates)|admin\/identity)/.test(c.req.path))c.env={...c.env,DB:withIdentityQueryBudget(c.env.DB)};
   await next();
   c.header('X-Robots-Tag', 'noindex');
+  if(c.req.method==='GET'&&c.req.path.startsWith('/api/offers'))c.header('Cache-Control','no-cache');
   if (c.req.method === 'GET' && !c.res.headers.get('Cache-Control')) c.header('Cache-Control', 'public, max-age=60');
 });
 
@@ -56,7 +68,8 @@ for (const path of ['/api/offers', '/api/platforms']) app.use(path, async (c, ne
   if (c.req.method !== 'GET' || typeof caches === 'undefined') return next();
   // Schema changes must not serve a cached pre-valuation response to the new UI.
   const cacheUrl = new URL(c.req.url);
-  cacheUrl.searchParams.set('__response_schema', 'valuation-v1-apply-window');
+  cacheUrl.searchParams.set('__response_schema', 'identity-canonical-v1');
+  if(path==='/api/offers'){const state=await c.env.DB.prepare('SELECT generation FROM identity_public_state WHERE id=1').first<{generation:number}>();if(!state)return next();cacheUrl.searchParams.set('__canonical_generation',String(state.generation));}
   const key = new Request(cacheUrl, { method: 'GET' });
   const hit = await caches.default.match(key);
   if (hit) return new Response(hit.body, hit);
@@ -115,7 +128,7 @@ app.get('/api/offers', async c => {
   const now = new Date();
   const d = db(c.env);
   const approvedPlatforms = new Set((await d.select({ id: s.platforms.id }).from(s.platforms).where(eq(s.platforms.status, 'approved'))).map(p => p.id));
-  const conds = [eq(s.offers.reviewState, 'approved')];
+  const conds = [eq(s.offers.reviewState, 'approved'),canonicalOffers];
   if (type) conds.push(eq(s.offers.type, type as OfferRow['type']));
   if (platform) conds.push(eq(s.offers.platformId, platform));
   let rows = (await d.select().from(s.offers).where(and(...conds))).filter(o => approvedPlatforms.has(o.platformId)).map(o => withStatus(o, now));
@@ -127,12 +140,13 @@ app.get('/api/offers', async c => {
 
 app.get('/api/offers/:id', async c => {
   const d = db(c.env);
-  const [o] = await d.select().from(s.offers).where(and(eq(s.offers.id, c.req.param('id')), eq(s.offers.reviewState, 'approved')));
+  let route;try{route=await resolveCanonicalOffer(c.env.DB,c.req.param('id'));}catch{return c.json({error:'没有这条羊毛'},404);}
+  const [o] = await d.select().from(s.offers).where(and(eq(s.offers.id, route.offerId), eq(s.offers.reviewState, 'approved'),canonicalOffers));
   if (!o) return c.json({ error: '没有这条羊毛' }, 404);
   const [platform] = await d.select().from(s.platforms).where(eq(s.platforms.id, o.platformId));
   if (platform?.status !== 'approved') return c.json({ error: '没有这条羊毛' }, 404);
   // 修订包含旧的审核文案和人工纠错，完整记录只由管理员接口提供。
-  return c.json({ offer: withStatus(o, new Date()), platform });
+  return c.json({ offer: withStatus(o, new Date()), platform,requestedOfferId:c.req.param('id'),canonicalOfferId:route.offerId });
 });
 
 app.get('/api/platforms', async c => {
@@ -145,7 +159,7 @@ app.get('/api/platforms/:id', async c => {
   const [p] = await d.select().from(s.platforms).where(and(eq(s.platforms.id, c.req.param('id')), eq(s.platforms.status, 'approved')));
   if (!p) return c.json({ error: '没有这个平台' }, 404);
   const now = new Date();
-  const rows = (await d.select().from(s.offers).where(and(eq(s.offers.platformId, p.id), eq(s.offers.reviewState, 'approved')))).map(o => withStatus(o, now));
+  const rows = (await d.select().from(s.offers).where(and(eq(s.offers.platformId, p.id), eq(s.offers.reviewState, 'approved'),canonicalOffers))).map(o => withStatus(o, now));
   return c.json({ platform: p, offers: rows });
 });
 
@@ -153,10 +167,10 @@ const xml = (value: unknown) => String(value ?? '').replace(/[&<>"']/g, char => 
 app.get('/rss.xml', async c => {
   const now = new Date();
   const approvedPlatforms = new Set((await db(c.env).select({ id: s.platforms.id }).from(s.platforms).where(eq(s.platforms.status, 'approved'))).map(p => p.id));
-  const offers = (await db(c.env).select().from(s.offers).where(eq(s.offers.reviewState, 'approved')).orderBy(desc(s.offers.discoveredAt)).limit(100))
+  const offers = (await db(c.env).select().from(s.offers).where(and(eq(s.offers.reviewState, 'approved'),canonicalOffers)).orderBy(desc(s.offers.discoveredAt)).limit(100))
     .filter(offer => approvedPlatforms.has(offer.platformId) && isClaimable(liveStatus(offer, now)));
   const items = offers.map(offer => `<item><title>${xml(offer.title)}</title><link>https://ai-yangmao.com/#offer-${xml(offer.id)}</link><guid isPermaLink="false">${xml(offer.id)}</guid><pubDate>${new Date(offer.discoveredAt).toUTCString()}</pubDate><description>${xml(`${offer.valueText}；领取证据：${offer.evidence.url}`)}</description></item>`).join('');
-  return c.body(`<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>AI 羊毛牧场 · 当前可领</title><link>https://ai-yangmao.com/</link><description>经过审核且仍可领取的 AI 额度与权益</description>${items}</channel></rss>`, 200, { 'Content-Type': 'application/rss+xml; charset=utf-8', 'Cache-Control': 'public, max-age=300', 'X-Robots-Tag': 'noindex' });
+  return c.body(`<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>AI 羊毛牧场 · 当前可领</title><link>https://ai-yangmao.com/</link><description>经过审核且仍可领取的 AI 额度与权益</description>${items}</channel></rss>`, 200, { 'Content-Type': 'application/rss+xml; charset=utf-8', 'Cache-Control': 'no-cache', 'X-Robots-Tag': 'noindex' });
 });
 
 /* ---------- 写入接口（采集管线专用，Bearer 密钥） ---------- */
@@ -168,6 +182,7 @@ ingest.use('*', async (c, next) => {
   await next();
 });
 
+ingest.route('/', identityIngestRoutes);
 ingest.route('/official-reviews', officialReviewRoutes);
 ingest.route('/lead-reviews', leadReviewRoutes);
 
@@ -196,18 +211,24 @@ ingest.post('/offers', async c => {
     const { valuation: _valuation, ...fields } = value as Record<string, unknown>;
     return fields;
   }, offerIn);
-  const body = z.array(extractionIn).max(50).safeParse(await c.req.json().catch(() => null));
+  const rawOffers = await c.req.json().catch(() => null);
+  const body = z.array(extractionIn).max(50).safeParse(rawOffers);
   if (!body.success) return c.json({ error: '数据格式不正确', issues: body.error.issues }, 400);
+  if(c.env.IDENTITY_MODE==='enforce'&&body.data.length>1)return c.json({error:'enforce intake accepts one item per request to stay within the D1 query budget'},400);
   const d = db(c.env);
   const pids = [...new Set(body.data.map(o => o.platformId))];
   const plats = pids.length ? await d.select().from(s.platforms).where(inArray(s.platforms.id, pids)) : [];
   const sids = [...new Set(body.data.map(o => o.sourceId).filter((x): x is string => !!x))];
   const srcs = sids.length ? await d.select().from(s.sources).where(inArray(s.sources.id, sids)) : [];
-  const results = [];
+  const results: Record<string,unknown>[] = [];
+  const legacyProducts=pids.filter(id=>!identitySelected(c.env,id));
+  const mergedProducts=new Set(legacyProducts.length?(await c.env.DB.prepare('SELECT value platformId FROM json_each(?) product WHERE EXISTS(SELECT 1 FROM benefit_entities e WHERE e.platform_id=product.value AND e.routing_generation>0)').bind(JSON.stringify(legacyProducts)).all<{platformId:string}>()).results.map(r=>r.platformId):[]);
   // 硬性去重的比对范围：这些平台下的全部条目（含已拒绝，避免拒掉的换个 ID 又回来）
-  const peers = pids.length ? (await d.select({ id: s.offers.id, platformId: s.offers.platformId, title: s.offers.title, valueText: s.offers.valueText, evidence: s.offers.evidence, tags: s.offers.tags, publishedAt: s.offers.publishedAt, claimStart: s.offers.claimStart, claimEnd: s.offers.claimEnd, sourceTz: s.offers.sourceTz, reviewState: s.offers.reviewState, type:s.offers.type, claimMethod:s.offers.claimMethod, requirements:s.offers.requirements, audience:s.offers.audience, models:s.offers.models, modalities:s.offers.modalities })
-    .from(s.offers)).map(x => ({ ...x, evidenceUrl: x.evidence.url, eventDay: resetEventDay(x) })) : [];
+  const loadPeers = async () => pids.length ? (await d.select({ id: s.offers.id, platformId: s.offers.platformId, title: s.offers.title, valueText: s.offers.valueText, evidence: s.offers.evidence, tags: s.offers.tags, publishedAt: s.offers.publishedAt, claimStart: s.offers.claimStart, claimEnd: s.offers.claimEnd, sourceTz: s.offers.sourceTz, reviewState: s.offers.reviewState, type:s.offers.type, claimMethod:s.offers.claimMethod, requirements:s.offers.requirements, audience:s.offers.audience, models:s.offers.models, modalities:s.offers.modalities })
+    .from(s.offers).where(canonicalOffers)).map(x => ({ ...x, evidenceUrl: x.evidence.url, eventDay: resetEventDay(x) })) : [];
+  let peersCache: Awaited<ReturnType<typeof loadPeers>> | null = null;
   for (const o of body.data) {
+    if(mergedProducts.has(o.platformId)){results.push({id:o.id,error:'identity canonical writes paused; enable the reconciled product enforce path',retryable:true});continue;}
     if(o.leadReviewJobId){
       const [lead]=o.leadId?await d.select().from(s.leads).where(eq(s.leads.id,o.leadId)):[];
       if(!lead||lead.status!=='reviewing'||lead.resolution?.jobId!==o.leadReviewJobId||lead.resolution.status!=='checking'){
@@ -221,6 +242,11 @@ ingest.post('/offers', async c => {
       const mismatch=!lead||!issuer?'原线索或发放平台不存在':leadScopeMismatch(lead,issuer,officialSources,o);
       if(mismatch){results.push({id:o.id,error:mismatch});continue;}
     }
+    try {
+      const adapted=await adaptLegacyOffer(c.env,o,(rawOffers as unknown[])[body.data.indexOf(o)]);
+      if(adapted){results.push(adapted);continue;}
+    } catch(error){results.push({id:o.id,error:(error as Error).message,retryable:true});continue;}
+    const peers=peersCache??(peersCache=await loadPeers());
     const eventDay = resetEventDay(o);
     const sameId = peers.find(x=>x.id===o.id);
     const identity={...o,evidenceUrl:o.evidence.url,eventDay};
@@ -277,7 +303,7 @@ ingest.post('/offers', async c => {
         continue; // Keep manual proposals and verification metadata; the /verify route verifies source health.
       }
     }
-    const { leadId, leadReviewJobId, officialReviewJobId, sameOccurrenceAs, sourceText, valuation: _pipelineValuation, ...od } = o;
+    const { identityFacts: _identityFacts, identityRequestId: _identityRequestId, leadId, leadReviewJobId, officialReviewJobId, sameOccurrenceAs, sourceFetch: _sourceFetch, sourceText, valuation: _pipelineValuation, ...od } = o;
     const row = {
       ...od, usdEstimate: o.usdEstimate ?? null, usdMax: o.usdMax ?? null, valuation: prev?.valuation ?? null, claimStart: o.claimStart ?? null, claimEnd: o.claimEnd ?? null,
       creditValidity: o.creditValidity ?? null, publishedAt: o.publishedAt ?? null, sourceId: o.sourceId ?? null,
@@ -294,19 +320,14 @@ ingest.post('/offers', async c => {
         ...(existingProposal?.manualFields ?? []),
       ]);
       // 人工改过的字段一律保留（2026-10-03）：原先“摘录变了就放开”的例外让模型每次换一句摘录就能改掉管理员确认过的内容。
-      // 官方条款真变了，由日期、类型、门槛、美元、免费模型或额度数字的变化触发提案，管理员再改。
-      const factNumbers = (t: string) => (t.normalize('NFKC').match(/\d[\d,.]*/g) ?? []).map(x => x.replace(/,/g, '')).sort().join('|');
-      const excerptChanged = (['benefit', 'eligibility', 'validity'] as const).some(key => {
-        const before = prev.evidence.excerpts[key]?.replace(/\s+/g, ' ').trim();
-        const after = o.evidence.excerpts[key]?.replace(/\s+/g, ' ').trim();
-        return !!before && !!after && before !== after;
-      });
+      // Grounded replacement of benefit facts can update the proposed wording, even when digits stay the same.
+      const benefitChanged = changedOfficialBenefit(prev.evidence, o.evidence, o.sourceText);
       for (const field of protectedFields) {
         // A proven replacement of official terms needs its new evidence approved with the new facts.
         if (prev.reviewState === 'approved' && field === 'evidence' && !existingProposal?.manualFields.includes(field)
           && changedOfficialTerms(prev.evidence, o.evidence, o.sourceText)) continue;
-        // 唯一例外：官方原文变了、额度里的数字也变了，额度文字可以进提案（仍不直接覆盖）
-        if (prev.reviewState === 'approved' && field === 'valueText' && excerptChanged && factNumbers(o.valueText) !== factNumbers(prev.valueText) && !existingProposal?.manualFields.includes(field)) continue;
+        // Only proven benefit changes may replace an old edit; an active manual proposal always wins.
+        if (prev.reviewState === 'approved' && field === 'valueText' && benefitChanged && !existingProposal?.manualFields.includes(field)) continue;
         if (field in row) (row as Record<string, unknown>)[field] = existingProposal?.manualFields.includes(field)
           ? existingProposal.candidate[field] : (prev as Record<string, unknown>)[field];
       }
@@ -341,8 +362,8 @@ ingest.post('/offers', async c => {
       row.title = prev.title; row.modalities = prev.modalities as typeof row.modalities; row.sourceTz = prev.sourceTz;
       row.claimMethod = prev.claimMethod; row.audience = prev.audience;
       if (prev.publishedAt) row.publishedAt = prev.publishedAt;
-      const numbers = (t: string) => (t.normalize('NFKC').match(/\d[\d,.]*/g) ?? []).map(x => x.replace(/,/g, '')).sort().join('|');
-      if (numbers(row.valueText) === numbers(prev.valueText)) row.valueText = prev.valueText;
+      // Equal digits do not mean equal benefits (100/day and 100/month differ).
+      if (!changedOfficialBenefit(prev.evidence, o.evidence, o.sourceText)) row.valueText = prev.valueText;
       row.sourceId = prev.sourceId;
       // 新提案也不能因模型漏摘录丢掉已审核证据。
       if (row.evidence.url === prev.evidence.url) {
@@ -419,7 +440,13 @@ ingest.post('/offers', async c => {
     if (existingProposal) await d.delete(s.offerProposals).where(and(eq(s.offerProposals.offerId, o.id),eq(s.offerProposals.updatedAt,existingProposal.updatedAt)));
     results.push({ id: o.id, changed: diff.map(x => x.field), reviewState, missingEvidence: missing });
   }
-  return c.json({ results });
+  const leadReconcilePending:number[]=[];
+  for(const leadId of new Set(body.data.flatMap(o=>o.leadId?[o.leadId]:[]))){
+    const failed=body.data.some((o,i)=>o.leadId===leadId&&'error' in results[i]);
+    if(results.some(r=>r.pendingResolution)){leadReconcilePending.push(leadId);continue;}
+    try {await aggregateIdentityLead(c.env.DB,leadId,failed);}catch(error){if(!(error instanceof IdentityQueryBudgetError))throw error;leadReconcilePending.push(leadId);}
+  }
+  return c.json({ results,leadReconcilePending });
 });
 
 /** 管线取待抓的信源，附带上次的内容哈希，用于判断有没有变化。 */
@@ -441,8 +468,8 @@ ingest.get('/verification-queue', async c => {
   const forced = c.req.query('force') === '1';
   const d = db(c.env);
   const approved = sourceId
-    ? and(eq(s.offers.reviewState, 'approved'), eq(s.offers.sourceId, sourceId))
-    : eq(s.offers.reviewState, 'approved');
+    ? and(eq(s.offers.reviewState, 'approved'), eq(s.offers.sourceId, sourceId),canonicalOffers)
+    : and(eq(s.offers.reviewState, 'approved'),canonicalOffers);
   const rows = await d.select().from(s.offers).where(approved);
   // Use a subquery: binding every approved ID exceeds D1's 100-parameter limit as the catalogue grows.
   const proposals = rows.length ? await d.select().from(s.offerProposals).where(inArray(s.offerProposals.offerId,
@@ -464,7 +491,7 @@ ingest.post('/verify', async c => {
     trustedDirect: z.boolean().optional(), pageHash: z.string().regex(/^[a-f0-9]{64}$/).optional(), processedChange: z.boolean().optional() }).safeParse(await c.req.json().catch(() => null));
   if (!body.success) return c.json({ error: '核验数据不正确', issues: body.error.issues }, 400);
   const d = db(c.env);
-  const [o] = await d.select().from(s.offers).where(eq(s.offers.id, body.data.offerId));
+  const [o] = await d.select().from(s.offers).where(and(eq(s.offers.id, body.data.offerId),canonicalOffers));
   if (!o || o.reviewState !== 'approved' || o.evidence.url !== body.data.url) return c.json({ error: '证据或活动不匹配' }, 404);
   if (body.data.trustedDirect !== true) return c.json({ verified: false, sourceUnverified: true });
   const currentVersion = and(eq(s.offers.id,o.id),eq(s.offers.updatedAt,o.updatedAt),eq(s.offers.reviewState,'approved'));
@@ -531,7 +558,11 @@ ingest.post('/leads/:id/status', async c => {
   if (!b.success) return c.json({ error: '数据格式不正确' }, 400);
   const [lead] = await db(c.env).select().from(s.leads).where(eq(s.leads.id, Number(c.req.param('id'))));
   if (!lead) return c.json({ error: '没有这条线索' }, 404);
+  const identity=await aggregateIdentityLead(c.env.DB,lead.id,b.data.status==='reviewing');
+  if(identity)return c.json({ok:true,identityHandled:true,...identity});
   if(lead.status!=='new')return c.json({error:'线索状态已变化，请使用线索复核结果接口'},409);
+  const originOfferId=b.data.offerId;
+  if(b.data.offerId)b.data.offerId=(await resolveCanonicalOffer(c.env.DB,b.data.offerId)).offerId;
   if (b.data.status === 'linked') {
     if (!b.data.offerId) return c.json({ error: '已关联必须提供已入库条目' }, 400);
     const [saved] = await db(c.env).select().from(s.offers).where(eq(s.offers.id, b.data.offerId));
@@ -542,7 +573,8 @@ ingest.post('/leads/:id/status', async c => {
     if(mismatch)return c.json({error:mismatch},400);
   }
   const raw = b.data.note ? `${lead.raw ?? ''}\n[研判] ${b.data.note}`.slice(-20000) : lead.raw;
-  await db(c.env).update(s.leads).set({ status: b.data.status, resolution:null, offerId: b.data.offerId ?? lead.offerId, raw }).where(and(eq(s.leads.id, lead.id),eq(s.leads.status,'new')));
+  const resolution=b.data.status==='linked'&&b.data.offerId?{status:'linked' as const,jobId:'legacy-link-'+crypto.randomUUID(),attempts:0,inconclusive:0,checkedAt:new Date().toISOString(),nextAttemptAt:null,reason:b.data.note??'已关联现有活动',queries:[],candidates:[],offerIds:[b.data.offerId],originOfferIds:originOfferId?[originOfferId]:[]}:null;
+  await db(c.env).update(s.leads).set({ status: b.data.status, resolution, offerId: b.data.offerId ?? lead.offerId, raw }).where(and(eq(s.leads.id, lead.id),eq(s.leads.status,'new')));
   return c.json({ ok: true });
 });
 
@@ -575,11 +607,16 @@ ingest.get('/corrections', async c => {
   return c.json({ corrections: items.slice(0, limit).map(x => x.line), total: items.length });
 });
 
-/** 所有尚未拒绝的条目索引；常驻福利不能在第 61 天从判重范围消失。 */
+/** Private compatibility index; rejected history and incomplete pages are explicit. */
 ingest.get('/offers-index', async c => {
-  const rows = await db(c.env).select({ id: s.offers.id, platformId: s.offers.platformId, title: s.offers.title, valueText: s.offers.valueText, claimStart:s.offers.claimStart, publishedAt:s.offers.publishedAt, tags:s.offers.tags, evidenceUrl:sql<string>`json_extract(${s.offers.evidence}, '$.url')` })
-    .from(s.offers).where(inArray(s.offers.reviewState, ['pending', 'approved']));
-  return c.json({ offers: rows });
+  const input=z.object({cursor:z.string().max(200).optional(),product:z.string().max(200).optional()}).safeParse(c.req.query());
+  if(!input.success)return c.json({error:'invalid index cursor'},400);
+  const {cursor,product}=input.data;
+  const rows=await c.env.DB.prepare(`SELECT o.id,o.platform_id AS platformId,o.title,o.value_text AS valueText,o.claim_start AS claimStart,o.published_at AS publishedAt,o.tags,o.review_state AS reviewState,json_extract(o.evidence,'$.url') AS evidenceUrl,
+    (SELECT d.scope_json FROM benefit_entities e JOIN review_decisions d ON d.entity_id=e.id WHERE e.canonical_offer_id=o.id AND d.action='reject' ORDER BY d.created_at DESC LIMIT 1) AS rejectionScope
+    FROM offers o WHERE o.id>? AND (? IS NULL OR o.platform_id=?) ORDER BY o.id LIMIT 251`).bind(cursor??'',product??null,product??null).all<Record<string,unknown>>();
+  const visible=rows.results.slice(0,250);
+  return c.json({offers:visible.map(row=>({...row,tags:JSON.parse(String(row.tags)),rejectionScope:row.rejectionScope?JSON.parse(String(row.rejectionScope)):null})),complete:rows.results.length<=250,nextCursor:rows.results.length>250?String(visible.at(-1)!.id):null});
 });
 
 /** 模型预算：今日 token、本月费用。 */

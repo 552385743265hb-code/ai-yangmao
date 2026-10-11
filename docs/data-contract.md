@@ -125,3 +125,16 @@
 - 新增标签：`TAGS`（spec.ts）、`offerIn` 枚举、审批表单 `TAG_L`、抽取提示词，四处一起改。
 
 线索处理过程另存于`leads.resolution`，不混进公开权益。`reviewing`会自动官方复核；技术受阻带下次重试，无法裁决转可操作审核任务，linked/rejected保留原因和关联。`leadReviewJobId`为入库传输控制，禁止自动上架，不能把相同生成ID当成同一活动。
+
+## 六、持久身份与历史路由（分支合同）
+
+第二、第三阶段的正式模型见 [主规格与补充](specs/dedupe-identity-2026-10-10/README.md)。本节描述已实现但尚未上线的分支，不改变当前线上状态。原有启发式作为召回特征；产品、独立领取机制、模型/池/轮次冲突与人工 different 是统一服务的先决约束，不能由标题、金额或模型 sameAs 绕过。
+
+- 原始观察、抽取候选、活动实体、条款版本、审核决定和任务分别持久化；unknown 不等于零或没有限制。Evidence 原文保持原语言，公开字段只写权益与条件。
+- business revision 管业务竞争，task revision 管 CAS/租约，material revision 管实质审核提醒，publication revision 管每次批准；lastSeen 与重复来源不推进审核提醒。A→B→A 恢复政策仍须一次新批准。
+- 拒绝按 candidate/version/机制/别名等受控 scope 继承，保留原理由及证据；补足指定缺项或独立新轮次只可按规则进入待审，不自动发布。人工字段与决定不得由新抽取覆盖。
+- offers/proposals 保持兼容投影，当前批准版本直到明确批准前不变。每次任务操作需要当前版本；stale 卡片或跨实体 version/decision 返回冲突，不能因 ID 存在就接受。
+- 历史 offer 先独立回填，合并另需精确计划与显式主记录理由。逻辑合并保留原行、审核和送达 payload，通过 canonical 路由统一列表、统计、详情、旧 hash 与通知。未回填产品仍保留旧公开记录。
+- pending/unknown 送达阻断相关重发；只有证明版本/轮次对应时继承 sent，不能伪造送达记录。撤销追加审计；新增证据、审核或发送引起冲突时保留新数据供人工处理。
+
+现场效果须由冻结的人工标注脱敏语料与真实授权环境另验；合成 fixture 成绩不能当作线上 precision/recall。

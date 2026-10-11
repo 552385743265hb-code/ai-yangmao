@@ -1,3 +1,8 @@
+import {fetchedSource} from './fetch-evidence';
+import type {FetchedPage} from './lib';
+import { resumeIdentityIntake } from './identity-workflow';
+import { postIdentityOffers } from './identity-client';
+import { captureIdentityShadow } from './identity-shadow';
 import {platformMentioned,leadScopeMismatch} from '../src/shared/lead-scope';
 import {runLeadReviews} from './lead-review';
 import { toOffer } from './offer-draft';
@@ -52,16 +57,16 @@ async function postLeads(leads: LeadIn[]) {
  * 付费的 DeepSeek 只在这个信源已经被推迟过至少一次（卡了 12 小时以上）、且本月费用没到上限时才用。
  */
 let extractionQueue: Promise<void> = Promise.resolve();
-async function extractAndPost(src: Source, url: string, text: string, sourceText?: string): Promise<boolean> {
+async function extractAndPost(src: Source, url: string, text: string, sourceText?: string, fetchedPage?:FetchedPage): Promise<boolean> {
   const prior = extractionQueue;
   let release!: () => void;
   extractionQueue = new Promise<void>(resolve => { release = resolve; });
   await prior;
-  try { return await extractAndPostUnlocked(src, url, text, sourceText); }
+  try { return await extractAndPostUnlocked(src, url, text, sourceText,fetchedPage); }
   finally { release(); }
 }
 
-async function extractAndPostUnlocked(src: Source, url: string, text: string, sourceText?: string): Promise<boolean> {
+async function extractAndPostUnlocked(src: Source, url: string, text: string, sourceText?: string, fetchedPage?:FetchedPage): Promise<boolean> {
   if (needsWrapUp()) { stats.deferred++; src.deferThisRun = true; return false; }
   if (!llmAvailable()) { stats.extractSkipped++; log('  没有配置模型 key，跳过抽取'); return false; }
   const estimate = Math.ceil(text.length / 2) + 1500;
@@ -85,13 +90,19 @@ async function extractAndPostUnlocked(src: Source, url: string, text: string, so
   tokensLeft -= r.tokens; stats.tokens += r.tokens; costLeft -= r.costCny; stats.costCny += r.costCny;
   if (r.costCny) log(`  动用付费兜底，花费 ¥${r.costCny.toFixed(4)}（本月剩 ¥${costLeft.toFixed(2)}）`);
   log(`  ${r.provider} 抽出 ${r.offers.length} 条，用 ${r.tokens} tokens`);
+  if (!DRY) {
+    try {
+      const captured=fetchedSource(fetchedPage);
+      await captureIdentityShadow({url,text:captured.sourceText??sourceText??text,sourceFetch:captured.sourceFetch,sourceId:src.id,candidates:r.offers.map(e=>toOffer(src,e,url,text,fetchedPage)),extractionComplete:true});
+    } catch { stats.errors.push(`${src.id}: identity shadow capture deferred`); }
+  }
   if (!r.offers.length) return true;
   // 逐条校验：不合格的只丢这一条，并记下原因
   const offers: OfferIn[] = [];
   const seenInPage = new Map<string, number>();
   let invalidCount = 0;
   for (const e of r.offers) {
-    const v = offerIn.safeParse({...toOffer(src, e, url, text), sourceText:sourceText && sourceText.length<=250000 ? sourceText : undefined});
+    const v = offerIn.safeParse({...toOffer(src,e,url,text,fetchedPage),...(!fetchedPage&&sourceText?{sourceText:sourceText.slice(0,250000)}:{})});
     if (v.success) {
       const candidate = v.data;
       const identity = [candidate.platformId, candidate.type, candidate.claimMethod, norm(candidate.title), norm(candidate.valueText), candidate.claimStart, candidate.claimEnd].join('|');
@@ -103,7 +114,7 @@ async function extractAndPostUnlocked(src: Source, url: string, text: string, so
   }
   if (!offers.length) return false; // 原文里有候选但全部校验失败，不能把页面标记为已处理
   if (DRY) { offers.forEach(o => log('  羊毛', o.id, o.title, `类型=${o.type} 对象=${o.audience} 门槛=${o.requirements.join(',')} 额度=${o.valueText}`)); stats.offers += offers.length; return true; }
-  const res = await api<{ results: { id: string; error?: string; reviewState?: string; unchanged?: boolean }[] }>('/offers', offers);
+  const res = await postIdentityOffers(offers);
   let hasWriteError = false;
   for (const x of res.results) {
     if (x.error) stats.errors.push(`${x.id}: ${x.error}`);
@@ -118,18 +129,20 @@ async function extractAndPostUnlocked(src: Source, url: string, text: string, so
       }
     }
   }
-  return !hasWriteError && invalidCount === 0;
+  const durable=res.results.every(r=>!r.error||r.intakePersisted===true);
+  if(hasWriteError&&durable)stats.deferred++;
+  return (!hasWriteError||durable) && invalidCount === 0;
 }
 
 async function officialPage(src: Source) {
-  const { text, via, finalUrl } = await fetchPage(src.url);
+  const fetchedPage=await fetchPage(src.url);const {text,via,finalUrl}=fetchedPage;
   const rel = relevantText(text);
   const hash = sha256(rel);
   if (hash === src.lastHash && !FORCE) { await report(src, true); log(`  无变化（${via}）`); return; }
   stats.changed++;
   log(`  有变化（${via}，相关文本 ${rel.length} 字）`);
   const extractionSource = via === 'jina' ? { ...src, tier: 'media', autoPublish: false } : src;
-  const done = rel.length ? await extractAndPost(extractionSource, finalUrl, rel, text) : true;
+  const done = rel.length ? await extractAndPost(extractionSource,finalUrl,rel,text,fetchedPage) : true;
   if (!done) src.deferThisRun = true;
   if (!DRY) {
     const { offers } = await api<{ offers: { id: string; url: string }[] }>(`/verification-queue?sourceId=${encodeURIComponent(src.id)}&force=1`);
@@ -164,10 +177,10 @@ async function officialFeed(src: Source) {
     if (completedThisRun >= 5 || needsWrapUp()) break;
     stats.changed++;
     try {
-      const { text, via, finalUrl } = await fetchPage(it.link, { timeoutMs: 10000, tries: 1 });
+      const fetchedPage=await fetchPage(it.link,{timeoutMs:10000,tries:1});const {text,via,finalUrl}=fetchedPage;
       const rel = relevantText(text);
       log(`  新文章：${it.title}（相关文本 ${rel.length} 字）`);
-      if (!rel.length || await extractAndPost(via === 'jina' ? { ...src, tier: 'media', autoPublish: false } : src, finalUrl, rel, text)) {
+      if (!rel.length || await extractAndPost(via === 'jina' ? { ...src, tier: 'media', autoPublish: false } : src,finalUrl,rel,text,fetchedPage)) {
         prev.add(it.link); completedThisRun++;
       }
     } catch (error) {
@@ -210,7 +223,7 @@ async function verifyExistingOffers(sources: Source[]) {
     if (needsWrapUp()) { stats.verificationDeferred += offers.length - offers.indexOf(offer); break; }
     stats.verificationChecked++;
     try {
-      const { text, via, finalUrl } = await fetchPage(offer.url);
+      const fetchedPage=await fetchPage(offer.url);const {text,via,finalUrl}=fetchedPage;
       const relevant = relevantText(text), currentHash = sha256(relevant);
       let processedChange = offer.pageHash === currentHash || offer.proposalHash === currentHash;
       if (!processedChange && relevant) {
@@ -218,7 +231,7 @@ async function verifyExistingOffers(sources: Source[]) {
           id: '', kind: 'manual', url: offer.url, tier: offer.tier, platformId: offer.platformId, lastHash: null,
           platform: { id: offer.platformId, name: offer.platformId, status: 'approved' }, autoPublish: false,
         } as Source;
-        processedChange = await extractAndPost(via === 'jina' ? { ...source, tier: 'media', autoPublish: false } : source, finalUrl, relevant, text);
+        processedChange = await extractAndPost(via === 'jina' ? { ...source, tier: 'media', autoPublish: false } : source,finalUrl,relevant,text,fetchedPage);
       }
       const result = DRY ? { verified: false } : await api<{ verified: boolean }>('/verify', { offerId: offer.id, url: offer.url, finalUrl, text, trustedDirect: via !== 'jina', pageHash: currentHash, processedChange });
       if (!result.verified && !DRY) { stats.verificationFailed++; stats.errors.push(`${offer.id}: 当前官方证据无法再次确认`); }
@@ -229,14 +242,25 @@ async function verifyExistingOffers(sources: Source[]) {
   }
 }
 
-interface IndexedOffer { id: string; platformId: string; title: string; valueText: string; claimStart?: string | null; publishedAt?: string | null; tags?: string[]; evidenceUrl?: string }
+interface IndexedOffer { reviewState?:string; rejectionScope?:unknown; id: string; platformId: string; title: string; valueText: string; claimStart?: string | null; publishedAt?: string | null; tags?: string[]; evidenceUrl?: string }
 const indexEntry = (offer: OfferIn): IndexedOffer => ({ id: offer.id, platformId: offer.platformId, title: offer.title, valueText: offer.valueText,
   claimStart: offer.claimStart, publishedAt: offer.publishedAt, tags: offer.tags, evidenceUrl: offer.evidence.url });
-const formatOfferIndex = (offers: IndexedOffer[]) => offers.map(offer => `${offer.id}｜${offer.title}｜${offer.valueText.slice(0, 40)}｜开始:${offer.claimStart ?? '未知'}${offer.tags?.includes('reset') ? `｜发布:${offer.publishedAt ?? '未知'}｜证据:${offer.evidenceUrl ?? '未知'}` : ''}`).join('\n');
+const formatOfferIndex = (offers: IndexedOffer[]) => offers.map(offer => `${offer.id}｜${offer.title}｜${offer.valueText.slice(0, 40)}｜审核:${offer.reviewState??'unknown'}${offer.rejectionScope?'｜拒绝范围:'+JSON.stringify(offer.rejectionScope):''}｜开始:${offer.claimStart ?? '未知'}${offer.tags?.includes('reset') ? `｜发布:${offer.publishedAt ?? '未知'}｜证据:${offer.evidenceUrl ?? '未知'}` : ''}`).join('\n');
 let idxCache: IndexedOffer[] | null = null;
 async function offerIndex() {
-  if (!idxCache) { try { idxCache = (await api<{ offers: IndexedOffer[] }>('/offers-index')).offers; } catch { idxCache = []; } }
-  return idxCache;
+  if(idxCache)return idxCache;
+  const all:IndexedOffer[]=[],seen=new Set<string>();let cursor:string|null=null;
+  for(let page=0;page<8;page++) {
+    let response:{offers:IndexedOffer[];nextCursor?:string|null;complete?:boolean};
+    try {response=await api('/offers-index'+(cursor?'?cursor='+encodeURIComponent(cursor):''));}
+    catch {throw new DeferError('identity index unavailable; extraction deferred');}
+    if(!Array.isArray(response.offers))throw new DeferError('invalid identity index response');
+    all.push(...response.offers);
+    if(!response.nextCursor&&response.complete!==false){idxCache=all;return all;}
+    if(!response.nextCursor||seen.has(response.nextCursor))throw new DeferError('identity index pagination incomplete');
+    cursor=response.nextCursor;seen.add(cursor);
+  }
+  throw new DeferError('identity index exceeds bounded compatibility scan');
 }
 
 /* ---------- 第一层反馈：抽取时附上管理员最近的纠正 ---------- */
@@ -268,7 +292,7 @@ async function triageLeads(plats: Plat[]) {
     const t = text.toLowerCase();
     return plats.filter(p => platformMentioned(t,p)).map(p => p.id).slice(0, 6);
   };
-  const { offers: known } = await api<{ offers: IndexedOffer[] }>('/offers-index');
+  const known = [...await offerIndex()];
   const knownIds = new Set(known.map(k => k.id));
   let existing = formatOfferIndex(known);
   const pmap = new Map(plats.map(p => [p.id, p]));
@@ -284,9 +308,9 @@ async function triageLeads(plats: Plat[]) {
     let evidenceText = l.raw ?? '';
     let text = `线索标题（转述，仅用于定位）：${l.title ?? ''}\n${evidenceText}`;
     let fetched = false;
-    let effectiveUrl = l.url, indirect = false;
+    let effectiveUrl = l.url, indirect = false;let fetchedPage:FetchedPage|undefined;
     try {
-      const pg = await fetchPage(l.url, { timeoutMs: 10000, tries: 1 });
+      const pg = await fetchPage(l.url, { timeoutMs: 10000, tries: 1 });fetchedPage=pg;
       evidenceText = pg.text.slice(0, 14000);
       text = `线索标题（转述，仅用于定位）：${l.title ?? ''}\n${evidenceText}`;
       effectiveUrl = pg.finalUrl; indirect = pg.via === 'jina'; fetched = true;
@@ -316,8 +340,7 @@ async function triageLeads(plats: Plat[]) {
       const p = findPlat(e.platformId);
       if (!p) { unknown.push(e.title); continue; }
       const tier = !fetched || indirect ? 'media' : tierOf(effectiveUrl, p);
-      const o = toOffer({ id: `lead-${l.origin}`, kind: l.origin, platformId: p.id, tier } as unknown as Source, e, effectiveUrl, relevantText(evidenceText));
-      o.sourceText = !indirect && fetched && evidenceText.length<=250000 ? evidenceText : undefined;
+      const o = toOffer({ id: `lead-${l.origin}`, kind: l.origin, platformId: p.id, tier } as unknown as Source, e,effectiveUrl,relevantText(evidenceText),fetchedPage);
       o.evidence.tier = tier; o.leadId = l.id; o.sourceId = undefined; o.firstChannel = l.origin;
       // 同一个活动：沿用已有条目的 id（写入接口会按修订处理，不会新开一条）
       if (e.sameAs && knownIds.has(e.sameAs)) {
@@ -333,7 +356,7 @@ async function triageLeads(plats: Plat[]) {
     if (DRY) { log(`  #${l.id} ${l.title?.slice(0, 40)} → ${valid.map(v => `${v.platformId}:${v.title}`).join('、') || '无'}${unknown.length ? `；白名单外：${unknown.join('、')}` : ''}`); continue; }
     if (valid.length) {
       let res;
-      try { res = await api<{ results: { id: string; error?: string; skipped?: string; unchanged?: boolean }[] }>('/offers', valid); }
+      try { res = await postIdentityOffers(valid); }
       catch (e) {
         stats.errors.push(`线索 #${l.id} 入库失败`);
         await api(`/leads/${l.id}/status`, { status: 'reviewing', note: `入库失败，需人工处理：${(e as Error).message.slice(0,350)}` });
@@ -354,7 +377,12 @@ async function triageLeads(plats: Plat[]) {
       }
       existing = formatOfferIndex(known);
       log(`  #${l.id} → ${valid.map(v => v.title).join('、')}`);
-      const saved = res.results.filter(x => !x.error && !('skipped' in x));
+      // A known duplicate is a resolved candidate, not a failed write. Keep unknown skips/errors retryable.
+      const saved = res.results.flatMap(x => {
+        if (x.error) return [];
+        if (x.duplicateId) return [{ ...x, id: x.duplicateId }];
+        return 'skipped' in x ? [] : [x];
+      });
       if (!saved.length || saved.length < valid.length || invalidCount || unknown.length) {
         await api(`/leads/${l.id}/status`, { status: 'reviewing', note: '部分或全部条目未成功入库，需人工处理：' + res.results.map(x => x.error ?? ('skipped' in x ? String(x.skipped) : x.id)).join('；').slice(0, 350) });
       } else {
@@ -415,6 +443,7 @@ export async function runPipeline() {
       stats.errors.push(`读取复核队列失败：${(error as Error).message}`);
     }
   }
+  try {const identity=await resumeIdentityIntake(Math.min(deadline,Date.now()+90000));Object.assign(stats,{identity});stats.deferred+=identity.deferred;if(identity.status==='not_evaluated')stats.errors.push('身份维护未评估：'+identity.reason);}catch{stats.deferred++;stats.errors.push('身份候选重试暂不可用');}
   stats.coverageDegraded = stats.deferred > 0 || stats.extractSkipped > 0 || stats.failed > 0 || stats.verificationFailed > 0
     || stats.verificationDeferred > 0 || stats.errors.length > 0 || list.some(source => source.deferThisRun);
   const ok = (FAST || !only) && stats.sources > 0 && stats.ok === stats.sources && !stats.coverageDegraded;
