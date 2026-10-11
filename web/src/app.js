@@ -186,6 +186,8 @@ function money(u) {
 const VALUE_METHOD = { face_value: '官方面额', official_price: '官方价格折算', scenario: '用量估算', none: '暂无可靠价格' };
 const VALUE_STATUS = { beta_unpriced: '公测免费 · 价值待定', unpriceable: '免费权益 · 暂无法折算', needs_judgment: '估值待核实' };
 const VALUE_GROUPS = [['official', '官方口径', 0], ['scenario', '用量估算', 3]];
+// Present existing valuation records in plain Chinese without changing their inputs.
+const valuationText = text => String(text ?? '').replace(/(?:首|前)\s*30\s*天/g, '一个月');
 const validAmount = n => typeof n === 'number' && Number.isFinite(n) && n >= 0 ? n : null;
 const valuationOf = o => o?.valuation?.version === 'v1' ? o.valuation : null;
 const isPriced = o => { const v = valuationOf(o); return !!v && ['priced', 'provisional'].includes(v.status) && ['face_value', 'official_price', 'scenario'].includes(v.method); };
@@ -205,18 +207,18 @@ function valueSummary(list) {
 const coverageText = s => `已计价 ${s.priced}/${s.total} 条${s.unknown ? ` · ${s.unknown} 条价值待定` : ''}${s.legacy ? `（含 ${s.legacy} 条尚未重估）` : ''}`;
 const summaryAmount = (s, group) => s[group + 'N'] ? `${group === 'scenario' ? '≈ ' : ''}${money(s[group])}` : '暂无已计价金额';
 const summaryText = s => `官方口径 ${summaryAmount(s, 'official')} · 用量估算 ${summaryAmount(s, 'scenario')} · ${coverageText(s)}`;
-const summaryHtml = list => { const s = valueSummary(list); return `<div class="valuation-summary"><span>官方口径 <b>${summaryAmount(s, 'official')}</b></span><span>用量估算 <b>${summaryAmount(s, 'scenario')}</b></span><small>${coverageText(s)} · 均为领取后首 30 天参考值，申请制另列</small></div>`; };
+const summaryHtml = list => { const s = valueSummary(list); return `<div class="valuation-summary"><span>官方口径 <b>${summaryAmount(s, 'official')}</b></span><span>用量估算 <b>${summaryAmount(s, 'scenario')}</b></span><small>${coverageText(s)} · 统一按一个月比较，申请制另列</small></div>`; };
 function valuePeriod(o) {
   const v = valuationOf(o);
   if (!v) return '旧值 · 周期待重估';
   if (o.ty === 'apply') return '完整申请权益上限';
-  return { one_time: '一次性 · 首 30 天', monthly: '每月刷新 · 首 30 天', first30: '首 30 天', apply_max: '最高可申请' }[v.period] || '首 30 天';
+  return { one_time: '一次性 · 月度参考', monthly: '每月刷新 · 月度参考', first30: '月度参考', apply_max: '最高可申请' }[v.period] || '月度参考';
 }
 function valueTag(o) {
   const v = valuationOf(o), method = v ? VALUE_METHOD[v.method] : '旧值未重估';
   return `<span class="value-tag ${valueGroup(o) || 'unknown'}">${esc(method)}${v?.status === 'provisional' ? ' · 暂定' : ''}</span>`;
 }
-const valueAssumption = o => { const v = valuationOf(o); return (v?.assumptions || []).find(x => /期限|持续|截止|覆盖|\d+\s*天|duration|days?/i.test(x)) || v?.assumptions?.[0] || (v?.coverage?.days ? `估值覆盖 ${v.coverage.days} 天` : ''); };
+const valueAssumption = o => { const v = valuationOf(o); return valuationText((v?.assumptions || []).find(x => /期限|持续|截止|覆盖|\d+\s*天|duration|days?/i.test(x)) || v?.assumptions?.[0] || (v?.coverage?.days ? `估值覆盖 ${v.coverage.days} 天` : '')); };
 function valLabel(o) {
   const v = valuationOf(o), amount = o.ty === 'apply' ? applyMaximum(o) : valueNumber(o), old = validAmount(o.usd);
   if (amount == null) {
@@ -234,24 +236,24 @@ function valuationAlternatives(o) {
   return list.filter(x => x && typeof x.model === 'string' && x.model.trim() && validAmount(x.amount) != null && typeof x.formula === 'string' && x.formula.trim());
 }
 function detailValueLabel(o, alternative) {
-  return alternative ? `≈ ${money(alternative.amount)}<small>首 30 天 · 使用方案</small><span class="value-tag scenario">用量估算 · 另一个使用方案</span>` : valLabel(o);
+  return alternative ? `≈ ${money(alternative.amount)}<small>月度参考 · 使用方案</small><span class="value-tag scenario">用量估算 · 另一个使用方案</span>` : valLabel(o);
 }
 function valuationBlock(o) {
   const v = valuationOf(o);
   if (!v) return `<div class="card" data-valuation><h3>估值说明</h3><p class="sub">旧参考金额尚未按 V1 重估，比较周期与依据待确认；不计入美元排行和汇总。</p></div>`;
   const alternatives = valuationAlternatives(o);
   const inputs = Object.entries(v.inputs || {}).filter(([key]) => key !== 'alternatives'), sources = (v.sources || []).filter(s => { try { return ['https:', 'http:'].includes(new URL(s.url).protocol); } catch { return false; } });
-  const text = x => typeof x === 'object' && x !== null ? JSON.stringify(x) : String(x ?? '未公布');
-  const labels = { scenario: '场景', usageVersion: '用量基准版本', inputTokens: '输入 Token', outputTokens: '输出 Token', inputPrice: '输入单价', outputPrice: '输出单价', unitPrice: '单位价格', quantity: '数量', unit: '单位', currency: '币种', coverageDays: '覆盖天数', packagePrice: '套餐价格', packageUnits: '套餐额度', officialMonthlyPrice: '官方月价', first30Max: '首 30 天参考上限', fullApplyMax: '完整申请权益上限', model: '模型', specification: '规格', resolution: '分辨率', quality: '质量', mode: '模式', priceUnit: '计费单位', priceApplicableAt: '价格适用时间', recipientCount: '领取人数', sharedPool: '共享额度', limits: '适用限制' };
+  const text = x => valuationText(typeof x === 'object' && x !== null ? JSON.stringify(x) : String(x ?? '未公布'));
+  const labels = { scenario: '场景', usageVersion: '用量基准版本', inputTokens: '输入 Token', outputTokens: '输出 Token', inputPrice: '输入单价', outputPrice: '输出单价', unitPrice: '单位价格', quantity: '数量', unit: '单位', currency: '币种', coverageDays: '覆盖天数', packagePrice: '套餐价格', packageUnits: '套餐额度', officialMonthlyPrice: '官方月价', first30Max: '月度参考上限', fullApplyMax: '完整申请权益上限', model: '模型', specification: '规格', resolution: '分辨率', quality: '质量', mode: '模式', priceUnit: '计费单位', priceApplicableAt: '价格适用时间', recipientCount: '领取人数', sharedPool: '共享额度', limits: '适用限制' };
   return `<div class="card" data-valuation><h3>估值说明</h3><p class="sub">${valueTag(o)} ${esc(valuePeriod(o))} · V1${v.reviewedAt ? ` · 核价 ${esc(v.reviewedAt.slice(0, 10))}` : ''}<br>参考购买成本，不代表现金或已实际节省的费用。</p>
-    ${o.ty === 'apply' ? `<div class="valuation-summary" data-apply-values><span>首 30 天参考上限 <b>${applyFirst30Maximum(o) == null ? '价值待定' : `${v.method === 'scenario' ? '≈ ' : ''}${money(applyFirst30Maximum(o))}`}</b></span><span>完整申请权益上限 <b>${applyMaximum(o) == null ? '价值待定' : money(applyMaximum(o))}</b></span><small>权益期限：${esc(o.val || '以官方计划为准')}。完整上限覆盖整个计划，各计划期限不同；最高可申请不代表保证获批${v.usdEstimate == null ? '，没有保证可得的下限' : ''}。</small></div>` : ''}
+    ${o.ty === 'apply' ? `<div class="valuation-summary" data-apply-values><span>月度参考上限 <b>${applyFirst30Maximum(o) == null ? '价值待定' : `${v.method === 'scenario' ? '≈ ' : ''}${money(applyFirst30Maximum(o))}`}</b></span><span>完整申请权益上限 <b>${applyMaximum(o) == null ? '价值待定' : money(applyMaximum(o))}</b></span><small>权益期限：${esc(o.val || '以官方计划为准')}。完整上限覆盖整个计划，各计划期限不同；最高可申请不代表保证获批${v.usdEstimate == null ? '，没有保证可得的下限' : ''}。</small></div>` : ''}
     ${v.baselineModel ? `<p class="small">基准模型：<b>${esc(v.baselineModel)}</b></p>` : ''}
     ${alternatives.length ? `<label class="field" for="valueModel">选择模型使用方案<select id="valueModel"><option value="default" selected>${esc(v.baselineModel || '默认估值')} · 默认基准</option>${alternatives.map((x, i) => x.model === v.baselineModel ? '' : `<option value="${i}">${esc(x.model)} · ≈ ${money(x.amount)}</option>`).join('')}</select></label><p class="small muted" data-model-note role="status">当前为默认基准。其他模型是另一个使用方案；金额已按此活动的覆盖期与配额计算。全站排序、汇总和领取记录使用默认估值。</p>` : ''}
     ${v.coverage ? `<p class="small">计价模型 ${v.coverage.pricedModels}/${v.coverage.totalModels}${v.coverage.days ? ` · 覆盖 ${v.coverage.days} 天` : ''}${v.coverage.pricedModels < v.coverage.totalModels ? ' · 部分模型缺价，金额为暂定值' : ''}</p>` : ''}
-    ${v.formula ? `<div class="value-formula" data-detail-formula>${esc(v.formula)}</div>` : `<p class="small">${esc(VALUE_STATUS[v.status] || '暂无可靠价格')}</p>`}
-    ${validAmount(v.fullValue) != null ? `<p class="small">完整权益参考值：${money(v.fullValue)}（独立展示，不叠加首 30 天值）</p>` : ''}
+    ${v.formula ? `<div class="value-formula" data-detail-formula>${esc(valuationText(v.formula))}</div>` : `<p class="small">${esc(VALUE_STATUS[v.status] || '暂无可靠价格')}</p>`}
+    ${validAmount(v.fullValue) != null ? `<p class="small">完整权益参考值：${money(v.fullValue)}（独立展示，不叠加月度参考价值）</p>` : ''}
     ${inputs.length ? `<details><summary>计算输入与限制</summary><dl class="value-inputs">${inputs.map(([key, val]) => `<div><dt>${esc(labels[key] || key)}</dt><dd>${esc(text(val))}</dd></div>`).join('')}</dl></details>` : ''}
-    ${(v.assumptions || []).length ? `<ul class="value-assumptions">${v.assumptions.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
+    ${(v.assumptions || []).length ? `<ul class="value-assumptions">${v.assumptions.map(x => `<li>${esc(valuationText(x))}</li>`).join('')}</ul>` : ''}
     ${sources.length ? `<details><summary>价格与权益来源（${sources.length}）</summary>${sources.map(s => `<div class="value-source"><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.priceBasis || '价格依据')} ↗</a><small>核价 ${esc((s.checkedAt || '').slice(0, 10))}</small><blockquote>${esc(s.excerpt || '')}</blockquote></div>`).join('')}</details>` : ''}</div>`;
 }
 function leftText(o) {
@@ -541,11 +543,11 @@ function pToday() {
   main().innerHTML = ribbon() + ph('今天', '今天能薅的羊毛都在这片草地上。点一只羊看详情。') + `
   <div class="hero">
     <div class="hero-over">
-      <div class="total"><span class="l">${C.only ? '按你的条件，' : ''}当前可领 · 首 30 天参考价值</span>${summaryHtml(todayValues)}</div>
-      <div class="wx" title="指数参考新增条数、即将结束条数与官方口径首 30 天价值；用量估算和未知价值不作零处理"><div>${wxIcon(wx.i)}</div><div><div class="row" style="gap:6px;align-items:baseline"><span class="i">${wx.i}</span><span class="t">今日羊毛指数 · ${wx.t}</span></div><div class="t">${wx.adv}</div><div class="t">条数与官方参考值</div></div></div>
+      <div class="total"><span class="l">${C.only ? '按你的条件，' : ''}当前可领 · 月度参考价值</span>${summaryHtml(todayValues)}</div>
+      <div class="wx" title="指数参考新增条数、即将结束条数与官方口径月度参考价值；用量估算和未知价值不作零处理"><div>${wxIcon(wx.i)}</div><div><div class="row" style="gap:6px;align-items:baseline"><span class="i">${wx.i}</span><span class="t">今日羊毛指数 · ${wx.t}</span></div><div class="t">${wx.adv}</div><div class="t">条数与官方参考值</div></div></div>
     </div>
     <div id="flock"></div>
-    <div class="flock-legend"><span><b>羊越大</b>，首 30 天参考价值越高（方法见详情）</span><span><b>价值待定</b>的羊用固定大小，并标 ?</span><span><b>毛越厚</b>，剩余时间越多</span><span><b>剃秃的</b>今明两天结束</span><span class="legend">${Object.keys(TYPES).filter(isTypeLimited).map(t => `<span>${etagSvg(typeVar(t)).replace('<svg ', '<svg style="width:12px;height:14px" ')}${TYPES[t].l}</span>`).join('')}</span></div>
+    <div class="flock-legend"><span><b>羊越大</b>，月度参考价值越高（方法见详情）</span><span><b>价值待定</b>的羊用固定大小，并标 ?</span><span><b>毛越厚</b>，剩余时间越多</span><span><b>剃秃的</b>今明两天结束</span><span class="legend">${Object.keys(TYPES).filter(isTypeLimited).map(t => `<span>${etagSvg(typeVar(t)).replace('<svg ', '<svg style="width:12px;height:14px" ')}${TYPES[t].l}</span>`).join('')}</span></div>
   </div>
   <section class="kpis">
     ${kpi('进行中', act.length, '条', daily((o, k) => activeOn(o, k) && statusOf(o, k) !== 'upcoming'))}
@@ -607,8 +609,8 @@ function pCalendar() {
   const months = [-1, 0, 1, 2].map(i => new Date(T0.getFullYear(), T0.getMonth() + i, 1));
   const hols = HOLIDAYS.filter(h => { const k = dayIdx(new Date(h.d + 'T00:00:00')); return k >= -10 && k <= 150; });
   main().innerHTML = ribbon() + ph('日历', '点任意一天，看那天能薅什么。草色越深，那天的羊毛越多。',
-    `<div class="row"><div class="seg" role="group" aria-label="颜色表示"><button type="button" data-metric="count" aria-pressed="${CAL.metric === 'count'}">当天条数</button>${VALUE_GROUPS.map(([key, label]) => `<button type="button" data-metric="${key}" aria-pressed="${CAL.metric === key}">${label} · 首30天</button>`).join('')}</div><label class="field" style="flex-direction:row;align-items:center;gap:8px"><span>跳到</span><input type="date" id="pickDate" value="${CAL.sel}"></label></div>`) + `
-  <p class="small muted">金额只比较各活动领取后首 30 天参考值，不按日重复累计。价值待定保留条数和活动；? 表示有活动但当前口径没有金额。</p>
+    `<div class="row"><div class="seg" role="group" aria-label="颜色表示"><button type="button" data-metric="count" aria-pressed="${CAL.metric === 'count'}">当天条数</button>${VALUE_GROUPS.map(([key, label]) => `<button type="button" data-metric="${key}" aria-pressed="${CAL.metric === key}">${label} · 月度</button>`).join('')}</div><label class="field" style="flex-direction:row;align-items:center;gap:8px"><span>跳到</span><input type="date" id="pickDate" value="${CAL.sel}"></label></div>`) + `
+  <p class="small muted">金额统一按一个月比较，不按日重复累计。价值待定保留条数和活动；? 表示有活动但当前口径没有金额。</p>
   <div class="row small muted" style="margin:-4px 0 12px;gap:14px"><span class="row" style="gap:6px">少 <span class="ramp">${[0, 2, 4, 6, 7].map(i => `<i style="background:var(--q${i})"></i>`).join('')}</span> 多</span><span class="row" style="gap:6px"><i class="sw" style="background:var(--s1);border-radius:50%"></i>当天开始</span><span class="row" style="gap:6px"><i class="sw" style="background:var(--muted);border-radius:50%"></i>当天结束</span><span class="row" style="gap:6px"><i class="sw" style="background:var(--tag)"></i>节日 / 购物节</span></div>
   <div class="months">${months.map((m, i) => `<div class="card month"><h3>${m.getFullYear()}年${m.getMonth() + 1}月</h3><div class="chart" id="cal${i}" style="height:262px"></div></div>`).join('')}</div>
   <section id="dayList"></section>
@@ -636,7 +638,7 @@ function drawMonths(months) {
       tooltip: {
         trigger: 'item', formatter: p => {
           const x = cells[p.dataIndex]; const dt = new Date(x.date + 'T00:00:00');
-          return `<b>${md(dt)} 周${WD[dt.getDay()]}</b><br>有效 ${x.s.n} 条<br>首 30 天参考值 · ${summaryText(x.s.values)}${x.s.hol ? `<br>节日：${x.s.hol.n}` : ''}${x.s.starts.length ? `<br>开始：${x.s.starts.map(o => esc(o.t)).join('、')}` : ''}${x.s.ends.length ? `<br>结束：${x.s.ends.map(o => esc(o.t)).join('、')}` : ''}`;
+          return `<b>${md(dt)} 周${WD[dt.getDay()]}</b><br>有效 ${x.s.n} 条<br>月度参考价值 · ${summaryText(x.s.values)}${x.s.hol ? `<br>节日：${x.s.hol.n}` : ''}${x.s.starts.length ? `<br>开始：${x.s.starts.map(o => esc(o.t)).join('、')}` : ''}${x.s.ends.length ? `<br>结束：${x.s.ends.map(o => esc(o.t)).join('、')}` : ''}`;
         },
       },
       calendar: { orient: 'vertical', range: `${m.getFullYear()}-${pad(m.getMonth() + 1)}`, cellSize: ['auto', 36], left: 6, right: 6, top: 24, bottom: 4, splitLine: { show: false }, itemStyle: { color: 'transparent', borderWidth: 0 }, dayLabel: { firstDay: 1, nameMap: ['日', '一', '二', '三', '四', '五', '六'], color: TK.muted, fontSize: 11, margin: 6 }, monthLabel: { show: false }, yearLabel: { show: false } },
@@ -752,7 +754,7 @@ function pAll() {
     ${sel('f-p', '平台', [['', '全部平台'], ...PLATFORMS.filter(p => OFFERS.some(o => o.p === p.id)).map(p => [p.id, p.name])])}
     ${sel('f-st', '状态', [['claimable', '现在或即将可领'], ['', '全部状态'], ['active', '进行中'], ['ending', '即将结束'], ['upcoming', '未开始'], ['standing', '常驻'], ['stale', '待核验'], ['ended', '已结束']])}
     ${sel('f-value', '估值方法', [['', '全部方法'], ['official', '仅看官方价值'], ['scenario', '用量估算'], ['unknown', '价值待定 / 未重估']])}
-    ${sel('f-sort', '排序', [['score', '薅度分高'], ['new', '新上架'], ['end', '快截止'], ['value', '首30天参考值高']])}
+    ${sel('f-sort', '排序', [['score', '薅度分高'], ['new', '新上架'], ['end', '快截止'], ['value', '月度参考价值高']])}
   </div>
   <div class="row small muted" style="justify-content:space-between;margin-bottom:10px"><span id="allCount"></span><button class="btn sm" type="button" id="resetF">清空筛选</button></div>
   <div id="allList"></div>`;
@@ -794,11 +796,11 @@ function pLibrary() {
   const rank = pids.filter(pid => totals(pid).priced > 0);
   main().innerHTML = ribbon() + ph('常驻额度库', '长期免费的额度，没有变化时不重复推送。每 7 天核验一次，14 天没核验成功就转为待核验。') + summaryHtml(available) + `
   <section class="grid g2" style="margin-top:0">
-    ${VALUE_GROUPS.map(([group, label]) => `<div class="card"><h3>平台 × 模态 · ${label}</h3><p class="sub">首 30 天参考值；同一共享权益在各适用模态展示，格子之间不能相加。? 表示覆盖但此口径未计价。</p><div class="chart" id="cMatrix-${group}" style="height:${pids.length * 30 + 60}px"></div></div>`).join('')}
+    ${VALUE_GROUPS.map(([group, label]) => `<div class="card"><h3>平台 × 模态 · ${label}</h3><p class="sub">月度参考价值；同一共享权益在各适用模态展示，格子之间不能相加。? 表示覆盖但此口径未计价。</p><div class="chart" id="cMatrix-${group}" style="height:${pids.length * 30 + 60}px"></div></div>`).join('')}
   </section>
-  <section><div class="card"><h3>常驻首 30 天参考价值排行</h3><p class="sub">按平台汇总当前可领权益，官方口径与用量估算分别列值；未知不进入美元排行。刷新周期见各活动。</p><div class="chart" id="cRank" style="height:${rank.length * 42 + 90}px"></div></div></section>
+  <section><div class="card"><h3>常驻额度月度价值排行</h3><p class="sub">按平台汇总当前可领权益，官方口径与用量估算分别列值；未知不进入美元排行。刷新周期见各活动。</p><div class="chart" id="cRank" style="height:${rank.length * 42 + 90}px"></div></div></section>
   <section>${secH('核验新鲜度', '上线后由管线每 7 天自动核验')}
-    <div class="card tbl" style="padding:4px 8px"><table><thead><tr><th>额度</th><th>平台</th><th>首 30 天参考值</th><th>最近核验</th><th>状态</th></tr></thead><tbody>
+    <div class="card tbl" style="padding:4px 8px"><table><thead><tr><th>额度</th><th>平台</th><th>月度参考价值</th><th>最近核验</th><th>状态</th></tr></thead><tbody>
     ${fresh.map(o => { const st = statusOf(o), d = -o.vf; const status = st !== 'standing' ? stChip(o) : d >= 8 ? stBadge('warn', '!', '快到核验期') : stBadge('good', '✓', '新鲜'); return `<tr class="link" data-href="#offer-${o.id}"><td>${esc(o.t)}</td><td>${esc(o.plat.name)}</td><td class="n">${valLabel(o)}</td><td class="n">${ago(o.vf)}</td><td>${status}</td></tr>`; }).join('')}
     </tbody></table></div>
   </section>
@@ -812,7 +814,7 @@ function pLibrary() {
     const mx = Math.max(1, ...cells.map(c => c.v ?? 0));
     const cm = chart('#cMatrix-' + group, {
       grid: { left: 8, right: 8, top: 26, bottom: 6, containLabel: true },
-      tooltip: { trigger: 'item', formatter: p => { const c = cells[p.dataIndex]; return `<b>${esc(PMAP[c.pid].name)}</b> · ${MODAL[c.m]}<br>${!c.covered ? '不覆盖这个模态' : `首 30 天 ${label}：${summaryAmount(c.summary, group)}<br>${coverageText(c.summary)}`}`; } },
+      tooltip: { trigger: 'item', formatter: p => { const c = cells[p.dataIndex]; return `<b>${esc(PMAP[c.pid].name)}</b> · ${MODAL[c.m]}<br>${!c.covered ? '不覆盖这个模态' : `${label} · 月度参考价值：${summaryAmount(c.summary, group)}<br>${coverageText(c.summary)}`}`; } },
       xAxis: Object.assign(axisCommon(), { type: 'category', position: 'top', data: mods.map(m => MODAL[m]), axisLine: { show: false }, axisLabel: { color: TK.ink2, fontSize: 12 } }),
       yAxis: Object.assign(axisCommon(), { type: 'category', inverse: true, data: pids.map(pid => PMAP[pid].name), axisLine: { show: false }, axisLabel: { color: TK.ink2, fontSize: 12 } }),
       series: [{ type: 'custom', data: cells.map(c => [c.x, c.y, c.v]), renderItem: (params, api) => {
@@ -828,7 +830,7 @@ function pLibrary() {
   const cr = chart('#cRank', {
     grid: { left: 8, right: 70, top: 34, bottom: 6, containLabel: true },
     legend: Object.assign(legendCommon(), { top: 0 }),
-    tooltip: { trigger: 'item', formatter: p => `${esc(p.name)}<br>首 30 天 ${p.seriesName}：<b>${money(p.value)}</b><br>${coverageText(totals(p.data.pid))}` },
+    tooltip: { trigger: 'item', formatter: p => `${esc(p.name)}<br>${p.seriesName} · 月度参考价值：<b>${money(p.value)}</b><br>${coverageText(totals(p.data.pid))}` },
     xAxis: Object.assign(axisCommon(), { type: 'value', axisLabel: { color: TK.muted, formatter: v => money(v) } }),
     yAxis: Object.assign(axisCommon(), { type: 'category', inverse: true, data: rank.map(pid => PMAP[pid].name), axisLabel: { color: TK.ink2, fontSize: 12 } }),
     series: VALUE_GROUPS.map(([group, name, col]) => ({ name, type: 'bar', barWidth: 10, data: rank.map(pid => ({ value: totals(pid)[group + 'N'] ? totals(pid)[group] : null, pid })), itemStyle: { color: TK.s[col], borderRadius: [0, 4, 4, 0] }, label: { show: true, position: 'right', color: TK.ink2, formatter: p => p.value == null ? '' : `${group === 'scenario' ? '≈' : ''}${money(p.value)}`, fontFamily: FONT } })),
@@ -841,11 +843,11 @@ const APPLY_VIEW = { period: 'first30' };
 function pApply() {
   const first30 = APPLY_VIEW.period === 'first30';
   const amount = first30 ? applyFirst30Maximum : applyMaximum;
-  const label = first30 ? '首 30 天参考上限' : '完整申请权益上限';
+  const label = first30 ? '月度参考上限' : '完整申请权益上限';
   const list = view(OFFERS.filter(o => o.ty === 'apply')).sort((a, b) => (amount(b) ?? -1) - (amount(a) ?? -1));
   const known = list.filter(o => amount(o) != null), priced = known.filter(o => amount(o) > 0);
-  main().innerHTML = ribbon() + ph('申请制', '需要提交材料、等待审核的资助。最高可申请不代表保证获批；申请制独立展示，不计入首 30 天普通权益汇总。') + `
-  <div class="card"><div class="seg" role="group" aria-label="申请价值比较周期">${[['first30', '首 30 天参考上限'], ['full', '完整申请权益上限']].map(([key, text]) => `<button type="button" data-apply-period="${key}" aria-pressed="${APPLY_VIEW.period === key}">${text}</button>`).join('')}</div><h3 style="margin-top:12px">${label}</h3><p class="sub">${first30 ? '只比较已核实的首 30 天参考上限；首月金额未知的资助保留卡片，不用完整资助额度替代首月值。' : '完整上限覆盖整个资助或会员计划，各计划期限不同，金额不能理解为相同时间内可获得的权益；期限见卡片与详情。'}对数刻度；已计价 ${known.length}/${list.length} 条，价值待定保留活动展示，零参考值不进入对数图。无保底时不生成下限。</p><div class="legend">${VALUE_GROUPS.map(([_, method, color]) => `<span><i class="sw" style="background:var(--s${color + 1})"></i>${method}</span>`).join('')}</div><div class="chart" id="cApply" style="height:${priced.length * 40 + 50}px"></div></div>
+  main().innerHTML = ribbon() + ph('申请制', '需要提交材料、等待审核的资助。最高可申请不代表保证获批；申请制独立展示，不计入普通权益的月度汇总。') + `
+  <div class="card"><div class="seg" role="group" aria-label="申请价值比较周期">${[['first30', '月度参考上限'], ['full', '完整申请权益上限']].map(([key, text]) => `<button type="button" data-apply-period="${key}" aria-pressed="${APPLY_VIEW.period === key}">${text}</button>`).join('')}</div><h3 style="margin-top:12px">${label}</h3><p class="sub">${first30 ? '只比较已核实的月度参考上限；首月金额未知的资助保留卡片，不用完整资助额度替代首月值。' : '完整上限覆盖整个资助或会员计划，各计划期限不同，金额不能理解为相同时间内可获得的权益；期限见卡片与详情。'}对数刻度；已计价 ${known.length}/${list.length} 条，价值待定保留活动展示，零参考值不进入对数图。无保底时不生成下限。</p><div class="legend">${VALUE_GROUPS.map(([_, method, color]) => `<span><i class="sw" style="background:var(--s${color + 1})"></i>${method}</span>`).join('')}</div><div class="chart" id="cApply" style="height:${priced.length * 40 + 50}px"></div></div>
   <section>${ocards(list)}</section>`;
   const c = chart('#cApply', {
     grid: { left: 8, right: 64, top: 6, bottom: 6, containLabel: true },
@@ -928,12 +930,12 @@ function pInsights() {
   if (!OFFERS.length) { main().innerHTML = ribbon() + ph('洞察', '把整片牧场放在一起看：哪里该先薅、谁最大方、羊毛从哪来。') + emptySheep('第一批羊毛审核通过后，这里会出现图表。'); return; }
   const ended = view(OFFERS.filter(o => statusOf(o) === 'ended')).sort((a, b) => actualEnd(b) - actualEnd(a));
   main().innerHTML = ribbon() + ph('洞察', '把整片牧场放在一起看：哪里该先薅、谁最大方、羊毛从哪来、什么时候会重置。') + `
-  <section style="margin-top:0"><div class="card"><h3>薅羊毛四象限</h3><p class="sub">横轴是门槛难度，纵轴是首 30 天参考值（对数刻度）；图例区分官方口径与用量估算。限时活动的气泡越大，剩余时间越多。申请制另列；价值待定及零参考值不进入对数图。</p><div class="chart" id="cQuad" style="height:400px"></div></div></section>
+  <section style="margin-top:0"><div class="card"><h3>薅羊毛四象限</h3><p class="sub">横轴是门槛难度，纵轴是月度参考价值（对数刻度）；图例区分官方口径与用量估算。限时活动的气泡越大，剩余时间越多。申请制另列；价值待定及零参考值不进入对数图。</p><div class="chart" id="cQuad" style="height:400px"></div></div></section>
   <section><div class="card"><h3>羊毛从哪来、怎么到你手里</h3><p class="sub">平台类型 → 羊毛类型 → 领取方式 → 主要门槛</p><div class="hscroll"><div class="chart" id="cSankey" style="height:470px"></div></div></div></section>
   <section>${summaryHtml(view(OFFERS.filter(o => o.ty !== 'apply')))}</section>
   <section class="grid g2">
-    <div class="card"><h3>谁最大方</h3><p class="sub">按官方口径与用量估算分区，面积 = 收录活动的首 30 天参考值，含已结束历史；申请制另列，未知不当零。</p><div class="chart" id="cTree" style="height:360px"></div><div class="legend">${VALUE_GROUPS.map(([_, label, color]) => `<span><i class="sw" style="background:var(--s${color + 1})"></i>${label}</span>`).join('')}</div></div>
-    <div class="card"><div class="row" style="justify-content:space-between"><div><h3>大方榜</h3><p class="sub" style="margin:0">近 6 个月回放：按活动出现月份累加首 30 天参考值；两种方法分别列值，首帧包含更早历史。</p></div><button class="btn sm pri" type="button" id="racePlay">▶ 回放</button></div><div class="chart" id="cRace" style="height:340px"></div></div>
+    <div class="card"><h3>谁最大方</h3><p class="sub">按官方口径与用量估算分区，面积 = 收录活动的月度参考价值，含已结束历史；申请制另列，未知不当零。</p><div class="chart" id="cTree" style="height:360px"></div><div class="legend">${VALUE_GROUPS.map(([_, label, color]) => `<span><i class="sw" style="background:var(--s${color + 1})"></i>${label}</span>`).join('')}</div></div>
+    <div class="card"><div class="row" style="justify-content:space-between"><div><h3>大方榜</h3><p class="sub" style="margin:0">近 6 个月回放：按活动出现月份累加月度参考价值；两种方法分别列值，首帧包含更早历史。</p></div><button class="btn sm pri" type="button" id="racePlay">▶ 回放</button></div><div class="chart" id="cRace" style="height:340px"></div></div>
   </section>
   <section><div class="card" id="resetBox"><h3>重置时钟</h3><p class="sub">Codex、Claude Code 等额度重置的历史分布（按官方发布时间，换算成你的本地时间）。只展示历史，不预测下一次；次数图保留所有已收录重置，无法估值不当作零。</p>${resetBlock()}</div></section>
   <section class="grid g2">
@@ -956,7 +958,7 @@ function pInsights() {
     legend: Object.assign(legendCommon(), { top: 4, left: 0 }),
     tooltip: { trigger: 'item', formatter: p => { const o = OMAP[p.data.id]; return `<b>${esc(o.t)}</b>${esc(o.plat.name)}<br>${valLabel(o).replace(/<[^>]+>/g, ' ')} · 门槛难度 ${p.data.value[0]}<br>${leftText(o)}`; } },
     xAxis: Object.assign(axisCommon(), { type: 'value', min: 0, max: 100, name: '门槛难度 →', nameLocation: 'end', nameGap: 8, nameTextStyle: { color: TK.muted, fontSize: 11, verticalAlign: 'top', padding: [14, 0, 0, 0] } }),
-    yAxis: Object.assign(axisCommon(), { type: 'log', min: quadMin, max: quadMax, name: '首30天参考值 ↑', nameTextStyle: { color: TK.muted, fontSize: 11, align: 'left' }, axisLabel: { color: TK.muted, fontSize: 11, formatter: v => money(v) } }),
+    yAxis: Object.assign(axisCommon(), { type: 'log', min: quadMin, max: quadMax, name: '月度参考价值 ↑', nameTextStyle: { color: TK.muted, fontSize: 11, align: 'left' }, axisLabel: { color: TK.muted, fontSize: 11, formatter: v => money(v) } }),
     series: groups.map(([name, fn, col], gi) => ({
       name, type: 'scatter',
       data: live.filter(fn).map(o => { const d = dims(o); const size = isLimited(o) ? (o.ek === 'date' ? 10 + clamp(o.e, 0, 30) * 0.8 : 22) : 14; return { id: o.id, value: [100 - d[1], valueNumber(o)], symbol: o.ty === 'standing' ? 'diamond' : 'circle', symbolSize: size }; }),
@@ -996,7 +998,7 @@ function pInsights() {
     return { name: PMAP[pid].name, value: summary[group], pid, group, summary, label: { color: onColor(TK.s[col]) } };
   }).filter(x => x.summary[group + 'N'] > 0 && x.value > 0) })).filter(x => x.children.length);
   const ct = chart('#cTree', {
-    tooltip: { trigger: 'item', formatter: p => p.data.group ? `<b>${esc(p.name)}</b><br>${p.data.group === 'scenario' ? '用量估算 ≈' : '官方口径'} ${money(p.value)} · 首 30 天${p.data.summary ? `<br>${coverageText(p.data.summary)}` : ''}` : '官方口径与用量估算分别列值' },
+    tooltip: { trigger: 'item', formatter: p => p.data.group ? `<b>${esc(p.name)}</b><br>${p.data.group === 'scenario' ? '用量估算 ≈' : '官方口径'} ${money(p.value)} · 月度参考${p.data.summary ? `<br>${coverageText(p.data.summary)}` : ''}` : '官方口径与用量估算分别列值' },
     series: [{ type: 'treemap', roam: false, nodeClick: false, breadcrumb: { show: false }, left: 0, right: 0, top: 0, bottom: 0,
       itemStyle: { borderColor: TK.surface, borderWidth: 2, gapWidth: 2, borderRadius: 6 },
       upperLabel: { show: true, height: 24, color: TK.ink, formatter: p => p.data.group ? p.name : '' },
@@ -1012,7 +1014,7 @@ function pInsights() {
   const cr = chart('#cRace', {
     grid: { left: 8, right: 70, top: 64, bottom: 8, containLabel: true },
     legend: Object.assign(legendCommon(), { top: 28 }),
-    tooltip: { trigger: 'item', formatter: p => `${esc(p.name)}<br>首 30 天 ${p.seriesName}：${money(p.value)}` },
+    tooltip: { trigger: 'item', formatter: p => `${esc(p.name)}<br>${p.seriesName} · 月度参考价值：${money(p.value)}` },
     xAxis: Object.assign(axisCommon(), { type: 'value', max: 'dataMax', axisLabel: { color: TK.muted, formatter: v => money(v) } }),
     yAxis: Object.assign(axisCommon(), { type: 'category', inverse: true, data: RACE.series.map(s => PMAP[s.id].name), axisLabel: { color: TK.ink2, fontSize: 12 } }),
     series: raceSeries(last), animationDuration: 0, animationDurationUpdate: REDUCED ? 0 : 900, animationEasingUpdate: 'linear',
@@ -1096,9 +1098,9 @@ function pPlatform(id) {
     <div class="kpi"><span class="k-l">现在可领</span><span class="k-v">${list.filter(claimable).length}<small>条</small></span></div>
     <div class="kpi"><span class="k-l">已结束</span><span class="k-v">${list.length - live.length}<small>条</small></span></div>
   </section>
-  <section class="card"><h3>收录历史的首 30 天参考值合计</h3><p class="sub">每条活动计一次，含已结束历史；分别按官方口径与用量估算汇总，申请制另列。不是累计实际发放金额。</p>${summaryHtml(list)}</section>
+  <section class="card"><h3>历史活动的月度参考价值合计</h3><p class="sub">每条活动计一次，含已结束历史；分别按官方口径与用量估算汇总，申请制另列。不是累计实际发放金额。</p>${summaryHtml(list)}</section>
   <section class="grid g2">
-    <div class="card"><h3>平台雷达</h3><p class="sub">价值维度按官方口径、用量估算分别平均已计价首 30 天值；${coverageText(valueSummary(list))}。缺价值不按最低分，无已计价金额时省略价值维度。</p><div class="chart" id="cPRadar" style="height:300px"></div></div>
+    <div class="card"><h3>平台雷达</h3><p class="sub">价值维度按官方口径、用量估算分别平均已计价月度参考价值；${coverageText(valueSummary(list))}。缺价值不按最低分，无已计价金额时省略价值维度。</p><div class="chart" id="cPRadar" style="height:300px"></div></div>
     <div class="card"><h3>发放历史</h3><p class="sub">每条羊毛从开始到结束；常驻额度画到今天</p><div class="chart" id="cPHist" style="height:${Math.max(160, list.length * 34 + 70)}px"></div></div>
   </section>
   <section>${secH('这个平台的羊毛')}${ocards(list)}</section>`;
@@ -1207,7 +1209,7 @@ function pOffer(id) {
       </div>
     </div>
     <div style="display:flex;flex-direction:column;gap:14px;min-width:0">
-      <div class="card"><h3>薅度雷达</h3><p class="sub">${valueNumber(o) == null ? '价值未计入，按其余五项重分配权重' : '六项按规则计算；价值为首 30 天参考值'}，薅度分 ${sc}</p><div class="chart" id="cRadar" style="height:280px"></div>
+      <div class="card"><h3>薅度雷达</h3><p class="sub">${valueNumber(o) == null ? '价值未计入，按其余五项重分配权重' : '六项按规则计算；价值为月度参考价值'}，薅度分 ${sc}</p><div class="chart" id="cRadar" style="height:280px"></div>
         <div class="rows">${DIMS.map((n, i) => `<div class="row small" style="gap:10px;padding:3px 0"><span style="width:64px;color:var(--ink-2)">${n}</span>${d[i] == null ? '<span class="small muted" style="flex:1">未计入评分</span>' : `<span class="meter" style="flex:1"><i style="width:${d[i]}%;background:${typeVar(o.ty)}"></i></span>`}<span class="num tnum" style="width:28px;text-align:right">${d[i] ?? '—'}</span></div>`).join('')}</div></div>
       ${ADM.token ? `<div class="card" id="revBox"><h3>条款修订记录</h3>${(o.rev || []).length ? `<div class="diff">${o.rev.map(rv => `<div><span class="small muted">${md(dayAt(rv.at))}</span><br><del>${esc(rv.from)}</del> → <ins>${esc(rv.to)}</ins></div>`).join('')}</div>` : '<p class="small muted" style="margin:0">收录以来条款没有变化。</p>'}</div>` : ''}
       <div class="card"><h3>状态时间轴</h3><ul class="tl">${hist.map(([t, s], i) => `<li class="${i ? '' : 'hot'}"><time>${md(dayAt(t))}</time>${esc(s)}</li>`).join('')}</ul></div>
@@ -1219,7 +1221,7 @@ function pOffer(id) {
     const alternative = modelSelect.value === 'default' ? null : valuationAlternatives(o)[Number(modelSelect.value)];
     if (modelSelect.value !== 'default' && !alternative) { modelSelect.value = 'default'; return; }
     $('[data-detail-value]').innerHTML = detailValueLabel(o, alternative);
-    $('[data-detail-formula]').textContent = alternative?.formula || valuationOf(o).formula;
+    $('[data-detail-formula]').textContent = valuationText(alternative?.formula || valuationOf(o).formula);
     $('[data-model-note]').textContent = alternative ? `另一个使用方案：${alternative.model}。参考金额已按此活动的覆盖期与配额计算；全站仍按默认基准 ${valuationOf(o).baselineModel || '估值'} 排序、汇总和记录领取。` : '当前为默认基准。其他模型是另一个使用方案；金额已按此活动的覆盖期与配额计算。全站排序、汇总和领取记录使用默认估值。';
   });
   const noteForm = $('#noteForm');
@@ -1293,7 +1295,7 @@ function pMine() {
   const claimed = valueSummary(claims), potential = valueSummary([...pool.filter(o => !claims.some(x => x.id === o.id)), ...claims]);
   main().innerHTML = ribbon() + ph('我的', '你的条件决定全站显示什么；想领和已领的清单只存在这台设备上。') + `
   <section class="grid g2" style="margin-top:0">
-    <div class="card"><h3>本月薅羊毛进度</h3><p class="sub">本月领取时的首 30 天参考值 / 当前可领及本月已领参考值。按方法分别计算，不代表已实际节省的费用。</p>
+    <div class="card"><h3>本月薅羊毛进度</h3><p class="sub">本月领取时记录的月度参考价值 / 当前可领及本月已领参考价值。按方法分别计算，不代表已实际节省的费用。</p>
       <div class="value-progress">${VALUE_GROUPS.map(([group, label, col]) => `<div class="prog">${ringSvg(potential[group] > 0 ? claimed[group] / potential[group] : 0, 110, `var(--s${col + 1})`, 10)}<div class="kv"><span class="small muted">本月已记领 · ${label}</span><b>${summaryAmount(claimed, group)}</b><span class="small muted">可领及已领 ${summaryAmount(potential, group)}</span></div></div>`).join('')}</div><p class="small muted">本月记录 ${claims.length} 条 · ${coverageText(claimed)}。旧领取记录未保存 V1 方法和周期，保留记录并不计金额。</p></div>
     <div class="card"><h3>我的条件</h3>${condForm()}</div>
   </section>
@@ -1634,7 +1636,7 @@ async function admQueue() {
       ${[['title', '标题', o.title], ['valueText', '额度', o.value], ['creditValidity', '额度有效期', o.creditValidity || '']].map(([k, l, v]) => `<label class="field">${l}<input type="text" name="${k}" value="${esc(v)}"></label>`).join('')}
       <label class="field">领取开始（可空）<input type="date" name="claimStart" value="${esc(o.claimStart || '')}"></label>
       <label class="field">领取截止（可空）<input type="date" name="claimEnd" value="${esc(o.claimEnd || '')}"></label>
-      <label class="field">首 30 天确定参考值（可空）<input type="number" step="any" min="0" name="usdEstimate" value="${o.usdEstimate ?? ''}"></label>
+      <label class="field">确定的月度参考价值（可空）<input type="number" step="any" min="0" name="usdEstimate" value="${o.usdEstimate ?? ''}"></label>
       <label class="field">最高可申请额度（申请制，可空）<input type="number" step="any" min="0" name="usdMax" value="${o.usdMax ?? ''}"></label>
       <label class="field">官方时区（日期按哪里的时间算）<select name="sourceTz">${(() => { const tz = o.sourceTz || 'UTC', opts = [['Asia/Shanghai', '北京时间（中国厂商）'], ['America/Los_Angeles', '美国西部时间（多数美国厂商）'], ['America/New_York', '美国东部时间'], ['Europe/London', '英国时间'], ['Europe/Paris', '欧洲中部时间'], ['Asia/Tokyo', '日本时间'], ['Asia/Singapore', '新加坡时间'], ['UTC', '世界标准时间 UTC（官方没写时区）']]; return (opts.some(([k]) => k === tz) ? opts : [...opts, [tz, tz]]).map(([k, l]) => `<option value="${k}" ${k === tz ? 'selected' : ''}>${l}</option>`).join(''); })()}</select></label>
       <label class="field">官方发布时间（可空，按你电脑的本地时间填；额度重置要精确到分钟）<input type="datetime-local" name="publishedAt" value="${dateTimeInput(o.publishedAt)}">${/^\d{4}-\d{2}-\d{2}$/.test(o.publishedAt || '') && dateTimeInput(o.publishedAt) ? '<span class="small muted">仅有日期，00:00 是填表占位；未改动则保留日期精度。</span>' : ''}${o.publishedAt && !dateTimeInput(o.publishedAt) ? '<span class="small" role="alert" style="color:var(--critical-ink)">原发布时间无效，请核对后补填；保存时空值会清除原错误日期。</span>' : ''}</label>
@@ -1966,7 +1968,7 @@ function openCompare() {
   const compareValue = list.every(o => valueNumber(o) != null);
   const compareDims = DIMS.filter((_, i) => i !== 0 || compareValue);
   const rowsDef = [['额度', o => valLabel(o).replace(/<[^>]+>/g, ' ')], ['薅度分', o => score(o)], ['类型', o => TYPES[o.ty].l], ['门槛', o => o.r.map(reqLabel).join('、')], ['领取截止', o => o.ek === 'date' ? md(dayAt(o.e)) : o.ek === 'unknown' ? '截止未知' : '长期'], ['额度有效期', o => o.val]];
-  openSheet('对比', `<p class="small muted">参考值以领取后首 30 天为窗口，方法见各条标签。${compareValue ? '' : '有活动价值待定或属于申请制，雷达统一省略价值维度，不按零比较。'}</p><div class="chart" id="cCmp" style="height:300px"></div><div class="tbl"><table><thead><tr><th></th>${list.map((o, i) => `<th><span class="row" style="gap:6px;flex-wrap:nowrap"><i class="sw" style="background:var(--s${i + 1})"></i>${esc(o.plat.name)}</span></th>`).join('')}</tr></thead><tbody>${rowsDef.map(([k, f]) => `<tr><td class="muted">${k}</td>${list.map(o => `<td style="white-space:normal;min-width:120px">${esc(f(o))}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`, () => {
+  openSheet('对比', `<p class="small muted">参考值以一个月为比较窗口，方法见各条标签。${compareValue ? '' : '有活动价值待定或属于申请制，雷达统一省略价值维度，不按零比较。'}</p><div class="chart" id="cCmp" style="height:300px"></div><div class="tbl"><table><thead><tr><th></th>${list.map((o, i) => `<th><span class="row" style="gap:6px;flex-wrap:nowrap"><i class="sw" style="background:var(--s${i + 1})"></i>${esc(o.plat.name)}</span></th>`).join('')}</tr></thead><tbody>${rowsDef.map(([k, f]) => `<tr><td class="muted">${k}</td>${list.map(o => `<td style="white-space:normal;min-width:120px">${esc(f(o))}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`, () => {
     chart('#cCmp', {
       legend: Object.assign(legendCommon(), { bottom: 0, data: list.map(o => o.t.length > 14 ? o.t.slice(0, 13) + '…' : o.t) }),
       tooltip: { trigger: 'item' },

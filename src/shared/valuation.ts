@@ -5,7 +5,7 @@ export const VALUATION_METHODS = {
   face_value: '官方面额', official_price: '官方价格折算', scenario: '标准用量估算', none: '暂无可靠价格',
 } as const;
 export const VALUATION_PERIODS = {
-  one_time: '一次性', monthly: '每月', first30: '前 30 天', apply_max: '最高可申请',
+  one_time: '一次性', monthly: '每月', first30: '月度参考价值', apply_max: '最高可申请',
 } as const;
 export const VALUATION_STATUSES = {
   priced: '已估值', provisional: '暂定估值', beta_unpriced: '公测免费 · 价值待定',
@@ -61,7 +61,7 @@ export const valuationSchema = z.object(valuationShape).strict().superRefine((v,
   const priced = v.status === 'priced' || v.status === 'provisional';
   if (priced) {
     if (v.method === 'none') fail('method', '有金额的估值须说明定价方法');
-    if (v.usdEstimate === null && !(v.period === 'apply_max' && v.usdMax !== null)) fail('usdEstimate', '已估值须有首 30 天金额或真实申请上限');
+    if (v.usdEstimate === null && !(v.period === 'apply_max' && v.usdMax !== null)) fail('usdEstimate', '已估值须有月度参考价值或真实申请上限');
     if (!v.formula) fail('formula', '已估值须保留计算公式');
   } else {
     if (v.method !== 'none') fail('method', '未定价状态不能使用定价方法');

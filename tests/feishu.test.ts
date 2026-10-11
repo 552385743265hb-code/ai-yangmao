@@ -120,7 +120,7 @@ describe('飞书群日报', () => {
     };
     sqlite.prepare('UPDATE offers SET valuation=?').run(JSON.stringify(base));
     const first = await cardText();
-    expect(first).toContain('官方价格折算 · 前 30 天 $20');
+    expect(first).toContain('官方价格折算 · 月度参考价值 $20');
     expect(first).not.toContain('$240');
     sqlite.prepare('UPDATE offers SET usd_estimate=NULL, valuation=?').run(JSON.stringify({ ...base, status: 'beta_unpriced', method: 'none', usdEstimate: null, fullValue: null, formula: null }));
     expect(await cardText()).toContain('公测免费 · 价值待定');

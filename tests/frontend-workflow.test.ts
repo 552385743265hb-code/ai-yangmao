@@ -396,13 +396,13 @@ describe('V1 valuation across public pages', () => {
     expect(page.charts.get('cApply').series[0].data.map((x: any) => x.value)).toEqual([200]);
     page.run("pOffer('oss')");
     const values = page.document.querySelector('[data-apply-values]')!.textContent;
-    expect(values).toContain('首 30 天参考上限 $200');
+    expect(values).toContain('月度参考上限 $200');
     expect(values).toContain('完整申请权益上限 $1.2k');
     expect(values).toContain('6 个月');
     expect(page.charts.get('cRadar').radar.indicator).toHaveLength(5);
     expect(page.run('valueSummary(OFFERS).total')).toBe(0);
     page.run("pOffer('gcloud')");
-    expect(page.document.querySelector('[data-apply-values]')!.textContent).toContain('首 30 天参考上限 价值待定');
+    expect(page.document.querySelector('[data-apply-values]')!.textContent).toContain('月度参考上限 价值待定');
     page.run("ALLF={...defaultAllF(),st:'',sort:'value'}");
     expect(page.run('filtered()[0].id')).toBe('oss');
   });

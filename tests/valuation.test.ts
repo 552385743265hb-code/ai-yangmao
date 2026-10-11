@@ -123,10 +123,10 @@ describe('shared card and notification value wording', () => {
     usdEstimate: 20, fullValue: 240, formula: '首30天 = 1 × $20；全年 = 12 × $20' };
   it('shows the first-month reference and its method without presenting the whole membership amount as that month', () => {
     const wording = valuationSummary({ usdEstimate: 20, valuation: official });
-    expect(wording).toBe('官方价格折算 · 前 30 天 $20');
+    expect(wording).toBe('官方价格折算 · 月度参考价值 $20');
     expect(wording).not.toContain('240');
     expect(valuationSummary({ usdEstimate: 0.9333, valuation: { ...official, status: 'provisional', method: 'scenario', usdEstimate: 0.9333 } }))
-      .toBe('标准用量估算 · 前 30 天约 $0.9333 · 暂定');
+      .toBe('标准用量估算 · 月度参考价值约 $0.9333 · 暂定');
   });
   it('explains an application ceiling without manufacturing a lower bound and preserves null conclusions', () => {
     expect(valuationSummary({ type: 'apply', usdEstimate: null, usdMax: 100_000,
