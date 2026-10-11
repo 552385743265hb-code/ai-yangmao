@@ -31,6 +31,8 @@
 
 ## opencode
 
+- 2026-10-10新待审查重：sgge（opencode-opencode-longcat-step5-preview-free-models）从Go中文价格表重报LongCat 2.5 Preview Free与Step 5 Preview Free；两模型已在Zen主条opencode-opencode-free-models-limited-time，Step 5独立一周活动沿用wofy。Go页面需订阅$10/$40套餐，未证明独立额外赠送；不因免费行/中文URL另建第三条福利，也不把Go付费通道写成零门槛。已记录duplicate建议，仍待审。
+
 - 2026-10-10复核：Space Bunny免费期延长的同一官推2107398361733104102、同模型及延长语义复用opencode-opencode-space-bunny-free-period-extension；Space Bunny/SpaceBunny别名、标题缩短、auto/signup抽取差异不能生成另条。原文只说few more days，不猜截止或模型身份；其他Zen/API渠道及独立新公告仍分别核验。固定官推正文读取优先X第一方嵌入，必须匹配账号opencode与推文ID，不能因登录墙判旧权益消失。
 
 - 2026-10-09：Step 5 Preview在OpenCode免费一周的保留条为已上架wofy；StepFun官方在OpenCode公告后约2分钟转述，h16u为重复待审线索，已纠归opencode并标duplicate，未擅自拒绝。发放方OpenCode原文https://x.com/opencode/status/2108206631859454383，模型厂商转述不新建活动；多模态输入不表示免费生图，模态按文本/编程记。
@@ -202,6 +204,8 @@
 
 ## higgsfield
 
+- 2026-10-10新待审核实：k1i9为8月24日独立Ox Alpha限免公告；8月26日同changelog明确更名GLM-5.3 Flash后costs credits。不能把更名后的GLM写成当前免费，也不能凭同属Supercomputer就认定与7月17日未披露模型的Free Mode重复；仅可补成已结束历史，精确截止时刻未知。官方https://higgsfield.ai/creator-hub/changelog，本轮记录历史建议，未批准。
+
 - 2026-10-10：API首发15%全模型/任选4模型最高50%折扣，是已拒的higgsfield-higgsfield-api-launch-offer，rgjd为换ID重报；折扣/几折换算、perk与topup改分类不构成新福利。普通付费定价折扣不收，原页有首发文本即可识别，不必因独立API再开一条。
 
 - 2026-10-09：API首次消费满$100送$15、30天消费阶梯5%–20%返利属于消费促销，不收；higgsfield-higgsfield-api-cashback-bonus已拒绝。
@@ -220,7 +224,7 @@
 - 官方ai-video-credits-explained给23credits=$1.15等对应关系，可得到$0.05/credit；Basic120=$6、Plus1000=$50、Ultra3000=$150。seedance-2-5-pricing-2026对比用套餐成本$49/1000credits=$0.049/credit，是套餐费率而非统一credit面值；两种口径需注明，不能把套餐含额度当免费赠送。
 - 更新日志 https://higgsfield.ai/creator-hub/changelog 很长，每条都有锚点（如 #free-mode-in-supercomputer-text-generation-at-zero-credits），证据用锚点链接；页面 ld+json 里的 datePublished 是 +05:00 时间，换算成 UTC 作发布时间。Jina 常被 Higgsfield 封，直接 curl 页面 HTML 可读。（2026-10-03）
 - 领取截止未公布，不把个人激活后1/3/7/11/365天权益有效期当整个活动领取截止。
-- 新用户 1 天 All Unlimited 免费试用（2026-07-21 起）只收一条；7/22、7/27 博客写的是它的不同阶段，不要每篇博客建一条。Seedance 无限量促销一波接一波（7/14 邀请、8/2 11 天、8/6 33 天），按波次各一条，过期的作为历史。Ox Alpha（8/24 起 Supercomputer 免费）、Activity Rewards（7/10，限 Pro/Plus 以上做任务送）尚未收录。（2026-10-03）旧公告仍需账户页面核现行可领取性。
+- 新用户 1 天 All Unlimited 免费试用（2026-07-21 起）只收一条；7/22、7/27 博客写的是它的不同阶段，不要每篇博客建一条。Seedance 无限量促销一波接一波（7/14 邀请、8/2 11 天、8/6 33 天），按波次各一条，过期的作为历史。Activity Rewards（7/10，限 Pro/Plus 以上做任务送）截至2026-10-03尚未收录；Ox Alpha历史限免已于2026-10-10产生待审k1i9，8/26转收费，见本节最新核验。旧公告仍需账户页面核现行可领取性。
 - 本批核验入口：https://higgsfield.ai/blog/higgsfield-all-unlimited-explained；https://higgsfield.ai/blog/seedance-4k-unlimited-11-days；https://higgsfield.ai/blog/annual-unlimited-ai-video-plans；https://higgsfield.ai/blog/ai-video-credits-explained；https://higgsfield.ai/blog/seedance-2-5-pricing-2026；https://higgsfield.ai/blog/best-unlimited-ai-video-generators；https://higgsfield.ai/creator-hub/changelog。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## luma
@@ -402,6 +406,8 @@
 - 本批核验入口：https://cloud.baidu.com/campaign/event/enterprise/index.html；https://cloud.baidu.com/；https://cloud.baidu.com/campaign/event/free/index.html；https://cloud.baidu.com/news/notice_c7a145b9-5c99-4870-939f-e09ba506aab3。更多逐条来源见 `docs/pending-field-review-2026-10-01.md`。
 
 ## volc
+
+- 2026-10-10新待审查重：u425重报已拒volc-volcengine-doubao-seedream-first-image-free；2026-10-03已因把输入参考图免费误作免费输出图拒绝。现行模型价格表仍区分输入/输出：5.0 Pro首张输入免费，flash/lite/4.5/4.0输入免费但输出收费，不复活同版拒项。lfba的compose_video工具调用限时免费确有官方原文，与web_fetch及首次开通运行时/web_search礼包不同，未查到重复；只免工具费，模型与运行时另计，无起止/原价/次数，收录适格性待裁。官方https://www.volcengine.com/docs/ark/model-pricing?lang=zh。
 
 - Managed Agents 没有只限企业的说法，门槛 realname。web_fetch 只写“限时免费”无原价、额度、起止，不收。联网搜索每月固定次数不打 reset 标签。（2026-10-03 批量审核）
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
@@ -823,6 +829,8 @@
 - 官网只说明通过短信/电话完成任务，terms要求18岁以上并保留收费权；没有价格不证明永久免费。媒体称邀请内测免费，目前缺发放方免费权益、数量、期限及资格原文，仅保留核验线索，不卖/买邀请码，不伪造官方摘录。官方条款：https://instinct.co/terms 。
 
 ## unisound
+
+- 2026-10-10新待审核实：x35l首页500M Token赠额宣传旁明确Scan to join the community及官方社区二维码，是进群领取线索，不是注册点击按钮即时到账；与U2-Flash限时0价及实名礼包机制不同，当前全状态未查到重复。500M是Token数量，不译为代币面值；模型、资格、分配、到账方式和有效期须核群内正式规则。官方https://maas.unisound.com/，本轮仅记录待核建议。
 
 - 2026-10-10复核：model-hub/u2-flash默认采集语言为英文，中文/英文宣传句及日期中的连字符/短横线是同版条款；9/30至10/31、新老用户、100RPM、10,000,000TPM均未改。译文变化或提案省略TPM不触发重审，保留管理员实测实名门槛和已批准额度说明；原文摘录按实际读取语言逐字保存，不自译成官方中文引文。
 
