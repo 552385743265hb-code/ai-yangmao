@@ -64,6 +64,8 @@ npx tsx $S suggest <短码> approve|history|reject|judge [--code 代码] --reaso
 
 **估值V1（2026-10-09）**：按 `src/shared/valuation.ts` 与 `docs/plans/benefit-valuation-and-field-completion-v1.md` 核对。公开计算区可放价格来源、计费单位、公式、标准用量、基准模型、覆盖和必要假设；reviewMemo保留问题、旧值、纠错及审核待办。管理员reviewed valuation与对应美元受抽取保护，不因新抽取清空或重新计算。只有本次授权重估/迁移或明确人工纠错才覆盖旧值；价格核验时间不是权益lastVerifiedAt。
 
+**估值V2（2026-10-11）**：新研判按 `docs/plans/benefit-valuation-and-field-completion-v2.md`，旧V1仍兼容。管理员明确采用入门/指定套餐、候选算法、第三方数量或替代模型时，保留来源与必要假设，新增benchmarkType并标provisional；不得把价格参照当真实官方面额、积分兑换证明或保证申请额度。通常用正常月价，指定年价另除12；有两种适用算法取低值。特殊用量倍率仅用于指定场景，单卡价先算再乘实际张数。不可估值按null结案，不写零。拒绝、合并、历史化另按明确的逐条授权与版本锁执行。
+
 | 字段 | 怎么判断 |
 |---|---|
 | 类型 type | 注册新人礼只给新注册账号；“首次使用某个应用/客户端就送、新老用户都行”是应用尝鲜 trial；常驻免费是 standing；限时开放是 free；会员额外加赠或重置是 perk；消费返利、首购/升级/充值后赠额不收，topup仅保留历史数据及获准的身份专享折扣；需要提交申请是 apply。类型和截止方式要配套（standing / apply ↔ endKind standing）。学生、教师认证不是申请制：送会员一段时间是 gift，认证后按月给额度（如 Kiro 学生一年）是 standing，个人有效期写进额度有效期；整个计划有截止才是 free；门槛 student（教师也用它）。apply 只给要交材料、人工审批、由发放方裁量批准的资助（包括固定会员奖品）。模态只有文本·编程（text）/ 图像 / 视频 / 音频，文本和编程不区分。 |

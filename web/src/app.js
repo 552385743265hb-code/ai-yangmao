@@ -185,7 +185,7 @@ function money(u) {
   if (u >= 1000) return '$' + (u >= 10000 ? Math.round(u / 1000) : (u / 1000).toFixed(1)) + 'k';
   return '$' + u.toLocaleString('en-US', { maximumFractionDigits: 2, minimumFractionDigits: u > 0 && u < 1 ? 2 : 0 });
 }
-// Only V1 values share a known comparison window. Legacy amounts remain visible,
+// Reviewed V1 and V2 values share a known comparison window. Legacy amounts remain visible,
 // but do not silently join rankings or totals until they have been revalued.
 const VALUE_METHOD = { face_value: '官方面额', official_price: '官方价格折算', scenario: '用量估算', none: '暂无可靠价格' };
 const VALUE_STATUS = { beta_unpriced: '公测免费 · 价值待定', unpriceable: '免费权益 · 暂无法折算', needs_judgment: '估值待核实' };
@@ -193,14 +193,18 @@ const VALUE_GROUPS = [['official', '官方口径', 0], ['scenario', '用量估�
 // Present existing valuation records in plain Chinese without changing their inputs.
 const valuationText = text => String(text ?? '').replace(/(?:首|前)\s*30\s*天/g, '一个月');
 const validAmount = n => typeof n === 'number' && Number.isFinite(n) && n >= 0 ? n : null;
-const valuationOf = o => o?.valuation?.version === 'v1' ? o.valuation : null;
+const valuationOf = o => ['v1', 'v2'].includes(o?.valuation?.version) ? o.valuation : null;
 const isPriced = o => { const v = valuationOf(o); return !!v && ['priced', 'provisional'].includes(v.status) && ['face_value', 'official_price', 'scenario'].includes(v.method); };
+const isReferenceBenchmark = o => { const v = valuationOf(o); return v?.version === 'v2' && typeof v.inputs?.benchmarkType === 'string' && !!v.inputs.benchmarkType.trim(); };
+const isApplyBenchmark = o => o.ty === 'apply' && isReferenceBenchmark(o);
 const valueGroup = o => isPriced(o) ? (valuationOf(o).method === 'scenario' ? 'scenario' : 'official') : null;
 const valueNumber = o => isPriced(o) && o.ty !== 'apply' ? validAmount(valuationOf(o).usdEstimate) : null;
-const applyMaximum = o => isPriced(o) && o.ty === 'apply' ? validAmount(valuationOf(o).usdMax) : null;
-const applyFirst30Maximum = o => isPriced(o) && o.ty === 'apply' ? validAmount(valuationOf(o).inputs?.first30Max) : null;
-const comparisonValue = o => o.ty === 'apply' ? applyFirst30Maximum(o) : valueNumber(o);
-const hasDisplayValue = o => (o.ty === 'apply' ? applyMaximum(o) : valueNumber(o)) != null;
+const applyMaximum = o => isPriced(o) && o.ty === 'apply' && !isApplyBenchmark(o) ? validAmount(valuationOf(o).usdMax) : null;
+const applyFirst30Maximum = o => isPriced(o) && o.ty === 'apply' && !isApplyBenchmark(o) ? validAmount(valuationOf(o).inputs?.first30Max) : null;
+const applyScenarioReference = o => isPriced(o) && isApplyBenchmark(o) ? validAmount(valuationOf(o).usdEstimate) : null;
+const applyMonthlyReference = o => isApplyBenchmark(o) ? applyScenarioReference(o) : applyFirst30Maximum(o);
+const comparisonValue = o => o.ty === 'apply' ? applyMonthlyReference(o) : valueNumber(o);
+const hasDisplayValue = o => (o.ty === 'apply' ? (isApplyBenchmark(o) ? applyScenarioReference(o) : applyMaximum(o)) : valueNumber(o)) != null;
 const valueSort = (a, b) => (comparisonValue(b) ?? -1) - (comparisonValue(a) ?? -1);
 function valueSummary(list) {
   const pool = list.filter(o => o.ty !== 'apply');
@@ -215,22 +219,22 @@ const summaryHtml = list => { const s = valueSummary(list); return `<div class="
 function valuePeriod(o) {
   const v = valuationOf(o);
   if (!v) return '旧值 · 周期待重估';
-  if (o.ty === 'apply') return '完整申请权益上限';
+  if (o.ty === 'apply') return isApplyBenchmark(o) ? '月度使用方案参考' : '完整申请权益上限';
   return { one_time: '一次性 · 月度参考', monthly: '每月刷新 · 月度参考', first30: '月度参考', apply_max: '最高可申请' }[v.period] || '月度参考';
 }
 function valueTag(o) {
-  const v = valuationOf(o), method = v ? VALUE_METHOD[v.method] : '旧值未重估';
+  const v = valuationOf(o), method = isReferenceBenchmark(o) ? (v.method === 'scenario' ? '模型成本参照' : '套餐价格参照') : v ? VALUE_METHOD[v.method] : '旧值未重估';
   return `<span class="value-tag ${valueGroup(o) || 'unknown'}">${esc(method)}${v?.status === 'provisional' ? ' · 暂定' : ''}</span>`;
 }
 const valueAssumption = o => { const v = valuationOf(o); return valuationText((v?.assumptions || []).find(x => /期限|持续|截止|覆盖|\d+\s*天|duration|days?/i.test(x)) || v?.assumptions?.[0] || (v?.coverage?.days ? `估值覆盖 ${v.coverage.days} 天` : '')); };
 function valLabel(o) {
-  const v = valuationOf(o), amount = o.ty === 'apply' ? applyMaximum(o) : valueNumber(o), old = validAmount(o.usd);
+  const v = valuationOf(o), amount = o.ty === 'apply' ? (isApplyBenchmark(o) ? applyScenarioReference(o) : applyMaximum(o)) : valueNumber(o), old = validAmount(o.usd);
   if (amount == null) {
     const label = v ? VALUE_STATUS[v.status] || '价值待定' : old != null ? `旧参考值 ${money(old)}` : '价值待定';
     return `<span class="value-unknown">${esc(label)}</span>${valueTag(o)}`;
   }
   const approx = v.method === 'scenario' || v.status === 'provisional' ? '≈ ' : '';
-  const value = o.ty === 'apply' ? `最高 ${approx}${money(amount)}` : `${approx}${money(amount)}`;
+  const value = o.ty === 'apply' && !isApplyBenchmark(o) ? `最高 ${approx}${money(amount)}` : `${approx}${money(amount)}`;
   return `${value}<small>${valuePeriod(o)}</small>${o.ty === 'apply' ? `<small>${esc(o.val || '权益期限见详情')}</small>` : ''}${valueTag(o)}`;
 }
 const radarData = o => { const d = dims(o); return { names: DIMS.filter((_, i) => d[i] != null), values: d.filter(x => x != null) }; };
@@ -244,19 +248,20 @@ function detailValueLabel(o, alternative) {
 }
 function valuationBlock(o) {
   const v = valuationOf(o);
-  if (!v) return `<div class="card" data-valuation><h3>估值说明</h3><p class="sub">旧参考金额尚未按 V1 重估，比较周期与依据待确认；不计入美元排行和汇总。</p></div>`;
+  if (!v) return `<div class="card" data-valuation><h3>估值说明</h3><p class="sub">旧参考金额尚未按已审核估值口径重估，比较周期与依据待确认；不计入美元排行和汇总。</p></div>`;
   const alternatives = valuationAlternatives(o);
   const inputs = Object.entries(v.inputs || {}).filter(([key]) => key !== 'alternatives'), sources = (v.sources || []).filter(s => { try { return ['https:', 'http:'].includes(new URL(s.url).protocol); } catch { return false; } });
   const text = x => valuationText(typeof x === 'object' && x !== null ? JSON.stringify(x) : String(x ?? '未公布'));
-  const labels = { scenario: '场景', usageVersion: '用量基准版本', inputTokens: '输入 Token', outputTokens: '输出 Token', inputPrice: '输入单价', outputPrice: '输出单价', unitPrice: '单位价格', quantity: '数量', unit: '单位', currency: '币种', coverageDays: '覆盖天数', packagePrice: '套餐价格', packageUnits: '套餐额度', officialMonthlyPrice: '官方月价', first30Max: '月度参考上限', fullApplyMax: '完整申请权益上限', model: '模型', specification: '规格', resolution: '分辨率', quality: '质量', mode: '模式', priceUnit: '计费单位', priceApplicableAt: '价格适用时间', recipientCount: '领取人数', sharedPool: '共享额度', limits: '适用限制' };
-  return `<div class="card" data-valuation><h3>估值说明</h3><p class="sub">${valueTag(o)} ${esc(valuePeriod(o))} · V1${v.reviewedAt ? ` · 核价 ${esc(v.reviewedAt.slice(0, 10))}` : ''}<br>参考购买成本，不代表现金或已实际节省的费用。</p>
-    ${o.ty === 'apply' ? `<div class="valuation-summary" data-apply-values><span>月度参考上限 <b>${applyFirst30Maximum(o) == null ? '价值待定' : `${v.method === 'scenario' ? '≈ ' : ''}${money(applyFirst30Maximum(o))}`}</b></span><span>完整申请权益上限 <b>${applyMaximum(o) == null ? '价值待定' : money(applyMaximum(o))}</b></span><small>权益期限：${esc(o.val || '以官方计划为准')}。完整上限覆盖整个计划，各计划期限不同；最高可申请不代表保证获批${v.usdEstimate == null ? '，没有保证可得的下限' : ''}。</small></div>` : ''}
+  const labels = { scenario: '场景', usageVersion: '用量基准版本', inputTokens: '输入 Token', outputTokens: '输出 Token', inputPrice: '输入单价', outputPrice: '输出单价', unitPrice: '单位价格', quantity: '数量', unit: '单位', currency: '币种', coverageDays: '覆盖天数', packagePrice: '套餐价格', packageUnits: '套餐额度', officialMonthlyPrice: '官方月价', first30Max: '月度参考上限', fullApplyMax: '完整申请权益上限', benchmarkType: '参考类型', referencePlan: '参考套餐', referenceModel: '参考模型', ruleIds: '计算规则', usageMultiplier: '用量倍数', pricingBasis: '定价依据', calculationBasis: '计算依据', model: '模型', specification: '规格', resolution: '分辨率', quality: '质量', mode: '模式', priceUnit: '计费单位', priceApplicableAt: '价格适用时间', recipientCount: '领取人数', sharedPool: '共享额度', limits: '适用限制' };
+  const benchmarks = { entry_plan: '入门套餐参考', lowest_plan: '最低套餐参考', middle_plan: '中档套餐参考', substitute_model: '替代模型用量参考', accepted_reference: '套餐价格参考', package_ratio: '套餐额度比例参考', modality_sum: '多模态用量参考', discount_reference: '优惠价格参考', reset_reference: '额度重置参考' };
+  return `<div class="card" data-valuation><h3>估值说明</h3><p class="sub">${valueTag(o)} ${esc(valuePeriod(o))} · ${esc(v.version.toUpperCase())}${v.reviewedAt ? ` · 核价 ${esc(v.reviewedAt.slice(0, 10))}` : ''}<br>参考购买成本，不代表现金或已实际节省的费用。</p>
+    ${o.ty === 'apply' ? `<div class="valuation-summary" data-apply-values>${isApplyBenchmark(o) ? `<span>月度使用方案参考 <b>${applyScenarioReference(o) == null ? '价值待定' : `≈ ${money(applyScenarioReference(o))}`}</b></span><small>按参考价格与固定用量计算的购买成本，不代表申请额度或保证获批；没有保证可得的下限。</small>` : `<span>月度参考上限 <b>${applyFirst30Maximum(o) == null ? '价值待定' : `${v.method === 'scenario' ? '≈ ' : ''}${money(applyFirst30Maximum(o))}`}</b></span>`}<span>完整申请权益上限 <b>${applyMaximum(o) == null ? '价值待定' : money(applyMaximum(o))}</b></span><small>权益期限：${esc(o.val || '以官方计划为准')}。完整上限覆盖整个计划，各计划期限不同；最高可申请不代表保证获批${v.usdEstimate == null ? '，没有保证可得的下限' : ''}。</small></div>` : ''}
     ${v.baselineModel ? `<p class="small">基准模型：<b>${esc(v.baselineModel)}</b></p>` : ''}
     ${alternatives.length ? `<label class="field" for="valueModel">选择模型使用方案<select id="valueModel"><option value="default" selected>${esc(v.baselineModel || '默认估值')} · 默认基准</option>${alternatives.map((x, i) => x.model === v.baselineModel ? '' : `<option value="${i}">${esc(x.model)} · ≈ ${money(x.amount)}</option>`).join('')}</select></label><p class="small muted" data-model-note role="status">当前为默认基准。其他模型是另一个使用方案；金额已按此活动的覆盖期与配额计算。全站排序、汇总和领取记录使用默认估值。</p>` : ''}
     ${v.coverage ? `<p class="small">计价模型 ${v.coverage.pricedModels}/${v.coverage.totalModels}${v.coverage.days ? ` · 覆盖 ${v.coverage.days} 天` : ''}${v.coverage.pricedModels < v.coverage.totalModels ? ' · 部分模型缺价，金额为暂定值' : ''}</p>` : ''}
     ${v.formula ? `<div class="value-formula" data-detail-formula>${esc(valuationText(v.formula))}</div>` : `<p class="small">${esc(VALUE_STATUS[v.status] || '暂无可靠价格')}</p>`}
     ${validAmount(v.fullValue) != null ? `<p class="small">完整权益参考值：${money(v.fullValue)}（独立展示，不叠加月度参考价值）</p>` : ''}
-    ${inputs.length ? `<details><summary>计算输入与限制</summary><dl class="value-inputs">${inputs.map(([key, val]) => `<div><dt>${esc(labels[key] || key)}</dt><dd>${esc(text(val))}</dd></div>`).join('')}</dl></details>` : ''}
+    ${inputs.length ? `<details><summary>计算输入与限制</summary><dl class="value-inputs">${inputs.map(([key, val]) => `<div><dt>${esc(labels[key] || key)}</dt><dd>${esc(key === 'benchmarkType' ? benchmarks[val] || text(val) : text(val))}</dd></div>`).join('')}</dl></details>` : ''}
     ${(v.assumptions || []).length ? `<ul class="value-assumptions">${v.assumptions.map(x => `<li>${esc(valuationText(x))}</li>`).join('')}</ul>` : ''}
     ${sources.length ? `<details><summary>价格与权益来源（${sources.length}）</summary>${sources.map(s => `<div class="value-source"><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.priceBasis || '价格依据')} ↗</a><small>核价 ${esc((s.checkedAt || '').slice(0, 10))}</small><blockquote>${esc(s.excerpt || '')}</blockquote></div>`).join('')}</details>` : ''}</div>`;
 }
@@ -847,19 +852,20 @@ function pLibrary() {
 const APPLY_VIEW = { period: 'first30' };
 function pApply() {
   const first30 = APPLY_VIEW.period === 'first30';
-  const amount = first30 ? applyFirst30Maximum : applyMaximum;
-  const label = first30 ? '月度参考上限' : '完整申请权益上限';
+  const amount = first30 ? applyMonthlyReference : applyMaximum;
+  const label = first30 ? '月度参考价值' : '完整申请权益上限';
   const list = view(OFFERS.filter(o => o.ty === 'apply')).sort((a, b) => (amount(b) ?? -1) - (amount(a) ?? -1));
   const known = list.filter(o => amount(o) != null), priced = known.filter(o => amount(o) > 0);
   main().innerHTML = ribbon() + ph('申请制', '需要提交材料、等待审核的资助。最高可申请不代表保证获批；申请制独立展示，不计入普通权益的月度汇总。') + `
-  <div class="card"><div class="seg" role="group" aria-label="申请价值比较周期">${[['first30', '月度参考上限'], ['full', '完整申请权益上限']].map(([key, text]) => `<button type="button" data-apply-period="${key}" aria-pressed="${APPLY_VIEW.period === key}">${text}</button>`).join('')}</div><h3 style="margin-top:12px">${label}</h3><p class="sub">${first30 ? '只比较已核实的月度参考上限；首月金额未知的资助保留卡片，不用完整资助额度替代首月值。' : '完整上限覆盖整个资助或会员计划，各计划期限不同，金额不能理解为相同时间内可获得的权益；期限见卡片与详情。'}对数刻度；已计价 ${known.length}/${list.length} 条，价值待定保留活动展示，零参考值不进入对数图。无保底时不生成下限。</p><div class="legend">${VALUE_GROUPS.map(([_, method, color]) => `<span><i class="sw" style="background:var(--s${color + 1})"></i>${method}</span>`).join('')}</div><div class="chart" id="cApply" style="height:${priced.length * 40 + 50}px"></div></div>
+  <div class="card"><div class="seg" role="group" aria-label="申请价值比较周期">${[['first30', '月度参考价值'], ['full', '完整申请权益上限']].map(([key, text]) => `<button type="button" data-apply-period="${key}" aria-pressed="${APPLY_VIEW.period === key}">${text}</button>`).join('')}</div><h3 style="margin-top:12px">${label}</h3><p class="sub">${first30 ? '月度参考上限只使用已核实的释放安排，未知时保留卡片。月度使用方案参考单列为参考价格与固定用量的购买成本，不代表申请额度或保证获批。' : '完整上限覆盖整个资助或会员计划，各计划期限不同，金额不能理解为相同时间内可获得的权益；期限见卡片与详情。使用方案参考不进入完整申请上限图。'}对数刻度；已计价 ${known.length}/${list.length} 条，价值待定保留活动展示，零参考值不进入对数图。无保底时不生成下限。</p><div class="legend">${VALUE_GROUPS.map(([_, method, color]) => `<span><i class="sw" style="background:var(--s${color + 1})"></i>${method}</span>`).join('')}${first30 && priced.some(isApplyBenchmark) ? '<span><i class="sw" style="background:var(--s4)"></i>月度使用方案参考</span>' : ''}</div><div class="chart" id="cApply" style="height:${priced.length * 40 + 50}px"></div></div>
   <section>${ocards(list)}</section>`;
   const c = chart('#cApply', {
     grid: { left: 8, right: 64, top: 6, bottom: 6, containLabel: true },
-    tooltip: { trigger: 'item', formatter: p => { const o = OMAP[p.data.id]; return `${esc(o.t)}<br>${label}：${valueGroup(o) === 'scenario' ? '≈ ' : ''}${money(amount(o))}<br>权益期限：${esc(o.val || '以官方计划为准')}<br>${valueTag(o)}<br>最高可申请不代表保证获批${valuationOf(o).usdEstimate == null ? '；没有保证可得的下限' : ''}`; } },
+    tooltip: { trigger: 'item', formatter: p => { const o = OMAP[p.data.id], benchmark = isApplyBenchmark(o); return `${esc(o.t)}<br>${benchmark ? '月度使用方案参考' : first30 ? '月度参考上限' : label}：${benchmark || valueGroup(o) === 'scenario' ? '≈ ' : ''}${money(amount(o))}<br>权益期限：${esc(o.val || '以官方计划为准')}<br>${valueTag(o)}<br>${benchmark ? '参考购买成本，不代表申请额度或保证获批；没有保证可得的下限' : `最高可申请不代表保证获批${valuationOf(o).usdEstimate == null ? '；没有保证可得的下限' : ''}`}`; } },
     xAxis: Object.assign(axisCommon(), { type: 'log', min: Math.min(1, ...priced.map(amount)), axisLabel: { color: TK.muted, formatter: v => money(v) } }),
     yAxis: Object.assign(axisCommon(), { type: 'category', inverse: true, data: priced.map(o => o.plat.name), axisLabel: { color: TK.ink2, fontSize: 12 } }),
-    series: [{ name: `${label}（方法见图例）`, type: 'bar', barWidth: 14, data: priced.map(o => ({ value: amount(o), id: o.id, itemStyle: { color: valueGroup(o) === 'scenario' ? TK.s[3] : TK.s[0] } })), itemStyle: { borderRadius: [0, 4, 4, 0] }, label: { show: true, position: 'right', color: TK.ink2, formatter: p => `${valueGroup(OMAP[p.data.id]) === 'scenario' ? '≈' : ''}${money(p.value)}`, fontFamily: FONT } }],
+    series: [{ name: `${first30 ? '月度参考上限' : label}（方法见图例）`, type: 'bar', barWidth: 14, data: priced.map(o => ({ value: isApplyBenchmark(o) ? null : amount(o), id: o.id, itemStyle: { color: valueGroup(o) === 'scenario' ? TK.s[3] : TK.s[0] } })), itemStyle: { borderRadius: [0, 4, 4, 0] }, label: { show: true, position: 'right', color: TK.ink2, formatter: p => p.value == null ? '' : `${valueGroup(OMAP[p.data.id]) === 'scenario' ? '≈' : ''}${money(p.value)}`, fontFamily: FONT } },
+      ...(first30 ? [{ name: '月度使用方案参考', type: 'bar', barWidth: 14, data: priced.map(o => ({ value: isApplyBenchmark(o) ? amount(o) : null, id: o.id })), itemStyle: { color: TK.s[3], borderRadius: [0, 4, 4, 0] }, label: { show: true, position: 'right', color: TK.ink2, formatter: p => p.value == null ? '' : `≈${money(p.value)}`, fontFamily: FONT } }] : [])],
   });
   c && c.on('click', p => { location.hash = 'offer-' + p.data.id; });
   $$('[data-apply-period]').forEach(button => button.addEventListener('click', () => { APPLY_VIEW.period = button.dataset.applyPeriod; CHARTS.forEach(chart => chart.dispose()); CHARTS.clear(); pApply(); }));
@@ -1255,7 +1261,7 @@ function pOffer(id) {
   const revisionBox = $('#revBox');
   (revisionBox ? adm(`/offers/${encodeURIComponent(o.id)}`) : Promise.resolve(null)).then(j => {
     const box = revisionBox; if (!box?.isConnected || route()[1] !== o.id || !j?.revisions?.length) return;
-    const F = { valueText: '额度', claimEnd: '截止', claimStart: '开始', membershipRequirement: '会员资格', requirements: '门槛', usdEstimate: '折合美元', usdMax: '最高可申请额度', valuation: 'V1 估值', title: '标题', creditValidity: '有效期', endKind: '截止类型', type: '类型', audience: '适用对象', steps: '领取步骤', claimMethod: '领取方式', modalities: '模态', platformId: '平台', sourceTz: '时区', evidence: '官方证据' };
+    const F = { valueText: '额度', claimEnd: '截止', claimStart: '开始', membershipRequirement: '会员资格', requirements: '门槛', usdEstimate: '折合美元', usdMax: '最高可申请额度', valuation: '估值', title: '标题', creditValidity: '有效期', endKind: '截止类型', type: '类型', audience: '适用对象', steps: '领取步骤', claimMethod: '领取方式', modalities: '模态', platformId: '平台', sourceTz: '时区', evidence: '官方证据' };
     // 修订内容转成人能读的文字：枚举用中文名，列表逐条，证据只说明链接和级别变化
     const say = (field, v) => {
       if (v == null || v === '') return '（空）';
@@ -1365,7 +1371,7 @@ function checksBlock(o) {
   return `<div class="card" style="padding:8px 10px;background:var(--surface-2)"><div class="small" style="font-weight:600;margin-bottom:2px">上架前检查</div>${main.length ? `<div class="rows">${main.map(line).join('')}</div>` : '<div class="small" style="color:var(--good-ink)">✓ 字段齐全，网站所有栏目和推送都能正确显示</div>'}${info.length ? `<div class="small muted" style="margin-top:4px">可选：${info.map(i => esc(i.label)).join('、')}</div>` : ''}</div>`;
 }
 const RC = [['paid_bundle', '付费套餐自带'], ['not_ai', '不是 AI 额度'], ['wrong_platform', '平台归错'], ['duplicate', '重复'], ['expired', '旧活动 · 日期查不到'], ['vague', '额度不明'], ['insufficient_evidence', '证据不足'], ['wrong_type', '分类错']];
-const FIELD_L = { models: '免费模型', tags: '标签', publishedAt: '发布时间', usdMax: '最高可申请额度', valuation: 'V1 估值', steps: '领取步骤', sourceTz: '官方时区', modalities: '模态', title: '标题', type: '类型', valueText: '额度', usdEstimate: '折合美元', claimStart: '开始', claimEnd: '截止', endKind: '截止方式', creditValidity: '有效期', audience: '适用对象', membershipRequirement: '会员资格', requirements: '门槛', modalities: '模态', platformId: '平台', sourceTz: '时区', claimMethod: '领取方式' };
+const FIELD_L = { models: '免费模型', tags: '标签', publishedAt: '发布时间', usdMax: '最高可申请额度', valuation: '估值', steps: '领取步骤', sourceTz: '官方时区', modalities: '模态', title: '标题', type: '类型', valueText: '额度', usdEstimate: '折合美元', claimStart: '开始', claimEnd: '截止', endKind: '截止方式', creditValidity: '有效期', audience: '适用对象', membershipRequirement: '会员资格', requirements: '门槛', modalities: '模态', platformId: '平台', sourceTz: '时区', claimMethod: '领取方式' };
 const SUG = { approve: ['good', '✓', '建议通过'], history: ['good', '⌛', '建议作为历史上架'], reject: ['bad', '✕', '建议拒绝'], judge: ['warn', '?', '需要你判断'] };
 const RCL_ALL = { paid_bundle: '付费套餐自带', not_ai: '不是 AI 额度', wrong_platform: '平台归错', duplicate: '重复', expired: '旧活动 · 日期查不到', vague: '额度不明', insufficient_evidence: '证据不足', wrong_type: '分类错', wrong_field: '字段错', other: '其他' };
 function reviewDiffRows(changes) {

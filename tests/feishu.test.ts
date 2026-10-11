@@ -92,7 +92,7 @@ describe('飞书群日报', () => {
     const notice = await buildNotice(env, 'digest', 'feishu');
     const [card] = await buildCards(env, notice) as { elements: { tag: string; text?: { content: string }; actions?: { url: string }[] }[] }[];
     const text = card.elements.filter(e => e.tag === 'div').map(e => e.text!.content).join('\n');
-    expect(text).toContain('🎁 **福利**：【译】$20 credited toward your subscription（旧参考值 $20–$40 · 待统一 V1 口径）');
+    expect(text).toContain('🎁 **福利**：【译】$20 credited toward your subscription（旧参考值 $20–$40 · 待按已审核估值口径重估）');
     expect(text).toContain('📥 **怎么领**：充值后赠送');
     expect(text).toContain('💬 **牧场心得**：升级后才到账， 注意先绑卡');
     expect(text).toContain('　1. 【译】Sign in with social login or AWS Builder ID');

@@ -250,15 +250,77 @@ describe('V1 valuation across public pages', () => {
     expect(page.run('endInstant(OMAP.ny).getTime()')).toBeGreaterThan(before);
     expect(constructions).toBeLessThanOrEqual(2);
   });
-  it('requests the V1 response contract rather than reusing a cached legacy offer list', async () => {
+  it('requests the V2 response contract and still accepts V1 metadata from the fresh offer list', async () => {
     const old = { id: 'cached', platformId: 'vendor', title: '额度', type: 'standing', valueText: '每月20美元', usdEstimate: 20, usdMax: null,
       modalities: ['text'], requirements: ['none'], claimMethod: 'auto', endKind: 'standing',
       lastVerifiedAt: new Date().toISOString(), discoveredAt: new Date().toISOString(), evidence: { tier: 'docs', excerpts: {} } };
     const page = fixture(url => url === '/api/platforms' ? { platforms: [{ id: 'vendor', name: 'Vendor', type: 'lab' }] }
-      : url.startsWith('/api/offers') ? { offers: [{ ...old, valuation: new URL(url, 'https://ai-yangmao.com').searchParams.get('valuation') === 'v1' ? valuation() : null }] } : {});
+      : url.startsWith('/api/offers') ? { offers: [{ ...old, valuation: new URL(url, 'https://ai-yangmao.com').searchParams.get('valuation') === 'v2' && new URL(url, 'https://ai-yangmao.com').searchParams.get('schema') === 'valuation-v2' ? valuation() : null }] } : {});
     await page.run('loadData()'); page.run('prepare();pToday()');
     expect(page.run('valueSummary(OFFERS)')).toMatchObject({ official: 20, priced: 1, legacy: 0 });
     expect(page.document.querySelector('.total')!.textContent).toContain('已计价 1/1');
+  });
+  it('renders the reviewed record version and preserves V1 and V2 amounts while excluding unsupported metadata', () => {
+    const page = fixture(() => ({}));
+    valuedOffers(page, [{ id: 'v1', valuation: valuation() },
+      { id: 'v2', valuation: valuation({ version: 'v2', method: 'official_price', status: 'provisional', usdEstimate: 15,
+        inputs: { benchmarkType: 'entry_plan', referencePlan: 'Starter <img src=x onerror=alert(1)>', usageMultiplier: 1 } }) },
+      { id: 'v2-null', valuation: valuation({ version: 'v2', status: 'beta_unpriced', method: 'none', usdEstimate: null, formula: null }) },
+      { id: 'future', usd: 999, valuation: valuation({ version: 'v3', usdEstimate: 999 }) }]);
+    expect(page.run('valueSummary(OFFERS)')).toMatchObject({ official: 35, priced: 2, unknown: 2, legacy: 1 });
+    page.run("pOffer('v1')");
+    expect(page.document.querySelector('[data-valuation]')!.textContent).toContain('· V1');
+    page.run("pOffer('v2')");
+    const block = page.document.querySelector('[data-valuation]')!;
+    expect(block.textContent).toContain('· V2');
+    expect(block.textContent).toContain('Starter <img src=x onerror=alert(1)>');
+    expect(block.querySelector('img')).toBeNull();
+    expect(page.document.querySelector('[data-detail-value]')!.textContent).toContain('≈ $15');
+    page.run("pOffer('v2-null')");
+    expect(page.document.querySelector('[data-detail-value]')!.textContent).toContain('价值待定');
+    expect(page.document.querySelector('[data-detail-value]')!.textContent).not.toContain('$0');
+    page.run("pOffer('future')");
+    expect(page.document.querySelector('[data-valuation]')!.textContent).toContain('已审核估值口径');
+    expect(page.document.querySelector('[data-valuation]')!.textContent).not.toContain('按 V1');
+  });
+  it('plots an application model reference separately from real grant caps without inventing an award amount', () => {
+    const page = fixture(() => ({}));
+    valuedOffers(page, [
+      { id: 'grant', ty: 'apply', ek: 'standing', valuation: valuation({ period: 'apply_max', usdEstimate: null, usdMax: 1000, inputs: { first30Max: 10, fullApplyMax: 1000 } }) },
+      { id: 'proxy', ty: 'apply', ek: 'standing', valuation: valuation({ version: 'v2', method: 'scenario', status: 'provisional', period: 'apply_max', usdEstimate: 30,
+        formula: '30 × 月度固定用量 × Reference Model 价格 = $30', inputs: { benchmarkType: 'substitute_model', referenceModel: 'Reference Model', usageMultiplier: 30,
+          first30Max: null, fullApplyMax: null } }) },
+      { id: 'proxy-zero', ty: 'apply', ek: 'standing', valuation: valuation({ version: 'v2', method: 'scenario', status: 'provisional', period: 'apply_max', usdEstimate: 0,
+        inputs: { benchmarkType: 'substitute_model', referenceModel: 'Reference Model' } }) },
+    ]);
+    page.run('pApply()');
+    const chart = page.charts.get('cApply');
+    expect(chart.series.map((s: any) => s.data.map((row: any) => [row.id, row.value]))).toEqual([
+      [['proxy', null], ['grant', 10]], [['proxy', 30], ['grant', null]],
+    ]);
+    expect(chart.series[1].name).toBe('月度使用方案参考');
+    expect(chart.tooltip.formatter({ data: chart.series[1].data[0] })).toContain('参考购买成本，不代表申请额度或保证获批');
+    expect(chart.tooltip.formatter({ data: chart.series[1].data[0] })).not.toContain('月度参考上限');
+    expect(page.document.querySelector('main')!.textContent).toContain('月度参考价值');
+    expect(page.run('applyFirst30Maximum(OMAP.proxy)')).toBeNull();
+    expect(page.run('applyMaximum(OMAP.proxy)')).toBeNull();
+    expect(page.run('valueSummary(OFFERS).total')).toBe(0);
+    expect(page.run('valLabel(OMAP.proxy)')).toContain('≈ $30');
+    expect(page.run('valLabel(OMAP.proxy)')).toContain('月度使用方案参考');
+    expect(page.run('valLabel(OMAP.proxy)')).not.toContain('最高');
+    expect(page.run('valLabel(OMAP["proxy-zero"])')).toContain('$0');
+    page.document.querySelector('[data-apply-period="full"]')!.dispatchEvent(new page.window.Event('click'));
+    expect(page.charts.get('cApply').series).toHaveLength(1);
+    expect(page.charts.get('cApply').series[0].data.map((row: any) => [row.id, row.value])).toEqual([['grant', 1000]]);
+    page.run("pOffer('proxy')");
+    const detail = page.document.querySelector('[data-apply-values]')!.textContent;
+    expect(detail).toContain('月度使用方案参考 ≈ $30');
+    expect(detail).toContain('完整申请权益上限 价值待定');
+    expect(detail).toContain('没有保证可得的下限');
+    expect(detail).not.toMatch(/确定金额|月度参考上限/);
+    expect(page.document.querySelector('[data-valuation]')!.textContent).toContain('用量倍数30');
+    page.run("pOffer('grant')");
+    expect(page.document.querySelector('[data-apply-values]')!.textContent).toContain('月度参考上限 $10');
   });
   it('switches evidenced model plans only in the detail amount and formula, leaving the baseline totals intact', () => {
     const page = fixture(() => ({}));

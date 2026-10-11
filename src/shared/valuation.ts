@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-/** V1 compares the benefit available in the first 30 days after claiming. */
+/** Reviewed valuations compare monthly reference costs while retaining real benefit ceilings. */
 export const VALUATION_METHODS = {
   face_value: '官方面额', official_price: '官方价格折算', scenario: '标准用量估算', none: '暂无可靠价格',
 } as const;
@@ -34,7 +34,7 @@ const jsonValue: z.ZodType<JsonValue> = z.lazy(() => z.union([
 export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
 
 const valuationShape = {
-  version: z.literal('v1'),
+  version: z.enum(['v1', 'v2']),
   status: z.enum(['priced', 'provisional', 'beta_unpriced', 'unpriceable', 'needs_judgment']),
   method: z.enum(['face_value', 'official_price', 'scenario', 'none']),
   period: z.enum(['one_time', 'monthly', 'first30', 'apply_max']),
@@ -70,6 +70,20 @@ export const valuationSchema = z.object(valuationShape).strict().superRefine((v,
   if (v.usdEstimate !== null && v.usdMax !== null && v.usdMax < v.usdEstimate) fail('usdMax', '真实上限不能小于比较金额');
   if (v.usdEstimate === null && v.usdMax !== null && v.period !== 'apply_max') fail('usdMax', '没有确定金额时只允许保存真实申请上限');
   if (v.status === 'priced' && v.coverage && v.coverage.pricedModels < v.coverage.totalModels) fail('status', '部分模型缺价时须标为暂定');
+  if (v.version === 'v2' && 'benchmarkType' in v.inputs) {
+    const benchmark = v.inputs.benchmarkType;
+    if (typeof benchmark !== 'string' || !benchmark.trim() || benchmark.length > 200) fail('inputs', '参考类型须为非空文字');
+    if (v.status !== 'provisional') fail('status', '参考套餐或替代模型金额须标为暂定');
+    if (v.method !== 'official_price' && v.method !== 'scenario') fail('method', '参考金额须使用价格折算或用量估算，不能冒充官方面额');
+    if (v.usdEstimate === null) fail('usdEstimate', '参考估值须有计算金额，无法定价时保持未知状态');
+    if (v.period === 'apply_max') {
+      if (v.usdMax !== null || v.inputs.first30Max != null || v.inputs.fullApplyMax != null) fail('usdMax', '申请制参考使用成本不能作为真实申请上限');
+    }
+    if (benchmark === 'substitute_model') {
+      if (v.method !== 'scenario') fail('method', '替代模型参考须使用用量估算');
+      if (v.fullValue !== null) fail('fullValue', '替代模型用量成本不能作为完整权益金额');
+    }
+  }
 });
 export type Valuation = z.infer<typeof valuationSchema>;
 
@@ -92,6 +106,7 @@ const publicInputFields = new Set([
   'components', 'fx', 'quantities', 'rates', 'cnyValue', 'entitlementUnits', 'numerator', 'denominator',
   'fxDate', 'fxSource', 'fromCurrency', 'toCurrency', 'inputPerMillion', 'outputPerMillion',
   'alternatives', 'formula', 'first30Max', 'fullApplyMax',
+  'benchmarkType', 'referencePlan', 'referenceModel', 'ruleIds', 'usageMultiplier', 'pricingBasis', 'calculationBasis',
 ]);
 function publicInputs(value: JsonValue): JsonValue {
   if (Array.isArray(value)) return value.map(publicInputs);
@@ -139,13 +154,16 @@ export function valuationSummary(offer: { type?: string; valuation?: unknown; us
   if (!value || !valuationMatchesAmounts(value, offer)) {
     if (offer.valuation != null) return VALUATION_STATUSES.needs_judgment;
     if (offer.usdEstimate == null) return '';
-    return `旧参考值 ${usd(offer.usdEstimate)}${offer.usdMax != null && offer.usdMax > offer.usdEstimate ? `–${usd(offer.usdMax)}` : ''} · 待统一 V1 口径`;
+    return `旧参考值 ${usd(offer.usdEstimate)}${offer.usdMax != null && offer.usdMax > offer.usdEstimate ? `–${usd(offer.usdMax)}` : ''} · 待按已审核估值口径重估`;
   }
   if (value.method === 'none') return VALUATION_STATUSES[value.status];
-  const parts: string[] = [VALUATION_METHODS[value.method]];
+  const isBenchmark = value.version === 'v2' && typeof value.inputs.benchmarkType === 'string' && !!value.inputs.benchmarkType.trim();
+  const parts: string[] = [isBenchmark ? value.method === 'scenario' ? '模型成本参照' : '套餐价格参照' : VALUATION_METHODS[value.method]];
   if (value.period === 'apply_max') {
-    if (value.usdEstimate !== null) parts.push(`确定金额 ${usd(value.usdEstimate)}`);
+    const benchmark = value.version === 'v2' && typeof value.inputs.benchmarkType === 'string' && !!value.inputs.benchmarkType.trim();
+    if (value.usdEstimate !== null) parts.push(`${benchmark ? '月度使用方案参考约' : '确定金额'} ${usd(value.usdEstimate)}`);
     if (value.usdMax !== null) parts.push(`最高可申请 ${usd(value.usdMax)}${value.usdEstimate === null ? '（审批决定，无保底）' : ''}`);
+    if (benchmark) parts.push('参考成本，不代表申请额度或保证获批');
   } else if (value.usdEstimate !== null) {
     parts.push(`${VALUATION_PERIODS[value.period]}${value.method === 'scenario' ? '约 ' : ' '}${usd(value.usdEstimate)}`);
     if (value.usdMax !== null && value.usdMax > value.usdEstimate) parts.push(`权益上限 ${usd(value.usdMax)}`);

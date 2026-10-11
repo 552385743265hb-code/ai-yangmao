@@ -18,7 +18,7 @@
 
 **核查入口：** [来源 1](https://www.adobe.com/in/education/students/photoshop.html)
 
-**你的结论或补充证据：** 待填写。
+**你的结论或补充证据：** 就按₹1999 年价 处理。
 
 ### 2 hacu 阿里云百炼新人免费额度
 
@@ -32,7 +32,7 @@
 
 **核查入口：** [来源 1](https://help.aliyun.com/zh/model-studio/new-free-quota)；[来源 2](https://help.aliyun.com/zh/model-studio/model-pricing)
 
-**你的结论或补充证据：** 待填写。
+**你的结论或补充证据：** 这个新人免费额度就按每个模态的参考额度累加即可。
 
 ### 3 yf7p 海纳百川计划：医疗机构可申请免费 Baichuan-M3 Plus API
 
@@ -48,7 +48,7 @@
 
 **核查入口：** [来源 1](https://www.baichuan-ai.com/?new_locale=zh-cn)；[来源 2](https://platform.baichuan-ai.com/prices)；[来源 3](https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml)
 
-**你的结论或补充证据：** 待填写。
+**你的结论或补充证据：** 医疗场景使用的token量大，现在这个量可能只相当于一天的量，所以扩大到现在的值的30倍
 
 ### 4 248m Hogee 数字员工免费体验
 
@@ -62,7 +62,7 @@
 
 **核查入口：** [来源 1](https://hogee.baidu.com/hogee/employee/explore)；[来源 2](https://hogee-web.cdn.bcebos.com/hogee/static/js/index.5f8aa87b.js)
 
-**你的结论或补充证据：** 待填写。
+**你的结论或补充证据：** 一般这种积分都是用成本最低的模型，找一下Baidu官方的成本最低的收费模型，按照默认使用量估算即可
 
 ### 5 626n SWE-2 Free 桌面端与命令行限时免费
 
@@ -74,7 +74,7 @@
 
 **核查入口：** [来源 1](https://devin.ai/pricing)；[来源 2](https://docs.devin.ai/desktop/models)
 
-**你的结论或补充证据：** 待填写。
+**你的结论或补充证据：** 9月10日发布的，到10月15日已经满一个月了，就按45美元
 
 ### 6 c232 Windsurf 平台 Claude Opus 4.6 (fast mode) 积分倍率优惠
 
@@ -86,7 +86,7 @@
 
 **核查入口：** [来源 1](https://devin.ai/blog/opus-46-fast)
 
-**你的结论或补充证据：** 待填写。
+**你的结论或补充证据：** 合并同样的事件。 估值就按照无法估值。
 
 ### 7 mdaj 豆包工作客户端下载 30 天订阅体验
 
@@ -100,7 +100,7 @@
 
 **核查入口：** [来源 1](https://www.doubao.com/work)
 
-**你的结论或补充证据：** 待填写。
+**你的结论或补充证据：** 按照最低档位套餐定
 
 ### 8 gvew Dreamina 每日免费额度
 
@@ -116,7 +116,7 @@
 
 **核查入口：** [来源 1](https://dreamina.capcut.com/ai-video/free-image-to-video-generator-credits-faq)；[来源 2](https://dreamina.capcut.com/pricing/dreamina-price)
 
-**你的结论或补充证据：** 待填写。
+**你的结论或补充证据：** 可以，3600相当于Basic的两倍，就按照basic的月费×2
 
 ### 9 v51t ElevenLabs 创业扶持计划
 
@@ -130,7 +130,7 @@
 
 **核查入口：** [来源 1](https://elevenlabs.io/startup-grants)；[来源 2](https://elevenlabs.io/pricing/api)；[来源 3](https://elevenlabs.io/docs/overview/administration/pay-as-you-go)
 
-**你的结论或补充证据：** 待填写。
+**你的结论或补充证据：** 按照不可估值处理
 
 ### 10 7tpm ElevenLabs 免费版
 
@@ -144,7 +144,7 @@
 
 **核查入口：** [来源 1](https://elevenlabs.io/v4)；[来源 2](https://elevenlabs.io/docs/overview/administration/pay-as-you-go)；[来源 3](https://elevenlabs.io/pricing)；[来源 4](https://help.elevenlabs.io/hc/en-us/articles/24351324241937-What-is-the-price-for-usage-based-billing)
 
-**你的结论或补充证据：** 待填写。
+**你的结论或补充证据：** 按照starter套餐的费率来定，不能算business的费率
 
 ### 11 qm8n ElevenLabs Creator 及以上：Eleven v4 限时额外 2 倍 TTS 用量（至 10/12）
 
@@ -158,7 +158,7 @@
 
 **核查入口：** [来源 1](https://elevenlabs.io/pricing)；[来源 2](https://elevenlabs.io/docs/overview/administration/pay-as-you-go)；[来源 3](https://help.elevenlabs.io/hc/en-us/articles/24351324241937-What-is-the-price-for-usage-based-billing)
 
-**你的结论或补充证据：** 待填写。
+**你的结论或补充证据：** 就按照creator的套餐×2
 
 ### 12 echh Gemini Enterprise Plus 版 30 天免费试用
 
@@ -172,7 +172,7 @@
 
 **核查入口：** [来源 1](https://cloud.google.com/free)；[来源 2](https://cloud.google.com/gemini-enterprise)
 
-**你的结论或补充证据：** 待填写。
+**你的结论或补充证据：** $21
 
 ### 13 0vec Gemini Enterprise 商业版 30 天免费试用
 
@@ -188,7 +188,7 @@
 
 **核查入口：** [来源 1](https://cloud.google.com/gemini-enterprise/business)；[来源 2](https://support.google.com/g/answer/16551831?hl=en)
 
-**你的结论或补充证据：** 待填写。
+**你的结论或补充证据：** $21
 
 ### 14 t3qi Genspark 免费账号每日额度
 
@@ -204,7 +204,7 @@
 
 **核查入口：** [来源 1](https://www.genspark.ai/helpcenter/membership-plans)；[来源 2](https://www.genspark.ai/helpcenter/credits-guide)
 
-**你的结论或补充证据：** 待填写。
+**你的结论或补充证据：** $4.8
 
 ### 15 niro Hugging Face 免费用户每月 $0.10（仅限 Inference Providers）
 
@@ -218,7 +218,7 @@
 
 **核查入口：** [来源 1](https://huggingface.co/docs/inference-providers/pricing)
 
-**你的结论或补充证据：** 待填写。
+**你的结论或补充证据：** 整个条目重新复核，如果属实就拒掉
 
 ### 16 df8o Higgsfield 付费会员积分补足（9月29–30日历史活动）
 
@@ -232,7 +232,7 @@
 
 **核查入口：** [来源 1](https://higgsfield.ai/creator-hub/changelog)；[来源 2](https://higgsfield.ai/blog/new-ai-influencer)
 
-**你的结论或补充证据：** 待填写。
+**你的结论或补充证据：** 按无法估值计算
 
 ### 17 asus Higgsfield Seedance 2.5 新用户24小时免费试用
 
@@ -248,7 +248,7 @@
 
 **核查入口：** [来源 1](https://higgsfield.ai/creator-hub/changelog)；[来源 2](https://higgsfield.ai/blog/credits-vs-unlimited-ai-video-generation)；[来源 3](https://higgsfield.ai/blog/new-ai-influencer)
 
-**你的结论或补充证据：** 待填写。
+**你的结论或补充证据：** $5.94 注意这个不要算整个月的了
 
 ### 18 c93n Scale 团队方案无限模型升级
 
@@ -262,7 +262,7 @@
 
 **核查入口：** [来源 1](https://higgsfield.ai/creator-hub/changelog)；[来源 2](https://docs.byteplus.com/en/docs/ModelArk/1544106)；[来源 3](https://ai.google.dev/gemini-api/docs/pricing)
 
-**你的结论或补充证据：** 待填写。
+**你的结论或补充证据：** 2.10 USD
 
 ### 19 yn2q Higgsfield 免费 Seedance 2.0 4K 生成
 
@@ -276,7 +276,7 @@
 
 **核查入口：** [来源 1](https://higgsfield.ai/blog/seedance-4k-unlimited-11-days)；[来源 2](https://higgsfield.ai/higgsfield-api)
 
-**你的结论或补充证据：** 待填写。
+**你的结论或补充证据：** 按无法估值计算
 
 ### 20 iaqq 华为云码道限时每日领取1000万Tokens（4款福利模型）
 
@@ -292,7 +292,7 @@
 
 **核查入口：** [来源 1](https://support.huaweicloud.com/offers-codeartsagent/codeartsagent_offers_0001.html)；[来源 2](https://bigmodel.cn/pricing)；[来源 3](https://api-docs.deepseek.com/zh-cn/quick_start/pricing)；[来源 4](https://openrouter.ai/api/v1/models/deepseek/deepseek-v4-flash-0731/endpoints)；[来源 5](https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml)
 
-**你的结论或补充证据：** 待填写。
+**你的结论或补充证据：** $1.613836
 
 ### 21 ti6o 果办OfficeAce 首次注册登录赠送4000积分
 
@@ -308,7 +308,7 @@
 
 **核查入口：** [来源 1](https://www.huaweicloud.com/product/officeace.html)；[来源 2](https://support.huaweicloud.com/price-officeace/officeace_05_0003.html)；[来源 3](https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml)
 
-**你的结论或补充证据：** 待填写。
+**你的结论或补充证据：** $29.288137
 
 ### 22 dh9i 即梦国内版每日登录送积分
 
@@ -320,7 +320,7 @@
 
 **核查入口：** [来源 1](https://jimeng.jianying.com/)；[来源 2](https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml)
 
-**你的结论或补充证据：** 待填写。
+**你的结论或补充证据：** 实测按照每日20免费积分计算，去火山引擎看最便宜的seedance mini的价格折算
 
 ### 23 mec1 可灵国内版每月 128 灵感值 + 视频体验包
 
@@ -332,7 +332,7 @@
 
 **核查入口：** [来源 1](https://klingai.kuaishou.com/)
 
-**你的结论或补充证据：** 待填写。
+**你的结论或补充证据：** 按照国内最低一级套餐单价计算灵感值价值
 
 ### 24 291d Lovable 每日构建积分（Free每月最多30）
 
@@ -344,7 +344,7 @@
 
 **核查入口：** [来源 1](https://docs.lovable.dev/introduction/credits-and-usage)
 
-**你的结论或补充证据：** 待填写。
+**你的结论或补充证据：** 按照pro的价值来计算
 
 ### 25 da07 Lovable 免费版每月 AI 服务额度
 
@@ -356,7 +356,7 @@
 
 **核查入口：** [来源 1](https://docs.lovable.dev/introduction/credits-and-usage)
 
-**你的结论或补充证据：** 待填写。
+**你的结论或补充证据：** 按照pro的加购积分来计算，$1.20
 
 ### 26 l93u Lovable 邀请奖励：好友注册10积分、首次付费后邀请人100积分
 
@@ -368,7 +368,7 @@
 
 **核查入口：** [来源 1](https://docs.lovable.dev/introduction/credits-and-usage)
 
-**你的结论或补充证据：** 待填写。
+**你的结论或补充证据：** 按照最低一级套餐估值
 
 ### 27 de7w Lovart 免费版每天 70 积分
 
@@ -384,7 +384,7 @@
 
 **核查入口：** [来源 1](https://www.lovart.ai/pricing)
 
-**你的结论或补充证据：** 待填写。
+**你的结论或补充证据：** $8.48 并且应该修改为历史条目
 
 ### 28 gpgi Magnific Seedream 5.0 Pro 限时不限量生成
 
@@ -398,7 +398,7 @@
 
 **核查入口：** [来源 1](https://www.magnific.com/pricing)
 
-**你的结论或补充证据：** 待填写。
+**你的结论或补充证据：** 可以按照你的算法，$3.96
 
 ### 29 42lv MiniMax Code 签到双倍积分（9/28–10/7）
 
@@ -414,7 +414,7 @@
 
 **核查入口：** [来源 1](https://agent.minimax.cn/docs/changelog)；[来源 2](https://platform.minimaxi.com/docs/guides/pricing-token-plan.md)；[来源 3](https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml)
 
-**你的结论或补充证据：** 待填写。
+**你的结论或补充证据：** $5.187131
 
 ### 30 85nn MiniMax Token Plan 老用户回馈积分（数额未公布）
 
@@ -428,7 +428,7 @@
 
 **核查入口：** [来源 1](https://agent.minimax.cn/docs/changelog)；[来源 2](https://platform.minimaxi.com/docs/guides/pricing-token-plan.md)
 
-**你的结论或补充证据：** 待填写。
+**你的结论或补充证据：** 按无法估值处理
 
 ### 31 93yq Mistral 免费计划每月 $10 API 额度（无需信用卡）
 
@@ -444,7 +444,7 @@
 
 **核查入口：** [来源 1](https://mistral.ai/pricing/)
 
-**你的结论或补充证据：** 待填写。
+**你的结论或补充证据：** $10
 
 ### 32 hqgl 模力方舟每日免费调用额度
 
@@ -458,7 +458,7 @@
 
 **核查入口：** [来源 1](https://ai.gitee.com/docs/getting-started)；[来源 2](https://ai.gitee.com/docs/products/apis/)；[来源 3](https://ai.gitee.com/docs/products/apis/texts/text-generation)；[来源 4](https://ai.gitee.com/serverless-api?model=DeepSeek-R1&tab=info)；[来源 5](https://help.aliyun.com/zh/model-studio/model-pricing)
 
-**你的结论或补充证据：** 待填写。
+**你的结论或补充证据：** 按无法估值处理
 
 ### 33 7z3x n8n Cloud 共享网关额度与充值
 
@@ -470,7 +470,7 @@
 
 **核查入口：** [来源 1](https://blog.n8n.io/gateway-credits/)；[来源 2](https://docs.n8n.io/deploy/use-n8n-cloud/gateway-credits)
 
-**你的结论或补充证据：** 待填写。
+**你的结论或补充证据：** 按无法估值处理
 
 ### 34 f58l OiiOii 邀请好友注册登录奖励200积分
 
@@ -482,7 +482,7 @@
 
 **核查入口：** [来源 1](https://www.oiioii.ai/price)
 
-**你的结论或补充证据：** 待填写。
+**你的结论或补充证据：** 200是指好友注册之后，你的奖励。就按200积分 处理。看官方的最低套餐折算积分的价值
 
 ### 35 wnpx Codex 和 ChatGPT Work 额度重置
 
@@ -494,7 +494,7 @@
 
 **核查入口：** [来源 1](https://x.com/thsottiaux/status/2078328592308818117)；[来源 2](https://help.openai.com/en/articles/11369540-using-codex-with-your-chatgpt-plan)
 
-**你的结论或补充证据：** 待填写。
+**你的结论或补充证据：** 按照GPT的中等订阅套餐（月）➗4 折算
 
 ### 36 ew88 Codex 10月2日全球额度重置执行进度
 
@@ -506,7 +506,7 @@
 
 **核查入口：** [来源 1](https://x.com/thsottiaux/status/2106239912932692085)；[来源 2](https://help.openai.com/en/articles/11369540-using-codex-with-your-chatgpt-plan)
 
-**你的结论或补充证据：** 待填写。
+**你的结论或补充证据：** 这条直接拒掉
 
 ### 37 ex2n OpenCode Go 订阅：$10/月用 $15–60/月的模型额度
 
@@ -518,7 +518,7 @@
 
 **核查入口：** [来源 1](https://opencode.ai/docs/go/)
 
-**你的结论或补充证据：** 待填写。
+**你的结论或补充证据：** $10 ，就按它实际支付的月费，买一赠一处理
 
 ### 38 wgce 基元律动 认证赠18额度
 
@@ -534,7 +534,7 @@
 
 **核查入口：** [来源 1](https://tokenrhythm.studio/_releases/base/4657068efe670e23d67d63e4e8ef9ecfc5ba48e1/assets/index-CSY7iifb.js)；[来源 2](https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml)
 
-**你的结论或补充证据：** 待填写。
+**你的结论或补充证据：** $2.689727
 
 ### 39 bcot Poe 免费用户每天积分（待实测）
 
@@ -546,7 +546,7 @@
 
 **核查入口：** [来源 1](https://www.usagepricing.com/blueprint/poe)；[来源 2](https://help.poe.com/hc/en-us/articles/19945140063636)；[来源 3](https://help.poe.com/hc/en-us/articles/19944206309524)
 
-**你的结论或补充证据：** 待填写。
+**你的结论或补充证据：** Free — ~300 compute points per day (about 15-30 short messages), lighter models only — cut roughly 90% from ~3,000/day since around March 2026 (Poe’s own help center no longer states an exact figure; the current number is independently corroborated by third-party trackers). ——官网（https://www.usagepricing.com/blueprint/poe ） 所以按照300计算
 
 ### 40 ayl0 SeaArt 免费账号每日 130 活力值
 
@@ -558,7 +558,7 @@
 
 **核查入口：** [来源 1](https://www.seaart.ai/mall)
 
-**你的结论或补充证据：** 待填写。
+**你的结论或补充证据：** 按候选B处理。如果有两种算法，取较低的值 保守计算即可
 
 ### 41 7f85 阶跃星辰 Studio 额外专属创作额度
 
@@ -572,7 +572,7 @@
 
 **核查入口：** [来源 1](https://platform.stepfun.com/docs/zh/step-plan/overview)
 
-**你的结论或补充证据：** 待填写。
+**你的结论或补充证据：** 按无法估值处理
 
 ### 42 0622 TapNow 新用户免费 Tapies 额度
 
@@ -584,7 +584,7 @@
 
 **核查入口：** [来源 1](https://www.tapnow.ai/terms-of-service)
 
-**你的结论或补充证据：** 待填写。
+**你的结论或补充证据：** 就按200÷95=$2.105263
 
 ### 43 81st 腾讯云智能体开发平台体验版免费试用 1 个月
 
@@ -598,7 +598,7 @@
 
 **核查入口：** [来源 1](https://cloud.tencent.com/act/pro/free)
 
-**你的结论或补充证据：** 待填写。
+**你的结论或补充证据：** 按腾讯平台最便宜的文本/编程模型API单价，乘以默认每个月使用量
 
 ### 44 3nb4 Tinker 研究与开源免费额度
 
@@ -612,7 +612,7 @@
 
 **核查入口：** [来源 1](https://thinkingmachines.ai/news/tinker-research-and-teaching-grants/)
 
-**你的结论或补充证据：** 待填写。
+**你的结论或补充证据：** 按无法估值处理
 
 ### 45 zud3 Trae Pro 会员 14 天免费试用
 
@@ -624,7 +624,7 @@
 
 **核查入口：** [来源 1](https://www.trae.ai/blog/trae_membership_0213)；[来源 2](https://www.trae.ai/pricing)
 
-**你的结论或补充证据：** 待填写。
+**你的结论或补充证据：** 按照首次订阅的$10的一半，即$5处理
 
 ### 46 ds4t Vidu 注册新人试用 20 积分
 
@@ -640,7 +640,7 @@
 
 **核查入口：** [来源 1](https://www.vidu.com/pricing)
 
-**你的结论或补充证据：** 待填写。
+**你的结论或补充证据：** $0.19
 
 ### 47 ibur 火山方舟新用户免费推理额度
 
@@ -654,7 +654,7 @@
 
 **核查入口：** [来源 1](https://www.volcengine.com/docs/ark/free-inference-quota?lang=zh)
 
-**你的结论或补充证据：** 待填写。
+**你的结论或补充证据：** 按无法估值处理
 
 ### 48 usw3 MiMo-V2.5-ASR 语音识别
 
@@ -668,7 +668,7 @@
 
 **核查入口：** [来源 1](https://mimo.mi.com/docs/price/pay-as-you-go)
 
-**你的结论或补充证据：** 待填写。
+**你的结论或补充证据：** $0.074/音频小时 × 20小时
 
 ### 49 uyua 小米 MiMo 闲时 0.8 倍算力优惠
 
@@ -682,7 +682,7 @@
 
 **核查入口：** [来源 1](https://platform.xiaomimimo.com/token-plan)；[来源 2](https://mimo.mi.com/docs/price/pay-as-you-go)
 
-**你的结论或补充证据：** 待填写。
+**你的结论或补充证据：** 按无法估值处理
 
 ### 50 sx99 智谱 GLM Coding Plan 7 天体验卡
 
@@ -696,7 +696,7 @@
 
 **核查入口：** [来源 1](https://bigmodel.cn/activity/trial-card/MIIKCBCNJG)；[来源 2](https://docs.bigmodel.cn/cn/coding-plan/overview)
 
-**你的结论或补充证据：** 待填写。
+**你的结论或补充证据：** 按照智谱最低套餐的月订阅/4
 
 ### 51 crw5 GLM Coding Plan 7天体验卡（已领完）
 
@@ -710,7 +710,7 @@
 
 **核查入口：** [来源 1](https://bigmodel.cn/activity/trial-card/EEGA0AKYV5)；[来源 2](https://docs.bigmodel.cn/cn/coding-plan/overview)
 
-**你的结论或补充证据：** 待填写。
+**你的结论或补充证据：** 按照智谱最低套餐的月订阅/4
 
 ### 52 upa4 ZCode 全体用户领 1 亿 Token（Trust.patch，共 10 万份）
 
@@ -724,7 +724,7 @@
 
 **核查入口：** [来源 1](https://mp.weixin.qq.com/s/Zia38bgBIcNlAXkA2I9pxw)；[来源 2](https://docs.bigmodel.cn/cn/guide/models/vlm/glm-5.3-flash)
 
-**你的结论或补充证据：** 待填写。
+**你的结论或补充证据：** 就按照¥80
 
 ### 53 0n2u ZCode 付费用户赠送重置卡（Trust.patch）
 
@@ -738,7 +738,7 @@
 
 **核查入口：** [来源 1](https://mp.weixin.qq.com/s/Zia38bgBIcNlAXkA2I9pxw)；[来源 2](https://docs.bigmodel.cn/cn/coding-plan/overview)
 
-**你的结论或补充证据：** 待填写。
+**你的结论或补充证据：** 按照智谱的中等套餐订阅价格/4 =一张重置卡的价值
 
 ## 已确认无法折算和公测未定价
 

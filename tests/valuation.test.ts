@@ -3,6 +3,8 @@ import { offerIn } from '../src/shared/ingest';
 import { checkOffer } from '../src/shared/spec';
 import { haoScore } from '../src/shared/score';
 import { parseValuation, publicSafeValuation, STANDARD_USAGE_V1, valuationClosesUsdGap, valuationSummary, type Valuation } from '../src/shared/valuation';
+import { auditFixture } from './fixtures/identity/audit';
+import worker from '../src/worker/index';
 
 const checkedAt = '2026-10-09';
 const source = { url: 'https://vendor.example/pricing', checkedAt, excerpt: 'Public beta pricing has not been announced.', priceBasis: '发放方价格页' };
@@ -31,7 +33,7 @@ describe('V1 valuation state and validation', () => {
     expect(usdIssues(offer)).toHaveLength(1);
   });
   it('fails closed for unknown versions, unknown status, internal top-level keys, stale amounts and zero pretending to be unpriced', () => {
-    for (const valuation of [{ ...unpriced, version: 'v2' }, { ...unpriced, status: 'unknown' }, { ...unpriced, reason: 'internal' }, { ...unpriced, usdEstimate: 0 }]) {
+    for (const valuation of [{ ...unpriced, version: 'v3' }, { ...unpriced, status: 'unknown' }, { ...unpriced, reason: 'internal' }, { ...unpriced, usdEstimate: 0 }]) {
       expect(parseValuation(valuation)).toBeNull();
       expect(valuationClosesUsdGap(valuation, offer)).toBe(false);
       expect(checkOffer({ ...offer, valuation }).some(issue => issue.field === 'valuation' && issue.level === 'block')).toBe(true);
@@ -78,7 +80,7 @@ describe('public valuation projection', () => {
     expect(JSON.stringify(publicSafeValuation(candidate))).not.toContain('private');
   });
   it('refuses unsupported versions and inconsistent public calculation states', () => {
-    expect(publicSafeValuation({ ...unpriced, version: 'v2' })).toBeNull();
+    expect(publicSafeValuation({ ...unpriced, version: 'v3' })).toBeNull();
     expect(publicSafeValuation({ ...unpriced, usdEstimate: 0 })).toBeNull();
     expect(publicSafeValuation('not json')).toBeNull();
   });
@@ -115,6 +117,118 @@ describe('public valuation projection', () => {
       .toEqual({ fullApplyMax: 350_000, first30Max: 2_000 });
     expect(publicSafeValuation(grant)?.usdMax).toBe(350_000);
     expect(publicSafeValuation(grant)?.usdEstimate).toBeNull();
+  });
+});
+
+describe('V2 valuation compatibility', () => {
+  it('requires provisional references, retains exact package reference values and rejects invented proxy ceilings', () => {
+    const reference = { ...unpriced, version: 'v2', status: 'provisional', method: 'official_price', usdEstimate: 20, fullValue: 240,
+      formula: '全年套餐 $240 ÷ 12 个月 = $20', inputs: { benchmarkType: 'accepted_reference', referencePlan: 'Annual' } };
+    expect(parseValuation(reference)).toEqual(reference);
+    expect(parseValuation({ ...reference, status: 'priced' })).toBeNull();
+    expect(parseValuation({ ...reference, method: 'face_value' })).toBeNull();
+    expect(parseValuation({ ...reference, inputs: { benchmarkType: '' } })).toBeNull();
+    const proxy = { ...reference, method: 'scenario', period: 'apply_max', fullValue: null, usdEstimate: 30,
+      formula: '30 × 每月固定用量 × 参考模型价格 = $30', inputs: { benchmarkType: 'substitute_model', referenceModel: 'Reference Model',
+        usageMultiplier: 30, first30Max: null, fullApplyMax: null } };
+    expect(offerIn.safeParse({ ...offer, type: 'apply', endKind: 'standing', usdEstimate: 30, valuation: proxy }).success).toBe(true);
+    for (const invalid of [{ ...proxy, usdMax: 100 }, { ...proxy, fullValue: 360 },
+      { ...proxy, inputs: { ...proxy.inputs, first30Max: 30 } }, { ...proxy, inputs: { ...proxy.inputs, fullApplyMax: 360 } }]) {
+      expect(parseValuation(invalid)).toBeNull();
+    }
+    const wording = valuationSummary({ type: 'apply', usdEstimate: 30, usdMax: null, valuation: proxy });
+    expect(wording).toContain('月度使用方案参考约 $30');
+    expect(wording).toContain('不代表申请额度或保证获批');
+    expect(wording).not.toMatch(/确定金额|最高可申请/);
+  });
+
+  it('accepts reviewed V1 and V2 records without changing their amounts, nulls or application ceilings', () => {
+    for (const version of ['v1', 'v2'] as const) {
+      const empty = { ...unpriced, version };
+      expect(parseValuation(JSON.stringify(empty))).toEqual(empty);
+      expect(valuationClosesUsdGap(empty, offer)).toBe(true);
+      expect(offerIn.safeParse({ ...offer, valuation: empty }).success).toBe(true);
+      const zero = { ...empty, status: 'priced', method: 'face_value', usdEstimate: 0, formula: '官方面额 $0' };
+      expect(parseValuation(zero)?.usdEstimate).toBe(0);
+      expect(parseValuation({ ...empty, usdEstimate: 0 })).toBeNull();
+      const cap = { ...empty, status: 'priced', method: 'face_value', period: 'apply_max', usdMax: 100_000, formula: '最高可申请 $100,000，审批决定' };
+      expect(offerIn.safeParse({ ...offer, type: 'apply', endKind: 'standing', usdMax: 100_000, valuation: cap }).success).toBe(true);
+      expect(valuationSummary({ type: 'apply', usdMax: 100_000, valuation: cap })).toBe('官方面额 · 最高可申请 $100,000（审批决定，无保底）');
+    }
+  });
+
+  it('publishes explicit reference inputs while stripping private metadata recursively', () => {
+    const value = { ...unpriced, version: 'v2', status: 'provisional', method: 'official_price', usdEstimate: 15,
+      formula: '100 积分 × ($15 ÷ 100 积分) = $15',
+      inputs: { benchmarkType: 'entry_plan', referencePlan: 'Starter', referenceModel: 'Model A', ruleIds: ['V2-PLAN-ENTRY'],
+        usageMultiplier: 1, pricingBasis: { packagePrice: 15, packageUnits: 100, reviewMemo: 'private rationale' },
+        calculationBasis: { quantity: 100, unit: '积分', issues: ['private issue'] }, selectedBy: 'private admin',
+        limits: { days: 30, reason: 'private choice' } }, reviewMemo: 'private decision', sources: [{ ...source, reason: 'private source' }] };
+    expect(publicSafeValuation(JSON.stringify(value))).toMatchObject({ version: 'v2', status: 'provisional', usdEstimate: 15, usdMax: null,
+      inputs: { benchmarkType: 'entry_plan', referencePlan: 'Starter', referenceModel: 'Model A', ruleIds: ['V2-PLAN-ENTRY'],
+        usageMultiplier: 1, pricingBasis: { packagePrice: 15, packageUnits: 100 }, calculationBasis: { quantity: 100, unit: '积分' }, limits: { days: 30 } } });
+    expect(JSON.stringify(publicSafeValuation(value))).not.toMatch(/private|selectedBy|reviewMemo|issues|reason/);
+  });
+
+  it('protects administrator V2 metadata from extractor updates and filters it on every public offer route', async () => {
+    const f = auditFixture();
+    try {
+      const call = (path: string, body?: unknown, admin = false) => f.call(path, body, admin, { IDENTITY_MODE: 'off' });
+      const value = { ...unpriced, version: 'v2', status: 'provisional', method: 'official_price', usdEstimate: 15,
+        formula: '100 积分 × ($15 ÷ 100 积分) = $15', inputs: { benchmarkType: 'entry_plan', referencePlan: 'Starter',
+          pricingBasis: { packagePrice: 15, packageUnits: 100 }, calculationBasis: { quantity: 100, unit: '积分' } } };
+      expect((await call('ingest/offers', [{ ...offer, usdEstimate: 999, valuation: { ...value, usdEstimate: 999 } }])).status).toBe(200);
+      expect(f.sqlite.prepare('SELECT valuation FROM offers WHERE id=?').get(offer.id)?.valuation).toBeNull();
+      expect((await call(`admin/offers/${offer.id}/edit`, { fields: { usdEstimate: 15, usdMax: null, valuation: value } }, true)).status).toBe(200);
+      const stored = f.sqlite.prepare('SELECT valuation,usd_estimate,review_state FROM offers WHERE id=?').get(offer.id);
+      expect(stored).toMatchObject({ usd_estimate: 15, review_state: 'pending' });
+      expect(JSON.parse(String(stored?.valuation))).toEqual(value);
+      expect((await call('ingest/offers', [{ ...offer, usdEstimate: 999, valuation: { ...value, usdEstimate: 999 } }])).status).toBe(200);
+      expect(f.sqlite.prepare('SELECT valuation,usd_estimate,review_state FROM offers WHERE id=?').get(offer.id)).toEqual(stored);
+      expect((await call(`admin/offers/${offer.id}/edit`, { fields: { usdEstimate: 16, valuation: value } }, true)).status).toBe(400);
+      const raw = { ...value, reviewMemo: 'private conclusion', inputs: { ...value.inputs, reason: 'private choice',
+        pricingBasis: { ...value.inputs.pricingBasis, reviewMemo: 'private price rationale' } } };
+      f.sqlite.prepare("UPDATE offers SET review_state='approved',valuation=?,review_memo=? WHERE id=?").run(JSON.stringify(raw), 'private audit', offer.id);
+      for (const path of ['offers?view=all&valuation=v2&schema=valuation-v2', `offers/${offer.id}`, 'platforms/vendor']) {
+        const result = await call(path);
+        expect(result.status).toBe(200);
+        const pub = result.body.offer ?? result.body.offers[0];
+        expect(pub.valuation).toEqual(value);
+        expect(JSON.stringify(result.body)).not.toMatch(/private|reviewMemo|reason/);
+      }
+      f.sqlite.prepare('UPDATE offers SET usd_estimate=16 WHERE id=?').run(offer.id);
+      expect((await call(`offers/${offer.id}`)).body.offer.valuation).toBeNull();
+    } finally { f.sqlite.close(); }
+  });
+
+  it('uses a new edge response schema without losing canonical generation invalidation', async () => {
+    const f = auditFixture(), cache = new Map<string, Response>(), pending: Promise<unknown>[] = [];
+    const previous = (globalThis as any).caches;
+    try {
+      await f.call('ingest/offers', [offer], false, { IDENTITY_MODE: 'off' });
+      const value = { ...unpriced, version: 'v2' };
+      f.sqlite.prepare("UPDATE offers SET review_state='approved',valuation=? WHERE id=?").run(JSON.stringify(value), offer.id);
+      const oldKey = new URL('https://local.test/api/offers?view=all');
+      oldKey.searchParams.set('__response_schema', 'membership-v1');
+      oldKey.searchParams.set('__canonical_generation', String(f.sqlite.prepare('SELECT generation FROM identity_public_state WHERE id=1').get()?.generation));
+      cache.set(oldKey.href, Response.json({ offers: [{ id: 'stale-cache-entry' }], count: 1 }));
+      (globalThis as any).caches = { default: {
+        async match(key: Request) { return cache.get(key.url)?.clone(); },
+        async put(key: Request, response: Response) { cache.set(key.url, response.clone()); },
+      } };
+      const get = () => worker.fetch(new Request('https://local.test/api/offers?view=all'), { DB: f.db, IDENTITY_MODE: 'off' } as any,
+        { waitUntil: (promise: Promise<unknown>) => pending.push(promise) } as any);
+      expect((await (await get()).json() as any).offers[0]).toMatchObject({ id: offer.id, valuation: value });
+      await Promise.all(pending);
+      const key = [...cache.keys()].find(url => new URL(url).searchParams.get('__response_schema') === 'valuation-v2');
+      expect(key).toBeDefined();
+      expect(new URL(key!).searchParams.get('__canonical_generation')).toBe(new URL(oldKey).searchParams.get('__canonical_generation'));
+      expect((await (await get()).json() as any).offers[0].valuation.version).toBe('v2');
+    } finally {
+      if (previous === undefined) delete (globalThis as any).caches;
+      else (globalThis as any).caches = previous;
+      f.sqlite.close();
+    }
   });
 });
 
