@@ -141,3 +141,10 @@ OpenRouter默认备用为`openrouter/free`；404须检查模型可用性，不�
 `scripts/membership-backfill.ts --snapshot <snapshot.json> --out <plan.json>`仅生成本地预演。快照包含offers、当前approvedVersions和proposals；与`--sql-out`同用时必须提供`--expected-catalog`，可用`--rollback-out`生成保护性兼容回滚。快照与生成SQL含内部数据，保存在权限受限目录，不提交Git。整批原子执行SQL，任何目录/行/身份版本不匹配停止；不拆批绕过断言。迁移仅为确定等价条目创建新V2基线，其余保留needs_review；原V1不可变。
 
 先在备份副本验证DDL迁移、数据迁移、FK完整性及回滚，再在生产迁移、部署、推送并读回公开目录/API/后台与浏览器筛选。新响应schema=membership-v1，更新identity_public_state.generation失效公开缓存。代码回滚必须先用兼容回滚恢复V1公开指针并核查所有新V2变更；保留新增字段、目录和不可变V2历史，禁止直接回到不识别V2的旧Worker处理新写入。
+
+
+## D1配额熔断与公开快照
+
+公开快照必须只含已批准字段，由`scripts/build-public-snapshot.ts <受限备份.sqlite> <快照ISO时间> public/public-snapshot.json`生成并随静态资源部署；每次部署保留或更新该资产，原始数据库备份不得上传。`D1_PUBLIC_SNAPSHOT_UNTIL`设置未来时间时，公开启动接口走快照，后台和采集返回只读503，定时任务暂停；期限后重试数据库。明确的D1额度错误也会触发快照退路。
+
+`D1_REPAIR_RELATED_INDEXES=1`使恢复后的调度先幂等创建reviews(offer_id)、leads(offer_id)索引，再执行原任务；0038迁移登记相同索引。不得为节省读取消除身份回填的快照并发保护。判断额度异常先用Cloudflare分析接口取得日/小时/查询热点，避免继续消耗D1；不同adaptive数据集不能算精确占比。当前应急部署与尚待验证事项见[D1恢复凭证](d1-quota-recovery-2026-10-11.md)。
