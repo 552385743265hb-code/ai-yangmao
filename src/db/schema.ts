@@ -4,6 +4,8 @@ import type { Valuation } from '../shared/valuation';
 // D1 表结构。字段含义见 docs/design.md §5。
 // JSON 字段存为 TEXT，读取时再解析。
 import { sql } from 'drizzle-orm';
+import { reviewDecisions } from './identity-schema';
+export * from './identity-schema';
 import { index, integer, real, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
 
 const now = sql`(strftime('%Y-%m-%dT%H:%M:%fZ','now'))`;
@@ -135,6 +137,7 @@ export const offerProposals = sqliteTable('offer_proposals', {
 });
 
 export const reviews = sqliteTable('reviews', {
+  decisionId: text('decision_id').references(() => reviewDecisions.id).unique(),
   id: integer('id').primaryKey({ autoIncrement: true }),
   offerId: text('offer_id').notNull().references(() => offers.id),
   action: text('action', { enum: ['approve', 'reject', 'edit'] }).notNull(),

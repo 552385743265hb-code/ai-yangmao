@@ -1,3 +1,4 @@
+import { postIdentityOffers } from './identity-client';
 import { toOffer } from './offer-draft';
 import type { Source } from './collectors';
 import { fetchPage, relevantText, api } from './lib';
@@ -93,10 +94,10 @@ export async function runOfficialReviews(options:{limit:number;deadlineAt:number
         if(next.platformId && next.platformId!==job.platform.id){failures.push(`发放方归属需人工确认：${url}`);continue;}
         if(!next.excerpts.benefit || next.excerpts.benefit.trim().length<12){failures.push(`缺少充分权益原文：${url}`);continue;}
         const draft=toOffer({id:job.offer.sourceId??'',platformId:job.platform.id,kind:job.offer.firstChannel??'media',tier} as Source,
-          {...next,fixedId:job.offer.id},page.finalUrl,relevantText(page.text));
-        const candidate=offerIn.safeParse({...draft,officialReviewJobId:job.jobId,sourceText:page.text.length<=250000?page.text:undefined});
+          {...next,fixedId:job.offer.id},page.finalUrl,relevantText(page.text),page);
+        const candidate=offerIn.safeParse({...draft,officialReviewJobId:job.jobId});
         if(!candidate.success){failures.push(`官方抽取字段未通过校验：${url}`);continue;}
-        const saved=await api<{results:{id:string;error?:string;skipped?:string;changed?:string[]}[]}>('/offers',[candidate.data]);
+        const saved=await postIdentityOffers([candidate.data]);
         const record=saved.results.find(r=>r.id===job.offer.id);
         if(!record||record.error||record.skipped){failures.push(`条目更新未应用：${record?.error??record?.skipped??'ID变化'}`);continue;}
         chosenUrl=page.finalUrl;changedFields=record.changed??[];matched=true;break;
