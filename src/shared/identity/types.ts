@@ -1,3 +1,4 @@
+import {sourceFetchSchema} from './fetch-evidence';
 import { z } from 'zod';
 
 export const idSchema = z.string().min(1).max(200);
@@ -61,12 +62,14 @@ export const reopenEvaluationSchema = z.strictObject({ allowed: z.boolean(), rea
 export type ReopenEvaluation = z.infer<typeof reopenEvaluationSchema>;
 
 const webUrlSchema = z.url().max(4000).refine(v => { const u = new URL(v); return ['http:','https:'].includes(u.protocol) && !u.username && !u.password; }, 'HTTP URL without credentials required');
-export const observationInputSchema = z.strictObject({ requestId: idSchema, originalUrl: webUrlSchema, finalUrl: webUrlSchema, text: z.string().max(1000000), fetchKind: z.enum(['direct','indirect','unavailable']), sourceId: idSchema.optional(), issuerProductId:idSchema.optional(), observedAt: z.iso.datetime(), truncated: z.boolean().default(false) });
+export const observationInputSchema = z.strictObject({ requestId: idSchema, originalUrl: webUrlSchema, finalUrl: webUrlSchema, text: z.string().max(1000000), fetchKind: z.enum(['direct','indirect','unavailable']), sourceId: idSchema.optional(), issuerProductId:idSchema.optional(), observedAt: z.iso.datetime(), truncated: z.boolean().default(false),fetchEvidence:sourceFetchSchema.optional() });
 export type ObservationInput = z.input<typeof observationInputSchema>;
-export const observationReceiptSchema = z.strictObject({ observationId: idSchema, documentId: idSchema, contentHash: z.string().regex(/^[a-f0-9]{64}$/), truncated: z.boolean() });
+export const observationReceiptSchema = z.strictObject({ observationId: idSchema, documentId: idSchema, contentHash: z.string().regex(/^[a-f0-9]{64}$/), truncated: z.boolean(),fetchId:idSchema.optional() });
 export type ObservationReceipt = z.infer<typeof observationReceiptSchema>;
 export const quoteSchema = z.strictObject({ start: z.number().int().nonnegative(), end: z.number().int().positive(), quote: z.string().min(1).max(20000) }).refine(q => q.end > q.start, 'nonempty span required');
 export const candidateInputSchema = z.strictObject({ inputId: idSchema, mechanismHint: mechanismSchema.optional(), span: quoteSchema, quotes: z.array(quoteSchema.safeExtend({id:idSchema})).min(1).max(100), rawCandidate: z.json().refine(v => JSON.stringify(v).length <= 50000, 'candidate too large'), facts: canonicalTermsSchema });
-export const candidateBatchInputSchema = z.strictObject({ requestId: idSchema, observationId: idSchema, extractionVersion: idSchema, extractionComplete: z.boolean(), nonBenefitEvidence: quoteSchema.optional(), leadIds: z.array(z.number().int().positive()).max(10).default([]), candidates: z.array(candidateInputSchema).max(10) }).refine(v => new Set(v.candidates.map(c => c.inputId)).size === v.candidates.length, 'inputId must be unique within a batch').refine(v => JSON.stringify(v).length <= 1000000, 'candidate batch too large');
+export const candidateBatchInputSchema = z.strictObject({ requestId: idSchema, observationId: idSchema, sourceFetchId:idSchema.optional(), extractionVersion: idSchema, extractionComplete: z.boolean(), nonBenefitEvidence: quoteSchema.optional(), leadIds: z.array(z.number().int().positive()).max(10).default([]), candidates: z.array(candidateInputSchema).max(10) }).refine(v => new Set(v.candidates.map(c => c.inputId)).size === v.candidates.length, 'inputId must be unique within a batch').refine(v => JSON.stringify(v).length <= 1000000, 'candidate batch too large');
 export type CandidateBatchInput = z.input<typeof candidateBatchInputSchema>;
 export type CandidateInput = z.infer<typeof candidateInputSchema>;
+
+export type {MergePlan,MergePreviewInput,MergeReceipt,RollbackReceipt} from './history-types';

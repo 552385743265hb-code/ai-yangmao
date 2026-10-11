@@ -11,6 +11,7 @@
 | [数据合同](docs/data-contract.md) | 字段、展示影响、审核与提案边界 |
 | [通用规则](pipeline/learned-rules.md) / [平台要点](pipeline/platform-notes.md) | 收录口径及带日期的平台事实 |
 | [架构](docs/design.md) / [自动官方复核](docs/official-review-workflow.md) | 整体数据流及社区稿自动补证 |
+| [去重第二、三阶段](docs/specs/dedupe-identity-2026-10-10/README.md) | 正式合同、独立 PR、本地验收与尚未通过的现场门槛 |
 | [运维](docs/operations.md) | 命令、调度、通知、预算、发布与回滚 |
 | [仓库审核技能](.claude/skills/yangmao-review/SKILL.md) / [Hermes接入](integrations/hermes/ai-yangmao/SKILL.md) | 实际操作与权限 |
 | [2026-10-09整理凭证](docs/closeout-2026-10-09.md) | 当次代码、远端、运行态及未闭合项 |

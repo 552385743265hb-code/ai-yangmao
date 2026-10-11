@@ -10,5 +10,5 @@ it('A06 resumes only server-selected deferred candidates without another extract
 });
 it('A27 shadow/off modes do not resolve diagnostic intake or consume models',async()=>{
  vi.stubEnv('IDENTITY_MODE','shadow');vi.stubEnv('API_BASE','https://mock.local');vi.stubGlobal('fetch',()=>{throw new Error('no network');});
- expect(await resumeIdentityIntake(Date.now()+10000)).toEqual({resolved:0,deferred:0,modelTasks:0});
+ expect(await resumeIdentityIntake(Date.now()+10000)).toEqual({resolved:0,deferred:0,modelTasks:0,status:'disabled',reason:'mode_shadow'});
 });

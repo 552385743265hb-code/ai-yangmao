@@ -1,0 +1,781 @@
+{
+  "schemaVersion": "identity-corpus-v1",
+  "environment": "synthetic",
+  "datasetVersion": "synthetic-example-1",
+  "approvedBy": "synthetic-fixture-author",
+  "frozenAt": "2026-10-10T00:00:00Z",
+  "pairs": [
+    {
+      "id": "same",
+      "label": "SAME_EQUIVALENT",
+      "labelAuthor": "synthetic-fixture-author",
+      "labelEvidence": "Fabricated campaign facts are deliberately identical.",
+      "crossLanguageOrSource": false,
+      "candidate": {
+        "schemaVersion": "terms-v1",
+        "issuerProductId": {
+          "state": "known",
+          "value": "vendor",
+          "evidenceRefs": [
+            "quote-1"
+          ]
+        },
+        "mechanism": {
+          "state": "known",
+          "value": "signup_grant",
+          "evidenceRefs": [
+            "quote-1"
+          ]
+        },
+        "benefitPools": [
+          {
+            "poolKey": "vendor:api",
+            "amount": {
+              "state": "known",
+              "value": {
+                "value": "10",
+                "unit": "currency",
+                "currency": "USD"
+              },
+              "evidenceRefs": [
+                "quote-1"
+              ]
+            },
+            "cadence": {
+              "state": "known",
+              "value": {
+                "kind": "once"
+              },
+              "evidenceRefs": [
+                "quote-1"
+              ]
+            },
+            "models": {
+              "state": "known",
+              "value": [
+                "model-v1"
+              ],
+              "evidenceRefs": [
+                "quote-1"
+              ]
+            },
+            "modalities": {
+              "state": "known",
+              "value": [
+                "text"
+              ],
+              "evidenceRefs": [
+                "quote-1"
+              ]
+            },
+            "creditValidity": {
+              "state": "unknown"
+            }
+          }
+        ],
+        "eligibility": {
+          "state": "unknown"
+        },
+        "geography": {
+          "state": "unknown"
+        },
+        "claimChannels": {
+          "state": "unknown"
+        },
+        "costs": {
+          "state": "unknown"
+        },
+        "claimWindow": {
+          "state": "unknown"
+        },
+        "occurrenceAnchor": {
+          "state": "known",
+          "value": "campaign",
+          "evidenceRefs": [
+            "quote-1"
+          ]
+        }
+      },
+      "entity": {
+        "id": "existing",
+        "platformId": "vendor",
+        "revision": 1,
+        "publicationRevision": 1,
+        "approvedVersionId": "v1",
+        "terms": {
+          "schemaVersion": "terms-v1",
+          "issuerProductId": {
+            "state": "known",
+            "value": "vendor",
+            "evidenceRefs": [
+              "quote-1"
+            ]
+          },
+          "mechanism": {
+            "state": "known",
+            "value": "signup_grant",
+            "evidenceRefs": [
+              "quote-1"
+            ]
+          },
+          "benefitPools": [
+            {
+              "poolKey": "vendor:api",
+              "amount": {
+                "state": "known",
+                "value": {
+                  "value": "10",
+                  "unit": "currency",
+                  "currency": "USD"
+                },
+                "evidenceRefs": [
+                  "quote-1"
+                ]
+              },
+              "cadence": {
+                "state": "known",
+                "value": {
+                  "kind": "once"
+                },
+                "evidenceRefs": [
+                  "quote-1"
+                ]
+              },
+              "models": {
+                "state": "known",
+                "value": [
+                  "model-v1"
+                ],
+                "evidenceRefs": [
+                  "quote-1"
+                ]
+              },
+              "modalities": {
+                "state": "known",
+                "value": [
+                  "text"
+                ],
+                "evidenceRefs": [
+                  "quote-1"
+                ]
+              },
+              "creditValidity": {
+                "state": "unknown"
+              }
+            }
+          ],
+          "eligibility": {
+            "state": "unknown"
+          },
+          "geography": {
+            "state": "unknown"
+          },
+          "claimChannels": {
+            "state": "unknown"
+          },
+          "costs": {
+            "state": "unknown"
+          },
+          "claimWindow": {
+            "state": "unknown"
+          },
+          "occurrenceAnchor": {
+            "state": "known",
+            "value": "campaign",
+            "evidenceRefs": [
+              "quote-1"
+            ]
+          }
+        }
+      },
+      "evidence": {
+        "observationId": "sample",
+        "fullText": "campaign grants 10 USD",
+        "truncated": false,
+        "sourceVerified": true,
+        "quoteById": {
+          "quote-1": "campaign grants 10 USD"
+        }
+      }
+    },
+    {
+      "id": "distinct",
+      "label": "DISTINCT",
+      "labelAuthor": "synthetic-fixture-author",
+      "labelEvidence": "Fabricated different issuer.",
+      "crossLanguageOrSource": false,
+      "candidate": {
+        "schemaVersion": "terms-v1",
+        "issuerProductId": {
+          "state": "known",
+          "value": "other",
+          "evidenceRefs": [
+            "quote-1"
+          ]
+        },
+        "mechanism": {
+          "state": "known",
+          "value": "signup_grant",
+          "evidenceRefs": [
+            "quote-1"
+          ]
+        },
+        "benefitPools": [
+          {
+            "poolKey": "vendor:api",
+            "amount": {
+              "state": "known",
+              "value": {
+                "value": "10",
+                "unit": "currency",
+                "currency": "USD"
+              },
+              "evidenceRefs": [
+                "quote-1"
+              ]
+            },
+            "cadence": {
+              "state": "known",
+              "value": {
+                "kind": "once"
+              },
+              "evidenceRefs": [
+                "quote-1"
+              ]
+            },
+            "models": {
+              "state": "known",
+              "value": [
+                "model-v1"
+              ],
+              "evidenceRefs": [
+                "quote-1"
+              ]
+            },
+            "modalities": {
+              "state": "known",
+              "value": [
+                "text"
+              ],
+              "evidenceRefs": [
+                "quote-1"
+              ]
+            },
+            "creditValidity": {
+              "state": "unknown"
+            }
+          }
+        ],
+        "eligibility": {
+          "state": "unknown"
+        },
+        "geography": {
+          "state": "unknown"
+        },
+        "claimChannels": {
+          "state": "unknown"
+        },
+        "costs": {
+          "state": "unknown"
+        },
+        "claimWindow": {
+          "state": "unknown"
+        },
+        "occurrenceAnchor": {
+          "state": "known",
+          "value": "campaign",
+          "evidenceRefs": [
+            "quote-1"
+          ]
+        }
+      },
+      "entity": {
+        "id": "existing",
+        "platformId": "vendor",
+        "revision": 1,
+        "publicationRevision": 1,
+        "approvedVersionId": "v1",
+        "terms": {
+          "schemaVersion": "terms-v1",
+          "issuerProductId": {
+            "state": "known",
+            "value": "vendor",
+            "evidenceRefs": [
+              "quote-1"
+            ]
+          },
+          "mechanism": {
+            "state": "known",
+            "value": "signup_grant",
+            "evidenceRefs": [
+              "quote-1"
+            ]
+          },
+          "benefitPools": [
+            {
+              "poolKey": "vendor:api",
+              "amount": {
+                "state": "known",
+                "value": {
+                  "value": "10",
+                  "unit": "currency",
+                  "currency": "USD"
+                },
+                "evidenceRefs": [
+                  "quote-1"
+                ]
+              },
+              "cadence": {
+                "state": "known",
+                "value": {
+                  "kind": "once"
+                },
+                "evidenceRefs": [
+                  "quote-1"
+                ]
+              },
+              "models": {
+                "state": "known",
+                "value": [
+                  "model-v1"
+                ],
+                "evidenceRefs": [
+                  "quote-1"
+                ]
+              },
+              "modalities": {
+                "state": "known",
+                "value": [
+                  "text"
+                ],
+                "evidenceRefs": [
+                  "quote-1"
+                ]
+              },
+              "creditValidity": {
+                "state": "unknown"
+              }
+            }
+          ],
+          "eligibility": {
+            "state": "unknown"
+          },
+          "geography": {
+            "state": "unknown"
+          },
+          "claimChannels": {
+            "state": "unknown"
+          },
+          "costs": {
+            "state": "unknown"
+          },
+          "claimWindow": {
+            "state": "unknown"
+          },
+          "occurrenceAnchor": {
+            "state": "known",
+            "value": "campaign",
+            "evidenceRefs": [
+              "quote-1"
+            ]
+          }
+        }
+      },
+      "evidence": {
+        "observationId": "sample",
+        "fullText": "campaign grants 10 USD",
+        "truncated": false,
+        "sourceVerified": true,
+        "quoteById": {
+          "quote-1": "campaign grants 10 USD"
+        }
+      }
+    },
+    {
+      "id": "changed",
+      "label": "SAME_CHANGED",
+      "labelAuthor": "synthetic-fixture-author",
+      "labelEvidence": "Fabricated explicit replacement.",
+      "crossLanguageOrSource": false,
+      "candidate": {
+        "schemaVersion": "terms-v1",
+        "issuerProductId": {
+          "state": "known",
+          "value": "vendor",
+          "evidenceRefs": [
+            "quote-1"
+          ]
+        },
+        "mechanism": {
+          "state": "known",
+          "value": "signup_grant",
+          "evidenceRefs": [
+            "quote-1"
+          ]
+        },
+        "benefitPools": [
+          {
+            "poolKey": "vendor:api",
+            "amount": {
+              "state": "known",
+              "value": {
+                "value": "20",
+                "unit": "currency",
+                "currency": "USD"
+              },
+              "evidenceRefs": [
+                "quote-1"
+              ]
+            },
+            "cadence": {
+              "state": "known",
+              "value": {
+                "kind": "once"
+              },
+              "evidenceRefs": [
+                "quote-1"
+              ]
+            },
+            "models": {
+              "state": "known",
+              "value": [
+                "model-v1"
+              ],
+              "evidenceRefs": [
+                "quote-1"
+              ]
+            },
+            "modalities": {
+              "state": "known",
+              "value": [
+                "text"
+              ],
+              "evidenceRefs": [
+                "quote-1"
+              ]
+            },
+            "creditValidity": {
+              "state": "unknown"
+            }
+          }
+        ],
+        "eligibility": {
+          "state": "unknown"
+        },
+        "geography": {
+          "state": "unknown"
+        },
+        "claimChannels": {
+          "state": "unknown"
+        },
+        "costs": {
+          "state": "unknown"
+        },
+        "claimWindow": {
+          "state": "unknown"
+        },
+        "occurrenceAnchor": {
+          "state": "known",
+          "value": "campaign",
+          "evidenceRefs": [
+            "quote-1"
+          ]
+        }
+      },
+      "entity": {
+        "id": "existing",
+        "platformId": "vendor",
+        "revision": 1,
+        "publicationRevision": 1,
+        "approvedVersionId": "v1",
+        "terms": {
+          "schemaVersion": "terms-v1",
+          "issuerProductId": {
+            "state": "known",
+            "value": "vendor",
+            "evidenceRefs": [
+              "quote-1"
+            ]
+          },
+          "mechanism": {
+            "state": "known",
+            "value": "signup_grant",
+            "evidenceRefs": [
+              "quote-1"
+            ]
+          },
+          "benefitPools": [
+            {
+              "poolKey": "vendor:api",
+              "amount": {
+                "state": "known",
+                "value": {
+                  "value": "10",
+                  "unit": "currency",
+                  "currency": "USD"
+                },
+                "evidenceRefs": [
+                  "quote-1"
+                ]
+              },
+              "cadence": {
+                "state": "known",
+                "value": {
+                  "kind": "once"
+                },
+                "evidenceRefs": [
+                  "quote-1"
+                ]
+              },
+              "models": {
+                "state": "known",
+                "value": [
+                  "model-v1"
+                ],
+                "evidenceRefs": [
+                  "quote-1"
+                ]
+              },
+              "modalities": {
+                "state": "known",
+                "value": [
+                  "text"
+                ],
+                "evidenceRefs": [
+                  "quote-1"
+                ]
+              },
+              "creditValidity": {
+                "state": "unknown"
+              }
+            }
+          ],
+          "eligibility": {
+            "state": "unknown"
+          },
+          "geography": {
+            "state": "unknown"
+          },
+          "claimChannels": {
+            "state": "unknown"
+          },
+          "costs": {
+            "state": "unknown"
+          },
+          "claimWindow": {
+            "state": "unknown"
+          },
+          "occurrenceAnchor": {
+            "state": "known",
+            "value": "campaign",
+            "evidenceRefs": [
+              "quote-1"
+            ]
+          }
+        }
+      },
+      "evidence": {
+        "observationId": "sample",
+        "fullText": "campaign now replaces 10 USD with 20 USD.",
+        "truncated": false,
+        "sourceVerified": true,
+        "quoteById": {
+          "quote-1": "campaign now replaces 10 USD with 20 USD."
+        }
+      }
+    },
+    {
+      "id": "unresolved",
+      "label": "UNRESOLVED",
+      "labelAuthor": "synthetic-fixture-author",
+      "labelEvidence": "Fabricated truncated source.",
+      "crossLanguageOrSource": false,
+      "candidate": {
+        "schemaVersion": "terms-v1",
+        "issuerProductId": {
+          "state": "known",
+          "value": "vendor",
+          "evidenceRefs": [
+            "quote-1"
+          ]
+        },
+        "mechanism": {
+          "state": "known",
+          "value": "signup_grant",
+          "evidenceRefs": [
+            "quote-1"
+          ]
+        },
+        "benefitPools": [
+          {
+            "poolKey": "vendor:api",
+            "amount": {
+              "state": "known",
+              "value": {
+                "value": "10",
+                "unit": "currency",
+                "currency": "USD"
+              },
+              "evidenceRefs": [
+                "quote-1"
+              ]
+            },
+            "cadence": {
+              "state": "known",
+              "value": {
+                "kind": "once"
+              },
+              "evidenceRefs": [
+                "quote-1"
+              ]
+            },
+            "models": {
+              "state": "known",
+              "value": [
+                "model-v1"
+              ],
+              "evidenceRefs": [
+                "quote-1"
+              ]
+            },
+            "modalities": {
+              "state": "known",
+              "value": [
+                "text"
+              ],
+              "evidenceRefs": [
+                "quote-1"
+              ]
+            },
+            "creditValidity": {
+              "state": "unknown"
+            }
+          }
+        ],
+        "eligibility": {
+          "state": "unknown"
+        },
+        "geography": {
+          "state": "unknown"
+        },
+        "claimChannels": {
+          "state": "unknown"
+        },
+        "costs": {
+          "state": "unknown"
+        },
+        "claimWindow": {
+          "state": "unknown"
+        },
+        "occurrenceAnchor": {
+          "state": "known",
+          "value": "campaign",
+          "evidenceRefs": [
+            "quote-1"
+          ]
+        }
+      },
+      "entity": {
+        "id": "existing",
+        "platformId": "vendor",
+        "revision": 1,
+        "publicationRevision": 1,
+        "approvedVersionId": "v1",
+        "terms": {
+          "schemaVersion": "terms-v1",
+          "issuerProductId": {
+            "state": "known",
+            "value": "vendor",
+            "evidenceRefs": [
+              "quote-1"
+            ]
+          },
+          "mechanism": {
+            "state": "known",
+            "value": "signup_grant",
+            "evidenceRefs": [
+              "quote-1"
+            ]
+          },
+          "benefitPools": [
+            {
+              "poolKey": "vendor:api",
+              "amount": {
+                "state": "known",
+                "value": {
+                  "value": "10",
+                  "unit": "currency",
+                  "currency": "USD"
+                },
+                "evidenceRefs": [
+                  "quote-1"
+                ]
+              },
+              "cadence": {
+                "state": "known",
+                "value": {
+                  "kind": "once"
+                },
+                "evidenceRefs": [
+                  "quote-1"
+                ]
+              },
+              "models": {
+                "state": "known",
+                "value": [
+                  "model-v1"
+                ],
+                "evidenceRefs": [
+                  "quote-1"
+                ]
+              },
+              "modalities": {
+                "state": "known",
+                "value": [
+                  "text"
+                ],
+                "evidenceRefs": [
+                  "quote-1"
+                ]
+              },
+              "creditValidity": {
+                "state": "unknown"
+              }
+            }
+          ],
+          "eligibility": {
+            "state": "unknown"
+          },
+          "geography": {
+            "state": "unknown"
+          },
+          "claimChannels": {
+            "state": "unknown"
+          },
+          "costs": {
+            "state": "unknown"
+          },
+          "claimWindow": {
+            "state": "unknown"
+          },
+          "occurrenceAnchor": {
+            "state": "known",
+            "value": "campaign",
+            "evidenceRefs": [
+              "quote-1"
+            ]
+          }
+        }
+      },
+      "evidence": {
+        "observationId": "sample",
+        "fullText": "campaign grants 10 USD",
+        "truncated": true,
+        "sourceVerified": true,
+        "quoteById": {
+          "quote-1": "campaign grants 10 USD"
+        }
+      }
+    }
+  ]
+}

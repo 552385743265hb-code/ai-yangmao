@@ -1,3 +1,4 @@
+import {sourceFetchSchema} from './identity/fetch-evidence';
 import { canonicalTermsSchema } from './identity/types';
 // 写入接口的数据校验。采集管线（GitHub Actions）和网站共用这一份。
 import { z } from 'zod';
@@ -52,6 +53,7 @@ export const offerIn = z.object({
   sameOccurrenceAs: z.string().max(80).optional(),
   // Collector-supplied full source, never model-generated and never stored on the public offer.
   sourceText: z.string().max(250000).optional(),
+  sourceFetch: sourceFetchSchema.optional(),
   steps: z.array(z.string().max(200)).max(10).default([]),
   evidence: z.object({
     url: z.url(),

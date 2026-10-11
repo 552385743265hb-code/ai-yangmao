@@ -1,3 +1,5 @@
+import {fetchedSource} from './fetch-evidence';
+import type {FetchedPage} from './lib';
 import { canonicalTermsSchema } from '../src/shared/identity/types';
 import type { Source } from './collectors';
 import type { Extracted } from './llm';
@@ -6,9 +8,10 @@ import { sha256, slug } from './lib';
 
 const clip = (v: string, n: number) => (v && v.length > n ? v.slice(0, n - 1) + '…' : v);
 
-export function toOffer(src: Source, e: Extracted & { fixedId?: string; sameAs?:string|null }, url: string, text: string): OfferIn {
+export function toOffer(src: Source, e: Extracted & { fixedId?: string; sameAs?:string|null }, url: string, text: string, page?:FetchedPage): OfferIn {
   const facts=canonicalTermsSchema.safeParse(e.identityFacts);
   return {
+    ...fetchedSource(page),
     ...(facts.success?{identityFacts:facts.data}:{}),
     id: e.fixedId ?? `${src.platformId}-${slug(e.key)}`.slice(0, 80), platformId: src.platformId!, sourceId: src.id || undefined,
     ...(e.sameAs && e.sameAs===e.fixedId?{sameOccurrenceAs:e.sameAs}:{}),
