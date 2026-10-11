@@ -114,7 +114,7 @@ export const leads = sqliteTable('leads', {
   status: text('status', { enum: ['new', 'reviewing', 'linked', 'rejected'] }).notNull().default('new'),
   offerId: text('offer_id').references(() => offers.id),
   createdAt: text('created_at').notNull().default(now),
-}, t => [uniqueIndex('leads_url_uq').on(t.url)]);
+}, t => [uniqueIndex('leads_url_uq').on(t.url), index('leads_offer_idx').on(t.offerId)]);
 
 export const offerRevisions = sqliteTable('offer_revisions', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -149,7 +149,7 @@ export const reviews = sqliteTable('reviews', {
   // 拒绝 / 修改的快捷理由，便于统计：paid_bundle 付费套餐自带、not_ai 不是 AI 额度、wrong_platform 平台归错、duplicate 重复、expired 已过期、vague 额度不明、insufficient_evidence 证据不足、wrong_type 分类错、wrong_field 字段错、other 其他
   reasonCode: text('reason_code'),
   at: text('at').notNull().default(now),
-});
+}, t => [index('reviews_offer_idx').on(t.offerId)]);
 
 /** Rejected updates remain remembered independently of the ephemeral proposal queue. */
 export const rejectedOfferUpdates = sqliteTable('rejected_offer_updates', {

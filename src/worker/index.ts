@@ -1,5 +1,7 @@
 import {publicationError} from './publication';
 import {readMembershipCatalog,collectedMembership} from './membership';
+import {ensureRelatedReadIndexes} from './d1-read-indexes';
+import {snapshotActive,snapshotResponse,quotaFailure} from './public-snapshot';
 import {closeIdentityLead} from './identity/lead-closure';
 import {canonicalOffers,resolveCanonicalOffer} from './identity/canonical';
 import { withIdentityQueryBudget,IdentityQueryBudgetError } from './identity/budget';
@@ -30,6 +32,8 @@ import { feishuAdmin, runScheduled } from './feishu';
 
 export interface Env {
   DB: D1Database;
+  D1_PUBLIC_SNAPSHOT_UNTIL?:string;
+  D1_REPAIR_RELATED_INDEXES?:string;
   ASSETS: Fetcher;
   INGEST_TOKEN: string;
   IDENTITY_MODE?: 'off' | 'shadow' | 'enforce';
@@ -56,6 +60,22 @@ const app = new Hono<{ Bindings: Env }>();
 const db = (env: Env) => drizzle(env.DB, { schema: s });
 type OfferRow = typeof s.offers.$inferSelect;
 
+let quotaCircuitUntil=0;
+app.use('/api/*',async(c,next)=>{
+ if(snapshotActive(c.env.D1_PUBLIC_SNAPSHOT_UNTIL)||Date.now()<quotaCircuitUntil){
+  if(c.req.path==='/api/health')return c.json({ok:true,dataMode:'approved-snapshot',readOnly:true});
+  const response=c.req.method==='GET'?await snapshotResponse(c.req.raw,c.env.ASSETS):null;
+  return response??c.json({error:'数据库当日读取额度已用尽，目前只读浏览，审核和采集暂时暂停',degraded:true,readOnly:true},503);
+ }
+ return next();
+});
+app.onError(async(error,c)=>{
+ if(!quotaFailure(error))return c.json({error:'服务暂不可用，请稍后重试'},500);
+ const nextDay=new Date();nextDay.setUTCHours(24,5,0,0);quotaCircuitUntil=nextDay.getTime();
+ const response=c.req.method==='GET'?await snapshotResponse(c.req.raw,c.env.ASSETS):null;
+ return response??c.json({error:'数据库当日读取额度已用尽，目前只读浏览，审核和采集暂时暂停',degraded:true,readOnly:true},503);
+});
+
 // 初期不让搜索引擎收录；接口不缓存旧状态太久
 app.use('/api/*', async (c, next) => {
   if(c.env.IDENTITY_MODE==='enforce'||/\/api\/(?:ingest\/(?:identity-|observations|candidates)|admin\/identity)/.test(c.req.path))c.env={...c.env,DB:withIdentityQueryBudget(c.env.DB)};
@@ -68,10 +88,11 @@ app.use('/api/*', async (c, next) => {
 // 公开的羊毛和平台列表在 Cloudflare 边缘缓存 5 分钟：访客再多，数据库每 5 分钟每个地址只查一次（D1 免费版每天限读 500 万行）。
 // 审核通过后最多 5 分钟出现在网站上。
 const EDGE_TTL = 300;
-for (const path of ['/api/offers', '/api/platforms']) app.use(path, async (c, next) => {
+for (const path of ['/api/offers', '/api/platforms', '/api/meta', '/api/coverage']) app.use(path, async (c, next) => {
   if (c.req.method !== 'GET' || typeof caches === 'undefined') return next();
   // Schema changes must not serve a cached pre-valuation response to the new UI.
   const cacheUrl = new URL(c.req.url);
+  cacheUrl.searchParams.delete('fresh');
   cacheUrl.searchParams.set('__response_schema', 'membership-v1');
   if(path==='/api/offers'){const state=await c.env.DB.prepare('SELECT generation FROM identity_public_state WHERE id=1').first<{generation:number}>();if(!state)return next();cacheUrl.searchParams.set('__canonical_generation',String(state.generation));}
   const key = new Request(cacheUrl, { method: 'GET' });
@@ -688,5 +709,5 @@ app.all('/api/*', c => c.json({ error: '没有这个接口' }, 404));
 export default {
   fetch: (req, env, ctx) => app.fetch(req, env, ctx),
   // 定时任务：飞书日报（东京 09:00）、每小时加急检查、每 6 小时触发采集
-  scheduled: (controller, env, ctx) => { ctx.waitUntil(runScheduled(controller.cron, env)); },
+  scheduled: (controller, env, ctx) => { if(snapshotActive(env.D1_PUBLIC_SNAPSHOT_UNTIL)||Date.now()<quotaCircuitUntil)return;ctx.waitUntil((async()=>{if(env.D1_REPAIR_RELATED_INDEXES==='1')await ensureRelatedReadIndexes(env.DB);await runScheduled(controller.cron, env);})()); },
 } satisfies ExportedHandler<Env>;

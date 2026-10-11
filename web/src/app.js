@@ -503,6 +503,7 @@ const main = () => $('#main');
 const ph = (title, desc = '', extra = '') => `<div class="ph"><div><h1>${title}</h1>${desc ? `<p>${desc}</p>` : ''}</div>${extra}</div>`;
 const secH = (title, hint = '') => `<div class="sec-h"><h2>${title}</h2>${hint ? `<span class="hint">${hint}</span>` : ''}</div>`;
 function ribbon() {
+  if(META.degraded)return `<div class="ribbon" role="status">只读模式：数据库今日额度已用尽，显示 ${esc(new Date(META.snapshotAt).toLocaleString())} 的已批准快照。数据可能延迟，领取前请核对官方；后台审核与采集暂时暂停。</div>`;
   const ago2 = LAST_OK ? Math.max(0, Math.round((NOW - LAST_OK) / 3600000)) : null;
   return `<div class="ribbon"><span class="live"><i></i>最近成功抓取：<b>${LAST_OK ? `${ago2 < 1 ? '1 小时内' : ago2 + ' 小时前'}（${hm(LAST_OK)}）` : '—'}</b></span><span>${META.coverageDegraded ? '部分新增内容待抽取；现有权益仍按官方证据复核' : '只收能追到官方出处的羊毛，每条都附官方原文'}</span></div>`;
 }
