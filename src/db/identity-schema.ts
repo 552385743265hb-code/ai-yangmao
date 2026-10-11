@@ -49,6 +49,7 @@ export const benefitEntities = sqliteTable('benefit_entities', {
   lastSeenAt: text('last_seen_at').notNull().default(sql`strftime('%Y-%m-%dT%H:%M:%fZ','now')`),
 }, t => [
   index('entities_platform_idx').on(t.platformId, t.state, t.id),
+  index('entities_platform_generation_idx').on(t.platformId,t.routingGeneration,t.id),
   uniqueIndex('benefit_entities_canonical_offer_id_uq').on(t.canonicalOfferId),
   check('benefit_entities_check_0', sql`state IN ('active','merged')`),
   check('benefit_entities_check_1', sql`business_revision>=0`),
@@ -299,3 +300,24 @@ export const identityRefusalApplications=sqliteTable('identity_refusal_applicati
  decisionId:text('decision_id').notNull().references(()=>reviewDecisions.id),
  factsHash:text('facts_hash').notNull(),rulesVersion:text('rules_version').notNull(),
 },t=>[primaryKey({columns:[t.candidateId,t.decisionId]}),index('refusal_applications_decision_idx').on(t.decisionId,t.candidateId)]);
+export const identityBackfillProgress=sqliteTable('identity_backfill_progress',{
+ snapshotHash:text('snapshot_hash').primaryKey().notNull(),cursorJson:text('cursor_json').notNull(),manifestJson:text('manifest_json').notNull(),revision:integer('revision').notNull().default(0),
+},()=>[check('backfill_cursor_json',sql`json_valid(cursor_json)`),check('backfill_manifest_json',sql`json_valid(manifest_json)`)]);
+export const mergePlans=sqliteTable('merge_plans',{
+ planHash:text('plan_hash').primaryKey().notNull(),snapshotHash:text('snapshot_hash').notNull(),planJson:text('plan_json').notNull(),approvedBy:text('approved_by'),status:text('status').notNull().default('preview'),revision:integer('revision').notNull().default(0),createdAt:text('created_at').notNull().default(sql`strftime('%Y-%m-%dT%H:%M:%fZ','now')`),
+},()=>[check('merge_plan_json',sql`json_valid(plan_json)`),check('merge_plan_status',sql`status IN ('preview','approved','applied','rolled_back')`)]);
+export const mergeOperations=sqliteTable('merge_operations',{
+ id:text('id').primaryKey().notNull(),requestId:text('request_id').notNull().unique().references(()=>identityCommands.requestId),planHash:text('plan_hash').notNull().references(()=>mergePlans.planHash),groupId:text('group_id').notNull(),beforeManifest:text('before_manifest').notNull(),afterManifest:text('after_manifest').notNull(),state:text('state').notNull(),revision:integer('revision').notNull().default(0),createdAt:text('created_at').notNull().default(sql`strftime('%Y-%m-%dT%H:%M:%fZ','now')`),
+},t=>[index('merge_operations_plan_idx').on(t.planHash,t.groupId),check('merge_operation_state',sql`state IN ('applied','rolled_back')`),check('merge_before_json',sql`json_valid(before_manifest)`),check('merge_after_json',sql`json_valid(after_manifest)`)]);
+export const mergeMembers=sqliteTable('merge_members',{
+ operationId:text('operation_id').notNull().references(()=>mergeOperations.id),entityId:text('entity_id').notNull().references(()=>benefitEntities.id),canonicalEntityId:text('canonical_entity_id').notNull().references(()=>benefitEntities.id),expectedRevision:integer('expected_revision').notNull(),postRevision:integer('post_revision').notNull(),
+},t=>[primaryKey({columns:[t.operationId,t.entityId]}),index('merge_members_entity_idx').on(t.entityId,t.operationId)]);
+export const identityVersionRoutes=sqliteTable('identity_version_routes',{
+ operationId:text('operation_id').notNull().references(()=>mergeOperations.id),sourceEntityId:text('source_entity_id').notNull().references(()=>benefitEntities.id),sourceVersionId:text('source_version_id').notNull().references(()=>benefitVersions.id),canonicalEntityId:text('canonical_entity_id').notNull().references(()=>benefitEntities.id),canonicalVersionId:text('canonical_version_id').notNull().references(()=>benefitVersions.id),termsHash:text('terms_hash').notNull(),sourcePublicationRevision:integer('source_publication_revision'),canonicalPublicationRevision:integer('canonical_publication_revision'),status:text('status').notNull().default('active'),
+},t=>[primaryKey({columns:[t.operationId,t.sourceVersionId,t.canonicalVersionId]}),index('version_routes_canonical_idx').on(t.canonicalEntityId,t.status,t.canonicalVersionId),check('version_routes_status',sql`status IN ('active','rolled_back')`)]);
+export const mergeTaskSources=sqliteTable('merge_task_sources',{
+ operationId:text('operation_id').notNull().references(()=>mergeOperations.id),canonicalTaskId:text('canonical_task_id').notNull().references(()=>reviewTasks.id),sourceTaskId:text('source_task_id').notNull().references(()=>reviewTasks.id),sourceMaterialRevision:integer('source_material_revision').notNull(),canonicalMaterialRevision:integer('canonical_material_revision').notNull(),status:text('status').notNull().default('active'),
+},t=>[primaryKey({columns:[t.operationId,t.sourceTaskId]}),index('task_sources_canonical_idx').on(t.canonicalTaskId,t.status,t.sourceTaskId),check('merge_task_sources_status',sql`status IN ('active','rolled_back')`)]);
+export const identityPublicState=sqliteTable('identity_public_state',{
+ id:integer('id').primaryKey(),generation:integer('generation').notNull().default(0),
+},()=>[check('identity_public_singleton',sql`id=1`),check('identity_public_generation',sql`generation>=0`)]);

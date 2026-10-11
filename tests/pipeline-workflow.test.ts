@@ -435,3 +435,12 @@ it('A18 official extraction never treats an unavailable identity index as empty 
  expect(h.payloads('/offers')).toHaveLength(0);
  expect(result.stats.coverageDegraded).toBe(true);
 });
+it('R07 scheduled official pages and feeds transport the actual fetch descriptor with the body',async()=>{
+ vi.stubEnv('FAST_LEADS','0');const url='https://vendor.example/article';const h=harness({sources:[rssSource],pages:{[rssSource.url]:rss(url)}});const {runPipeline}=await import('../pipeline/run');await runPipeline();const posted=h.payloads('/offers')[0][0];expect(posted.sourceFetch).toMatchObject({originalUrl:url,finalUrl:url,fetchedUrl:url,sourceVerified:true,truncated:false});expect(posted.sourceFetch.contentHash).toBe(sha256(posted.sourceText));
+});
+it('R07 scheduled Jina feed fallback preserves its reader provenance and media tier',async()=>{
+ vi.stubEnv('FAST_LEADS','0');const url='https://vendor.example/article';const h=harness({sources:[rssSource],pages:{[rssSource.url]:rss(url),[url]:403},jinaBody:'URL Source: https://unrelated.example\nWarning: Target URL returned error 403\nMarkdown Content:\n'+benefit});const {runPipeline}=await import('../pipeline/run');await runPipeline();const posted=h.payloads('/offers')[0][0];expect(posted.evidence.tier).toBe('media');expect(posted.sourceFetch).toMatchObject({originalUrl:url,method:'jina',sourceVerified:false});expect(posted.sourceFetch.fetchedUrl).toContain('r.jina.ai');
+});
+it('R07 official enrichment transports reader attestation rather than deriving it from source text',async()=>{
+ const h=harness({officialJob:true});const {runPipeline}=await import('../pipeline/run');await runPipeline();const posted=h.payloads('/offers')[0][0];expect(posted.sourceFetch.originalUrl).toBe(posted.evidence.url);expect(posted.sourceFetch.sourceVerified).toBe(true);expect(posted.sourceFetch.contentHash).toBe(sha256(posted.sourceText));
+});

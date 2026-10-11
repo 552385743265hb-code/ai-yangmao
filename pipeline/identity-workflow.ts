@@ -2,10 +2,20 @@ import { z } from 'zod';
 import { api } from './lib';
 import { intakeReceiptSchema } from '../src/shared/identity/types';
 import { reviewIdentity,type IdentityReviewInput } from './identity-review';
-export async function resumeIdentityIntake(deadlineAt:number):Promise<{resolved:number;deferred:number;modelTasks:number}> {
- const stats={resolved:0,deferred:0,modelTasks:0};
- if(process.env.IDENTITY_MODE!=='enforce'||!process.env.API_BASE)return stats;
- const queue=z.object({candidates:z.array(z.object({id:z.string(),revision:z.number().int()})).max(4)}).parse(await api('/identity-retries'));
+export interface IdentityMaintenanceStats {resolved:number;deferred:number;modelTasks:number;status:'processed'|'disabled'|'not_evaluated';reason?:string}
+export async function resumeIdentityIntake(deadlineAt:number):Promise<IdentityMaintenanceStats> {
+ const stats:IdentityMaintenanceStats={resolved:0,deferred:0,modelTasks:0,status:'processed'};
+ const skip=(status:IdentityMaintenanceStats['status'],reason:string)=>({...stats,status,reason});
+ if(process.env.DRY_RUN==='1')return skip('disabled','dry_run');
+ const mode=process.env.IDENTITY_MODE;
+ if(!mode)return skip('not_evaluated','missing_identity_mode');
+ if(!['off','shadow','enforce'].includes(mode))return skip('not_evaluated','invalid_identity_mode');
+ if(mode!=='enforce')return skip('disabled','mode_'+mode);
+ if(!['true','false'].includes(process.env.IDENTITY_MODEL_ASSIST??''))return skip('not_evaluated','invalid_or_missing_identity_model_assist');
+ if(!process.env.API_BASE?.trim())return skip('not_evaluated','explicit_api_base_required');
+ if(Date.now()>=deadlineAt)return skip('not_evaluated','deadline_reached');
+ const queue=z.object({reason:z.string().optional(),candidates:z.array(z.object({id:z.string(),revision:z.number().int()})).max(4)}).parse(await api('/identity-retries'));
+ if(queue.reason)return skip('not_evaluated',queue.reason);
  for(const candidate of queue.candidates){
   if(Date.now()>=deadlineAt){stats.deferred++;continue;}
   try {const receipt=intakeReceiptSchema.parse(await api('/identity-candidates/'+encodeURIComponent(candidate.id)+'/resolve',{requestId:crypto.randomUUID(),expectedRevision:candidate.revision}));if(receipt.retryable)stats.deferred++;else stats.resolved++;}

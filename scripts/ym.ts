@@ -71,7 +71,7 @@ switch (cmd) {
   case 'show': {
     const { offer: o, revisions } = await call(`/offers/${rest[0]}`);
     console.log(`[${o.code}] ${o.title}（${o.platform}）
-审核版本：${o.reviewVersion}\n类型：${o.type}　状态：${o.status}　审核：${o.reviewState}
+审核版本：${o.reviewVersion}\n上下架版本：${o.visibilityVersion??o.reviewVersion}\n类型：${o.type}　状态：${o.status}　审核：${o.reviewState}
 额度：${o.value}${o.usd != null ? `（约 $${o.usd}）` : ''}
 领取：${o.claimMethod}　${o.claimStart ?? '已开放'} → ${o.end}（官方时区 ${o.sourceTz}）　额度有效期：${o.creditValidity ?? '未写'}
 资格：${AUD[o.audience]}；${req(o.requirements)}
@@ -93,9 +93,9 @@ ${revisions.length ? `修订：${revisions.map((r: any) => r.diff.map((x: any) =
     break;
   }
   case 'withdraw': {
-    const [ref, evidenceUrl, ...reason] = rest;
+    const [ref, evidenceUrl, ...reason] = rest;const version=requireVersion();
     if (!ref || !evidenceUrl || !reason.length) { console.error('需要短码、官方撤回链接和具体理由'); process.exitCode = 2; break; }
-    const result = await call(`/offers/${ref}/withdraw`, { evidenceUrl, reason: reason.join(' ') });
+    const result = await call(`/offers/${ref}/withdraw`, { evidenceUrl, reason: reason.join(' '),expectedReviewVersion:version });
     console.log(`已结束活动 [${result.code}]；结束提醒会在下一次日报中处理。`);
     break;
   }

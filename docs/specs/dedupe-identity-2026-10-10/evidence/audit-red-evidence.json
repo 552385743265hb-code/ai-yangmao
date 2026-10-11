@@ -1,0 +1,490 @@
+[
+  {
+    "log": "R01-human-correction-red.log",
+    "sha256": "f056a1b761fd586f48709fdf4ce7bcb6158a2075bc0bc77bc583545ecef3a05a",
+    "failures": [
+      {
+        "failure": "tests/identity-audit-subclaims.test.ts > R01 repeating an extraction after human fact correction retains its current receipt and original assertion identity",
+        "message": "AssertionError: expected null to be '192e0809-f54b-4947-8dd6-c77bc0bfc799' // Object.is equality"
+      }
+    ]
+  },
+  {
+    "log": "R01-red.log",
+    "sha256": "c52a23d2ef618e78c9080e0a2b6174726dc50cbbc69d6e57ae3afbff4a32ebc0",
+    "failures": [
+      {
+        "failure": "tests/identity-audit-subclaims.test.ts > R01 same_span_same_mechanism_independent_subclaims_across_requests qualification after pending",
+        "message": "FAIL  tests/identity-audit-subclaims.test.ts > R01 same_span_same_mechanism_independent_subclaims_across_requests qualification after approved"
+      },
+      {
+        "failure": "tests/identity-audit-subclaims.test.ts > R01 same_span_same_mechanism_independent_subclaims_across_requests qualification after approved",
+        "message": "FAIL  tests/identity-audit-subclaims.test.ts > R01 same_span_same_mechanism_independent_subclaims_across_requests qualification after rejected"
+      },
+      {
+        "failure": "tests/identity-audit-subclaims.test.ts > R01 same_span_same_mechanism_independent_subclaims_across_requests qualification after rejected",
+        "message": "FAIL  tests/identity-audit-subclaims.test.ts > R01 same_span_same_mechanism_independent_subclaims_across_requests pool after pending"
+      },
+      {
+        "failure": "tests/identity-audit-subclaims.test.ts > R01 same_span_same_mechanism_independent_subclaims_across_requests pool after pending",
+        "message": "FAIL  tests/identity-audit-subclaims.test.ts > R01 same_span_same_mechanism_independent_subclaims_across_requests pool after approved"
+      },
+      {
+        "failure": "tests/identity-audit-subclaims.test.ts > R01 same_span_same_mechanism_independent_subclaims_across_requests pool after approved",
+        "message": "FAIL  tests/identity-audit-subclaims.test.ts > R01 same_span_same_mechanism_independent_subclaims_across_requests pool after rejected"
+      },
+      {
+        "failure": "tests/identity-audit-subclaims.test.ts > R01 same_span_same_mechanism_independent_subclaims_across_requests pool after rejected",
+        "message": "FAIL  tests/identity-audit-subclaims.test.ts > R01 same_span_same_mechanism_independent_subclaims_across_requests correction after pending"
+      },
+      {
+        "failure": "tests/identity-audit-subclaims.test.ts > R01 same_span_same_mechanism_independent_subclaims_across_requests correction after pending",
+        "message": "FAIL  tests/identity-audit-subclaims.test.ts > R01 same_span_same_mechanism_independent_subclaims_across_requests correction after approved"
+      },
+      {
+        "failure": "tests/identity-audit-subclaims.test.ts > R01 same_span_same_mechanism_independent_subclaims_across_requests correction after approved",
+        "message": "FAIL  tests/identity-audit-subclaims.test.ts > R01 same_span_same_mechanism_independent_subclaims_across_requests correction after rejected"
+      },
+      {
+        "failure": "tests/identity-audit-subclaims.test.ts > R01 same_span_same_mechanism_independent_subclaims_across_requests correction after rejected",
+        "message": "AssertionError: expected 'candidate_0533a1d6c87a53a66880ff592b1…' not to be 'candidate_0533a1d6c87a53a66880ff592b1…' // Object.is equality"
+      },
+      {
+        "failure": "tests/identity-audit-subclaims.test.ts > R01 concurrent single-candidate requests retain both distinct assertions",
+        "message": "AssertionError: expected 1 to be 2 // Object.is equality"
+      }
+    ]
+  },
+  {
+    "log": "R02-indirect-red.log",
+    "sha256": "9770da00327b2c41ba5748629b0a1497039cee37bb12833dcabde3dcd16f0913",
+    "failures": [
+      {
+        "failure": "tests/identity-audit-claims.test.ts > R02 missing-fact policy can reopen a reviewed indirect claim using newly verified official evidence without upgrading the old source",
+        "message": "AssertionError: expected { …(11) } to match object { outcome: 'evidence_reopen', …(2) }"
+      }
+    ]
+  },
+  {
+    "log": "R02-red.log",
+    "sha256": "c5fa1fc6c35b08bb1c4c05e49e07ef57435407307455a894ba1a3ebfc66dafcf",
+    "failures": [
+      {
+        "failure": "tests/identity-audit-claims.test.ts > R02 rejected_claim_without_offer_reappears_under_new_observation inherits the original decision without a new offer task or reminder",
+        "message": "AssertionError: expected { inputId: 'translated', …(10) } to match object { outcome: 'duplicate_rejected', …(4) }"
+      },
+      {
+        "failure": "tests/identity-audit-claims.test.ts > R02 does not suppress unknown qualification",
+        "message": "AssertionError: expected 'created_pending' to be 'needs_identity_review' // Object.is equality"
+      },
+      {
+        "failure": "tests/identity-audit-claims.test.ts > R02 official evidence supplies only the named missing fact and creates one pending reopen",
+        "message": "AssertionError: expected { …(11) } to match object { outcome: 'evidence_reopen', …(2) }"
+      },
+      {
+        "failure": "tests/identity-audit-claims.test.ts > R02 one explicit human claim correspondence persists and can ground later cross-source refusal inheritance",
+        "message": "AssertionError: expected 400 to be 200 // Object.is equality"
+      }
+    ]
+  },
+  {
+    "log": "R02-ui-red.log",
+    "sha256": "84d74aeb4f6232821a49d4e9359a797286f53ce30d624d4fbcf17ef3a9817b78",
+    "failures": [
+      {
+        "failure": "tests/frontend-workflow.test.ts > R02 offerless claim cards let administrators inspect and explicitly preview an original refusal",
+        "message": "AssertionError: expected null not to be null"
+      },
+      {
+        "failure": "tests/frontend-workflow.test.ts > R02 an offerless evidence reopen requires identity resolution before any approval control",
+        "message": "AssertionError: expected null not to be null"
+      },
+      {
+        "failure": "tests/identity-audit-claims.test.ts > R02 administrators can inspect paginated active offerless refusals before naming a target",
+        "message": "AssertionError: expected 404 to be 200 // Object.is equality"
+      }
+    ]
+  },
+  {
+    "log": "R03-continuation-red.log",
+    "sha256": "8233eb571934604e7f960fb57c77d3af458733ce35a67e7fa65fc06fe06665ad",
+    "failures": [
+      {
+        "failure": "tests/frontend-workflow.test.ts > R03 budget-sized manual history checks continue with the same request and keep the task actionable",
+        "message": "AssertionError: expected true to be false // Object.is equality"
+      }
+    ]
+  },
+  {
+    "log": "R03-red.log",
+    "sha256": "3a5d79617ce3701e3c09fba1c9f227df36c9a6e8d136c83cf4b76b75073a1ca1",
+    "failures": [
+      {
+        "failure": "tests/identity-audit-pagination.test.ts > R03 41 entities exactAlias=false can reach the chosen identity through the real manual endpoint",
+        "message": "FAIL  tests/identity-audit-pagination.test.ts > R03 41 entities exactAlias=true can reach the chosen identity through the real manual endpoint"
+      },
+      {
+        "failure": "tests/identity-audit-pagination.test.ts > R03 41 entities exactAlias=true can reach the chosen identity through the real manual endpoint",
+        "message": "FAIL  tests/identity-audit-pagination.test.ts > R03 81 entities exactAlias=false can reach the chosen identity through the real manual endpoint"
+      },
+      {
+        "failure": "tests/identity-audit-pagination.test.ts > R03 81 entities exactAlias=false can reach the chosen identity through the real manual endpoint",
+        "message": "FAIL  tests/identity-audit-pagination.test.ts > R03 81 entities exactAlias=true can reach the chosen identity through the real manual endpoint"
+      },
+      {
+        "failure": "tests/identity-audit-pagination.test.ts > R03 81 entities exactAlias=true can reach the chosen identity through the real manual endpoint",
+        "message": "AssertionError: expected 400 to be 200 // Object.is equality"
+      },
+      {
+        "failure": "tests/identity-audit-pagination.test.ts > R03 explicit new activity after 81 unrelated entities completes without skipping applicable refusal scopes",
+        "message": "AssertionError: expected 400 to be 200 // Object.is equality"
+      },
+      {
+        "failure": "tests/identity-audit-pagination.test.ts > R03 forty-one historical non-refusals do not block one existing entity",
+        "message": "AssertionError: expected 'needs_identity_review' to be 'duplicate_approved' // Object.is equality"
+      },
+      {
+        "failure": "tests/identity-audit-pagination.test.ts > R03 manual refusal pagination is durable across budget-sized requests and rejects changed payloads",
+        "message": "AssertionError: expected 400 to be 200 // Object.is equality"
+      }
+    ]
+  },
+  {
+    "log": "R04-red.log",
+    "sha256": "94955f573399ddfed4677f9c9dd51894007f7b5ae538bbf33b9fc448301600ad",
+    "failures": [
+      {
+        "failure": "tests/identity-audit-visibility.test.ts > R04 unpublish_with_current_composite_review_version merged=false",
+        "message": "FAIL  tests/identity-audit-visibility.test.ts > R04 unpublish_with_current_composite_review_version merged=true"
+      },
+      {
+        "failure": "tests/identity-audit-visibility.test.ts > R04 unpublish_with_current_composite_review_version merged=true",
+        "message": "FAIL  tests/identity-audit-visibility.test.ts > R04 withdraw_with_current_composite_review_version merged=false"
+      },
+      {
+        "failure": "tests/identity-audit-visibility.test.ts > R04 withdraw_with_current_composite_review_version merged=false",
+        "message": "FAIL  tests/identity-audit-visibility.test.ts > R04 withdraw_with_current_composite_review_version merged=true"
+      },
+      {
+        "failure": "tests/identity-audit-visibility.test.ts > R04 withdraw_with_current_composite_review_version merged=true",
+        "message": "AssertionError: expected 409 to be 200 // Object.is equality"
+      },
+      {
+        "failure": "tests/identity-audit-visibility.test.ts > R04 stale pre-merge alias cards fail while a fresh alias GET provides the canonical visibility version",
+        "message": "AssertionError: expected 409 to be 200 // Object.is equality"
+      },
+      {
+        "failure": "tests/identity-audit-visibility.test.ts > R04 a draft review token and the published visibility token are separate in the actual GET contract",
+        "message": "TypeError: .toMatch() expects to receive a string, but got undefined"
+      },
+      {
+        "failure": "tests/identity-audit-visibility.test.ts > R04 withdrawal retains the administrator-supplied evidence link in its decision audit",
+        "message": "AssertionError: expected 409 to be 200 // Object.is equality"
+      }
+    ]
+  },
+  {
+    "log": "R05-claim-flow-red.log",
+    "sha256": "72da8076511eb9e31218b12321436c09f5871eed4eedb815ec51b453d4909dc4",
+    "failures": [
+      {
+        "failure": "tests/identity-audit-claims.test.ts > R02/R05 a named missing-fact reopen can be explicitly materialized and then reviewed, without publishing during identity confirmation",
+        "message": "AssertionError: expected 409 to be 200 // Object.is equality"
+      }
+    ]
+  },
+  {
+    "log": "R05-integration-red.log",
+    "sha256": "ba88e4a12603f284b2629c96e4b8f060f7b23ca0d77db000ed880c1428830802",
+    "failures": [
+      {
+        "failure": "tests/frontend-workflow.test.ts > R05 paused publications have an explicit versioned reopen preview which does not approve",
+        "message": "AssertionError: expected null not to be null"
+      },
+      {
+        "failure": "tests/identity-audit-lifecycle.test.ts > R05 a merged source-only draft can be reopened without rewriting the source proposal",
+        "message": "AssertionError: expected 409 to be 200 // Object.is equality"
+      },
+      {
+        "failure": "tests/identity-audit-lifecycle.test.ts > R05 a reopened source lineage keeps its lead in review with the new task",
+        "message": "AssertionError: expected { status: 'linked', …(3) } to match object { status: 'reviewing', …(1) }"
+      },
+      {
+        "failure": "tests/identity-audit-lifecycle.test.ts > R05 paused activities are discoverable through a bounded administrator listing",
+        "message": "AssertionError: expected 404 to be 200 // Object.is equality"
+      }
+    ]
+  },
+  {
+    "log": "R05-other-refusal-red.log",
+    "sha256": "6da9eb0829d2fe646aa277d0d64c9d84babda37d4fd604993c935c41025b0d33",
+    "failures": [
+      {
+        "failure": "tests/identity-audit-lifecycle.test.ts > R05 reopening visibility cannot silently supersede a different active manual refusal",
+        "message": "AssertionError: expected 200 to be 409 // Object.is equality"
+      }
+    ]
+  },
+  {
+    "log": "R05-red.log",
+    "sha256": "783b21c07d0f5dcfb9808e544d44869af162608f0a3847712afc9d9df3e7f4c0",
+    "failures": [
+      {
+        "failure": "tests/identity-audit-lifecycle.test.ts > R05 pre_unpublish_task_cannot_republish_offer and its original draft stays intact",
+        "message": "AssertionError: expected 200 to be 409 // Object.is equality"
+      },
+      {
+        "failure": "tests/identity-audit-lifecycle.test.ts > R05 pre_withdraw_task_cannot_republish_offer and its original draft stays intact",
+        "message": "AssertionError: expected 400 to be 409 // Object.is equality"
+      },
+      {
+        "failure": "tests/identity-audit-lifecycle.test.ts > R05 unpublish invalidates in-flight model leases and preserves unknown delivery receipts",
+        "message": "AssertionError: expected { …(2) } to deeply equal { lease_token: null, …(1) }"
+      },
+      {
+        "failure": "tests/identity-audit-lifecycle.test.ts > R05 withdraw invalidates in-flight model leases and preserves unknown delivery receipts",
+        "message": "AssertionError: expected { …(2) } to deeply equal { lease_token: null, …(1) }"
+      },
+      {
+        "failure": "tests/identity-audit-lifecycle.test.ts > R05 fresh input after unpublish cannot create a replacement approval path",
+        "message": "AssertionError: expected { inputId: 'repeat-after-hold', …(10) } to match object { outcome: 'duplicate_rejected', …(2) }"
+      },
+      {
+        "failure": "tests/identity-audit-lifecycle.test.ts > R05 fresh input after withdraw cannot create a replacement approval path",
+        "message": "AssertionError: expected { inputId: 'repeat-after-hold', …(10) } to match object { outcome: 'duplicate_rejected', …(2) }"
+      },
+      {
+        "failure": "tests/identity-audit-lifecycle.test.ts > R05 explicit unpublish reopen creates a fresh review and only its approval restores visibility draft=false",
+        "message": "FAIL  tests/identity-audit-lifecycle.test.ts > R05 explicit unpublish reopen creates a fresh review and only its approval restores visibility draft=true"
+      },
+      {
+        "failure": "tests/identity-audit-lifecycle.test.ts > R05 explicit unpublish reopen creates a fresh review and only its approval restores visibility draft=true",
+        "message": "AssertionError: expected undefined to match object { action: 'unpublish', …(1) }"
+      },
+      {
+        "failure": "tests/identity-audit-lifecycle.test.ts > R05 explicit withdraw reopen creates a fresh review and only its approval restores visibility draft=false",
+        "message": "FAIL  tests/identity-audit-lifecycle.test.ts > R05 explicit withdraw reopen creates a fresh review and only its approval restores visibility draft=true"
+      },
+      {
+        "failure": "tests/identity-audit-lifecycle.test.ts > R05 explicit withdraw reopen creates a fresh review and only its approval restores visibility draft=true",
+        "message": "AssertionError: expected undefined to match object { action: 'withdraw', …(1) }"
+      },
+      {
+        "failure": "tests/identity-audit-lifecycle.test.ts > R05 closing a published activity invalidates already-filled public edge caches",
+        "message": "AssertionError: expected 1 to be +0 // Object.is equality"
+      },
+      {
+        "failure": "tests/identity-audit-lifecycle.test.ts > R05 explicit reopen does not treat an old unknown reminder as resendable",
+        "message": "AssertionError: expected 404 to be 200 // Object.is equality"
+      }
+    ]
+  },
+  {
+    "log": "R06-red.log",
+    "sha256": "dcad2af080189fcddb74af7e04c0ebaab2cf8f05a941880baf0843625547ef56",
+    "failures": [
+      {
+        "failure": "tests/identity-audit-terms.test.ts > R06 manual_same_identity_preserves_known_change_when_other_facts_missing amount",
+        "message": "AssertionError: expected { inputId: 'new', …(10) } to match object { outcome: 'proposed_update', …(1) }"
+      },
+      {
+        "failure": "tests/identity-audit-terms.test.ts > R06 manual_same_identity_preserves_known_change_when_other_facts_missing cadence",
+        "message": "AssertionError: expected 400 to be 200 // Object.is equality"
+      },
+      {
+        "failure": "tests/identity-audit-terms.test.ts > R06 manual_same_identity_preserves_known_change_when_other_facts_missing added",
+        "message": "AssertionError: expected { inputId: 'new', …(10) } to match object { outcome: 'proposed_update', …(1) }"
+      },
+      {
+        "failure": "tests/identity-audit-terms.test.ts > R06 identity same cannot waive independent pool ambiguity",
+        "message": "AssertionError: expected 400 to be 409 // Object.is equality"
+      }
+    ]
+  },
+  {
+    "log": "R07-integrity-red.log",
+    "sha256": "b1de0bd4a94b8f8775f8a7e45b64661a1f42739ed6e916f21016a58400502dc2",
+    "failures": [
+      {
+        "failure": "tests/identity-audit-provenance.test.ts > R07 a nonstandard first-party reader origin cannot be promoted by its label",
+        "message": "AssertionError: expected true to be false // Object.is equality"
+      },
+      {
+        "failure": "tests/identity-audit-provenance.test.ts > R07 fetch-attempt audit is immutable and retains its own provenance",
+        "message": "AssertionError: expected [Function] to throw an error"
+      }
+    ]
+  },
+  {
+    "log": "R07-red.log",
+    "sha256": "83f7d206c9719cd5b65db6652da9c956a69335c76011c9f8ee8399bf81c722cb",
+    "failures": [
+      {
+        "failure": "tests/identity-audit-provenance.test.ts > R07 jina_media_fallback_is_not_reclassified_as_direct through fetchPage toOffer adapter observation",
+        "message": "AssertionError: expected true to be false // Object.is equality"
+      },
+      {
+        "failure": "tests/identity-audit-provenance.test.ts > R07 missing verification cannot obtain verified identity evidence through the legacy transport",
+        "message": "FAIL  tests/identity-audit-provenance.test.ts > R07 truncated body cannot obtain verified identity evidence through the legacy transport"
+      },
+      {
+        "failure": "tests/identity-audit-provenance.test.ts > R07 truncated body cannot obtain verified identity evidence through the legacy transport",
+        "message": "AssertionError: expected true to be false // Object.is equality"
+      },
+      {
+        "failure": "tests/identity-audit-provenance.test.ts > R07 normal direct fetch remains verified and records the actual retrieval URLs",
+        "message": "SyntaxError: \"undefined\" is not valid JSON"
+      },
+      {
+        "failure": "tests/identity-audit-provenance.test.ts > R07 the model cannot manufacture fetch provenance by adding fields to an extracted offer",
+        "message": "AssertionError: expected true to be false // Object.is equality"
+      },
+      {
+        "failure": "tests/identity-audit-provenance.test.ts > R07 validated first-party embed retains subject and physical-reader provenance",
+        "message": "SyntaxError: \"undefined\" is not valid JSON"
+      },
+      {
+        "failure": "tests/identity-audit-provenance.test.ts > R07 shadow and enforce carry the same facts and retrieval confidence through actual Worker routes",
+        "message": "AssertionError: expected { schemaVersion: 'terms-v1', …(9) } to deeply equal { schemaVersion: 'terms-v1', …(9) }"
+      }
+    ]
+  },
+  {
+    "log": "R08-red.log",
+    "sha256": "0b71002eb4e5b367046db486ccd9a82acb13fe743006968a49b26714307bdd06",
+    "failures": [
+      {
+        "failure": "tests/identity-audit-valuation.test.ts > R08 approved_proposal_keeps_manual_valuation amount",
+        "message": "FAIL  tests/identity-audit-valuation.test.ts > R08 approved_proposal_keeps_manual_valuation unknown"
+      },
+      {
+        "failure": "tests/identity-audit-valuation.test.ts > R08 approved_proposal_keeps_manual_valuation unknown",
+        "message": "FAIL  tests/identity-audit-valuation.test.ts > R08 approved_proposal_keeps_manual_valuation application"
+      },
+      {
+        "failure": "tests/identity-audit-valuation.test.ts > R08 approved_proposal_keeps_manual_valuation application",
+        "message": "AssertionError: expected [] to deeply equal ArrayContaining{…}"
+      }
+    ]
+  },
+  {
+    "log": "R09-canary-red.log",
+    "sha256": "4584808e524621a00fd950231d115d7b94281a0eaef9520c3082a39b0eb337bd",
+    "failures": [
+      {
+        "failure": "tests/identity-audit-workflow.test.ts > R09 model queue respects the Worker product canary and mode",
+        "message": "AssertionError: expected [ { …(3) } ] to deeply equal []"
+      }
+    ]
+  },
+  {
+    "log": "R09-red.log",
+    "sha256": "e92bb37456a3dc7fba754657bdc50e38191dee85a71c95065d62245b5b14d302",
+    "failures": [
+      {
+        "failure": "tests/identity-audit-workflow.test.ts > R09 collect_workflow_provides_identity_execution_config and resumes a real server-selected candidate",
+        "message": "AssertionError: workflow must wire IDENTITY_MODE: expected null not to be null"
+      },
+      {
+        "failure": "tests/identity-audit-workflow.test.ts > R09 workflow defaults explicitly off and never calls network",
+        "message": "AssertionError: workflow must wire IDENTITY_MODE: expected null not to be null"
+      },
+      {
+        "failure": "tests/identity-audit-workflow.test.ts > R09 missing or invalid config is diagnostic rather than empty backlog: ",
+        "message": "AssertionError: expected { resolved: +0, deferred: +0, …(1) } to match object { status: 'not_evaluated', …(1) }"
+      },
+      {
+        "failure": "tests/identity-audit-workflow.test.ts > R09 missing or invalid config is diagnostic rather than empty backlog: typo",
+        "message": "AssertionError: expected { resolved: +0, deferred: +0, …(1) } to match object { status: 'not_evaluated', …(1) }"
+      },
+      {
+        "failure": "tests/identity-audit-workflow.test.ts > R09 dry-run cannot mutate deferred candidates or claim model tasks",
+        "message": "Error: dry run"
+      },
+      {
+        "failure": "tests/identity-audit-workflow.test.ts > R09 enforce does not also create shadow extraction candidates",
+        "message": "AssertionError: workflow must wire IDENTITY_MODE: expected null not to be null"
+      },
+      {
+        "failure": "tests/identity-audit-workflow.test.ts > R09 assist true still uses the existing denied-budget path without any provider call",
+        "message": "AssertionError: workflow must wire IDENTITY_MODE: expected null not to be null"
+      }
+    ]
+  },
+  {
+    "log": "legacy-scope-red.log",
+    "sha256": "9f15d0bd7ca6aacf548f89c82caee81f1c2b807a292f81b8a85973f765f25881",
+    "failures": [
+      {
+        "failure": "tests/identity-audit-subclaims.test.ts > R01 a legacy NULL-scope assertion replays after human qualification correction",
+        "message": "AssertionError: expected 'candidate_cf8c297b45c778b975996f5f235…' to be 'candidate_a20b2f08ea62b0058b07cd8d5a8…' // Object.is equality"
+      }
+    ]
+  },
+  {
+    "log": "reject-empty-red.log",
+    "sha256": "9fcb3ec6c15a7d82d414489118a9fa7ddc7386d172bd9bd16a3794df99ed13cb",
+    "failures": [
+      {
+        "failure": "tests/identity-audit-terms.test.ts > R06 an administrator can reject a changed-facts candidate with no usable display draft",
+        "message": "AssertionError: expected 400 to be 200 // Object.is equality"
+      }
+    ]
+  },
+  {
+    "log": "restoration-price-red.log",
+    "sha256": "7039d160113a60e34fd7a66223e15bacd812a57fa3ab1bc37d14b657b0347681",
+    "failures": [
+      {
+        "failure": "tests/identity-audit-lifecycle.test.ts > R05 newly observed terms during restoration remain one editable restoration review modelPrice=999",
+        "message": "AssertionError: expected 409 to be 200 // Object.is equality"
+      }
+    ]
+  },
+  {
+    "log": "restoration-price-reject-red.log",
+    "sha256": "ca00a34496af84ca3ad21c6c299f03d7ac4673d6f89f35c739bf8795c9c150cb",
+    "failures": [
+      {
+        "failure": "tests/identity-audit-lifecycle.test.ts > R05 newly observed terms during restoration remain one editable restoration review modelPrice=999 decision=reject",
+        "message": "AssertionError: expected 409 to be 200 // Object.is equality"
+      }
+    ]
+  },
+  {
+    "log": "review-followup-red.log",
+    "sha256": "54e4a51e7a44cb0b8a31b6e7019c3126abb2a008ae5727c8f37feadbe5345588",
+    "failures": [
+      {
+        "failure": "tests/identity-audit-lifecycle.test.ts > R05 newly observed terms during restoration remain one editable restoration review",
+        "message": "AssertionError: expected 'd0aa5f15-a94f-4598-aabb-abd44ec4b695' to be '63b3c1c1-1b59-46e2-b535-b4b5cb851c5b' // Object.is equality"
+      },
+      {
+        "failure": "tests/identity-audit-lifecycle.test.ts > R05 a withdrawn publication cannot be claimed from a previously built notice",
+        "message": "AssertionError: expected '31b9e9c6-1f18-47d2-8b13-7f30a88144b7' to be undefined"
+      },
+      {
+        "failure": "tests/identity-audit-subclaims.test.ts > R01 incomplete canonical facts retain distinct raw subclaims after pending",
+        "message": "FAIL  tests/identity-audit-subclaims.test.ts > R01 incomplete canonical facts retain distinct raw subclaims after approved"
+      },
+      {
+        "failure": "tests/identity-audit-subclaims.test.ts > R01 incomplete canonical facts retain distinct raw subclaims after approved",
+        "message": "FAIL  tests/identity-audit-subclaims.test.ts > R01 incomplete canonical facts retain distinct raw subclaims after rejected"
+      },
+      {
+        "failure": "tests/identity-audit-subclaims.test.ts > R01 incomplete canonical facts retain distinct raw subclaims after rejected",
+        "message": "AssertionError: expected 'candidate_217c68763c70ae9c82941223cda…' not to be 'candidate_217c68763c70ae9c82941223cda…' // Object.is equality"
+      }
+    ]
+  },
+  {
+    "log": "review-same-claim-red.log",
+    "sha256": "833463fc05d7825ea1383529ddec210bab73daafc9218751f8acaa7d92d25e22",
+    "failures": [
+      {
+        "failure": "tests/identity-audit-claims.test.ts > R02 same_claim on its own evidence reopen keeps the task actionable",
+        "message": "AssertionError: expected 'resolved' to be 'manual' // Object.is equality"
+      }
+    ]
+  }
+]
