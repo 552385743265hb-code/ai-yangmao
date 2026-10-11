@@ -1,0 +1,62 @@
+[
+  {
+    "sha": "2b10445be76e924ba4b3b5dbdce7d9b97755525b",
+    "title": "fix(identity): retain same-span assertions across intake requests",
+    "pushed": false
+  },
+  {
+    "sha": "d22623a10c4625147d9784b1b77cd0e786346e21",
+    "title": "fix(identity): preserve cross-source offerless refusal memory",
+    "pushed": false
+  },
+  {
+    "sha": "d5935ddc6f4de58ddca7ad51b931c3b644d2e59e",
+    "title": "fix(identity): make scoped manual resolution resumable beyond retrieval limits",
+    "pushed": false
+  },
+  {
+    "sha": "7a75409f3c791f62f373ec406cc11c1f4ceaf2c8",
+    "title": "fix(identity): transport and verify actual collector provenance",
+    "pushed": false
+  },
+  {
+    "sha": "1ed2af22b8ad07cd77621613592bfcf1fb12a244",
+    "title": "fix(identity): separate visibility tokens from SQL timestamps and draft versions",
+    "pushed": false
+  },
+  {
+    "sha": "351ea20e01a88879c36307691386adbbbef792aa",
+    "title": "fix(identity): invalidate closed reviews and require explicit restoration",
+    "pushed": false
+  },
+  {
+    "sha": "9728dbe5557d710c5c8357b830e185a7e54ea21c",
+    "title": "fix(identity): preserve partial terms changes after human identity confirmation",
+    "pushed": false
+  },
+  {
+    "sha": "d896300deae4d2b6e006f92c3e01f9ee6f750348",
+    "title": "fix(identity): retain reviewed manual valuation on proposal approval",
+    "pushed": false
+  },
+  {
+    "sha": "f19779051e9032c5b52124a670e3f30c11326e16",
+    "title": "fix(identity): wire bounded collection maintenance with explicit configuration",
+    "pushed": false
+  },
+  {
+    "sha": "40ca04c4412594b413065818e50b897aba71eb2b",
+    "title": "fix(identity): close adversarial assertion restoration and delivery gaps",
+    "pushed": false
+  },
+  {
+    "sha": "d2dc5d7cf327e66f0d83215159b2d68959a33927",
+    "title": "fix(identity): allow rejecting candidates without publication fields",
+    "pushed": false
+  },
+  {
+    "sha": "f54650cdc7bda70f448d803a0eb63a8ccf3a420a",
+    "title": "fix(tooling): update vulnerable local runtime dependencies",
+    "pushed": false
+  }
+]

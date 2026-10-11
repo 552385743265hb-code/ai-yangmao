@@ -96,3 +96,11 @@ it('A44 unreconciled rejected leads block canary even when every offer is mapped
  expect(response.body.results[0]).toMatchObject({error:expect.stringContaining('backfill')});
  expect(f.sqlite.prepare('SELECT count(*) n FROM benefit_entities').get()).toEqual({n:0});
 });
+it('A29 legacy show supplies the current identity version for the existing CLI',async()=>{
+ const {IdentityService}=await import('../src/worker/identity/service');const {IdentityStore}=await import('../src/worker/identity/store');const text='Campaign signup-2026 grants 10 USD.';const facts=terms();facts.occurrenceAnchor=known('signup-2026');const store=new IdentityStore(f.db);
+ const ob=await store.recordObservation({requestId:'show',originalUrl:'https://vendor.example/show',finalUrl:'https://vendor.example/show',text,fetchKind:'direct',sourceId:'vendor-source',observedAt:new Date().toISOString()});
+ const [c]=await store.recordCandidates({requestId:'show-c',observationId:ob.observationId,extractionVersion:'v1',extractionComplete:true,candidates:[{inputId:'show',span:{start:0,end:text.length,quote:text},quotes:[{id:'quote-1',start:0,end:text.length,quote:text}],facts,rawCandidate:displayOffer()}]});
+ const r=await new IdentityService(f.db).resolveCandidate(c.candidateId,'show-resolve');const shown=await call('admin/offers/'+r.canonicalOfferId,undefined,true);
+ expect(shown.body.offer.reviewVersion).toBe(`identity:${r.taskId}:0`);
+ const queue=await call('admin/queue',undefined,true);expect(queue.body.pending).toHaveLength(0);
+});

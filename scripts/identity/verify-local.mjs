@@ -5,6 +5,8 @@ import { MutationBuilder,commitIdentityMutation } from '../../src/worker/identit
 import { IdentityService } from '../../src/worker/identity/service.ts';
 import { terms } from '../../tests/fixtures/identity/terms.ts';
 import { displayOffer } from '../../tests/fixtures/identity/offer.ts';
+import {claimNotice,ackDelivery} from '../../src/worker/admin.ts';
+import {resolveCanonicalOffer} from '../../src/worker/identity/canonical.ts';
 import { IdentityStore } from '../../src/worker/identity/store.ts';
 const proxy=await getPlatformProxy({configPath:'tests/fixtures/identity/wrangler.jsonc',persist:{path:'.superpowers/sdd/IMPLEMENTATION/d1/v3'}});
 try {
@@ -49,5 +51,9 @@ try {
  assert.equal(decision.publicationRevision,1);
  assert.equal((await db.prepare('SELECT review_state FROM offers WHERE id=?').bind(resolved.canonicalOfferId).first()).review_state,'approved');
  assert.equal((await db.prepare("SELECT count(*) n FROM identity_events WHERE entity_id=? AND kind='new'").bind(resolved.entityId).first()).n,1);
- console.log(JSON.stringify({environment:'local-workerd-d1',observationReplay:'passed',concurrentReceipt:'passed',initialApprovalOutbox:'passed',zeroGuard:'passed',finalAssertionRollback:'passed',returning:'passed',batchCheckRollback:'passed',foreignKeys:'passed',externalMessages:0,modelCalls:0}));
+ const route=await resolveCanonicalOffer(db,resolved.canonicalOfferId);assert.equal(route.entityId,resolved.entityId);
+ const notice=await claimNotice({DB:db},'digest','telegram');assert.ok(notice.deliveryId);assert.ok(notice.marks.some(m=>m.entityId===resolved.entityId));
+ assert.equal((await ackDelivery({DB:db},notice.deliveryId,'sent')).ok,true);
+ assert.equal((await db.prepare("SELECT status FROM identity_events WHERE entity_id=? AND kind='new'").bind(resolved.entityId).first()).status,'delivered');
+ console.log(JSON.stringify({canonicalRead:'passed',notificationClaimAck:'passed',environment:'local-workerd-d1',observationReplay:'passed',concurrentReceipt:'passed',initialApprovalOutbox:'passed',zeroGuard:'passed',finalAssertionRollback:'passed',returning:'passed',batchCheckRollback:'passed',foreignKeys:'passed',externalMessages:0,modelCalls:0}));
 } finally { await proxy.dispose(); }

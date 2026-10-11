@@ -245,9 +245,9 @@ it('A26 a superseded rejection is re-evaluated without losing identity links',as
  await service.decideTask(opened.taskId,{requestId:'approve',expectedRevision:0,action:'approve',actor:'admin',role:'admin'});
  expect(await service.resolveCandidate(candidateId,'repeat-after-reopen')).toMatchObject({outcome:'duplicate_approved',entityId:a.entityId,versionId:a.versionId,canonicalOfferId:a.canonicalOfferId});
 });
-it('A08 a partial duplicate reuses the pending version without reinserting it',async()=>{
+it('A08 a partial candidate waits for identity confirmation without reinserting a pending version',async()=>{
  const a=await service.resolveCandidate(await intake('a'),'a');const partial=facts();partial.benefitPools[0].amount={state:'unknown'};
- expect(await service.resolveCandidate(await intake('partial','Campaign signup-2026 is available.',partial),'partial')).toMatchObject({outcome:'duplicate_pending',entityId:a.entityId,versionId:a.versionId,taskId:a.taskId});
+ expect(await service.resolveCandidate(await intake('partial','Campaign signup-2026 is available.',partial),'partial')).toMatchObject({outcome:'needs_identity_review',entityId:null,versionId:null});
  expect(f.sqlite.prepare('SELECT count(*) n FROM benefit_versions').get()).toEqual({n:1});
 });
 for(const action of ['approve','reject'] as const)it('A22 current manually refreshed proposal can '+action,async()=>{
@@ -274,4 +274,32 @@ it('A26 a mechanism scoped refusal suppresses another occurrence without cross-e
  const b=await service.resolveCandidate(await intake('b','Independent campaign signup-2027 grants 10 USD to subscribers.',other),'b');
  expect(b).toMatchObject({outcome:'duplicate_rejected',decisionId:rejected.decisionId,taskId:null});
  expect(f.sqlite.prepare('SELECT count(*) n FROM offers').get()).toEqual({n:1});
+});
+it('A08/A10 a retained automatic campaign alias cannot consume an under-extracted independent claim as duplicate pending',async()=>{
+ const a=await service.resolveCandidate(await intake('original'),'original');const partial=facts();partial.benefitPools[0].amount={state:'unknown'};
+ const b=await service.resolveCandidate(await intake('independent','Umbrella campaign signup-2026: a separate student signup bonus grants 20 USD.',partial),'independent');
+ expect(b).toMatchObject({outcome:'needs_identity_review',entityId:null,versionId:null});expect(b.taskId).not.toBe(a.taskId);
+ expect(f.sqlite.prepare('SELECT count(*) n FROM benefit_versions').get()).toEqual({n:1});expect(f.sqlite.prepare('SELECT count(*) n FROM entity_observations').get()).toEqual({n:1});
+});
+it('A24 different requests and extractor IDs race on one strong anchor then the loser retries canonical',async()=>{
+ const ids=[await intake('model-a'),await intake('model-b')];const results=await Promise.allSettled(ids.map((id,i)=>service.resolveCandidate(id,'race-model-'+i)));
+ expect(results.filter(r=>r.status==='fulfilled')).toHaveLength(1);const loser=results.findIndex(r=>r.status==='rejected');expect((results[loser] as PromiseRejectedResult).reason).toMatchObject({status:409});
+ const retried=await service.resolveCandidate(ids[loser],'race-model-'+loser);expect(retried.outcome).toBe('duplicate_pending');
+ for(const table of ['benefit_entities','benefit_versions','review_tasks','offers'])expect(f.sqlite.prepare(`SELECT count(*) n FROM ${table}`).get()).toEqual({n:1});
+});
+it('A45 a candidate cannot bind an unrelated entity decision even when both references exist',async()=>{
+ const firstId=await intake('first'),a=await service.resolveCandidate(firstId,'first');const other=facts();other.occurrenceAnchor=known('other-campaign');
+ const b=await service.resolveCandidate(await intake('other','Campaign other-campaign grants 10 USD.',other),'other');const rejection=await service.decideTask(b.taskId!,{requestId:'reject-other',expectedRevision:0,action:'reject',reasonCode:'other',actor:'admin',role:'admin'});
+ const {MutationBuilder,commitIdentityMutation}=await import('../src/worker/identity/commit');const builder=new MutationBuilder(f.db,'foreign-decision','foreign-decision');builder.update('intake_candidates',{decision_id:rejection.decisionId},'id=?',[firstId]);builder.assertOwnership('intake_candidates',firstId);
+ await expect(commitIdentityMutation(f.db,builder.plan([],{ok:true}))).rejects.toThrow(/CHECK/);
+ expect(f.sqlite.prepare('SELECT decision_id,entity_id FROM intake_candidates WHERE id=?').get(firstId)).toEqual({decision_id:null,entity_id:a.entityId});expect(f.sqlite.prepare("SELECT count(*) n FROM identity_commands WHERE request_id='foreign-decision'").get()).toEqual({n:0});
+});
+it('A26 an explicit missing-fact refusal policy permits one pending evidence reopen after the named fact is supplied',async()=>{
+ const incomplete=facts();incomplete.benefitPools[0].amount={state:'unknown'};
+ const a=await service.resolveCandidate(await intake('missing-amount','Campaign signup-2026 is available.',incomplete),'missing-amount');
+ await service.decideTask(a.taskId!,{requestId:'reject-missing',expectedRevision:0,action:'reject',reasonCode:'insufficient_evidence',reopenPolicy:{kind:'missing_facts',missingFacts:['benefitPools.vendor:api.amount']},actor:'admin',role:'admin'});
+ const supplied=await intake('supplied'),b=await service.resolveCandidate(supplied,'supplied');expect(b).toMatchObject({outcome:'evidence_reopen',entityId:a.entityId});
+ expect((await service.resolveCandidate(supplied,'supplied-again')).taskId).toBe(b.taskId);
+ const widened=facts();widened.eligibility=known({audience:'new',requirements:['student']});const widenedId=await intake('widened','Campaign signup-2026 grants 10 USD to new student accounts.',widened);expect(await service.resolveCandidate(widenedId,'widened')).toMatchObject({outcome:'needs_identity_review',entityId:null});
+ expect(f.sqlite.prepare("SELECT count(*) n FROM offers WHERE review_state='approved'").get()).toEqual({n:0});expect(f.sqlite.prepare("SELECT count(*) n FROM review_tasks WHERE kind='evidence_reopen'").get()).toEqual({n:1});
 });

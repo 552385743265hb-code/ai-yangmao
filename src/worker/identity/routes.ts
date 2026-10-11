@@ -1,3 +1,8 @@
+import {taskSourcesCte} from './task-sources';
+import {visibilityState,visibilityView} from './visibility';
+import {IdentityMergeService} from './merge';
+import {buildMergePlan} from './merge-plan';
+import {mergePlanSchema} from '../../shared/identity/history-types';
 import { z } from 'zod';
 import { mechanismSchema,canonicalTermsSchema } from '../../shared/identity/types';
 import { sha256 } from '../../shared/identity/normalize';
@@ -40,12 +45,19 @@ identityIngestRoutes.get('/identity-candidates',async c=>{
   if(query.data.anchor)facts.occurrenceAnchor={state:'known',value:query.data.anchor,evidenceRefs:['query']};
   return c.json(await new IdentityStore(c.env.DB).retrieveCandidates(query.data.productId,facts,query.data.cursor));
 });
+const selectedTaskSql=`EXISTS(SELECT 1 FROM task_candidates tc WHERE tc.task_id=t.id) AND NOT EXISTS(SELECT 1 FROM task_candidates tc JOIN intake_candidates c ON c.id=tc.candidate_id WHERE tc.task_id=t.id AND json_extract(c.facts_json,'$.issuerProductId.state')='known' AND json_extract(c.facts_json,'$.issuerProductId.value') NOT IN (SELECT value FROM json_each(?)))`;
+const taskProducts=(env:Env)=>(env.IDENTITY_CANARY_PLATFORMS??'').split(',').map(p=>p.trim()).filter(Boolean).slice(0,20);
+async function requireTaskSelected(env:Env,id:string){
+ const products=taskProducts(env);
+ if(env.IDENTITY_MODE!=='enforce'||!products.length||!await env.DB.prepare(`SELECT 1 FROM review_tasks t WHERE t.id=? AND ${selectedTaskSql}`).bind(id,JSON.stringify(products)).first())throw new IdentityError(409,'identity task is outside the active Worker canary');
+}
 identityIngestRoutes.get('/identity-tasks',async c=>{
-  const rows=await c.env.DB.prepare("SELECT id,revision,kind FROM review_tasks t WHERE kind='identity' AND (state='open' OR (state='checking' AND lease_until<?)) AND EXISTS(SELECT 1 FROM task_candidates WHERE task_id=t.id) ORDER BY created_at,id LIMIT 4").bind(new Date().toISOString()).all();
-  return c.json({tasks:rows.results});
+ const products=taskProducts(c.env);if(c.env.IDENTITY_MODE!=='enforce'||!products.length)return c.json({tasks:[]});
+ const rows=await c.env.DB.prepare(`SELECT id,revision,kind FROM review_tasks t WHERE kind='identity' AND (state='open' OR (state='checking' AND lease_until<?)) AND ${selectedTaskSql} ORDER BY created_at,id LIMIT 4`).bind(new Date().toISOString(),JSON.stringify(products)).all();
+ return c.json({tasks:rows.results});
 });
-identityIngestRoutes.post('/identity-tasks/:id/claim',async c=>c.json(await new IdentityService(c.env.DB).claimTask(c.req.param('id'),await c.req.json())));
-identityIngestRoutes.post('/identity-tasks/:id/result',async c=>c.json(await new IdentityService(c.env.DB).submitTaskSuggestion(c.req.param('id'),await c.req.json())));
+identityIngestRoutes.post('/identity-tasks/:id/claim',async c=>{await requireTaskSelected(c.env,c.req.param('id'));return c.json(await new IdentityService(c.env.DB).claimTask(c.req.param('id'),await c.req.json()));});
+identityIngestRoutes.post('/identity-tasks/:id/result',async c=>{await requireTaskSelected(c.env,c.req.param('id'));return c.json(await new IdentityService(c.env.DB).submitTaskSuggestion(c.req.param('id'),await c.req.json()));});
 
 export const identityAdminRoutes=new Hono<{Bindings:Env;Variables:{role:'admin'|'reviewer';who:string}}>();
 identityAdminRoutes.onError((error,c)=>{
@@ -53,24 +65,40 @@ identityAdminRoutes.onError((error,c)=>{
  if(error instanceof z.ZodError)return c.json({error:'invalid identity request'},400);
  return c.json({error:'identity operation unavailable',retryable:true},503);
 });
+identityAdminRoutes.get('/visibility-holds',async c=>{
+ if(c.get('role')!=='admin')return c.json({error:'administrator required'},403);
+ const input=z.object({cursor:z.string().max(200).default(''),limit:z.coerce.number().int().min(1).max(5).default(5)}).safeParse(c.req.query());if(!input.success)return c.json({error:'invalid visibility cursor'},400);const {cursor,limit}=input.data;
+ const rows=await c.env.DB.prepare("SELECT e.id,o.id offer_id,o.title FROM benefit_entities e JOIN offers o ON o.id=e.canonical_offer_id WHERE e.state='active' AND e.current_approved_version_id IS NOT NULL AND e.id>? AND (o.review_state<>'approved' OR o.withdrawn_at IS NOT NULL) ORDER BY e.id LIMIT ?").bind(cursor,limit+1).all<{id:string;offer_id:string;title:string}>();const holds=[];
+ for(const row of rows.results.slice(0,limit)){const state=await visibilityState(c.env.DB,row.id);if(state?.closed)holds.push({offerId:row.offer_id,title:row.title,visibilityVersion:state.version,...visibilityView(state)});}
+ return c.json({holds,nextCursor:rows.results.length>limit?rows.results[limit-1].id:null});
+});
+identityAdminRoutes.get('/claim-decisions',async c=>{
+ const input=z.object({productId:z.string().min(1).max(200).optional(),cursor:z.string().max(200).default(''),limit:z.coerce.number().int().min(1).max(10).default(10)}).safeParse(c.req.query());if(!input.success)return c.json({error:'invalid claim cursor'},400);
+ const {productId,cursor,limit}=input.data;
+ const rows=await c.env.DB.prepare("SELECT d.id,d.candidate_id,d.reason_text,d.reason_code,d.scope_json,d.reopen_policy_json,c.facts_json,c.raw_candidate_json,o.final_url FROM review_decisions d JOIN intake_candidates c ON c.id=d.candidate_id JOIN source_observations o ON o.id=c.observation_id WHERE d.entity_id IS NULL AND d.action='reject' AND json_extract(d.scope_json,'$.kind')='claim' AND d.id>? AND (?2 IS NULL OR json_extract(c.facts_json,'$.issuerProductId.state')<>'known' OR json_extract(c.facts_json,'$.issuerProductId.value')=?2) AND NOT EXISTS(SELECT 1 FROM review_decisions n WHERE n.supersedes_id=d.id) ORDER BY d.id LIMIT ?3").bind(cursor,productId??null,limit+1).all<Record<string,unknown>>();
+ return c.json({decisions:rows.results.slice(0,limit).map(r=>({id:r.id,candidateId:r.candidate_id,reason:r.reason_text||r.reason_code,scope:JSON.parse(String(r.scope_json)),reopenPolicy:JSON.parse(String(r.reopen_policy_json)),facts:JSON.parse(String(r.facts_json)),quotes:(JSON.parse(String(r.raw_candidate_json)).quotes??[]).slice(0,5),url:r.final_url})),nextCursor:rows.results.length>limit?String(rows.results[limit-1].id):null});
+});
 identityAdminRoutes.get('/tasks',async c=>{
- const query=z.object({cursor:z.string().max(200).optional(),limit:z.coerce.number().int().min(1).max(8).default(5)}).safeParse(c.req.query());
+ const query=z.object({cursor:z.string().max(200).optional(),limit:z.coerce.number().int().min(1).max(5).default(5)}).safeParse(c.req.query());
  if(!query.success)return c.json({error:'invalid task cursor'},400);
- const rows=await c.env.DB.prepare("SELECT * FROM review_tasks WHERE state IN ('open','checking','manual') AND id>? ORDER BY id LIMIT ?").bind(query.data.cursor??'',query.data.limit+1).all<Record<string,unknown>>();
+ const rows=await c.env.DB.prepare("SELECT * FROM review_tasks WHERE state IN ('open','checking','manual') AND (entity_id IS NULL OR EXISTS(SELECT 1 FROM benefit_entities e WHERE e.id=review_tasks.entity_id AND e.state='active')) AND id>? ORDER BY id LIMIT ?").bind(query.data.cursor??'',query.data.limit+1).all<Record<string,unknown>>();
  const tasks=[];
  for(const task of rows.results.slice(0,query.data.limit)){
-  const sources=await c.env.DB.prepare('SELECT c.id AS candidateId,c.facts_json,c.raw_candidate_json,o.id AS observationId,o.final_url,o.trust_json,o.text_truncated FROM task_candidates tc JOIN intake_candidates c ON c.id=tc.candidate_id JOIN source_observations o ON o.id=c.observation_id WHERE tc.task_id=? ORDER BY c.id LIMIT 11').bind(task.id).all<Record<string,unknown>>();
+  const sources=await c.env.DB.prepare(taskSourcesCte+" SELECT DISTINCT c.id AS candidateId,c.facts_json,c.raw_candidate_json,o.id AS observationId,coalesce(json_extract(f.provenance_json,'$.finalUrl'),o.final_url) final_url,coalesce(f.provenance_json,o.trust_json) trust_json,coalesce(json_extract(f.provenance_json,'$.truncated'),o.text_truncated) text_truncated FROM task_candidates tc JOIN intake_candidates c ON c.id=tc.candidate_id JOIN source_observations o ON o.id=c.observation_id LEFT JOIN source_observation_fetches f ON f.id=c.source_fetch_id AND f.observation_id=o.id WHERE tc.task_id IN (SELECT id FROM task_sources) ORDER BY c.id LIMIT 11").bind(task.id).all<Record<string,unknown>>();
   const version=task.version_id?await c.env.DB.prepare('SELECT facts_json,display_candidate_json FROM benefit_versions WHERE id=? AND entity_id=?').bind(task.version_id,task.entity_id).first<Record<string,unknown>>():null;
   const entity=task.entity_id?await c.env.DB.prepare('SELECT id,canonical_offer_id,current_approved_version_id,business_revision,publication_revision FROM benefit_entities WHERE id=?').bind(task.entity_id).first<Record<string,unknown>>():null;
   const previous=entity?.current_approved_version_id?await c.env.DB.prepare('SELECT facts_json FROM benefit_versions WHERE id=? AND entity_id=?').bind(entity.current_approved_version_id,entity.id).first<{facts_json:string}>():null;
-  const decisions=task.entity_id?await c.env.DB.prepare('SELECT id,action,reason_code,scope_json,reopen_policy_json,actor,created_at FROM review_decisions WHERE entity_id=? ORDER BY created_at DESC LIMIT 10').bind(task.entity_id).all():{results:[]};
-  tasks.push({...task,entity,previousFacts:previous?JSON.parse(previous.facts_json):null,facts:version?JSON.parse(String(version.facts_json)):null,display:version?JSON.parse(String(version.display_candidate_json)):null,sources:sources.results.slice(0,10).map(row=>({...row,facts:JSON.parse(String(row.facts_json)),raw:JSON.parse(String(row.raw_candidate_json))})),sourcesComplete:sources.results.length<=10,decisions:decisions.results,reviewVersion:`identity:${task.id}:${task.revision}`});
+  const decisions=task.entity_id?await c.env.DB.prepare('SELECT id,action,reason_code,reason_text,scope_json,reopen_policy_json,actor,created_at FROM review_decisions WHERE entity_id=? ORDER BY created_at DESC LIMIT 10').bind(task.entity_id).all():{results:[]};
+  const proposal=entity?.canonical_offer_id?await c.env.DB.prepare('SELECT manual_fields FROM offer_proposals WHERE offer_id=?').bind(entity.canonical_offer_id).first<{manual_fields:string}>():null;
+  const visibility=task.entity_id?await visibilityState(c.env.DB,String(task.entity_id)):null;
+  tasks.push({...task,visibilityHold:visibilityView(visibility),visibilityBlocked:!!visibility?.closed&&visibility.restorationTaskId!==task.id,visibilityRestoration:visibility?.restorationTaskId===task.id,protectedFields:proposal?JSON.parse(proposal.manual_fields):[],entity,previousFacts:previous?JSON.parse(previous.facts_json):null,facts:version?JSON.parse(String(version.facts_json)):null,display:version?JSON.parse(String(version.display_candidate_json)):null,sources:sources.results.slice(0,10).map(row=>({...row,facts:JSON.parse(String(row.facts_json)),quotes:JSON.parse(String(row.raw_candidate_json)).quotes??[]})),sourcesComplete:sources.results.length<=10,decisions:decisions.results,reviewVersion:`identity:${task.id}:${task.revision}`});
  }
  return c.json({tasks,nextCursor:rows.results.length>query.data.limit?String(rows.results[query.data.limit-1]?.id):null});
 });
 identityAdminRoutes.post('/tasks/:id/resolve',async c=>{
  const raw=await c.req.json() as Record<string,unknown>;
  const service=new IdentityService(c.env.DB);
+ if(raw.action==='same_claim'){if(c.get('role')!=='admin')return c.json({error:'administrator required'},403);const {action:_action,...input}=raw;return c.json(await service.confirmRejectedClaim(c.req.param('id'),{...input,actor:c.get('who')}));}
  const result=raw.action==='same'||raw.action==='new'||raw.action==='distinct'
    ?await service.resolveIdentityTask(c.req.param('id'),{...raw,action:raw.action==='distinct'?'new':raw.action,actor:c.get('who')} as never)
    :await service.decideTask(c.req.param('id'),{...raw,actor:c.get('who'),role:c.get('role')} as never);
@@ -104,9 +132,26 @@ identityIngestRoutes.post('/identity-leads/:id/reconcile',async c=>{
 });
 
 identityIngestRoutes.get('/identity-retries',async c=>{
- if(c.env.IDENTITY_MODE!=='enforce')return c.json({candidates:[]});
+ if(c.env.IDENTITY_MODE!=='enforce')return c.json({candidates:[],reason:'worker_mode_not_enforce'});
  const products=(c.env.IDENTITY_CANARY_PLATFORMS??'').split(',').map(p=>p.trim()).filter(Boolean).slice(0,20);
- if(!products.length)return c.json({candidates:[]});
+ if(!products.length)return c.json({candidates:[],reason:'worker_canary_empty'});
  const rows=await c.env.DB.prepare(`SELECT id,revision FROM intake_candidates WHERE state='deferred' AND (next_attempt_at IS NULL OR next_attempt_at<=?) AND (json_extract(facts_json,'$.issuerProductId.state')='unknown' OR json_extract(facts_json,'$.issuerProductId.value') IN (${products.map(()=>'?').join(',')})) ORDER BY attempts,id LIMIT 4`).bind(new Date().toISOString(),...products).all();
  return c.json({candidates:rows.results});
+});
+
+identityAdminRoutes.post('/merges/preview',async c=>{
+ if(c.get('role')!=='admin'||!c.env.IDENTITY_HISTORY_ENVIRONMENT)return c.json({error:'explicit nonproduction administrator environment required'},403);
+ const raw=await c.req.json();if(raw.environment!==c.env.IDENTITY_HISTORY_ENVIRONMENT)return c.json({error:'history environment mismatch'},403);
+ if(!Array.isArray(raw.groups)||raw.groups.length!==1)return c.json({error:'preview one complete group per Worker request; offline preview supports up to ten'},400);
+ return c.json(await buildMergePlan(c.env.DB,raw));
+});
+identityAdminRoutes.post('/merges/apply',async c=>{
+ if(c.get('role')!=='admin'||c.env.HISTORICAL_MERGE_ENABLED!=='true'||!c.env.IDENTITY_HISTORY_ENVIRONMENT)return c.json({error:'historical merge disabled or unauthorized'},403);
+ const body=z.strictObject({plan:mergePlanSchema,requestId:z.string().min(1).max(150),approvedPlanHash:z.string(),groupId:z.string().optional()}).parse(await c.req.json());
+ const r=await new IdentityMergeService(c.env.DB,{environment:c.env.IDENTITY_HISTORY_ENVIRONMENT,enabled:true,actor:c.get('who')}).applyMerge(body.plan,body.requestId,body.approvedPlanHash,body.groupId);return c.json(r,r.status==='conflict'?409:200);
+});
+identityAdminRoutes.post('/merges/rollback',async c=>{
+ if(c.get('role')!=='admin'||c.env.HISTORICAL_MERGE_ENABLED!=='true'||!c.env.IDENTITY_HISTORY_ENVIRONMENT)return c.json({error:'historical rollback disabled or unauthorized'},403);
+ const body=z.strictObject({operationId:z.string(),expectedRevision:z.number().int().nonnegative(),requestId:z.string().min(1).max(150)}).parse(await c.req.json());
+ const r=await new IdentityMergeService(c.env.DB,{environment:c.env.IDENTITY_HISTORY_ENVIRONMENT,enabled:true,actor:c.get('who')}).rollbackMerge(body.operationId,body.expectedRevision,body.requestId);return c.json(r,r.status==='conflict'?409:200);
 });
