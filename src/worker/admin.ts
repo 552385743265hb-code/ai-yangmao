@@ -1,6 +1,7 @@
+import {visibilityState,visibilityView} from './identity/visibility';
 import {canonicalLeadProjection} from './identity/lead-projection';
 import {notificationInheritance} from './identity/notification-inheritance';
-import {noticeIdentities,pendingIdentityNotices,identityReviewAlerts,identityGuard,deliveryIdentityGuard} from './identity/notifications';
+import {noticeIdentities,pendingIdentityNotices,identityReviewAlerts,identityGuard,deliveryIdentityGuard,reviewAlertOverlap} from './identity/notifications';
 import {canonicalOffers,resolveCanonicalOffer,entityOfferVersion} from './identity/canonical';
 import { identityAdminRoutes } from './identity/routes';
 import { IdentityService } from './identity/service';
@@ -208,7 +209,8 @@ admin.get('/offers/:ref', async c => {
   const tasks=await c.env.DB.prepare("SELECT t.id,t.revision FROM review_tasks t JOIN benefit_entities e ON e.id=t.entity_id WHERE e.canonical_offer_id=? AND t.state IN ('open','checking','manual') AND t.kind IN ('initial','terms_change','evidence_reopen') ORDER BY t.id LIMIT 2").bind(o.id).all<{id:string;revision:number}>();
   const task=tasks.results.length===1?tasks.results[0]:null;
   const entity=await c.env.DB.prepare('SELECT id,business_revision FROM benefit_entities WHERE canonical_offer_id=?').bind(o.id).first<{id:string;business_revision:number}>();
-  return c.json({ offer: { ...view(target, names[target.platformId] ?? target.platformId), visibilityVersion:entity?entityOfferVersion(entity,o.updatedAt):o.updatedAt,reviewVersion:task?`identity:${task.id}:${task.revision}`:entity?entityOfferVersion(entity,o.updatedAt):proposal?.updatedAt ?? o.updatedAt, ...(proposal ? {link:`https://ai-yangmao.com/#admin-offer-${encodeURIComponent(o.id)}`, pendingUpdate: true, updateDiff: proposalComparison(o, proposal.candidate)} : {}) }, pendingUpdate: !!proposal, revisions });
+  const hold=entity?visibilityView(await visibilityState(c.env.DB,entity.id)):null;
+  return c.json({ offer: { visibilityHold:hold,...view(target, names[target.platformId] ?? target.platformId), visibilityVersion:entity?entityOfferVersion(entity,o.updatedAt):o.updatedAt,reviewVersion:task?`identity:${task.id}:${task.revision}`:entity?entityOfferVersion(entity,o.updatedAt):proposal?.updatedAt ?? o.updatedAt, ...(proposal ? {link:`https://ai-yangmao.com/#admin-offer-${encodeURIComponent(o.id)}`, pendingUpdate: true, updateDiff: proposalComparison(o, proposal.candidate)} : {}) }, pendingUpdate: !!proposal, revisions });
 });
 
 /** 审核：通过 / 拒绝。原样通过会给信源的"连续原样通过"加一；拒绝清零。 */
@@ -386,6 +388,11 @@ admin.post('/offers/:ref/memo', async c => {
 });
 
 /** 下架：把已上架但不该收的条目撤下（按新标准不收、错收等），不同于“官方撤回”（withdraw，算活动结束、进墓场）。只给管理员。 */
+admin.post('/offers/:ref/reopen-visibility',async c=>{
+ const o=await findOffer(c.env,c.req.param('ref'));if(!o)return c.json({error:'找不到这条羊毛'},404);
+ const body=z.object({expectedReviewVersion:z.string().min(1),reason:z.string().min(8).max(2000),requestId:z.string().min(1).max(180).optional()}).safeParse(await c.req.json().catch(()=>null));if(!body.success)return c.json({error:'需要当前上下架版本和明确重开依据'},400);
+ const requestId=body.data.requestId??await sha256(stableJson({offerId:o.id,...body.data,actor:c.get('who')}));return c.json({ok:true,...await new IdentityService(c.env.DB).reopenVisibility(o.id,{requestId,expectedOfferVersion:body.data.expectedReviewVersion,reason:body.data.reason,actor:c.get('who')})});
+});
 admin.post('/offers/:ref/unpublish', async c => {
   const o = await findOffer(c.env, c.req.param('ref'));
   if (!o) return c.json({ error: '找不到这条羊毛' }, 404);
@@ -697,7 +704,7 @@ export async function claimNotice(env: Env, kind: NoticeKind, channel: NoticeCha
           WHERE old_item.key='id' AND new_item.key='id' AND coalesce((SELECT root.canonical_offer_id FROM benefit_entities old JOIN benefit_entities root ON root.id=old.merged_into WHERE old.canonical_offer_id=old_item.value AND old.state='merged'),old_item.value)=new_item.value)
         OR EXISTS (SELECT 1 FROM json_each(prior.payload,'$.marks') old_mark,json_tree(?5,'$.items') new_item WHERE new_item.key='id' AND coalesce((SELECT root.canonical_offer_id FROM benefit_entities old JOIN benefit_entities root ON root.id=old.merged_into WHERE old.canonical_offer_id=json_extract(old_mark.value,'$.offerId') AND old.state='merged'),json_extract(old_mark.value,'$.offerId'))=new_item.value)
         OR EXISTS (SELECT 1 FROM json_each(prior.payload,'$.reviewAlerts') old_alert, json_each(?5,'$.reviewAlerts') new_alert
-          WHERE (json_extract(old_alert.value,'$.key')=json_extract(new_alert.value,'$.key') OR EXISTS(SELECT 1 FROM merge_task_sources m WHERE m.status='active' AND m.source_task_id=json_extract(old_alert.value,'$.taskId') AND m.canonical_task_id=json_extract(new_alert.value,'$.taskId'))))
+          WHERE (json_extract(old_alert.value,'$.key')=json_extract(new_alert.value,'$.key') OR EXISTS(SELECT 1 FROM merge_task_sources m WHERE m.status='active' AND m.source_task_id=json_extract(old_alert.value,'$.taskId') AND m.canonical_task_id=json_extract(new_alert.value,'$.taskId')) OR ${reviewAlertOverlap('old_alert.value',"json_extract(new_alert.value,'$.taskId')")}))
       )) ON CONFLICT(fingerprint) DO NOTHING RETURNING id`)
     .bind(id,fingerprint,channel,kind,JSON.stringify(notice)).all<{id:string}>();
   return created.results.length ? { ...notice, deliveryId: id } : { ...notice, empty: true, alreadyClaimed: true };

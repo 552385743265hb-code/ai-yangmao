@@ -4,8 +4,14 @@ import { sha256,stableJson } from '../../shared/identity/normalize';
 import { MutationBuilder,commitIdentityMutation } from './commit';
 import { IdentityError } from './store';
 export async function aggregateIdentityLead(db:D1Database,leadId:number,forceReview=false):Promise<{status:string;offerIds:string[];taskIds:string[];deferredIds:string[]}|null> {
- const rows=await db.prepare(`SELECT c.id,c.state,c.revision,c.receipt_json,e.canonical_offer_id,t.id AS task_id,t.kind,t.state AS task_state
-  FROM lead_candidate_links l JOIN intake_candidates c ON c.id=l.candidate_id LEFT JOIN benefit_entities e ON e.id=c.entity_id LEFT JOIN review_tasks t ON t.id=coalesce((SELECT canonical_task_id FROM merge_task_sources WHERE source_task_id=c.task_id AND status='active'),c.task_id) WHERE l.lead_id=? ORDER BY c.id LIMIT 101`).bind(leadId).all<{id:string;state:string;revision:number;receipt_json:string|null;canonical_offer_id:string|null;task_id:string|null;kind:string|null;task_state:string|null}>();
+ const rows=await db.prepare(`WITH RECURSIVE linked AS (
+ SELECT c.id,c.state,c.revision,c.receipt_json,c.entity_id,c.task_id FROM lead_candidate_links l JOIN intake_candidates c ON c.id=l.candidate_id WHERE l.lead_id=? ORDER BY c.id LIMIT 101
+ ), task_routes(candidate_id,task_id) AS (
+ SELECT id,task_id FROM linked WHERE task_id IS NOT NULL
+ UNION SELECT r.candidate_id,m.canonical_task_id FROM task_routes r JOIN merge_task_sources m ON m.source_task_id=r.task_id AND m.status='active'
+ UNION SELECT r.candidate_id,s.task_id FROM task_routes r JOIN review_task_sources s ON s.source_task_id=r.task_id JOIN review_tasks newer ON newer.id=s.task_id WHERE newer.state IN ('open','manual','checking') OR EXISTS(SELECT 1 FROM merge_task_sources m WHERE m.source_task_id=newer.id AND m.status='active')
+ ) SELECT c.id,c.state,c.revision,c.receipt_json,e.canonical_offer_id,t.id AS task_id,t.kind,t.state AS task_state
+ FROM linked c LEFT JOIN benefit_entities e ON e.id=c.entity_id LEFT JOIN review_tasks t ON t.id=coalesce((SELECT chosen.id FROM task_routes r JOIN review_tasks chosen ON chosen.id=r.task_id WHERE r.candidate_id=c.id AND chosen.state IN ('open','checking','manual') ORDER BY chosen.rowid DESC LIMIT 1),(SELECT canonical_task_id FROM merge_task_sources WHERE source_task_id=c.task_id AND status='active'),c.task_id) ORDER BY c.id`).bind(leadId).all<{id:string;state:string;revision:number;receipt_json:string|null;canonical_offer_id:string|null;task_id:string|null;kind:string|null;task_state:string|null}>();
  const extractions=await db.prepare('SELECT e.request_id,e.state,e.extraction_complete FROM identity_extraction_leads l JOIN intake_extractions e ON e.request_id=l.request_id WHERE l.lead_id=? ORDER BY e.request_id LIMIT 101').bind(leadId).all<{request_id:string;state:string;extraction_complete:number}>();
  if(!rows.results.length&&!extractions.results.length)return null;
  const lead=await db.prepare('SELECT status,resolution,offer_id FROM leads WHERE id=?').bind(leadId).first<{status:string;resolution:string|null;offer_id:string|null}>();

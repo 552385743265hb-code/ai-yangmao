@@ -166,6 +166,10 @@ async function main() {
     await write(`/offers/${encodeURIComponent(ref)}/edit`, { fields, approve: flag('--approve'), reason, reasonCode: code, expectedReviewVersion: version });
     return;
   }
+  if(cmd==='reopen'){
+    const version=reviewedVersion(),reason=opt('--reason');if(!reason||reason.length<8)throw new Error('reopen 需要明确的重开依据；重开仍保持待审');
+    await write(`/offers/${encodeURIComponent(ref)}/reopen-visibility`,{expectedReviewVersion:version,reason});return;
+  }
   if (cmd === 'unpublish') {
     const version=reviewedVersion();
     const reason = opt('--reason'); if (!reason) throw new Error('unpublish <短码> --code <理由代码> --reason "理由"');

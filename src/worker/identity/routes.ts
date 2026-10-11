@@ -1,3 +1,5 @@
+import {taskSourcesCte} from './task-sources';
+import {visibilityState,visibilityView} from './visibility';
 import {IdentityMergeService} from './merge';
 import {buildMergePlan} from './merge-plan';
 import {mergePlanSchema} from '../../shared/identity/history-types';
@@ -56,6 +58,13 @@ identityAdminRoutes.onError((error,c)=>{
  if(error instanceof z.ZodError)return c.json({error:'invalid identity request'},400);
  return c.json({error:'identity operation unavailable',retryable:true},503);
 });
+identityAdminRoutes.get('/visibility-holds',async c=>{
+ if(c.get('role')!=='admin')return c.json({error:'administrator required'},403);
+ const input=z.object({cursor:z.string().max(200).default(''),limit:z.coerce.number().int().min(1).max(5).default(5)}).safeParse(c.req.query());if(!input.success)return c.json({error:'invalid visibility cursor'},400);const {cursor,limit}=input.data;
+ const rows=await c.env.DB.prepare("SELECT e.id,o.id offer_id,o.title FROM benefit_entities e JOIN offers o ON o.id=e.canonical_offer_id WHERE e.state='active' AND e.current_approved_version_id IS NOT NULL AND e.id>? AND (o.review_state<>'approved' OR o.withdrawn_at IS NOT NULL) ORDER BY e.id LIMIT ?").bind(cursor,limit+1).all<{id:string;offer_id:string;title:string}>();const holds=[];
+ for(const row of rows.results.slice(0,limit)){const state=await visibilityState(c.env.DB,row.id);if(state?.closed)holds.push({offerId:row.offer_id,title:row.title,visibilityVersion:state.version,...visibilityView(state)});}
+ return c.json({holds,nextCursor:rows.results.length>limit?rows.results[limit-1].id:null});
+});
 identityAdminRoutes.get('/claim-decisions',async c=>{
  const input=z.object({productId:z.string().min(1).max(200).optional(),cursor:z.string().max(200).default(''),limit:z.coerce.number().int().min(1).max(10).default(10)}).safeParse(c.req.query());if(!input.success)return c.json({error:'invalid claim cursor'},400);
  const {productId,cursor,limit}=input.data;
@@ -68,13 +77,14 @@ identityAdminRoutes.get('/tasks',async c=>{
  const rows=await c.env.DB.prepare("SELECT * FROM review_tasks WHERE state IN ('open','checking','manual') AND (entity_id IS NULL OR EXISTS(SELECT 1 FROM benefit_entities e WHERE e.id=review_tasks.entity_id AND e.state='active')) AND id>? ORDER BY id LIMIT ?").bind(query.data.cursor??'',query.data.limit+1).all<Record<string,unknown>>();
  const tasks=[];
  for(const task of rows.results.slice(0,query.data.limit)){
-  const sources=await c.env.DB.prepare("SELECT DISTINCT c.id AS candidateId,c.facts_json,c.raw_candidate_json,o.id AS observationId,coalesce(json_extract(f.provenance_json,'$.finalUrl'),o.final_url) final_url,coalesce(f.provenance_json,o.trust_json) trust_json,coalesce(json_extract(f.provenance_json,'$.truncated'),o.text_truncated) text_truncated FROM task_candidates tc JOIN intake_candidates c ON c.id=tc.candidate_id JOIN source_observations o ON o.id=c.observation_id LEFT JOIN source_observation_fetches f ON f.id=c.source_fetch_id AND f.observation_id=o.id WHERE tc.task_id=?1 OR tc.task_id IN (SELECT source_task_id FROM merge_task_sources WHERE canonical_task_id=?1 AND status='active') ORDER BY c.id LIMIT 11").bind(task.id).all<Record<string,unknown>>();
+  const sources=await c.env.DB.prepare(taskSourcesCte+" SELECT DISTINCT c.id AS candidateId,c.facts_json,c.raw_candidate_json,o.id AS observationId,coalesce(json_extract(f.provenance_json,'$.finalUrl'),o.final_url) final_url,coalesce(f.provenance_json,o.trust_json) trust_json,coalesce(json_extract(f.provenance_json,'$.truncated'),o.text_truncated) text_truncated FROM task_candidates tc JOIN intake_candidates c ON c.id=tc.candidate_id JOIN source_observations o ON o.id=c.observation_id LEFT JOIN source_observation_fetches f ON f.id=c.source_fetch_id AND f.observation_id=o.id WHERE tc.task_id IN (SELECT id FROM task_sources) ORDER BY c.id LIMIT 11").bind(task.id).all<Record<string,unknown>>();
   const version=task.version_id?await c.env.DB.prepare('SELECT facts_json,display_candidate_json FROM benefit_versions WHERE id=? AND entity_id=?').bind(task.version_id,task.entity_id).first<Record<string,unknown>>():null;
   const entity=task.entity_id?await c.env.DB.prepare('SELECT id,canonical_offer_id,current_approved_version_id,business_revision,publication_revision FROM benefit_entities WHERE id=?').bind(task.entity_id).first<Record<string,unknown>>():null;
   const previous=entity?.current_approved_version_id?await c.env.DB.prepare('SELECT facts_json FROM benefit_versions WHERE id=? AND entity_id=?').bind(entity.current_approved_version_id,entity.id).first<{facts_json:string}>():null;
   const decisions=task.entity_id?await c.env.DB.prepare('SELECT id,action,reason_code,reason_text,scope_json,reopen_policy_json,actor,created_at FROM review_decisions WHERE entity_id=? ORDER BY created_at DESC LIMIT 10').bind(task.entity_id).all():{results:[]};
   const proposal=entity?.canonical_offer_id?await c.env.DB.prepare('SELECT manual_fields FROM offer_proposals WHERE offer_id=?').bind(entity.canonical_offer_id).first<{manual_fields:string}>():null;
-  tasks.push({...task,protectedFields:proposal?JSON.parse(proposal.manual_fields):[],entity,previousFacts:previous?JSON.parse(previous.facts_json):null,facts:version?JSON.parse(String(version.facts_json)):null,display:version?JSON.parse(String(version.display_candidate_json)):null,sources:sources.results.slice(0,10).map(row=>({...row,facts:JSON.parse(String(row.facts_json)),quotes:JSON.parse(String(row.raw_candidate_json)).quotes??[]})),sourcesComplete:sources.results.length<=10,decisions:decisions.results,reviewVersion:`identity:${task.id}:${task.revision}`});
+  const visibility=task.entity_id?await visibilityState(c.env.DB,String(task.entity_id)):null;
+  tasks.push({...task,visibilityHold:visibilityView(visibility),visibilityBlocked:!!visibility?.closed&&visibility.restorationTaskId!==task.id,visibilityRestoration:visibility?.restorationTaskId===task.id,protectedFields:proposal?JSON.parse(proposal.manual_fields):[],entity,previousFacts:previous?JSON.parse(previous.facts_json):null,facts:version?JSON.parse(String(version.facts_json)):null,display:version?JSON.parse(String(version.display_candidate_json)):null,sources:sources.results.slice(0,10).map(row=>({...row,facts:JSON.parse(String(row.facts_json)),quotes:JSON.parse(String(row.raw_candidate_json)).quotes??[]})),sourcesComplete:sources.results.length<=10,decisions:decisions.results,reviewVersion:`identity:${task.id}:${task.revision}`});
  }
  return c.json({tasks,nextCursor:rows.results.length>query.data.limit?String(rows.results[query.data.limit-1]?.id):null});
 });

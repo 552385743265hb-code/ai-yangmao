@@ -1,3 +1,5 @@
+import {visibilityState,activeVisibilityPredicate} from './visibility';
+import {taskSourcesCte} from './task-sources';
 import {retrieveManualHistory} from './manual-retrieval';
 import {findClaimMemory} from './claim-memory';
 import {matchesEntityOfferVersion,differentCanonicalEntities} from './canonical';
@@ -50,7 +52,9 @@ export class IdentityService {
   const command='reopen:'+input.requestId,hash=await sha256(stableJson({decisionId,...input}));
   const prior=await readIdentityReceipt<{taskId:string;decisionId:string}>(this.db,command,hash);if(prior){if(prior.status==='conflict')throw new IdentityError(409,'request payload conflict');return prior.value!;}
   const row=await this.db.prepare('SELECT * FROM review_decisions WHERE id=?').bind(decisionId).first<Record<string,unknown>>();if(!row)throw new IdentityError(404,'decision missing');
-  const decision=readReviewDecision(row);if(decision.action!=='reject')throw new IdentityError(400,'only a refusal can be reopened');
+  const decision=readReviewDecision(row);
+  if(decision.entityId&&['unpublish','withdraw'].includes(String((decision.basis as Record<string,unknown>|undefined)?.visibilityAction))){const state=await visibilityState(this.db,decision.entityId);if(!state||state.entityRevision!==input.expectedRevision||!state.holds.some(h=>h.id===decisionId))throw new IdentityError(409,'visibility decision changed');return this.reopenVisibility(state.offerId,{requestId:input.requestId,expectedOfferVersion:state.version,reason:input.reason,actor:input.actor});}
+  if(decision.action!=='reject')throw new IdentityError(400,'only a refusal can be reopened');
   const entity=decision.entityId?await this.entity(decision.entityId):null;
   if(decision.entityId&&!entity)throw new IdentityError(409,'decision belongs to a merged or missing entity; review its canonical activity');
   const basisHash=await sha256(stableJson(input.basis)),taskKey=reviewTaskKey({kind:'evidence_reopen',entityId:decision.entityId??'claim-'+decision.candidateId,refusalDecisionId:decisionId,basisHash});
@@ -97,14 +101,46 @@ export class IdentityService {
   if(!version)throw new IdentityError(409,'approved baseline missing');
   const facts=canonicalTermsSchema.parse(JSON.parse(version.facts_json)),builder=new MutationBuilder(this.db,command,hash),expected:ExpectedRevision[]=[{kind:'entity',id:entity.id,revision:entity.business_revision}];
   builder.require('EXISTS(SELECT 1 FROM offers WHERE id=? AND updated_at=?)',[offerId,offer.updatedAt]);
+  const priorVisibility=await visibilityState(this.db,entity.id);
+  const mainTasks=await this.db.prepare("SELECT id,version_id FROM review_tasks WHERE entity_id=? AND kind IN ('terms_change','evidence_reopen') AND state IN ('open','checking','manual') AND version_id IS NOT NULL ORDER BY rowid DESC LIMIT 2").bind(entity.id).all<{id:string;version_id:string}>();
+  const suspendedVersionId=mainTasks.results.length===1?mainTasks.results[0].version_id:priorVisibility?.holds[0]?.basis.suspendedVersionId??null;
   const decisionId=crypto.randomUUID(),now=new Date().toISOString();
-  builder.insert('review_decisions',{id:decisionId,entity_id:entity.id,version_id:entity.current_approved_version_id,action:input.action==='unpublish'?'reject':'edit',reason_code:input.reasonCode??(input.action==='withdraw'?'expired':'other'),reason_text:input.reason,basis_json:JSON.stringify({visibilityAction:input.action,evidenceUrl:input.evidenceUrl??null,basis:input.basis??null}),scope_json:JSON.stringify({kind:'exact_version',entityId:entity.id,versionId:entity.current_approved_version_id}),reopen_policy_json:JSON.stringify({kind:'manual',missingFacts:[]}),rules_version:RULES_VERSION,evidence_refs_json:'[]',actor:input.actor,target_version_id:entity.current_approved_version_id,idempotency_key:command});
+  builder.insert('review_decisions',{id:decisionId,entity_id:entity.id,version_id:entity.current_approved_version_id,action:'reject',reason_code:input.reasonCode??(input.action==='withdraw'?'expired':'other'),reason_text:input.reason,basis_json:JSON.stringify({visibilityAction:input.action,evidenceUrl:input.evidenceUrl??null,basis:input.basis??null,suspendedVersionId}),scope_json:JSON.stringify({kind:'entity_alias',entityId:entity.id}),supersedes_id:priorVisibility?.holds[0]?.id??null,reopen_policy_json:JSON.stringify({kind:'manual',missingFacts:[]}),rules_version:RULES_VERSION,evidence_refs_json:'[]',actor:input.actor,target_version_id:entity.current_approved_version_id,idempotency_key:command});
+  for(const previous of priorVisibility?.holds.slice(1)??[])builder.insert('review_decisions',{id:crypto.randomUUID(),entity_id:entity.id,action:'edit',reason_code:'other',reason_text:'可见性决定被本次明确操作接续',basis_json:JSON.stringify({visibilitySupersededBy:decisionId}),scope_json:JSON.stringify({kind:'entity_alias',entityId:entity.id}),reopen_policy_json:'{"kind":"manual","missingFacts":[]}',rules_version:RULES_VERSION,evidence_refs_json:'[]',actor:input.actor,idempotency_key:command+':replace:'+previous.id,supersedes_id:previous.id});
+  builder.cancelEntityReview(entity.id,decisionId);builder.advancePublicGeneration();
   builder.update('offers',input.action==='unpublish'?{review_state:'rejected',updated_at:now}:{withdrawn_at:now,withdrawn_reason:input.reason,updated_at:now},'id=?',[offerId]);
   builder.update('benefit_entities',{business_revision:entity.business_revision+1},'id=?',[entity.id]);
   if(facts.mechanism.state==='known'){const block=entity.platform_id+':'+facts.mechanism.value,revision=(await this.db.prepare('SELECT revision FROM identity_blocks WHERE block_key=?').bind(block).first<{revision:number}>())?.revision??0;expected.push({kind:'block',id:block,revision});builder.insert('identity_blocks',{block_key:block,revision},'nothing');builder.update('identity_blocks',{revision:revision+1},'block_key=?',[block]);}
   builder.insert('reviews',{offer_id:offerId,action:input.action==='unpublish'?'reject':'edit',reviewer:input.actor,reason:input.reason,reason_code:input.reasonCode??'other',decision_id:decisionId});
   builder.insert('offer_revisions',{offer_id:offerId,diff:JSON.stringify([{field:input.action==='unpublish'?'reviewState':'withdrawnAt',from:input.action==='unpublish'?offer.reviewState:offer.withdrawnAt,to:input.action==='unpublish'?'rejected':now}]),author:'admin'});
   return this.commit(builder,expected,{decisionId});
+ }
+
+ async reopenVisibility(offerId:string,raw:unknown):Promise<{taskId:string;decisionId:string}> {
+  const input=z.strictObject({requestId:z.string().min(1).max(180),expectedOfferVersion:z.string().min(1),reason:z.string().min(8).max(2000),actor:z.string().min(1)}).parse(raw),command='visibility-reopen:'+input.requestId,hash=await sha256(stableJson({offerId,...input}));
+  const prior=await readIdentityReceipt<{taskId:string;decisionId:string}>(this.db,command,hash);if(prior){if(prior.status==='conflict')throw new IdentityError(409,'request payload conflict');return prior.value!;}
+  const entity=await this.db.prepare("SELECT * FROM benefit_entities WHERE canonical_offer_id=? AND state='active'").bind(offerId).first<EntityRow>(),offer=await this.offer(offerId);if(!entity||!offer||!entity.current_approved_version_id||!matchesEntityOfferVersion(entity,offer.updatedAt,input.expectedOfferVersion))throw new IdentityError(409,'visibility version changed');
+  const state=await visibilityState(this.db,entity.id);if(!state?.closed)throw new IdentityError(409,'activity does not need a visibility reopen');
+  if(state.restorationTaskId&&!state.holds.length){const existing=await this.db.prepare('SELECT decision_id FROM review_tasks WHERE id=?').bind(state.restorationTaskId).first<{decision_id:string}>();return this.commit(new MutationBuilder(this.db,command,hash),[{kind:'entity',id:entity.id,revision:entity.business_revision}],{taskId:state.restorationTaskId,decisionId:existing!.decision_id});}
+  const proposal=await this.db.prepare('SELECT candidate,manual_fields,updated_at FROM offer_proposals WHERE offer_id=?').bind(offerId).first<{candidate:string;manual_fields:string;updated_at:string}>();
+  let versionId=entity.current_approved_version_id;
+  if(proposal){const retained=state.holds[0]?.basis.suspendedVersionId;if(typeof retained==='string')versionId=retained;else{const drafts=await this.db.prepare("SELECT DISTINCT version_id FROM review_tasks WHERE entity_id=? AND base_version_id=? AND kind IN ('terms_change','evidence_reopen') AND version_id IS NOT NULL AND version_id<>? AND state IN ('open','checking','manual','cancelled') LIMIT 2").bind(entity.id,entity.current_approved_version_id,entity.current_approved_version_id).all<{version_id:string}>();if(drafts.results.length!==1)throw new IdentityError(409,'retained proposal needs an explicit version reconciliation');versionId=drafts.results[0].version_id;}}
+  const version=await this.db.prepare('SELECT facts_json,display_candidate_json,revision FROM benefit_versions WHERE id=? AND entity_id=?').bind(versionId,entity.id).first<{facts_json:string;display_candidate_json:string;revision:number}>();if(!version)throw new IdentityError(409,'retained version belongs to another identity');
+  const sourceTask=await this.db.prepare('SELECT id,material_revision FROM review_tasks WHERE entity_id=? AND version_id=? ORDER BY rowid DESC LIMIT 1').bind(entity.id,versionId).first<{id:string;material_revision:number}>();let sourceIds:string[]=[];
+  if(sourceTask){const parents=await this.db.prepare('SELECT source_task_id FROM review_task_sources WHERE task_id=? ORDER BY source_task_id LIMIT 41').bind(sourceTask.id).all<{source_task_id:string}>(),merged=await this.db.prepare("SELECT 1 FROM merge_task_sources WHERE canonical_task_id=? AND status='active' LIMIT 1").bind(sourceTask.id).first();if(parents.results.length>40)throw new IdentityError(409,'source task group needs explicit reconciliation');sourceIds=parents.results.length&&!merged?parents.results.map(p=>p.source_task_id):[sourceTask.id];}
+  const builder=new MutationBuilder(this.db,command,hash),expected:ExpectedRevision[]=[{kind:'entity',id:entity.id,revision:entity.business_revision}],decisionId=crypto.randomUUID(),taskId=crypto.randomUUID(),materialRevision=(sourceTask?.material_revision??0)+1;
+  builder.require('EXISTS(SELECT 1 FROM offers WHERE id=? AND updated_at=?)',[offerId,offer.updatedAt]);builder.require('EXISTS(SELECT 1 FROM benefit_versions WHERE id=? AND entity_id=? AND revision=? AND display_candidate_json=?)',[versionId,entity.id,version.revision,version.display_candidate_json]);
+  for(const hold of state.holds)builder.require('NOT EXISTS(SELECT 1 FROM review_decisions WHERE supersedes_id=?)',[hold.id]);
+  if(proposal){builder.require('EXISTS(SELECT 1 FROM offer_proposals WHERE offer_id=? AND updated_at=? AND candidate=?)',[offerId,proposal.updated_at,proposal.candidate]);const display=offerIn.parse(JSON.parse(proposal.candidate));builder.update('benefit_versions',{display_candidate_json:JSON.stringify(display),revision:version.revision+1},'id=?',[versionId]);}
+  const basis=JSON.stringify({visibilityReopen:true,previousVisibility:{reviewState:offer.reviewState,withdrawnAt:offer.withdrawnAt},sourceTaskIds:sourceIds,displayBefore:JSON.parse(version.display_candidate_json)});
+  builder.insert('review_decisions',{id:decisionId,entity_id:entity.id,version_id:versionId,action:'reopen',reason_code:'other',reason_text:input.reason,basis_json:basis,scope_json:JSON.stringify({kind:'entity_alias',entityId:entity.id}),reopen_policy_json:'{"kind":"manual","missingFacts":[]}',rules_version:RULES_VERSION,evidence_refs_json:'[]',actor:input.actor,idempotency_key:command,supersedes_id:state.holds[0]?.id??null,base_version_id:entity.current_approved_version_id,target_version_id:versionId});
+  for(const hold of state.holds.slice(1))builder.insert('review_decisions',{id:crypto.randomUUID(),entity_id:entity.id,action:'reopen',reason_code:'other',reason_text:input.reason,basis_json:JSON.stringify({visibilityReopenDecision:decisionId}),scope_json:JSON.stringify({kind:'entity_alias',entityId:entity.id}),reopen_policy_json:'{"kind":"manual","missingFacts":[]}',rules_version:RULES_VERSION,evidence_refs_json:'[]',actor:input.actor,idempotency_key:command+':'+hold.id,supersedes_id:hold.id});
+  // Cancel before inserting the fresh review; the new decision already exists for its FK.
+  builder.cancelEntityReview(entity.id,decisionId);
+  builder.insert('review_tasks',{id:taskId,task_key:'visibility:'+entity.id+':'+decisionId,kind:'evidence_reopen',entity_id:entity.id,version_id:versionId,base_version_id:entity.current_approved_version_id,decision_id:decisionId,material_revision:materialRevision});builder.insertMany('review_task_sources',sourceIds.map(source=>({task_id:taskId,source_task_id:source})));
+  builder.update('benefit_entities',{business_revision:entity.business_revision+1},'id=?',[entity.id]);const facts=canonicalTermsSchema.parse(JSON.parse(version.facts_json));if(facts.mechanism.state==='known'){const key=entity.platform_id+':'+facts.mechanism.value,revision=(await this.db.prepare('SELECT revision FROM identity_blocks WHERE block_key=?').bind(key).first<{revision:number}>())?.revision??0;expected.push({kind:'block',id:key,revision});builder.insert('identity_blocks',{block_key:key,revision},'nothing');builder.update('identity_blocks',{revision:revision+1},'block_key=?',[key]);}
+  builder.advancePublicGeneration();builder.insert('identity_events',{id:crypto.randomUUID(),event_key:`review:${taskId}:${materialRevision}:telegram`,entity_id:entity.id,version_id:versionId,task_id:taskId,kind:'review',payload_json:JSON.stringify({taskId,materialRevision,channel:'telegram'})});
+  return this.commit(builder,expected,{taskId,decisionId});
  }
 
  async editManagedOffer(offerId:string,raw:{requestId:string;taskId?:string;expectedTaskRevision?:number;expectedOfferVersion?:string;fields:Record<string,unknown>;identityFacts?:CanonicalTermsV1;actor:string}):Promise<{taskId:string|null;revision:number;pendingUpdate:boolean}> {
@@ -114,6 +150,7 @@ export class IdentityService {
   const prior=await readIdentityReceipt<{taskId:string|null;revision:number;pendingUpdate:boolean}>(this.db,command,hash);if(prior){if(prior.status==='conflict')throw new IdentityError(409,'request payload conflict');return prior.value!;}
   const entity=await this.db.prepare("SELECT * FROM benefit_entities WHERE canonical_offer_id=? AND state='active'").bind(offerId).first<EntityRow>(),original=await this.offer(offerId);
   if(!entity||!original)throw new IdentityError(404,'managed offer missing');
+  const visibility=await visibilityState(this.db,entity.id);if(visibility?.closed&&!visibility.restorationTaskId)throw new IdentityError(409,'publication is paused; explicitly reopen its review before editing a draft');
   const active=await this.db.prepare("SELECT * FROM review_tasks WHERE entity_id=? AND kind IN ('initial','terms_change','evidence_reopen') AND state IN ('open','checking','manual') ORDER BY created_at DESC LIMIT 2").bind(entity.id).all<TaskRow>();
   if(active.results.length>1)throw new IdentityError(409,'multiple review drafts need explicit conflict resolution');
   const task=active.results[0]??null;
@@ -171,7 +208,7 @@ export class IdentityService {
  }
 
  private async taskContext(taskId:string):Promise<{candidate:CanonicalTermsV1;entities:VersionedEntity[];evidence:EvidenceContext;retrievalComplete:boolean}> {
-  const row=await this.db.prepare('SELECT c.* FROM task_candidates tc JOIN intake_candidates c ON c.id=tc.candidate_id WHERE tc.task_id=? ORDER BY c.id LIMIT 1').bind(taskId).first<CandidateRow>();
+  const row=await this.db.prepare(taskSourcesCte+' SELECT c.* FROM task_candidates tc JOIN intake_candidates c ON c.id=tc.candidate_id WHERE tc.task_id IN (SELECT id FROM task_sources) ORDER BY c.id LIMIT 1').bind(taskId).first<CandidateRow>();
   if(!row)throw new IdentityError(409,'task has no model-reviewable candidate; manual review required');
   const candidate=canonicalTermsSchema.parse(JSON.parse(row.facts_json)),evidence=await this.evidence(row);
   const page=candidate.issuerProductId.state==='known'?await this.store.retrieveCandidates(candidate.issuerProductId.value,candidate):{entities:[],decisions:[],complete:false,nextCursor:null};
@@ -299,15 +336,16 @@ export class IdentityService {
   const blockRevision=blockKey?(await this.db.prepare('SELECT revision FROM identity_blocks WHERE block_key=?').bind(blockKey).first<{revision:number}>())?.revision??0:0;
   if(blockKey)expected.push({kind:'block',id:blockKey,revision:blockRevision});
   const claimMemory=receipt.outcome!=='duplicate_rejected'&&(control||!ambiguousFamily)?await findClaimMemory(this.db,candidate.id,facts,evidence):{match:null,unresolved:false};
-  if(control&&claimMemory.match)throw new IdentityError(409,'review the original claim refusal before resolving a different activity identity');
-  if(claimMemory.match){
+  const claimReopen=!!(control&&claimMemory.match?.reopen.allowed&&control.task.kind==='evidence_reopen'&&!control.task.entity_id&&control.task.task_key===reviewTaskKey({kind:'evidence_reopen',entityId:'claim:'+claimMemory.match.canonicalCandidateId,refusalDecisionId:claimMemory.match.decision.id,basisHash:candidate.facts_hash})&&await hashTerms(facts)===candidate.facts_hash);
+  if(control&&claimMemory.match&&!claimReopen)throw new IdentityError(409,'review the original claim refusal before resolving a different activity identity');
+  if(claimMemory.match&&!claimReopen){
    const memory=claimMemory.match;receipt.decisionId=memory.decision.id;receipt.outcome=memory.reopen.allowed?'evidence_reopen':'duplicate_rejected';receipt.reasonCodes=memory.reopen.allowed?memory.reopen.reasonCodes:['existing_claim_refusal'];
    builder.require('NOT EXISTS(SELECT 1 FROM review_decisions WHERE supersedes_id=?)',[memory.decision.id]);builder.require('EXISTS(SELECT 1 FROM intake_candidates WHERE id=? AND revision=?)',[memory.proofCandidateId,memory.proofRevision]);
    builder.insert('identity_refusal_applications',{candidate_id:candidate.id,decision_id:memory.decision.id,facts_hash:candidate.facts_hash,rules_version:RULES_VERSION,canonical_candidate_id:memory.canonicalCandidateId,identity_basis_json:JSON.stringify({humanConfirmed:false,proofCandidateId:memory.proofCandidateId,observationId:candidate.observation_id})},'nothing');
    if(memory.reopen.allowed){taskKind='evidence_reopen';taskKey=reviewTaskKey({kind:'evidence_reopen',entityId:'claim:'+memory.canonicalCandidateId,refusalDecisionId:memory.decision.id,basisHash:candidate.facts_hash});}
   }
   if(claimMemory.unresolved)receipt.reasonCodes.push('claim_identity_unproven');
-  if(!claimMemory.match&&(control||!claimMemory.unresolved)&&receipt.outcome!=='duplicate_rejected'&&productId&&mechanism&&!evidence.truncated&&!candidate.last_error?.includes('invalid_evidence')&&(control||(!candidate.last_error?.includes('ambiguous_subitems')&&!ambiguousFamily))) {
+  if((!claimMemory.match||claimReopen)&&(control||!claimMemory.unresolved)&&receipt.outcome!=='duplicate_rejected'&&productId&&mechanism&&!evidence.truncated&&!candidate.last_error?.includes('invalid_evidence')&&(control||(!candidate.last_error?.includes('ambiguous_subitems')&&!ambiguousFamily))) {
    const manualHistory=control?await retrieveManualHistory(this.db,{command,payloadHash,candidateId:candidate.id,candidateRevision:candidate.revision,observationId:candidate.observation_id,taskId:control.task.id,taskRevision:control.task.revision,productId,facts,entityId:control.action==='same'?control.entityId??null:null,blockKey:blockKey!,blockRevision}):null;
    if(manualHistory?.continued)return {...receipt,outcome:'deferred',retryable:true,taskId:control!.task.id,reasonCodes:['manual_history_continue']};
    if(manualHistory)builder.require(manualHistory.guard.sql,manualHistory.guard.args);
@@ -345,6 +383,7 @@ export class IdentityService {
    if(!material)expected.push({kind:'entity',id:entity.id,revision:entity.business_revision});
    if(control)material=true;
    receipt.entityId=entity.id;receipt.canonicalOfferId=entity.canonical_offer_id;
+   const visibility=await visibilityState(this.db,entity.id);
    const hash=await hashTerms(facts);
    let version=control?.action==='same'&&comparison?.termsRelation==='EQUIVALENT'&&entity.current_approved_version_id?await this.db.prepare('SELECT id,state FROM benefit_versions WHERE id=? AND entity_id=?').bind(entity.current_approved_version_id,entity.id).first<{id:string;state:string}>():await this.db.prepare('SELECT id,state FROM benefit_versions WHERE entity_id=? AND terms_schema=? AND terms_hash=?').bind(entity.id,'terms-v1',hash).first<{id:string;state:string}>();
    versionId=version?.id??crypto.randomUUID();baseVersionId=entity.current_approved_version_id;
@@ -353,6 +392,7 @@ export class IdentityService {
 
    const superseded=new Set(decisions.flatMap(d=>d.supersedesId?[d.supersedesId]:[]));
    const refusals=decisions.filter(d=>!superseded.has(d.id)&&decisionApplies(d,facts,{entityId:entity!.id,versionId,candidateId:candidate.id,observationId:candidate.observation_id}));
+   if(visibility?.closed&&visibility.holds.length){const closed=await this.db.prepare('SELECT * FROM review_decisions WHERE id=?').bind(visibility.holds[0].id).first<Record<string,unknown>>();if(closed&&!refusals.some(d=>d.id===String(closed.id)))refusals.push(readReviewDecision(closed));}
    const sameVersionReopen=refusals.length===1?await evaluateReopen(refusals[0],facts,evidence):null;
    if(control?.action==='new'&&refusals.length&&!sameVersionReopen?.allowed)throw new IdentityError(409,'active refusal requires explicit reopening: '+refusals.slice(0,3).map(d=>d.id).join(','));
    if(refusals.length===1&&sameVersionReopen?.allowed){taskKind='evidence_reopen';taskKey=reviewTaskKey({kind:'evidence_reopen',entityId:entity.id,refusalDecisionId:refusals[0].id,basisHash:sameVersionReopen.basisHash!});receipt.outcome='evidence_reopen';receipt.reasonCodes=sameVersionReopen.reasonCodes;}
@@ -427,12 +467,13 @@ export class IdentityService {
   if(legacyJob){if(entity&&entity.id!==legacyJob.entityId)throw new IdentityError(409,'official review resolved a different activity');if(entity&&receipt.entityRevision!==null)builder.acknowledgeOfficialJob(legacyJob.offerId,legacyJob.originalJob,receipt.entityRevision!);}
   if(control){
    if(!entity||receipt.taskId===control.task.id)throw new IdentityError(400,'identity remains unproven; provide scoped canonical facts or choose a verified entity');
+   if(claimReopen&&claimMemory.match){const memory=claimMemory.match;builder.require('NOT EXISTS(SELECT 1 FROM review_decisions WHERE supersedes_id=?)',[memory.decision.id]);builder.require('EXISTS(SELECT 1 FROM intake_candidates WHERE id=? AND revision=?)',[memory.proofCandidateId,memory.proofRevision]);builder.insert('review_decisions',{id:crypto.randomUUID(),candidate_id:memory.canonicalCandidateId,action:'reopen',reason_code:memory.decision.reasonCode,reason_text:control.reason??'已补齐指定事实并明确开始新的审核',basis_json:JSON.stringify({namedFactReopen:true,sourceTaskId:control.task.id,candidateId:candidate.id,entityId:entity.id}),scope_json:JSON.stringify(memory.decision.scope),reopen_policy_json:JSON.stringify({kind:'manual',missingFacts:[]}),rules_version:RULES_VERSION,evidence_refs_json:JSON.stringify([candidate.observation_id]),actor:control.actor,idempotency_key:command+':claim-reopen',supersedes_id:memory.decision.id});}
    const decisionId=crypto.randomUUID();
-   builder.insert('review_decisions',{id:decisionId,entity_id:entity.id,candidate_id:candidate.id,version_id:receipt.versionId,action:control.action==='same'?'same':'distinct',reason_code:control.action==='same'?'duplicate':'other',reason_text:control.reason??'',scope_json:JSON.stringify({kind:'claim',candidateId:candidate.id}),reopen_policy_json:JSON.stringify({kind:'manual',missingFacts:[]}),rules_version:RULES_VERSION,evidence_refs_json:JSON.stringify([candidate.observation_id]),actor:control.actor,idempotency_key:command+':manual'});
+   builder.insert('review_decisions',{id:decisionId,entity_id:entity.id,candidate_id:candidate.id,version_id:receipt.versionId,basis_json:JSON.stringify({sourceTaskId:control.task.id,previousEntityId:control.task.entity_id,reopenedClaimDecisionId:claimReopen?claimMemory.match!.decision.id:null}),action:control.action==='same'||claimReopen?'same':'distinct',reason_code:control.action==='same'?'duplicate':'other',reason_text:control.reason??'',scope_json:JSON.stringify({kind:'claim',candidateId:candidate.id}),reopen_policy_json:JSON.stringify({kind:'manual',missingFacts:[]}),rules_version:RULES_VERSION,evidence_refs_json:JSON.stringify([candidate.observation_id]),actor:control.actor,idempotency_key:command+':manual'});
    if(control.action==='new'&&control.entityId&&control.entityId!==entity.id){const other=await this.entity(control.entityId);if(!other)throw new IdentityError(400,'distinct target missing');expected.push({kind:'entity',id:other.id,revision:other.business_revision});const pair=[entity.id,other.id].sort();builder.insert('identity_constraints',{id:crypto.randomUUID(),entity_a:pair[0],entity_b:pair[1],relation:'different',basis_json:JSON.stringify({taskId:control.task.id,candidateId:candidate.id}),actor:control.actor});builder.update('benefit_entities',{business_revision:other.business_revision+1},'id=?',[other.id]);}
    builder.insert('identity_aliases',{id:crypto.randomUUID(),namespace:'manual',alias_key:'candidate:'+candidate.id,scope_key:entity.platform_id,entity_id:entity.id,basis_json:JSON.stringify({decisionId,actor:control.actor})},'nothing');
    const remaining=await this.db.prepare('SELECT 1 FROM task_candidates tc JOIN intake_candidates c ON c.id=tc.candidate_id WHERE tc.task_id=? AND c.task_id=? AND c.id<>? LIMIT 1').bind(control.task.id,control.task.id,candidate.id).first();
-   builder.update('review_tasks',{state:remaining?'manual':'resolved',revision:control.task.revision+1,decision_id:remaining?null:decisionId,lease_token:null,lease_until:null},'id=?',[control.task.id]);
+   builder.update('review_tasks',{state:remaining?'manual':'resolved',revision:control.task.revision+1,decision_id:remaining?null:control.task.entity_id&&control.task.entity_id!==entity.id?control.task.decision_id:decisionId,lease_token:null,lease_until:null},'id=?',[control.task.id]);
   }
   builder.update('intake_candidates',{state:receipt.outcome==='duplicate_rejected'?'resolved_rejected':receipt.outcome==='duplicate_approved'||receipt.outcome==='duplicate_pending'?'resolved_same':receipt.outcome==='created_pending'?'pending_initial':receipt.outcome==='proposed_update'?'pending_change':'pending_identity',entity_id:receipt.entityId,version_id:receipt.versionId,task_id:receipt.taskId,decision_id:receipt.decisionId,revision:candidate.revision+1,receipt_json:JSON.stringify(receipt),last_error:null,next_attempt_at:null,lease_token:null,lease_until:null,...(control?.facts?{facts_json:JSON.stringify(facts),facts_hash:await hashTerms(facts),claim_identity_key:claimIdentityKey(facts)}:{})},'id=? AND revision=?',[candidate.id,candidate.revision]);
   builder.assert('EXISTS(SELECT 1 FROM intake_candidates WHERE id=? AND revision=?)',[candidate.id,candidate.revision+1]);builder.assertOwnership('intake_candidates',candidate.id);
@@ -463,15 +504,18 @@ export class IdentityService {
   }
   const proposal=entity.canonical_offer_id?await this.db.prepare('SELECT candidate,diff,manual_fields,updated_at FROM offer_proposals WHERE offer_id=?').bind(entity.canonical_offer_id).first<{candidate:string;diff:string;manual_fields:string;updated_at:string}>():null;
   if(proposal&&JSON.parse(proposal.manual_fields).length&&stableJson(offerIn.parse(JSON.parse(proposal.candidate)))!==stableJson(offerIn.parse(JSON.parse(version.display_candidate_json))))throw new IdentityError(409,'manual proposal edits require a refreshed identity version');
-  const original=await this.offer(entity.canonical_offer_id);
+  const original=await this.offer(entity.canonical_offer_id),visibility=await visibilityState(this.db,entity.id);
+  const restoring=visibility?.closed&&visibility.restorationTaskId===task.id&&visibility.holds.length===0;
+  if(input.action==='approve'&&visibility?.closed&&!restoring)throw new IdentityError(409,'publication is paused; a fresh explicit reopen review is required');
   let accepted:OfferIn|null=null;
   if(input.action==='approve') {
    if(!original)throw new IdentityError(400,'reviewable offer fields required');
    const rawDisplay=JSON.parse(version.display_candidate_json);
    accepted=offerIn.parse({...rawDisplay,id:original.id,platformId:original.platformId,usdEstimate:original.usdEstimate,usdMax:original.usdMax,valuation:original.valuation,sourceId:original.sourceId??undefined,firstChannel:original.firstChannel??undefined});
-   const error=await publicationError({DB:this.db},{...original,...accepted});if(error)throw new IdentityError(400,error);
+   const error=await publicationError({DB:this.db},{...original,...accepted,...(restoring?{withdrawnAt:null,withdrawnReason:null}:{})});if(error)throw new IdentityError(400,error);
   }
   const builder=new MutationBuilder(this.db,command,hash),expected:ExpectedRevision[]=[{kind:'task',id:task.id,revision:input.expectedRevision},{kind:'entity',id:entity.id,revision:entity.business_revision}];
+  if(input.action==='approve'){builder.require(`NOT EXISTS(SELECT 1 FROM review_decisions d WHERE d.entity_id=? AND ${activeVisibilityPredicate})`,[entity.id]);builder.advancePublicGeneration();}
   if(proposal&&entity.canonical_offer_id)builder.require('EXISTS(SELECT 1 FROM offer_proposals WHERE offer_id=? AND updated_at=? AND candidate=?)',[entity.canonical_offer_id,proposal.updated_at,proposal.candidate]);
   if(versionFacts.mechanism.state==='known'){
    const block=entity.platform_id+':'+versionFacts.mechanism.value;
@@ -480,10 +524,11 @@ export class IdentityService {
   }
   const decisionId=crypto.randomUUID(),publicationRevision=entity.publication_revision+(input.action==='approve'?1:0);
   if(original)builder.require('EXISTS(SELECT 1 FROM offers WHERE id=? AND updated_at=?)',[original.id,original.updatedAt]);
-  const priorRefusal=await this.db.prepare("SELECT d.id FROM review_decisions d WHERE entity_id=? AND version_id=? AND action='reject' AND NOT EXISTS(SELECT 1 FROM review_decisions later WHERE later.supersedes_id=d.id) ORDER BY created_at DESC LIMIT 2").bind(entity.id,task.version_id).all<{id:string}>();
+  const priorRefusal=await this.db.prepare("SELECT d.id FROM review_decisions d WHERE entity_id=? AND (version_id=? OR json_extract(scope_json,'$.kind')='entity_alias') AND action='reject' AND NOT EXISTS(SELECT 1 FROM review_decisions later WHERE later.supersedes_id=d.id) ORDER BY created_at DESC LIMIT 2").bind(entity.id,task.version_id).all<{id:string}>();
   if(priorRefusal.results.length>1)throw new IdentityError(409,'conflicting active refusals need explicit resolution');
+  if(input.action==='approve'&&priorRefusal.results[0]&&!(task.kind==='evidence_reopen'&&task.task_key.startsWith(`evidence:${entity.id}:${priorRefusal.results[0].id}:`)))throw new IdentityError(409,'active refusal requires its own explicit reopen review');
   const policy=input.reopenPolicy??{kind:'manual' as const,missingFacts:[]};
-  const basisRows=await this.db.prepare("SELECT DISTINCT c.* FROM task_candidates tc JOIN intake_candidates c ON c.id=tc.candidate_id WHERE tc.task_id=?1 OR tc.task_id IN (SELECT source_task_id FROM merge_task_sources WHERE canonical_task_id=?1 AND status='active') ORDER BY c.id LIMIT 10").bind(task.id).all<CandidateRow>();
+  const basisRows=await this.db.prepare(taskSourcesCte+' SELECT DISTINCT c.* FROM task_candidates tc JOIN intake_candidates c ON c.id=tc.candidate_id WHERE tc.task_id IN (SELECT id FROM task_sources) ORDER BY c.id LIMIT 10').bind(task.id).all<CandidateRow>();
   const reviewedBasisHashes=[...(policy.reviewedBasisHashes??[])];
   if(input.action==='reject'&&policy.kind==='missing_facts')for(const basisCandidate of basisRows.results){
    const provisional=reviewDecisionSchema.parse({id:decisionId,entityId:entity.id,candidateId:basisCandidate.id,versionId:task.version_id,action:'reject',reasonCode:input.reasonCode??'other',scope:input.scope??{kind:'exact_version',entityId:entity.id,versionId:task.version_id},reopenPolicy:policy,rulesVersion:RULES_VERSION,evidenceRefs:[],actor:input.actor,baseVersionId:task.base_version_id,targetVersionId:task.version_id,idempotencyKey:command,supersedesId:null,createdAt:new Date().toISOString()});
@@ -495,7 +540,7 @@ export class IdentityService {
   builder.update('benefit_entities',{business_revision:entity.business_revision+1,publication_revision:publicationRevision,...(input.action==='approve'?{current_approved_version_id:task.version_id}:{})},'id=?',[entity.id]);builder.assertOwnership('benefit_entities',entity.id);
   builder.update('review_tasks',{state:'resolved',decision_id:decisionId,revision:task.revision+1,lease_token:null,lease_until:null},'id=?',[task.id]);
   if(original){
-   if(accepted)builder.update('offers',{...offerValues(accepted),review_state:'approved',updated_at:new Date().toISOString(),last_verified_at:new Date().toISOString(),verify_result:'审核员确认官方证据'},'id=?',[original.id]);
+   if(accepted)builder.update('offers',{...offerValues(accepted),review_state:'approved',...(restoring?{withdrawn_at:null,withdrawn_reason:null}:{}),updated_at:new Date().toISOString(),last_verified_at:new Date().toISOString(),verify_result:'审核员确认官方证据'},'id=?',[original.id]);
    else if(!entity.current_approved_version_id)builder.update('offers',{review_state:'rejected',updated_at:new Date().toISOString()},'id=?',[original.id]);
    builder.insert('reviews',{offer_id:original.id,action:input.action,reviewer:input.actor,reason:input.reason??null,reason_code:input.reasonCode??'other',decision_id:decisionId});
    if(task.kind==='terms_change'||(task.kind==='evidence_reopen'&&proposal)){

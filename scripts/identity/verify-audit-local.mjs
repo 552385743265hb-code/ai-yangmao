@@ -62,5 +62,14 @@ try{
  const publishedView=await call('admin/offers/'+created.canonicalOfferId,undefined,true);assert.match(publishedView.offer.reviewVersion,/^entity:/);const withdrawalBody={expectedReviewVersion:publishedView.offer.visibilityVersion,reason:'Synthetic official withdrawal notice.',evidenceUrl:'https://vendor.example/withdrawal',basis:'official'};
  const withdrawn=await call('admin/offers/'+created.canonicalOfferId+'/withdraw',withdrawalBody,true);assert.deepEqual(await call('admin/offers/'+created.canonicalOfferId+'/withdraw',withdrawalBody,true),withdrawn);assert.equal(JSON.parse((await db.prepare('SELECT basis_json FROM review_decisions WHERE id=?').bind(withdrawn.decisionId).first()).basis_json).evidenceUrl,withdrawalBody.evidenceUrl);
  const afterWithdraw=await call('admin/offers/'+created.canonicalOfferId,undefined,true);const unpublishBody={expectedReviewVersion:afterWithdraw.offer.visibilityVersion,reason:'Synthetic policy review removes this publication.',reasonCode:'other'};const unpublished=await call('admin/offers/'+created.canonicalOfferId+'/unpublish',unpublishBody,true);assert.deepEqual(await call('admin/offers/'+created.canonicalOfferId+'/unpublish',unpublishBody,true),unpublished);assert.equal((await db.prepare('SELECT review_state FROM offers WHERE id=?').bind(created.canonicalOfferId).first()).review_state,'rejected');
- assert.ok(measurements.every(m=>m.statements<=50));console.log(JSON.stringify({environment:'fresh-local-workerd-d1',R01:'passed',R02:'passed',R03:'passed',R07:'passed',R04:'passed',productionOperations:0,modelCalls:0,messages:0,measurements}));
+
+ const restoredView=await call('admin/offers/'+created.canonicalOfferId,undefined,true);
+ const restored=await call('admin/offers/'+created.canonicalOfferId+'/reopen-visibility',{expectedReviewVersion:restoredView.offer.visibilityVersion,reason:'Synthetic explicit fresh publication review.'},true);
+ assert.notEqual(restored.taskId,created.taskId);
+ await call('admin/identity/tasks/'+created.taskId+'/resolve',{requestId:'stale-original-approval',expectedRevision:0,action:'approve'},true,409);
+ assert.equal((await db.prepare('SELECT review_state FROM offers WHERE id=?').bind(created.canonicalOfferId).first()).review_state,'rejected');
+ await call('admin/identity/tasks/'+restored.taskId+'/resolve',{requestId:'approve-restoration',expectedRevision:0,action:'approve'},true);
+ assert.deepEqual(await db.prepare('SELECT review_state,withdrawn_at FROM offers WHERE id=?').bind(created.canonicalOfferId).first(),{review_state:'approved',withdrawn_at:null});
+ assert.deepEqual((await db.prepare('PRAGMA foreign_key_check').all()).results,[]);
+ assert.ok(measurements.every(m=>m.statements<=50));console.log(JSON.stringify({environment:'fresh-local-workerd-d1',R01:'passed',R02:'passed',R03:'passed',R07:'passed',R04:'passed',R05:'passed',productionOperations:0,modelCalls:0,messages:0,measurements}));
 }finally{await proxy.dispose();}

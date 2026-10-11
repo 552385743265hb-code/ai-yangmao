@@ -26,6 +26,7 @@ npx tsx $S memo <短码> memo.txt           # 内部核验记录（仅管理员�
 npx tsx $S approve <短码> --version <reviewVersion>
 npx tsx $S reject <短码> --version <reviewVersion> --code <代码> --reason "理由"
 npx tsx $S retest <短码>
+npx tsx $S reopen <短码> --version <visibilityVersion> --reason "明确重开依据"  # 只新建恢复审核，不直接发布
 npx tsx $S unpublish <短码> --version <visibilityVersion> --code <代码> --reason "理由"   # 撤下已上架但不该收的条目（对已上架条目用 reject 只会丢弃更新提案）
 npx tsx $S suggest <短码> approve|history|reject|judge [--code 代码] --reason "理由"   # 只给审批卡片标建议，不改状态（批量预审用）
 ```

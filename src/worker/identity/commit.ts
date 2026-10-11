@@ -10,7 +10,7 @@ export interface MutationPlan<T> {
 // weakening any predicate or changing the left-to-right binding order.
 export function balancedAnd(parts:string[]):string {if(!parts.length)return '1';if(parts.length===1)return '('+parts[0]+')';const middle=Math.floor(parts.length/2);return '('+balancedAnd(parts.slice(0,middle))+' AND '+balancedAnd(parts.slice(middle))+')';}
 export const commandGuard = "EXISTS(SELECT 1 FROM identity_commands WHERE request_id=? AND payload_hash=? AND state='staged' AND execution_token=?)";
-const allowed=new Set(['source_documents','source_observations','source_observation_fetches','intake_candidates','intake_extractions','identity_extraction_leads','identity_refusal_applications','identity_backfill_progress','merge_plans','merge_operations','merge_members','identity_version_routes','merge_task_sources','identity_public_state','lead_candidate_links','benefit_entities','benefit_versions','entity_observations','identity_aliases','review_decisions','review_tasks','task_candidates','identity_constraints','identity_blocks','identity_events','offers','offer_proposals','reviews','offer_revisions','rejected_offer_updates','leads']);
+const allowed=new Set(['source_documents','source_observations','source_observation_fetches','intake_candidates','intake_extractions','identity_extraction_leads','identity_refusal_applications','identity_backfill_progress','merge_plans','merge_operations','merge_members','identity_version_routes','merge_task_sources','identity_public_state','lead_candidate_links','benefit_entities','benefit_versions','entity_observations','identity_aliases','review_decisions','review_tasks','review_task_sources','task_candidates','identity_constraints','identity_blocks','identity_events','offers','offer_proposals','reviews','offer_revisions','rejected_offer_updates','leads']);
 const identifier=(name:string)=>{if(!/^[a-z_]+$/.test(name))throw new Error('invalid internal SQL identifier');return '"'+name+'"';};
 const ownsVersion=(table:string,column:string,entity='entity_id')=>`(${column} IS NULL OR EXISTS(SELECT 1 FROM benefit_versions v WHERE v.id=${table}.${column} AND v.entity_id=${table}.${entity}))`;
 const ownership:Record<string,string>={
@@ -37,6 +37,15 @@ export class MutationBuilder {
  update(table:string,data:Record<string,Binding>,where:string,args:Binding[]):void {
   const name=this.table(table),keys=Object.keys(data);
   this.statements.push(this.db.prepare(`UPDATE ${name} SET ${keys.map(k=>identifier(k)+'=?').join(',')} WHERE (${where}) AND ${commandGuard}`).bind(...keys.map(k=>data[k]),...args,this.requestId,this.payloadHash,this.executionToken));
+ }
+ advancePublicGeneration():void {
+  this.statements.push(this.db.prepare(`UPDATE identity_public_state SET generation=generation+1 WHERE id=1 AND ${commandGuard}`).bind(this.requestId,this.payloadHash,this.executionToken));
+  this.assert('EXISTS(SELECT 1 FROM identity_public_state WHERE id=1)');
+ }
+ cancelEntityReview(entityId:string,decisionId:string):void {
+  this.statements.push(this.db.prepare(`UPDATE review_tasks SET state='cancelled',revision=revision+1,material_revision=material_revision+1,decision_id=?,lease_token=NULL,lease_until=NULL WHERE entity_id=? AND state IN ('open','checking','manual') AND ${commandGuard}`).bind(decisionId,entityId,this.requestId,this.payloadHash,this.executionToken));
+  this.statements.push(this.db.prepare(`UPDATE intake_candidates SET lease_token=NULL,lease_until=NULL,revision=revision+1 WHERE entity_id=? AND lease_token IS NOT NULL AND ${commandGuard}`).bind(entityId,this.requestId,this.payloadHash,this.executionToken));
+  this.statements.push(this.db.prepare(`UPDATE identity_events SET status='blocked' WHERE entity_id=? AND status='pending' AND ${commandGuard}`).bind(entityId,this.requestId,this.payloadHash,this.executionToken));
  }
  remove(table:string,where:string,args:Binding[]):void {
   this.statements.push(this.db.prepare(`DELETE FROM ${this.table(table)} WHERE (${where}) AND ${commandGuard}`).bind(...args,this.requestId,this.payloadHash,this.executionToken));
