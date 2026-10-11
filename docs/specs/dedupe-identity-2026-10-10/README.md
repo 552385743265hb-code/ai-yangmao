@@ -1,6 +1,6 @@
 # Codex 实施规格：第二、第三阶段
 
-本目录是本次交付的统一实施入口；第二、第三阶段已在七个独立增量中实现；当前交付限于源码和本地工程验证，未合并或部署。本轮 PR 审计修复与最新结果见 [整改报告](AUDIT-REMEDIATION.md)；原七增量交付快照见 [交付证据](P3-C-EVIDENCE.md)，未来发布与兼容回滚见 [RELEASE.md](RELEASE.md)。目录外同主题旧草稿仅供追溯，不能据此另建一套subject/entity表。
+本目录是本次交付的统一实施入口；第二、第三阶段已在七个独立增量中实现；当前已完成PR #6–#13合并、必要生产迁移及off兼容部署，最新状态见 [发布凭证](../../dedupe-release-2026-10-10.md)。本轮 PR 审计修复与最新结果见 [整改报告](AUDIT-REMEDIATION.md)；原七增量交付快照见 [交付证据](P3-C-EVIDENCE.md)，未来发布与兼容回滚见 [RELEASE.md](RELEASE.md)。目录外同主题旧草稿仅供追溯，不能据此另建一套subject/entity表。
 
 按顺序阅读：本 README、[主规格](SPEC.md)、[九项实施任务](IMPLEMENTATION.md)、[验收矩阵](ACCEPTANCE.md)、[执行提示](CODEX-HANDOFF.md)。以下补充是主规格的组成部分，编码时并入对应schema和测试。
 
@@ -18,4 +18,4 @@
 
 ## 第一阶段状态
 
-当前合并对象为PR #6（#2为已关闭的工作稿）。本目录其余PR #2引用仅为原始修复溯源，实施以PR #6或等价集成为准。第一阶段只实现三个代码修复及12项回归保护测试；已验证343个Vitest和8个CLI、typecheck、web构建。`0016_rejection_decision_key.sql`必须先迁移再部署新Worker。当前没有生产部署、生产迁移或历史apply。详细证据见PR及`docs/phase1-dedupe-fix-2026-10-10.md`。
+第一阶段正式PR #6现已合并（#2为已关闭的工作稿）。本目录其余PR #2引用仅为原始修复溯源，实施以PR #6或等价集成为准。第一阶段只实现三个代码修复及12项回归保护测试；已验证343个Vitest和8个CLI、typecheck、web构建。`0016_rejection_decision_key.sql`必须先迁移再部署新Worker。上述数量为第一阶段历史快照；当前部署/迁移状态见发布凭证，生产历史apply仍未执行。详细证据见PR及`docs/phase1-dedupe-fix-2026-10-10.md`。

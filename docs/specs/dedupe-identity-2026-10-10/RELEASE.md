@@ -1,10 +1,10 @@
 # 发布准备与兼容回滚
 
-这是未来操作说明，**不是生产授权**。本次交付只做开发、合成数据测试和本地 D1 演练。未合并 main、部署、访问生产 D1、真实采集、模型调用或消息发送；模型预算未增加。
+本次用户已单独授权兼容发布，PR合并、必要生产迁移和部署已完成，见 [发布凭证](../../dedupe-release-2026-10-10.md)。以下扩大canary、历史apply与恢复步骤仍是未来操作说明，不自动扩大授权；本次没有真实采集、模型调用或消息发送，预算未增加。
 
 ## 交付基线与发布门槛
 
-正式第一阶段为 PR #6 / `64db363b7dd4fd301d4872101d6ec313a0640d3d`。PR #7–#13 是依次堆叠的七个增量，不能单独拿最后一个 PR 的差异发布。每次合并或发布前重新核对 main、PR head、CI、迁移台账和用户未提交文件；本次没有合并任何 PR。
+正式第一阶段为 PR #6 / `64db363b7dd4fd301d4872101d6ec313a0640d3d`。PR #7–#13 是依次堆叠的七个增量，不能单独拿最后一个 PR 的差异发布。每次合并或发布前重新核对 main、PR head、CI、迁移台账和用户未提交文件；本次8个PR均已合并。
 
 本地工程验收与现场效果分开。A01–A45 的合成测试、SQLite 和真实本地 workerd D1 已有证据；尚缺至少 60 个经人工标注和授权的脱敏 pair、真实工作负载指标和生产 canary 验收。缺样本时不报告现场 precision/recall 为 0 或 100%，不扩大 canary，不启用生产历史合并。
 
@@ -46,9 +46,9 @@ npx tsx scripts/identity/evaluate.ts --input /approved/pairs.json --environment 
 
 ## 兼容回滚包
 
-本轮已验证的兼容代码：`f54650cdc7bda70f448d803a0eb63a8ccf3a420a`，需要迁移 0016–0035。较旧 P3-B 只证明历史 canonical 读取保护，不能替代包含本轮关闭审核/拒绝/估值修复的回滚代码。A31/A43/A44 和实际本地 D1 证明关闭身份写入仍只公开 canonical、旧 ID 解析、通知映射和缓存 generation 有效，未映射记录保持可见。
+本次已部署的兼容代码：`32ccacc53d185c2754d881089077d438f2808e3f`，需要迁移 0016–0035。较旧 P3-B 只证明历史 canonical 读取保护，不能替代包含本轮关闭审核/拒绝/估值修复的回滚代码。A31/A43/A44 和实际本地 D1 证明关闭身份写入仍只公开 canonical、旧 ID 解析、通知映射和缓存 generation 有效，未映射记录保持可见。
 
-写入回滚是在经授权环境部署这个兼容版本并设置 `IDENTITY_MODE=off`、`IDENTITY_MODEL_ASSIST=false`、`HISTORICAL_MERGE_ENABLED=false`，保留 identity 表及 alias-aware 读取。已合并产品旧采集写入会 retryable 暂停，避免在关闭解析后重新制造重复；未合并产品按原路径工作。暂停不等于丢弃线索，应监控重试积压。此操作未在生产执行。
+写入回滚是在经授权环境部署这个兼容版本并设置 `IDENTITY_MODE=off`、`IDENTITY_MODEL_ASSIST=false`、`HISTORICAL_MERGE_ENABLED=false`，保留 identity 表及 alias-aware 读取。已合并产品旧采集写入会 retryable 暂停，避免在关闭解析后重新制造重复；未合并产品按原路径工作。暂停不等于丢弃线索，应监控重试积压。当前生产已使用本轮兼容代码并关闭上述开关；没有执行历史数据撤销。
 
 禁止直接回退 PR #6 或其它不认识 canonical/alias/generation 的旧 Worker；禁止为回滚 drop 表、删除原记录或重写 sent payload。单组数据撤销按 post-manifest 与 revision 检查；后续审核、证据、发送或人工修改无法归属时输出 rollback_conflict。全库恢复/Time Travel 需要独立灾难恢复授权。
 

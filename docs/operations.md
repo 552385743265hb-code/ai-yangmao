@@ -4,11 +4,11 @@
 
 ## 身份改造发布状态
 
-2026-10-10 分支交付的第二、第三阶段尚未合并、部署或访问生产。正式实施入口为 [dedupe-identity-2026-10-10](specs/dedupe-identity-2026-10-10/README.md)，不使用旧平行草稿。发布前按 [发布与兼容回滚](specs/dedupe-identity-2026-10-10/RELEASE.md) 实时核对 main、迁移、精确代码 SHA、语料和授权。
+2026-10-10已按本次用户授权合并PR #6–#13，生产迁移到0035，并部署兼容代码 `32ccacc53d185c2754d881089077d438f2808e3f`。当前版本、线上检查和数据保留证据见 [发布凭证](dedupe-release-2026-10-10.md)；正式规格仍为 [dedupe-identity-2026-10-10](specs/dedupe-identity-2026-10-10/README.md)。
 
-新路径默认 shadow，`IDENTITY_MODEL_ASSIST` 关闭，历史 apply 关闭。enforce 要求明确产品 canary 与所有状态对账。0016 必须先于第一阶段 Worker；第二、第三阶段继续依序应用 0017–0029 后部署兼容代码。迁移编号以执行时仓库和目标环境台账为准，不能覆盖已占用编号。
+生产Worker及GitHub采集身份模式显式off，辅助模型关闭，历史apply关闭，预算未增加。第二/第三阶段代码与schema已就绪，enforce仍要求明确产品canary、全部状态对账以及冻结人工语料/资源验收；本次没有执行生产历史回填或合并。未来迁移编号以仓库和目标台账为准，不能覆盖已占用编号，始终先兼容迁移再部署Worker。
 
-发生过逻辑合并后，写入关闭仍必须保留 canonical、通知版本映射和公开缓存 generation 读取。兼容回滚代码固定为 `c3c721e1bd64a54299f43826ee44a446f29f15a7` 或经相同验收的后续版本；设置 `IDENTITY_MODE=off`、模型与历史开关关闭，保留新增表。不能回退到识别这些关系之前的 Worker。生产启停、迁移、发送与数据恢复均须另行授权。
+关闭写入仍须保留canonical、通知映射和缓存generation读取。兼容代码以本次部署或后续经同等验证的版本为准；保留全部新表和原记录，禁止为回滚删除人工决定或释放pending/unknown送达。数据恢复、历史apply及扩大canary须另有相应授权。
 
 ## 查询、审核与权限
 
@@ -75,7 +75,7 @@ gh workflow run collect.yml --ref main -f fast_leads=true -f lead_limit=50
 
 “当前官方页面未能再次确认原条款”来自evidence_missing，和字段拦截数不同。先核对证据URL、跳转、默认页/弹窗及保存摘录；如WorkBuddy个人有效期藏在完整规则弹窗，普通抓取缺失不能直接判结束。人工读到当前官方规则后可修正摘录并用`retested`记录已核实仍有效；这不是接受更新，也不把site证据改成tested。只有管理员明确亲测过权益才用tested级别。
 
-管理员亲测停止领取时，管理接口`POST /api/admin/offers/:ref/withdraw`可传`basis:"tested"`、reason及实测入口evidenceUrl；默认basis为official。withdrawnAt是确认时刻，实际截止未知仍留空。结束会清除过时提案、退出可领和自动复核队列，历史approved记录保留。
+管理员亲测停止领取时，管理接口`POST /api/admin/offers/:ref/withdraw`可传`basis:"tested"`、reason及实测入口evidenceUrl；默认basis为official。withdrawnAt是确认时刻，实际截止未知仍留空。legacy条目结束会清除过时提案、退出可领和自动复核队列，历史approved记录保留；identity管理的活动保留草稿并取消旧任务/租约，显式重开后才可进入新的恢复审核。
 
 ## 展示、通知与健康
 
