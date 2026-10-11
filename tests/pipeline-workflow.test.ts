@@ -71,6 +71,7 @@ function harness(options: HarnessOptions = {}) {
       ? new Response('quota exhausted', { status: options.geminiStatus })
       : json({ candidates: [{ content: { parts: [{ text: options.modelOutput ?? JSON.stringify({ offers: [candidate] }) }] } }], usageMetadata: { totalTokenCount: 100 } });
     if (url.includes('api.deepseek.com')) return json({ choices: [{ message: { content: options.modelOutput ?? JSON.stringify({ offers: [candidate] }) } }], usage: { total_tokens: 100, prompt_tokens: 80, completion_tokens: 20 } });
+    if (url.endsWith('/leads')) return json({created:body.length});
     if (url.endsWith('/offers')) return json({ results: options.ingestResults ?? body.map((o: { id: string }) => ({ id: o.id, created: true, reviewState: 'pending' })) });
     if (url.endsWith('/status') || url.endsWith('/runs')) return json({ ok: true });
     if (url.includes('/verification-queue')) return options.verificationStatus
@@ -443,4 +444,25 @@ it('R07 scheduled Jina feed fallback preserves its reader provenance and media t
 });
 it('R07 official enrichment transports reader attestation rather than deriving it from source text',async()=>{
  const h=harness({officialJob:true});const {runPipeline}=await import('../pipeline/run');await runPipeline();const posted=h.payloads('/offers')[0][0];expect(posted.sourceFetch.originalUrl).toBe(posted.evidence.url);expect(posted.sourceFetch.sourceVerified).toBe(true);expect(posted.sourceFetch.contentHash).toBe(sha256(posted.sourceText));
+});
+
+describe('Discord pipeline checkpoint ordering',()=>{
+  it.each([false,true])('checkpoints only after successful lead ingestion (write fails=%s)',async(fails)=>{
+    const channel='1558646770689384560',guild='1558646769938735136';
+    for(const[k,v]of Object.entries({DISCORD_BOT_TOKEN:'synthetic-test-token',DISCORD_CHANNEL_ID:channel,DISCORD_GUILD_ID:guild,LEAD_LIMIT:'0',LEAD_REVIEW_LIMIT:'0',OFFICIAL_REVIEW_LIMIT:'0'}))vi.stubEnv(k,v);
+    const source={id:'discord',kind:'discord',tier:'lead',platformId:null,platform:null,autoPublish:false,lastHash:null,url:`https://discord.com/channels/${guild}/${channel}`,config:{publishers:[{platformId:'midjourney',name:'Midjourney',guildId:'662267976984297473',channelId:'952771221915840552'}]}};
+    const h=harness({sources:[source],leads:[lead]});const base=fetch;
+    vi.stubGlobal('fetch',vi.fn(async(input:any,init?:RequestInit)=>{
+      const u=String(input);
+      if(u.startsWith('https://discord.com/api/v10/'))return json(u.includes('/messages?')?[{id:'1558661628222906430',channel_id:channel,type:0,flags:2,content:'Free credits for all users',embeds:[],attachments:[],message_reference:{guild_id:'662267976984297473',channel_id:'952771221915840552',message_id:'1000000000000000001'}}]:{id:channel,guild_id:guild,type:0});
+      if(fails&&u.endsWith('/leads')&&init?.method==='POST')return new Response('failure',{status:500});
+      return base(input,init);
+    }));
+    const {runPipeline}=await import('../pipeline/run');const result=await runPipeline();
+    if(!fails)expect(result.stats.errors).toEqual([]);
+    expect(h.payloads('/snapshots').some(x=>x.hash==='discord:1558661628222906430')).toBe(!fails);
+    expect(result.stats.failed).toBe(fails?1:0);
+    expect(h.payloads('/offers')).toEqual([]);
+    expect(h.writes.filter(x=>x.url.includes('googleapis'))).toHaveLength(0);
+  });
 });

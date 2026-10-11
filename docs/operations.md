@@ -59,7 +59,7 @@ Worker UTC 00:00对应东京09:00、上海08:00。Hermes未设置独立任务时
 gh workflow run collect.yml --ref main -f fast_leads=true -f lead_limit=50
 ```
 
-`DRY_RUN`不写权益/线索业务状态，真实模型请求仍记预算。`ONLY_SOURCES`限定信源抓取；官方补证由独立队列控制，诊断需要明确跳过时传`official_review_limit=0`。周度distill只提出纠错规则PR，不是发现扫描；邮件接收与Discord采集尚未实现。
+`DRY_RUN`不写权益/线索业务状态，真实模型请求仍记预算。`ONLY_SOURCES`限定信源抓取；官方补证由独立队列控制，诊断需要明确跳过时传`official_review_limit=0`。周度distill只提出纠错规则PR，不是发现扫描；邮件接收尚未实现；Discord 公告采集已接入，配置与边界见下节。
 
 ## 模型、预算与回归
 
@@ -114,3 +114,19 @@ OpenRouter默认备用为`openrouter/free`；404须检查模型可用性，不�
 拒绝记忆迁移为0013_rejected_offer_updates.sql；首次启用须迁移后部署Worker，再推送采集器完整正文协议。文档同步本身无需重新部署。回归同时覆盖旧ID改字段、新ID重复插入、拒绝后重放、人工候选保留及真实新轮次不误合并。
 
 `ym leads`同时输出reviewVersion；`ym dismiss <线索ID> --version <reviewVersion>`使用查看时版本，避免旧指令覆盖已完成结果。线索页面的关联/结束/重试也检查版本。
+
+## Discord 官方公告采集
+
+2026-10-10接入：自建服务器关注厂商官方公告，再由读取Bot通过Discord REST API读取自己的接收文字频道，不访问其他服务器的消息API。Discord follow只同步厂商选择发布的公告，不等于完整时间线。
+
+当前接收频道：official-announcements（1558646770689384560），自建服务器1558646769938735136。GitHub Secret为DISCORD_BOT_TOKEN，Variables为DISCORD_CHANNEL_ID及DISCORD_GUILD_ID；本机配置在忽略的.codex/discord.env，Token不得进文档、日志或提交。
+
+信源discord-official-announcements加入每小时快速通道和每6小时全量通道。只接收IS_CROSSPOST且原始guild/channel匹配sources.config.publishers的公告；系统提示、普通成员发言、测试消息、原文已删除公告不产线索。当前已核实Midjourney guild662267976984297473 / announcements952771221915840552，依据为Midjourney官方文档直链。新增厂商需先核实官方入口与原始频道，再定向扩展映射；不能只凭Webhook名称、头像或正文自称官方。
+
+正文、embed字段及附件链接保留，原始Discord消息URL用于去重。文本命中福利关键词或附有待核实附件的官方公告先产线索，沿现有研判/官方补证进入待审；身份可靠不等于活动批准，autoPublish保持false。
+
+检查点为snapshots.hash的discord:<最后接收消息ID>，沿新到旧分页完整补回，先成功写线索才更新检查点。限流、权限错误、未知来源、正文不可读、超过分页上限或入库失败均保留原检查点并进入信源健康失败。默认20页（2,000消息），maxPages最大100；初次读取同样分页，适合本次新建接收频道。重放由原始消息URL去重；本版本不自动重抽旧消息的后续编辑，条款变更可人工补录/重新核验。
+
+只读验证可运行python3 .codex/discord-probe.py .codex/discord.env；只输出身份、频道和计数，不输出Token或消息全文。频道暂无官方公告时，仅证明读取链路可用，不能声称真实福利已入库。
+
+诊断补跑用collect.yml的only_sources=discord-official-announcements、fast_leads=true、lead_limit=0、lead_review_limit=0、official_review_limit=0，跳过模型与其他业务队列；正常定时运行沿既有预算和审核规则执行。

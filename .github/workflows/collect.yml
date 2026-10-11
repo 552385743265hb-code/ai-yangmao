@@ -59,6 +59,9 @@ jobs:
           IDENTITY_MODE: ${{ vars.IDENTITY_MODE || 'off' }}
           IDENTITY_MODEL_ASSIST: ${{ vars.IDENTITY_MODEL_ASSIST || 'false' }}
           INGEST_TOKEN: ${{ secrets.INGEST_TOKEN }}
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          DISCORD_CHANNEL_ID: ${{ vars.DISCORD_CHANNEL_ID }}
+          DISCORD_GUILD_ID: ${{ vars.DISCORD_GUILD_ID }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GLM_API_KEY: ${{ secrets.GLM_API_KEY }}
           GLM_MODEL: ${{ vars.GLM_MODEL || 'glm-4-flash' }}

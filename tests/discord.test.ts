@@ -1,0 +1,23 @@
+import {afterEach,beforeEach,describe,expect,it,vi} from 'vitest';
+import {collectDiscord} from '../pipeline/discord';
+import type {Source} from '../pipeline/collectors';
+const channel='1558646770689384560',guild='1558646769938735136';
+const source={id:'discord-official-announcements',kind:'discord',url:`https://discord.com/channels/${guild}/${channel}`,tier:'lead',platformId:null,lastHash:null,platform:null,autoPublish:false,config:{publishers:[{platformId:'midjourney',name:'Midjourney',guildId:'662267976984297473',channelId:'952771221915840552'}]}} as Source;
+const post=(id:string,extra:Record<string,unknown>={})=>({id,channel_id:channel,type:0,flags:2,content:'Free credits for all AI users',message_reference:{guild_id:'662267976984297473',channel_id:'952771221915840552',message_id:'1000000000000000001'},embeds:[],attachments:[],...extra});
+beforeEach(()=>{vi.stubEnv('DISCORD_BOT_TOKEN','synthetic-test-token');vi.stubEnv('DISCORD_CHANNEL_ID',channel);vi.stubEnv('DISCORD_GUILD_ID',guild);});
+afterEach(()=>{vi.unstubAllEnvs();vi.unstubAllGlobals();});
+function api(pages:unknown[][]){let n=0;vi.stubGlobal('fetch',vi.fn(async(url:string)=>new Response(JSON.stringify(url.includes('/messages?')?pages[n++]??[]:{id:channel,guild_id:guild,type:0}))));}
+describe('Discord followed official announcements',()=>{
+ it('ignores tests, join/follow system events and arbitrary webhooks',async()=>{api([[post('1558661628222906430',{flags:0}),post('1558659770985095219',{type:7,flags:0}),post('1558655286238122086',{type:12,flags:0})]]);const r=await collectDiscord(source);expect(r.leads).toEqual([]);expect(r.cursor).toBe('1558661628222906430');});
+ it('retains original canonical link, text and embed fields for a relevant follow',async()=>{api([[post('1558661628222906430',{embeds:[{title:'Credits giveaway',description:'Claim free credits',fields:[{name:'Expiry',value:'October 31'}]}]})]]);const r=await collectDiscord(source);expect(r.leads).toHaveLength(1);expect(r.leads[0].origin).toBe('discord');expect(r.leads[0].url).toBe('https://discord.com/channels/662267976984297473/952771221915840552/1000000000000000001');expect(r.leads[0].raw).toContain('October 31');});
+ it('fails closed on an unregistered publisher',async()=>{api([[post('1558661628222906430',{message_reference:{guild_id:'999999999999999999',channel_id:'888888888888888888',message_id:'1000000000000000001'}})]]);await expect(collectDiscord(source)).rejects.toThrow('未登记');});
+ it('does not silently checkpoint a known announcement with inaccessible body',async()=>{api([[post('1558661628222906430',{content:'',embeds:[],attachments:[]})]]);await expect(collectDiscord(source)).rejects.toThrow('正文');});
+ it('walks older pages to the saved cursor without losing a busy interval',async()=>{const page=Array.from({length:100},(_,i)=>post(String(1558661628222906430n-BigInt(i)),{flags:0}));const old=post('1558661628222906200');api([page,[old]]);const r=await collectDiscord({...source,lastHash:'discord:1558661628222906100'});expect(r.pages).toBe(2);expect(r.leads).toHaveLength(1);expect(String(vi.mocked(fetch).mock.calls[2][0])).toContain('before=1558661628222906331');});
+ it('rejects channel responses from another server',async()=>{vi.stubGlobal('fetch',vi.fn(async()=>new Response(JSON.stringify({id:channel,guild_id:'999999999999999999',type:0}))));await expect(collectDiscord(source)).rejects.toThrow('服务器');});
+ it('reports rate limits without printing token or response text',async()=>{vi.stubGlobal('fetch',vi.fn(async()=>new Response('private response',{status:429})));await expect(collectDiscord(source)).rejects.toThrow('HTTP 429');});
+ it('captures standalone free wording and attachment-only official posts',async()=>{api([[post('1558661628222906430',{content:'U2 Flash is free now!'}),post('1558661628222906429',{content:'',message_reference:{guild_id:'662267976984297473',channel_id:'952771221915840552',message_id:'1000000000000000002'},attachments:[{filename:'offer.png',url:'https://cdn.discordapp.com/attachments/offer.png'}]})]]);expect((await collectDiscord(source)).leads).toHaveLength(2);});
+ it('does not advance when the backfill limit is reached',async()=>{api([Array.from({length:100},(_,i)=>post(String(1558661628222906430n-BigInt(i))))]);await expect(collectDiscord({...source,config:{...source.config,maxPages:1}})).rejects.toThrow('未完整补回');});
+ it('rejects a receiver outside the configured channel',async()=>{api([[]]);await expect(collectDiscord({...source,url:'https://discord.com/channels/1558646769938735136/1558646770689384999'})).rejects.toThrow('已授权频道');});
+ it('ignores a deleted source announcement',async()=>{api([[post('1558661628222906430',{flags:10})]]);expect((await collectDiscord(source)).leads).toEqual([]);});
+
+});

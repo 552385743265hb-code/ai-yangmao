@@ -1,3 +1,4 @@
+import {collectDiscord} from './discord';
 import {fetchedSource} from './fetch-evidence';
 import type {FetchedPage} from './lib';
 import { resumeIdentityIntake } from './identity-workflow';
@@ -204,6 +205,7 @@ async function runSource(src: Source) {
     else if (src.kind === 'hn') { await postLeads(await hn(src)); await report(src, true); }
     else if (src.kind === 'reddit') { await postLeads(await reddit(src)); await report(src, true); }
     else if (src.kind === 'feed') { await postLeads(await feed(src)); await report(src, true); }
+    else if (src.kind === 'discord') { const result=await collectDiscord(src); await postLeads(result.leads); await report(src,true,{hash:`discord:${result.cursor}`}); log(`  Discord ${result.messages} 条新消息，${result.leads.length} 条官方线索，${result.pages} 页`); }
     else if (src.kind === 'rss' && src.platformId) await officialFeed(src);
     else if ((src.kind === 'web_list' || src.kind === 'json') && src.platformId) await officialPage(src);
     else { log('  暂不支持这种信源，跳过'); return; }
@@ -283,6 +285,7 @@ function tierOf(url: string, p: Plat | undefined): OfferIn['evidence']['tier'] {
   return p ? officialTier(url,p,[])??'media':'media';
 }
 async function triageLeads(plats: Plat[]) {
+  if (LEAD_LIMIT <= 0) return;
   if (!llmAvailable()) { stats.deferred++; stats.errors.push('线索研判：没有可用模型'); return; }
   const { leads } = await api<{ leads: Lead[] }>(`/leads?limit=${LEAD_LIMIT}`);
   if (!leads.length) return;
@@ -409,7 +412,7 @@ export async function runPipeline() {
   log(`共 ${list.length} 个信源；今日 token ${Number.isFinite(tokensLeft) ? `剩 ${tokensLeft}` : '不设总上限'}，本月付费兜底剩 ¥${costLeft.toFixed(2)}${DRY ? '；演练模式，不写入权益' : ''}`);
   // 先采集线索，再研判；全站官方页面抽取与复核不能抢走重要线索的模型预算。
   const leadSources = list.filter(s => s.kind === 'aihot' || s.tier === 'lead');
-  const selected = FAST ? leadSources.filter(s => s.kind === 'aihot' || s.kind === 'feed') : leadSources;
+  const selected = FAST ? leadSources.filter(s => s.kind === 'aihot' || s.kind === 'feed' || s.kind === 'discord') : leadSources;
   for (const source of selected) {
     if (needsWrapUp()) { stats.deferred++; break; }
     await runSource(source);

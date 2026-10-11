@@ -2760,6 +2760,28 @@
    "config": {
     "addedBy": "admin"
    }
+  },
+  {
+   "id": "discord-official-announcements",
+   "platform": null,
+   "kind": "discord",
+   "url": "https://discord.com/channels/1558646769938735136/1558646770689384560",
+   "tier": "lead",
+   "config": {
+    "receiverGuildId": "1558646769938735136",
+    "channelId": "1558646770689384560",
+    "maxPages": 20,
+    "publishers": [
+     {
+      "platformId": "midjourney",
+      "name": "Midjourney",
+      "guildId": "662267976984297473",
+      "channelId": "952771221915840552"
+     }
+    ],
+    "addedBy": "admin",
+    "officialOriginEvidence": "https://docs.midjourney.com/hc/en-us/articles/32637946450445-Add-Midjourney-to-Your-Discord-Server"
+   }
   }
  ]
 }
