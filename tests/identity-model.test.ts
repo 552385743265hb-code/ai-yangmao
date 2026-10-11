@@ -51,3 +51,7 @@ it('A19 changing a fact citation binding invalidates cache and cannot override c
  const a=input(),b=input();b.candidate.issuerProductId={state:'known',value:'vendor',evidenceRefs:['forged-ref']};
  expect(await identityCacheKey(a)).not.toBe(await identityCacheKey(b));
 });
+it('A19 inherited object properties cannot masquerade as evidence reference IDs',()=>{
+ const data=input();data.evidence.fullText+=' function toString() { [native code] }';
+ expect(()=>validateIdentitySuggestion({relation:'SAME',entityId:'e1',termsRelation:'EQUIVALENT',evidenceRefs:['toString']},data)).toThrow();
+});

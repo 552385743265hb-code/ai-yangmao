@@ -1,0 +1,27 @@
+{
+  "status": "not_evaluated",
+  "suppliedHumanLabelledPairs": 0,
+  "requiredPairs": 60,
+  "requiredComposition": {
+    "SAME_EQUIVALENT": 20,
+    "DISTINCT": 20,
+    "SAME_CHANGED": 10,
+    "UNRESOLVED": 10,
+    "crossLanguageOrSourceWithinEquivalent": 8
+  },
+  "automaticPrecision": null,
+  "duplicateRecall": null,
+  "changedRecall": null,
+  "uncertainRate": null,
+  "falseMerge": null,
+  "falseReject": null,
+  "duplicateReviewLeak": null,
+  "reason": "No authorized frozen human-labelled redacted corpus was supplied. Synthetic results are separate and cannot establish field quality.",
+  "productionCanary": "not_run",
+  "productionOperations": 0,
+  "modelCalls": 0,
+  "externalMessages": 0,
+  "identityPrecision": null,
+  "identityUncertainRate": null,
+  "falseSame": null
+}

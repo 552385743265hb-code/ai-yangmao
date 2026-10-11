@@ -1,7 +1,10 @@
+import {assertionScopeKey} from '../../shared/identity/assertion-scope';
+import {verifyFetchProvenance} from './fetch-provenance';
+import { commitIdentityMutation, commandGuard } from './commit';
 import { z } from 'zod';
 import { officialTier } from '../../shared/official-review';
 import { candidateBatchInputSchema, observationInputSchema, observationReceiptSchema, intakeReceiptSchema, type CandidateBatchInput, type IntakeReceipt, type ObservationInput, type ObservationReceipt, type CanonicalTermsV1, type RetrievalPage, type VersionedEntity, reviewDecisionSchema, canonicalTermsSchema } from '../../shared/identity/types';
-import { identitySearchTokens, hashTerms, normalizeDocumentUrl, normalizeTerms, sha256, stableJson } from '../../shared/identity/normalize';
+import { claimIdentityKey, identitySearchTokens, hashTerms, normalizeDocumentUrl, normalizeTerms, sha256, stableJson } from '../../shared/identity/normalize';
 
 export class IdentityError extends Error {
   constructor(public status: 400 | 403 | 404 | 409 | 503, message: string) { super(message); }
@@ -13,6 +16,8 @@ function parse<T>(schema: z.ZodType<T>, input: unknown): T {
 }
 type CommandRow = { payload_hash: string; state: string; result_json: string | null };
 type ObservationRow = { id: string; text: string; text_truncated: number; fetch_kind: string; trust_json: string };
+
+export function readReviewDecision(row:Record<string,unknown>) { return reviewDecisionSchema.parse({id:row.id,entityId:row.entity_id,candidateId:row.candidate_id,versionId:row.version_id,action:row.action,reasonCode:row.reason_code,reasonText:row.reason_text,basis:JSON.parse(String(row.basis_json??'{}')),scope:JSON.parse(String(row.scope_json)),reopenPolicy:JSON.parse(String(row.reopen_policy_json)),rulesVersion:row.rules_version,evidenceRefs:JSON.parse(String(row.evidence_refs_json)),actor:row.actor,baseVersionId:row.base_version_id,targetVersionId:row.target_version_id,idempotencyKey:row.idempotency_key,supersedesId:row.supersedes_id,createdAt:row.created_at}); }
 
 export class IdentityStore {
   constructor(readonly db: D1Database) {}
@@ -38,8 +43,10 @@ export class IdentityStore {
 
   async lookupAlias(namespace: 'legacy_offer_id'|'official_campaign'|'manual', key: string, scope: string): Promise<string|null> {
     try {
-      const row=await this.db.prepare("SELECT entity_id FROM identity_aliases WHERE namespace=? AND alias_key=? AND status='active' AND (namespace='legacy_offer_id' OR scope_key=?) LIMIT 1").bind(namespace,key,scope).first<{entity_id:string}>();
-      return row?.entity_id??null;
+      const row=await this.db.prepare("SELECT e.id,e.state,e.platform_id,r.id root_id,r.state root_state,r.platform_id root_platform FROM identity_aliases a JOIN benefit_entities e ON e.id=a.entity_id LEFT JOIN benefit_entities r ON r.id=e.merged_into WHERE a.namespace=? AND a.alias_key=? AND a.status='active' AND (a.namespace='legacy_offer_id' OR a.scope_key=?) LIMIT 1").bind(namespace,key,scope).first<{id:string;state:string;platform_id:string;root_id:string|null;root_state:string|null;root_platform:string|null}>();
+      if(!row)return null;if(row.state==='active')return row.id;
+      if(row.root_state==='active'&&row.root_platform===row.platform_id)return row.root_id;
+      throw new IdentityError(503,'invalid canonical alias route');
     } catch { throw new IdentityError(503,'alias retrieval unavailable'); }
   }
 
@@ -63,21 +70,21 @@ export class IdentityStore {
       const alias=anchor?await this.lookupAlias('official_campaign',anchor,scope):null;
       const exact=alias?await this.db.prepare(select+' WHERE e.id=? AND e.platform_id=?').bind(alias,productId).first<EntityRow>():null;
       const take=exact&&!page.exactSeen?39:40;
-      const rows=await this.db.prepare(select+' WHERE e.platform_id=? AND e.id>? AND e.id<>? ORDER BY e.id LIMIT ?').bind(productId,page.entity,exact?.id??'',take+1).all<EntityRow>();
+      const rows=await this.db.prepare(select+" WHERE e.state='active' AND e.platform_id=? AND e.id>? AND e.id<>? ORDER BY e.id LIMIT ?").bind(productId,page.entity,exact?.id??'',take+1).all<EntityRow>();
       const visible=rows.results.slice(0,take);
       const entities=[...(exact&&!page.exactSeen?[view(exact)]:[]),...visible.map(view)];
       // Independent indexed streams cover entity and lead-only decisions in all states.
       const decisionRows=await Promise.all([
-        this.db.prepare("SELECT d.* FROM review_decisions d JOIN benefit_entities e ON e.id=d.entity_id WHERE e.platform_id=? AND d.id>? ORDER BY d.id LIMIT 41").bind(productId,page.decision).all<Record<string,unknown>>(),
-        this.db.prepare("SELECT d.* FROM intake_candidates c JOIN review_decisions d ON d.candidate_id=c.id WHERE json_extract(c.facts_json,'$.issuerProductId.value')=? AND d.id>? ORDER BY d.id LIMIT 41").bind(productId,page.decision).all<Record<string,unknown>>(),
-        this.db.prepare("SELECT * FROM review_decisions WHERE json_extract(scope_json,'$.productId')=? AND id>? ORDER BY id LIMIT 41").bind(productId,page.decision).all<Record<string,unknown>>(),
+        this.db.prepare("SELECT d.* FROM review_decisions d JOIN benefit_entities e ON e.id=d.entity_id WHERE e.platform_id=? AND d.id>? AND d.action='reject' AND NOT EXISTS(SELECT 1 FROM review_decisions n WHERE n.supersedes_id=d.id) ORDER BY d.id LIMIT 41").bind(productId,page.decision).all<Record<string,unknown>>(),
+        this.db.prepare("SELECT d.* FROM intake_candidates c JOIN review_decisions d ON d.candidate_id=c.id WHERE json_extract(c.facts_json,'$.issuerProductId.value')=? AND d.id>? AND d.action='reject' AND NOT EXISTS(SELECT 1 FROM review_decisions n WHERE n.supersedes_id=d.id) ORDER BY d.id LIMIT 41").bind(productId,page.decision).all<Record<string,unknown>>(),
+        this.db.prepare("SELECT d.* FROM review_decisions d WHERE json_extract(d.scope_json,'$.productId')=? AND d.id>? AND d.action='reject' AND NOT EXISTS(SELECT 1 FROM review_decisions n WHERE n.supersedes_id=d.id) ORDER BY d.id LIMIT 41").bind(productId,page.decision).all<Record<string,unknown>>(),
       ]);
       const allDecisions=[...new Map(decisionRows.flatMap(r=>r.results).map(row=>[String(row.id),row])).values()].sort((a,b)=>String(a.id)<String(b.id)?-1:1);
       const searchText=[facts.issuerProductId.state==='known'?facts.issuerProductId.value:'',...facts.benefitPools.flatMap(p=>[p.poolKey,...(p.models.state==='known'?p.models.value:[])])].join(' ');
       const ranked=await this.searchIdentity(productId,searchText.slice(0,2000));
       const rank=(id:string)=>id===exact?.id?-1:ranked.ids.includes(id)?ranked.ids.indexOf(id):41;
       entities.sort((a,b)=>rank(a.id)-rank(b.id));
-      const decisions=allDecisions.slice(0,40).map(row=>reviewDecisionSchema.parse({id:row.id,entityId:row.entity_id,candidateId:row.candidate_id,versionId:row.version_id,action:row.action,reasonCode:row.reason_code,scope:JSON.parse(String(row.scope_json)),reopenPolicy:JSON.parse(String(row.reopen_policy_json)),rulesVersion:row.rules_version,evidenceRefs:JSON.parse(String(row.evidence_refs_json)),actor:row.actor,baseVersionId:row.base_version_id,targetVersionId:row.target_version_id,idempotencyKey:row.idempotency_key,supersedesId:row.supersedes_id,createdAt:row.created_at}));
+      const decisions=allDecisions.slice(0,40).map(readReviewDecision);
       const complete=rows.results.length<=take&&allDecisions.length<=40;
       const nextCursor=complete?null:btoa(JSON.stringify({v:1,product:productId,entity:visible.at(-1)?.id??page.entity,decision:decisions.at(-1)?.id??page.decision,exactSeen:true}));
       return {entities,decisions,complete,nextCursor};
@@ -95,44 +102,41 @@ export class IdentityStore {
   // Shadow intake has no business revision dependency. Every statement is tied to
   // the staged command, including the final invariant; D1 rolls back on CHECK failure.
   private async storageCommand<T>(requestId: string, hash: string, receipt: T, writes: (guard: string, guardArgs: string[]) => D1PreparedStatement[], invariant = '1', invariantArgs: (string|number|null)[] = []): Promise<T> {
-    const prior = await this.prior(requestId,hash);
-    if (prior) return JSON.parse(prior.result_json!) as T;
-    const guard = "EXISTS(SELECT 1 FROM identity_commands WHERE request_id=? AND payload_hash=? AND state='staged')";
-    await this.db.batch([
-      this.db.prepare("INSERT OR IGNORE INTO identity_commands(request_id,payload_hash,state,expected_json) VALUES(?,?,'staged','[]')").bind(requestId,hash),
-      ...writes(guard,[requestId,hash]),
-      this.db.prepare(`UPDATE identity_commands SET state=CASE WHEN (${invariant}) THEN 'applied' ELSE 'invalid' END,result_json=? WHERE request_id=? AND payload_hash=? AND state='staged'`).bind(...invariantArgs,JSON.stringify(receipt),requestId,hash),
-    ]);
-    const applied = await this.prior(requestId,hash);
-    if (!applied) throw new IdentityError(409,'intake command was not applied');
-    return JSON.parse(applied.result_json!) as T;
+    const executionToken=crypto.randomUUID();
+    const result=await commitIdentityMutation(this.db,{requestId,payloadHash:hash,executionToken,expected:[],statements:writes(commandGuard,[requestId,hash,executionToken]),receipt,assertions:[{sql:invariant,args:invariantArgs}]});
+    if(result.status==='conflict'||result.value===null)throw new IdentityError(409,'intake command was not applied');
+    return result.value;
   }
 
   async recordObservation(raw: ObservationInput): Promise<ObservationReceipt> {
     const input = parse(observationInputSchema,raw);
     const hash = await sha256(stableJson(input));
     const commandId = `observation:${input.requestId}`;
-    const prior = await this.prior(commandId,hash);
-    if (prior) return observationReceiptSchema.parse(JSON.parse(prior.result_json!));
     const urlKey = normalizeDocumentUrl(input.originalUrl);
     const documentId = `doc_${await sha256(urlKey)}`;
     const contentHash = await sha256(input.text);
-    const observationId = `obs_${await sha256(stableJson([documentId,contentHash,input.fetchKind]))}`;
-    const truncated = input.truncated || input.text.length > 250000;
+    const verifiedFetch=input.fetchEvidence?await verifyFetchProvenance(input.fetchEvidence,input.originalUrl,input.finalUrl,input.text):null;
+    if(verifiedFetch&&!verifiedFetch.valid)throw new IdentityError(400,'fetch provenance does not match source body or URLs');
+    const truncated = input.truncated || input.fetchEvidence?.truncated===true || input.text.length > 250000;
     let sourceVerified = false, productId: string | null = null;
-    if (input.sourceId && input.fetchKind === 'direct' && new URL(input.originalUrl).hostname === new URL(input.finalUrl).hostname) {
-      const source = await this.db.prepare('SELECT s.url,s.tier,p.id,p.name,p.site,p.x_handles,p.staff_handles FROM sources s JOIN platforms p ON p.id=s.platform_id WHERE s.id=?').bind(input.sourceId).first<{url:string;tier:string;id:string;name:string;site:string|null;x_handles:string;staff_handles:string}>();
-      if (source) {
+    if ((input.sourceId||input.issuerProductId) && input.fetchKind === 'direct' && !truncated && (!verifiedFetch||verifiedFetch.direct) && new URL(input.originalUrl).hostname === new URL(input.finalUrl).hostname) {
+      const source = input.sourceId?await this.db.prepare('SELECT s.url,s.tier,p.id,p.name,p.site,p.x_handles,p.staff_handles FROM sources s JOIN platforms p ON p.id=s.platform_id WHERE s.id=?').bind(input.sourceId).first<{url:string;tier:string;id:string;name:string;site:string|null;x_handles:string;staff_handles:string}>():await this.db.prepare("SELECT site AS url,'site' AS tier,id,name,site,x_handles,staff_handles FROM platforms WHERE id=? AND site IS NOT NULL").bind(input.issuerProductId!).first<{url:string;tier:string;id:string;name:string;site:string|null;x_handles:string;staff_handles:string}>();
+      if (source && (!input.issuerProductId||input.issuerProductId===source.id)) {
         const platform = {id:source.id,name:source.name,site:source.site,xHandles:JSON.parse(source.x_handles),staffHandles:JSON.parse(source.staff_handles)};
         sourceVerified = !!officialTier(input.originalUrl,platform,[source]) && !!officialTier(input.finalUrl,platform,[source]);
         if (sourceVerified) productId=source.id;
       }
     }
+    const fetchKind=input.fetchKind==='unavailable'?'unavailable':sourceVerified?'direct':'indirect';
+    const observationId = `obs_${await sha256(stableJson([documentId,contentHash,fetchKind]))}`;
+    const fetchId='fetch_'+await sha256(commandId);
     const trust = JSON.stringify({sourceVerified,productId,sourceId:input.sourceId??null});
-    const receipt = {observationId,documentId,contentHash,truncated};
+    const provenance=JSON.stringify({...input.fetchEvidence,originalUrl:input.originalUrl,finalUrl:input.finalUrl,fetchedUrl:input.fetchEvidence?.fetchedUrl??null,method:input.fetchEvidence?.method??input.fetchKind,reportedSourceVerified:input.fetchEvidence?.sourceVerified??null,sourceVerified,productId,truncated,contentHash});
+    const receipt = {observationId,documentId,contentHash,truncated,fetchId};
     return this.storageCommand(commandId,hash,receipt,(guard,args)=>[
       this.db.prepare(`INSERT INTO source_documents(id,original_url,url_key,first_seen_at,last_seen_at) SELECT ?,?,?,?,? WHERE ${guard} ON CONFLICT(url_key) DO UPDATE SET last_seen_at=max(last_seen_at,excluded.last_seen_at)`).bind(documentId,input.originalUrl,urlKey,input.observedAt,input.observedAt,...args),
-      this.db.prepare(`INSERT INTO source_observations(id,document_id,content_hash,text,text_truncated,fetch_kind,final_url,observed_at,last_seen_at,trust_json) SELECT ?,?,?,?,?,?,?,?,?,? WHERE ${guard} ON CONFLICT(document_id,content_hash,fetch_kind) DO UPDATE SET last_seen_at=max(last_seen_at,excluded.last_seen_at)`).bind(observationId,documentId,contentHash,input.text.slice(0,250000),Number(truncated),input.fetchKind,input.finalUrl,input.observedAt,input.observedAt,trust,...args),
+      this.db.prepare(`INSERT INTO source_observations(id,document_id,content_hash,text,text_truncated,fetch_kind,final_url,observed_at,last_seen_at,trust_json,fetch_provenance_json) SELECT ?,?,?,?,?,?,?,?,?,?,? WHERE ${guard} ON CONFLICT(document_id,content_hash,fetch_kind) DO UPDATE SET last_seen_at=max(last_seen_at,excluded.last_seen_at)`).bind(observationId,documentId,contentHash,input.text.slice(0,250000),Number(truncated),fetchKind,input.finalUrl,input.observedAt,input.observedAt,trust,provenance,...args),
+      this.db.prepare(`INSERT INTO source_observation_fetches(id,observation_id,request_id,provenance_json,observed_at) SELECT ?,?,?,?,? WHERE ${guard}`).bind(fetchId,observationId,commandId,provenance,input.observedAt,...args),
     ],'EXISTS(SELECT 1 FROM source_observations WHERE id=?)',[observationId]);
   }
 
@@ -143,6 +147,7 @@ export class IdentityStore {
     const observation = await this.db.prepare('SELECT id,text,text_truncated,fetch_kind,trust_json FROM source_observations WHERE id=?').bind(input.observationId).first<ObservationRow>();
     if (!observation) throw new IdentityError(404,'observation not found');
     for (const leadId of input.leadIds) if (!await this.db.prepare('SELECT id FROM leads WHERE id=?').bind(leadId).first()) throw new IdentityError(400,'lead not found');
+    if(input.sourceFetchId){const fetch=await this.db.prepare('SELECT provenance_json FROM source_observation_fetches WHERE id=? AND observation_id=?').bind(input.sourceFetchId,input.observationId).first<{provenance_json:string}>();if(!fetch)throw new IdentityError(400,'fetch does not belong to observation');if(JSON.parse(fetch.provenance_json).truncated)observation.text_truncated=1;}
     const readable = observation.fetch_kind !== 'unavailable' && !!observation.text && !observation.text_truncated;
     const nonBenefit = input.nonBenefitEvidence;
     const complete = input.extractionComplete && readable && (input.candidates.length > 0 || !!(nonBenefit && observation.text.slice(nonBenefit.start,nonBenefit.end) === nonBenefit.quote));
@@ -150,14 +155,18 @@ export class IdentityStore {
     await this.storageCommand(request,payloadHash,{extractionComplete:complete,reasonCodes:complete?[]:['extraction_incomplete']},(guard,args)=>[
       this.db.prepare(`INSERT INTO intake_extractions(request_id,observation_id,extraction_version,input_json,state,extraction_complete,next_attempt_at,last_error) SELECT ?,?,?,?,'deferred',?,?,? WHERE ${guard}`)
         .bind(request,input.observationId,input.extractionVersion,JSON.stringify(input),Number(complete),new Date(Date.now()+20*60_000).toISOString(),'intake_pending',...args),
+      ...input.leadIds.map(leadId=>this.db.prepare(`INSERT INTO identity_extraction_leads(request_id,lead_id) SELECT ?,? WHERE ${guard} ON CONFLICT DO NOTHING`).bind(request,leadId,...args)),
     ]);
     const receipts: IntakeReceipt[]=[];
     for (const candidate of input.candidates) {
       const facts = normalizeTerms(candidate.facts);
       const mechanism = facts.mechanism;
       const spanKey = `${candidate.span.start}:${candidate.span.end}`;
-      const key = await sha256(stableJson([input.observationId,input.extractionVersion,spanKey,mechanism.state==='known'?mechanism.value:candidate.mechanismHint??null]));
-      const candidateId = `candidate_${key}`;
+      const familyKey = await sha256(stableJson([input.observationId,input.extractionVersion,spanKey,mechanism.state==='known'?mechanism.value:candidate.mechanismHint??null]));
+      const factsHash = await hashTerms(facts);
+      const scopeKey=assertionScopeKey(facts,candidate.rawCandidate);
+      let key = await sha256(stableJson(['candidate-assertion-v3',familyKey,factsHash,scopeKey]));
+      let candidateId = `candidate_${key}`;
       const mechanismKey = mechanism.state==='known'?mechanism.value:candidate.mechanismHint??null;
       const ambiguous = input.candidates.some(other => other.inputId !== candidate.inputId
         && other.span.start === candidate.span.start && other.span.end === candidate.span.end
@@ -165,7 +174,10 @@ export class IdentityStore {
         && stableJson(other.rawCandidate) !== stableJson(candidate.rawCandidate));
       const base: IntakeReceipt = {inputId:candidate.inputId,candidateId,canonicalOfferId:null,entityId:null,versionId:null,decisionId:null,taskId:null,outcome:'deferred',retryable:true,reasonCodes:['shadow_pending_resolution']};
       try {
-        const previous = await this.db.prepare('SELECT receipt_json FROM intake_candidates WHERE candidate_key=?').bind(key).first<{receipt_json:string|null}>();
+        let previous = await this.db.prepare('SELECT id,candidate_key,receipt_json,assertion_scope_key,facts_json,raw_candidate_json FROM intake_candidates WHERE claim_family_key=? AND assertion_facts_hash=? AND (assertion_scope_key=? OR assertion_scope_key IS NULL) ORDER BY assertion_scope_key IS NULL,id LIMIT 1').bind(familyKey,factsHash,scopeKey).first<{id:string;candidate_key:string;receipt_json:string|null;assertion_scope_key:string|null;facts_json:string;raw_candidate_json:string}>();
+        if(previous&&previous.assertion_scope_key===null&&assertionScopeKey(facts,JSON.parse(previous.raw_candidate_json).candidate??{})!==scopeKey)previous=null;
+        if(previous){key=previous.candidate_key;candidateId=previous.id;base.candidateId=candidateId;}
+        const conflictingAssertion=await this.db.prepare('SELECT 1 FROM intake_candidates WHERE claim_family_key=? AND id<>? LIMIT 1').bind(familyKey,candidateId).first();
         const quoteMap = new Map(candidate.quotes.map(q=>[q.id,q]));
         let grounded = quoteMap.size === candidate.quotes.length && observation.text.slice(candidate.span.start,candidate.span.end) === candidate.span.quote;
         const checkRefs = (value: unknown): void => {
@@ -181,11 +193,10 @@ export class IdentityStore {
         };
         checkRefs(facts);
         const receipt = previous?.receipt_json ? {...intakeReceiptSchema.parse(JSON.parse(previous.receipt_json)),inputId:candidate.inputId} : {...base,reasonCodes:!grounded?['invalid_evidence_reference']:!readable?['source_incomplete']:base.reasonCodes};
-        if (ambiguous) { receipt.reasonCodes=['ambiguous_subitems']; receipt.outcome='deferred'; receipt.retryable=true; }
+        if (ambiguous||conflictingAssertion) { receipt.reasonCodes=['ambiguous_subitems']; receipt.outcome='deferred'; receipt.retryable=true; }
         const command = `candidate:${await sha256(stableJson([input.requestId,candidate.inputId]))}`;
-        const factsHash = await hashTerms(facts);
         const result = await this.storageCommand(command,payloadHash,receipt,(guard,args)=>[
-          this.db.prepare(`INSERT INTO intake_candidates(id,observation_id,extraction_version,span_key,candidate_key,raw_candidate_json,facts_json,facts_hash,state,last_error,receipt_json) SELECT ?,?,?,?,?,?,?,?,'deferred',?,? WHERE ${guard} ON CONFLICT(candidate_key) DO NOTHING`).bind(candidateId,input.observationId,input.extractionVersion,spanKey,key,JSON.stringify({candidate:candidate.rawCandidate,quotes:candidate.quotes,span:candidate.span}),JSON.stringify(facts),factsHash,receipt.reasonCodes.join(','),JSON.stringify(receipt),...args),
+          this.db.prepare(`INSERT INTO intake_candidates(id,observation_id,extraction_version,span_key,candidate_key,claim_family_key,assertion_facts_hash,assertion_scope_key,claim_identity_key,source_fetch_id,raw_candidate_json,facts_json,facts_hash,state,last_error,receipt_json) SELECT ?,?,?,?,?,?,?,?,?,?,?,?,?,'deferred',?,? WHERE ${guard} ON CONFLICT(candidate_key) DO NOTHING`).bind(candidateId,input.observationId,input.extractionVersion,spanKey,key,familyKey,factsHash,scopeKey,claimIdentityKey(facts),input.sourceFetchId??null,JSON.stringify({candidate:candidate.rawCandidate,quotes:candidate.quotes,span:candidate.span}),JSON.stringify(facts),factsHash,receipt.reasonCodes.join(','),JSON.stringify(receipt),...args),
           ...input.leadIds.map(leadId=>this.db.prepare(`INSERT INTO lead_candidate_links(lead_id,candidate_id) SELECT ?,? WHERE ${guard} ON CONFLICT DO NOTHING`).bind(leadId,candidateId,...args)),
         ],'EXISTS(SELECT 1 FROM intake_candidates WHERE id=?)',[candidateId]);
         receipts.push(result);

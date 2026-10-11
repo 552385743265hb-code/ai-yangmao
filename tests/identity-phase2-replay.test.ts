@@ -1,0 +1,26 @@
+import {afterEach,beforeEach,it,expect} from 'vitest';
+import {identityDb} from './fixtures/identity/db';
+import {IdentityStore} from '../src/worker/identity/store';
+import {IdentityService} from '../src/worker/identity/service';
+import {aggregateIdentityLead} from '../src/worker/identity/leads';
+import {terms,known} from './fixtures/identity/terms';
+import {displayOffer} from './fixtures/identity/offer';
+import type {CanonicalTermsV1} from '../src/shared/identity/types';
+let f:ReturnType<typeof identityDb>;
+beforeEach(()=>{f=identityDb();});afterEach(()=>f.sqlite.close());
+it('A04/A06 frozen synthetic page preserves a refused item a pending item and a failed item through retry',async()=>{
+ const store=new IdentityStore(f.db),service=new IdentityService(f.db);
+ const fragments=['Campaign paid-plan is a paid subscription bundle.','Campaign signup-2026 grants 10 USD.','Campaign daily-2026 grants daily 10 credits.'];
+ const all=fragments.join('\n');const observation=await store.recordObservation({requestId:'mixed',originalUrl:'https://vendor.example/mixed',finalUrl:'https://vendor.example/mixed',text:all,sourceId:'vendor-source',fetchKind:'direct',observedAt:'2026-10-10T00:00:00.000Z'});
+ const candidates=fragments.map((quote,i)=>{const facts=terms();facts.occurrenceAnchor=known(['paid-plan','signup-2026','daily-2026'][i]);facts.mechanism=known((['trial','signup_grant','recurring_quota'] as const)[i]);if(i===0)facts.costs=known({upfrontAmount:'20',currency:'USD',subscriptionRequired:true,autoRenewal:true});if(i===2)facts.benefitPools[0].cadence=known({kind:'calendar',unit:'day',count:1,timezone:'UTC'});const start=all.indexOf(quote);return {inputId:'item-'+i,span:{start,end:start+quote.length,quote},quotes:[{id:'quote-1',start,end:start+quote.length,quote}],facts:facts as CanonicalTermsV1,rawCandidate:displayOffer()};});
+ const batch={requestId:'mixed-candidates',observationId:observation.observationId,extractionVersion:'frozen-v1',extractionComplete:true,leadIds:[1],candidates};let writes=0;
+ f.inject(sql=>{if(sql.startsWith('INSERT INTO intake_candidates')&&++writes===3)throw new Error('synthetic interruption');});const first=await store.recordCandidates(batch);f.inject();
+ const paid=await service.resolveCandidate(first[0].candidateId,'paid');await service.decideTask(paid.taskId!,{requestId:'reject-paid',expectedRevision:0,action:'reject',reasonCode:'paid_bundle',actor:'admin',role:'admin'});
+ expect((await service.resolveCandidate(first[0].candidateId,'paid-repeat')).outcome).toBe('duplicate_rejected');
+ const pending=await service.resolveCandidate(first[1].candidateId,'signup');expect(pending.outcome).toBe('created_pending');
+ expect(first[2]).toMatchObject({outcome:'deferred',reasonCodes:['storage_unavailable']});expect((await aggregateIdentityLead(f.db,1))?.status).toBe('reviewing');
+ const before=f.sqlite.prepare('SELECT count(*) n FROM review_decisions').get();const second=await store.recordCandidates(batch);
+ const daily=await service.resolveCandidate(second[2].candidateId,'daily');expect(daily.outcome).toBe('created_pending');expect(daily.entityId).not.toBe(pending.entityId);
+ expect(f.sqlite.prepare('SELECT count(*) n FROM review_decisions').get()).toEqual(before);expect(f.sqlite.prepare('SELECT count(*) n FROM intake_candidates').get()).toEqual({n:3});
+ expect(f.sqlite.prepare("SELECT count(*) n FROM offers WHERE review_state='approved'").get()).toEqual({n:0});expect((await aggregateIdentityLead(f.db,1))?.deferredIds).toHaveLength(0);
+});

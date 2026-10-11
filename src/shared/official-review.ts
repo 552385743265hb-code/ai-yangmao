@@ -1,6 +1,7 @@
 /** 自动复核只修改待审草稿/更新提案，不替代管理员批准。 */
 export interface OfficialReview {
   status: 'checking' | 'matched' | 'unresolved' | 'failed';
+  identityRevision?: number;
   jobId: string;
   inputVersion: string;
   originUrl: string;

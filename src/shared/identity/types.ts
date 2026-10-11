@@ -1,3 +1,4 @@
+import {sourceFetchSchema} from './fetch-evidence';
 import { z } from 'zod';
 
 export const idSchema = z.string().min(1).max(200);
@@ -34,7 +35,7 @@ export const canonicalTermsSchema = z.strictObject({
   occurrenceAnchor: factSchema(text),
 });
 export type CanonicalTermsV1 = z.infer<typeof canonicalTermsSchema>;
-export const evidenceContextSchema = z.strictObject({ observationId: idSchema, fullText: z.string().max(250000), truncated: z.boolean(), sourceVerified: z.boolean(), quoteById: z.record(idSchema, z.string().min(1).max(20000)), differentEntityIds: z.array(idSchema).max(40).optional(), confirmedEntityId: idSchema.optional() });
+export const evidenceContextSchema = z.strictObject({ observationId: idSchema, fullText: z.string().max(250000), truncated: z.boolean(), sourceVerified: z.boolean(), quoteById: z.record(idSchema, z.string().min(1).max(20000)), differentEntityIds: z.array(idSchema).max(40).optional(), confirmedEntityId: idSchema.optional(), revokedEntityIds:z.array(idSchema).max(40).optional() });
 export type EvidenceContext = z.infer<typeof evidenceContextSchema>;
 export const versionedEntitySchema = z.strictObject({ id: idSchema, platformId: idSchema, revision: revisionSchema, publicationRevision: revisionSchema, approvedVersionId: idSchema.nullable(), terms: canonicalTermsSchema.nullable() });
 export type VersionedEntity = z.infer<typeof versionedEntitySchema>;
@@ -42,7 +43,7 @@ export const resolutionResultSchema = z.strictObject({ relation: z.enum(['SAME',
 export type ResolutionResult = z.infer<typeof resolutionResultSchema>;
 export type IdentityRelation = ResolutionResult['relation'];
 export type TermsRelation = ResolutionResult['termsRelation'];
-export const intakeReceiptSchema = z.strictObject({ inputId: idSchema, candidateId: idSchema, canonicalOfferId: idSchema.nullable(), entityId: idSchema.nullable(), versionId: idSchema.nullable(), decisionId: idSchema.nullable(), taskId: idSchema.nullable(), outcome: z.enum(['duplicate_approved','duplicate_pending','duplicate_rejected','created_pending','proposed_update','needs_identity_review','evidence_reopen','deferred']), retryable: z.boolean(), reasonCodes: z.array(text).max(100) });
+export const intakeReceiptSchema = z.strictObject({ inputId: idSchema, candidateId: idSchema, entityRevision:revisionSchema.nullable().optional(), canonicalOfferId: idSchema.nullable(), entityId: idSchema.nullable(), versionId: idSchema.nullable(), decisionId: idSchema.nullable(), taskId: idSchema.nullable(), outcome: z.enum(['duplicate_approved','duplicate_pending','duplicate_rejected','created_pending','proposed_update','needs_identity_review','evidence_reopen','deferred']), retryable: z.boolean(), reasonCodes: z.array(text).max(100) });
 export type IntakeReceipt = z.infer<typeof intakeReceiptSchema>;
 export interface RetrievalPage { entities: VersionedEntity[]; nextCursor: string | null; complete: boolean; decisions: ReviewDecision[] }
 export interface MutationResult<T> { status: 'applied' | 'replayed' | 'conflict'; value: T | null }
@@ -54,19 +55,21 @@ export const decisionScopeSchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('occurrence'), productId: idSchema, anchor: text }),
   z.strictObject({ kind: z.literal('scoped_mechanism'), productId: idSchema, mechanism: mechanismSchema, confirmedBy: idSchema }),
 ]);
-export const reopenPolicySchema = z.strictObject({ kind: z.enum(['manual','missing_facts','new_occurrence','policy_change','correct_product']), missingFacts: z.array(text).max(100) });
-export const reviewDecisionSchema = z.strictObject({ id: idSchema, entityId: idSchema.nullable(), candidateId: idSchema.nullable(), versionId: idSchema.nullable(), action: z.enum(['approve','reject','same','distinct','reopen','revoke','merge','rollback','edit']), reasonCode: z.enum(['duplicate','paid_bundle','ordinary_discount','not_ai','insufficient_evidence','vague','expired','wrong_platform','other']), scope: decisionScopeSchema, reopenPolicy: reopenPolicySchema, rulesVersion: text, evidenceRefs: z.array(idSchema).max(100), actor: idSchema, baseVersionId: idSchema.nullable(), targetVersionId: idSchema.nullable(), idempotencyKey: idSchema, supersedesId: idSchema.nullable(), createdAt: z.iso.datetime() }).refine(v => v.entityId !== null || v.candidateId !== null, 'decision needs a subject');
+export const reopenPolicySchema = z.strictObject({ kind: z.enum(['manual','missing_facts','new_occurrence','policy_change','correct_product']), missingFacts: z.array(text).max(100), reviewedBasisHashes:z.array(z.string().regex(/^[a-f0-9]{64}$/)).max(100).optional() });
+export const reviewDecisionSchema = z.strictObject({ id: idSchema, entityId: idSchema.nullable(), candidateId: idSchema.nullable(), versionId: idSchema.nullable(), action: z.enum(['approve','reject','same','distinct','reopen','revoke','merge','rollback','edit']), reasonText:z.string().max(4000).optional(), basis:z.json().optional(), reasonCode: z.enum(['duplicate','paid_bundle','ordinary_discount','not_ai','insufficient_evidence','vague','expired','wrong_platform','other']), scope: decisionScopeSchema, reopenPolicy: reopenPolicySchema, rulesVersion: text, evidenceRefs: z.array(idSchema).max(100), actor: idSchema, baseVersionId: idSchema.nullable(), targetVersionId: idSchema.nullable(), idempotencyKey: z.string().min(1).max(600), supersedesId: idSchema.nullable(), createdAt: z.iso.datetime() }).refine(v => v.entityId !== null || v.candidateId !== null, 'decision needs a subject');
 export type ReviewDecision = z.infer<typeof reviewDecisionSchema>;
 export const reopenEvaluationSchema = z.strictObject({ allowed: z.boolean(), reasonCodes: z.array(text), basisHash: z.string().regex(/^[a-f0-9]{64}$/).nullable() });
 export type ReopenEvaluation = z.infer<typeof reopenEvaluationSchema>;
 
 const webUrlSchema = z.url().max(4000).refine(v => { const u = new URL(v); return ['http:','https:'].includes(u.protocol) && !u.username && !u.password; }, 'HTTP URL without credentials required');
-export const observationInputSchema = z.strictObject({ requestId: idSchema, originalUrl: webUrlSchema, finalUrl: webUrlSchema, text: z.string().max(1000000), fetchKind: z.enum(['direct','indirect','unavailable']), sourceId: idSchema.optional(), observedAt: z.iso.datetime(), truncated: z.boolean().default(false) });
+export const observationInputSchema = z.strictObject({ requestId: idSchema, originalUrl: webUrlSchema, finalUrl: webUrlSchema, text: z.string().max(1000000), fetchKind: z.enum(['direct','indirect','unavailable']), sourceId: idSchema.optional(), issuerProductId:idSchema.optional(), observedAt: z.iso.datetime(), truncated: z.boolean().default(false),fetchEvidence:sourceFetchSchema.optional() });
 export type ObservationInput = z.input<typeof observationInputSchema>;
-export const observationReceiptSchema = z.strictObject({ observationId: idSchema, documentId: idSchema, contentHash: z.string().regex(/^[a-f0-9]{64}$/), truncated: z.boolean() });
+export const observationReceiptSchema = z.strictObject({ observationId: idSchema, documentId: idSchema, contentHash: z.string().regex(/^[a-f0-9]{64}$/), truncated: z.boolean(),fetchId:idSchema.optional() });
 export type ObservationReceipt = z.infer<typeof observationReceiptSchema>;
 export const quoteSchema = z.strictObject({ start: z.number().int().nonnegative(), end: z.number().int().positive(), quote: z.string().min(1).max(20000) }).refine(q => q.end > q.start, 'nonempty span required');
 export const candidateInputSchema = z.strictObject({ inputId: idSchema, mechanismHint: mechanismSchema.optional(), span: quoteSchema, quotes: z.array(quoteSchema.safeExtend({id:idSchema})).min(1).max(100), rawCandidate: z.json().refine(v => JSON.stringify(v).length <= 50000, 'candidate too large'), facts: canonicalTermsSchema });
-export const candidateBatchInputSchema = z.strictObject({ requestId: idSchema, observationId: idSchema, extractionVersion: idSchema, extractionComplete: z.boolean(), nonBenefitEvidence: quoteSchema.optional(), leadIds: z.array(z.number().int().positive()).max(10).default([]), candidates: z.array(candidateInputSchema).max(10) }).refine(v => new Set(v.candidates.map(c => c.inputId)).size === v.candidates.length, 'inputId must be unique within a batch').refine(v => JSON.stringify(v).length <= 1000000, 'candidate batch too large');
+export const candidateBatchInputSchema = z.strictObject({ requestId: idSchema, observationId: idSchema, sourceFetchId:idSchema.optional(), extractionVersion: idSchema, extractionComplete: z.boolean(), nonBenefitEvidence: quoteSchema.optional(), leadIds: z.array(z.number().int().positive()).max(10).default([]), candidates: z.array(candidateInputSchema).max(10) }).refine(v => new Set(v.candidates.map(c => c.inputId)).size === v.candidates.length, 'inputId must be unique within a batch').refine(v => JSON.stringify(v).length <= 1000000, 'candidate batch too large');
 export type CandidateBatchInput = z.input<typeof candidateBatchInputSchema>;
 export type CandidateInput = z.infer<typeof candidateInputSchema>;
+
+export type {MergePlan,MergePreviewInput,MergeReceipt,RollbackReceipt} from './history-types';

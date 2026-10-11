@@ -46,7 +46,7 @@ async function loadData({ fresh = false } = {}) {
   const stamp = Date.now();
   const get = async p => { const url = fresh ? `${p}${p.includes('?') ? '&' : '?'}fresh=${stamp}` : p; const r = await fetch(url, { ...(fresh ? { cache: 'no-store' } : {}), headers: { Accept: 'application/json' } }); if (!r.ok) throw new Error(`${p} ${r.status}`); return r.json(); };
   // A new response contract must not reuse a browser/CDN entry without valuation metadata.
-  const [pl, of, meta, cov] = await Promise.all([get('/api/platforms'), get('/api/offers?view=all&valuation=v1&schema=apply-window'), get('/api/meta'), get('/api/coverage').catch(() => null)]);
+  const [pl, of, meta, cov] = await Promise.all([get('/api/platforms'), get('/api/offers?view=all&valuation=v1&schema=identity-canonical-v1'), get('/api/meta'), get('/api/coverage').catch(() => null)]);
   const now = Date.now(), DAYMS = 864e5;
   const t0 = new Date(); t0.setHours(0, 0, 0, 0);
   const rel = d => (d ? Math.round((new Date(d + 'T00:00:00') - t0) / DAYMS) : null);

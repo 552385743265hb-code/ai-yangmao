@@ -1,3 +1,13 @@
+import {visibilityState,visibilityView} from './identity/visibility';
+import {canonicalLeadProjection} from './identity/lead-projection';
+import {notificationInheritance} from './identity/notification-inheritance';
+import {noticeIdentities,pendingIdentityNotices,identityReviewAlerts,identityGuard,deliveryIdentityGuard,reviewAlertOverlap} from './identity/notifications';
+import {canonicalOffers,resolveCanonicalOffer,entityOfferVersion} from './identity/canonical';
+import { identityAdminRoutes } from './identity/routes';
+import { IdentityService } from './identity/service';
+import { IdentityError } from './identity/store';
+import { sha256,stableJson } from '../shared/identity/normalize';
+import { publicationError, validateStoredOffer } from './publication';
 import {leadTask,leadReviewVersion,leadReviewDue,type LeadResolution} from '../shared/lead-review';
 import { leadPriority } from '../shared/leads';
 import { isReviewField } from '../shared/spec';
@@ -33,7 +43,7 @@ const endText = (o: OfferRow) => (o.endKind === 'date' && o.claimEnd ? `${md(o.c
 
 function view(o: OfferRow, platformName: string, now = new Date()) {
   return {
-    reviewVersion: o.updatedAt, code: shortCode(o.id), id: o.id, platformId: o.platformId, platform: platformName, title: o.title, type: TYPE_L[o.type] ?? o.type,
+    reviewVersion: o.updatedAt, visibilityVersion:o.updatedAt, code: shortCode(o.id), id: o.id, platformId: o.platformId, platform: platformName, title: o.title, type: TYPE_L[o.type] ?? o.type,
     value: o.valueText, usd: o.usdEstimate, end: endText(o), status: liveStatus(o, now), reviewState: o.reviewState,
     requirements: o.requirements, audience: o.audience, claimMethod: o.claimMethod, creditValidity: o.creditValidity,
     sourceTz: o.sourceTz, claimStart: o.claimStart, claimEnd: o.claimEnd, endKind: o.endKind,
@@ -49,6 +59,7 @@ export const admin = new Hono<{ Bindings: Env; Variables: { role: 'admin' | 'rev
 
 /** 审核员能用的接口：看待审、通过、拒绝、修改、核验记录、线索、补录、补信源、送交平台准入。 */
 const REVIEWER_ALLOWED: [string, RegExp][] = [
+  ['GET', /^\/identity\/tasks$/], ['POST', /^\/identity\/tasks\/[^/]+\/resolve$/],
   ['GET', /^\/(whoami|queue|leads)$/], ['GET', /^\/offers\/[^/]+$/],
   ['POST', /^\/offers\/[^/]+\/(approve|reject|edit|memo|note|retested|suggest|official-retry)$/],
   ['POST', /^\/leads\/\d+\/(dismiss|reviewing|retry|resolve)$/], ['POST', /^\/(manual|sources|platforms)$/],
@@ -73,6 +84,8 @@ admin.use('*', async (c, next) => {
   c.set('role', 'reviewer'); c.set('who', who);
   await next();
 });
+
+admin.route('/identity',identityAdminRoutes);
 
 admin.get('/whoami', c => c.json({ role: c.get('role'), who: c.get('who') }));
 
@@ -100,75 +113,48 @@ async function platformNames(env: Env) {
 async function findOffer(env: Env, ref: string): Promise<OfferRow | null> {
   const d = db(env);
   const [byId] = await d.select().from(s.offers).where(eq(s.offers.id, ref));
-  if (byId) return byId;
+  if (byId) {const route=await resolveCanonicalOffer(env.DB,byId.id);return route.offerId===byId.id?byId:(await d.select().from(s.offers).where(eq(s.offers.id,route.offerId)))[0]??null;}
   const all = await d.select().from(s.offers);
   const matches = all.filter(o => shortCode(o.id) === ref.toLowerCase());
   if (matches.length > 1) throw new AmbiguousShortCode(matches.map(o => o.id));
-  return matches[0] ?? null;
+  if(!matches[0])return null;const route=await resolveCanonicalOffer(env.DB,matches[0].id);return (await d.select().from(s.offers).where(eq(s.offers.id,route.offerId)))[0]??null;
 }
 
 class AmbiguousShortCode extends Error {
   constructor(readonly ids: string[]) { super('短码不唯一，请改用完整活动 ID'); }
 }
 admin.onError((error, c) => {
+  if (error instanceof z.ZodError) return c.json({error:'身份请求格式不正确'},400);
+  if (error instanceof IdentityError) return c.json({error:error.message},error.status);
   if (error instanceof AmbiguousShortCode) return c.json({ error: error.message, ids: error.ids }, 409);
   throw error;
 });
 
-const validateStoredOffer = (offer: OfferRow) => offerIn.safeParse({
-  ...offer, firstChannel: offer.firstChannel ?? undefined, sourceId: offer.sourceId ?? undefined,
-});
-
-/** 管理员通过时的门槛：平台已准入、证据是该平台的官方出处。不能靠 reviewState 绕过准入。 */
-async function publicationError(env: Env, offer: OfferRow): Promise<string | null> {
-  const valid = validateStoredOffer(offer);
-  if (!valid.success) return '活动字段或日期不符合共享校验规则';
-  if (offer.verifyResult === 'evidence_missing') return '当前官方页面未能再次确认原条款，先核验再通过';
-  const [platform] = await db(env).select().from(s.platforms).where(eq(s.platforms.id, offer.platformId));
-  if (!platform || platform.status !== 'approved') return '平台尚未准入';
-  if (offer.evidence.tier === 'media') return '媒体或社区转述不能作为上架证据，请先补齐官方出处';
-  const published=await db(env).select().from(s.offers).where(and(eq(s.offers.platformId,offer.platformId),eq(s.offers.reviewState,'approved')));
-  const duplicate=published.find(other=>other.id!==offer.id&&sameBenefit(offer,other));
-  if(duplicate)return `与已上架的 ${duplicate.id} 是同一活动，请先核对合并，避免重复上架`;
-  const block = blocking(checkOffer(offer));
-  if (block.length) return block.map(i => `${i.label}：${i.problem}`).join('；');
-  // 不检查原文摘录：摘录门槛是防模型编造的（自动上架仍要求三项齐全，见 missingEvidence）。
-  // 管理员人工核对过官方页面，内容可能来自图片、视频等模型读不到的地方，以管理员为准（2026-09-30 管理员决定）。
-  let url: URL;
-  try { url = new URL(offer.evidence.url); } catch { return '官方证据链接无效'; }
-  if (!['https:', 'http:'].includes(url.protocol)) return '官方证据必须是网页链接';
-  // 管理员亲自领到过：链接可以是官网下载页或社区帖子，不要求属于平台官方出处
-  if (offer.evidence.tier === 'tested') return null;
-  // 公众号图片等仍由管理员确认；自动流程不能以公众号名推断任意文章作者。
-  if (offer.evidence.tier === 'official' && url.hostname === 'mp.weixin.qq.com' && platform.wechat) return null;
-  const official = await db(env).select({ url: s.sources.url, tier: s.sources.tier }).from(s.sources).where(eq(s.sources.platformId, platform.id));
-  const tier=officialTier(url.href,platform,official);
-  if (tier && (offer.evidence.tier!=='staff'||tier==='staff')) return null;
-  return '证据链接不属于该平台的官网或已登记官方信源';
-}
-
 admin.get('/queue', async c => {
   const d = db(c.env), names = await platformNames(c.env), now = new Date();
   // 先抓到的在前，新抓取的排在最后（管理员按顺序审，新来的不打乱已预审的条目，2026-10-03）
-  const pending = await d.select().from(s.offers).where(eq(s.offers.reviewState, 'pending')).orderBy(s.offers.discoveredAt, s.offers.id);
+  const pending = await d.select().from(s.offers).where(and(eq(s.offers.reviewState, 'pending'),canonicalOffers)).orderBy(s.offers.discoveredAt, s.offers.id);
   const proposals = await d.select().from(s.offerProposals).orderBy(desc(s.offerProposals.updatedAt));
   const originals = proposals.length ? await d.select().from(s.offers).where(inArray(s.offers.id, d.select({ id: s.offerProposals.offerId }).from(s.offerProposals))) : [];
   const codeCounts = new Map<string, number>();
   for (const { id } of await d.select({ id: s.offers.id }).from(s.offers)) codeCounts.set(shortCode(id), (codeCounts.get(shortCode(id)) ?? 0) + 1);
-  const queueView = (o: OfferRow) => ({ ...view(o, names[o.platformId] ?? o.platformId, now), code: codeCounts.get(shortCode(o.id))! > 1 ? o.id : shortCode(o.id) });
+  const entityRows=(await c.env.DB.prepare("SELECT e.id,e.canonical_offer_id,e.business_revision,e.state,EXISTS(SELECT 1 FROM review_tasks t WHERE t.entity_id=e.id AND t.state IN ('open','checking','manual')) active_task FROM benefit_entities e WHERE e.canonical_offer_id IS NOT NULL").all<{id:string;canonical_offer_id:string;business_revision:number;state:string;active_task:number}>()).results;
+  const managed=new Set(entityRows.filter(e=>e.state==='merged'||e.active_task).map(e=>e.canonical_offer_id));
+  const entityByOffer=new Map(entityRows.map(e=>[e.canonical_offer_id,e]));
+  const queueView = (o: OfferRow) => ({ ...view(o, names[o.platformId] ?? o.platformId, now),...(entityByOffer.has(o.id)?{reviewVersion:entityOfferVersion(entityByOffer.get(o.id)!,o.updatedAt),visibilityVersion:entityOfferVersion(entityByOffer.get(o.id)!,o.updatedAt)}:{}), code: codeCounts.get(shortCode(o.id))! > 1 ? o.id : shortCode(o.id) });
   const [{ n: newLeads }] = await d.select({ n: sql<number>`count(*)` }).from(s.leads).where(eq(s.leads.status, 'new'));
   const pendingPlatforms = await d.select().from(s.platforms).where(eq(s.platforms.status, 'pending'));
   const suggest = (await d.select().from(s.sources).where(and(gte(s.sources.cleanStreak, 5), eq(s.sources.autoPublish, false))))
     .filter(source => source.enabled && ['site', 'docs', 'official'].includes(source.tier));
-  const approvedRows = await d.select().from(s.offers).where(eq(s.offers.reviewState, 'approved'));
+  const approvedRows = await d.select().from(s.offers).where(and(eq(s.offers.reviewState, 'approved'),canonicalOffers));
   // 抓取/证据匹配失败留在健康页自动重试，不转成人工审批任务。
   const needsVerification: OfferRow[] = [];
   // 已上架但字段不全：和待审用同一份检查，补齐后各栏目才完整
   const incomplete = approvedRows.filter(o => checkOffer(o, now).some(i => i.level !== 'info'));
   return c.json({
     pending: [
-      ...pending.map(queueView),
-      ...proposals.flatMap(p => {
+      ...pending.filter(o=>!managed.has(o.id)).map(queueView),
+      ...proposals.filter(p=>!managed.has(p.offerId)).flatMap(p => {
         const original = originals.find(o => o.id === p.offerId);
         if (!original) return [];
         const updateDiff = proposalComparison(original, p.candidate);
@@ -176,7 +162,7 @@ admin.get('/queue', async c => {
         return [{ ...queueView(proposalOffer(original, p.candidate)), link:`https://ai-yangmao.com/#admin-offer-${encodeURIComponent(p.offerId)}`, reviewVersion: p.updatedAt, pendingUpdate: true, changedFields: updateDiff.map(x => x.field), updateDiff }];
       }),
     ],
-    leadTasks: (await d.select().from(s.leads).where(eq(s.leads.status,'reviewing'))).sort((a,b)=>Number(b.resolution?.status==='manual')-Number(a.resolution?.status==='manual')||leadPriority(a)-leadPriority(b)||a.id-b.id).map(leadTask),
+    leadTasks: (await canonicalLeadProjection(c.env.DB,await d.select().from(s.leads).where(eq(s.leads.status,'reviewing')))).sort((a,b)=>Number(b.resolution?.status==='manual')-Number(a.resolution?.status==='manual')||leadPriority(a)-leadPriority(b)||a.id-b.id).map(leadTask),
     priorityLeads: (await d.select().from(s.leads).where(inArray(s.leads.status,['new','reviewing'])))
       .filter(l=>leadPriority(l)<=1).sort((a,b)=>leadPriority(a)-leadPriority(b)||b.id-a.id).slice(0,10)
       .map(l=>({ id:l.id,title:l.title,url:l.url,status:l.status,note:l.status==='reviewing'?l.raw?.split('[研判]').at(-1)?.slice(0,500):null })),
@@ -189,9 +175,15 @@ admin.get('/queue', async c => {
 admin.post('/offers/:ref/withdraw', async c => {
   const o = await findOffer(c.env, c.req.param('ref'));
   if (!o) return c.json({ error: '找不到这条羊毛' }, 404);
-  const body = z.object({ reason: z.string().min(4).max(500), evidenceUrl: z.url().refine(url => /^https?:\/\//.test(url)), basis: z.enum(['official', 'tested']).default('official') })
+  const body = z.object({ reason: z.string().min(4).max(500), evidenceUrl: z.url().refine(url => /^https?:\/\//.test(url)), basis: z.enum(['official', 'tested']).default('official'),expectedReviewVersion:z.string().optional() })
     .safeParse(await c.req.json().catch(() => null));
   if (!body.success) return c.json({ error: '需要证据入口链接和具体理由', issues: body.error.issues }, 400);
+  if(await c.env.DB.prepare('SELECT id FROM benefit_entities WHERE canonical_offer_id=?').bind(o.id).first()){
+    const version=c.req.header('If-Match')??body.data.expectedReviewVersion;if(!version)return c.json({error:'请携带当前活动版本 If-Match'},409);
+    const reason=(body.data.basis==='tested'?'管理员实测停止领取：':'')+body.data.reason;
+    const requestId=await sha256(stableJson({offerId:o.id,action:'withdraw',version,body:body.data,actor:c.get('who')}));
+    return c.json({ok:true,status:'ended',...await new IdentityService(c.env.DB).setVisibility(o.id,{requestId,expectedOfferVersion:version,action:'withdraw',reason,evidenceUrl:body.data.evidenceUrl,basis:body.data.basis,actor:c.get('who')})});
+  }
   const nowIso = new Date().toISOString();
   const previousEvidence = o.evidence;
   // 实测确认不能冒充官方撤回公告；原权益的官方历史证据及抓取日期保留。
@@ -212,9 +204,13 @@ admin.get('/offers/:ref', async c => {
   if (!o) return c.json({ error: '找不到这条羊毛' }, 404);
   const names = await platformNames(c.env);
   const [proposal] = await db(c.env).select().from(s.offerProposals).where(eq(s.offerProposals.offerId, o.id));
-  const revisions = await db(c.env).select().from(s.offerRevisions).where(eq(s.offerRevisions.offerId, o.id)).orderBy(desc(s.offerRevisions.at));
+  const revisions = await db(c.env).select().from(s.offerRevisions).where(sql`${s.offerRevisions.offerId}=${o.id} OR ${s.offerRevisions.offerId} IN (SELECT member.canonical_offer_id FROM benefit_entities member JOIN benefit_entities root ON root.id=member.merged_into WHERE root.canonical_offer_id=${o.id} AND member.state='merged')`).orderBy(desc(s.offerRevisions.at));
   const target = proposal ? proposalOffer(o, proposal.candidate) : o;
-  return c.json({ offer: { ...view(target, names[target.platformId] ?? target.platformId), reviewVersion:proposal?.updatedAt ?? o.updatedAt, ...(proposal ? {link:`https://ai-yangmao.com/#admin-offer-${encodeURIComponent(o.id)}`, pendingUpdate: true, updateDiff: proposalComparison(o, proposal.candidate)} : {}) }, pendingUpdate: !!proposal, revisions });
+  const tasks=await c.env.DB.prepare("SELECT t.id,t.revision FROM review_tasks t JOIN benefit_entities e ON e.id=t.entity_id WHERE e.canonical_offer_id=? AND t.state IN ('open','checking','manual') AND t.kind IN ('initial','terms_change','evidence_reopen') ORDER BY t.id LIMIT 2").bind(o.id).all<{id:string;revision:number}>();
+  const task=tasks.results.length===1?tasks.results[0]:null;
+  const entity=await c.env.DB.prepare('SELECT id,business_revision FROM benefit_entities WHERE canonical_offer_id=?').bind(o.id).first<{id:string;business_revision:number}>();
+  const hold=entity?visibilityView(await visibilityState(c.env.DB,entity.id)):null;
+  return c.json({ offer: { visibilityHold:hold,...view(target, names[target.platformId] ?? target.platformId), visibilityVersion:entity?entityOfferVersion(entity,o.updatedAt):o.updatedAt,reviewVersion:task?`identity:${task.id}:${task.revision}`:entity?entityOfferVersion(entity,o.updatedAt):proposal?.updatedAt ?? o.updatedAt, ...(proposal ? {link:`https://ai-yangmao.com/#admin-offer-${encodeURIComponent(o.id)}`, pendingUpdate: true, updateDiff: proposalComparison(o, proposal.candidate)} : {}) }, pendingUpdate: !!proposal, revisions });
 });
 
 /** 审核：通过 / 拒绝。原样通过会给信源的"连续原样通过"加一；拒绝清零。 */
@@ -223,6 +219,18 @@ admin.post('/offers/:ref/:action{approve|reject}', async c => {
   if (!o) return c.json({ error: '找不到这条羊毛' }, 404);
   const action = c.req.param('action') as 'approve' | 'reject';
   const body = await c.req.json().catch(() => ({})) as { reason?: string; reasonCode?: string; reviewer?: string; expectedReviewVersion?: string };
+  const entity=await c.env.DB.prepare('SELECT id FROM benefit_entities WHERE canonical_offer_id=?').bind(o.id).first<{id:string}>();
+  if(entity){
+    const transport=body as typeof body & {identityTaskId?:string;expectedIdentityRevision?:number;requestId?:string};
+    const encoded=transport.expectedReviewVersion?.match(/^identity:([^:]+):(\d+)$/);
+    const taskId=transport.identityTaskId??encoded?.[1],revision=transport.expectedIdentityRevision??(encoded?Number(encoded[2]):undefined);
+    if(!taskId||revision===undefined)return c.json({error:'请刷新身份审核任务，提交其当前版本'},409);
+    const belongs=await c.env.DB.prepare('SELECT id FROM review_tasks WHERE id=? AND entity_id=?').bind(taskId,entity.id).first();
+    if(!belongs)return c.json({error:'审核任务不属于这条活动'},409);
+    const requestId=transport.requestId??await sha256(stableJson({taskId,revision,action,actor:c.get('who'),reason:body.reason??null,reasonCode:body.reasonCode??'other'}));
+    const receipt=await new IdentityService(c.env.DB).decideTask(taskId,{requestId,expectedRevision:revision,action,actor:c.get('who'),role:c.get('role'),reason:body.reason,reasonCode:body.reasonCode as never});
+    return c.json({ok:true,code:shortCode(o.id),reviewState:action==='approve'?'approved':'rejected',identityDecision:receipt});
+  }
   const d = db(c.env);
   const [proposal] = await d.select().from(s.offerProposals).where(eq(s.offerProposals.offerId, o.id));
   if (body.expectedReviewVersion && body.expectedReviewVersion !== (proposal?.updatedAt ?? o.updatedAt)) return c.json({ error: '内容已更新，请刷新这条活动后再审核' }, 409);
@@ -303,6 +311,16 @@ admin.post('/offers/:ref/edit', async c => {
   const o = await findOffer(c.env, c.req.param('ref'));
   if (!o) return c.json({ error: '找不到这条羊毛' }, 404);
   const body = await c.req.json().catch(() => null) as { fields?: Record<string, unknown>; approve?: boolean; reason?: string; reasonCode?: string; expectedReviewVersion?: string } | null;
+  if(c.get('role')!=='admin'&&(body?.fields?.evidence as {tier?:string}|undefined)?.tier==='tested')return c.json({error:'管理员亲测需要管理员确认'},403);
+  const identity=await c.env.DB.prepare('SELECT id FROM benefit_entities WHERE canonical_offer_id=?').bind(o.id).first();
+  if(identity){
+    if(body?.approve)return c.json({error:'请先保存身份草稿，再按其当前版本批准'},409);
+    const transport=body as typeof body & {requestId?:string;identityTaskId?:string;expectedIdentityRevision?:number;identityFacts?:unknown};
+    const encoded=transport?.expectedReviewVersion?.match(/^identity:([^:]+):(\d+)$/);
+    const requestId=transport?.requestId??await sha256(stableJson({offerId:o.id,...body,actor:c.get('who')}));
+    const result=await new IdentityService(c.env.DB).editManagedOffer(o.id,{requestId,taskId:transport?.identityTaskId??encoded?.[1],expectedTaskRevision:transport?.expectedIdentityRevision??(encoded?Number(encoded[2]):undefined),expectedOfferVersion:body?.expectedReviewVersion,fields:body?.fields??{},actor:c.get('who'),...(transport?.identityFacts?{identityFacts:transport.identityFacts as never}:{})});
+    return c.json({ok:true,approved:false,code:shortCode(o.id),title:o.title,changed:Object.keys(body?.fields??{}),...result,reviewVersion:result.taskId?`identity:${result.taskId}:${result.revision}`:undefined});
+  }
   const patch = z.record(z.string(), z.unknown()).safeParse(body?.fields);
   if (!patch.success || Object.keys(patch.data).some(key => !EDITABLE_FIELDS.has(key))) return c.json({ error: '包含不可编辑的字段' }, 400);
   const d = db(c.env), nowIso = new Date().toISOString();
@@ -370,12 +388,22 @@ admin.post('/offers/:ref/memo', async c => {
 });
 
 /** 下架：把已上架但不该收的条目撤下（按新标准不收、错收等），不同于“官方撤回”（withdraw，算活动结束、进墓场）。只给管理员。 */
+admin.post('/offers/:ref/reopen-visibility',async c=>{
+ const o=await findOffer(c.env,c.req.param('ref'));if(!o)return c.json({error:'找不到这条羊毛'},404);
+ const body=z.object({expectedReviewVersion:z.string().min(1),reason:z.string().min(8).max(2000),requestId:z.string().min(1).max(180).optional()}).safeParse(await c.req.json().catch(()=>null));if(!body.success)return c.json({error:'需要当前上下架版本和明确重开依据'},400);
+ const requestId=body.data.requestId??await sha256(stableJson({offerId:o.id,...body.data,actor:c.get('who')}));return c.json({ok:true,...await new IdentityService(c.env.DB).reopenVisibility(o.id,{requestId,expectedOfferVersion:body.data.expectedReviewVersion,reason:body.data.reason,actor:c.get('who')})});
+});
 admin.post('/offers/:ref/unpublish', async c => {
   const o = await findOffer(c.env, c.req.param('ref'));
   if (!o) return c.json({ error: '找不到这条羊毛' }, 404);
-  if (o.reviewState !== 'approved') return c.json({ error: '这条目前没有上架' }, 409);
-  const body = z.object({ reasonCode: z.string().max(40).default('other'), reason: z.string().min(2).max(500) }).safeParse(await c.req.json().catch(() => null));
+  const body = z.object({ reasonCode: z.string().max(40).default('other'), reason: z.string().min(2).max(500),expectedReviewVersion:z.string().optional() }).safeParse(await c.req.json().catch(() => null));
   if (!body.success) return c.json({ error: '请写明下架理由' }, 400);
+  if(await c.env.DB.prepare('SELECT id FROM benefit_entities WHERE canonical_offer_id=?').bind(o.id).first()){
+    const version=c.req.header('If-Match')??body.data.expectedReviewVersion;if(!version)return c.json({error:'请携带当前活动版本 If-Match'},409);
+    const requestId=await sha256(stableJson({offerId:o.id,action:'unpublish',version,body:body.data,actor:c.get('who')}));
+    return c.json({ok:true,title:o.title,code:shortCode(o.id),...await new IdentityService(c.env.DB).setVisibility(o.id,{requestId,expectedOfferVersion:version,action:'unpublish',reason:body.data.reason,reasonCode:body.data.reasonCode,actor:c.get('who')})});
+  }
+  if (o.reviewState !== 'approved') return c.json({ error: '这条目前没有上架' }, 409);
   const d = db(c.env);
   await d.delete(s.offerProposals).where(eq(s.offerProposals.offerId, o.id));
   await d.update(s.offers).set({ reviewState: 'rejected', updatedAt: new Date().toISOString() }).where(eq(s.offers.id, o.id));
@@ -427,7 +455,7 @@ admin.get('/leads', async c => {
   const state = status==='all' ? inArray(s.leads.status,['new','reviewing']) : eq(s.leads.status,status);
   const [{total}] = await d.select({total:sql<number>`count(*)`}).from(s.leads).where(state);
   const rows=await d.select().from(s.leads).where(and(state,before ? lt(s.leads.id,before):undefined)).orderBy(desc(s.leads.id)).limit(limit+1);
-  const page=rows.slice(0,limit);
+  const page=await canonicalLeadProjection(c.env.DB,rows.slice(0,limit));
   return c.json({total,nextCursor:rows.length>limit ? page.at(-1)!.id:null,leads:page.map(l=>({...leadTask(l),origin:l.origin,
     note:l.resolution?.reason??(l.status==='reviewing'?l.raw?.split('[研判]').at(-1)?.slice(0,500):null),createdAt:l.createdAt}))});
 });
@@ -437,9 +465,12 @@ admin.post('/leads/:id/resolve',async c=>{
   if(!body.success)return c.json({error:'请填写处理依据并使用当前线索版本'},400);
   const d=db(c.env),[l]=await d.select().from(s.leads).where(eq(s.leads.id,Number(c.req.param('id'))));
   if(!l||!['new','reviewing'].includes(l.status)||leadReviewVersion(l)!==body.data.expectedVersion)return c.json({error:'线索状态已更新，请刷新'},409);
+  if(l.resolution?.identityTaskIds?.length)return c.json({error:'请逐项处理身份审核任务，不能用整条线索覆盖候选决定'},409);
   const b=body.data;
+  const originOfferId=b.offerId;
+  if(b.offerId)b.offerId=(await resolveCanonicalOffer(c.env.DB,b.offerId)).offerId;
   if(b.outcome==='linked'&&(!b.offerId||!(await d.select().from(s.offers).where(eq(s.offers.id,b.offerId))).length))return c.json({error:'请填写已存在的完整活动ID'},400);
-  const resolution:LeadResolution={status:b.outcome==='retry'?'retry':b.outcome,jobId:crypto.randomUUID(),attempts:0,inconclusive:0,checkedAt:new Date().toISOString(),nextAttemptAt:b.outcome==='retry'?new Date().toISOString():null,reason:b.reason,queries:l.resolution?.queries??[],candidates:l.resolution?.candidates??[],evidenceUrl:l.resolution?.evidenceUrl,quote:l.resolution?.quote,offerIds:b.offerId?[b.offerId]:(l.resolution?.offerIds??[])};
+  const resolution:LeadResolution={status:b.outcome==='retry'?'retry':b.outcome,jobId:crypto.randomUUID(),attempts:0,inconclusive:0,checkedAt:new Date().toISOString(),nextAttemptAt:b.outcome==='retry'?new Date().toISOString():null,reason:b.reason,queries:l.resolution?.queries??[],candidates:l.resolution?.candidates??[],evidenceUrl:l.resolution?.evidenceUrl,quote:l.resolution?.quote,offerIds:b.offerId?[b.offerId]:(l.resolution?.offerIds??[]),originOfferIds:originOfferId?[originOfferId]:(l.resolution?.originOfferIds??l.resolution?.offerIds??[])};
   const changed=await d.update(s.leads).set({status:b.outcome==='linked'?'linked':b.outcome==='closed'?'rejected':'reviewing',resolution,offerId:b.offerId??l.offerId})
     .where(and(eq(s.leads.id,l.id),eq(s.leads.status,l.status),sql`COALESCE(${s.leads.resolution},'')=COALESCE(${l.resolution?JSON.stringify(l.resolution):null},'')`)).returning({id:s.leads.id});
   return changed.length?c.json({ok:true}):c.json({error:'线索已更新，请刷新'},409);
@@ -449,6 +480,7 @@ admin.post('/leads/:id/:action{dismiss|reviewing|retry}', async c => {
   if(!l)return c.json({error:'没有这条线索'},404);
   const body=await c.req.json().catch(()=>({}));
   if(!['new','reviewing'].includes(l.status)||body.expectedVersion!==leadReviewVersion(l))return c.json({error:'线索版本已变化或缺少版本，请刷新后处理'},409);
+  if(l.resolution?.identityTaskIds?.length)return c.json({error:'请使用身份任务或拒绝决定的显式重开接口'},409);
   const resolution:LeadResolution={status:action==='dismiss'?'closed':'retry',jobId:crypto.randomUUID(),attempts:0,inconclusive:0,checkedAt:new Date().toISOString(),nextAttemptAt:action==='dismiss'?null:new Date().toISOString(),reason:String(body.reason??(action==='dismiss'?'管理员忽略线索':'管理员要求重新官方核验')).slice(0,1000),queries:[],candidates:[]};
   const changed=await d.update(s.leads).set({status:action==='dismiss'?'rejected':'reviewing',resolution}).where(and(eq(s.leads.id,l.id),eq(s.leads.status,l.status),sql`COALESCE(${s.leads.resolution},'')=COALESCE(${l.resolution?JSON.stringify(l.resolution):null},'')`)).returning({id:s.leads.id});
   return changed.length?c.json({ok:true}):c.json({error:'线索已更新，请刷新'},409);
@@ -469,7 +501,7 @@ admin.post('/manual', async c => {
   if (!body.success) return c.json({ error: '链接不正确', issues: body.error.issues }, 400);
   const raw = JSON.stringify({ note: body.data.note ?? null, platformId: body.data.platformId ?? null });
   const res = await db(c.env).insert(s.leads).values({ origin: 'telegram', url: body.data.url, title: body.data.note ?? '补录链接', raw })
-    .onConflictDoUpdate({ target: s.leads.url, set: { status: 'new', resolution:null, origin: 'telegram', raw } }).returning({ id: s.leads.id });
+    .onConflictDoUpdate({ target: s.leads.url, set: { raw: sql`COALESCE(${s.leads.raw}, '') || '\n[补充链接备注] ' || ${raw}` } }).returning({ id: s.leads.id });
   return c.json({ ok: true, leadId: res[0]?.id });
 });
 
@@ -495,16 +527,21 @@ type NoticeKind = 'digest' | 'urgent';
 const TOP = { standing: 5, rising: 3, lastcall: 3 }; // 飞书日报三个榜各推几条
 type NoticeChannel = 'telegram' | 'feishu';
 type NoticeStage = 'new' | 'changed' | 'ending' | 'ended' | 'urgent';
-type NoticeMark = { offerId: string; stage: NoticeStage; messageId?: string };
+type NoticeMark = { offerId: string; stage: NoticeStage; messageId?: string;eventId?:string;eventKey?:string;entityId?:string;versionId?:string|null;publicationRevision?:number;generation?:number };
 const FIELD_NAME: Record<string, string> = { title: '标题', type: '类型', modalities: '模态', claimMethod: '领取方式', requirements: '门槛', audience: '适用对象', valueText: '额度', usdEstimate: '价值估算', usdMax: '价值上限', models: '免费模型', tags: '标签', publishedAt: '发布时间', claimStart: '领取开始', claimEnd: '领取截止', endKind: '截止方式', creditValidity: '额度有效期', sourceTz: '官方时区', steps: '领取步骤', evidence: '官方证据' };
 const showValue = (value: unknown) => value == null ? '未写明' : Array.isArray(value) ? value.join('、') : typeof value === 'object' ? '已更新' : String(value);
 
 export async function buildNotice(env: Env, kind: NoticeKind, channel: NoticeChannel) {
   const d = db(env), names = await platformNames(env), now = new Date();
   const approvedPlatforms = new Set((await d.select({ id: s.platforms.id }).from(s.platforms).where(eq(s.platforms.status, 'approved'))).map(p => p.id));
-  const approved = (await d.select().from(s.offers).where(eq(s.offers.reviewState, 'approved'))).filter(o => approvedPlatforms.has(o.platformId));
+  const approved = (await d.select().from(s.offers).where(and(eq(s.offers.reviewState, 'approved'),canonicalOffers))).filter(o => approvedPlatforms.has(o.platformId));
+  const inherited=await notificationInheritance(env.DB,approved.map(o=>o.id),channel);
+  const inFlight = (await d.select({ payload: s.deliveries.payload, channel: s.deliveries.channel, status: s.deliveries.status }).from(s.deliveries).where(and(eq(s.deliveries.channel,channel),inArray(s.deliveries.status, ['pending', 'unknown']))));
+  const blockedItems = new Set(inFlight.flatMap(delivery => Object.values((delivery.payload as {items?:Record<string,{id:string}[]>}).items ?? {}).flat().map(item=>item.id)));
+  for(const id of inherited.blocked)blockedItems.add(id);
+  const identities=await noticeIdentities(env.DB,approved.map(o=>o.id)),identityEvents=await pendingIdentityNotices(env.DB,channel,approved.filter(o=>isClaimable(liveStatus(o,now))&&!blockedItems.has(o.id)).map(o=>o.id),[...inherited.sent.entries()].filter(([,stages])=>stages.has('new')||stages.has('urgent')).map(([id])=>id),[...inherited.sent.entries()].filter(([,stages])=>stages.has('changed')).map(([id])=>id));
   const sent = await d.select().from(s.notifications).where(eq(s.notifications.channel, channel));
-  const has = (id: string, stage: string) => sent.find(n => n.offerId === id && n.stage === stage);
+  const has = (id: string, stage: string) => sent.find(n => n.offerId === id && n.stage === stage)??(inherited.sent.get(id)?.has(stage)?{sentAt:null,messageId:null}:undefined);
   const out: Record<string, (ReturnType<typeof view> & { score?: number })[]> = { new: [], changed: [], ending: [], ended: [], urgent: [], standing: [], rising: [], lastcall: [] };
   let marks: NoticeMark[] = [];
   const revs = approved.length ? await d.select().from(s.offerRevisions).where(and(inArray(s.offerRevisions.offerId, d.select({ id: s.offers.id }).from(s.offers).where(eq(s.offers.reviewState, 'approved'))), eq(s.offerRevisions.author, 'pipeline'))) : [];
@@ -512,6 +549,13 @@ export async function buildNotice(env: Env, kind: NoticeKind, channel: NoticeCha
     const st = liveStatus(o, now), v = view(o, names[o.platformId] ?? o.platformId, now), end = claimEndAt(o);
     if (kind === 'urgent') {
       if (st === 'ending' && end && end > now && end.getTime() - now.getTime() <= 48 * 3600_000 && !has(o.id, 'urgent') && !has(o.id, 'new')) { out.urgent.push(v); marks.push({ offerId: o.id, stage: 'urgent' }); }
+      continue;
+    }
+    if(identities.has(o.id)&&channel==='telegram'){
+      const event=identityEvents.find(e=>e.entity_id===identities.get(o.id)!.id);
+      if(event&&!inherited.sent.get(o.id)?.has(event.kind)&&isClaimable(st)&&(event.kind==='changed'||(!has(o.id,'new')&&!has(o.id,'urgent')))){out[event.kind].push(v);marks.push({offerId:o.id,stage:event.kind,eventId:event.id,eventKey:event.event_key});}
+      if(st==='ending'&&!has(o.id,'ending')&&!has(o.id,'urgent')){out.ending.push(v);marks.push({offerId:o.id,stage:'ending'});}
+      if(st==='ended'&&!has(o.id,'ended')&&(has(o.id,'new')||has(o.id,'urgent'))){out.ended.push(v);marks.push({offerId:o.id,stage:'ended'});}
       continue;
     }
     if (!has(o.id, 'new') && !has(o.id, 'urgent') && isClaimable(st)) {
@@ -531,9 +575,6 @@ export async function buildNotice(env: Env, kind: NoticeKind, channel: NoticeCha
     // 只通知推送过“上架”的条目；作为历史数据补录的已结束活动不推送
     if (st === 'ended' && !has(o.id, 'ended') && (has(o.id, 'new') || has(o.id, 'urgent')) && (!end || now.getTime() - end.getTime() < 7 * 86400_000)) { out.ended.push(v); marks.push({ offerId: o.id, stage: 'ended' }); }
   }
-  const inFlight = (await d.select({ payload: s.deliveries.payload, channel: s.deliveries.channel, status: s.deliveries.status }).from(s.deliveries)
-    .where(inArray(s.deliveries.status, ['pending', 'unknown']))).filter(delivery => delivery.channel === channel);
-  const blockedItems = new Set(inFlight.flatMap(delivery => Object.values((delivery.payload as {items?:Record<string,{id:string}[]>}).items ?? {}).flat().map(item=>item.id)));
   const key = (mark: NoticeMark) => `${mark.offerId}\u0000${mark.stage}\u0000${mark.messageId ?? ''}`;
   const blocked = new Set(inFlight.flatMap(delivery => ((delivery.payload as { marks?: NoticeMark[] }).marks ?? []).map(key)));
   marks = marks.filter(mark => !blocked.has(key(mark)) && !blockedItems.has(mark.offerId)).sort((a, b) => key(a).localeCompare(key(b)));
@@ -561,8 +602,8 @@ export async function buildNotice(env: Env, kind: NoticeKind, channel: NoticeCha
       ...[...rising, ...lastcall].filter(x => x.st === 'ending' && !has(x.o.id, 'ending')).map(x => ({ offerId: x.o.id, stage: 'ending' as const })),
     ].filter(mark => !blocked.has(key(mark)));
   }
-  const pendingOffers = (await d.select({ n: sql<number>`count(*)` }).from(s.offers).where(eq(s.offers.reviewState, 'pending')))[0].n;
-  const pendingProposals = (await d.select({ diff: s.offerProposals.diff }).from(s.offerProposals))
+  const pendingOffers = (await d.select({ n: sql<number>`count(*)` }).from(s.offers).where(and(eq(s.offers.reviewState, 'pending'),sql`NOT EXISTS(SELECT 1 FROM benefit_entities e WHERE e.canonical_offer_id=offers.id)`)))[0].n;
+  const pendingProposals = (await d.select({ diff: s.offerProposals.diff }).from(s.offerProposals).where(sql`NOT EXISTS(SELECT 1 FROM benefit_entities e WHERE e.canonical_offer_id=offer_proposals.offer_id)`))
     .filter(proposal => proposal.diff.some(change => isReviewField(change.field))).length;
   let pendingCount = pendingOffers + pendingProposals;
   let needsVerificationCount = 0; // 自动核验故障由健康监控处理，不要求管理员每天确认。
@@ -596,27 +637,28 @@ export async function buildNotice(env: Env, kind: NoticeKind, channel: NoticeCha
     }
   }
   // 审核提醒按对象身份去重，不能用“待审总数没增加”吞掉替换进来的新条目。
-  type ReviewAlert = { key: string; title: string; state: string; url: string; priority?: number };
+  type ReviewAlert = { key: string; title: string; state: string; url: string; priority?: number;eventId?:string;taskId?:string;materialRevision?:number };
   let reviewAlerts: ReviewAlert[] = [];
   let leadBacklog = 0;
   if (channel === 'telegram') {
     const receipts = await d.select({ payload: s.deliveries.payload }).from(s.deliveries)
       .where(and(eq(s.deliveries.channel, 'telegram'), inArray(s.deliveries.status, ['sent', 'pending', 'unknown'])));
     const announced = new Set(receipts.flatMap(r => ((r.payload as { reviewAlerts?: ReviewAlert[] }).reviewAlerts ?? []).map(a=>a.key)));
-    const awaiting = await d.select().from(s.offers).where(eq(s.offers.reviewState, 'pending')).orderBy(s.offers.discoveredAt);
+    const awaiting = await d.select().from(s.offers).where(and(eq(s.offers.reviewState, 'pending'),sql`NOT EXISTS(SELECT 1 FROM benefit_entities e WHERE e.canonical_offer_id=offers.id)`)).orderBy(s.offers.discoveredAt);
     const reviewRank = (o: OfferRow) => {
       const end = claimEndAt(o);
       if (end && end > now && end.getTime()-now.getTime() <= 48*3600_000) return 0;
       return leadPriority({id:0,origin:'aihot',title:o.title,raw:o.valueText}) <= 1 ? 1 : 2;
     };
     awaiting.sort((a,b)=>reviewRank(a)-reviewRank(b));
-    const proposals = await d.select().from(s.offerProposals);
+    const proposals = await d.select().from(s.offerProposals).where(sql`NOT EXISTS(SELECT 1 FROM benefit_entities e WHERE e.canonical_offer_id=offer_proposals.offer_id)`);
     const unresolved = await d.select().from(s.leads).where(inArray(s.leads.status,['new','reviewing']));
     leadBacklog = unresolved.length;
     reviewAlerts = [
+      ...await identityReviewAlerts(env.DB,[...announced,...inherited.announcedReviewKeys]),
       ...awaiting.map(o=>({ key: o.officialReview && (o.officialReview.status === 'matched' || (o.officialReview.status!=='checking'&&!o.officialReview.nextAttemptAt)) ? `offer:${o.id}:official:${o.officialReview.jobId}` : `offer:${o.id}`, priority: reviewRank(o), title: `[${shortCode(o.id)}] ${o.title}`, state: o.officialReview?.status==='unresolved'&&!o.officialReview.nextAttemptAt?'官方复核待人工核对':'待审', url: `https://ai-yangmao.com/#admin-offer-${encodeURIComponent(o.id)}` })),
       ...proposals.filter(p=>p.diff.some(x=>isReviewField(x.field))).map(p=>({ key: `proposal:${p.offerId}:${JSON.stringify(p.diff)}`, priority: 2, title: String(p.candidate.title ?? p.offerId), state: '条款更新待审', url: `https://ai-yangmao.com/#admin-offer-${encodeURIComponent(p.offerId)}` })),
-      ...unresolved.filter(l=>leadPriority(l)<=1||l.resolution?.status==='manual').sort((a,b)=>leadPriority(a)-leadPriority(b)||b.id-a.id).map(l=>({ key: `lead:${l.id}:${l.resolution?.status==='manual'?'manual:'+l.resolution.jobId:l.status}`, priority: 1, title: `#${l.id} ${l.title ?? ''}`, state: l.status==='reviewing' ? (l.resolution?.status==='manual'?'线索待你判断':'线索正在自动复核') : '重要线索，尚未研判', url: 'https://ai-yangmao.com/#admin' })),
+      ...unresolved.filter(l=>!l.resolution?.identityTaskIds?.length&&(leadPriority(l)<=1||l.resolution?.status==='manual')).sort((a,b)=>leadPriority(a)-leadPriority(b)||b.id-a.id).map(l=>({ key: `lead:${l.id}:${l.resolution?.status==='manual'?'manual:'+l.resolution.jobId:l.status}`, priority: 1, title: `#${l.id} ${l.title ?? ''}`, state: l.status==='reviewing' ? (l.resolution?.status==='manual'?'线索待你判断':'线索正在自动复核') : '重要线索，尚未研判', url: 'https://ai-yangmao.com/#admin' })),
     ].filter(a=>!announced.has(a.key));
     // 重要线索先提醒，余下待审分批发完；单条失败不堵住其他审核提醒。
     reviewAlerts.sort((a,b)=>(a.priority ?? 2)-(b.priority ?? 2));
@@ -628,8 +670,10 @@ export async function buildNotice(env: Env, kind: NoticeKind, channel: NoticeCha
     const chosen = new Set(reviewAlerts.map(a=>a.key));
     reviewAlerts.push(...alertPool.filter(a=>!chosen.has(a.key)).slice(0,10-reviewAlerts.length));
   }
+  marks=marks.map(mark=>{const e=identities.get(mark.offerId);return e?{...mark,...identityGuard(e),eventKey:mark.eventKey??`offer:${e.id}:${e.publication_revision}:${mark.stage}:${channel}`}:mark;});
+  const itemIds=new Set(Object.values(out).flat().map(o=>o.id));const identityGuards=[...identities.values()].filter(e=>itemIds.has(e.canonical_offer_id)).map(identityGuard);
   const empty = !reviewAlerts.length && !d1Alert && !marks.length && !out.standing.length && !out.rising.length && !out.lastcall.length && (kind === 'urgent' || channel !== 'telegram' || (!pendingCount && !suggestAutoPublish.length && !needsVerificationCount && !coverageDegraded));
-  return { kind, channel, items: out, marks, moreCount, d1Alert, pendingCount, reviewAlerts, leadBacklog, suggestAutoPublish, needsVerificationCount, coverageDegraded, empty, blockedCount: blocked.size };
+  return { kind, channel, identityGuards, items: out, marks, moreCount, d1Alert, pendingCount, reviewAlerts, leadBacklog, suggestAutoPublish, needsVerificationCount, coverageDegraded, empty, blockedCount: blocked.size+inherited.blocked.size,identityDeliveryConflicts:inherited.conflicts };
 }
 
 /** 预览是纯读取，不能仅凭获取消息就把内容记为已发送。 */
@@ -654,12 +698,13 @@ export async function claimNotice(env: Env, kind: NoticeKind, channel: NoticeCha
   const id = crypto.randomUUID();
   const created = await env.DB.prepare(`
     INSERT INTO deliveries(id,fingerprint,channel,kind,payload)
-    SELECT ?1,?2,?3,?4,?5 WHERE NOT EXISTS (
+    SELECT ?1,?2,?3,?4,?5 WHERE ${deliveryIdentityGuard} AND NOT EXISTS (
       SELECT 1 FROM deliveries prior WHERE prior.channel=?3 AND prior.status IN ('pending','unknown') AND (
         EXISTS (SELECT 1 FROM json_tree(prior.payload,'$.items') old_item, json_tree(?5,'$.items') new_item
-          WHERE old_item.key='id' AND new_item.key='id' AND old_item.value=new_item.value)
+          WHERE old_item.key='id' AND new_item.key='id' AND coalesce((SELECT root.canonical_offer_id FROM benefit_entities old JOIN benefit_entities root ON root.id=old.merged_into WHERE old.canonical_offer_id=old_item.value AND old.state='merged'),old_item.value)=new_item.value)
+        OR EXISTS (SELECT 1 FROM json_each(prior.payload,'$.marks') old_mark,json_tree(?5,'$.items') new_item WHERE new_item.key='id' AND coalesce((SELECT root.canonical_offer_id FROM benefit_entities old JOIN benefit_entities root ON root.id=old.merged_into WHERE old.canonical_offer_id=json_extract(old_mark.value,'$.offerId') AND old.state='merged'),json_extract(old_mark.value,'$.offerId'))=new_item.value)
         OR EXISTS (SELECT 1 FROM json_each(prior.payload,'$.reviewAlerts') old_alert, json_each(?5,'$.reviewAlerts') new_alert
-          WHERE json_extract(old_alert.value,'$.key')=json_extract(new_alert.value,'$.key'))
+          WHERE (json_extract(old_alert.value,'$.key')=json_extract(new_alert.value,'$.key') OR EXISTS(SELECT 1 FROM merge_task_sources m WHERE m.status='active' AND m.source_task_id=json_extract(old_alert.value,'$.taskId') AND m.canonical_task_id=json_extract(new_alert.value,'$.taskId')) OR ${reviewAlertOverlap('old_alert.value',"json_extract(new_alert.value,'$.taskId')")}))
       )) ON CONFLICT(fingerprint) DO NOTHING RETURNING id`)
     .bind(id,fingerprint,channel,kind,JSON.stringify(notice)).all<{id:string}>();
   return created.results.length ? { ...notice, deliveryId: id } : { ...notice, empty: true, alreadyClaimed: true };
@@ -670,25 +715,28 @@ admin.post('/notify/claim', async c => {
   return c.json(await claimNotice(c.env, parsed.data.kind, parsed.data.channel));
 });
 
-async function recordDeliveredMarks(env: Env, delivery: typeof s.deliveries.$inferSelect) {
-  const notice = delivery.payload as unknown as Awaited<ReturnType<typeof buildNotice>>;
-  const d = db(env), nowIso = new Date().toISOString();
-  for (const mark of notice.marks) {
-    await d.insert(s.notifications).values({ offerId: mark.offerId, stage: mark.stage, channel: delivery.channel, status: 'sent', sentAt: nowIso, messageId: mark.messageId ?? null })
-      .onConflictDoUpdate({ target: [s.notifications.offerId, s.notifications.stage, s.notifications.channel], set: { status: 'sent', sentAt: nowIso, messageId: mark.messageId ?? null } });
-  }
+async function recordDeliveryResult(env:Env,delivery:typeof s.deliveries.$inferSelect,status:'sent'|'unknown',error?:string,manual=false) {
+ const notice=delivery.payload as unknown as Awaited<ReturnType<typeof buildNotice>>,now=new Date().toISOString();
+ const eligible=manual?"status IN ('pending','unknown')":"status='pending'";
+ const gate=`EXISTS(SELECT 1 FROM deliveries WHERE id=? AND ${eligible})`,statements:D1PreparedStatement[]=[];
+ if(status==='sent'){
+  for(const mark of notice.marks??[])statements.push(env.DB.prepare(`INSERT INTO notifications(offer_id,stage,channel,status,sent_at,message_id) SELECT ?,?,?,'sent',?,? WHERE ${gate} ON CONFLICT(offer_id,stage,channel) DO UPDATE SET status='sent',sent_at=excluded.sent_at,message_id=excluded.message_id`).bind(mark.offerId,mark.stage,delivery.channel,now,mark.messageId??null,delivery.id));
+  const ids=[...(notice.marks??[]).flatMap(m=>m.eventId?[m.eventId]:[]),...(notice.reviewAlerts??[]).flatMap(a=>a.eventId?[a.eventId]:[])];
+  if(ids.length)statements.push(env.DB.prepare(`UPDATE identity_events SET status='delivered' WHERE id IN (SELECT value FROM json_each(?)) AND ${gate}`).bind(JSON.stringify(ids),delivery.id));
+ }
+ statements.push(env.DB.prepare(`UPDATE deliveries SET status=?,error=?,updated_at=? WHERE id=? AND ${eligible}`).bind(status,error??null,now,delivery.id));
+ await env.DB.batch(statements);
 }
-
-/** 回报一次发送的结果：sent 才写入通知台账；unknown 留待人工核对，不自动重发。 */
+/** Unknown delivery stays blocked until an explicit administrator resolution. */
 export async function ackDelivery(env: Env, id: string, status: 'sent' | 'unknown', error?: string): Promise<{ ok: boolean; code?: number; error?: string; alreadyAcknowledged?: boolean; status?: string }> {
-  const d = db(env);
-  const [delivery] = await d.select().from(s.deliveries).where(eq(s.deliveries.id, id));
-  if (!delivery) return { ok: false, code: 404, error: '没有这次发送' };
-  if (delivery.status === 'sent') return { ok: true, alreadyAcknowledged: true };
-  if (delivery.status === 'unknown' && status !== 'unknown') return { ok: false, code: 409, error: '结果不明的消息需要先人工核对' };
-  if (status === 'sent') await recordDeliveredMarks(env, delivery);
-  await d.update(s.deliveries).set({ status, error: error ?? null, updatedAt: new Date().toISOString() }).where(eq(s.deliveries.id, id));
-  return { ok: true, status };
+ const [delivery]=await db(env).select().from(s.deliveries).where(eq(s.deliveries.id,id));
+ if(!delivery)return {ok:false,code:404,error:'没有这次发送'};
+ if(delivery.status==='sent')return {ok:true,alreadyAcknowledged:true};
+ if(delivery.status==='unknown'&&status==='unknown')return {ok:true,alreadyAcknowledged:true,status:'unknown'};
+ if(delivery.status!=='pending')return {ok:false,code:409,error:'结果不明或已释放的消息需要先人工核对'};
+ await recordDeliveryResult(env,delivery,status,error);
+ const current=await env.DB.prepare('SELECT status FROM deliveries WHERE id=?').bind(id).first<{status:string}>();
+ return current?.status===status?{ok:true,status}:{ok:false,code:409,error:'发送状态已改变'};
 }
 admin.post('/notify/:id/ack', async c => {
   const body = z.object({ status: z.enum(['sent', 'unknown']), error: z.string().max(500).optional() }).safeParse(await c.req.json().catch(() => null));
@@ -707,8 +755,7 @@ admin.post('/notify/:id/resolve', async c => {
   if (!delivery || !['unknown', 'pending'].includes(delivery.status)) return c.json({ error: '没有需要核对的发送记录' }, 404);
   if (delivery.status === 'pending' && Date.now() - Date.parse(delivery.createdAt) < 10 * 60_000) return c.json({ error: '发送仍可能进行中，十分钟后再人工核对' }, 409);
   if (body.data.outcome === 'delivered') {
-    await recordDeliveredMarks(c.env, delivery);
-    await d.update(s.deliveries).set({ status: 'sent', error: `人工确认已送达：${body.data.reason}`, updatedAt: new Date().toISOString() }).where(eq(s.deliveries.id, delivery.id));
+    await recordDeliveryResult(c.env,delivery,'sent',`人工确认已送达：${body.data.reason}`,true);
   } else {
     await d.update(s.deliveries).set({ status: 'released', fingerprint: `${delivery.fingerprint}:released:${delivery.id}`, error: `人工确认未送达：${body.data.reason}`, updatedAt: new Date().toISOString() }).where(eq(s.deliveries.id, delivery.id));
   }
