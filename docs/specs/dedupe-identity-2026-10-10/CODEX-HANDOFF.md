@@ -1,35 +1,13 @@
-# 给 Codex 的执行入口
+# 当前交接状态
 
-## 当前成果
+正式实施入口仍按 README → SPEC → IMPLEMENTATION → ACCEPTANCE 阅读。七个 P2/P3 增量已实现于 PR #7–#13；本轮针对用户对累计 `4371ea0b9e160519485943bb9e8a3c3996ff9cb6` 的审计继续本地修复，不能重开一套规格或重打第一阶段补丁。
 
-第一阶段PR：https://github.com/accesaver-byte/ai-yangmao/pull/6  
-分支：`fix/dedupe-phase1-final-20261010`  
-基线：`7cea69d95d2c27e2c1ebd7641a94bab2a696901d`  
-已验证修复代码：`ba9724f5a39bff1b0640c4a1f4618ef0a9fdf5b4`。
+最新已验证代码 `f54650cdc7bda70f448d803a0eb63a8ccf3a420a`，分支 `codex/dedupe-p3-c`。逐项修改、实际提交、RED/GREEN、完整测试、运行时证据及未验证门槛见 [AUDIT-REMEDIATION.md](AUDIT-REMEDIATION.md) 和 [ACCEPTANCE-RESULTS.md](ACCEPTANCE-RESULTS.md)。此次修复未推送，远端 PR #13 仍在被审计的4371ea0；不要把旧CI当成新补丁CI。
 
-第一阶段只实现：duplicateId终态处理、同数字真实周期变化保留为提案、拒绝记忆/audit/提案删除原子性。包含0016增量迁移；没有部署或生产迁移。343个Vitest＋8个CLI测试、typecheck和web构建通过；还需真实D1运行时/生产验收。依赖audit另报告4个high package entries，未在此PR修依赖。
+第一阶段正式 PR #6 / `64db363b7dd4fd301d4872101d6ec313a0640d3d` 尚未合并。核对结束时远端 main=`6a381f40d3a8a89c2ea4487416a41f1cd48e7f47`；期间新增的是审核规则/平台文档，迁移目录仍止于0015。本地修复树与此 main 的 merge-tree 无冲突，但没有实际合并分支或执行合并树运行验证。原工作区 `docs/valuation-judgment-2026-10-10.md` 的未提交修改保留。
 
-第二、三阶段文件是规格，不是已实现代码。按下列入口交接，不重复第一阶段工作。
+后续先检查 AGENTS、git status、远端 PR 链、最新 main 与迁移台账；不覆盖用户修改。需要0016及0017–0035全部兼容schema，先迁移再部署Worker，编号冲突必须另编增量并复验，不覆盖已存在SQL。
 
-## 可直接复制的任务
+当前仅本地开发、测试、合成/脱敏dry-run和本地提交授权。本轮不推送新PR、合并main、部署、读写生产数据库、真实采集、发消息或增加模型预算。历史工具默认planHash/冲突预览；保留全部原记录、人工决定、sent/pending/unknown送达，不自动释放未知发送。
 
-```text
-请先读 docs/specs/dedupe-identity-2026-10-10/README.md 的合同补充，再在 ai-yangmao 仓库按以下文件实施第二、第三阶段：
-1. docs/specs/dedupe-identity-2026-10-10/SPEC.md
-2. docs/specs/dedupe-identity-2026-10-10/IMPLEMENTATION.md
-3. docs/specs/dedupe-identity-2026-10-10/ACCEPTANCE.md
-
-开始前读取 AGENTS.md、现役数据合同、最新 main 和 PR #6。检查第一阶段修复是否已集成；不要覆盖用户未提交修改，不要重复实现已完成代码。使用独立分支，先做P2-A，按IMPLEMENTATION的七个增量和九个任务依序交付。
-
-目标是同活动同版本不重复审核；真正的新活动/条款变化/补足拒绝原因的新官方证据仍可进入正确流程。不得用标题相似度、同URL、同金额或模型sameAs直接静默合并；未知要保留为可追溯任务。保留全部拒绝历史、人工编辑、旧ID和实际通知回执。
-
-每个任务先写并运行失败测试，再实现，运行全套测试/typecheck，涉及前端加build:web。使用本地SQLite与实际本地D1验证事务。保存进度、命令和实际结果，未验证项明确列出。
-
-当前只允许本地开发、测试、生成迁移和脱敏数据dry-run。生产读取/写入、部署、消息发送、预算增加、主分支合并、历史apply均未授权；持有密钥不扩大权限。历史清理先生成planHash预览，保留原记录并实现受约束回滚，不能直接删除重复行。
-
-完成每个增量后输出代码diff、测试证据、风险、迁移顺序与下一任务输入；生产执行留待独立授权。
-```
-
-## 文件职责
-
-SPEC决定业务语义和不变量；IMPLEMENTATION决定分步文件/接口；ACCEPTANCE决定如何证明没有误合、漏更新或丢审计。与现役代码冲突时先记录具体差异并更新计划，不以“已有一个特例”跳过全局合同，也不任意推翻收录政策。
+下一项外部门槛是授权冻结的至少60对人工标注脱敏语料及真实规模资源测量；未提供时保持 not_evaluated，不用合成答案代替。重新推送、生产和具体历史planHash执行由用户另行决定。兼容回滚要求见 [RELEASE.md](RELEASE.md)。

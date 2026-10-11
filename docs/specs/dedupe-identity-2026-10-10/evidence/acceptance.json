@@ -24,12 +24,6 @@
           "name": "canonical terms A01 exact decimal normalization does not round large values",
           "status": "passed"
         }
-      ],
-      "redLogs": [
-        "task1-red-behavior.log"
-      ],
-      "bootstrapRedLogs": [
-        "task1-red.log"
       ]
     },
     {
@@ -42,10 +36,6 @@
           "name": "canonical terms A02 calendar and rolling cadences and independent currencies/pools never collapse",
           "status": "passed"
         }
-      ],
-      "redLogs": [],
-      "bootstrapRedLogs": [
-        "task1-red.log"
       ]
     },
     {
@@ -73,13 +63,6 @@
           "name": "observation and candidate shadow storage A03 cross-domain redirects and indirect fetches do not inherit official trust",
           "status": "passed"
         }
-      ],
-      "redLogs": [
-        "task1-red-behavior.log",
-        "task2-red.log"
-      ],
-      "bootstrapRedLogs": [
-        "task1-red.log"
       ]
     },
     {
@@ -117,14 +100,7 @@
           "name": "A04 legacy structured mechanisms distinguish independent grants with shared wording",
           "status": "passed"
         }
-      ],
-      "redLogs": [
-        "p2a-ambiguous-red.log",
-        "p2a-review-red.log",
-        "task2-red.log",
-        "task2-shadow-red.log"
-      ],
-      "bootstrapRedLogs": []
+      ]
     },
     {
       "id": "A05",
@@ -146,12 +122,7 @@
           "name": "A04/A05 shadow captures original text and stable spans within the per-request write budget without calling models or the legacy writer",
           "status": "passed"
         }
-      ],
-      "redLogs": [
-        "task2-red.log",
-        "task2-shadow-red.log"
-      ],
-      "bootstrapRedLogs": []
+      ]
     },
     {
       "id": "A06",
@@ -198,14 +169,7 @@
           "name": "A06 resumes only server-selected deferred candidates without another extraction or search call",
           "status": "passed"
         }
-      ],
-      "redLogs": [
-        "p2a-review-red.log",
-        "task2-red.log",
-        "task5-client-red.log",
-        "task5-retry-red.log"
-      ],
-      "bootstrapRedLogs": []
+      ]
     },
     {
       "id": "A07",
@@ -222,12 +186,7 @@
           "name": "A07 official enrichment updates only pending media evidence and preserves the same task and manual notes",
           "status": "passed"
         }
-      ],
-      "redLogs": [
-        "task5-adapters-red.log",
-        "task5-enrich-red.log"
-      ],
-      "bootstrapRedLogs": []
+      ]
     },
     {
       "id": "A08",
@@ -264,14 +223,6 @@
           "name": "A08/A10 a retained automatic campaign alias cannot consume an under-extracted independent claim as duplicate pending",
           "status": "passed"
         }
-      ],
-      "redLogs": [
-        "p2c-review-red.log",
-        "p3c-review-boundary-red.log",
-        "task4-protection-red.log"
-      ],
-      "bootstrapRedLogs": [
-        "task1-red.log"
       ]
     },
     {
@@ -289,12 +240,7 @@
           "name": "A09 manual same confirmation links a weak source without another offer or publication",
           "status": "passed"
         }
-      ],
-      "redLogs": [
-        "task3-compare-red.log",
-        "task5-manual-red.log"
-      ],
-      "bootstrapRedLogs": []
+      ]
     },
     {
       "id": "A10",
@@ -321,12 +267,7 @@
           "name": "A08/A10 a retained automatic campaign alias cannot consume an under-extracted independent claim as duplicate pending",
           "status": "passed"
         }
-      ],
-      "redLogs": [
-        "p3c-review-boundary-red.log",
-        "task3-extra-red.log"
-      ],
-      "bootstrapRedLogs": []
+      ]
     },
     {
       "id": "A11",
@@ -338,11 +279,7 @@
           "name": "A11 actual issuer wins over a common parent or a shared model",
           "status": "passed"
         }
-      ],
-      "redLogs": [
-        "task3-compare-red.log"
-      ],
-      "bootstrapRedLogs": []
+      ]
     },
     {
       "id": "A12",
@@ -374,11 +311,7 @@
           "name": "A12 one pool replacement cannot authorize a change in a second pool",
           "status": "passed"
         }
-      ],
-      "redLogs": [
-        "p2b-review-red.log"
-      ],
-      "bootstrapRedLogs": []
+      ]
     },
     {
       "id": "A13",
@@ -390,11 +323,7 @@
           "name": "A13 same-day independent resets remain distinct despite otherwise equal facts",
           "status": "passed"
         }
-      ],
-      "redLogs": [
-        "task3-compare-red.log"
-      ],
-      "bootstrapRedLogs": []
+      ]
     },
     {
       "id": "A14",
@@ -421,14 +350,7 @@
           "name": "A14 an edit to a published mapped offer creates a draft and preserves the approved projection",
           "status": "passed"
         }
-      ],
-      "redLogs": [
-        "task3-compare-red.log",
-        "task4-protection-red.log",
-        "task4-service-red.log",
-        "task5-edit-red.log"
-      ],
-      "bootstrapRedLogs": []
+      ]
     },
     {
       "id": "A15",
@@ -445,12 +367,7 @@
           "name": "A15 unrelated page text and observation IDs do not invalidate the reviewed evidence basis",
           "status": "passed"
         }
-      ],
-      "redLogs": [
-        "task3-compare-red.log",
-        "task3-extra-red.log"
-      ],
-      "bootstrapRedLogs": []
+      ]
     },
     {
       "id": "A16",
@@ -472,13 +389,7 @@
           "name": "A16 explicit claim deadline and renewal replacements produce CHANGED without publishing",
           "status": "passed"
         }
-      ],
-      "redLogs": [
-        "p2b-proof-red.log",
-        "p2b-review-red.log",
-        "task3-compare-red.log"
-      ],
-      "bootstrapRedLogs": []
+      ]
     },
     {
       "id": "A17",
@@ -515,19 +426,6 @@
           "name": "A14/A17 approval is the only publication boundary, including restoring old terms",
           "status": "passed"
         }
-      ],
-      "redLogs": [
-        "p2b-proof-red.log",
-        "p3b-review-red2.log",
-        "task3-compare-red.log",
-        "task4-decisions-red.log",
-        "task4-service-red.log",
-        "task6-notify-red.log",
-        "task6-urgent-red.log",
-        "task8-transition-red.log"
-      ],
-      "bootstrapRedLogs": [
-        "task8-red.log"
       ]
     },
     {
@@ -570,14 +468,7 @@
           "name": "A18 official extraction never treats an unavailable identity index as empty history",
           "status": "passed"
         }
-      ],
-      "redLogs": [
-        "task3-fts-red.log",
-        "task3-model-red.log",
-        "task3-retrieval-red.log",
-        "task5-index-red.log"
-      ],
-      "bootstrapRedLogs": []
+      ]
     },
     {
       "id": "A19",
@@ -634,16 +525,7 @@
           "name": "A19 an existing campaign alias cannot validate a fabricated incoming anchor",
           "status": "passed"
         }
-      ],
-      "redLogs": [
-        "p2b-review-red.log",
-        "task2-red.log",
-        "task3-model-red.log",
-        "task5-anchor-red.log",
-        "task5-lease-scope-red.log",
-        "task5-reference-red.log"
-      ],
-      "bootstrapRedLogs": []
+      ]
     },
     {
       "id": "A20",
@@ -680,16 +562,7 @@
           "name": "A20 same request/payload replays exactly one task and business revision",
           "status": "passed"
         }
-      ],
-      "redLogs": [
-        "task1-schema-red.log",
-        "task4-lease-red.log",
-        "task4-service-red.log",
-        "task4-transaction-red.log",
-        "task5-adapters-red.log",
-        "task6-notify-red.log"
-      ],
-      "bootstrapRedLogs": []
+      ]
     },
     {
       "id": "A21",
@@ -701,11 +574,7 @@
           "name": "A21 same request with a different payload conflicts without changing original result",
           "status": "passed"
         }
-      ],
-      "redLogs": [
-        "task4-transaction-red.log"
-      ],
-      "bootstrapRedLogs": []
+      ]
     },
     {
       "id": "A22",
@@ -757,14 +626,7 @@
           "name": "A22 an orphan staged row cannot arm writes after the head revision guard matches zero rows",
           "status": "passed"
         }
-      ],
-      "redLogs": [
-        "p2c-review-red.log",
-        "task4-protection-red.log",
-        "task4-service-red.log",
-        "task5-nonce-red.log"
-      ],
-      "bootstrapRedLogs": []
+      ]
     },
     {
       "id": "A23",
@@ -806,13 +668,6 @@
           "name": "A23 final assertion failure is a CHECK violation inside the batch, never partial success",
           "status": "passed"
         }
-      ],
-      "redLogs": [
-        "task1-schema-red.log",
-        "task4-transaction-red.log"
-      ],
-      "bootstrapRedLogs": [
-        "task8-red.log"
       ]
     },
     {
@@ -840,12 +695,7 @@
           "name": "A24 concurrent identical requests return one applied receipt and one replay",
           "status": "passed"
         }
-      ],
-      "redLogs": [
-        "task1-schema-red.log",
-        "task4-service-red.log"
-      ],
-      "bootstrapRedLogs": []
+      ]
     },
     {
       "id": "A25",
@@ -857,11 +707,7 @@
           "name": "A25 two new-identity conclusions cannot both commit from the same block revision",
           "status": "passed"
         }
-      ],
-      "redLogs": [
-        "task4-transaction-red.log"
-      ],
-      "bootstrapRedLogs": []
+      ]
     },
     {
       "id": "A26",
@@ -943,22 +789,7 @@
           "name": "A26 an explicit missing-fact refusal policy permits one pending evidence reopen after the named fact is supplied",
           "status": "passed"
         }
-      ],
-      "redLogs": [
-        "p2c-review-red.log",
-        "p2c-scope-red.log",
-        "p3c-reopen-preservation-red.log",
-        "task3-retrieval-red.log",
-        "task4-decisions-red.log",
-        "task4-service-red.log",
-        "task5-index-red.log",
-        "task5-lead-refusal-red.log",
-        "task5-manual-red.log",
-        "task5-paid-scope-red.log",
-        "task5-reopen-revoke-red.log",
-        "task5-visibility-red.log"
-      ],
-      "bootstrapRedLogs": []
+      ]
     },
     {
       "id": "A27",
@@ -1020,18 +851,7 @@
           "name": "A27 missing explicit endpoint or dry run performs no network writes",
           "status": "passed"
         }
-      ],
-      "redLogs": [
-        "p2a-review-red.log",
-        "p2d-review-red.log",
-        "task2-red.log",
-        "task2-routes-red.log",
-        "task2-shadow-red.log",
-        "task3-model-red.log",
-        "task4-service-red.log",
-        "task5-budget-red.log"
-      ],
-      "bootstrapRedLogs": []
+      ]
     },
     {
       "id": "A28",
@@ -1073,17 +893,7 @@
           "name": "A28 a presentation-only edit does not create a new task or material reminder",
           "status": "passed"
         }
-      ],
-      "redLogs": [
-        "p2d-cli-red.log",
-        "p2d-review-red.log",
-        "task4-lease-red.log",
-        "task5-presentation-red.log",
-        "task6-notify-red.log",
-        "task6-ui-readable-red.log",
-        "task6-ui-red.log"
-      ],
-      "bootstrapRedLogs": []
+      ]
     },
     {
       "id": "A29",
@@ -1175,28 +985,6 @@
           "name": "A29 revoking an identity alias invalidates later candidate reuse without rewriting old request receipts",
           "status": "passed"
         }
-      ],
-      "redLogs": [
-        "p2d-cli-red.log",
-        "p3b-review-red2.log",
-        "task3-compare-red.log",
-        "task3-model-red.log",
-        "task4-lease-red.log",
-        "task4-protection-red.log",
-        "task5-alias-cache-red.log",
-        "task5-edit-red.log",
-        "task5-legacy-approve-red.log",
-        "task5-manual-red.log",
-        "task5-official-red.log",
-        "task5-reopen-revoke-red.log",
-        "task6-legacy-red.log",
-        "task6-notify-red.log",
-        "task6-ui-red.log",
-        "task8-constraints-red.log",
-        "task8-live-version-red.log"
-      ],
-      "bootstrapRedLogs": [
-        "task8-red.log"
       ]
     },
     {
@@ -1224,14 +1012,6 @@
           "name": "A30 a reviewer cannot enlarge refusal scope or reopen an admin decision",
           "status": "passed"
         }
-      ],
-      "redLogs": [
-        "task2-routes-red.log",
-        "task4-service-red.log",
-        "task8-cli-red.log"
-      ],
-      "bootstrapRedLogs": [
-        "task8-red.log"
       ]
     },
     {
@@ -1274,16 +1054,6 @@
           "name": "A31 corrupt routing cycles fail closed without exposing an alias",
           "status": "passed"
         }
-      ],
-      "redLogs": [
-        "p2d-review-red.log",
-        "task6-public-red.log",
-        "task6-ui-red.log",
-        "task8-cache-red.log",
-        "task8-platform-red.log"
-      ],
-      "bootstrapRedLogs": [
-        "task8-red.log"
       ]
     },
     {
@@ -1341,13 +1111,6 @@
           "name": "A32 preview command rejects apply before opening any input",
           "status": "passed"
         }
-      ],
-      "redLogs": [
-        "p3a-review-red.log",
-        "task7-proposal-red.log"
-      ],
-      "bootstrapRedLogs": [
-        "task7-red.log"
       ]
     },
     {
@@ -1370,12 +1133,6 @@
           "name": "A33 applying a later cursor without its durable preceding checkpoint is rejected before writes",
           "status": "passed"
         }
-      ],
-      "redLogs": [
-        "p3a-checkpoint-red.log"
-      ],
-      "bootstrapRedLogs": [
-        "task7-red.log"
       ]
     },
     {
@@ -1423,13 +1180,6 @@
           "name": "A34 a protected manual business field difference is explicit even outside proposals",
           "status": "passed"
         }
-      ],
-      "redLogs": [
-        "p3a-manual-red.log",
-        "p3a-review-red.log"
-      ],
-      "bootstrapRedLogs": [
-        "task7-red.log"
       ]
     },
     {
@@ -1467,13 +1217,6 @@
           "name": "A31/A35 platform admission changes invalidate the promised public merge projection",
           "status": "passed"
         }
-      ],
-      "redLogs": [
-        "task8-live-version-red.log",
-        "task8-platform-red.log"
-      ],
-      "bootstrapRedLogs": [
-        "task8-red.log"
       ]
     },
     {
@@ -1506,11 +1249,6 @@
           "name": "A36 a plan with hard identity conflicts or the wrong approval hash cannot apply",
           "status": "passed"
         }
-      ],
-      "redLogs": [],
-      "bootstrapRedLogs": [
-        "task7-red.log",
-        "task8-red.log"
       ]
     },
     {
@@ -1558,17 +1296,6 @@
           "name": "A37 a source-only proposal is carried to the chosen canonical task without rewriting its original draft",
           "status": "passed"
         }
-      ],
-      "redLogs": [
-        "p3b-review-red.log",
-        "p3b-review-red2.log",
-        "task8-integration-red.log",
-        "task8-lead-red.log",
-        "task8-new-link-red.log",
-        "task8-verify-route-red.log"
-      ],
-      "bootstrapRedLogs": [
-        "task8-red.log"
       ]
     },
     {
@@ -1581,10 +1308,6 @@
           "name": "A38/A40 a sent alias announcement is inherited by facts despite different publication counters without a fabricated sent row",
           "status": "passed"
         }
-      ],
-      "redLogs": [],
-      "bootstrapRedLogs": [
-        "task8-red.log"
       ]
     },
     {
@@ -1617,14 +1340,6 @@
           "name": "A28/A39 an unknown reminder does not reappear or starve another task",
           "status": "passed"
         }
-      ],
-      "redLogs": [
-        "p2d-review-red.log",
-        "p3a-review-red.log"
-      ],
-      "bootstrapRedLogs": [
-        "task7-red.log",
-        "task8-red.log"
       ]
     },
     {
@@ -1642,13 +1357,6 @@
           "name": "A17/A40 changed notices inherit a proven transition only at the merge publication boundary",
           "status": "passed"
         }
-      ],
-      "redLogs": [
-        "p3b-review-red2.log",
-        "task8-transition-red.log"
-      ],
-      "bootstrapRedLogs": [
-        "task8-red.log"
       ]
     },
     {
@@ -1666,10 +1374,6 @@
           "name": "A41 rollback cancels merge-derived carriers and restores the original single-sided draft",
           "status": "passed"
         }
-      ],
-      "redLogs": [],
-      "bootstrapRedLogs": [
-        "task8-red.log"
       ]
     },
     {
@@ -1702,12 +1406,6 @@
           "name": "A42 version-route changes after merge are not overwritten by rollback",
           "status": "passed"
         }
-      ],
-      "redLogs": [
-        "task8-routing-red.log"
-      ],
-      "bootstrapRedLogs": [
-        "task8-red.log"
       ]
     },
     {
@@ -1730,14 +1428,6 @@
           "name": "A31/A43/A44 all public collections exclude merged rows in off mode and preserve unmapped offers",
           "status": "passed"
         }
-      ],
-      "redLogs": [
-        "task6-public-red.log",
-        "task8-cache-red.log",
-        "task8-off-write-red.log"
-      ],
-      "bootstrapRedLogs": [
-        "task8-red.log"
       ]
     },
     {
@@ -1760,13 +1450,7 @@
           "name": "A31/A43/A44 all public collections exclude merged rows in off mode and preserve unmapped offers",
           "status": "passed"
         }
-      ],
-      "redLogs": [
-        "p2c-review-red.log",
-        "task5-adapters-red.log",
-        "task6-public-red.log"
-      ],
-      "bootstrapRedLogs": []
+      ]
     },
     {
       "id": "A45",
@@ -1793,24 +1477,19 @@
           "name": "A45 a version from another entity fails the batch ownership invariant",
           "status": "passed"
         }
-      ],
-      "redLogs": [
-        "task1-schema-red.log",
-        "task4-transaction-red.log"
-      ],
-      "bootstrapRedLogs": []
+      ]
     }
   ],
-  "authorReview": "Direct coverage gaps found by independent review were added; taggedTestsStatus is not a claim of exhaustive subcase or field acceptance.",
-  "sourceCodeSha": "6aa71d82f661ecee3f1b85cf9f645b3f2ecdf43b",
+  "sourceCodeSha": "f54650cdc7bda70f448d803a0eb63a8ccf3a420a",
   "node": "v24.21.0",
-  "command": "npx vitest run tests src --reporter=json --outputFile=.superpowers/sdd/IMPLEMENTATION/task9-vitest.json",
-  "reportSha256": "d8d9bc19ebb42a2a6c39fba974ee02471f897040831cc3804d10888fa6198b64",
-  "totalExecuted": 562,
-  "passed": 562,
+  "wrangler": "4.149.0",
+  "command": "VITEST_MAX_WORKERS=1 npx vitest run tests src --reporter=json --outputFile=.superpowers/sdd/acceptance-audit-4371ea0/final-tests.json",
+  "reportSha256": "16ad26d1f3210d718ac37ca4ebf8910b7d5d3d33e71d3f4e7d53bac57aab77f7",
+  "totalExecuted": 678,
+  "passed": 678,
   "failed": 0,
   "pending": 0,
-  "fullSuiteCommand": "npm test",
-  "cliTests": 8,
-  "redEvidenceNote": "Historical red assertions or missing-module failures; new preservation controls that passed initially are not claimed as red. Full logs remain in the ignored verification directory."
+  "fullSuiteCommand": "VITEST_MAX_WORKERS=1 npm test",
+  "cliTests": 11,
+  "authorReview": "R01-R09 plus independent-review adversarial regressions; tag coverage is not exhaustive field acceptance."
 }

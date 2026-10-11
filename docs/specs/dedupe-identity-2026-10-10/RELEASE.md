@@ -11,8 +11,8 @@
 未来发布须依次取得明确授权并完成：
 
 1. 保存目标环境可恢复快照及脱敏副本，记录 snapshotHash、sourceCodeSha、rulesVersion、所有状态计数及 high-water marks。
-2. 核对已应用迁移。先补 `0016_rejection_decision_key.sql`，再按本仓库顺序应用 0017–0029；已存在迁移不可重写。新编号如有并行占用必须重新编号并重测。先在批准环境迁移，再部署对应 Worker，保留旧列和表。
-3. 默认 `IDENTITY_MODE=shadow`、`IDENTITY_MODEL_ASSIST=false`、`HISTORICAL_MERGE_ENABLED=false`，不设置生产 `IDENTITY_HISTORY_ENVIRONMENT`。模型辅助仍受原预算约束，本次不增加额度。
+2. 核对已应用迁移。先补 `0016_rejection_decision_key.sql`，再按本仓库顺序应用 0017–0035；已存在迁移不可重写。新编号如有并行占用必须重新编号并重测。先在批准环境迁移，再部署对应 Worker，保留旧列和表。
+3. 采集 workflow 的仓库变量默认 `IDENTITY_MODE=off`、`IDENTITY_MODEL_ASSIST=false`；若经授权启用 shadow，Worker 与采集配置须显式对齐。产品 canary 以 Worker 的 `IDENTITY_CANARY_PLATFORMS` 为准；Worker enforce 缺 canary 会报告未评估。保持 `HISTORICAL_MERGE_ENABLED=false`，不设置生产 `IDENTITY_HISTORY_ENVIRONMENT`。模型辅助仍受原预算约束，本次不增加额度。
 4. 每个旧 offer 独立回填、100 条 checkpoint；核对 offers、全部拒绝、leads、proposals、审计及通知映射。某产品未完成全状态对账不得进入 `IDENTITY_CANARY_PLATFORMS` 的 enforce；未回填产品旧 approved 继续可见。
 5. 用冻结人工语料完成比较与流程验收，达到 ACCEPTANCE §3 门槛。人工确认明确产品范围后开启 canary，检查误合并、误拒、重复审核，而不只看队列减少。
 6. 合并只先预览、核对 conflicts 和精确 planHash。先在批准的隔离副本演练 apply/rollback；生产操作须另批环境及具体计划。当前工具只支持 synthetic/redacted_local，不能改环境标签冒充生产授权。
@@ -46,7 +46,7 @@ npx tsx scripts/identity/evaluate.ts --input /approved/pairs.json --environment 
 
 ## 兼容回滚包
 
-已验证的兼容代码：`c3c721e1bd64a54299f43826ee44a446f29f15a7`（P3-B），及保留相同行为的后续提交。需要迁移 0016–0029。A31/A43/A44 和实际本地 D1 证明关闭身份写入仍只公开 canonical、旧 ID 解析、通知映射和缓存 generation 有效，未映射记录保持可见。
+本轮已验证的兼容代码：`f54650cdc7bda70f448d803a0eb63a8ccf3a420a`，需要迁移 0016–0035。较旧 P3-B 只证明历史 canonical 读取保护，不能替代包含本轮关闭审核/拒绝/估值修复的回滚代码。A31/A43/A44 和实际本地 D1 证明关闭身份写入仍只公开 canonical、旧 ID 解析、通知映射和缓存 generation 有效，未映射记录保持可见。
 
 写入回滚是在经授权环境部署这个兼容版本并设置 `IDENTITY_MODE=off`、`IDENTITY_MODEL_ASSIST=false`、`HISTORICAL_MERGE_ENABLED=false`，保留 identity 表及 alias-aware 读取。已合并产品旧采集写入会 retryable 暂停，避免在关闭解析后重新制造重复；未合并产品按原路径工作。暂停不等于丢弃线索，应监控重试积压。此操作未在生产执行。
 
@@ -56,7 +56,7 @@ npx tsx scripts/identity/evaluate.ts --input /approved/pairs.json --environment 
 
 ## 本地复现
 
-使用 Node 24.21.0。完整命令和最新结果见 [P3-C-EVIDENCE.md](P3-C-EVIDENCE.md)。`tests/fixtures/identity/wrangler.jsonc` 是隔离配置；每次真实 D1 演练使用新的 `.superpowers/sdd/IMPLEMENTATION/merge-d1-*` 目录。只运行 `--local`，不加载项目真实凭据或发送器。
+使用 Node 24.21.0。最新完整命令和结果见 [AUDIT-REMEDIATION.md](AUDIT-REMEDIATION.md)；P3-C-EVIDENCE 是修复前快照。`tests/fixtures/identity/wrangler.jsonc` 是隔离配置；每次真实 D1 演练使用新的 `.superpowers/sdd/IMPLEMENTATION/merge-d1-*` 目录。只运行 `--local`，不加载项目真实凭据或发送器。
 
 `metrics.ts` 记录逐条 SQL（batch 内每条单独计数）、D1 暴露的 rows_read/rows_written、累计数据库调用耗时和错误；first/raw 不提供元数据的语句计为 metadataMissing，部分和不冒充全量。返回 raw 数组保持重复列，不能为采集指标改变 SQL 的行为。重试数量和最早计划时间另行输出；当前候选没有排队起始时间，队龄明确未测。`elapsedMs` 累计数据库调用时长，并行调用会重复计时，不能当作整个操作 wall time 或生产 CPU/延迟；字段名更改列为延期 Minor。
 
