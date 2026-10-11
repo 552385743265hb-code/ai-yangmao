@@ -56,6 +56,8 @@ jobs:
         run: npm run collect
         env:
           API_BASE: ${{ secrets.API_BASE }}
+          IDENTITY_MODE: ${{ vars.IDENTITY_MODE || 'off' }}
+          IDENTITY_MODEL_ASSIST: ${{ vars.IDENTITY_MODEL_ASSIST || 'false' }}
           INGEST_TOKEN: ${{ secrets.INGEST_TOKEN }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GLM_API_KEY: ${{ secrets.GLM_API_KEY }}

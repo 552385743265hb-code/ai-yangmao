@@ -12,7 +12,9 @@ function unknownTerms(): CanonicalTermsV1 {
   return {schemaVersion:'terms-v1',issuerProductId:unknown,mechanism:unknown,benefitPools:[],eligibility:unknown,geography:unknown,claimChannels:unknown,costs:unknown,claimWindow:unknown,occurrenceAnchor:unknown};
 }
 export async function captureIdentityShadow(input: ShadowInput): Promise<{recorded:number;reason?:string}> {
-  if(process.env.IDENTITY_MODE==='off'||process.env.DRY_RUN==='1')return {recorded:0,reason:'disabled'};
+  if(process.env.DRY_RUN==='1'||process.env.IDENTITY_MODE==='off')return {recorded:0,reason:'disabled'};
+  if(process.env.IDENTITY_MODE==='enforce')return {recorded:0,reason:'enforce_adapter_owns_intake'};
+  if(process.env.IDENTITY_MODE!=='shadow')return {recorded:0,reason:'explicit_shadow_mode_required'};
   if(!process.env.API_BASE?.trim())return {recorded:0,reason:'explicit_api_base_required'};
   const observedAt=new Date().toISOString();
   const requestId=crypto.randomUUID();

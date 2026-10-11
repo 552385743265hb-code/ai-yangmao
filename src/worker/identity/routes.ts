@@ -45,12 +45,19 @@ identityIngestRoutes.get('/identity-candidates',async c=>{
   if(query.data.anchor)facts.occurrenceAnchor={state:'known',value:query.data.anchor,evidenceRefs:['query']};
   return c.json(await new IdentityStore(c.env.DB).retrieveCandidates(query.data.productId,facts,query.data.cursor));
 });
+const selectedTaskSql=`EXISTS(SELECT 1 FROM task_candidates tc WHERE tc.task_id=t.id) AND NOT EXISTS(SELECT 1 FROM task_candidates tc JOIN intake_candidates c ON c.id=tc.candidate_id WHERE tc.task_id=t.id AND json_extract(c.facts_json,'$.issuerProductId.state')='known' AND json_extract(c.facts_json,'$.issuerProductId.value') NOT IN (SELECT value FROM json_each(?)))`;
+const taskProducts=(env:Env)=>(env.IDENTITY_CANARY_PLATFORMS??'').split(',').map(p=>p.trim()).filter(Boolean).slice(0,20);
+async function requireTaskSelected(env:Env,id:string){
+ const products=taskProducts(env);
+ if(env.IDENTITY_MODE!=='enforce'||!products.length||!await env.DB.prepare(`SELECT 1 FROM review_tasks t WHERE t.id=? AND ${selectedTaskSql}`).bind(id,JSON.stringify(products)).first())throw new IdentityError(409,'identity task is outside the active Worker canary');
+}
 identityIngestRoutes.get('/identity-tasks',async c=>{
-  const rows=await c.env.DB.prepare("SELECT id,revision,kind FROM review_tasks t WHERE kind='identity' AND (state='open' OR (state='checking' AND lease_until<?)) AND EXISTS(SELECT 1 FROM task_candidates WHERE task_id=t.id) ORDER BY created_at,id LIMIT 4").bind(new Date().toISOString()).all();
-  return c.json({tasks:rows.results});
+ const products=taskProducts(c.env);if(c.env.IDENTITY_MODE!=='enforce'||!products.length)return c.json({tasks:[]});
+ const rows=await c.env.DB.prepare(`SELECT id,revision,kind FROM review_tasks t WHERE kind='identity' AND (state='open' OR (state='checking' AND lease_until<?)) AND ${selectedTaskSql} ORDER BY created_at,id LIMIT 4`).bind(new Date().toISOString(),JSON.stringify(products)).all();
+ return c.json({tasks:rows.results});
 });
-identityIngestRoutes.post('/identity-tasks/:id/claim',async c=>c.json(await new IdentityService(c.env.DB).claimTask(c.req.param('id'),await c.req.json())));
-identityIngestRoutes.post('/identity-tasks/:id/result',async c=>c.json(await new IdentityService(c.env.DB).submitTaskSuggestion(c.req.param('id'),await c.req.json())));
+identityIngestRoutes.post('/identity-tasks/:id/claim',async c=>{await requireTaskSelected(c.env,c.req.param('id'));return c.json(await new IdentityService(c.env.DB).claimTask(c.req.param('id'),await c.req.json()));});
+identityIngestRoutes.post('/identity-tasks/:id/result',async c=>{await requireTaskSelected(c.env,c.req.param('id'));return c.json(await new IdentityService(c.env.DB).submitTaskSuggestion(c.req.param('id'),await c.req.json()));});
 
 export const identityAdminRoutes=new Hono<{Bindings:Env;Variables:{role:'admin'|'reviewer';who:string}}>();
 identityAdminRoutes.onError((error,c)=>{
@@ -125,9 +132,9 @@ identityIngestRoutes.post('/identity-leads/:id/reconcile',async c=>{
 });
 
 identityIngestRoutes.get('/identity-retries',async c=>{
- if(c.env.IDENTITY_MODE!=='enforce')return c.json({candidates:[]});
+ if(c.env.IDENTITY_MODE!=='enforce')return c.json({candidates:[],reason:'worker_mode_not_enforce'});
  const products=(c.env.IDENTITY_CANARY_PLATFORMS??'').split(',').map(p=>p.trim()).filter(Boolean).slice(0,20);
- if(!products.length)return c.json({candidates:[]});
+ if(!products.length)return c.json({candidates:[],reason:'worker_canary_empty'});
  const rows=await c.env.DB.prepare(`SELECT id,revision FROM intake_candidates WHERE state='deferred' AND (next_attempt_at IS NULL OR next_attempt_at<=?) AND (json_extract(facts_json,'$.issuerProductId.state')='unknown' OR json_extract(facts_json,'$.issuerProductId.value') IN (${products.map(()=>'?').join(',')})) ORDER BY attempts,id LIMIT 4`).bind(new Date().toISOString(),...products).all();
  return c.json({candidates:rows.results});
 });

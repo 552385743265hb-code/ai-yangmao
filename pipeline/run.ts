@@ -443,7 +443,7 @@ export async function runPipeline() {
       stats.errors.push(`读取复核队列失败：${(error as Error).message}`);
     }
   }
-  try {const identity=await resumeIdentityIntake(Math.min(deadline,Date.now()+90000));Object.assign(stats,{identity});stats.deferred+=identity.deferred;}catch{stats.deferred++;stats.errors.push('身份候选重试暂不可用');}
+  try {const identity=await resumeIdentityIntake(Math.min(deadline,Date.now()+90000));Object.assign(stats,{identity});stats.deferred+=identity.deferred;if(identity.status==='not_evaluated')stats.errors.push('身份维护未评估：'+identity.reason);}catch{stats.deferred++;stats.errors.push('身份候选重试暂不可用');}
   stats.coverageDegraded = stats.deferred > 0 || stats.extractSkipped > 0 || stats.failed > 0 || stats.verificationFailed > 0
     || stats.verificationDeferred > 0 || stats.errors.length > 0 || list.some(source => source.deferThisRun);
   const ok = (FAST || !only) && stats.sources > 0 && stats.ok === stats.sources && !stats.coverageDegraded;
