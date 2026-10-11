@@ -71,7 +71,7 @@ switch (cmd) {
   case 'show': {
     const { offer: o, revisions } = await call(`/offers/${rest[0]}`);
     console.log(`[${o.code}] ${o.title}（${o.platform}）
-审核版本：${o.reviewVersion}\n类型：${o.type}　状态：${o.status}　审核：${o.reviewState}
+审核版本：${o.reviewVersion}\n上下架版本：${o.visibilityVersion??o.reviewVersion}\n类型：${o.type}　状态：${o.status}　审核：${o.reviewState}
 额度：${o.value}${o.usd != null ? `（约 $${o.usd}）` : ''}
 领取：${o.claimMethod}　${o.claimStart ?? '已开放'} → ${o.end}（官方时区 ${o.sourceTz}）　额度有效期：${o.creditValidity ?? '未写'}
 资格：${AUD[o.audience]}；${req(o.requirements)}

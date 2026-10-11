@@ -88,3 +88,9 @@ it('A19 replacement direction must agree with the proposed after-value',()=>{
  const {candidate,old}=anchored();candidate.benefitPools[0].amount=known({value:'20',unit:'currency',currency:'USD'});
  expect(compareCandidate(candidate,old,context('Campaign signup-2026 replaces 20 USD with 10 USD.')).termsRelation).toBe('INSUFFICIENT');
 });
+it('A08/A10 an automatic anchor with omitted or newly discovered facts cannot prove the same activity',()=>{
+ const {candidate,old}=anchored();candidate.benefitPools[0].amount=unknown;
+ expect(compareCandidate(candidate,old,context('Umbrella campaign signup-2026: a separate student signup bonus grants 20 USD.'))).toMatchObject({relation:'UNRESOLVED',entityId:null,termsRelation:'INSUFFICIENT'});
+ const added=anchored();added.candidate.eligibility=known({audience:'new',requirements:['student']});
+ expect(compareCandidate(added.candidate,added.old,context('Campaign signup-2026 grants a separate student benefit.'))).toMatchObject({relation:'UNRESOLVED',entityId:null});
+});

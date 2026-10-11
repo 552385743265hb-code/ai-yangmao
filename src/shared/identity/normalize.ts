@@ -77,3 +77,8 @@ export function identitySearchTokens(text: string): string[] {
   for(const run of normalized.match(/[\p{Script=Han}]+/gu)??[]) for(let i=0;i<run.length-1;i++)tokens.push(run.slice(i,i+2));
   return [...new Set(tokens)].slice(0,128);
 }
+
+/** A lookup aid for a scoped reviewed claim, never proof of identity by itself. */
+export function claimIdentityKey(facts:CanonicalTermsV1):string|null {
+ return facts.issuerProductId.state==='known'&&facts.mechanism.state==='known'&&facts.occurrenceAnchor.state==='known'?JSON.stringify([facts.issuerProductId.value,facts.mechanism.value,facts.occurrenceAnchor.value]):null;
+}
