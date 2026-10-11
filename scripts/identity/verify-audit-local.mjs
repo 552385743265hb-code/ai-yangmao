@@ -85,5 +85,12 @@ try{
  const completedEdit=await call('admin/offers/'+created.canonicalOfferId+'/edit',{requestId:'complete-partial',identityTaskId:partialResult.taskId,expectedIdentityRevision:pendingRevision,fields:{usdEstimate:20,usdMax:null,valuation:manualValuation},identityFacts:partial},true);
  await call('admin/identity/tasks/'+partialResult.taskId+'/resolve',{requestId:'completed-approval',expectedRevision:completedEdit.revision,action:'approve'},true);
  assert.equal((await call('admin/offers/'+created.canonicalOfferId,undefined,true)).offer.valuation.usdEstimate,20);
- assert.ok(measurements.every(m=>m.statements<=50));console.log(JSON.stringify({environment:'fresh-local-workerd-d1',R01:'passed',R02:'passed',R03:'passed',R07:'passed',R04:'passed',R05:'passed',R06:'passed',R08:'passed',productionOperations:0,modelCalls:0,messages:0,measurements}));
+
+ const incomplete=structuredClone(a);incomplete.eligibility={state:'unknown'};
+ const rawIntake=async(id,requirements)=>(await call('ingest/candidates',{requestId:id,observationId:observed.observationId,extractionVersion:'raw-scope-audit',extractionComplete:true,candidates:[{inputId:id,span:{start:0,end:body.length,quote:body},quotes:[{id:'quote-1',start:0,end:body.length,quote:body}],facts:incomplete,rawCandidate:{...displayOffer(),requirements}}]})).receipts[0];
+ const rawStudent=await rawIntake('raw-student',['student']),rawBusiness=await rawIntake('raw-business',['biz']);assert.notEqual(rawStudent.candidateId,rawBusiness.candidateId);
+ assert.equal((await call('ingest/identity-candidates/'+rawBusiness.candidateId+'/resolve',{requestId:'resolve-raw-business'})).outcome,'needs_identity_review');
+ const modeQueue=await call('ingest/identity-tasks');assert.ok(modeQueue.tasks.length<=4);
+ assert.deepEqual((await db.prepare('PRAGMA foreign_key_check').all()).results,[]);
+ assert.ok(measurements.every(m=>m.statements<=50));console.log(JSON.stringify({environment:'fresh-local-workerd-d1',R01:'passed',R02:'passed',R03:'passed',R07:'passed',R04:'passed',R05:'passed',R06:'passed',R08:'passed',R09:'passed',rawScope:'passed',productionOperations:0,modelCalls:0,messages:0,measurements}));
 }finally{await proxy.dispose();}

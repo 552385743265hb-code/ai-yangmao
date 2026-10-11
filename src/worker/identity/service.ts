@@ -296,7 +296,7 @@ export class IdentityService {
   if(reopen.allowed){const key=reviewTaskKey({kind:'evidence_reopen',entityId:'claim:'+root.id,refusalDecisionId:decision.id,basisHash:factsHash}),existing=await this.db.prepare("SELECT id FROM review_tasks WHERE task_key=? AND state IN ('open','manual','checking')").bind(key).first<{id:string}>();receipt.taskId=existing?.id??crypto.randomUUID();if(!existing){builder.insert('review_tasks',{id:receipt.taskId,task_key:key,kind:'evidence_reopen'});builder.insert('identity_events',{id:crypto.randomUUID(),event_key:`review:${receipt.taskId}:1:telegram`,task_id:receipt.taskId,kind:'review',payload_json:JSON.stringify({taskId:receipt.taskId,materialRevision:1,channel:'telegram'})});}builder.insert('task_candidates',{task_id:receipt.taskId,candidate_id:candidate.id},'nothing');}
   builder.insert('identity_refusal_applications',{candidate_id:candidate.id,decision_id:decision.id,facts_hash:factsHash,rules_version:RULES_VERSION,canonical_candidate_id:root.id,identity_basis_json:JSON.stringify({humanConfirmed:true,reason:input.reason,actor:input.actor,observationId:candidate.observation_id})},'nothing');
   const auditId=crypto.randomUUID();builder.insert('review_decisions',{id:auditId,candidate_id:candidate.id,action:'same',reason_code:'duplicate',reason_text:input.reason,basis_json:JSON.stringify({canonicalCandidateId:root.id,refusalDecisionId:decision.id}),scope_json:JSON.stringify({kind:'claim',candidateId:candidate.id}),reopen_policy_json:'{"kind":"manual","missingFacts":[]}',rules_version:RULES_VERSION,evidence_refs_json:JSON.stringify([candidate.observation_id]),actor:input.actor,idempotency_key:command});
-  const remaining=await this.db.prepare('SELECT 1 FROM intake_candidates WHERE task_id=? AND id<>? LIMIT 1').bind(task.id,candidate.id).first();builder.update('review_tasks',{state:remaining?'manual':'resolved',revision:task.revision+1,decision_id:remaining?null:auditId,lease_token:null,lease_until:null},'id=?',[task.id]);
+  const remaining=receipt.taskId===task.id||await this.db.prepare('SELECT 1 FROM intake_candidates WHERE task_id=? AND id<>? LIMIT 1').bind(task.id,candidate.id).first();builder.update('review_tasks',{state:remaining?'manual':'resolved',revision:task.revision+1,decision_id:remaining?null:auditId,lease_token:null,lease_until:null},'id=?',[task.id]);
   if(!remaining)builder.update('identity_events',{status:'blocked'},"task_id=? AND kind='review' AND status='pending'",[task.id]);
   builder.update('intake_candidates',{facts_json:JSON.stringify(facts),facts_hash:factsHash,claim_identity_key:claimIdentityKey(facts),decision_id:decision.id,task_id:receipt.taskId,state:reopen.allowed?'pending_identity':'resolved_rejected',receipt_json:JSON.stringify(receipt),revision:candidate.revision+1,last_error:null,next_attempt_at:null},'id=?',[candidate.id]);builder.assertOwnership('intake_candidates',candidate.id);
   return this.commit(builder,expected,receipt);
@@ -311,12 +311,12 @@ export class IdentityService {
   if(!candidate)throw new IdentityError(404,'candidate not found');
   const stored=candidate.receipt_json?intakeReceiptSchema.parse(JSON.parse(candidate.receipt_json)):null;
   if(!stored)throw new IdentityError(409,'candidate lacks intake receipt');
-  const ambiguousFamily=!!candidate.claim_family_key&&!!await this.db.prepare('SELECT 1 FROM intake_candidates WHERE claim_family_key=? AND assertion_facts_hash<>? LIMIT 1').bind(candidate.claim_family_key,candidate.assertion_facts_hash??candidate.facts_hash).first();
+  const ambiguousFamily=!!candidate.claim_family_key&&!!await this.db.prepare('SELECT 1 FROM intake_candidates WHERE claim_family_key=? AND id<>? LIMIT 1').bind(candidate.claim_family_key,candidate.id).first();
   const facts=canonicalTermsSchema.parse(control?.facts??JSON.parse(candidate.facts_json)),evidence=await this.evidence({...candidate,facts_json:JSON.stringify(control?.facts??JSON.parse(candidate.facts_json))});
   const builder=new MutationBuilder(this.db,command,payloadHash),expected:ExpectedRevision[]=[];
   if(control){expected.push({kind:'task',id:control.task.id,revision:control.task.revision});builder.require("EXISTS(SELECT 1 FROM review_tasks WHERE id=? AND state IN ('open','checking','manual'))",[control.task.id]);}
   builder.require('EXISTS(SELECT 1 FROM intake_candidates WHERE id=? AND revision=?)',[candidate.id,candidate.revision]);
-  if(candidate.claim_family_key&&!control&&!ambiguousFamily)builder.require('NOT EXISTS(SELECT 1 FROM intake_candidates WHERE claim_family_key=? AND assertion_facts_hash<>?)',[candidate.claim_family_key,candidate.assertion_facts_hash??candidate.facts_hash]);
+  if(candidate.claim_family_key&&!control&&!ambiguousFamily)builder.require('NOT EXISTS(SELECT 1 FROM intake_candidates WHERE claim_family_key=? AND id<>?)',[candidate.claim_family_key,candidate.id]);
   const leadRaw=JSON.parse(candidate.raw_candidate_json).candidate?._identityLegacyLead;
   const legacyLead=!control&&leadRaw?z.strictObject({leadId:z.number().int().positive(),resolution:z.string()}).parse(leadRaw):null;
   if(legacyLead)builder.require("EXISTS(SELECT 1 FROM leads WHERE id=? AND status='reviewing' AND resolution=? AND json_extract(resolution,'$.status')='checking')",[legacyLead.leadId,legacyLead.resolution]);
@@ -426,6 +426,17 @@ export class IdentityService {
    if(!version&&versionId){builder.insert('benefit_versions',{id:versionId,entity_id:entity.id,terms_schema:'terms-v1',terms_hash:hash,facts_json:JSON.stringify(facts),display_candidate_json:JSON.stringify(display??{}),state:'pending',base_version_id:baseVersionId});material=true;}
    if(receipt.outcome==='proposed_update'&&entity.canonical_offer_id){
     const proposal=await this.db.prepare('SELECT offer_id FROM offer_proposals WHERE offer_id=?').bind(entity.canonical_offer_id).first();
+    if(visibility?.restorationTaskId){
+     const restoration=await this.db.prepare('SELECT * FROM review_tasks WHERE id=?').bind(visibility.restorationTaskId).first<TaskRow>();
+     if(restoration&&(!proposal||restoration.version_id===versionId)){
+      taskKey=restoration.task_key;taskKind='evidence_reopen';
+      if(restoration.version_id!==versionId){
+       expected.push({kind:'task',id:restoration.id,revision:restoration.revision});
+       builder.update('review_tasks',{version_id:versionId,revision:restoration.revision+1,material_revision:restoration.material_revision+1,state:'manual',lease_token:null,lease_until:null},'id=?',[restoration.id]);
+       builder.insert('identity_events',{id:crypto.randomUUID(),event_key:`review:${restoration.id}:${restoration.material_revision+1}:telegram`,entity_id:entity.id,version_id:versionId,task_id:restoration.id,kind:'review',payload_json:JSON.stringify({taskId:restoration.id,materialRevision:restoration.material_revision+1,channel:'telegram'})});material=true;
+      }
+     }
+    }
     const sameTask=await this.db.prepare("SELECT id FROM review_tasks WHERE task_key=? AND state IN ('open','checking','manual')").bind(taskKey).first();
     if(proposal&&!sameTask){taskKind='merge_conflict';taskKey='proposal-conflict:'+entity.id+':'+hash;receipt.outcome='needs_identity_review';receipt.reasonCodes=['competing_proposal'];}
    }
@@ -520,13 +531,13 @@ export class IdentityService {
   const original=await this.offer(entity.canonical_offer_id),visibility=await visibilityState(this.db,entity.id);
   const restoring=visibility?.closed&&visibility.restorationTaskId===task.id&&visibility.holds.length===0;
   if(input.action==='approve'&&visibility?.closed&&!restoring)throw new IdentityError(409,'publication is paused; a fresh explicit reopen review is required');
-  let accepted:OfferIn|null=null;
+  let accepted:OfferIn|null=null,reviewedDisplay:OfferIn|null=null;
+  const manualFields=new Set<string>(proposal?JSON.parse(proposal.manual_fields):[]);
+  const protectedReviewDisplay=(raw:Record<string,unknown>)=>offerIn.parse({...raw,...(original?{id:original.id,platformId:original.platformId,...Object.fromEntries((['usdEstimate','usdMax','valuation'] as const).map(key=>[key,manualFields.has(key)?raw[key]:original[key]]))}:{})});
+  if(original)reviewedDisplay=protectedReviewDisplay(JSON.parse(version.display_candidate_json));
   if(input.action==='approve') {
-   if(!original)throw new IdentityError(400,'reviewable offer fields required');
-   const rawDisplay=JSON.parse(version.display_candidate_json);
-   const manualFields=new Set<string>(proposal?JSON.parse(proposal.manual_fields):[]);
-   const valuationFields=Object.fromEntries((['usdEstimate','usdMax','valuation'] as const).map(key=>[key,manualFields.has(key)?rawDisplay[key]:original[key]]));
-   accepted=offerIn.parse({...rawDisplay,id:original.id,platformId:original.platformId,...valuationFields,sourceId:original.sourceId??undefined,firstChannel:original.firstChannel??undefined});
+   if(!original||!reviewedDisplay)throw new IdentityError(400,'reviewable offer fields required');
+   accepted=offerIn.parse({...reviewedDisplay,id:original.id,platformId:original.platformId,sourceId:original.sourceId??undefined,firstChannel:original.firstChannel??undefined});
    const error=await publicationError({DB:this.db},{...original,...accepted,...(restoring?{withdrawnAt:null,withdrawnReason:null}:{})});if(error)throw new IdentityError(400,error);
   }
   const builder=new MutationBuilder(this.db,command,hash),expected:ExpectedRevision[]=[{kind:'task',id:task.id,revision:input.expectedRevision},{kind:'entity',id:entity.id,revision:entity.business_revision}];
@@ -559,7 +570,7 @@ export class IdentityService {
    else if(!entity.current_approved_version_id)builder.update('offers',{review_state:'rejected',updated_at:new Date().toISOString()},'id=?',[original.id]);
    builder.insert('reviews',{offer_id:original.id,action:input.action,reviewer:input.actor,reason:input.reason??null,reason_code:input.reasonCode??'other',decision_id:decisionId});
    if(task.kind==='terms_change'||(task.kind==='evidence_reopen'&&proposal)){
-    if(proposal&&task.kind==='evidence_reopen'&&stableJson(offerIn.parse(JSON.parse(proposal.candidate)))!==stableJson(offerIn.parse(JSON.parse(version.display_candidate_json))))throw new IdentityError(409,'proposal belongs to another review version');
+    if(proposal&&task.kind==='evidence_reopen'&&stableJson(protectedReviewDisplay(JSON.parse(proposal.candidate)))!==stableJson(reviewedDisplay??protectedReviewDisplay(JSON.parse(version.display_candidate_json))))throw new IdentityError(409,'proposal belongs to another review version');
     if(input.action==='reject'&&proposal)builder.insert('rejected_offer_updates',{offer_id:original.id,evidence:JSON.stringify(JSON.parse(proposal.candidate).evidence??original.evidence),diff:proposal.diff,decision_key:command});
     if(input.action==='approve'&&accepted)builder.insert('offer_revisions',{offer_id:original.id,diff:proposal?.diff??'[]',evidence_before:JSON.stringify(original.evidence),evidence_after:JSON.stringify(accepted.evidence),author:'pipeline'});
     builder.remove('offer_proposals','offer_id=?',[original.id]);
