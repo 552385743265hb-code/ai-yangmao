@@ -1,3 +1,4 @@
+import {needsEvidence,reviewPreparation} from '../shared/review-preparation';
 import {closeIdentityLead} from './identity/lead-closure';
 import {visibilityState,visibilityView} from './identity/visibility';
 import {canonicalLeadProjection} from './identity/lead-projection';
@@ -44,7 +45,7 @@ const endText = (o: OfferRow) => (o.endKind === 'date' && o.claimEnd ? `${md(o.c
 
 function view(o: OfferRow, platformName: string, now = new Date()) {
   return {
-    reviewVersion: o.updatedAt, visibilityVersion:o.updatedAt, code: shortCode(o.id), id: o.id, platformId: o.platformId, platform: platformName, title: o.title, type: TYPE_L[o.type] ?? o.type,
+    preparation: reviewPreparation(o), reviewVersion: o.updatedAt, visibilityVersion:o.updatedAt, code: shortCode(o.id), id: o.id, platformId: o.platformId, platform: platformName, title: o.title, type: TYPE_L[o.type] ?? o.type,
     value: o.valueText, usd: o.usdEstimate, end: endText(o), status: liveStatus(o, now), reviewState: o.reviewState,
     requirements: o.requirements, audience: o.audience, claimMethod: o.claimMethod, creditValidity: o.creditValidity,
     sourceTz: o.sourceTz, claimStart: o.claimStart, claimEnd: o.claimEnd, endKind: o.endKind,
@@ -151,19 +152,27 @@ admin.get('/queue', async c => {
   // 抓取/证据匹配失败留在健康页自动重试，不转成人工审批任务。
   const needsVerification: OfferRow[] = [];
   // 已上架但字段不全：和待审用同一份检查，补齐后各栏目才完整
-  const incomplete = approvedRows.filter(o => checkOffer(o, now).some(i => i.level !== 'info'));
-  return c.json({
-    pending: [
+  const incomplete = approvedRows.filter(o => !o.withdrawnAt&&checkOffer(o, now).some(i => i.level !== 'info'));
+  const identityTasks=(await c.env.DB.prepare("SELECT t.id,t.kind,t.revision,t.entity_id,t.suggestion_json,d.basis_json,e.canonical_offer_id,v.display_candidate_json FROM review_tasks t LEFT JOIN benefit_entities e ON e.id=t.entity_id LEFT JOIN benefit_versions v ON v.id=t.version_id AND v.entity_id=e.id LEFT JOIN review_decisions d ON d.id=t.decision_id WHERE t.state IN ('open','checking','manual') AND (e.id IS NULL OR e.state='active') ORDER BY t.created_at,t.id").all<{id:string;kind:string;revision:number;entity_id:string|null;suggestion_json:string|null;basis_json:string|null;canonical_offer_id:string|null;display_candidate_json:string|null}>()).results;
+  const taskOfferIds=identityTasks.flatMap(t=>t.canonical_offer_id?[t.canonical_offer_id]:[]);
+  const allOffers=taskOfferIds.length?await d.select().from(s.offers).where(sql`${s.offers.id} IN (SELECT value FROM json_each(${JSON.stringify(taskOfferIds)}))`):[];
+  const managedCards=identityTasks.flatMap(t=>{const original=allOffers.find(o=>o.id===t.canonical_offer_id),restoration=!!t.basis_json&&JSON.parse(t.basis_json).visibilityReopen===true;if(!original||!t.display_candidate_json||!['initial','terms_change','evidence_reopen'].includes(t.kind)||(original.withdrawnAt&&!restoration))return [];const suggestion=t.suggestion_json?JSON.parse(t.suggestion_json):null;const target={...proposalOffer(original,JSON.parse(t.display_candidate_json)),...(suggestion?.kind==='official_evidence'?{verifyResult:null}:{})};return [{...queueView(target),...(suggestion?.kind==='official_evidence'?{suggestion:original.reviewSuggestion??{verdict:suggestion.verdict??'judge',reason:suggestion.reason,by:'系统补证建议'}}:{}),restoration,identityTaskId:t.id,reviewVersion:`identity:${t.id}:${t.revision}`,pendingUpdate:!restoration&&original.reviewState==='approved',updateDiff:original.reviewState==='approved'?proposalComparison(original,JSON.parse(t.display_candidate_json)):[]}];});
+  const legacyCards = [
       ...pending.filter(o=>!managed.has(o.id)).map(queueView),
       ...proposals.filter(p=>!managed.has(p.offerId)).flatMap(p => {
         const original = originals.find(o => o.id === p.offerId);
         if (!original) return [];
         const updateDiff = proposalComparison(original, p.candidate);
         if (!updateDiff.some(change => isReviewField(change.field))) return [];
-        return [{ ...queueView(proposalOffer(original, p.candidate)), link:`https://ai-yangmao.com/#admin-offer-${encodeURIComponent(p.offerId)}`, reviewVersion: p.updatedAt, pendingUpdate: true, changedFields: updateDiff.map(x => x.field), updateDiff }];
+        return [{ ...queueView(proposalOffer(original, p.candidate)), link:`https://ai-yangmao.com/#admin-offer-${encodeURIComponent(p.offerId)}`, reviewVersion: p.updatedAt, pendingUpdate: original.reviewState==='approved', changedFields: updateDiff.map(x => x.field), updateDiff }];
       }),
-    ],
-    leadTasks: (await canonicalLeadProjection(c.env.DB,await d.select().from(s.leads).where(eq(s.leads.status,'reviewing')))).sort((a,b)=>Number(b.resolution?.status==='manual')-Number(a.resolution?.status==='manual')||leadPriority(a)-leadPriority(b)||a.id-b.id).map(leadTask),
+    ];
+  const pendingCards=[...new Map(legacyCards.map(c=>[c.id,c])).values()];
+  const leadTasks=(await canonicalLeadProjection(c.env.DB,await d.select().from(s.leads).where(eq(s.leads.status,'reviewing')))).filter(l=>!l.resolution?.identityTaskIds?.length).sort((a,b)=>Number(b.resolution?.status==='manual')-Number(a.resolution?.status==='manual')||leadPriority(a)-leadPriority(b)||a.id-b.id).map(leadTask);
+  const paused=await c.env.DB.prepare("SELECT count(*) n FROM benefit_entities e JOIN offers o ON o.id=e.canonical_offer_id WHERE e.state='active' AND e.current_approved_version_id IS NOT NULL AND (o.review_state<>'approved' OR o.withdrawn_at IS NOT NULL)").first<{n:number}>();
+  const cards=[...pendingCards,...managedCards];
+  const counts={activities:pendingCards.length+identityTasks.length,leadReview:leadTasks.length,newLeads,paused:paused?.n??0};
+  return c.json({pending:cards,counts,managedTaskIds:managedCards.map(c=>c.identityTaskId),leadTasks,
     priorityLeads: (await d.select().from(s.leads).where(inArray(s.leads.status,['new','reviewing'])))
       .filter(l=>leadPriority(l)<=1).sort((a,b)=>leadPriority(a)-leadPriority(b)||b.id-a.id).slice(0,10)
       .map(l=>({ id:l.id,title:l.title,url:l.url,status:l.status,note:l.status==='reviewing'?l.raw?.split('[研判]').at(-1)?.slice(0,500):null })),
@@ -206,9 +215,10 @@ admin.get('/offers/:ref', async c => {
   const names = await platformNames(c.env);
   const [proposal] = await db(c.env).select().from(s.offerProposals).where(eq(s.offerProposals.offerId, o.id));
   const revisions = await db(c.env).select().from(s.offerRevisions).where(sql`${s.offerRevisions.offerId}=${o.id} OR ${s.offerRevisions.offerId} IN (SELECT member.canonical_offer_id FROM benefit_entities member JOIN benefit_entities root ON root.id=member.merged_into WHERE root.canonical_offer_id=${o.id} AND member.state='merged')`).orderBy(desc(s.offerRevisions.at));
-  const target = proposal ? proposalOffer(o, proposal.candidate) : o;
-  const tasks=await c.env.DB.prepare("SELECT t.id,t.revision FROM review_tasks t JOIN benefit_entities e ON e.id=t.entity_id WHERE e.canonical_offer_id=? AND t.state IN ('open','checking','manual') AND t.kind IN ('initial','terms_change','evidence_reopen') ORDER BY t.id LIMIT 2").bind(o.id).all<{id:string;revision:number}>();
+  let target = proposal ? proposalOffer(o, proposal.candidate) : o;
+  const tasks=await c.env.DB.prepare("SELECT t.id,t.revision,t.suggestion_json,v.display_candidate_json FROM review_tasks t JOIN benefit_entities e ON e.id=t.entity_id LEFT JOIN benefit_versions v ON v.id=t.version_id AND v.entity_id=e.id WHERE e.canonical_offer_id=? AND t.state IN ('open','checking','manual') AND t.kind IN ('initial','terms_change','evidence_reopen') ORDER BY t.id LIMIT 2").bind(o.id).all<{id:string;revision:number;suggestion_json:string|null;display_candidate_json:string|null}>();
   const task=tasks.results.length===1?tasks.results[0]:null;
+  if(task?.display_candidate_json){const suggestion=task.suggestion_json?JSON.parse(task.suggestion_json):null;target={...proposalOffer(o,JSON.parse(task.display_candidate_json)),...(suggestion?.kind==='official_evidence'?{verifyResult:null,reviewSuggestion:o.reviewSuggestion??{verdict:suggestion.verdict??'judge',reason:suggestion.reason,by:'系统补证建议'}}:{})};}
   const entity=await c.env.DB.prepare('SELECT id,business_revision FROM benefit_entities WHERE canonical_offer_id=?').bind(o.id).first<{id:string;business_revision:number}>();
   const hold=entity?visibilityView(await visibilityState(c.env.DB,entity.id)):null;
   return c.json({ offer: { visibilityHold:hold,...view(target, names[target.platformId] ?? target.platformId), visibilityVersion:entity?entityOfferVersion(entity,o.updatedAt):o.updatedAt,reviewVersion:task?`identity:${task.id}:${task.revision}`:entity?entityOfferVersion(entity,o.updatedAt):proposal?.updatedAt ?? o.updatedAt, ...(proposal ? {link:`https://ai-yangmao.com/#admin-offer-${encodeURIComponent(o.id)}`, pendingUpdate: true, updateDiff: proposalComparison(o, proposal.candidate)} : {}) }, pendingUpdate: !!proposal, revisions });
@@ -428,8 +438,10 @@ admin.post('/offers/:ref/suggest', async c => {
 admin.post('/offers/:ref/official-retry',async c=>{
   const o=await findOffer(c.env,c.req.param('ref'));if(!o)return c.json({error:'找不到条目'},404);
   const [proposal]=await db(c.env).select().from(s.offerProposals).where(eq(s.offerProposals.offerId,o.id));
-  const target=proposal?proposalOffer(o,proposal.candidate):o;
-  if(target.evidence.tier!=='media'||(o.reviewState!=='pending'&&!proposal))return c.json({error:'当前条目不需要社区来源官方复核'},409);
+  let target=proposal?proposalOffer(o,proposal.candidate):o;
+  const drafts=(await c.env.DB.prepare("SELECT v.display_candidate_json,t.suggestion_json FROM review_tasks t JOIN benefit_entities e ON e.id=t.entity_id JOIN benefit_versions v ON v.id=t.version_id AND v.entity_id=e.id WHERE e.canonical_offer_id=? AND e.state='active' AND t.kind='initial' AND t.state IN ('open','manual') LIMIT 2").bind(o.id).all<{display_candidate_json:string;suggestion_json:string|null}>()).results;
+  if(drafts.length===1){const suggestion=drafts[0].suggestion_json?JSON.parse(drafts[0].suggestion_json):null;target={...proposalOffer(o,JSON.parse(drafts[0].display_candidate_json)),...(suggestion?.kind==='official_evidence'?{verifyResult:null}:{})};}
+  if(o.withdrawnAt||!needsEvidence(target)||(o.reviewState!=='pending'&&!proposal))return c.json({error:'当前条目无需补证，或已暂停发布'},409);
   if(o.officialReview?.status==='checking'&&Date.now()-Date.parse(o.officialReview.checkedAt)<20*60_000)return c.json({error:'官方复核正在进行，请稍后查看'},409);
   await db(c.env).update(s.offers).set({officialReview:null}).where(eq(s.offers.id,o.id));
   return c.json({ok:true});
