@@ -534,7 +534,7 @@ export class IdentityService {
   let accepted:OfferIn|null=null,reviewedDisplay:OfferIn|null=null;
   const manualFields=new Set<string>(proposal?JSON.parse(proposal.manual_fields):[]);
   const protectedReviewDisplay=(raw:Record<string,unknown>)=>offerIn.parse({...raw,...(original?{id:original.id,platformId:original.platformId,...Object.fromEntries((['usdEstimate','usdMax','valuation'] as const).map(key=>[key,manualFields.has(key)?raw[key]:original[key]]))}:{})});
-  if(original)reviewedDisplay=protectedReviewDisplay(JSON.parse(version.display_candidate_json));
+  if(original&&(input.action==='approve'||(proposal&&task.kind==='evidence_reopen')))reviewedDisplay=protectedReviewDisplay(JSON.parse(version.display_candidate_json));
   if(input.action==='approve') {
    if(!original||!reviewedDisplay)throw new IdentityError(400,'reviewable offer fields required');
    accepted=offerIn.parse({...reviewedDisplay,id:original.id,platformId:original.platformId,sourceId:original.sourceId??undefined,firstChannel:original.firstChannel??undefined});

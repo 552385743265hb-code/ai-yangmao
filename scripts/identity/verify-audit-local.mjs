@@ -92,5 +92,13 @@ try{
  assert.equal((await call('ingest/identity-candidates/'+rawBusiness.candidateId+'/resolve',{requestId:'resolve-raw-business'})).outcome,'needs_identity_review');
  const modeQueue=await call('ingest/identity-tasks');assert.ok(modeQueue.tasks.length<=4);
  assert.deepEqual((await db.prepare('PRAGMA foreign_key_check').all()).results,[]);
+
+ const badDisplayFacts=structuredClone(a);badDisplayFacts.benefitPools[0].amount=known({value:'40',unit:'currency',currency:'USD'});const badText='Campaign shared replaces 20 USD with 40 USD.';
+ const badObservation=await call('ingest/observations',{requestId:'bad-display-source',originalUrl:'https://vendor.example/bad-display',finalUrl:'https://vendor.example/bad-display',text:badText,sourceId:'vendor-source',fetchKind:'direct',observedAt:'2026-10-10T10:00:00Z'});
+ const badCandidate=(await call('ingest/candidates',{requestId:'bad-display-intake',observationId:badObservation.observationId,extractionVersion:'audit-v1',extractionComplete:true,candidates:[{inputId:'bad',span:{start:0,end:badText.length,quote:badText},quotes:[{id:'quote-1',start:0,end:badText.length,quote:badText}],facts:badDisplayFacts,rawCandidate:{}}]})).receipts[0];
+ const badTask=await call('ingest/identity-candidates/'+badCandidate.candidateId+'/resolve',{requestId:'bad-display-resolve'});let bad;
+ for(let i=0;i<3;i++){bad=await call('admin/identity/tasks/'+badTask.taskId+'/resolve',{requestId:'bad-display-identity',expectedRevision:0,action:'same',candidateId:badCandidate.candidateId,entityId:created.entityId,reason:'Same official activity, incomplete display requires rejection.'},true);if(!bad.retryable)break;}
+ assert.equal(bad.outcome,'proposed_update');await call('admin/identity/tasks/'+bad.taskId+'/resolve',{requestId:'reject-bad-display',expectedRevision:0,action:'reject',reason:'Display extraction incomplete.'},true);
+ assert.equal((await call('admin/offers/'+created.canonicalOfferId,undefined,true)).offer.valuation.usdEstimate,20);
  assert.ok(measurements.every(m=>m.statements<=50));console.log(JSON.stringify({environment:'fresh-local-workerd-d1',R01:'passed',R02:'passed',R03:'passed',R07:'passed',R04:'passed',R05:'passed',R06:'passed',R08:'passed',R09:'passed',rawScope:'passed',productionOperations:0,modelCalls:0,messages:0,measurements}));
 }finally{await proxy.dispose();}
