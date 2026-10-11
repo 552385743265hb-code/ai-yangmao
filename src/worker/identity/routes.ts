@@ -1,3 +1,4 @@
+import {previewBackfillObject,applyBackfillObject,backfillSourceSchema,objectBackfillPlanSchema} from './production-backfill';
 import {taskSourcesCte} from './task-sources';
 import {visibilityState,visibilityView} from './visibility';
 import {IdentityMergeService} from './merge';
@@ -45,8 +46,8 @@ identityIngestRoutes.get('/identity-candidates',async c=>{
   if(query.data.anchor)facts.occurrenceAnchor={state:'known',value:query.data.anchor,evidenceRefs:['query']};
   return c.json(await new IdentityStore(c.env.DB).retrieveCandidates(query.data.productId,facts,query.data.cursor));
 });
-const selectedTaskSql=`EXISTS(SELECT 1 FROM task_candidates tc WHERE tc.task_id=t.id) AND NOT EXISTS(SELECT 1 FROM task_candidates tc JOIN intake_candidates c ON c.id=tc.candidate_id WHERE tc.task_id=t.id AND json_extract(c.facts_json,'$.issuerProductId.state')='known' AND json_extract(c.facts_json,'$.issuerProductId.value') NOT IN (SELECT value FROM json_each(?)))`;
-const taskProducts=(env:Env)=>(env.IDENTITY_CANARY_PLATFORMS??'').split(',').map(p=>p.trim()).filter(Boolean).slice(0,20);
+const selectedTaskSql=`EXISTS(SELECT 1 FROM task_candidates tc WHERE tc.task_id=t.id) AND NOT EXISTS(SELECT 1 FROM task_candidates tc JOIN intake_candidates c ON c.id=tc.candidate_id WHERE tc.task_id=t.id AND json_extract(c.facts_json,'$.issuerProductId.state')='known' AND NOT EXISTS(SELECT 1 FROM json_each(?) selected WHERE selected.value='*' OR selected.value=json_extract(c.facts_json,'$.issuerProductId.value')))`;
+const taskProducts=(env:Env)=>(env.IDENTITY_CANARY_PLATFORMS??'').split(',').map(p=>p.trim()).filter(Boolean);
 async function requireTaskSelected(env:Env,id:string){
  const products=taskProducts(env);
  if(env.IDENTITY_MODE!=='enforce'||!products.length||!await env.DB.prepare(`SELECT 1 FROM review_tasks t WHERE t.id=? AND ${selectedTaskSql}`).bind(id,JSON.stringify(products)).first())throw new IdentityError(409,'identity task is outside the active Worker canary');
@@ -133,21 +134,49 @@ identityIngestRoutes.post('/identity-leads/:id/reconcile',async c=>{
 
 identityIngestRoutes.get('/identity-retries',async c=>{
  if(c.env.IDENTITY_MODE!=='enforce')return c.json({candidates:[],reason:'worker_mode_not_enforce'});
- const products=(c.env.IDENTITY_CANARY_PLATFORMS??'').split(',').map(p=>p.trim()).filter(Boolean).slice(0,20);
+ const products=(c.env.IDENTITY_CANARY_PLATFORMS??'').split(',').map(p=>p.trim()).filter(Boolean);
  if(!products.length)return c.json({candidates:[],reason:'worker_canary_empty'});
- const rows=await c.env.DB.prepare(`SELECT id,revision FROM intake_candidates WHERE state='deferred' AND (next_attempt_at IS NULL OR next_attempt_at<=?) AND (json_extract(facts_json,'$.issuerProductId.state')='unknown' OR json_extract(facts_json,'$.issuerProductId.value') IN (${products.map(()=>'?').join(',')})) ORDER BY attempts,id LIMIT 4`).bind(new Date().toISOString(),...products).all();
+ const rows=await c.env.DB.prepare(`SELECT id,revision FROM intake_candidates WHERE state='deferred' AND (next_attempt_at IS NULL OR next_attempt_at<=?) AND (json_extract(facts_json,'$.issuerProductId.state')='unknown' OR EXISTS(SELECT 1 FROM json_each(?) selected WHERE selected.value='*' OR selected.value=json_extract(facts_json,'$.issuerProductId.value'))) ORDER BY attempts,id LIMIT 4`).bind(new Date().toISOString(),JSON.stringify(products)).all();
  return c.json({candidates:rows.results});
 });
 
+function historyContext(env:Env,actor:string){
+ if(!env.IDENTITY_HISTORY_ENVIRONMENT||!env.IDENTITY_HISTORY_SOURCE_SHA||!/^([a-f0-9]{40})$/.test(env.IDENTITY_HISTORY_SOURCE_SHA))throw new IdentityError(403,'explicit history environment and deployed source SHA required');
+ return {environment:env.IDENTITY_HISTORY_ENVIRONMENT,sourceDatabaseId:'worker.DB:'+env.IDENTITY_HISTORY_ENVIRONMENT,sourceCodeSha:env.IDENTITY_HISTORY_SOURCE_SHA,approvedBy:actor};
+}
+identityAdminRoutes.get('/backfill/pending',async c=>{
+ if(c.get('role')!=='admin')throw new IdentityError(403,'administrator required');historyContext(c.env,c.get('who'));
+ const [offers,leads,updates]=await Promise.all([
+  c.env.DB.prepare('SELECT o.id FROM offers o WHERE NOT EXISTS(SELECT 1 FROM benefit_entities e WHERE e.canonical_offer_id=o.id) ORDER BY o.id LIMIT 100').all<{id:string}>(),
+  c.env.DB.prepare("SELECT l.id FROM leads l WHERE l.status='rejected' AND NOT EXISTS(SELECT 1 FROM review_decisions d WHERE d.idempotency_key='backfill:lead:'||l.id AND json_extract(d.basis_json,'$.legacyResolution') IS l.resolution) AND NOT EXISTS(SELECT 1 FROM lead_candidate_links lc JOIN intake_candidates i ON i.id=lc.candidate_id JOIN review_decisions d ON d.id=i.decision_id WHERE lc.lead_id=l.id AND d.action='reject') ORDER BY l.id LIMIT 100").all<{id:number}>(),
+  c.env.DB.prepare("SELECT r.id FROM rejected_offer_updates r WHERE NOT EXISTS(SELECT 1 FROM review_decisions d WHERE d.idempotency_key='backfill:rejected_update:'||r.id OR d.idempotency_key=r.decision_key) ORDER BY r.id LIMIT 100").all<{id:number}>(),
+ ]);return c.json({offers:offers.results.map(r=>r.id),leads:leads.results.map(r=>String(r.id)),rejected_offer_updates:updates.results.map(r=>String(r.id)),limit:100});
+});
+identityAdminRoutes.get('/backfill/status',async c=>{
+ if(c.get('role')!=='admin')throw new IdentityError(403,'administrator required');const source=backfillSourceSchema.parse(c.req.query());const key='backfill:'+({offers:'offer',leads:'lead',rejected_offer_updates:'rejected_update'}[source.table])+':'+source.id;
+ const row=await c.env.DB.prepare('SELECT state FROM identity_commands WHERE request_id=?').bind(key).first<{state:string}>();return c.json({source,state:row?.state??'missing'});
+});
+identityAdminRoutes.post('/backfill/preview',async c=>{
+ if(c.get('role')!=='admin')throw new IdentityError(403,'administrator required');
+ return c.json(await previewBackfillObject(c.env.DB,backfillSourceSchema.parse(await c.req.json()),historyContext(c.env,c.get('who'))));
+});
+identityAdminRoutes.post('/backfill/apply',async c=>{
+ if(c.get('role')!=='admin'||c.env.HISTORICAL_MERGE_ENABLED!=='true')throw new IdentityError(403,'history writes disabled or unauthorized');
+ const body=z.strictObject({plan:objectBackfillPlanSchema,approvedPlanHash:z.string()}).parse(await c.req.json());
+ return c.json(await applyBackfillObject(c.env.DB,body.plan,body.approvedPlanHash,historyContext(c.env,c.get('who'))));
+});
+
 identityAdminRoutes.post('/merges/preview',async c=>{
- if(c.get('role')!=='admin'||!c.env.IDENTITY_HISTORY_ENVIRONMENT)return c.json({error:'explicit nonproduction administrator environment required'},403);
+ if(c.get('role')!=='admin'||!c.env.IDENTITY_HISTORY_ENVIRONMENT)return c.json({error:'explicit administrator history environment required'},403);
  const raw=await c.req.json();if(raw.environment!==c.env.IDENTITY_HISTORY_ENVIRONMENT)return c.json({error:'history environment mismatch'},403);
+ if(c.env.IDENTITY_HISTORY_ENVIRONMENT==='production'&&raw.sourceCodeSha!==historyContext(c.env,c.get('who')).sourceCodeSha)throw new IdentityError(409,'history source version changed');
  if(!Array.isArray(raw.groups)||raw.groups.length!==1)return c.json({error:'preview one complete group per Worker request; offline preview supports up to ten'},400);
  return c.json(await buildMergePlan(c.env.DB,raw));
 });
 identityAdminRoutes.post('/merges/apply',async c=>{
  if(c.get('role')!=='admin'||c.env.HISTORICAL_MERGE_ENABLED!=='true'||!c.env.IDENTITY_HISTORY_ENVIRONMENT)return c.json({error:'historical merge disabled or unauthorized'},403);
  const body=z.strictObject({plan:mergePlanSchema,requestId:z.string().min(1).max(150),approvedPlanHash:z.string(),groupId:z.string().optional()}).parse(await c.req.json());
+ if(c.env.IDENTITY_HISTORY_ENVIRONMENT==='production'&&body.plan.sourceCodeSha!==historyContext(c.env,c.get('who')).sourceCodeSha)throw new IdentityError(409,'history source version changed');
  const r=await new IdentityMergeService(c.env.DB,{environment:c.env.IDENTITY_HISTORY_ENVIRONMENT,enabled:true,actor:c.get('who')}).applyMerge(body.plan,body.requestId,body.approvedPlanHash,body.groupId);return c.json(r,r.status==='conflict'?409:200);
 });
 identityAdminRoutes.post('/merges/rollback',async c=>{

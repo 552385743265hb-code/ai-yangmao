@@ -113,7 +113,7 @@ export class IdentityStore {
     const hash = await sha256(stableJson(input));
     const commandId = `observation:${input.requestId}`;
     const urlKey = normalizeDocumentUrl(input.originalUrl);
-    const documentId = `doc_${await sha256(urlKey)}`;
+    const documentId = (await this.db.prepare('SELECT id FROM source_documents WHERE url_key=?').bind(urlKey).first<{id:string}>())?.id??`doc_${await sha256(urlKey)}`;
     const contentHash = await sha256(input.text);
     const verifiedFetch=input.fetchEvidence?await verifyFetchProvenance(input.fetchEvidence,input.originalUrl,input.finalUrl,input.text):null;
     if(verifiedFetch&&!verifiedFetch.valid)throw new IdentityError(400,'fetch provenance does not match source body or URLs');
@@ -128,7 +128,7 @@ export class IdentityStore {
       }
     }
     const fetchKind=input.fetchKind==='unavailable'?'unavailable':sourceVerified?'direct':'indirect';
-    const observationId = `obs_${await sha256(stableJson([documentId,contentHash,fetchKind]))}`;
+    const observationId = (await this.db.prepare('SELECT id FROM source_observations WHERE document_id=? AND content_hash=? AND fetch_kind=?').bind(documentId,contentHash,fetchKind).first<{id:string}>())?.id??`obs_${await sha256(stableJson([documentId,contentHash,fetchKind]))}`;
     const fetchId='fetch_'+await sha256(commandId);
     const trust = JSON.stringify({sourceVerified,productId,sourceId:input.sourceId??null});
     const provenance=JSON.stringify({...input.fetchEvidence,originalUrl:input.originalUrl,finalUrl:input.finalUrl,fetchedUrl:input.fetchEvidence?.fetchedUrl??null,method:input.fetchEvidence?.method??input.fetchKind,reportedSourceVerified:input.fetchEvidence?.sourceVerified??null,sourceVerified,productId,truncated,contentHash});

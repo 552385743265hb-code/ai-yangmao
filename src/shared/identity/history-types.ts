@@ -1,6 +1,6 @@
 import {z} from 'zod';
 import {canonicalTermsSchema} from './types';
-export const historyEnvironment=z.enum(['synthetic','redacted_local']);
+export const historyEnvironment=z.enum(['synthetic','redacted_local','production']);
 export const historyContextSchema=z.strictObject({environment:historyEnvironment,sourceDatabaseId:z.string().min(1).max(200),sourceCodeSha:z.string().regex(/^[0-9a-f]{40}$/),approvedBy:z.string().min(1).max(200)});
 export type HistoryContext=z.infer<typeof historyContextSchema>;
 export const legacyTables=['offers','leads','rejected_offer_updates','offer_proposals','reviews','offer_revisions','notifications','deliveries'] as const;

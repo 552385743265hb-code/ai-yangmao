@@ -11,7 +11,7 @@ import { IdentityStore,IdentityError } from './store';
 import { IdentityService } from './service';
 
 export function identitySelected(env:Pick<Env,'IDENTITY_MODE'|'IDENTITY_CANARY_PLATFORMS'>,productId:string):boolean {
- return env.IDENTITY_MODE==='enforce'&&(env.IDENTITY_CANARY_PLATFORMS??'').split(',').map(s=>s.trim()).includes(productId);
+ const products=(env.IDENTITY_CANARY_PLATFORMS??'').split(',').map(s=>s.trim());return env.IDENTITY_MODE==='enforce'&&(products.includes('*')||products.includes(productId));
 }
 export async function requireIdentityReady(db:D1Database,productId:string):Promise<void> {
  const missing=await db.prepare('SELECT 1 FROM offers o LEFT JOIN benefit_entities e ON e.canonical_offer_id=o.id WHERE o.platform_id=? AND e.id IS NULL LIMIT 1').bind(productId).first();
