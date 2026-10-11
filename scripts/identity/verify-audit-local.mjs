@@ -81,7 +81,9 @@ try{
  const pendingRevision=(await db.prepare('SELECT revision FROM review_tasks WHERE id=?').bind(partialResult.taskId).first()).revision;
  await call('admin/identity/tasks/'+partialResult.taskId+'/resolve',{requestId:'incomplete-approval',expectedRevision:pendingRevision,action:'approve'},true,409);
  partial.eligibility=a.eligibility;
- const completedEdit=await call('admin/offers/'+created.canonicalOfferId+'/edit',{requestId:'complete-partial',identityTaskId:partialResult.taskId,expectedIdentityRevision:pendingRevision,fields:{},identityFacts:partial},true);
+ const manualValuation={version:'v1',status:'priced',method:'face_value',period:'one_time',usdEstimate:20,usdMax:null,fullValue:20,formula:'Official face value 20 USD',inputs:{},sources:[{url:'https://vendor.example/pricing',checkedAt:'2026-10-10',excerpt:'20 USD.',priceBasis:'Official face value'}],assumptions:[],reviewedAt:'2026-10-10'};
+ const completedEdit=await call('admin/offers/'+created.canonicalOfferId+'/edit',{requestId:'complete-partial',identityTaskId:partialResult.taskId,expectedIdentityRevision:pendingRevision,fields:{usdEstimate:20,usdMax:null,valuation:manualValuation},identityFacts:partial},true);
  await call('admin/identity/tasks/'+partialResult.taskId+'/resolve',{requestId:'completed-approval',expectedRevision:completedEdit.revision,action:'approve'},true);
- assert.ok(measurements.every(m=>m.statements<=50));console.log(JSON.stringify({environment:'fresh-local-workerd-d1',R01:'passed',R02:'passed',R03:'passed',R07:'passed',R04:'passed',R05:'passed',R06:'passed',productionOperations:0,modelCalls:0,messages:0,measurements}));
+ assert.equal((await call('admin/offers/'+created.canonicalOfferId,undefined,true)).offer.valuation.usdEstimate,20);
+ assert.ok(measurements.every(m=>m.statements<=50));console.log(JSON.stringify({environment:'fresh-local-workerd-d1',R01:'passed',R02:'passed',R03:'passed',R07:'passed',R04:'passed',R05:'passed',R06:'passed',R08:'passed',productionOperations:0,modelCalls:0,messages:0,measurements}));
 }finally{await proxy.dispose();}

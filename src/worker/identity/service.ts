@@ -167,7 +167,7 @@ export class IdentityService {
    const builder=new MutationBuilder(this.db,command,hash),expected:ExpectedRevision[]=[{kind:'entity',id:entity.id,revision:entity.business_revision}];
    builder.require('EXISTS(SELECT 1 FROM offers WHERE id=? AND updated_at=?)',[offerId,original.updatedAt]);
    if(task){expected.push({kind:'task',id:task.id,revision:task.revision});builder.update('review_tasks',{revision:task.revision+1,lease_token:null,lease_until:null,state:'manual'},'id=?',[task.id]);}
-   if(proposal){builder.require('EXISTS(SELECT 1 FROM offer_proposals WHERE offer_id=? AND updated_at=?)',[offerId,proposal.updated_at]);builder.update('offer_proposals',{candidate:JSON.stringify(parsed.data),updated_at:new Date().toISOString()},'offer_id=?',[offerId]);}
+   if(proposal){builder.require('EXISTS(SELECT 1 FROM offer_proposals WHERE offer_id=? AND updated_at=?)',[offerId,proposal.updated_at]);builder.update('offer_proposals',{candidate:JSON.stringify(parsed.data),manual_fields:JSON.stringify([...new Set([...JSON.parse(proposal.manual_fields),...Object.keys(input.fields)])]),updated_at:new Date().toISOString()},'offer_id=?',[offerId]);}
    else builder.update('offers',{...offerValues(parsed.data),updated_at:new Date().toISOString()},'id=?',[offerId]);
    builder.update('benefit_versions',{display_candidate_json:JSON.stringify(parsed.data)},'id=?',[oldVersion.id]);
    builder.update('benefit_entities',{business_revision:entity.business_revision+1},'id=?',[entity.id]);
@@ -524,7 +524,9 @@ export class IdentityService {
   if(input.action==='approve') {
    if(!original)throw new IdentityError(400,'reviewable offer fields required');
    const rawDisplay=JSON.parse(version.display_candidate_json);
-   accepted=offerIn.parse({...rawDisplay,id:original.id,platformId:original.platformId,usdEstimate:original.usdEstimate,usdMax:original.usdMax,valuation:original.valuation,sourceId:original.sourceId??undefined,firstChannel:original.firstChannel??undefined});
+   const manualFields=new Set<string>(proposal?JSON.parse(proposal.manual_fields):[]);
+   const valuationFields=Object.fromEntries((['usdEstimate','usdMax','valuation'] as const).map(key=>[key,manualFields.has(key)?rawDisplay[key]:original[key]]));
+   accepted=offerIn.parse({...rawDisplay,id:original.id,platformId:original.platformId,...valuationFields,sourceId:original.sourceId??undefined,firstChannel:original.firstChannel??undefined});
    const error=await publicationError({DB:this.db},{...original,...accepted,...(restoring?{withdrawnAt:null,withdrawnReason:null}:{})});if(error)throw new IdentityError(400,error);
   }
   const builder=new MutationBuilder(this.db,command,hash),expected:ExpectedRevision[]=[{kind:'task',id:task.id,revision:input.expectedRevision},{kind:'entity',id:entity.id,revision:entity.business_revision}];
