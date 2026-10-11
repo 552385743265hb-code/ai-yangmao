@@ -34,7 +34,7 @@ export async function searchOfficial(query:string,deadlineAt:number):Promise<str
   return parseSearchResults(body);
 }
 interface Job {
-  claimed:boolean;recovered?:boolean;previousCandidates?:string[];jobId:string;offer:OfferIn & {discoveredAt?:string};platform:OfficialPlatform;sources:OfficialSource[];
+  claimed:boolean;stageEvidence?:boolean;recovered?:boolean;previousCandidates?:string[];jobId:string;offer:OfferIn & {discoveredAt?:string};platform:OfficialPlatform;sources:OfficialSource[];
 }
 export interface OfficialReviewStats { checked:number;matched:number;unresolved:number;failed:number;deferred:number;searches:number }
 export async function runOfficialReviews(options:{limit:number;deadlineAt:number;dry:boolean;allowPaid:boolean;account:(tokens:number,costCny:number)=>void;canContinue:()=>boolean;log:(...args:unknown[])=>void}):Promise<OfficialReviewStats> {
@@ -60,7 +60,7 @@ export async function runOfficialReviews(options:{limit:number;deadlineAt:number
       if(handles.length)planned.push(`${terms} ${handles.map(h=>'site:x.com/'+h.replace(/^@/,'')+'/status').join(' OR ')}`.slice(0,350));
       // 已知准确出处优先，搜索服务故障不阻断读取这些候选。
       const known=job.offer.steps.flatMap(step=>step.match(/https?:\/\/[^\s<>"）)]+/g) ?? []).map(url=>url.replace(/[.,;，。；]+$/,''));
-      const urls:string[]=[...known];
+      const urls:string[]=[job.offer.evidence.url,...known];
       for(const query of planned) {
         if(searchPaused){failure=true;failures.push('本轮搜索服务受限，继续读取已知官方候选');break;}
         queries.push(query);stats.searches++;
@@ -97,6 +97,7 @@ export async function runOfficialReviews(options:{limit:number;deadlineAt:number
           {...next,fixedId:job.offer.id},page.finalUrl,relevantText(page.text),page);
         const candidate=offerIn.safeParse({...draft,officialReviewJobId:job.jobId});
         if(!candidate.success){failures.push(`官方抽取字段未通过校验：${url}`);continue;}
+        if(job.stageEvidence){const staged=await api<{staged:boolean;changedFields:string[]}>(`/official-reviews/${queued.id}/draft`,{jobId:job.jobId,candidate:candidate.data});if(staged.staged){chosenUrl=page.finalUrl;changedFields=staged.changedFields;matched=true;break;}}
         const saved=await postIdentityOffers([candidate.data]);
         const record=saved.results.find(r=>r.id===job.offer.id);
         if(!record||record.error||record.skipped){failures.push(`条目更新未应用：${record?.error??record?.skipped??'ID变化'}`);continue;}

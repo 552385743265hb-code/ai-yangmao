@@ -1,3 +1,4 @@
+import {needsEvidence} from '../shared/review-preparation';
 import {canonicalOffers} from './identity/canonical';
 import { drizzle } from 'drizzle-orm/d1';
 import { and,eq } from 'drizzle-orm';
@@ -27,8 +28,9 @@ export async function publicationError(env: Pick<Env, 'DB'>, offer: OfferRow): P
   if(duplicate)return `与已上架的 ${duplicate.id} 是同一活动，请先核对合并，避免重复上架`;
   const block = blocking(checkOffer(offer));
   if (block.length) return block.map(i => `${i.label}：${i.problem}`).join('；');
-  // 不检查原文摘录：摘录门槛是防模型编造的（自动上架仍要求三项齐全，见 missingEvidence）。
-  // 管理员人工核对过官方页面，内容可能来自图片、视频等模型读不到的地方，以管理员为准（2026-09-30 管理员决定）。
+  // 自动补证要求领取/资格原文；最终人工审批可核对图片条件，但缺少核心权益原文仍先补证。
+  // 管理员亲测仍通过 tested 显式确认，模型不能设置 tested。
+  if(needsEvidence(offer,false))return '官方权益原文不足，请等待系统补证或补充准确证据后再通过';
   let url: URL;
   try { url = new URL(offer.evidence.url); } catch { return '官方证据链接无效'; }
   if (!['https:', 'http:'].includes(url.protocol)) return '官方证据必须是网页链接';

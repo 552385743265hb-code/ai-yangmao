@@ -19,7 +19,7 @@ import { MutationBuilder,commitIdentityMutation,readIdentityReceipt,type Binding
 type OfferRow=typeof tables.offers.$inferSelect;
 type CandidateRow={id:string;observation_id:string;facts_json:string;facts_hash:string;raw_candidate_json:string;receipt_json:string|null;revision:number;entity_id:string|null;state:string;task_id:string|null;last_error:string|null;claim_family_key:string|null;assertion_facts_hash:string|null;source_fetch_id:string|null};
 type EntityRow={routing_generation?:number;id:string;platform_id:string;canonical_offer_id:string|null;business_revision:number;publication_revision:number;current_approved_version_id:string|null};
-type TaskRow={id:string;task_key:string;kind:string;entity_id:string|null;version_id:string|null;base_version_id:string|null;state:string;revision:number;material_revision:number;decision_id:string|null;lease_context_json?:string|null};
+type TaskRow={id:string;task_key:string;kind:string;entity_id:string|null;version_id:string|null;base_version_id:string|null;state:string;revision:number;material_revision:number;decision_id:string|null;lease_context_json?:string|null;suggestion_json?:string|null};
 type ResolutionControl={task:TaskRow;actor:string;action:'same'|'new';reason?:string;facts?:CanonicalTermsV1;entityId?:string};
 const decisionInput=z.strictObject({requestId:z.string().min(1).max(200),expectedRevision:z.number().int().nonnegative(),action:z.enum(['approve','reject']),actor:z.string().min(1),role:z.enum(['admin','reviewer']),reasonCode:reviewDecisionSchema.shape.reasonCode.optional(),reason:z.string().max(2000).optional(),scope:decisionScopeSchema.optional(),reopenPolicy:reopenPolicySchema.optional()});
 export type TaskDecisionInput=z.infer<typeof decisionInput>;
@@ -553,7 +553,8 @@ export class IdentityService {
   if(input.action==='approve') {
    if(!original||!reviewedDisplay)throw new IdentityError(400,'reviewable offer fields required');
    accepted=offerIn.parse({...reviewedDisplay,id:original.id,platformId:original.platformId,sourceId:original.sourceId??undefined,firstChannel:original.firstChannel??undefined});
-   const error=await publicationError({DB:this.db},{...original,...accepted,...(restoring?{withdrawnAt:null,withdrawnReason:null}:{})});if(error)throw new IdentityError(400,error);
+   const supplemented=task.kind==='initial'&&original.reviewState==='pending'&&task.suggestion_json&&JSON.parse(task.suggestion_json).kind==='official_evidence';
+   const error=await publicationError({DB:this.db},{...original,...accepted,...(supplemented?{verifyResult:null}:{}),...(restoring?{withdrawnAt:null,withdrawnReason:null}:{})});if(error)throw new IdentityError(400,error);
   }
   const builder=new MutationBuilder(this.db,command,hash),expected:ExpectedRevision[]=[{kind:'task',id:task.id,revision:input.expectedRevision},{kind:'entity',id:entity.id,revision:entity.business_revision}];
   if(input.action==='approve'){builder.require(`NOT EXISTS(SELECT 1 FROM review_decisions d WHERE d.entity_id=? AND ${activeVisibilityPredicate})`,[entity.id]);builder.advancePublicGeneration();}

@@ -102,5 +102,5 @@ it('A29 legacy show supplies the current identity version for the existing CLI',
  const [c]=await store.recordCandidates({requestId:'show-c',observationId:ob.observationId,extractionVersion:'v1',extractionComplete:true,candidates:[{inputId:'show',span:{start:0,end:text.length,quote:text},quotes:[{id:'quote-1',start:0,end:text.length,quote:text}],facts,rawCandidate:displayOffer()}]});
  const r=await new IdentityService(f.db).resolveCandidate(c.candidateId,'show-resolve');const shown=await call('admin/offers/'+r.canonicalOfferId,undefined,true);
  expect(shown.body.offer.reviewVersion).toBe(`identity:${r.taskId}:0`);
- const queue=await call('admin/queue',undefined,true);expect(queue.body.pending).toHaveLength(0);
+ const queue=await call('admin/queue',undefined,true);expect(queue.body.pending).toHaveLength(1);expect(queue.body.pending[0].reviewVersion).toBe(`identity:${r.taskId}:0`);expect(queue.body.counts.activities).toBe(1);
 });
