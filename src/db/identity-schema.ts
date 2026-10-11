@@ -71,7 +71,7 @@ export const benefitVersions = sqliteTable('benefit_versions', {
 }, t => [
   index('versions_entity_idx').on(t.entityId, t.state, t.id),
   uniqueIndex('benefit_versions_entity_id_terms_schema_terms_hash_uq').on(t.entityId, t.termsSchema, t.termsHash),
-  check('benefit_versions_check_0', sql`terms_schema='terms-v1'`),
+  check('benefit_versions_check_0', sql`terms_schema IN ('terms-v1','terms-v2')`),
   check('benefit_versions_check_1', sql`json_valid(facts_json)`),
   check('benefit_versions_check_2', sql`json_valid(display_candidate_json)`),
   check('benefit_versions_check_3', sql`state IN ('pending','approved','rejected','superseded')`),
@@ -321,3 +321,10 @@ export const mergeTaskSources=sqliteTable('merge_task_sources',{
 export const identityPublicState=sqliteTable('identity_public_state',{
  id:integer('id').primaryKey(),generation:integer('generation').notNull().default(0),
 },()=>[check('identity_public_singleton',sql`id=1`),check('identity_public_generation',sql`generation>=0`)]);
+
+export const membershipVersionMigrations=sqliteTable('membership_version_migrations',{
+ oldVersionId:text('old_version_id').primaryKey().notNull().references(()=>benefitVersions.id),
+ newVersionId:text('new_version_id').notNull().references(()=>benefitVersions.id),
+ offerId:text('offer_id').notNull().references(()=>offers.id),
+ createdAt:text('created_at').notNull().default(sql`strftime('%Y-%m-%dT%H:%M:%fZ','now')`),
+});

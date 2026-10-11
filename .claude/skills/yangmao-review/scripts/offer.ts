@@ -30,7 +30,7 @@ function reviewedVersion(): string {
 
 const TYPE_CODE: Record<string, string> = { 注册新人礼: 'new', 应用尝鲜: 'trial', 限时免费开放: 'free', 会员福利: 'perk', 充值赠送: 'topup', 会员免费送: 'gift', 常驻免费额度: 'standing', 申请制: 'apply' };
 const EDITABLE = ['title', 'type', 'valueText', 'usdEstimate', 'usdMax', 'models', 'tags', 'claimStart', 'claimEnd', 'endKind', 'creditValidity',
-  'audience', 'requirements', 'modalities', 'platformId', 'sourceTz', 'claimMethod', 'steps', 'evidence', 'publishedAt'];
+  'audience', 'requirements', 'membershipRequirement', 'modalities', 'platformId', 'sourceTz', 'claimMethod', 'steps', 'evidence', 'publishedAt'];
 const REASON_CODES = ['paid_bundle', 'not_ai', 'wrong_platform', 'duplicate', 'expired', 'vague', 'insufficient_evidence', 'wrong_type', 'wrong_field', 'other'];
 
 function token(): string {
@@ -64,7 +64,7 @@ type Check = { field: string; label: string; level: string; problem: string; sec
 function raw(v: View) {
   return {
     type: TYPE_CODE[v.type] ?? v.type, title: v.title, valueText: v.value, usdEstimate: v.usdEstimate ?? null, usdMax: v.usdMax ?? null,
-    claimStart: v.claimStart ?? null, claimEnd: v.claimEnd ?? null, endKind: v.endKind, sourceTz: v.sourceTz ?? 'UTC', requirements: v.requirements,
+    claimStart: v.claimStart ?? null, claimEnd: v.claimEnd ?? null, membershipRequirement:v.membershipRequirement??null, endKind: v.endKind, sourceTz: v.sourceTz ?? 'UTC', requirements: v.requirements,
     audience: v.audience, creditValidity: v.creditValidity ?? null, models: v.models ?? [], tags: v.tags ?? [], steps: v.steps ?? [], publishedAt: v.publishedAt ?? null,
     claimMethod: v.claimMethod, modalities: v.modalities ?? [], platformId: v.platformId,
     evidence: { url: v.evidenceUrl, tier: v.evidenceTier, excerpts: v.excerpts ?? {} },
@@ -127,7 +127,7 @@ async function main() {
     if(v.visibilityVersion)console.log(`visibilityVersion（下架）：${v.visibilityVersion}`);
     if (pendingUpdate) console.log('注意：下列字段是候选；批准基线差异（from → to）：\n' + JSON.stringify(v.updateDiff ?? [], null, 2));
     console.log(`# [${v.code}] ${v.title}\nID：${v.id}｜平台：${v.platform}（${v.platformId}）｜审核：${v.reviewState}｜状态：${v.status}${pendingUpdate ? '｜有条款更新待审' : ''}`);
-    for (const k of ['type', 'valueText', 'usdEstimate', 'usdMax', 'claimMethod', 'requirements', 'audience', 'claimStart', 'claimEnd', 'endKind', 'sourceTz', 'creditValidity', 'modalities', 'models', 'tags', 'publishedAt', 'steps']) console.log(`- ${k}：${JSON.stringify(r[k])}`);
+    for (const k of ['type', 'valueText', 'usdEstimate', 'usdMax', 'claimMethod', 'requirements', 'membershipRequirement', 'audience', 'claimStart', 'claimEnd', 'endKind', 'sourceTz', 'creditValidity', 'modalities', 'models', 'tags', 'publishedAt', 'steps']) console.log(`- ${k}：${JSON.stringify(r[k])}`);
     console.log(`- 证据：${r.evidence.tier} ${r.evidence.url}`);
     for (const [k, t] of Object.entries(r.evidence.excerpts)) if (t) console.log(`    ${k}：「${t}」`);
     if (v.adminNote) console.log(`- 牧场心得：${v.adminNote}`);

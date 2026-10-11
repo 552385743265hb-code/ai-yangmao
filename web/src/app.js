@@ -63,14 +63,15 @@ const ptypeColor = pt => TK.s[PTYPE[pt].slot - 1];
 const typeVar = ty => `var(--s${TYPES[ty].slot})`;
 
 /* ---------- 数据准备 ---------- */
-let PMAP = {}, OMAP = {}, MEMBERS = [], LAST_OK = null;
+let PMAP = {}, OMAP = {}, LAST_OK = null;
 /** 数据加载后调用：建立索引，计算依赖数据的统计。 */
 function prepare() {
   PMAP = Object.fromEntries(PLATFORMS.map(p => [p.id, p]));
   OFFERS = OFFERS.filter(o => PMAP[o.p]);
   OFFERS.forEach(o => { o.plat = PMAP[o.p]; });
   OMAP = Object.fromEntries(OFFERS.map(o => [o.id, o]));
-  MEMBERS = uniq(OFFERS.flatMap(o => o.r.filter(r => r.startsWith('member:')).map(r => r.slice(7))));
+  Object.assign(C, migrateMembershipPreferences(C));
+  LS.set('ym-cond', C);
   LAST_OK = META.lastSuccessfulCollect ? new Date(META.lastSuccessfulCollect) : null;
   RACE = computeRace(); TREND = computeTrend();
   HOLIDAYS.forEach(h => { h.past = holidayPast(h); });
@@ -119,7 +120,7 @@ const startInstant = o => { if (o.s == null) return new Date(o.discoveredAt); co
 const actualEnd = o => { const times = [o.ek === 'date' ? endInstant(o).getTime() : NaN, o.withdrawnAt ? Date.parse(o.withdrawnAt) : NaN].filter(Number.isFinite); return times.length ? new Date(Math.min(...times)) : null; };
 
 /* ---------- 我的条件 / 我的清单（只存在本机浏览器） ---------- */
-const C = Object.assign({ only: false, phone: false, card: false, net: false, student: false, biz: false, invite: false, realname: true, pay: true, members: [] }, LS.get('ym-cond', {}));
+const C = Object.assign({ only: false, phone: false, card: false, net: false, student: false, biz: false, invite: false, realname: true, pay: true, members: [], subscriptions: [] }, LS.get('ym-cond', {}));
 const savedMine = LS.get('ym-mine', {});
 const MINE = { want: savedMine.want || [], claimed: savedMine.claimed || [], legacyGot: savedMine.legacyGot || (savedMine.claimed ? [] : savedMine.got || []) };
 const localMonth = () => ymd(new Date()).slice(0, 7);
@@ -135,22 +136,25 @@ function missing(o) {
     const [k, p] = r.split(':');
     if (k === 'none') continue;
     if (k === 'targeted') { miss.push(r); continue; }
-    if (k === 'member') { if (!C.members.includes(p)) miss.push(r); continue; }
+    if (k === 'member') continue;
     if (!C[k]) miss.push(r);
   }
+  const member = membershipResult(o, C.subscriptions || []);
+  if (member !== 'yes') miss.push(member === 'unknown' ? 'membership_unknown' : 'member:未满足会员资格');
   return miss;
 }
 const eligible = o => missing(o).length === 0;
 const view = arr => C.only ? arr.filter(eligible) : arr;
-function reqLabel(r) { const [k, p] = r.split(':'); if (k === 'member') return `需会员 · ${p}`; if (k === 'pay') return `需充值 ${p}`; return REQ[k]; }
+function reqLabel(r) { if (r === 'membership_unknown') return '会员资格还需确认（请核对或补充订阅资料）'; const [k, p] = r.split(':'); if (k === 'member') return `需会员 · ${p}`; if (k === 'pay') return `需充值 ${p}`; return REQ[k]; }
 function reqChips(o, mark = false) {
-  return `<div class="chips">${o.r.map(r => {
+  const nonmember = o.r.filter(r => !r.startsWith('member:'));
+  const requirement = membershipRequirementOf(o), result = membershipResult(o, C.subscriptions || []);
+  const member = requirement.status !== 'not_required' ? `<span style="white-space:normal;overflow-wrap:anywhere" class="chip ${mark && result === 'yes' ? 'have' : mark && result === 'no' ? 'miss' : ''}">${result === 'unknown' ? '？还需确认 · ' : mark ? result === 'yes' ? '✓ ' : '✕ ' : ''}${esc(YMMembership.formatMembership(requirement, MEMBERSHIP_CATALOG))}</span>` : '';
+  return `<div class="chips">${nonmember.map(r => {
     const k = r.split(':')[0];
-    let cls = '';
-    if (mark && k !== 'none' && k !== 'targeted') cls = missing({ r: [r] }).length ? 'miss' : 'have';
-    const pre = cls === 'have' ? '✓ ' : cls === 'miss' ? '✕ ' : '';
-    return `<span class="chip ${cls}">${pre}${esc(reqLabel(r))}</span>`;
-  }).join('')}</div>`;
+    const cls = mark && k !== 'none' && k !== 'targeted' ? (!C[k] ? 'miss' : 'have') : '';
+    return `<span class="chip ${cls}">${cls === 'have' ? '✓ ' : cls === 'miss' ? '✕ ' : ''}${esc(reqLabel(r))}</span>`;
+  }).join('')}${member}</div>`;
 }
 
 /* ---------- 薅度雷达（全部按规则算，不调用模型） ---------- */
@@ -1250,7 +1254,7 @@ function pOffer(id) {
   const revisionBox = $('#revBox');
   (revisionBox ? adm(`/offers/${encodeURIComponent(o.id)}`) : Promise.resolve(null)).then(j => {
     const box = revisionBox; if (!box?.isConnected || route()[1] !== o.id || !j?.revisions?.length) return;
-    const F = { valueText: '额度', claimEnd: '截止', claimStart: '开始', requirements: '门槛', usdEstimate: '折合美元', usdMax: '最高可申请额度', valuation: 'V1 估值', title: '标题', creditValidity: '有效期', endKind: '截止类型', type: '类型', audience: '适用对象', steps: '领取步骤', claimMethod: '领取方式', modalities: '模态', platformId: '平台', sourceTz: '时区', evidence: '官方证据' };
+    const F = { valueText: '额度', claimEnd: '截止', claimStart: '开始', membershipRequirement: '会员资格', requirements: '门槛', usdEstimate: '折合美元', usdMax: '最高可申请额度', valuation: 'V1 估值', title: '标题', creditValidity: '有效期', endKind: '截止类型', type: '类型', audience: '适用对象', steps: '领取步骤', claimMethod: '领取方式', modalities: '模态', platformId: '平台', sourceTz: '时区', evidence: '官方证据' };
     // 修订内容转成人能读的文字：枚举用中文名，列表逐条，证据只说明链接和级别变化
     const say = (field, v) => {
       if (v == null || v === '') return '（空）';
@@ -1285,7 +1289,7 @@ function condForm() {
   return `<label class="tog"><span>只看我能薅的<small>全站只显示你满足门槛的羊毛</small></span><input type="checkbox" data-c="only" ${C.only ? 'checked' : ''}></label>
   ${COND_ITEMS.map(([k, l]) => `<label class="tog"><span>${l}</span><input type="checkbox" data-c="${k}" ${C[k] ? 'checked' : ''}></label>`).join('')}
   <div class="small muted" style="margin:14px 0 6px">我已有的会员</div>
-  <div class="chips">${MEMBERS.map(m => `<button class="btn sm" type="button" data-mem="${esc(m)}" aria-pressed="${C.members.includes(m)}">${esc(m)}</button>`).join('')}</div>
+  ${subscriptionControls()}
   <p class="small muted" style="margin:12px 0 0">只保存在这台设备的浏览器里，不会上传。</p>`;
 }
 function pMine() {
@@ -1360,7 +1364,7 @@ function checksBlock(o) {
   return `<div class="card" style="padding:8px 10px;background:var(--surface-2)"><div class="small" style="font-weight:600;margin-bottom:2px">上架前检查</div>${main.length ? `<div class="rows">${main.map(line).join('')}</div>` : '<div class="small" style="color:var(--good-ink)">✓ 字段齐全，网站所有栏目和推送都能正确显示</div>'}${info.length ? `<div class="small muted" style="margin-top:4px">可选：${info.map(i => esc(i.label)).join('、')}</div>` : ''}</div>`;
 }
 const RC = [['paid_bundle', '付费套餐自带'], ['not_ai', '不是 AI 额度'], ['wrong_platform', '平台归错'], ['duplicate', '重复'], ['expired', '旧活动 · 日期查不到'], ['vague', '额度不明'], ['insufficient_evidence', '证据不足'], ['wrong_type', '分类错']];
-const FIELD_L = { models: '免费模型', tags: '标签', publishedAt: '发布时间', usdMax: '最高可申请额度', valuation: 'V1 估值', steps: '领取步骤', sourceTz: '官方时区', modalities: '模态', title: '标题', type: '类型', valueText: '额度', usdEstimate: '折合美元', claimStart: '开始', claimEnd: '截止', endKind: '截止方式', creditValidity: '有效期', audience: '适用对象', requirements: '门槛', modalities: '模态', platformId: '平台', sourceTz: '时区', claimMethod: '领取方式' };
+const FIELD_L = { models: '免费模型', tags: '标签', publishedAt: '发布时间', usdMax: '最高可申请额度', valuation: 'V1 估值', steps: '领取步骤', sourceTz: '官方时区', modalities: '模态', title: '标题', type: '类型', valueText: '额度', usdEstimate: '折合美元', claimStart: '开始', claimEnd: '截止', endKind: '截止方式', creditValidity: '有效期', audience: '适用对象', membershipRequirement: '会员资格', requirements: '门槛', modalities: '模态', platformId: '平台', sourceTz: '时区', claimMethod: '领取方式' };
 const SUG = { approve: ['good', '✓', '建议通过'], history: ['good', '⌛', '建议作为历史上架'], reject: ['bad', '✕', '建议拒绝'], judge: ['warn', '?', '需要你判断'] };
 const RCL_ALL = { paid_bundle: '付费套餐自带', not_ai: '不是 AI 额度', wrong_platform: '平台归错', duplicate: '重复', expired: '旧活动 · 日期查不到', vague: '额度不明', insufficient_evidence: '证据不足', wrong_type: '分类错', wrong_field: '字段错', other: '其他' };
 function reviewDiffRows(changes) {
@@ -1641,9 +1645,9 @@ async function admQueue() {
       <label class="field">官方时区（日期按哪里的时间算）<select name="sourceTz">${(() => { const tz = o.sourceTz || 'UTC', opts = [['Asia/Shanghai', '北京时间（中国厂商）'], ['America/Los_Angeles', '美国西部时间（多数美国厂商）'], ['America/New_York', '美国东部时间'], ['Europe/London', '英国时间'], ['Europe/Paris', '欧洲中部时间'], ['Asia/Tokyo', '日本时间'], ['Asia/Singapore', '新加坡时间'], ['UTC', '世界标准时间 UTC（官方没写时区）']]; return (opts.some(([k]) => k === tz) ? opts : [...opts, [tz, tz]]).map(([k, l]) => `<option value="${k}" ${k === tz ? 'selected' : ''}>${l}</option>`).join(''); })()}</select></label>
       <label class="field">官方发布时间（可空，按你电脑的本地时间填；额度重置要精确到分钟）<input type="datetime-local" name="publishedAt" value="${dateTimeInput(o.publishedAt)}">${/^\d{4}-\d{2}-\d{2}$/.test(o.publishedAt || '') && dateTimeInput(o.publishedAt) ? '<span class="small muted">仅有日期，00:00 是填表占位；未改动则保留日期精度。</span>' : ''}${o.publishedAt && !dateTimeInput(o.publishedAt) ? '<span class="small" role="alert" style="color:var(--critical-ink)">原发布时间无效，请核对后补填；保存时空值会清除原错误日期。</span>' : ''}</label>
       ${(() => { const rq = o.requirements || [], val = k => (rq.find(r => r.startsWith(k + ':')) || '').slice(k.length + 1);
-        return `<div class="field" style="grid-column:1/-1">门槛（领之前必须满足的条件，可多选；手机号、信用卡、网络只指海外）<div class="chips">${['none', 'realname', 'phone', 'card', 'net', 'biz', 'student', 'invite', 'targeted'].map(k => `<label class="chip"><input type="checkbox" name="req" value="${k}" ${rq.includes(k) ? 'checked' : ''}> ${REQ[k]}${k === 'student' ? '（含教师）' : ''}</label>`).join('')}</div>
-        <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:6px"><label class="chip"><input type="checkbox" name="req" value="member" ${val('member') ? 'checked' : ''}> 需会员</label><input type="text" name="reqMember" value="${esc(val('member'))}" placeholder="哪个会员，如 Pro（$20/月）" style="flex:1;min-width:160px">
-        <label class="chip"><input type="checkbox" name="req" value="pay" ${val('pay') ? 'checked' : ''}> 需充值</label><input type="text" name="reqPay" value="${esc(val('pay'))}" placeholder="充多少，如 首充 10 元" style="flex:1;min-width:160px"></div></div>`; })()}
+        return `<div class="field" style="grid-column:1/-1">门槛（领之前必须满足的条件，可多选；手机号、信用卡、网络只指海外）<div class="chips">${['none', 'realname', 'phone', 'card', 'net', 'biz', 'student', 'invite', 'targeted', 'unknown'].map(k => `<label class="chip"><input type="checkbox" name="req" value="${k}" ${rq.includes(k) ? 'checked' : ''}> ${REQ[k]}${k === 'student' ? '（含教师）' : ''}</label>`).join('')}</div>
+        <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:6px"><label class="chip"><input type="checkbox" name="req" value="pay" ${val('pay') ? 'checked' : ''}> 需充值</label><input type="text" name="reqPay" value="${esc(val('pay'))}" placeholder="充多少，如 首充 10 元" style="flex:1;min-width:160px"></div></div>`; })()}
+      <div class="field" style="grid-column:1/-1" data-membership-editor>正在加载会员资格目录…</div>
       <div class="field" style="grid-column:1/-1">模态<div class="chips">${Object.entries(MODAL).map(([k, l]) => `<label class="chip"><input type="checkbox" name="modalities" value="${k}" ${(o.modalities || []).includes(k) ? 'checked' : ''}> ${l}</label>`).join('')}</div></div>
       <div class="field" style="grid-column:1/-1">标签<div class="chips">${Object.entries(TAG_L).map(([k, l]) => `<label class="chip"><input type="checkbox" name="tags" value="${k}" ${(o.tags || []).includes(k) ? 'checked' : ''}> ${l}</label>`).join('')}</div></div>
       <label class="field" style="grid-column:1/-1">领取步骤（一行一步）<textarea name="steps" rows="3">${esc((o.steps || []).join('\n'))}</textarea></label>
@@ -1657,7 +1661,7 @@ async function admQueue() {
       <label class="field">平台<select name="platformId">${adminPlatformOptions(o.platformId || PLATFORMS.find(p => p.name === o.platform)?.id, o.platform)}</select></label>
       <label class="field">适用对象<select name="audience">${Object.entries(AUD).map(([k, l]) => `<option value="${k}" ${o.audience === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
       <label class="field" style="grid-column:1/-1">为什么这样改（可选，但强烈建议写）<input type="text" name="__reason" placeholder="例如：要先付费升级才送，属于充值赠送"></label>
-      <div class="row review-actions" style="grid-column:1/-1;align-items:center"><button class="btn sm pri" type="submit">${/^(identity|entity):/.test(o.reviewVersion||'')?'保存待审草稿':live ? '保存' : o.pendingUpdate ? '保存并接受更新' : '保存并通过'}</button><span data-formmsg role="alert" class="small" style="font-weight:600"></span></div>
+      <div class="row review-actions" style="grid-column:1/-1;align-items:center"><button class="btn sm pri" type="submit">${!live || o.pendingUpdate ? '保存草稿' : '保存'}</button><span data-formmsg role="alert" class="small" style="font-weight:600"></span></div>
     </form></template>
   </article>`;
   const sugCount = k => q.pending.filter(o => (o.suggestion?.verdict || 'none') === k).length;
@@ -1738,6 +1742,7 @@ async function admQueue() {
         template.replaceWith(template.content.cloneNode(true));
         f = el.querySelector('[data-editform]');
         f.addEventListener('submit', submitEdit);
+        mountMembershipEditor(f, o);
         const platform = f.querySelector('select[name="platformId"]');
         platform.innerHTML = adminPlatformOptions(o.platformId || PLATFORMS.find(p => p.name === o.platform)?.id, o.platform);
         platform.addEventListener('focus', refreshAdminPlatforms);
@@ -1758,11 +1763,11 @@ async function admQueue() {
       const pub = String(fd.publishedAt || '').trim();
       if (pub && Number.isNaN(Date.parse(pub))) throw new Error('官方发布时间格式不对');
       if (!checked('modalities').length) throw new Error('至少选一个模态');
-      const req = checked('req').map(k => k === 'member' ? `member:${String(fd.reqMember || '').trim() || '会员'}` : k === 'pay' ? `pay:${String(fd.reqPay || '').trim() || '充值'}` : k);
-      if (!req.length) throw new Error('门槛至少勾一项；没有任何条件就勾“零门槛”');
+      const req = checked('req').map(k => k === 'pay' ? `pay:${String(fd.reqPay || '').trim() || '充值'}` : k);
+      if (!req.length && membershipRequirementOf(o).status === 'not_required' && (!form.membershipEditor?.touched || form.membershipEditor.requirement.status === 'not_required')) throw new Error('门槛至少勾一项；没有任何条件就勾“零门槛”');
       if (req.includes('none') && req.length > 1) throw new Error('勾了“零门槛”就不能再勾其他门槛');
-      delete fd.req; delete fd.reqMember; delete fd.reqPay;
-      const fields = { ...fd, requirements: req, models: [...new Set(String(fd.models || '').split(/[,，、;；]/).map(x => x.trim()).filter(Boolean))],
+      delete fd.req; delete fd.reqPay;
+      const fields = { ...fd, ...membershipEditFields(o, form.membershipEditor, req, !!form.nonmemberTouched, newEvidence.url), models: [...new Set(String(fd.models || '').split(/[,，、;；]/).map(x => x.trim()).filter(Boolean))],
         usdEstimate: num(fd.usdEstimate), usdMax: num(fd.usdMax), modalities: checked('modalities'), tags: checked('tags'), publishedAt: pub ? (pub === dateTimeInput(o.publishedAt) ? o.publishedAt : new Date(pub).toISOString()) : null,
         steps: String(fd.steps || '').split('\n').map(x => x.trim()).filter(Boolean).slice(0, 10), sourceTz: String(fd.sourceTz || 'UTC').trim() };
       if (newEvidence.url !== o.evidenceUrl || newEvidence.tier !== o.evidenceTier || EX_L.some(([key]) => newEvidence.excerpts[key] !== (o.excerpts[key] || ''))) fields.evidence = newEvidence;
@@ -1776,12 +1781,12 @@ async function admQueue() {
         for(const key of Object.keys(fields))if(key!=='evidence'&&comparable(key,fields[key])===comparable(key,baseline[key]))delete fields[key];
         if(!Object.keys(fields).length){msg.textContent='没有修改，仍保持待审';btn.disabled=false;return;}
       }
-      const r = await adm(`/offers/${code}/edit`, { fields, approve: !managed, expectedReviewVersion:o?.reviewVersion, reason: reason || undefined, reasonCode: fields.type !== undefined && Object.keys(TYPES).find(k => TYPES[k].l === el.dataset.type) !== fields.type ? 'wrong_type' : 'wrong_field' });
-      if(managed||r.approved===false){toast('草稿已保存，尚未通过上架');await admQueue();return;}
-      const result = !live && o.pendingUpdate ? '已接受更新' : live ? '已保存' : '已通过';
+      const r = await adm(`/offers/${code}/edit`, { fields, approve: false, expectedReviewVersion:o?.reviewVersion, reason: reason || undefined, reasonCode: fields.type !== undefined && Object.keys(TYPES).find(k => TYPES[k].l === el.dataset.type) !== fields.type ? 'wrong_type' : 'wrong_field' });
+      if(managed || !live || o.pendingUpdate || r.pendingUpdate){toast('草稿已保存，尚未通过上架');await admQueue();return;}
+      const result = '已保存';
       done(el, r.changed.length ? `已修改 ${r.changed.map(f => FIELD_L[f] || f).join('、')}；${result}` : `没有改动，${result}`);
       msg.textContent = '';
-      } catch (err) { btn.disabled = false; msg.style.color = 'var(--critical-ink)'; msg.textContent = '没有保存：' + err.message; console.error('[admin] 保存并通过失败', err); }
+      } catch (err) { btn.disabled = false; msg.style.color = 'var(--critical-ink)'; msg.textContent = '没有保存：' + err.message; console.error('[admin] 保存失败', err); }
     };
   });
   bindCards(box);
@@ -1932,7 +1937,7 @@ function drawShell() {
   drawCondBtn();
 }
 function drawCondBtn() {
-  const n = COND_ITEMS.filter(([k]) => !['realname', 'pay'].includes(k) && C[k]).length + C.members.length;
+  const n = COND_ITEMS.filter(([k]) => !['realname', 'pay'].includes(k) && C[k]).length + (C.subscriptions || []).length;
   $$('[data-open-cond]').forEach(b => { if (b.classList.contains('cond-btn')) b.innerHTML = `我的条件${n ? `<span class="badge">${n}</span>` : ''}${C.only ? ' · 只看能薅' : ''}`; });
 }
 function markNav(name) {
@@ -2030,13 +2035,9 @@ document.addEventListener('click', e => {
     MINE.legacyGot = MINE.legacyGot.filter(id => id !== t.dataset.removeLegacy);
     LS.set('ym-mine', MINE); render(true); return;
   }
-  if (t.matches('[data-mem]')) {
-    const m = t.dataset.mem;
-    C.members = C.members.includes(m) ? C.members.filter(x => x !== m) : [...C.members, m];
-    t.setAttribute('aria-pressed', C.members.includes(m));
-    LS.set('ym-cond', C); RACE = computeRace(); TREND = computeTrend(); drawCondBtn(); render(true);
-  }
+
 });
+bindSubscriptionEvents();
 document.addEventListener('change', e => {
   const t = e.target.closest('[data-c]'); if (!t) return;
   C[t.dataset.c] = t.checked; LS.set('ym-cond', C); RACE = computeRace(); TREND = computeTrend(); drawCondBtn();

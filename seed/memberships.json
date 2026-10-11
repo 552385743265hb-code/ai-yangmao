@@ -1,0 +1,374 @@
+{
+  "revision": 1,
+  "products": [
+    {
+      "id": "hugging-face",
+      "name": "Hugging Face",
+      "aliases": [],
+      "status": "verified",
+      "sourceUrl": "https://huggingface.co/docs/inference-providers/pricing",
+      "verifiedAt": "2026-09-30T14:10:35Z",
+      "revision": 1
+    },
+    {
+      "id": "devin",
+      "name": "Devin",
+      "aliases": [],
+      "status": "verified",
+      "sourceUrl": "https://devin.ai/blog/kimi-k27-glm-52-devin-desktop",
+      "verifiedAt": "2026-10-01T00:00:00Z",
+      "revision": 1
+    },
+    {
+      "id": "n8n-cloud",
+      "name": "n8n Cloud",
+      "aliases": [],
+      "status": "verified",
+      "sourceUrl": "https://blog.n8n.io/gateway-credits/",
+      "verifiedAt": "2026-10-01T03:52:29.357Z",
+      "revision": 1
+    },
+    {
+      "id": "claude",
+      "name": "Claude",
+      "aliases": [],
+      "status": "verified",
+      "sourceUrl": "https://support.claude.com/en/articles/15862783",
+      "verifiedAt": "2026-10-02T14:19:21.768Z",
+      "revision": 1
+    },
+    {
+      "id": "cursor",
+      "name": "Cursor",
+      "aliases": [],
+      "status": "verified",
+      "sourceUrl": "https://cursor.com/changelog/rollouts-and-security-reviewer",
+      "verifiedAt": "2026-10-01T03:52:58.817Z",
+      "revision": 1
+    },
+    {
+      "id": "windsurf",
+      "name": "Windsurf",
+      "aliases": [],
+      "status": "verified",
+      "sourceUrl": "https://devin.ai/blog/gemini-31-pro",
+      "verifiedAt": "2026-10-02T17:40:24.623Z",
+      "revision": 1
+    },
+    {
+      "id": "magnific",
+      "name": "Magnific",
+      "aliases": [],
+      "status": "verified",
+      "sourceUrl": "https://www.magnific.com/pricing",
+      "verifiedAt": "2026-10-09T09:24:32.617Z",
+      "revision": 1
+    },
+    {
+      "id": "grok",
+      "name": "Grok",
+      "aliases": [],
+      "status": "verified",
+      "sourceUrl": "https://x.ai/news/grok-bot-for-enterprise",
+      "verifiedAt": "2026-10-02T17:44:48.073Z",
+      "revision": 1
+    },
+    {
+      "id": "higgsfield",
+      "name": "Higgsfield",
+      "aliases": [],
+      "status": "verified",
+      "sourceUrl": "https://higgsfield.ai/blog/how-to-get-free-unlimited-seedance-2",
+      "verifiedAt": "2026-10-01T06:20:25.799Z",
+      "revision": 1
+    }
+  ],
+  "plans": [
+    {
+      "id": "hugging-face-pro",
+      "productId": "hugging-face",
+      "name": "PRO",
+      "aliases": [],
+      "status": "verified",
+      "sourceUrl": "https://huggingface.co/docs/inference-providers/pricing",
+      "verifiedAt": "2026-09-30T14:10:35Z",
+      "revision": 1,
+      "billing": "unknown"
+    },
+    {
+      "id": "hugging-face-team",
+      "productId": "hugging-face",
+      "name": "Team",
+      "aliases": [],
+      "status": "verified",
+      "sourceUrl": "https://huggingface.co/docs/inference-providers/pricing",
+      "verifiedAt": "2026-09-30T14:10:35Z",
+      "revision": 1,
+      "billing": "unknown"
+    },
+    {
+      "id": "hugging-face-enterprise",
+      "productId": "hugging-face",
+      "name": "Enterprise",
+      "aliases": [],
+      "status": "verified",
+      "sourceUrl": "https://huggingface.co/docs/inference-providers/pricing",
+      "verifiedAt": "2026-09-30T14:10:35Z",
+      "revision": 1,
+      "billing": "unknown"
+    },
+    {
+      "id": "devin-pro",
+      "productId": "devin",
+      "name": "Pro",
+      "aliases": [],
+      "status": "verified",
+      "sourceUrl": "https://devin.ai/blog/kimi-k27-glm-52-devin-desktop",
+      "verifiedAt": "2026-10-01T00:00:00Z",
+      "revision": 1,
+      "billing": "unknown"
+    },
+    {
+      "id": "devin-max",
+      "productId": "devin",
+      "name": "Max",
+      "aliases": [],
+      "status": "verified",
+      "sourceUrl": "https://devin.ai/blog/kimi-k27-glm-52-devin-desktop",
+      "verifiedAt": "2026-10-01T00:00:00Z",
+      "revision": 1,
+      "billing": "unknown"
+    },
+    {
+      "id": "devin-teams",
+      "productId": "devin",
+      "name": "Teams",
+      "aliases": [],
+      "status": "verified",
+      "sourceUrl": "https://devin.ai/blog/kimi-k27-glm-52-devin-desktop",
+      "verifiedAt": "2026-10-01T00:00:00Z",
+      "revision": 1,
+      "billing": "unknown"
+    },
+    {
+      "id": "n8n-cloud-starter",
+      "productId": "n8n-cloud",
+      "name": "Starter",
+      "aliases": [],
+      "status": "verified",
+      "sourceUrl": "https://blog.n8n.io/gateway-credits/",
+      "verifiedAt": "2026-10-01T03:52:29.357Z",
+      "revision": 1,
+      "billing": "paid"
+    },
+    {
+      "id": "n8n-cloud-pro",
+      "productId": "n8n-cloud",
+      "name": "Pro",
+      "aliases": [],
+      "status": "verified",
+      "sourceUrl": "https://blog.n8n.io/gateway-credits/",
+      "verifiedAt": "2026-10-01T03:52:29.357Z",
+      "revision": 1,
+      "billing": "paid"
+    },
+    {
+      "id": "claude-pro",
+      "productId": "claude",
+      "name": "Pro",
+      "aliases": [],
+      "status": "verified",
+      "sourceUrl": "https://support.claude.com/en/articles/15862783",
+      "verifiedAt": "2026-10-02T14:19:21.768Z",
+      "revision": 1,
+      "billing": "unknown"
+    },
+    {
+      "id": "claude-team",
+      "productId": "claude",
+      "name": "Team",
+      "aliases": [],
+      "status": "verified",
+      "sourceUrl": "https://support.claude.com/en/articles/15862783",
+      "verifiedAt": "2026-10-02T14:19:21.768Z",
+      "revision": 1,
+      "billing": "unknown"
+    },
+    {
+      "id": "cursor-teams",
+      "productId": "cursor",
+      "name": "Teams",
+      "aliases": [],
+      "status": "verified",
+      "sourceUrl": "https://cursor.com/changelog/rollouts-and-security-reviewer",
+      "verifiedAt": "2026-10-01T03:52:58.817Z",
+      "revision": 1,
+      "billing": "unknown"
+    },
+    {
+      "id": "cursor-enterprise",
+      "productId": "cursor",
+      "name": "Enterprise",
+      "aliases": [],
+      "status": "verified",
+      "sourceUrl": "https://cursor.com/changelog/rollouts-and-security-reviewer",
+      "verifiedAt": "2026-10-01T03:52:58.817Z",
+      "revision": 1,
+      "billing": "unknown"
+    },
+    {
+      "id": "windsurf-pro",
+      "productId": "windsurf",
+      "name": "Pro",
+      "aliases": [],
+      "status": "verified",
+      "sourceUrl": "https://devin.ai/blog/gemini-31-pro",
+      "verifiedAt": "2026-10-02T17:40:24.623Z",
+      "revision": 1,
+      "billing": "unknown"
+    },
+    {
+      "id": "windsurf-teams",
+      "productId": "windsurf",
+      "name": "Teams",
+      "aliases": [],
+      "status": "verified",
+      "sourceUrl": "https://devin.ai/blog/gemini-31-pro",
+      "verifiedAt": "2026-10-02T17:40:24.623Z",
+      "revision": 1,
+      "billing": "unknown"
+    },
+    {
+      "id": "windsurf-enterprise",
+      "productId": "windsurf",
+      "name": "Enterprise",
+      "aliases": [],
+      "status": "verified",
+      "sourceUrl": "https://devin.ai/blog/gemini-31-pro",
+      "verifiedAt": "2026-10-02T17:40:24.623Z",
+      "revision": 1,
+      "billing": "unknown"
+    },
+    {
+      "id": "windsurf-trial",
+      "productId": "windsurf",
+      "name": "Trial",
+      "aliases": [],
+      "status": "verified",
+      "sourceUrl": "https://devin.ai/blog/gemini-31-pro",
+      "verifiedAt": "2026-10-02T17:40:24.623Z",
+      "revision": 1,
+      "billing": "unknown"
+    },
+    {
+      "id": "magnific-premium-plus",
+      "productId": "magnific",
+      "name": "Premium+",
+      "aliases": [],
+      "status": "verified",
+      "sourceUrl": "https://www.magnific.com/pricing",
+      "verifiedAt": "2026-10-09T09:24:32.617Z",
+      "revision": 1,
+      "billing": "unknown"
+    },
+    {
+      "id": "magnific-pro",
+      "productId": "magnific",
+      "name": "Pro",
+      "aliases": [],
+      "status": "verified",
+      "sourceUrl": "https://www.magnific.com/pricing",
+      "verifiedAt": "2026-10-09T09:24:32.617Z",
+      "revision": 1,
+      "billing": "unknown"
+    },
+    {
+      "id": "magnific-business",
+      "productId": "magnific",
+      "name": "Business",
+      "aliases": [],
+      "status": "verified",
+      "sourceUrl": "https://www.magnific.com/pricing",
+      "verifiedAt": "2026-10-09T09:24:32.617Z",
+      "revision": 1,
+      "billing": "unknown"
+    },
+    {
+      "id": "grok-enterprise",
+      "productId": "grok",
+      "name": "Enterprise",
+      "aliases": [],
+      "status": "verified",
+      "sourceUrl": "https://x.ai/news/grok-bot-for-enterprise",
+      "verifiedAt": "2026-10-02T17:44:48.073Z",
+      "revision": 1,
+      "billing": "unknown"
+    },
+    {
+      "id": "claude-max",
+      "productId": "claude",
+      "name": "Max",
+      "aliases": [],
+      "status": "verified",
+      "sourceUrl": "https://x.com/ClaudeDevs/status/2102871550974427462",
+      "verifiedAt": "2026-10-02T18:23:04.655Z",
+      "revision": 1,
+      "billing": "unknown"
+    },
+    {
+      "id": "higgsfield-basic",
+      "productId": "higgsfield",
+      "name": "Basic",
+      "aliases": [],
+      "status": "verified",
+      "sourceUrl": "https://higgsfield.ai/creator-hub/changelog#credit-reset",
+      "verifiedAt": "2026-10-09T00:56:24.019Z",
+      "revision": 1,
+      "billing": "paid"
+    },
+    {
+      "id": "higgsfield-plus",
+      "productId": "higgsfield",
+      "name": "Plus",
+      "aliases": [],
+      "status": "verified",
+      "sourceUrl": "https://higgsfield.ai/blog/how-to-get-free-unlimited-seedance-2",
+      "verifiedAt": "2026-10-01T06:20:25.799Z",
+      "revision": 1,
+      "billing": "unknown"
+    },
+    {
+      "id": "higgsfield-pro",
+      "productId": "higgsfield",
+      "name": "Pro",
+      "aliases": [],
+      "status": "verified",
+      "sourceUrl": "https://higgsfield.ai/blog/how-to-get-free-unlimited-seedance-2",
+      "verifiedAt": "2026-10-01T06:20:25.799Z",
+      "revision": 1,
+      "billing": "unknown"
+    },
+    {
+      "id": "higgsfield-starter",
+      "productId": "higgsfield",
+      "name": "Starter",
+      "aliases": [],
+      "status": "verified",
+      "sourceUrl": "https://higgsfield.ai/blog/how-to-get-free-unlimited-seedance-2",
+      "verifiedAt": "2026-10-01T06:20:25.799Z",
+      "revision": 1,
+      "billing": "unknown"
+    },
+    {
+      "id": "higgsfield-b2b",
+      "productId": "higgsfield",
+      "name": "B2B",
+      "aliases": [],
+      "status": "verified",
+      "sourceUrl": "https://higgsfield.ai/blog/how-to-get-free-unlimited-seedance-2",
+      "verifiedAt": "2026-10-01T06:20:25.799Z",
+      "revision": 1,
+      "billing": "unknown"
+    }
+  ]
+}

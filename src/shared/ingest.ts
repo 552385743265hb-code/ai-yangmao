@@ -1,3 +1,4 @@
+import {membershipSchema} from './membership';
 import {sourceFetchSchema} from './identity/fetch-evidence';
 import { canonicalTermsSchema } from './identity/types';
 // 写入接口的数据校验。采集管线（GitHub Actions）和网站共用这一份。
@@ -34,6 +35,7 @@ export const offerIn = z.object({
   models: z.array(z.string().trim().min(1).max(80)).max(80).default([]),
   claimMethod: z.enum(['auto', 'signup', 'app', 'form', 'topup', 'member', 'code']),
   requirements: z.array(z.string().regex(REQ)).min(1),
+  membershipRequirement: membershipSchema.nullable().optional(),
   audience: z.enum(['new', 'old', 'all', 'unclear']).default('unclear'),
   valueText: z.string().min(1).max(200),
   usdEstimate: z.number().nonnegative().nullable().optional(),

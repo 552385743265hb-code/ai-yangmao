@@ -1,3 +1,4 @@
+import * as YMMembership from '../src/shared/membership';
 import { readFileSync } from 'node:fs';
 import { createContext, runInContext } from 'node:vm';
 import { parseHTML } from 'linkedom';
@@ -10,17 +11,18 @@ async function pageFixture() {
   const queue={pending:[makeOffer('first'),makeOffer('second')],incomplete:Array.from({length:8},(_,i)=>makeOffer(`live-${i}`)),newLeads:0,needsVerification:[],pendingPlatforms:[],suggestAutoPublish:[]};
   const writes:unknown[]=[]; const requests:string[]=[];
   const timers:Function[]=[];
-  const context=createContext({document,window,console,Intl,Date,Map,Set,URL,Response,FormData,
+  const context=createContext({YMMembership, structuredClone,document,window,console,Intl,Date,Map,Set,URL,Response,FormData,
     location:{hash:'#admin'},navigator:{},getComputedStyle:()=>({getPropertyValue:()=> '#123456'}),
     matchMedia:()=>({matches:false,addEventListener(){}}),MutationObserver:class{observe(){}},
     localStorage:{getItem(){return null},setItem(){},removeItem(){}},sessionStorage:{getItem(){return null},setItem(){},removeItem(){}},
     setTimeout,clearTimeout,setInterval:(fn:Function)=>timers.push(fn),fetch:async(_url:string,init?:RequestInit)=>{
+      if(_url.endsWith('/memberships')) return new Response(JSON.stringify({revision:0,products:[],plans:[]}));
       if(init?.body){requests.push(_url);writes.push(JSON.parse(String(init.body)));return new Response(JSON.stringify({adminNote:JSON.parse(String(init.body)).note}));}
       return new Response(JSON.stringify(queue));
     }});
   // Run the real frontend and handlers, without the network-driven boot screen.
   const app=readFileSync('web/src/app.js','utf8');
-  runInContext(readFileSync('web/src/data.js','utf8')+'\n'+app.slice(0,app.indexOf('(async function boot()')),context);
+  runInContext(readFileSync('web/src/data.js','utf8')+'\n'+readFileSync('web/src/membership.js','utf8')+'\n'+app.slice(0,app.indexOf('(async function boot()')),context);
   await runInContext("ADM.token='fixture'; ADM.role='admin'; PLATFORMS=[{id:'vendor',name:'Vendor',type:'lab'}]; admQueue()",context);
   return {document,window,context,writes,timers,requests};
 }

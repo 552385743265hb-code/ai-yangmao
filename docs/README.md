@@ -18,7 +18,7 @@
 
 ## 方案与实施范围
 
-- [会员资格选择式录入与匹配设计](superpowers/specs/2026-10-11-membership-eligibility-design.md)：日常审核不再手写会员句子，采用标准目录、条件选择和结构化匹配；设计待确认，尚未实施。
+- [会员资格选择式录入与匹配设计](superpowers/specs/2026-10-11-membership-eligibility-design.md)：日常审核不再手写会员句子，采用标准目录、条件选择和结构化匹配；用户已确认并直接实施，生产结果见发布凭证。
 
 - [去重第二、三阶段正式入口](specs/dedupe-identity-2026-10-10/README.md)：七个增量、九项任务的源码与本地验证；独立 PR 尚未合并或部署。
 - [主规格](specs/dedupe-identity-2026-10-10/SPEC.md) / [实施任务](specs/dedupe-identity-2026-10-10/IMPLEMENTATION.md) / [45 组验收](specs/dedupe-identity-2026-10-10/ACCEPTANCE.md)。旧草稿只供历史追溯。

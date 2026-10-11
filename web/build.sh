@@ -10,9 +10,10 @@ mkdir -p public/vendor
   cat web/src/head.html
   echo '</head><body>'
   cat web/src/body.html
-  echo '<script src="/vendor/echarts.min.js"></script><script src="/app.js"></script></body></html>'
+  echo '<script src="/vendor/echarts.min.js"></script><script src="/membership-core.js"></script><script src="/app.js"></script></body></html>'
 } > public/index.html
-cat web/src/data.js web/src/app.js > public/app.js
+node --input-type=module -e 'import { build } from "esbuild"; await build({entryPoints:["src/shared/membership.ts"],bundle:true,format:"iife",globalName:"YMMembership",platform:"browser",outfile:"public/membership-core.js"});'
+cat web/src/data.js web/src/membership.js web/src/app.js > public/app.js
 cp node_modules/echarts/dist/echarts.min.js public/vendor/echarts.min.js
 cp web/_headers public/_headers
 node --check public/app.js

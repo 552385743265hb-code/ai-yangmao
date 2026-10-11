@@ -1,3 +1,5 @@
+import {membershipSchema,membershipFacts} from '../../shared/membership';
+import {withMembershipFacts} from '../../shared/identity/membership';
 import { legacyReceipt } from '../../shared/identity/legacy';
 export { legacyReceipt } from '../../shared/identity/legacy';
 import { IdentityQueryBudgetError } from './budget';
@@ -26,6 +28,19 @@ export function unknownIdentityTerms(productId?:string):CanonicalTermsV1 {
 }
 export async function adaptLegacyOffer(env:Env,offer:OfferIn,raw:unknown):Promise<Record<string,unknown>|null> {
  if(!identitySelected(env,offer.platformId))return null;
+ // Legacy writers may omit structure but cannot erase a confirmed selection
+ // while retaining the exact same compatibility member labels.
+ const stored=await env.DB.prepare('SELECT o.requirements,o.membership_requirement,p.candidate FROM offers o LEFT JOIN offer_proposals p ON p.offer_id=o.id WHERE o.id=?').bind(offer.id).first<{requirements:string;membership_requirement:string|null;candidate:string|null}>();
+ if(stored) {
+  const proposal=stored.candidate?JSON.parse(stored.candidate):null;
+  const previous=proposal?.membershipRequirement??(stored.membership_requirement?JSON.parse(stored.membership_requirement):null);
+  const previousRequirements=proposal?.requirements??JSON.parse(stored.requirements);
+  const members=(requirements:string[])=>[...new Set(requirements.filter(r=>r.startsWith('member:')))].sort();
+  const rawMembership=raw&&typeof raw==='object'?(raw as Record<string,unknown>).membershipRequirement:null;
+  const sameStructure=!rawMembership||!!previous&&!!offer.membershipRequirement&&stableJson(membershipFacts({...offer.membershipRequirement,status:previous?.status??offer.membershipRequirement.status}))===stableJson(membershipFacts(previous));
+  if(previous&&sameStructure&&stableJson(members(previousRequirements))===stableJson(members(offer.requirements)))offer={...offer,membershipRequirement:membershipSchema.parse(previous)};
+ }
+
  const transport=z.object({identityFacts:canonicalTermsSchema.optional(),identityRequestId:z.string().min(1).max(160).optional()}).parse(raw);
  const payloadHash=await sha256(stableJson({offer,identityFacts:transport.identityFacts??null}));
  const request=transport.identityRequestId??payloadHash;
@@ -54,7 +69,9 @@ export async function adaptLegacyOffer(env:Env,offer:OfferIn,raw:unknown):Promis
  const quotes=Object.entries(offer.evidence.excerpts).flatMap(([id,quote])=>{if(!quote)return [];const start=text.indexOf(quote);return start<0?[]:[{id,start,end:start+quote.length,quote}];});
  const span=quotes.find(q=>q.id==='benefit')??quotes[0];
  const {sourceFetch:_fetch,sourceText:_text,identityFacts:_facts,identityRequestId:_request,officialReviewJobId:_officialJob,leadReviewJobId:_leadJob,...display}=offer;
- const receipts=await store.recordCandidates({requestId:'legacy-candidate:'+request,observationId:observation.observationId,sourceFetchId:observation.fetchId,extractionVersion:'legacy-adapter-v1',extractionComplete:!!span,leadIds:offer.leadId?[offer.leadId]:[],candidates:span?[{inputId:offer.id,span:{start:span.start,end:span.end,quote:span.quote},quotes,rawCandidate:{...display,...(legacyJob?{_identityLegacyJob:legacyJob}:{}),...(legacyLead?{_identityLegacyLead:legacyLead}:{})},facts:transport.identityFacts??unknownIdentityTerms()}]:[]});
+ let identityFacts=transport.identityFacts??unknownIdentityTerms();
+ if(offer.membershipRequirement&&span)identityFacts=withMembershipFacts(identityFacts,offer.membershipRequirement,[span.id]);
+ const receipts=await store.recordCandidates({requestId:'legacy-candidate:'+request,observationId:observation.observationId,sourceFetchId:observation.fetchId,extractionVersion:'legacy-adapter-v1',extractionComplete:!!span,leadIds:offer.leadId?[offer.leadId]:[],candidates:span?[{inputId:offer.id,span:{start:span.start,end:span.end,quote:span.quote},quotes,rawCandidate:{...display,...(legacyJob?{_identityLegacyJob:legacyJob}:{}),...(legacyLead?{_identityLegacyLead:legacyLead}:{})},facts:identityFacts}]:[]});
  if(!receipts.length)return {id:offer.id,error:'identity extraction incomplete',retryable:true};
  let receipt:IntakeReceipt;
  try {receipt=await new IdentityService(env.DB).resolveCandidate(receipts[0].candidateId,'legacy-resolve:'+request);}

@@ -1,3 +1,6 @@
+import {membershipSchema,validateMembership} from '../../shared/membership';
+import {membershipFactConsistent} from '../../shared/identity/membership';
+import {readMembershipCatalog,MembershipError} from '../membership';
 import {assertionScopeKey} from '../../shared/identity/assertion-scope';
 import {verifyFetchProvenance} from './fetch-provenance';
 import { commitIdentityMutation, commandGuard } from './commit';
@@ -142,6 +145,20 @@ export class IdentityStore {
 
   async recordCandidates(raw: CandidateBatchInput): Promise<IntakeReceipt[]> {
     const input = parse(candidateBatchInputSchema,raw);
+    // Native candidate intake observes the same catalog and fact/display contract.
+    for(const candidate of input.candidates) {
+      const display=candidate.rawCandidate;
+      const rawMembership=display&&typeof display==='object'&&!Array.isArray(display)?display.membershipRequirement:undefined;
+      const parsedMembership=rawMembership==null?null:membershipSchema.safeParse(rawMembership);
+      if(parsedMembership&&!parsedMembership.success)throw new IdentityError(400,'invalid membership requirement');
+      const membership=parsedMembership?.success?parsedMembership.data:null;
+      if(membership) {
+        let catalog;try{catalog=await readMembershipCatalog(this.db);}catch(error){if(error instanceof MembershipError)throw new IdentityError(error.status,error.message);throw error;}
+        if(membership.catalogRevision!==catalog.revision)throw new IdentityError(409,'membership catalog revision changed');
+        const errors=validateMembership(membership,catalog);if(errors.length)throw new IdentityError(400,errors.join('; '));
+      }
+      if(!membershipFactConsistent(candidate.facts,membership))throw new IdentityError(400,'membership identity facts differ from candidate selection');
+    }
     const payloadHash = await sha256(stableJson(input));
     const request = `batch:${input.requestId}`;
     const observation = await this.db.prepare('SELECT id,text,text_truncated,fetch_kind,trust_json FROM source_observations WHERE id=?').bind(input.observationId).first<ObservationRow>();

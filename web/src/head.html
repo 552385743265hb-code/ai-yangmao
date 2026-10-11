@@ -343,4 +343,9 @@ tr.link:hover td{background:var(--surface-2)}
 .review-diff del{color:var(--critical-ink);background:color-mix(in srgb,var(--critical-ink) 14%,transparent);text-decoration-thickness:1.5px}
 .review-diff ins{color:var(--good-ink);background:color-mix(in srgb,var(--good-ink) 15%,transparent);text-decoration:none;font-weight:600}
 @container (max-width:400px){.review-diff-pair{grid-template-columns:minmax(0,1fr)}.review-diff-pair>div+div{border-left:0;border-top:1px dashed var(--line);padding:6px 0 0}}
+/* Selection controls must remain usable in narrow review cards and mobile sheets. */
+[data-membership-editor] fieldset,[data-owned-subscriptions] fieldset{min-inline-size:0;border:1px solid var(--line-2);border-radius:10px;padding:10px}
+[data-membership-editor] .chip{white-space:normal;overflow-wrap:anywhere}
+[data-membership-editor] details,[data-owned-subscriptions] details{margin:8px 0}
+[data-membership-editor] summary,[data-owned-subscriptions] summary{cursor:pointer;margin-bottom:6px}
 </style>

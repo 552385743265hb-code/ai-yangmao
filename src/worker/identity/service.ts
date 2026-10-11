@@ -1,3 +1,6 @@
+import {prepareMembershipFields,MembershipError} from '../membership';
+import {membershipFacts} from '../../shared/membership';
+import {withMembershipFacts,membershipFactConsistent} from '../../shared/identity/membership';
 import {findReviewedLegacy} from './reviewed-legacy';
 import {visibilityState,activeVisibilityPredicate} from './visibility';
 import {taskSourcesCte} from './task-sources';
@@ -23,7 +26,7 @@ type TaskRow={id:string;task_key:string;kind:string;entity_id:string|null;versio
 type ResolutionControl={task:TaskRow;actor:string;action:'same'|'new';reason?:string;facts?:CanonicalTermsV1;entityId?:string};
 const decisionInput=z.strictObject({requestId:z.string().min(1).max(200),expectedRevision:z.number().int().nonnegative(),action:z.enum(['approve','reject']),actor:z.string().min(1),role:z.enum(['admin','reviewer']),reasonCode:reviewDecisionSchema.shape.reasonCode.optional(),reason:z.string().max(2000).optional(),scope:decisionScopeSchema.optional(),reopenPolicy:reopenPolicySchema.optional()});
 export type TaskDecisionInput=z.infer<typeof decisionInput>;
-const columns:Record<string,string>={platformId:'platform_id',title:'title',type:'type',modalities:'modalities',models:'models',tags:'tags',claimMethod:'claim_method',requirements:'requirements',audience:'audience',valueText:'value_text',usdEstimate:'usd_estimate',usdMax:'usd_max',valuation:'valuation',claimStart:'claim_start',claimEnd:'claim_end',endKind:'end_kind',creditValidity:'credit_validity',sourceTz:'source_tz',publishedAt:'published_at',steps:'steps',evidence:'evidence',sourceId:'source_id',firstChannel:'first_channel'};
+const columns:Record<string,string>={platformId:'platform_id',title:'title',type:'type',modalities:'modalities',models:'models',tags:'tags',claimMethod:'claim_method',requirements:'requirements',membershipRequirement:'membership_requirement',audience:'audience',valueText:'value_text',usdEstimate:'usd_estimate',usdMax:'usd_max',valuation:'valuation',claimStart:'claim_start',claimEnd:'claim_end',endKind:'end_kind',creditValidity:'credit_validity',sourceTz:'source_tz',publishedAt:'published_at',steps:'steps',evidence:'evidence',sourceId:'source_id',firstChannel:'first_channel'};
 function offerValues(value:OfferIn):Record<string,Binding> {
  const data:Record<string,Binding>={};for(const [field,column]of Object.entries(columns)) {const v=(value as unknown as Record<string,unknown>)[field];if(v!==undefined)data[column]=v!==null&&typeof v==='object'?JSON.stringify(v):v as Binding;}
  return data;
@@ -160,12 +163,24 @@ export class IdentityService {
   if(!oldVersion)throw new IdentityError(409,'editable fact baseline missing');
   const proposal=await this.db.prepare('SELECT candidate,manual_fields,updated_at FROM offer_proposals WHERE offer_id=?').bind(offerId).first<{candidate:string;manual_fields:string;updated_at:string}>();
   const base=proposal?{...original,...JSON.parse(proposal.candidate)}:task&&!entity.current_approved_version_id?{...original,...JSON.parse(oldVersion.display_candidate_json)}:original;
+  try {input.fields=await prepareMembershipFields(this.db,base,input.fields);}catch(error){if(error instanceof MembershipError)throw new IdentityError(error.status,error.message);throw error;}
   const parsed=validateStoredOffer({...base,...input.fields,id:offerId,platformId:entity.platform_id});
   if(!parsed.success)throw new IdentityError(400,'edited offer is invalid');
   let facts=canonicalTermsSchema.parse(input.identityFacts??JSON.parse(oldVersion.facts_json));
-  const materialFields=Object.keys(input.fields).filter(key=>!['title','steps','publishedAt','sourceTz','usdEstimate','usdMax','valuation'].includes(key));
+  const materialFields=Object.keys(input.fields).filter(key=>stableJson(input.fields[key])!==stableJson((base as Record<string,unknown>)[key])).filter(key=>!['title','steps','publishedAt','sourceTz','usdEstimate','usdMax','valuation'].includes(key));
+  const selected=parsed.data.membershipRequirement;
+  const priorSelected=(base as OfferIn).membershipRequirement;
+  const membershipChanged=Object.hasOwn(input.fields,'membershipRequirement')&&stableJson(selected?membershipFacts(selected):null)!==stableJson(priorSelected?membershipFacts(priorSelected):null);
+  if(!membershipChanged&&Object.hasOwn(input.fields,'membershipRequirement')) {
+   const index=materialFields.indexOf('membershipRequirement');if(index>=0)materialFields.splice(index,1);
+   const beforeRequirements=(base as OfferIn).requirements.filter(r=>!r.startsWith('member:'));
+   if(stableJson(beforeRequirements)===stableJson(parsed.data.requirements.filter(r=>!r.startsWith('member:')))){const i=materialFields.indexOf('requirements');if(i>=0)materialFields.splice(i,1);}
+  }
+  if(membershipChanged&&selected&&!input.identityFacts)facts=withMembershipFacts(facts,selected,['admin-membership:'+input.requestId]);
+  if(input.identityFacts&&!membershipFactConsistent(facts,selected))throw new IdentityError(400,'membership facts differ from selected eligibility');
   if(!materialFields.length&&!input.identityFacts){
    const builder=new MutationBuilder(this.db,command,hash),expected:ExpectedRevision[]=[{kind:'entity',id:entity.id,revision:entity.business_revision}];
+   if(Object.hasOwn(input.fields,'membershipRequirement')&&selected)builder.require('EXISTS(SELECT 1 FROM membership_catalog WHERE id=1 AND revision=?)',[selected.catalogRevision]);
    builder.require('EXISTS(SELECT 1 FROM offers WHERE id=? AND updated_at=?)',[offerId,original.updatedAt]);
    if(task){expected.push({kind:'task',id:task.id,revision:task.revision});builder.update('review_tasks',{revision:task.revision+1,lease_token:null,lease_until:null,state:'manual'},'id=?',[task.id]);}
    if(proposal){builder.require('EXISTS(SELECT 1 FROM offer_proposals WHERE offer_id=? AND updated_at=?)',[offerId,proposal.updated_at]);builder.update('offer_proposals',{candidate:JSON.stringify(parsed.data),manual_fields:JSON.stringify([...new Set([...JSON.parse(proposal.manual_fields),...Object.keys(input.fields)])]),updated_at:new Date().toISOString()},'offer_id=?',[offerId]);}
@@ -179,18 +194,24 @@ export class IdentityService {
   // baseline and mark affected slots unknown until an administrator supplies them.
   if(!input.identityFacts&&materialFields.length){const unknown={state:'unknown'} as const;
    if(materialFields.some(k=>['valueText','models','modalities','creditValidity','type','tags'].includes(k)))facts.benefitPools=facts.benefitPools.map(pool=>({...pool,amount:unknown,cadence:unknown,models:unknown,modalities:unknown,creditValidity:unknown}));
-   if(materialFields.some(k=>['requirements','audience'].includes(k)))facts.eligibility=unknown;
+   if(materialFields.some(k=>['requirements','audience'].includes(k))) {
+    const beforeRequirements=(base as OfferIn).requirements.filter(r=>!r.startsWith('member:'));
+    const afterRequirements=parsed.data.requirements.filter(r=>!r.startsWith('member:'));
+    if(materialFields.includes('audience')||stableJson(beforeRequirements)!==stableJson(afterRequirements))facts.eligibility=unknown;
+   }
+   if(membershipChanged&&!selected&&facts.schemaVersion==='terms-v2')facts.membership=unknown;
    if(materialFields.some(k=>['claimStart','claimEnd','endKind'].includes(k)))facts.claimWindow=unknown;
    if(materialFields.includes('claimMethod'))facts.claimChannels=unknown;
   }
   if(facts.issuerProductId.state==='known'&&facts.issuerProductId.value!==entity.platform_id)throw new IdentityError(400,'facts belong to another product');
-  const factsHash=await hashTerms(facts),existing=await this.db.prepare("SELECT id FROM benefit_versions WHERE entity_id=? AND terms_hash=? AND terms_schema='terms-v1'").bind(entity.id,factsHash).first<{id:string}>();
+  const factsHash=await hashTerms(facts),existing=await this.db.prepare("SELECT id FROM benefit_versions WHERE entity_id=? AND terms_hash=? AND terms_schema=?").bind(entity.id,factsHash,facts.schemaVersion).first<{id:string}>();
   const versionId=existing?.id??crypto.randomUUID(),taskId=task?.id??crypto.randomUUID(),revision=(task?.revision??-1)+1,materialRevision=(task?.material_revision??0)+(materialFields.length||!task?1:0);
   const builder=new MutationBuilder(this.db,command,hash),expected:ExpectedRevision[]=[{kind:'entity',id:entity.id,revision:entity.business_revision}];
+  if(Object.hasOwn(input.fields,'membershipRequirement')&&selected)builder.require('EXISTS(SELECT 1 FROM membership_catalog WHERE id=1 AND revision=?)',[selected.catalogRevision]);
   if(task)expected.push({kind:'task',id:task.id,revision:task.revision});
   builder.require('EXISTS(SELECT 1 FROM offers WHERE id=? AND updated_at=?)',[offerId,original.updatedAt]);
   if(proposal)builder.require('EXISTS(SELECT 1 FROM offer_proposals WHERE offer_id=? AND updated_at=? AND candidate=?)',[offerId,proposal.updated_at,proposal.candidate]);
-  if(!existing)builder.insert('benefit_versions',{id:versionId,entity_id:entity.id,terms_schema:'terms-v1',terms_hash:factsHash,facts_json:JSON.stringify(facts),display_candidate_json:JSON.stringify(parsed.data),state:'pending',base_version_id:entity.current_approved_version_id});
+  if(!existing)builder.insert('benefit_versions',{id:versionId,entity_id:entity.id,terms_schema:facts.schemaVersion,terms_hash:factsHash,facts_json:JSON.stringify(facts),display_candidate_json:JSON.stringify(parsed.data),state:'pending',base_version_id:entity.current_approved_version_id});
   else builder.update('benefit_versions',{display_candidate_json:JSON.stringify(parsed.data)},'id=?',[versionId]);
   if(task)builder.update('review_tasks',{version_id:versionId,revision,material_revision:materialRevision,state:'manual',lease_token:null,lease_until:null},'id=?',[taskId]);
   else builder.insert('review_tasks',{id:taskId,task_key:'manual-edit:'+entity.id+':'+versionId,kind:entity.current_approved_version_id?'evidence_reopen':'initial',entity_id:entity.id,version_id:versionId,base_version_id:entity.current_approved_version_id,state:'manual'});
@@ -375,6 +396,14 @@ export class IdentityService {
    if(candidate.entity_id)evidence.differentEntityIds=await differentCanonicalEntities(this.db,candidate.entity_id);
    const compared=await Promise.all(page.entities.map(async e=>{
     let result=compareCandidate(facts,e,evidence);
+    if(facts.schemaVersion==='terms-v1'&&e.approvedVersionId&&result.reasonCodes.includes('membership_legacy_mapping_required')) {
+     const mapped=await this.db.prepare('SELECT old.facts_json FROM membership_version_migrations m JOIN benefit_versions old ON old.id=m.old_version_id WHERE m.new_version_id=? AND old.entity_id=? AND old.terms_schema=? AND old.terms_hash=?').bind(e.approvedVersionId,e.id,facts.schemaVersion,await hashTerms(facts)).first<{facts_json:string}>();
+     if(mapped) {
+      const equivalent=compareCandidate(facts,{...e,terms:canonicalTermsSchema.parse(JSON.parse(mapped.facts_json))},evidence);
+      if(equivalent.termsRelation==='EQUIVALENT')result={...equivalent,reasonCodes:['reviewed_membership_mapping']};
+     }
+    }
+
     // A prior human refusal can authorize exactly its named missing facts to be
     // reconsidered. It does not authorize other scope enrichment or publication.
     if(result.reasonCodes.includes('new_identity_facts')&&e.terms){
@@ -407,13 +436,23 @@ export class IdentityService {
    receipt.entityId=entity.id;receipt.canonicalOfferId=entity.canonical_offer_id;
    const visibility=await visibilityState(this.db,entity.id);
    const hash=await hashTerms(facts);
-   let version=control?.action==='same'&&comparison?.termsRelation==='EQUIVALENT'&&entity.current_approved_version_id?await this.db.prepare('SELECT id,state FROM benefit_versions WHERE id=? AND entity_id=?').bind(entity.current_approved_version_id,entity.id).first<{id:string;state:string}>():await this.db.prepare('SELECT id,state FROM benefit_versions WHERE entity_id=? AND terms_schema=? AND terms_hash=?').bind(entity.id,'terms-v1',hash).first<{id:string;state:string}>();
+   let version=comparison?.termsRelation==='EQUIVALENT'&&entity.current_approved_version_id?await this.db.prepare('SELECT id,state FROM benefit_versions WHERE id=? AND entity_id=?').bind(entity.current_approved_version_id,entity.id).first<{id:string;state:string}>():await this.db.prepare('SELECT id,state FROM benefit_versions WHERE entity_id=? AND terms_schema=? AND terms_hash=?').bind(entity.id,facts.schemaVersion,hash).first<{id:string;state:string}>();
+   // Reuse a semantically equal historical version across schema boundaries,
+   // including rejected versions whose immutable decisions still point to V1.
+   if(!version&&comparison?.termsRelation==='EQUIVALENT') {
+    const historical=await this.db.prepare('SELECT id,state,facts_json FROM benefit_versions WHERE entity_id=? ORDER BY created_at DESC,id DESC LIMIT 41').bind(entity.id).all<{id:string;state:string;facts_json:string}>();
+    if(historical.results.length>40)throw new IdentityError(409,'historical membership versions require bounded reconciliation');
+    const equivalent=historical.results.filter(v=>compareCandidate(facts,{id:entity!.id,platformId:entity!.platform_id,revision:entity!.business_revision,publicationRevision:entity!.publication_revision,approvedVersionId:v.id,terms:canonicalTermsSchema.parse(JSON.parse(v.facts_json))},evidence).termsRelation==='EQUIVALENT');
+    version=equivalent.find(v=>v.state==='rejected')??equivalent[0]??null;
+   }
    versionId=version?.id??crypto.randomUUID();baseVersionId=entity.current_approved_version_id;
    receipt.versionId=versionId;
    const display=displayFromRaw(candidate.raw_candidate_json);
 
    const superseded=new Set(decisions.flatMap(d=>d.supersedesId?[d.supersedesId]:[]));
-   const refusals=decisions.filter(d=>!superseded.has(d.id)&&decisionApplies(d,facts,{entityId:entity!.id,versionId,candidateId:candidate.id,observationId:candidate.observation_id}));
+   const mappedVersions=facts.schemaVersion==='terms-v2'&&version?await this.db.prepare('SELECT old_version_id FROM membership_version_migrations WHERE new_version_id=?').bind(version.id).all<{old_version_id:string}>():{results:[]};
+   const equivalentVersionIds=[versionId,...mappedVersions.results.map(v=>v.old_version_id)];
+   const refusals=decisions.filter(d=>!superseded.has(d.id)&&equivalentVersionIds.some(id=>decisionApplies(d,facts,{entityId:entity!.id,versionId:id,candidateId:candidate.id,observationId:candidate.observation_id})));
    if(visibility?.closed&&visibility.holds.length){const closed=await this.db.prepare('SELECT * FROM review_decisions WHERE id=?').bind(visibility.holds[0].id).first<Record<string,unknown>>();if(closed&&!refusals.some(d=>d.id===String(closed.id)))refusals.push(readReviewDecision(closed));}
    const sameVersionReopen=refusals.length===1?await evaluateReopen(refusals[0],facts,evidence):null;
    if(control?.action==='new'&&refusals.length&&!sameVersionReopen?.allowed)throw new IdentityError(409,'active refusal requires explicit reopening: '+refusals.slice(0,3).map(d=>d.id).join(','));
@@ -438,7 +477,7 @@ export class IdentityService {
     if(pending){receipt.outcome='duplicate_pending';taskKind='initial';taskKey=reviewTaskKey({kind:'initial',entityId:entity.id});versionId=pending.version_id;receipt.versionId=versionId;version=versionId?await this.db.prepare('SELECT id,state FROM benefit_versions WHERE id=? AND entity_id=?').bind(versionId,entity.id).first<{id:string;state:string}>():null;}
    }
    if(receipt.outcome==='needs_identity_review'){versionId=null;receipt.versionId=null;}
-   if(!version&&versionId){builder.insert('benefit_versions',{id:versionId,entity_id:entity.id,terms_schema:'terms-v1',terms_hash:hash,facts_json:JSON.stringify(facts),display_candidate_json:JSON.stringify(display??{}),state:'pending',base_version_id:baseVersionId});material=true;}
+   if(!version&&versionId){builder.insert('benefit_versions',{id:versionId,entity_id:entity.id,terms_schema:facts.schemaVersion,terms_hash:hash,facts_json:JSON.stringify(facts),display_candidate_json:JSON.stringify(display??{}),state:'pending',base_version_id:baseVersionId});material=true;}
    if(receipt.outcome==='proposed_update'&&entity.canonical_offer_id){
     const proposal=await this.db.prepare('SELECT offer_id FROM offer_proposals WHERE offer_id=?').bind(entity.canonical_offer_id).first();
     if(visibility?.restorationTaskId){
@@ -553,11 +592,17 @@ export class IdentityService {
   if(input.action==='approve') {
    if(!original||!reviewedDisplay)throw new IdentityError(400,'reviewable offer fields required');
    accepted=offerIn.parse({...reviewedDisplay,id:original.id,platformId:original.platformId,sourceId:original.sourceId??undefined,firstChannel:original.firstChannel??undefined});
+   if(!membershipFactConsistent(versionFacts,accepted.membershipRequirement))throw new IdentityError(409,'membership identity facts require confirmation before publication');
    const supplemented=task.kind==='initial'&&original.reviewState==='pending'&&task.suggestion_json&&JSON.parse(task.suggestion_json).kind==='official_evidence';
    const error=await publicationError({DB:this.db},{...original,...accepted,...(supplemented?{verifyResult:null}:{}),...(restoring?{withdrawnAt:null,withdrawnReason:null}:{})});if(error)throw new IdentityError(400,error);
   }
   const builder=new MutationBuilder(this.db,command,hash),expected:ExpectedRevision[]=[{kind:'task',id:task.id,revision:input.expectedRevision},{kind:'entity',id:entity.id,revision:entity.business_revision}];
-  if(input.action==='approve'){builder.require(`NOT EXISTS(SELECT 1 FROM review_decisions d WHERE d.entity_id=? AND ${activeVisibilityPredicate})`,[entity.id]);builder.advancePublicGeneration();}
+  if(input.action==='approve'){
+   // Keep catalog validation and publication in one compare-and-swap boundary.
+   // Editorial edits do not pass through this approval path.
+   if(accepted?.membershipRequirement)builder.require('EXISTS(SELECT 1 FROM membership_catalog WHERE id=1 AND revision=?)',[accepted.membershipRequirement.catalogRevision]);
+   builder.require(`NOT EXISTS(SELECT 1 FROM review_decisions d WHERE d.entity_id=? AND ${activeVisibilityPredicate})`,[entity.id]);builder.advancePublicGeneration();
+  }
   if(proposal&&entity.canonical_offer_id)builder.require('EXISTS(SELECT 1 FROM offer_proposals WHERE offer_id=? AND updated_at=? AND candidate=?)',[entity.canonical_offer_id,proposal.updated_at,proposal.candidate]);
   if(versionFacts.mechanism.state==='known'){
    const block=entity.platform_id+':'+versionFacts.mechanism.value;

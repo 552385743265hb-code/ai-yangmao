@@ -27,6 +27,15 @@ export function compareCandidate(raw:CanonicalTermsV1,rawEntity:VersionedEntity,
   const before=normalizeTerms(entity.terms);
   const anchor=knownValue(candidate.occurrenceAnchor),oldAnchor=knownValue(before.occurrenceAnchor);
   const incomingSlots=factSlots(candidate),oldSlots=factSlots(before);
+  // V1 member prose has no lossless interpretation without a reviewed mapping.
+  // Only a fully known member-free eligibility can cross the version boundary.
+  if(candidate.schemaVersion!==before.schemaVersion) {
+    const legacy=candidate.schemaVersion==='terms-v1'?candidate:before;
+    if(legacy.eligibility.state!=='known'||legacy.eligibility.value.requirements.some(r=>/^member:/i.test(r)))return unresolved('membership_legacy_mapping_required');
+    const slot={state:'known' as const,value:{schemaVersion:'membership-v1',status:'not_required',anyOf:[]},evidenceRefs:legacy.eligibility.evidenceRefs};
+    (candidate.schemaVersion==='terms-v1'?incomingSlots:oldSlots).set('membership',slot);
+  }
+  for(const value of [candidate,before])if(value.schemaVersion==='terms-v2'&&(value.membership.state!=='known'||value.membership.value.status==='needs_review'))return unresolved('membership_unconfirmed');
   const validSource=evidence.sourceVerified&&!evidence.truncated;
   const anchorRefs=candidate.occurrenceAnchor.state==='known'?candidate.occurrenceAnchor.evidenceRefs:[];
   const anchorGrounded=!!anchor&&validSource&&evidenceGrounded(anchorRefs,evidence)&&anchorRefs.some(ref=>evidence.quoteById[ref].includes(anchor));

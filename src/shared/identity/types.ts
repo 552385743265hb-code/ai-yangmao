@@ -1,3 +1,4 @@
+import {membershipFactsSchema} from '../membership';
 import {sourceFetchSchema} from './fetch-evidence';
 import { z } from 'zod';
 
@@ -21,7 +22,7 @@ export const cadenceSchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('per_action'), action: z.enum(['signup','login','referral','verification','other']) }),
 ]);
 export type Cadence = z.infer<typeof cadenceSchema>;
-export const canonicalTermsSchema = z.strictObject({
+export const canonicalTermsV1Schema = z.strictObject({
   schemaVersion: z.literal('terms-v1'), issuerProductId: factSchema(idSchema), mechanism: factSchema(mechanismSchema),
   benefitPools: z.array(z.strictObject({ poolKey: idSchema,
     amount: factSchema(z.strictObject({ value: decimal, unit: text, currency: currency.nullable() })),
@@ -34,7 +35,12 @@ export const canonicalTermsSchema = z.strictObject({
   claimWindow: factSchema(z.strictObject({ startsAt: text.nullable(), endsAt: text.nullable(), timezone: text.nullable() })),
   occurrenceAnchor: factSchema(text),
 });
-export type CanonicalTermsV1 = z.infer<typeof canonicalTermsSchema>;
+export const canonicalTermsV2Schema = canonicalTermsV1Schema.extend({schemaVersion:z.literal('terms-v2'),membership:factSchema(membershipFactsSchema)});
+export const canonicalTermsSchema = z.discriminatedUnion('schemaVersion',[canonicalTermsV1Schema,canonicalTermsV2Schema]);
+export type CanonicalTerms = z.infer<typeof canonicalTermsSchema>;
+// Compatibility name retained for existing callers; historical V1 schema stays immutable.
+export type CanonicalTermsV1 = CanonicalTerms;
+export type CanonicalTermsV2 = z.infer<typeof canonicalTermsV2Schema>;
 export const evidenceContextSchema = z.strictObject({ observationId: idSchema, fullText: z.string().max(250000), truncated: z.boolean(), sourceVerified: z.boolean(), quoteById: z.record(idSchema, z.string().min(1).max(20000)), differentEntityIds: z.array(idSchema).max(40).optional(), confirmedEntityId: idSchema.optional(), revokedEntityIds:z.array(idSchema).max(40).optional() });
 export type EvidenceContext = z.infer<typeof evidenceContextSchema>;
 export const versionedEntitySchema = z.strictObject({ id: idSchema, platformId: idSchema, revision: revisionSchema, publicationRevision: revisionSchema, approvedVersionId: idSchema.nullable(), terms: canonicalTermsSchema.nullable() });

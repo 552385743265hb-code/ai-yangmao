@@ -41,12 +41,16 @@ let PLATFORMS = [];
 let OFFERS = [];
 let META = { lastSuccessfulCollect: null };
 let COVERAGE = null;
+let MEMBERSHIP_CATALOG = { revision: 0, products: [], plans: [] };
+let MEMBERSHIP_CATALOG_OK = false;
 
 async function loadData({ fresh = false } = {}) {
   const stamp = Date.now();
   const get = async p => { const url = fresh ? `${p}${p.includes('?') ? '&' : '?'}fresh=${stamp}` : p; const r = await fetch(url, { ...(fresh ? { cache: 'no-store' } : {}), headers: { Accept: 'application/json' } }); if (!r.ok) throw new Error(`${p} ${r.status}`); return r.json(); };
   // A new response contract must not reuse a browser/CDN entry without valuation metadata.
-  const [pl, of, meta, cov] = await Promise.all([get('/api/platforms'), get('/api/offers?view=all&valuation=v1&schema=identity-canonical-v1'), get('/api/meta'), get('/api/coverage').catch(() => null)]);
+  const [pl, of, meta, cov, memberships] = await Promise.all([get('/api/platforms'), get('/api/offers?view=all&valuation=v1&schema=membership-v1'), get('/api/meta'), get('/api/coverage').catch(() => null), get('/api/memberships').catch(() => null)]);
+  MEMBERSHIP_CATALOG_OK = !!memberships && Number.isInteger(memberships.revision) && Array.isArray(memberships.products) && Array.isArray(memberships.plans);
+  if (MEMBERSHIP_CATALOG_OK) MEMBERSHIP_CATALOG = memberships;
   const now = Date.now(), DAYMS = 864e5;
   const t0 = new Date(); t0.setHours(0, 0, 0, 0);
   const rel = d => (d ? Math.round((new Date(d + 'T00:00:00') - t0) / DAYMS) : null);
@@ -56,7 +60,7 @@ async function loadData({ fresh = false } = {}) {
     return {
       id: o.id, p: o.platformId, t: o.title, ty: o.type, m: [...new Set(o.modalities.map(x => x === 'code' ? 'text' : x))], c: o.claimMethod, r: o.requirements.length ? o.requirements : ['none'],
       v: o.valueText, usd: o.usdEstimate ?? null, usdMax: o.usdMax ?? null, noUsd: o.usdEstimate == null,
-      valuation: o.valuation || null,
+      valuation: o.valuation || null, membershipRequirement: o.membershipRequirement || null,
       s: rel(o.claimStart), e: o.endKind === 'date' ? rel(o.claimEnd) : null, ek: o.endKind,
       vf: o.lastVerifiedAt ? -(now - Date.parse(o.lastVerifiedAt)) / DAYMS : -99,
       vfDay: o.lastVerifiedAt ? dayIdx(new Date(o.lastVerifiedAt)) : null,

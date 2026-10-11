@@ -1,3 +1,4 @@
+import type { MembershipRequirement } from '../shared/membership';
 import type { LeadResolution } from '../shared/lead-review';
 import type { OfficialReview } from '../shared/official-review';
 import type { Valuation } from '../shared/valuation';
@@ -52,6 +53,7 @@ export const offers = sqliteTable('offers', {
   modalities: text('modalities', { mode: 'json' }).$type<string[]>().notNull(),
   claimMethod: text('claim_method', { enum: ['auto', 'signup', 'app', 'form', 'topup', 'member', 'code'] }).notNull(),
   requirements: text('requirements', { mode: 'json' }).$type<string[]>().notNull(),
+  membershipRequirement: text('membership_requirement', { mode: 'json' }).$type<MembershipRequirement | null>(),
   audience: text('audience', { enum: ['new', 'old', 'all', 'unclear'] }).notNull().default('unclear'),
   valueText: text('value_text').notNull(),
   usdEstimate: real('usd_estimate'),

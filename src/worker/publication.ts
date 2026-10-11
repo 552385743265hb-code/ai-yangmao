@@ -1,3 +1,4 @@
+import {membershipPublicationError} from './membership';
 import {needsEvidence} from '../shared/review-preparation';
 import {canonicalOffers} from './identity/canonical';
 import { drizzle } from 'drizzle-orm/d1';
@@ -16,9 +17,10 @@ export const validateStoredOffer = (offer: OfferRow) => offerIn.safeParse({
 });
 
 /** 管理员通过时的门槛：平台已准入、证据是该平台的官方出处。不能靠 reviewState 绕过准入。 */
-export async function publicationError(env: Pick<Env, 'DB'>, offer: OfferRow): Promise<string | null> {
+export async function publicationError(env: Pick<Env, 'DB'>, offer: OfferRow, options:{preserveExistingMembership?:boolean}={}): Promise<string | null> {
   const valid = validateStoredOffer(offer);
   if (!valid.success) return '活动字段或日期不符合共享校验规则';
+  const membershipIssue=options.preserveExistingMembership?null:await membershipPublicationError(env.DB,offer);if(membershipIssue)return membershipIssue;
   if (offer.verifyResult === 'evidence_missing') return '当前官方页面未能再次确认原条款，先核验再通过';
   const [platform] = await db(env).select().from(s.platforms).where(eq(s.platforms.id, offer.platformId));
   if (!platform || platform.status !== 'approved') return '平台尚未准入';

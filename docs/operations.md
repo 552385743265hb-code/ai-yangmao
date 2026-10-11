@@ -130,3 +130,14 @@ OpenRouter默认备用为`openrouter/free`；404须检查模型可用性，不�
 只读验证可运行python3 .codex/discord-probe.py .codex/discord.env；只输出身份、频道和计数，不输出Token或消息全文。频道暂无官方公告时，仅证明读取链路可用，不能声称真实福利已入库。
 
 诊断补跑用collect.yml的only_sources=discord-official-announcements、fast_leads=true、lead_limit=0、lead_review_limit=0、official_review_limit=0，跳过模型与其他业务队列；正常定时运行沿既有预算和审核规则执行。
+
+
+## 选择式会员资格运维
+
+`GET /api/memberships`返回已核实/历史目录，`GET /api/admin/memberships`包含待核实项。管理员通过POST同路径创建pending产品/套餐；`/:id/impact?kind=product|plan`预览影响，`/:id/verify`带目录和条目修订及影响确认独立核实。目录核实不批准福利。目录缺项不准按品牌或档位相似度猜测。
+
+0036新增会员目录、目录审计与offers.membership_requirement；0037以保留行的方式扩展benefit_versions到terms-v2并增加版本迁移映射。发布前备份所涉表与当前版本；D1有FTS虚拟表时整库export不支持，使用明确的`--table`导出相关表并保存只读JSON快照。
+
+`scripts/membership-backfill.ts --snapshot <snapshot.json> --out <plan.json>`仅生成本地预演。快照包含offers、当前approvedVersions和proposals；与`--sql-out`同用时必须提供`--expected-catalog`，可用`--rollback-out`生成保护性兼容回滚。快照与生成SQL含内部数据，保存在权限受限目录，不提交Git。整批原子执行SQL，任何目录/行/身份版本不匹配停止；不拆批绕过断言。迁移仅为确定等价条目创建新V2基线，其余保留needs_review；原V1不可变。
+
+先在备份副本验证DDL迁移、数据迁移、FK完整性及回滚，再在生产迁移、部署、推送并读回公开目录/API/后台与浏览器筛选。新响应schema=membership-v1，更新identity_public_state.generation失效公开缓存。代码回滚必须先用兼容回滚恢复V1公开指针并核查所有新V2变更；保留新增字段、目录和不可变V2历史，禁止直接回到不识别V2的旧Worker处理新写入。

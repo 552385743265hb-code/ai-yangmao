@@ -27,7 +27,7 @@ const HELP = `用法：ym <命令>
   show <短码>           看一条羊毛的全部字段和官方证据
   approve <短码> --version <审核版本> 通过
   reject <短码> [理由]  拒绝。理由开头可加快捷分类：付费套餐 / 非AI / 平台错 / 重复 / 过期 / 额度不明 / 证据不足 / 分类错
-  edit <短码> 字段=值 … [--approve] [--reason 理由]  修改字段（可同时通过）；写上理由，模型以后学得更快。字段：title type valueText usdEstimate claimStart claimEnd endKind creditValidity audience requirements modalities platformId sourceTz claimMethod
+  edit <短码> 字段=值 … [--approve] [--reason 理由]  修改字段（可同时通过）；写上理由，模型以后学得更快。字段：title type valueText usdEstimate claimStart claimEnd endKind creditValidity audience requirements membershipRequirement(JSON) modalities platformId sourceTz claimMethod
   leads [数量]          看最新线索
   dismiss <线索id>      忽略线索（需 --version <reviewVersion>）
   add <链接> [备注]     补录链接（下一轮采集抓取并抽取，进待审）
@@ -108,7 +108,7 @@ ${revisions.length ? `修订：${revisions.map((r: any) => r.diff.map((x: any) =
     for (const kv of rest.slice(1).filter(a => !(reason && reason.split(' ').includes(a)))) {
       const i = kv.indexOf('='); if (i < 0) continue;
       const k = kv.slice(0, i), v = kv.slice(i + 1);
-      fields[k] = ['requirements', 'modalities'].includes(k) ? v.split(',') : k === 'usdEstimate' ? (v === 'null' ? null : Number(v)) : v === 'null' ? null : v;
+      fields[k] = k === 'membershipRequirement' ? JSON.parse(v) : ['requirements', 'modalities'].includes(k) ? v.split(',') : k === 'usdEstimate' ? (v === 'null' ? null : Number(v)) : v === 'null' ? null : v;
     }
     const r = await call(`/offers/${rest[0]}/edit`, { fields, approve: flag('--approve'), expectedReviewVersion:version, reason, reasonCode: Object.keys(fields).includes('type') ? 'wrong_type' : 'wrong_field' });
     console.log(`已修改 [${r.code}]：${(r.changed??Object.keys(fields)).join('、')}${r.approved ? '，并已通过' : ''}${r.reviewVersion?' · 新审核版本：'+r.reviewVersion:''}`);

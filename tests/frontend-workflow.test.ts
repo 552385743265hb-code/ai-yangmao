@@ -1,3 +1,4 @@
+import * as YMMembership from '../src/shared/membership';
 import { readFileSync } from 'node:fs';
 import { createContext, runInContext } from 'node:vm';
 import { parseHTML } from 'linkedom';
@@ -13,15 +14,15 @@ function fixture(handle: (url: string, init?: RequestInit) => unknown | Promise<
   window.scrollTo = () => {};
   const charts = new Map<string, any>();
   const storage = { getItem: () => null, setItem() {}, removeItem() {} };
-  const context = createContext({ window, document, console, Intl, Date, Map, Set, URL, URLSearchParams, Response, FormData,
+  const context = createContext({YMMembership, structuredClone, window, document, console, Intl, Date, Map, Set, URL, URLSearchParams, Response, FormData,
     location: { hash: '#admin' }, navigator: {}, getComputedStyle: () => ({ getPropertyValue: () => '#123456' }),
     matchMedia: () => ({ matches: false, addEventListener() {} }), MutationObserver: class { observe() {} },
     localStorage: storage, sessionStorage: storage, setTimeout, clearTimeout, setInterval() {},
     echarts: { getInstanceByDom: () => null, init: (element: HTMLElement) => ({ setOption: (options: any) => charts.set(element.id, options), on() {}, dispose() {}, isDisposed: () => false }) },
-    fetch: async (url: string, init?: RequestInit) => new Response(JSON.stringify(await handle(url, init))),
+    fetch: async (url: string, init?: RequestInit) => new Response(JSON.stringify(url.endsWith('/memberships') ? {revision:0,products:[],plans:[]} : await handle(url, init))),
   });
   const app = readFileSync('web/src/app.js', 'utf8');
-  runInContext(readFileSync('web/src/data.js', 'utf8') + '\n' + app.slice(0, app.indexOf('(async function boot()')), context);
+  runInContext(readFileSync('web/src/data.js', 'utf8') + '\n' + readFileSync('web/src/membership.js', 'utf8') + '\n' + app.slice(0, app.indexOf('(async function boot()')), context);
   const run = (code: string) => runInContext(code, context);
   run("PLATFORMS=[{id:'vendor',name:'Vendor',type:'lab'}];ADM.token='fixture';ADM.role='admin';");
   return { document, window, context, run, charts };
@@ -591,3 +592,36 @@ it('later identity pages cannot duplicate already displayed managed activity car
 it('managed card records manual testing as a draft without claiming publication or decrementing review totals',async()=>{const sent:any[]=[];const q=queue([offer('managed',{evidenceTier:'media',reviewVersion:'identity:task:0'})]);const f=fixture((url,init)=>{if(init?.method==='POST'){sent.push({url,body:JSON.parse(String(init.body))});return {approved:false,reviewVersion:'identity:task:1'};}return url.includes('/identity/tasks')?{tasks:[]}:q;});await f.run('admQueue()');f.document.querySelector('[data-act="tested"]')!.dispatchEvent(new f.window.Event('click'));await pause();expect(sent).toHaveLength(1);expect(sent[0].body.approve).toBe(false);expect(f.document.querySelector('[data-activity-count]')?.textContent).toBe('1');});
 it('saving a note retains the managed task version for the following explicit approval',async()=>{const sent:any[]=[];const q=queue([offer('managed',{reviewVersion:'identity:task:7'})]);const f=fixture((url,init)=>{if(init?.method==='POST'){sent.push({url,body:JSON.parse(String(init.body))});return url.endsWith('/note')?{reviewVersion:'2026-10-11T00:00:00Z'}:{title:'manual decision'};}return url.includes('/identity/tasks')?{tasks:[]}:q;});await f.run('admQueue()');(f.document.querySelector('[data-note]') as HTMLTextAreaElement).value='人工心得';f.document.querySelector('[data-act="note"]')!.dispatchEvent(new f.window.Event('click'));await pause();f.document.querySelector('[data-act="approve"]')!.dispatchEvent(new f.window.Event('click'));await pause();expect(sent[1].body.expectedReviewVersion).toBe('identity:task:7');});
 it('rich managed draft edits submit only changed fields and never reassign an unchanged product',async()=>{const sent:any[]=[];const q=queue([offer('managed',{reviewVersion:'identity:task:0',usdEstimate:null,usdMax:null,claimStart:null,claimEnd:null,endKind:'unknown',creditValidity:null,publishedAt:null})]);const f=fixture((url,init)=>{if(init?.method==='POST'){sent.push(JSON.parse(String(init.body)));return {approved:false,changed:['title']};}return url.includes('/identity/tasks')?{tasks:[]}:q;});f.context.FormData=class{values:any[];constructor(form:any){this.values=[...form.querySelectorAll('input,select,textarea')].filter((e:any)=>e.name&&(!['checkbox','radio'].includes(e.type)||e.hasAttribute('checked'))).map((e:any)=>[e.name,e.tagName==='SELECT'?(e.querySelector('option[selected]')||e.querySelector('option'))?.value:e.value]);}[Symbol.iterator](){return this.values[Symbol.iterator]();}};await f.run('admQueue()');f.document.querySelector('[data-act="edit"]')!.dispatchEvent(new f.window.Event('click'));const form=f.document.querySelector('[data-editform]')!;(form.querySelector('[name="title"]') as HTMLInputElement).value='只修改标题';form.dispatchEvent(new f.window.Event('submit',{cancelable:true}));await pause();expect(sent).toHaveLength(1);expect(sent[0]).toMatchObject({approve:false,fields:{title:'只修改标题'}});expect(Object.keys(sent[0].fields)).toEqual(['title']);});
+
+describe('membership draft saving without implicit approval',()=>{
+  it.each([false,true])('saves legacy pending membership draft and approved simple edit separately (live=%s)',async live=>{
+    const writes:any[]=[];
+    const item=offer('legacy-membership',{reviewState:live?'approved':'pending',requirements:live?['none']:['member:不明确套餐']});
+    const page=fixture((_url,init)=>{
+      if(init?.body){writes.push(JSON.parse(String(init.body)));return {changed:['title'],approved:false};}
+      return {...queue(live?[]:[item]),incomplete:live?[item]:[]};
+    });
+    page.context.FormData=class {
+      fields:[string,string][];
+      constructor(form:HTMLFormElement){this.fields=[...form.querySelectorAll<HTMLInputElement|HTMLSelectElement|HTMLTextAreaElement>('[name]')].filter(x=>!x.disabled&&(!['checkbox','radio'].includes((x as HTMLInputElement).type)||x.hasAttribute('checked'))).map(x=>[x.name,x.value]);}
+      [Symbol.iterator](){return this.fields[Symbol.iterator]();}
+    };
+    page.run('saveMessages=[];toast=message=>saveMessages.push(message)');
+    await page.run('admQueue()');
+    if(live){const section=page.document.querySelector('[data-incomplete]')!;(section as HTMLDetailsElement).open=true;section.dispatchEvent(new page.window.Event('toggle'));}
+    const card=page.document.querySelector('[data-code="legacy-membership"]')!;
+    card.querySelector('[data-act="edit"]')!.dispatchEvent(new page.window.Event('click'));await pause();
+    const form=card.querySelector('[data-editform]')!;
+    expect(form.querySelector('button[type="submit"]')!.textContent).toBe(live?'保存':'保存草稿');
+    (form.querySelector('[name="title"]') as HTMLInputElement).value='标题修订';
+    if(!live){
+      const status=form.querySelector('[data-membership-status]')!;Object.defineProperty(status,'value',{configurable:true,value:'needs_review'});status.dispatchEvent(new page.window.Event('change',{bubbles:true}));
+      form.querySelector('[data-membership-unresolved]')!.dispatchEvent(new page.window.Event('click',{bubbles:true}));
+    }
+    form.dispatchEvent(new page.window.Event('submit'));await pause();
+    expect(writes).toHaveLength(1);expect(writes[0].approve).toBe(false);
+    if(!live)expect(writes[0].fields.membershipRequirement.status).toBe('needs_review');
+    expect(page.run('saveMessages.join("；")')).toContain(live?'已保存':'草稿已保存，尚未通过上架');
+    if(live)expect(page.run('saveMessages.join("；")')).not.toContain('草稿');
+  });
+});

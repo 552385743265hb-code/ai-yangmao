@@ -1,3 +1,5 @@
+import type {MembershipRequirement} from '../shared/membership';
+import {membershipAdminRoutes,prepareMembershipFields,MembershipError} from './membership';
 import {needsEvidence,reviewPreparation} from '../shared/review-preparation';
 import {closeIdentityLead} from './identity/lead-closure';
 import {visibilityState,visibilityView} from './identity/visibility';
@@ -31,6 +33,7 @@ import type { Env } from './index';
 
 type OfferRow = typeof s.offers.$inferSelect;
 const db = (env: Env) => drizzle(env.DB, { schema: s });
+const membershipCatalogGuard=(r?:MembershipRequirement|null)=>r?sql`EXISTS(SELECT 1 FROM membership_catalog WHERE id=1 AND revision=${r.catalogRevision})`:undefined;
 
 /** 4 位短码，方便在手机上回复（例如"通过 a3f9"）。 */
 export function shortCode(id: string): string {
@@ -47,7 +50,7 @@ function view(o: OfferRow, platformName: string, now = new Date()) {
   return {
     preparation: reviewPreparation(o), reviewVersion: o.updatedAt, visibilityVersion:o.updatedAt, code: shortCode(o.id), id: o.id, platformId: o.platformId, platform: platformName, title: o.title, type: TYPE_L[o.type] ?? o.type,
     value: o.valueText, usd: o.usdEstimate, end: endText(o), status: liveStatus(o, now), reviewState: o.reviewState,
-    requirements: o.requirements, audience: o.audience, claimMethod: o.claimMethod, creditValidity: o.creditValidity,
+    membershipRequirement:o.membershipRequirement??null, requirements: o.requirements, audience: o.audience, claimMethod: o.claimMethod, creditValidity: o.creditValidity,
     sourceTz: o.sourceTz, claimStart: o.claimStart, claimEnd: o.claimEnd, endKind: o.endKind,
     evidenceUrl: o.evidence.url, evidenceTier: o.evidence.tier, excerpts: o.evidence.excerpts, missingEvidence: missingEvidence(o.evidence.excerpts),
     steps: o.steps, models: o.models ?? [], tags: o.tags ?? [], publishedAt: o.publishedAt ?? null, modalities: o.modalities, usdEstimate: o.usdEstimate, usdMax: o.usdMax ?? null, valuation: parseValuation(o.valuation), adminNote: o.adminNote ?? null, reviewMemo: o.reviewMemo ?? null, officialReview: o.officialReview ?? null, suggestion: o.reviewSuggestion ?? null,
@@ -61,6 +64,7 @@ export const admin = new Hono<{ Bindings: Env; Variables: { role: 'admin' | 'rev
 
 /** 审核员能用的接口：看待审、通过、拒绝、修改、核验记录、线索、补录、补信源、送交平台准入。 */
 const REVIEWER_ALLOWED: [string, RegExp][] = [
+  ['GET', /^\/memberships(?:\/[^/]+\/impact)?$/], ['POST', /^\/memberships$/],
   ['GET', /^\/identity\/tasks$/], ['POST', /^\/identity\/tasks\/[^/]+\/resolve$/],
   ['GET', /^\/(whoami|queue|leads)$/], ['GET', /^\/offers\/[^/]+$/],
   ['POST', /^\/offers\/[^/]+\/(approve|reject|edit|memo|note|retested|suggest|official-retry)$/],
@@ -88,6 +92,7 @@ admin.use('*', async (c, next) => {
 });
 
 admin.route('/identity',identityAdminRoutes);
+admin.route('/memberships',membershipAdminRoutes);
 
 admin.get('/whoami', c => c.json({ role: c.get('role'), who: c.get('who') }));
 
@@ -127,7 +132,7 @@ class AmbiguousShortCode extends Error {
 }
 admin.onError((error, c) => {
   if (error instanceof z.ZodError) return c.json({error:'身份请求格式不正确'},400);
-  if (error instanceof IdentityError) return c.json({error:error.message},error.status);
+  if (error instanceof IdentityError || error instanceof MembershipError) return c.json({error:error.message},error.status);
   if (error instanceof AmbiguousShortCode) return c.json({ error: error.message, ids: error.ids }, 409);
   throw error;
 });
@@ -251,13 +256,14 @@ admin.post('/offers/:ref/:action{approve|reject}', async c => {
     const issue = await publicationError(c.env, candidate);
     if (issue) return c.json({ error: issue }, 400);
   }
+  const membershipGuard=action==='approve'?membershipCatalogGuard((proposal?proposalOffer(o,proposal.candidate):o).membershipRequirement):undefined;
   const nowIso = new Date().toISOString();
   if (proposal && o.reviewState === 'approved') {
     if (action === 'approve') {
       const candidate = proposalOffer(o, proposal.candidate);
       const parsed = validateStoredOffer(candidate);
       if (!parsed.success) return c.json({ error: '提案字段不正确', issues: parsed.error.issues }, 400);
-      const accepted = await d.update(s.offers).set({ ...parsed.data, lastVerifiedAt: nowIso, verifyResult: '审核员确认官方证据', updatedAt: nowIso }).where(and(eq(s.offers.id,o.id),eq(s.offers.updatedAt,o.updatedAt),sql`EXISTS (SELECT 1 FROM offer_proposals WHERE offer_id=${o.id} AND updated_at=${proposal.updatedAt})`)).returning({id:s.offers.id});
+      const accepted = await d.update(s.offers).set({ ...parsed.data, lastVerifiedAt: nowIso, verifyResult: '审核员确认官方证据', updatedAt: nowIso }).where(and(eq(s.offers.id,o.id),eq(s.offers.updatedAt,o.updatedAt),sql`EXISTS (SELECT 1 FROM offer_proposals WHERE offer_id=${o.id} AND updated_at=${proposal.updatedAt})`,membershipGuard)).returning({id:s.offers.id});
       if (!accepted.length) return c.json({error:'条目或提案已更新，请刷新后重试'},409);
       await d.insert(s.offerRevisions).values({ offerId: o.id, diff: proposal.diff, evidenceBefore: o.evidence, evidenceAfter: candidate.evidence });
     }
@@ -283,7 +289,7 @@ admin.post('/offers/:ref/:action{approve|reject}', async c => {
       await d.delete(s.offerProposals).where(and(eq(s.offerProposals.offerId,o.id),eq(s.offerProposals.updatedAt,proposal.updatedAt)));
     }
   } else {
-    const changed = await d.update(s.offers).set({ reviewState: action === 'approve' ? 'approved' : 'rejected', ...(action === 'approve' ? { lastVerifiedAt: nowIso, verifyResult: '审核员确认官方证据' } : {}), updatedAt: nowIso }).where(and(eq(s.offers.id, o.id), eq(s.offers.reviewState, 'pending'), eq(s.offers.updatedAt,o.updatedAt))).returning({id:s.offers.id});
+    const changed = await d.update(s.offers).set({ reviewState: action === 'approve' ? 'approved' : 'rejected', ...(action === 'approve' ? { lastVerifiedAt: nowIso, verifyResult: '审核员确认官方证据' } : {}), updatedAt: nowIso }).where(and(eq(s.offers.id, o.id), eq(s.offers.reviewState, 'pending'), eq(s.offers.updatedAt,o.updatedAt),membershipGuard)).returning({id:s.offers.id});
     if (!changed.length) return c.json({error:'这条活动已被更新或处理，请刷新后重试'},409);
   }
   // Proposal rejection already wrote its audit in the same transaction as memory and deletion.
@@ -305,7 +311,7 @@ admin.post('/offers/:ref/:action{approve|reject}', async c => {
 
 /** 补丁只允许编辑业务字段；补丁合并后仍由 offerIn 校验完整活动。 */
 const EDITABLE_FIELDS = new Set(['title', 'type', 'valueText', 'usdEstimate', 'usdMax', 'valuation', 'models', 'tags', 'claimStart', 'claimEnd', 'endKind', 'creditValidity',
-  'audience', 'requirements', 'modalities', 'platformId', 'sourceTz', 'claimMethod', 'steps', 'evidence', 'publishedAt', 'sourceId']);
+  'audience', 'requirements', 'membershipRequirement', 'modalities', 'platformId', 'sourceTz', 'claimMethod', 'steps', 'evidence', 'publishedAt', 'sourceId']);
 /** 旧提案可能含整行快照；只覆盖业务字段，审核建议、核验记录及当前状态始终读原条目。 */
 function proposalOffer(original: OfferRow, candidate: Record<string, unknown>): OfferRow {
   return { ...original, ...Object.fromEntries(Object.entries(candidate).filter(([field]) => EDITABLE_FIELDS.has(field))) } as OfferRow;
@@ -332,6 +338,11 @@ admin.post('/offers/:ref/edit', async c => {
     const result=await new IdentityService(c.env.DB).editManagedOffer(o.id,{requestId,taskId:transport?.identityTaskId??encoded?.[1],expectedTaskRevision:transport?.expectedIdentityRevision??(encoded?Number(encoded[2]):undefined),expectedOfferVersion:body?.expectedReviewVersion,fields:body?.fields??{},actor:c.get('who'),...(transport?.identityFacts?{identityFacts:transport.identityFacts as never}:{})});
     return c.json({ok:true,approved:false,code:shortCode(o.id),title:o.title,changed:Object.keys(body?.fields??{}),...result,reviewVersion:result.taskId?`identity:${result.taskId}:${result.revision}`:undefined});
   }
+  if(body?.fields){
+    const proposal=await c.env.DB.prepare('SELECT candidate FROM offer_proposals WHERE offer_id=?').bind(o.id).first<{candidate:string}>();
+    const base=proposal?proposalOffer(o,JSON.parse(proposal.candidate)):o;
+    try{body.fields=await prepareMembershipFields(c.env.DB,base,body.fields);}catch(e){return c.json({error:e instanceof Error?e.message:'会员资格不正确'},e instanceof MembershipError?e.status:400);}
+  }
   const patch = z.record(z.string(), z.unknown()).safeParse(body?.fields);
   if (!patch.success || Object.keys(patch.data).some(key => !EDITABLE_FIELDS.has(key))) return c.json({ error: '包含不可编辑的字段' }, 400);
   const d = db(c.env), nowIso = new Date().toISOString();
@@ -339,6 +350,7 @@ admin.post('/offers/:ref/edit', async c => {
   if (body?.expectedReviewVersion && body.expectedReviewVersion !== (proposal?.updatedAt ?? o.updatedAt)) return c.json({ error: '内容已更新，请刷新这条活动后再审核' }, 409);
   const base = proposal ? proposalOffer(o, proposal.candidate) : o;
   const candidate = { ...base, ...patch.data } as OfferRow;
+  const membershipGuard=(Object.hasOwn(patch.data,'membershipRequirement')||body?.approve)?membershipCatalogGuard(candidate.membershipRequirement):undefined;
   const valid = validateStoredOffer(candidate);
   if (!valid.success) return c.json({ error: '活动字段不正确', issues: valid.error.issues }, 400);
   const diff = Object.keys(patch.data)
@@ -346,8 +358,19 @@ admin.post('/offers/:ref/edit', async c => {
     .map(field => ({ field, from: (base as Record<string, unknown>)[field], to: (candidate as Record<string, unknown>)[field] }));
   if (!diff.length && !body?.approve) return c.json({ error: '没有要改的字段' }, 400);
   if (!diff.length && body?.approve && o.reviewState !== 'pending' && !proposal) return c.json({ error: '这条活动没有待审核内容' }, 409);
+  // Eligibility changes on legacy published rows also require a separately reviewed proposal.
+  if(!proposal&&o.reviewState==='approved'&&!body?.approve&&diff.some(d=>d.field==='membershipRequirement')){
+    const selected=candidate.membershipRequirement;
+    const inserted=await c.env.DB.prepare(`INSERT INTO offer_proposals(offer_id,candidate,diff,manual_fields,detected_at,updated_at)
+      SELECT ?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM offers WHERE id=? AND updated_at=? AND review_state='approved')
+      AND (? IS NULL OR EXISTS(SELECT 1 FROM membership_catalog WHERE id=1 AND revision=?))
+      ON CONFLICT(offer_id) DO NOTHING RETURNING offer_id`).bind(o.id,JSON.stringify(candidate),JSON.stringify(diff),JSON.stringify(diff.map(d=>d.field)),nowIso,nowIso,o.id,o.updatedAt,selected?.catalogRevision??null,selected?.catalogRevision??null).all();
+    if(!inserted.results.length)return c.json({error:'条目或会员目录已更新，请刷新后重试'},409);
+    await d.insert(s.reviews).values({offerId:o.id,action:'edit',editedFields:diff.map(x=>x.field),reviewer:c.get('who'),reason:body?.reason??'会员资格已保存为待审更新',reasonCode:'wrong_field'});
+    return c.json({ok:true,code:shortCode(o.id),changed:diff.map(x=>x.field),approved:false,pendingUpdate:true,reviewVersion:nowIso});
+  }
   if (body?.approve || (!proposal && o.reviewState === 'approved')) {
-    const issue = await publicationError(c.env, candidate);
+    const issue = await publicationError(c.env, candidate,{preserveExistingMembership:!body?.approve&&!proposal&&o.reviewState==='approved'&&diff.every(d=>!['requirements','membershipRequirement'].includes(d.field))});
     if (issue) return c.json({ error: issue }, 400);
   }
 
@@ -357,7 +380,7 @@ admin.post('/offers/:ref/edit', async c => {
       .filter(field => JSON.stringify((o as Record<string, unknown>)[field] ?? null) !== JSON.stringify((candidate as Record<string, unknown>)[field] ?? null))
       .map(field => ({ field, from: (o as Record<string, unknown>)[field], to: (candidate as Record<string, unknown>)[field] }));
     if (body?.approve) {
-      const accepted = await d.update(s.offers).set({ ...valid.data, lastVerifiedAt: nowIso, verifyResult: '审核员确认官方证据', updatedAt: nowIso }).where(and(eq(s.offers.id,o.id),eq(s.offers.updatedAt,o.updatedAt),sql`EXISTS (SELECT 1 FROM offer_proposals WHERE offer_id=${o.id} AND updated_at=${proposal.updatedAt})`)).returning({id:s.offers.id});
+      const accepted = await d.update(s.offers).set({ ...valid.data, lastVerifiedAt: nowIso, verifyResult: '审核员确认官方证据', updatedAt: nowIso }).where(and(eq(s.offers.id,o.id),eq(s.offers.updatedAt,o.updatedAt),sql`EXISTS (SELECT 1 FROM offer_proposals WHERE offer_id=${o.id} AND updated_at=${proposal.updatedAt})`,membershipGuard)).returning({id:s.offers.id});
       if (!accepted.length) return c.json({error:'条目或提案已更新，请刷新后重试'},409);
       const pipelineDiff = proposedDiff.filter(x => !manualFields.includes(x.field));
       const manualDiff = proposedDiff.filter(x => manualFields.includes(x.field));
@@ -365,11 +388,11 @@ admin.post('/offers/:ref/edit', async c => {
       if (manualDiff.length) await d.insert(s.offerRevisions).values({ offerId: o.id, diff: manualDiff, author: 'admin', evidenceBefore: o.evidence, evidenceAfter: candidate.evidence });
       await d.delete(s.offerProposals).where(and(eq(s.offerProposals.offerId,o.id),eq(s.offerProposals.updatedAt,proposal.updatedAt)));
     } else {
-      const changed = await d.update(s.offerProposals).set({ candidate, diff: proposedDiff, manualFields, updatedAt: nowIso }).where(and(eq(s.offerProposals.offerId,o.id),eq(s.offerProposals.updatedAt,proposal.updatedAt))).returning({id:s.offerProposals.offerId});
+      const changed = await d.update(s.offerProposals).set({ candidate, diff: proposedDiff, manualFields, updatedAt: nowIso }).where(and(eq(s.offerProposals.offerId,o.id),eq(s.offerProposals.updatedAt,proposal.updatedAt),membershipGuard)).returning({id:s.offerProposals.offerId});
       if (!changed.length) return c.json({error:'提案已更新，请刷新后重试'},409);
     }
   } else {
-    const changed = await d.update(s.offers).set({ ...valid.data, ...(body?.approve ? { reviewState: 'approved' as const, lastVerifiedAt: nowIso, verifyResult: '审核员确认官方证据' } : {}), updatedAt: nowIso }).where(and(eq(s.offers.id, o.id),eq(s.offers.updatedAt,o.updatedAt))).returning({id:s.offers.id});
+    const changed = await d.update(s.offers).set({ ...valid.data, ...(body?.approve ? { reviewState: 'approved' as const, lastVerifiedAt: nowIso, verifyResult: '审核员确认官方证据' } : {}), updatedAt: nowIso }).where(and(eq(s.offers.id, o.id),eq(s.offers.updatedAt,o.updatedAt),membershipGuard)).returning({id:s.offers.id});
     if (!changed.length) return c.json({error:'这条活动已更新，请刷新后重试'},409);
     if (diff.length) await d.insert(s.offerRevisions).values({ offerId: o.id, diff, author: 'admin', evidenceBefore: o.evidence, evidenceAfter: candidate.evidence });
   }

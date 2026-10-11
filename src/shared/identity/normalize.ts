@@ -1,3 +1,4 @@
+import {membershipFacts} from '../membership';
 import { canonicalTermsSchema, type CanonicalTermsV1 } from './types';
 
 const canonicalText = (value: string) => value.normalize('NFKC').replace(/\s+/gu, ' ').trim();
@@ -50,6 +51,8 @@ export function normalizeTerms(input: CanonicalTermsV1): CanonicalTermsV1 {
     parsed.costs.value.currency = parsed.costs.value.currency.toUpperCase();
     if (!/^[A-Z]{3}$/.test(parsed.costs.value.currency)) throw new Error('currency requires an explicit ISO code');
   }
+  if(parsed.schemaVersion==='terms-v2'&&parsed.eligibility.state==='known')parsed.eligibility.value.requirements=parsed.eligibility.value.requirements.filter(r=>!r.startsWith('member:'));
+  if(parsed.schemaVersion==='terms-v2'&&parsed.membership.state==='known')parsed.membership.value=membershipFacts({...parsed.membership.value,catalogRevision:0,evidenceUrls:[]});
   return parsed;
 }
 export function withoutEvidence(value: unknown): unknown {
@@ -58,7 +61,7 @@ export function withoutEvidence(value: unknown): unknown {
   return value;
 }
 export async function hashTerms(input: CanonicalTermsV1): Promise<string> {
-  return sha256(`terms-v1\n${stableJson(withoutEvidence(normalizeTerms(input)))}`);
+  return sha256(`${input.schemaVersion}\n${stableJson(withoutEvidence(normalizeTerms(input)))}`);
 }
 export function normalizeDocumentUrl(input: string): string {
   const url = new URL(input);

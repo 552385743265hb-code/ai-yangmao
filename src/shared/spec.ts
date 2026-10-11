@@ -1,3 +1,4 @@
+import type {MembershipRequirement} from './membership';
 // 羊毛数据规格：每个字段喂给网站哪些栏目、审核时缺了会怎样。
 // 服务器审核（能否通过）、审批卡片（上架前检查）、采集抽取（要填哪些字段）共用这一份，保证“一条羊毛审一次，所有栏目都对”。
 // 对照表见 docs/data-contract.md。
@@ -49,6 +50,7 @@ export interface SpecInput {
   endKind: 'date' | 'unknown' | 'standing';
   sourceTz: string;
   requirements: string[];
+  membershipRequirement?:MembershipRequirement|null;
   audience?: string | null;
   creditValidity?: string | null;
   models?: string[];
@@ -82,6 +84,7 @@ export function checkOffer(o: SpecInput, now = new Date()): SpecIssue[] {
   if (!o.valueText?.trim()) add('valueText', '额度', 'block', '没有额度描述', ['all', 'detail', 'push']);
   else if (englishOnly(o.valueText)) add('valueText', '额度', 'warn', '额度是整句英文，要写中文', ['detail', 'push']);
 
+  if(o.membershipRequirement?.status==='needs_review')add('membershipRequirement','会员资格','block','请确认会员产品、套餐与限制',['mine','all']);
   if (o.requirements.includes('unknown')) add('requirements', '门槛', 'block', '门槛写的是“待确认”，要按官方原文写清', ['mine', 'all', 'score', 'insights', 'push']);
 
   const valuation = parseValuation(o.valuation);
@@ -116,7 +119,7 @@ export const blocking = (issues: SpecIssue[]) => issues.filter(i => i.level === 
 
 /** 已通过条目只有这些业务字段变化才需要复核；见 data-contract.md 第二节。 */
 export const REVIEW_FIELDS = [
-  'platformId', 'title', 'type', 'valueText', 'requirements', 'usdEstimate', 'usdMax', 'valuation',
+  'platformId', 'title', 'type', 'valueText', 'requirements', 'membershipRequirement', 'usdEstimate', 'usdMax', 'valuation',
   'claimStart', 'claimEnd', 'endKind', 'sourceTz', 'models', 'tags', 'publishedAt',
   'modalities', 'claimMethod', 'audience',
 ] as const;

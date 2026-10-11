@@ -1,3 +1,5 @@
+import {publicationError} from './publication';
+import {readMembershipCatalog,collectedMembership} from './membership';
 import {closeIdentityLead} from './identity/lead-closure';
 import {canonicalOffers,resolveCanonicalOffer} from './identity/canonical';
 import { withIdentityQueryBudget,IdentityQueryBudgetError } from './identity/budget';
@@ -70,16 +72,18 @@ for (const path of ['/api/offers', '/api/platforms']) app.use(path, async (c, ne
   if (c.req.method !== 'GET' || typeof caches === 'undefined') return next();
   // Schema changes must not serve a cached pre-valuation response to the new UI.
   const cacheUrl = new URL(c.req.url);
-  cacheUrl.searchParams.set('__response_schema', 'identity-canonical-v1');
+  cacheUrl.searchParams.set('__response_schema', 'membership-v1');
   if(path==='/api/offers'){const state=await c.env.DB.prepare('SELECT generation FROM identity_public_state WHERE id=1').first<{generation:number}>();if(!state)return next();cacheUrl.searchParams.set('__canonical_generation',String(state.generation));}
   const key = new Request(cacheUrl, { method: 'GET' });
-  const hit = await caches.default.match(key);
+  const edgeCache = (caches as CacheStorage & { default: Cache }).default;
+  if (!edgeCache) return next();
+  const hit = await edgeCache.match(key);
   if (hit) return new Response(hit.body, hit);
   await next();
   if (c.res.status !== 200) return;
   const res = new Response(c.res.clone().body, c.res);
   res.headers.set('Cache-Control', `public, max-age=60, s-maxage=${EDGE_TTL}`);
-  c.executionCtx.waitUntil(caches.default.put(key, res));
+  c.executionCtx.waitUntil(edgeCache.put(key, res));
 });
 
 // 公开接口不输出内部核验记录
@@ -91,6 +95,7 @@ const withStatus = (o: OfferRow, now: Date) => {
 };
 
 app.get('/api/health', c => c.json({ ok: true, time: new Date().toISOString() }));
+app.get('/api/memberships',async c=>{const catalog=await readMembershipCatalog(c.env.DB);c.header('Cache-Control','no-store');return c.json({...catalog,products:catalog.products.filter(p=>p.status!=='pending'),plans:catalog.plans.filter(p=>p.status!=='pending'&&catalog.products.some(x=>x.id===p.productId&&x.status!=='pending'))});});
 
 app.get('/api/meta', async c => {
   const [lastOk] = await db(c.env).select().from(s.runs).where(and(eq(s.runs.kind, 'collect'), eq(s.runs.ok, true))).orderBy(desc(s.runs.finishedAt)).limit(1);
@@ -229,7 +234,9 @@ ingest.post('/offers', async c => {
   const loadPeers = async () => pids.length ? (await d.select({ id: s.offers.id, platformId: s.offers.platformId, title: s.offers.title, valueText: s.offers.valueText, evidence: s.offers.evidence, tags: s.offers.tags, publishedAt: s.offers.publishedAt, claimStart: s.offers.claimStart, claimEnd: s.offers.claimEnd, sourceTz: s.offers.sourceTz, reviewState: s.offers.reviewState, type:s.offers.type, claimMethod:s.offers.claimMethod, requirements:s.offers.requirements, audience:s.offers.audience, models:s.offers.models, modalities:s.offers.modalities })
     .from(s.offers).where(canonicalOffers)).map(x => ({ ...x, evidenceUrl: x.evidence.url, eventDay: resetEventDay(x) })) : [];
   let peersCache: Awaited<ReturnType<typeof loadPeers>> | null = null;
+  const membershipCatalog=body.data.some(o=>o.membershipRequirement||o.requirements.some(r=>r.startsWith('member:')))?await readMembershipCatalog(c.env.DB):null;
   for (const o of body.data) {
+    if(membershipCatalog)o.membershipRequirement=collectedMembership(o.requirements,o.membershipRequirement,membershipCatalog);
     if(mergedProducts.has(o.platformId)){results.push({id:o.id,error:'identity canonical writes paused; enable the reconciled product enforce path',retryable:true});continue;}
     if(o.leadReviewJobId){
       const [lead]=o.leadId?await d.select().from(s.leads).where(eq(s.leads.id,o.leadId)):[];
@@ -279,6 +286,7 @@ ingest.post('/offers', async c => {
     const sameOfficialHost = src && (() => { try { return new URL(src.url).hostname.toLowerCase() === new URL(o.evidence.url).hostname.toLowerCase(); } catch { return false; } })();
     const auto = plat.status === 'approved' && !!src?.enabled && sameOfficialHost && src.platformId === o.platformId && src.autoPublish && !!officialTier(o.evidence.url,plat,[src])
       && ['site', 'docs', 'official'].includes(src.tier) && src.tier === o.evidence.tier
+      && !o.requirements.some(r=>r.startsWith('member:')) && (!o.membershipRequirement||o.membershipRequirement.status==='not_required')
       && !o.officialReviewJobId && !o.leadReviewJobId && !ambiguous && missing.length === 0 && !/未写明|不明确/.test(o.valueText) && !o.requirements.some(requirement => requirement === 'unknown' || /未写明/.test(requirement));
     const [prev] = await d.select().from(s.offers).where(eq(s.offers.id, o.id));
     if(o.leadReviewJobId&&prev){
@@ -436,7 +444,9 @@ ingest.post('/offers', async c => {
       results.push({ id: o.id, changed: diff.map(x => x.field), reviewState: 'pending_update', missingEvidence: missing });
       continue;
     }
-    const reviewState = auto ? 'approved' : 'pending';
+    // Evaluate the merged row, after restoring all manual qualification fields.
+    const canAutoPublish=auto&&!row.requirements.some(r=>r.startsWith('member:'))&&(!row.membershipRequirement||row.membershipRequirement.status==='not_required')&&!await publicationError(c.env,{...prev,...row} as OfferRow);
+    const reviewState = canAutoPublish ? 'approved' : 'pending';
     const changed = await d.update(s.offers).set({ ...row, reviewState }).where(and(eq(s.offers.id,o.id),eq(s.offers.updatedAt,prev.updatedAt),eq(s.offers.reviewState,prev.reviewState),jobCurrent)).returning({id:s.offers.id});
     if(!changed.length){results.push({id:o.id,error:'复核期间条目已更新，保留管理员操作'});continue;}
     if (existingProposal) await d.delete(s.offerProposals).where(and(eq(s.offerProposals.offerId, o.id),eq(s.offerProposals.updatedAt,existingProposal.updatedAt)));
