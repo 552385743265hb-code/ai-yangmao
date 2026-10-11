@@ -1,3 +1,4 @@
+import { postIdentityOffers } from './identity-client';
 import {api,fetchPage,relevantText} from './lib';
 import {extract,modelAvailable,DeferError} from './llm';
 import {modelBudget,BudgetExhaustedError,BudgetLedgerError} from './budget';
@@ -83,9 +84,9 @@ export async function runLeadReviews(options:LeadReviewOptions){
               const tier=officialTier(page.finalUrl,issuer,sources.filter(s=>s.platformId===issuer.id));
               if(!tier||!next.excerpts.benefit?.trim()){hadInvalid=true;reasons.push('未获得发放方权益原文');continue;}
               const prior=next.sameAs?job.existing.find(o=>o.id===next.sameAs&&o.platformId===issuer.id):undefined;
-              const draft=offerIn.safeParse({...toOffer({id:'',kind:lead.origin,platformId:issuer.id,tier} as Source,{...next,...(prior?{fixedId:prior.id}:{})},page.finalUrl,relevantText(page.text)),leadId:lead.id,leadReviewJobId:job.jobId,sourceText:page.text.length<=250000?page.text:undefined});
+              const draft=offerIn.safeParse({...toOffer({id:'',kind:lead.origin,platformId:issuer.id,tier} as Source,{...next,...(prior?{fixedId:prior.id}:{})},page.finalUrl,relevantText(page.text),page),leadId:lead.id,leadReviewJobId:job.jobId});
               if(!draft.success){hadInvalid=true;reasons.push('抽取字段不完整，需补字段');continue;}
-              const saved=await api<{results:{id:string;error?:string;skipped?:string;duplicateId?:string}[]}>('/offers',[draft.data]);
+              const saved=await postIdentityOffers([draft.data]);
               const record=saved.results[0];
               if(record?.duplicateId){offerIds.push(record.duplicateId);continue;}
               if(!record||record.error||record.skipped){hadInvalid=true;reasons.push(record?.error??record?.skipped??'入库未确认');continue;}

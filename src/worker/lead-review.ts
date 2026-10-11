@@ -1,3 +1,4 @@
+import { aggregateIdentityLead } from './identity/leads';
 import {leadScopeMismatch} from '../shared/lead-scope';
 import {normUrl} from '../shared/dedupe';
 import {Hono} from 'hono';
@@ -58,6 +59,8 @@ leadReviewRoutes.post('/:id/result',async c=>{
     if(!b.evidenceUrl||normUrl(b.evidenceUrl)!==normUrl(l.url)||!b.quote||b.quote.trim().length<12||!b.sourceText||!norm(b.sourceText).includes(norm(b.quote))
       ||!platforms.some(p=>officialTier(b.evidenceUrl!,p,sources.filter(x=>x.platformId===p.id))))return c.json({error:'结束线索需要可信官方原文与具体依据'},400);
   }
+  const identity=await aggregateIdentityLead(c.env.DB,l.id);
+  if(identity)return c.json({ok:true,identityHandled:true,...identity,status:identity.status==='linked'?'linked':identity.status==='rejected'?'closed':identity.deferredIds.length?'retry':'manual'});
   const old=l.resolution,now=Date.now();
   const inconclusive=old.inconclusive+(b.outcome==='manual'?1:0);
   const status=b.outcome==='manual'&&inconclusive<3?'retry':b.outcome;

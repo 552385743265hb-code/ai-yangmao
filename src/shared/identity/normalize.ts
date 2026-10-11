@@ -69,3 +69,16 @@ export function normalizeDocumentUrl(input: string): string {
   url.searchParams.sort();
   return `url-v1:${url.href}`;
 }
+
+/** Bounded lexical recall tokens; Chinese bigrams avoid treating a whole sentence as one word. */
+export function identitySearchTokens(text: string): string[] {
+  const normalized=canonicalText(text).toLowerCase();
+  const tokens: string[]=[...(normalized.match(/[\p{L}\p{N}]+/gu)??[])];
+  for(const run of normalized.match(/[\p{Script=Han}]+/gu)??[]) for(let i=0;i<run.length-1;i++)tokens.push(run.slice(i,i+2));
+  return [...new Set(tokens)].slice(0,128);
+}
+
+/** A lookup aid for a scoped reviewed claim, never proof of identity by itself. */
+export function claimIdentityKey(facts:CanonicalTermsV1):string|null {
+ return facts.issuerProductId.state==='known'&&facts.mechanism.state==='known'&&facts.occurrenceAnchor.state==='known'?JSON.stringify([facts.issuerProductId.value,facts.mechanism.value,facts.occurrenceAnchor.value]):null;
+}

@@ -12,6 +12,7 @@ let env: Env;
 
 function d1(memory: DatabaseSync) {
   return {
+    async batch(statements:{all():Promise<unknown>}[]){memory.exec('BEGIN');try{const results=[];for(const s of statements)results.push(await s.all());memory.exec('COMMIT');return results;}catch(error){memory.exec('ROLLBACK');throw error;}},
     prepare(sql: string) {
       let args: unknown[] = [];
       return {

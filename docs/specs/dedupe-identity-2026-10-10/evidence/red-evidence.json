@@ -1,0 +1,1160 @@
+[
+  {
+    "log": "p2a-ambiguous-red.log",
+    "sha256": "345131e59f2c72c3e3e8a6c62e75c9d00b0000d183756a033dc9d0bdfbe2571f",
+    "failures": [
+      {
+        "failure": "tests/identity-observations.test.ts > A04 unresolved subitems sharing a span are reported as ambiguous with both raw inputs retained",
+        "message": "AssertionError: expected false to be true // Object.is equality"
+      }
+    ]
+  },
+  {
+    "log": "p2a-review-red.log",
+    "sha256": "2c25b624f5017a23a1b64f5bdc30c21823c14e95e5a3986e3c1ea5d6389675b9",
+    "failures": [
+      {
+        "failure": "tests/identity-observations.test.ts > A04 independent mechanisms sharing one exact sentence keep both candidates",
+        "message": "Error: invalid identity input"
+      },
+      {
+        "failure": "tests/identity-observations.test.ts > A06 invalid normalized facts reject the batch before declaring extraction complete",
+        "message": "AssertionError: expected Error: invalid exact decimal to match object { status: 400 }"
+      },
+      {
+        "failure": "tests/identity-observations.test.ts > A27 incomplete empty extraction durably retains source, leads, input and retry state",
+        "message": "AssertionError: expected undefined to be defined"
+      },
+      {
+        "failure": "tests/identity-shadow.test.ts > A04 legacy structured mechanisms distinguish independent grants with shared wording",
+        "message": "AssertionError: expected [ undefined, undefined ] to deeply equal [ 'signup_grant', 'recurring_quota' ]"
+      }
+    ]
+  },
+  {
+    "log": "p2b-proof-red.log",
+    "sha256": "4178c8911b335de45418f0f91bf46cad4ac66550b97754179dc89415fe35dfc7",
+    "failures": [
+      {
+        "failure": "tests/identity-compare.test.ts > A17 restored historical terms are compared with the current approved B version",
+        "message": "AssertionError: expected { relation: 'UNRESOLVED', …(9) } to match object { relation: 'SAME', …(2) }"
+      },
+      {
+        "failure": "tests/identity-compare.test.ts > A16 explicit claim deadline and renewal replacements produce CHANGED without publishing",
+        "message": "AssertionError: expected { relation: 'UNRESOLVED', …(9) } to match object { relation: 'SAME', …(1) }"
+      }
+    ]
+  },
+  {
+    "log": "p2b-review-red.log",
+    "sha256": "a279b2560e1b35b4f38ac72bbc14c15a9bc186e18d09fb21f1236de932ed08f5",
+    "failures": [
+      {
+        "failure": "tests/identity-compare.test.ts > A16 unrelated replacement wording cannot authorize an invented amount",
+        "message": "AssertionError: expected 'CHANGED' to be 'INSUFFICIENT' // Object.is equality"
+      },
+      {
+        "failure": "tests/identity-compare.test.ts > A12 one pool replacement cannot authorize a change in a second pool",
+        "message": "AssertionError: expected 'CHANGED' to be 'INSUFFICIENT' // Object.is equality"
+      },
+      {
+        "failure": "tests/identity-model.test.ts > A19 changing a fact citation binding invalidates cache and cannot override current quote validation",
+        "message": "AssertionError: expected '1803825cff950a2e556e21fededadb192265c…' not to be '1803825cff950a2e556e21fededadb192265c…' // Object.is equality"
+      }
+    ]
+  },
+  {
+    "log": "p2c-review-red.log",
+    "sha256": "9a7799763fb7267b5bf829d35e92a9678f70f9f30fecf05dd0fe055531a1835c",
+    "failures": [
+      {
+        "failure": "tests/identity-adapters.test.ts > A44 unreconciled rejected leads block canary even when every offer is mapped",
+        "message": "AssertionError: expected { id: 'vendor-signup', …(3) } to match object { error: StringContaining \"backfill\" }"
+      },
+      {
+        "failure": "tests/identity-service.test.ts > A26 a superseded rejection is re-evaluated without losing identity links",
+        "message": "AssertionError: expected { inputId: 'repeat', …(10) } to match object { outcome: 'duplicate_approved', …(3) }"
+      },
+      {
+        "failure": "tests/identity-service.test.ts > A08 a partial duplicate reuses the pending version without reinserting it",
+        "message": "Error: UNIQUE constraint failed: benefit_versions.id"
+      },
+      {
+        "failure": "tests/identity-service.test.ts > A22 current manually refreshed proposal can approve",
+        "message": "FAIL  tests/identity-service.test.ts > A22 current manually refreshed proposal can reject"
+      },
+      {
+        "failure": "tests/identity-service.test.ts > A22 current manually refreshed proposal can reject",
+        "message": "Error: manual proposal edits require a refreshed identity version"
+      },
+      {
+        "failure": "tests/identity-service.test.ts > A22 manual evidence reopen approve completes its owned proposal",
+        "message": "FAIL  tests/identity-service.test.ts > A22 manual evidence reopen reject completes its owned proposal"
+      },
+      {
+        "failure": "tests/identity-service.test.ts > A22 manual evidence reopen reject completes its owned proposal",
+        "message": "AssertionError: expected { n: 1 } to deeply equal { n: +0 }"
+      },
+      {
+        "failure": "tests/identity-service.test.ts > A26 a mechanism scoped refusal suppresses another occurrence without cross-entity ownership",
+        "message": "Error: invalid identity input"
+      }
+    ]
+  },
+  {
+    "log": "p2c-scope-red.log",
+    "sha256": "36198ae50686b052d85d62da4192b774ba226583c7d3e60ba5eb8dc76a47da97",
+    "failures": [
+      {
+        "failure": "tests/identity-service.test.ts > A26 a mechanism scoped refusal suppresses another occurrence without cross-entity ownership",
+        "message": "Error: CHECK constraint failed: state IN ('staged','applied')"
+      }
+    ]
+  },
+  {
+    "log": "p2d-cli-red.log",
+    "sha256": "ed1959a062ade8ff73703d79980d31a761406202791620b30ebb47902482d6dd",
+    "failures": [
+      {
+        "failure": "tests/identity-cli.test.ts > A28 legacy ym queue includes identity tasks even when the legacy pending list is empty",
+        "message": "AssertionError: expected '待审队列是空的。新线索 0 条。\\n' to contain '合成身份任务'"
+      },
+      {
+        "failure": "tests/identity-cli.test.ts > A29 legacy ym approve sends the exact supplied review version without refreshing",
+        "message": "AssertionError: expected undefined to be 'identity:task-a:3' // Object.is equality"
+      }
+    ]
+  },
+  {
+    "log": "p2d-review-red.log",
+    "sha256": "f53e213f500b848197d267eec423fa4404d29eb644c294f2fdaf8c2a3879d33a",
+    "failures": [
+      {
+        "failure": "tests/frontend-workflow.test.ts > A27 an unknown identity task can submit an explicitly confirmed product and mechanism",
+        "message": "AssertionError: expected null not to be null"
+      },
+      {
+        "failure": "tests/identity-notifications.test.ts > A28/A39 an unknown reminder does not reappear or starve another task",
+        "message": "AssertionError: expected [ { …(8) }, …(2) ] to have a length of 1 but got 3"
+      },
+      {
+        "failure": "tests/identity-notifications.test.ts > A27/A31 forty expired publication events cannot starve a later claimable offer",
+        "message": "AssertionError: expected false to be true // Object.is equality"
+      }
+    ]
+  },
+  {
+    "log": "p3a-checkpoint-red.log",
+    "sha256": "c253fec72f91931ef956fc00a7ca5d26a5655e9495235973d01a6ca3b747c9ce",
+    "failures": [
+      {
+        "failure": "tests/identity-backfill.test.ts > A33 a new authorized snapshot reconciles unchanged objects and a new legacy offer without reusing its old checkpoint",
+        "message": "Error: backfill object conflict"
+      },
+      {
+        "failure": "tests/identity-backfill.test.ts > A33 applying a later cursor without its durable preceding checkpoint is rejected before writes",
+        "message": "AssertionError: promise resolved \"{ …(3) }\" instead of rejecting"
+      }
+    ]
+  },
+  {
+    "log": "p3a-manual-red.log",
+    "sha256": "50f6e22c1f51958f1aef3a38eadc16a2b96564bba39159c925ec20258ef182eb",
+    "failures": [
+      {
+        "failure": "tests/identity-merge-plan.test.ts > A34 a protected manual business field difference is explicit even outside proposals",
+        "message": "AssertionError: expected [] to include 'manual_field_conflict'"
+      }
+    ]
+  },
+  {
+    "log": "p3a-review-red.log",
+    "sha256": "738933ab0d249210255ce5f78685207c87c5fcc3e13383f07e9d96d85acbc6f4",
+    "failures": [
+      {
+        "failure": "tests/identity-backfill.test.ts > A32 eleven linked historical leads are all represented without silent truncation",
+        "message": "AssertionError: expected { n: 10 } to deeply equal { n: 11 }"
+      },
+      {
+        "failure": "tests/identity-backfill.test.ts > A32 a proposal keeps its own URL and original excerpt instead of borrowing approved evidence",
+        "message": "AssertionError: expected { …(2) } to deeply equal { …(2) }"
+      },
+      {
+        "failure": "tests/identity-backfill.test.ts > A32 rejected updates retain their corresponding refusal and never inherit a later approval reason",
+        "message": "AssertionError: expected { reason_code: 'other', …(1) } to deeply equal { reason_code: 'paid_bundle', …(1) }"
+      },
+      {
+        "failure": "tests/identity-merge-plan.test.ts > A34/A39 task-only unknown deliveries change the exact plan and remain visible",
+        "message": "AssertionError: expected '805271828e75f5d039533183419591834f73f…' not to be '805271828e75f5d039533183419591834f73f…' // Object.is equality"
+      },
+      {
+        "failure": "tests/identity-merge-plan.test.ts > A34 a noncanonical-only manual note is a conflict including its empty canonical counterpart",
+        "message": "AssertionError: expected [] to include 'manual_note_conflict'"
+      }
+    ]
+  },
+  {
+    "log": "p3b-review-red.log",
+    "sha256": "805ed7b0599f1778fef9fe996c84c9428d744c006885a868af0508210680b7aa",
+    "failures": [
+      {
+        "failure": "tests/identity-merge.test.ts > A37 retained official aliases accept new observations after their owner was merged",
+        "message": "Error: CHECK constraint failed: state IN ('staged','applied')"
+      },
+      {
+        "failure": "tests/identity-merge.test.ts > A37 a source-only proposal is carried to the chosen canonical task without rewriting its original draft",
+        "message": "AssertionError: expected 'conflict' to be 'applied' // Object.is equality"
+      }
+    ]
+  },
+  {
+    "log": "p3b-review-red2.log",
+    "sha256": "71cef2326174bcd3d196b3c517d918605ef8d091fb2a90e13306349a757b202f",
+    "failures": [
+      {
+        "failure": "tests/identity-merge.test.ts > A17/A40 changed notices inherit a proven transition only at the merge publication boundary",
+        "message": "AssertionError: expected [ { offerId: 'offer-0', …(1) } ] to deeply equal []"
+      },
+      {
+        "failure": "tests/identity-merge.test.ts > A37 retained official aliases accept new observations after their owner was merged",
+        "message": "Error: CHECK constraint failed: state IN ('staged','applied')"
+      },
+      {
+        "failure": "tests/identity-merge.test.ts > A37 a source-only proposal is carried to the chosen canonical task without rewriting its original draft",
+        "message": "AssertionError: expected 'conflict' to be 'applied' // Object.is equality"
+      },
+      {
+        "failure": "tests/identity-merge.test.ts > A29 an administrator can revoke a retained alias and invalidate its canonical entity",
+        "message": "Error: alias entity missing"
+      }
+    ]
+  },
+  {
+    "log": "p3c-reopen-preservation-red.log",
+    "sha256": "f4c2c209480f614f007d20fc5213b84b76330f2271a2ee3b7a4462b67d8c121a",
+    "failures": [
+      {
+        "failure": "tests/identity-service.test.ts > A26 an explicit missing-fact refusal policy permits one pending evidence reopen after the named fact is supplied",
+        "message": "AssertionError: expected { inputId: 'supplied', …(10) } to match object { outcome: 'evidence_reopen', …(1) }"
+      }
+    ]
+  },
+  {
+    "log": "p3c-review-boundary-red.log",
+    "sha256": "b486503b4946e2503e385ca0b6d79017864dec350fd9902a9cf457d7f96a9ea2",
+    "failures": [
+      {
+        "failure": "tests/identity-compare.test.ts > A08/A10 an automatic anchor with omitted or newly discovered facts cannot prove the same activity",
+        "message": "AssertionError: expected { relation: 'SAME', …(9) } to match object { relation: 'UNRESOLVED', …(2) }"
+      },
+      {
+        "failure": "tests/identity-evaluation.test.ts > raw SAME with insufficient terms still counts as a false identity match for a DISTINCT gold control",
+        "message": "AssertionError: expected +0 to be 1 // Object.is equality"
+      },
+      {
+        "failure": "tests/identity-evaluation.test.ts > tagged test results never assert complete contract subcase coverage",
+        "message": "AssertionError: expected undefined to be 'passed' // Object.is equality"
+      },
+      {
+        "failure": "tests/identity-service.test.ts > A08/A10 a retained automatic campaign alias cannot consume an under-extracted independent claim as duplicate pending",
+        "message": "AssertionError: expected { inputId: 'independent', …(10) } to match object { …(3) }"
+      }
+    ]
+  },
+  {
+    "log": "p3c-review-red.log",
+    "sha256": "b58dda4d0c68e243ee5852db08f12136ea86fac2b83ccf6f6ed64dc052dec0bf",
+    "failures": [
+      {
+        "failure": "tests/identity-evaluation.test.ts > raw SAME with insufficient terms still counts as a false identity match for a DISTINCT gold control",
+        "message": "AssertionError: expected +0 to be 1 // Object.is equality"
+      }
+    ]
+  },
+  {
+    "log": "task1-red-behavior.log",
+    "sha256": "d848d560a3cf49d75c1709aeb918dda8500508c5f371f49ddd131ca1432a6556",
+    "failures": [
+      {
+        "failure": "tests/identity-normalize.test.ts > canonical terms > A01 decimal and NFKC normalize without touching evidence references or the input",
+        "message": "AssertionError: expected { state: 'known', …(2) } to deeply equal { state: 'known', …(2) }"
+      },
+      {
+        "failure": "tests/identity-normalize.test.ts > canonical terms > A01 hashes ignore provenance and set order but retain model versions",
+        "message": "AssertionError: expected '{\"schemaVersion\":\"terms-v1\",\"issuerPr…' to be '{\"schemaVersion\":\"terms-v1\",\"issuerPr…' // Object.is equality"
+      },
+      {
+        "failure": "tests/identity-normalize.test.ts > canonical terms > rejects ungrounded facts, invented scope, invalid decimals and duplicate pools",
+        "message": "AssertionError: expected [Function] to throw an error"
+      },
+      {
+        "failure": "tests/identity-normalize.test.ts > canonical terms > A01 exact decimal normalization does not round large values",
+        "message": "AssertionError: expected { state: 'known', …(2) } to deeply equal { state: 'known', …(2) }"
+      },
+      {
+        "failure": "tests/identity-normalize.test.ts > canonical terms > A03 URL identity strips tracking only and preserves content parameters/fragments",
+        "message": "AssertionError: expected 'https://twitter.com/vendor/status/1?u…' to be 'url-v1:https://x.com/vendor/status/1?…' // Object.is equality"
+      }
+    ]
+  },
+  {
+    "log": "task1-red.log",
+    "sha256": "336379482072c27d58566e96ee5496c08b2d71c17c56314da9c2fe6e219a9f46",
+    "failures": [
+      {
+        "failure": "tests/identity-normalize.test.ts [ tests/identity-normalize.test.ts ]",
+        "message": "Error: Cannot find module '../src/shared/identity/types' imported from <worktree>/tests/identity-normalize.test.ts"
+      }
+    ]
+  },
+  {
+    "log": "task1-schema-red.log",
+    "sha256": "ab382c3a4ecd99883810a2824628e2af3b723c50e00dfb1d711b9dac54cea248",
+    "failures": [
+      {
+        "failure": "tests/identity-schema.test.ts > identity additive migration > A20 fresh and 0016 upgrade preserve history and expose all identity tables",
+        "message": "AssertionError: expected [ 'leads', 'sqlite_sequence', …(12) ] to include 'source_documents'"
+      },
+      {
+        "failure": "tests/identity-schema.test.ts > identity additive migration > A24 strong aliases enforce uniqueness, legacy offer identity is global, resolved task keys can be reused",
+        "message": "AssertionError: expected undefined to be defined"
+      },
+      {
+        "failure": "tests/identity-schema.test.ts > identity additive migration > A23/A45 invalid references, staged states and malformed JSON cannot persist",
+        "message": "AssertionError: expected undefined to be defined"
+      }
+    ]
+  },
+  {
+    "log": "task2-red.log",
+    "sha256": "0fec9ea92c048ebc7f2f8aacb88f242a4b4428c4f11e4c18291d42636287409f",
+    "failures": [
+      {
+        "failure": "tests/identity-observations.test.ts > observation and candidate shadow storage > A03 ten fetches create one observation and advance only lastSeen, with no legacy side effects",
+        "message": "AssertionError: expected [] to deeply equal [ { …(2) } ]"
+      },
+      {
+        "failure": "tests/identity-observations.test.ts > observation and candidate shadow storage > A03 request response loss replays, payload reuse conflicts without changing the stored text",
+        "message": "AssertionError: promise resolved \"{ observationId: 'unimplemented', …(3) }\" instead of rejecting"
+      },
+      {
+        "failure": "tests/identity-observations.test.ts > observation and candidate shadow storage > A04 a page retains signup, daily and paid subitems with independent candidate IDs and lead links",
+        "message": "AssertionError: expected +0 to be 3 // Object.is equality"
+      },
+      {
+        "failure": "tests/identity-observations.test.ts > observation and candidate shadow storage > A05 translated title and random input ID never change span identity; extraction revisions preserve both audits",
+        "message": "TypeError: Cannot read properties of undefined (reading 'candidateId')"
+      },
+      {
+        "failure": "tests/identity-observations.test.ts > observation and candidate shadow storage > A06 one failed write remains deferred; replay returns earlier receipts and retries only the missing row",
+        "message": "AssertionError: expected undefined to match object { outcome: 'deferred', …(2) }"
+      },
+      {
+        "failure": "tests/identity-observations.test.ts > observation and candidate shadow storage > A27 stores full body hash and truncation without treating empty extraction as rejection",
+        "message": "AssertionError: expected undefined to deeply equal { n: 250000, text_truncated: 1, …(1) }"
+      },
+      {
+        "failure": "tests/identity-observations.test.ts > observation and candidate shadow storage > A19 fake quotes and candidate provenance cannot create trusted facts",
+        "message": "AssertionError: expected undefined to match object { outcome: 'deferred', …(2) }"
+      },
+      {
+        "failure": "tests/identity-observations.test.ts > observation and candidate shadow storage > A03 cross-domain redirects and indirect fetches do not inherit official trust",
+        "message": "SyntaxError: \"undefined\" is not valid JSON"
+      },
+      {
+        "failure": "tests/identity-observations.test.ts > observation and candidate shadow storage > A06 oversized batches reject all eleven and do not silently drop a candidate",
+        "message": "AssertionError: promise resolved \"[]\" instead of rejecting"
+      }
+    ]
+  },
+  {
+    "log": "task2-routes-red.log",
+    "sha256": "8a682ceda0efec6124180eab66a9727b68f14cb667bfafca8b8753b0420cd43a",
+    "failures": [
+      {
+        "failure": "tests/identity-routes.test.ts > A30 observations require ingest auth and reject forged trust metadata",
+        "message": "AssertionError: expected 404 to be 400 // Object.is equality"
+      },
+      {
+        "failure": "tests/identity-routes.test.ts > A27 an incomplete empty batch is recorded without falsely closing a lead",
+        "message": "AssertionError: expected 404 to be 200 // Object.is equality"
+      }
+    ]
+  },
+  {
+    "log": "task2-shadow-red.log",
+    "sha256": "f1819ae6cbae0d180f9f1f6f8bf3713a5b070da7c2ee9c4a365ce92188db8041",
+    "failures": [
+      {
+        "failure": "tests/identity-shadow.test.ts > A04/A05 shadow captures original text and stable spans in batches of ten without calling models or the legacy writer",
+        "message": "AssertionError: expected { recorded: +0 } to match object { recorded: 11 }"
+      },
+      {
+        "failure": "tests/identity-shadow.test.ts > A27 missing explicit endpoint or dry run performs no network writes",
+        "message": "AssertionError: expected { recorded: +0 } to match object { recorded: +0, …(1) }"
+      }
+    ]
+  },
+  {
+    "log": "task3-compare-red.log",
+    "sha256": "1d64c89494bfc33aee7cc46468a8b03785085b5f9712e91d708c73517af902d6",
+    "failures": [
+      {
+        "failure": "tests/identity-compare.test.ts > A09 confirmed multilingual campaign with equivalent facts adds evidence without changing terms",
+        "message": "AssertionError: expected { relation: 'UNRESOLVED', …(9) } to match object { relation: 'SAME', …(2) }"
+      },
+      {
+        "failure": "tests/identity-compare.test.ts > A11 actual issuer wins over a common parent or a shared model",
+        "message": "AssertionError: expected { relation: 'UNRESOLVED', …(9) } to match object { relation: 'DISTINCT', …(1) }"
+      },
+      {
+        "failure": "tests/identity-compare.test.ts > A13 same-day independent resets remain distinct despite otherwise equal facts",
+        "message": "AssertionError: expected { relation: 'UNRESOLVED', …(9) } to match object { relation: 'DISTINCT' }"
+      },
+      {
+        "failure": "tests/identity-compare.test.ts > A14 same digits with a grounded cadence replacement are SAME CHANGED",
+        "message": "AssertionError: expected { relation: 'UNRESOLVED', …(9) } to match object { relation: 'SAME', …(1) }"
+      },
+      {
+        "failure": "tests/identity-compare.test.ts > A15 amounts and quoted text presentation drift do not constitute changed facts",
+        "message": "AssertionError: expected { relation: 'UNRESOLVED', …(9) } to match object { relation: 'SAME', …(1) }"
+      },
+      {
+        "failure": "tests/identity-compare.test.ts > A16 trusted scope replacement needs wording from the relevant quote",
+        "message": "AssertionError: expected { relation: 'UNRESOLVED', …(9) } to match object { relation: 'SAME', …(1) }"
+      },
+      {
+        "failure": "tests/identity-compare.test.ts > A17 restored historical terms are compared with the current approved B version",
+        "message": "AssertionError: expected { relation: 'UNRESOLVED', …(9) } to match object { relation: 'SAME', …(2) }"
+      },
+      {
+        "failure": "tests/identity-compare.test.ts > A29 manual different is a hard veto even over an exact campaign or model suggestion",
+        "message": "AssertionError: expected { relation: 'UNRESOLVED', …(9) } to match object { relation: 'DISTINCT', …(1) }"
+      }
+    ]
+  },
+  {
+    "log": "task3-extra-red.log",
+    "sha256": "19ef8be1824febbb41ce8a1746f1f70cec7026bdd7ee95325b5ac19d78182e3d",
+    "failures": [
+      {
+        "failure": "tests/identity-compare.test.ts > A10 independent mechanisms cannot be merged merely because the same umbrella campaign is quoted",
+        "message": "AssertionError: expected { relation: 'SAME', …(9) } to match object { relation: 'UNRESOLVED', …(1) }"
+      },
+      {
+        "failure": "tests/identity-model.test.ts > A15 unrelated page text and observation IDs do not invalidate the reviewed evidence basis",
+        "message": "AssertionError: expected 'bd36a13531d7ce4538868d7e3a19b27b3ce1e…' to be 'fdb660e3fb98aa4b8057ff977ee93f3c58333…' // Object.is equality"
+      }
+    ]
+  },
+  {
+    "log": "task3-fts-red.log",
+    "sha256": "2af9dcd7fcc455d32a606ecb6f2463563a47f559c171af1ed9baf2dee6bd0d47",
+    "failures": [
+      {
+        "failure": "tests/identity-retrieval.test.ts > A18 FTS uses bounded product-scoped Chinese recall while missing index entries stay in the structured page",
+        "message": "AssertionError: expected [] to include 'e1'"
+      }
+    ]
+  },
+  {
+    "log": "task3-model-red.log",
+    "sha256": "438000d2b3490bae00a528da9191f7e1107272c18cb0bc8fa5921d1f13151dd3",
+    "failures": [
+      {
+        "failure": "tests/identity-model.test.ts > A19 candidate-external IDs, fake quotes and injected approval fields are rejected",
+        "message": "AssertionError: expected [Function] to throw an error"
+      },
+      {
+        "failure": "tests/identity-model.test.ts > A29 cache identity changes with business revisions, rules and relevant evidence",
+        "message": "AssertionError: expected 'unimplemented' not to be 'unimplemented' // Object.is equality"
+      },
+      {
+        "failure": "tests/identity-model.test.ts > A18/A19 assist off, truncated input and incomplete history make no provider call",
+        "message": "AssertionError: expected [] to include 'model_assist_disabled'"
+      },
+      {
+        "failure": "tests/identity-model.test.ts > A19 a correct deterministic duplicate bypasses the model even with assistance enabled",
+        "message": "AssertionError: expected { reasonCodes: [] } to match object { relation: 'SAME', …(1) }"
+      },
+      {
+        "failure": "tests/identity-model.test.ts > A27 a worker run handles at most four jobs and preserves the remaining queue",
+        "message": "AssertionError: expected [] to deeply equal [ 'job-0', 'job-1', 'job-2', 'job-3' ]"
+      }
+    ]
+  },
+  {
+    "log": "task3-retrieval-red.log",
+    "sha256": "5ec0d81597f41e377eecd74ced2d0b67f2050b17551d5a5a6b1b2a8a3b009518",
+    "failures": [
+      {
+        "failure": "tests/identity-retrieval.test.ts > A18 all states are visible in bounded keyset pages and overflow is never complete",
+        "message": "AssertionError: expected [] to have a length of 40 but got +0"
+      },
+      {
+        "failure": "tests/identity-retrieval.test.ts > A18 exact aliases beyond top40 are returned from the main table and wrong product aliases are excluded",
+        "message": "AssertionError: expected false to be true // Object.is equality"
+      },
+      {
+        "failure": "tests/identity-retrieval.test.ts > A18 lookup faults propagate as retryable errors, never an empty successful history",
+        "message": "AssertionError: promise resolved \"{ entities: [], nextCursor: null, …(2) }\" instead of rejecting"
+      },
+      {
+        "failure": "tests/identity-retrieval.test.ts > A18 product filtering and cursors cannot expose another product history",
+        "message": "AssertionError: promise resolved \"{ entities: [], nextCursor: null, …(2) }\" instead of rejecting"
+      },
+      {
+        "failure": "tests/identity-retrieval.test.ts > A26 scoped lead-only rejection is retrieved even without an offer/entity",
+        "message": "AssertionError: expected [] to deeply equal [ 'd' ]"
+      }
+    ]
+  },
+  {
+    "log": "task4-decisions-red.log",
+    "sha256": "4ab46851a5f5105e986e959db1a4b3b4451abf621321840bde6def566b5964ba",
+    "failures": [
+      {
+        "failure": "tests/identity-decisions.test.ts > A26 paid bundle scope does not suppress a genuinely independent grant",
+        "message": "AssertionError: expected false to be true // Object.is equality"
+      },
+      {
+        "failure": "tests/identity-decisions.test.ts > A26 only grounded official evidence for the specified missing slots permits reopening",
+        "message": "AssertionError: expected { allowed: false, …(2) } to match object { allowed: true, …(1) }"
+      },
+      {
+        "failure": "tests/identity-decisions.test.ts > A26 other and expired decisions never turn into platform-wide blacklists or implicit reopening",
+        "message": "AssertionError: expected false to be true // Object.is equality"
+      },
+      {
+        "failure": "tests/identity-decisions.test.ts > A17 initial and base-to-target tasks are stable while restoring an old version is a new transition",
+        "message": "AssertionError: expected '' to be 'initial:e1' // Object.is equality"
+      }
+    ]
+  },
+  {
+    "log": "task4-lease-red.log",
+    "sha256": "40269d3cd2b2affc6be823cc1c1efb475f2fb562ea7e4da8bdcc0474dd86ff52",
+    "failures": [
+      {
+        "failure": "tests/identity-service.test.ts > A29 task lease tokens expire and cannot overwrite a later human decision",
+        "message": "TypeError: service.claimTask is not a function"
+      },
+      {
+        "failure": "tests/identity-service.test.ts > A20/A28 task suggestion replay is idempotent and does not increment material revision",
+        "message": "TypeError: service.claimTask is not a function"
+      }
+    ]
+  },
+  {
+    "log": "task4-protection-red.log",
+    "sha256": "a97cffdee5057901f23c3638282afa81818d993306ab2830af55b80991bb7541",
+    "failures": [
+      {
+        "failure": "tests/identity-service.test.ts > A08 missing facts do not mint a partial version or permit identity-task approval",
+        "message": "AssertionError: expected { n: 2 } to deeply equal { n: 1 }"
+      },
+      {
+        "failure": "tests/identity-service.test.ts > A22 manual proposal edits block stale publication and preserve the edited draft",
+        "message": "AssertionError: promise resolved \"{ …(2) }\" instead of rejecting"
+      },
+      {
+        "failure": "tests/identity-service.test.ts > A22 rejecting a changed version atomically retains legacy refusal evidence and audit",
+        "message": "AssertionError: expected { n: +0 } to deeply equal { n: 1 }"
+      },
+      {
+        "failure": "tests/identity-service.test.ts > A29 decisions advance the product block and cannot attach a foreign scope",
+        "message": "AssertionError: promise resolved \"{ …(2) }\" instead of rejecting"
+      },
+      {
+        "failure": "tests/identity-service.test.ts > A14 different proposals remain visible as a conflict instead of replacing the first draft",
+        "message": "AssertionError: expected 'proposed_update' to be 'needs_identity_review' // Object.is equality"
+      }
+    ]
+  },
+  {
+    "log": "task4-service-red.log",
+    "sha256": "4c5af380609534bc72b9d7a44a09bdd8c011a5cadc6fb95872767e1808393e61",
+    "failures": [
+      {
+        "failure": "tests/identity-service.test.ts > A24 same strong campaign across two requests creates one entity/version/task and no publication",
+        "message": "Error: not implemented"
+      },
+      {
+        "failure": "tests/identity-service.test.ts > A20 request replay does not create another event or decision",
+        "message": "Error: not implemented"
+      },
+      {
+        "failure": "tests/identity-service.test.ts > A14/A17 approval is the only publication boundary, including restoring old terms",
+        "message": "Error: not implemented"
+      },
+      {
+        "failure": "tests/identity-service.test.ts > A26 rejected version repeat keeps its refusal and does not create another review task",
+        "message": "Error: not implemented"
+      },
+      {
+        "failure": "tests/identity-service.test.ts > A22 stale task cards preserve proposals and produce no decision or outbox changes",
+        "message": "Error: not implemented"
+      },
+      {
+        "failure": "tests/identity-service.test.ts > A27 unknown product creates a durable identity task rather than an invented offer",
+        "message": "Error: not implemented"
+      },
+      {
+        "failure": "tests/identity-service.test.ts > A30 a reviewer cannot enlarge refusal scope or reopen an admin decision",
+        "message": "Error: not implemented"
+      }
+    ]
+  },
+  {
+    "log": "task4-transaction-red.log",
+    "sha256": "a7a192055414cfc633a83a467fd4cc97e9495fe7b86226611c296abc30e85901",
+    "failures": [
+      {
+        "failure": "tests/identity-transaction.test.ts > A20 same request/payload replays exactly one task and business revision",
+        "message": "AssertionError: expected { status: 'conflict', value: null } to deeply equal { status: 'applied', …(1) }"
+      },
+      {
+        "failure": "tests/identity-transaction.test.ts > A21 same request with a different payload conflicts without changing original result",
+        "message": "AssertionError: expected undefined to deeply equal { payload_hash: 'payload' }"
+      },
+      {
+        "failure": "tests/identity-transaction.test.ts > A23 SQL failure at statement 2 rolls back command and business writes",
+        "message": "FAIL  tests/identity-transaction.test.ts > A23 SQL failure at statement 3 rolls back command and business writes"
+      },
+      {
+        "failure": "tests/identity-transaction.test.ts > A23 SQL failure at statement 3 rolls back command and business writes",
+        "message": "FAIL  tests/identity-transaction.test.ts > A23 SQL failure at statement 4 rolls back command and business writes"
+      },
+      {
+        "failure": "tests/identity-transaction.test.ts > A23 SQL failure at statement 4 rolls back command and business writes",
+        "message": "AssertionError: promise resolved \"{ status: 'conflict', value: null }\" instead of rejecting"
+      },
+      {
+        "failure": "tests/identity-transaction.test.ts > A23 final assertion failure is a CHECK violation inside the batch, never partial success",
+        "message": "AssertionError: promise resolved \"{ status: 'conflict', value: null }\" instead of rejecting"
+      },
+      {
+        "failure": "tests/identity-transaction.test.ts > A25 two new-identity conclusions cannot both commit from the same block revision",
+        "message": "AssertionError: expected 'conflict' to be 'applied' // Object.is equality"
+      },
+      {
+        "failure": "tests/identity-transaction.test.ts > A45 a version from another entity fails the batch ownership invariant",
+        "message": "AssertionError: promise resolved \"{ status: 'conflict', value: null }\" instead of rejecting"
+      }
+    ]
+  },
+  {
+    "log": "task5-adapters-red.log",
+    "sha256": "2e0ec14e2b8192a3a82b6befb494382cef22067e569aecdc2134b6b334935761",
+    "failures": [
+      {
+        "failure": "tests/identity-adapters.test.ts > A07 manual source supplementation preserves linked/rejected resolution without implicit reopening",
+        "message": "AssertionError: expected { status: 'new', resolution: null } to deeply equal { status: 'linked', …(1) }"
+      },
+      {
+        "failure": "tests/identity-adapters.test.ts > A44 an explicitly selected but unreconciled product cannot silently fall through to legacy intake",
+        "message": "AssertionError: expected { Object (id, unchanged) } to match object { error: StringContaining \"backfill\" }"
+      },
+      {
+        "failure": "tests/identity-adapters.test.ts > A20 enforce legacy adapter returns typed per-candidate receipts and never auto-approves",
+        "message": "AssertionError: expected { id: 'vendor-signup', …(3) } to match object { identityReceipt: { …(2) } }"
+      }
+    ]
+  },
+  {
+    "log": "task5-alias-cache-red.log",
+    "sha256": "d65e6763a336c0d860079a019372db22e0b765c32809a8cf62b9399403012a72",
+    "failures": [
+      {
+        "failure": "tests/identity-service.test.ts > A29 revoking an identity alias invalidates later candidate reuse without rewriting old request receipts",
+        "message": "AssertionError: expected 'created_pending' to be 'needs_identity_review' // Object.is equality"
+      }
+    ]
+  },
+  {
+    "log": "task5-anchor-red.log",
+    "sha256": "4217b6969049c7a254b2a53bf7ddf3e62d8dfb4301648539ea07387a3cb2d3e2",
+    "failures": [
+      {
+        "failure": "tests/identity-service.test.ts > A19 an existing campaign alias cannot validate a fabricated incoming anchor",
+        "message": "AssertionError: expected 'duplicate_pending' to be 'needs_identity_review' // Object.is equality"
+      }
+    ]
+  },
+  {
+    "log": "task5-budget-red.log",
+    "sha256": "188881b6bc19a0c362b6526635426d0effb7e1c968652455cf94d2fda356301f",
+    "failures": [
+      {
+        "failure": "tests/identity-budget.test.ts > A27 a request stays within fifty SQL statements and defers durable intake for a separate resolution request",
+        "message": "AssertionError: expected 59 to be less than or equal to 50"
+      }
+    ]
+  },
+  {
+    "log": "task5-client-red.log",
+    "sha256": "18eb9f0821b6c72a695e6a0ba3d8db1e5a7d8e3640035e4d0af21329992a6a42",
+    "failures": [
+      {
+        "failure": "tests/identity-client.test.ts > A06 fifty legacy candidates are split into ten-item requests with positional receipts intact",
+        "message": "AssertionError: expected [] to deeply equal [ 10, 10, 10, 10, 10 ]"
+      },
+      {
+        "failure": "tests/identity-client.test.ts > A06 a missing receipt never becomes a successful batch",
+        "message": "AssertionError: promise resolved \"{ results: [] }\" instead of rejecting"
+      }
+    ]
+  },
+  {
+    "log": "task5-edit-red.log",
+    "sha256": "c9aedb0a7c9b2001bcd57f2f5ab0b0cff664af719a2b3e9d6241a934a093d5a9",
+    "failures": [
+      {
+        "failure": "tests/identity-service.test.ts > A29 manual display edits are version guarded and cannot be overwritten by later ingestion",
+        "message": "TypeError: service.editManagedOffer is not a function"
+      },
+      {
+        "failure": "tests/identity-service.test.ts > A14 an edit to a published mapped offer creates a draft and preserves the approved projection",
+        "message": "TypeError: service.editManagedOffer is not a function"
+      }
+    ]
+  },
+  {
+    "log": "task5-enrich-red.log",
+    "sha256": "bebfe7625ea73225d8fa2b13bee4deece1a2dcffd7a0f7c7ee4aaef9fd7f549b",
+    "failures": [
+      {
+        "failure": "tests/identity-service.test.ts > A07 official enrichment updates only pending media evidence and preserves the same task and manual notes",
+        "message": "AssertionError: expected 'media' to be 'site' // Object.is equality"
+      }
+    ]
+  },
+  {
+    "log": "task5-index-red.log",
+    "sha256": "395e2386991792688f163519492845ed0eef36e7b6d9dc6a173e3316ab57f377",
+    "failures": [
+      {
+        "failure": "tests/identity-adapters.test.ts > A26 ingest index includes rejected history with review state and bounded paging",
+        "message": "AssertionError: expected undefined to match object { id: 'vendor-signup', …(1) }"
+      },
+      {
+        "failure": "tests/pipeline-workflow.test.ts > A18 official extraction never treats an unavailable identity index as empty history",
+        "message": "AssertionError: expected [ [ { id: 'vendor-max-api', …(23) } ] ] to have a length of +0 but got 1"
+      }
+    ]
+  },
+  {
+    "log": "task5-lead-refusal-red.log",
+    "sha256": "f55824b4e3f794e6dc3c73a7d6f2760438adda66daabb6c5817f29cd1edb4d08",
+    "failures": [
+      {
+        "failure": "tests/identity-service.test.ts > A26 a lead-only prior refusal is consumed before any entity or offer is created",
+        "message": "AssertionError: expected { inputId: 'claim', …(9) } to match object { outcome: 'duplicate_rejected', …(3) }"
+      }
+    ]
+  },
+  {
+    "log": "task5-lease-scope-red.log",
+    "sha256": "665c07f6fe8992ba2a68ee4d2a2e9527ef049e88a06510acbed700b77f337310",
+    "failures": [
+      {
+        "failure": "tests/identity-service.test.ts > A19 task results cannot name an existing entity outside the leased candidate set",
+        "message": "AssertionError: promise resolved \"{ …(3) }\" instead of rejecting"
+      }
+    ]
+  },
+  {
+    "log": "task5-legacy-approve-red.log",
+    "sha256": "5f3d98a8c008d04a54125e8fcc1c033d69496e207a14ba97f8fb77ac2766a295",
+    "failures": [
+      {
+        "failure": "tests/identity-adapters.test.ts > A29 legacy approval routes must not bypass a mapped identity task revision",
+        "message": "AssertionError: expected 200 to be 409 // Object.is equality"
+      }
+    ]
+  },
+  {
+    "log": "task5-manual-red.log",
+    "sha256": "fb996996cb0b6126c57212c591e1f58cb0daba4cfb91808c9673443686ee0ea7",
+    "failures": [
+      {
+        "failure": "tests/identity-service.test.ts > A29 a human can resolve an unknown-product task as a new pending activity atomically",
+        "message": "TypeError: service.resolveIdentityTask is not a function"
+      },
+      {
+        "failure": "tests/identity-service.test.ts > A09 manual same confirmation links a weak source without another offer or publication",
+        "message": "TypeError: service.resolveIdentityTask is not a function"
+      },
+      {
+        "failure": "tests/identity-service.test.ts > A26 an unresolved claim can be rejected without manufacturing an offer or entity",
+        "message": "Error: identity conflict requires explicit identity resolution"
+      }
+    ]
+  },
+  {
+    "log": "task5-nonce-red.log",
+    "sha256": "5dfb30c29c6abd7a661b84c86f3d2a3e803a9a771ebc36409ad79cf8c55d4b3e",
+    "failures": [
+      {
+        "failure": "tests/identity-transaction.test.ts > A22 an orphan staged row cannot arm writes after the head revision guard matches zero rows",
+        "message": "AssertionError: expected 'replayed' to be 'conflict' // Object.is equality"
+      }
+    ]
+  },
+  {
+    "log": "task5-official-red.log",
+    "sha256": "c34dc06cc0551e7e09ada117efd83ce72b874a9fdd0d016a52a79747cdfa8c69",
+    "failures": [
+      {
+        "failure": "tests/identity-adapters.test.ts > A29 an official-review job cannot write after identity revision changes even if offer timestamps match",
+        "message": "AssertionError: expected { …(4) } to match object { error: StringContaining{…} }"
+      }
+    ]
+  },
+  {
+    "log": "task5-paid-scope-red.log",
+    "sha256": "ac87026990cbec7ec60d21b7a49b86dad653f1e01e10cb5e510f7e7e717187ac",
+    "failures": [
+      {
+        "failure": "tests/identity-decisions.test.ts > A26 a paid recurring bundle refusal cannot suppress a free recurring grant on the same product",
+        "message": "AssertionError: expected true to be false // Object.is equality"
+      }
+    ]
+  },
+  {
+    "log": "task5-presentation-red.log",
+    "sha256": "742c57c2edadfd91a40d60a52e6393e008da119ed524800b920207480ddf76ae",
+    "failures": [
+      {
+        "failure": "tests/identity-service.test.ts > A28 a presentation-only edit does not create a new task or material reminder",
+        "message": "AssertionError: expected { title: '注册 API 赠额' } to deeply equal { title: '管理员更清楚的标题' }"
+      }
+    ]
+  },
+  {
+    "log": "task5-reference-red.log",
+    "sha256": "c5966427b2bc6a586b5682c8c44adf8dfada6b5bdafccc8667767e336fa57469",
+    "failures": [
+      {
+        "failure": "tests/identity-model.test.ts > A19 inherited object properties cannot masquerade as evidence reference IDs",
+        "message": "AssertionError: expected [Function] to throw an error"
+      }
+    ]
+  },
+  {
+    "log": "task5-reopen-revoke-red.log",
+    "sha256": "3147ade81bec0f5322a2c4cda651271527fc8358f4d11ca472d9c75cd7d830ee",
+    "failures": [
+      {
+        "failure": "tests/identity-service.test.ts > A26 explicit reopening preserves the refusal and remains pending until a new approval",
+        "message": "TypeError: service.reopenDecision is not a function"
+      },
+      {
+        "failure": "tests/identity-service.test.ts > A29 alias revocation is version guarded, audited, and invalidates entity business state",
+        "message": "TypeError: service.revokeAlias is not a function"
+      }
+    ]
+  },
+  {
+    "log": "task5-retry-red.log",
+    "sha256": "481e36183237158c74879e5018ac7c7376fea72e1ede46c633c5d5e0d3054130",
+    "failures": [
+      {
+        "failure": "tests/identity-retry.test.ts > A06 resumes only server-selected deferred candidates without another extraction or search call",
+        "message": "AssertionError: expected +0 to be 1 // Object.is equality"
+      }
+    ]
+  },
+  {
+    "log": "task5-visibility-red.log",
+    "sha256": "06e0110b9794d6ee3451216310117fa0a246f4d7285ce8660aee7821edc636bd",
+    "failures": [
+      {
+        "failure": "tests/identity-service.test.ts > A26 unpublishing a managed offer adds a scoped refusal without deleting historical proposals",
+        "message": "TypeError: service.setVisibility is not a function"
+      }
+    ]
+  },
+  {
+    "log": "task6-legacy-red.log",
+    "sha256": "bc371cdf6da16fdb5400fa5dad66c86c35257df5ae5680982722adc5b16d4835",
+    "failures": [
+      {
+        "failure": "tests/identity-adapters.test.ts > A29 legacy show supplies the current identity version for the existing CLI",
+        "message": "AssertionError: expected '2026-10-10T18:34:32.604Z' to be 'identity:bd922971-275e-4e71-8a10-fc53…' // Object.is equality"
+      }
+    ]
+  },
+  {
+    "log": "task6-notify-red.log",
+    "sha256": "8dfe556d2c00b96da6f34a148f263c8e08646bdba287e1e3e160e908679689da",
+    "failures": [
+      {
+        "failure": "tests/identity-notifications.test.ts > A28 one task has one stable reminder after another source and a metadata revision",
+        "message": "AssertionError: expected [ 'lead:1:reviewing', …(1) ] to include 'review:3d8b5d25-d4d7-412f-93e5-7f2949…'"
+      },
+      {
+        "failure": "tests/identity-notifications.test.ts > A17/A20 publication marks use approved publicationRevision and ack consumes only their event",
+        "message": "AssertionError: expected { …(2) } to match object { …(3) }"
+      },
+      {
+        "failure": "tests/identity-notifications.test.ts > A29 claim rechecks the task material revision after preview without reserving stale delivery",
+        "message": "AssertionError: expected '5c2c8e80-b86e-4601-b5bd-b6944ec26966' to be undefined"
+      }
+    ]
+  },
+  {
+    "log": "task6-public-red.log",
+    "sha256": "af3148eaf1eae1dd9f759b52b169a6cf68d4f3d995606243ec73962f587fb916",
+    "failures": [
+      {
+        "failure": "tests/identity-public.test.ts > A31/A43/A44 all public collections exclude merged rows in off mode and preserve unmapped offers",
+        "message": "AssertionError: expected [ 'canonical', 'old', 'unmapped' ] to deeply equal [ 'canonical', 'unmapped' ]"
+      },
+      {
+        "failure": "tests/identity-public.test.ts > A31 old detail IDs resolve to visible canonical while hidden canonical returns 404",
+        "message": "AssertionError: expected { offer: { id: 'old', …(34) }, …(1) } to match object { requestedOfferId: 'old', …(2) }"
+      },
+      {
+        "failure": "tests/identity-public.test.ts > A31 corrupt routing cycles fail closed without exposing an alias",
+        "message": "AssertionError: expected 200 to be 404 // Object.is equality"
+      }
+    ]
+  },
+  {
+    "log": "task6-ui-readable-red.log",
+    "sha256": "89a40764c3638e1bff1dfa189175925efd3123eb1bb637f0635e7d05a8973c7c",
+    "failures": [
+      {
+        "failure": "tests/frontend-workflow.test.ts > A28 review facts use readable values without internal citation keys",
+        "message": "AssertionError: expected '<div style=\"overflow:auto\"><table cla…' to contain '10 USD'"
+      }
+    ]
+  },
+  {
+    "log": "task6-ui-red.log",
+    "sha256": "a3b8c879da4412b841c9eb70cca87703e62dc7b2b78b741d8a4f4e2b1d4913bb",
+    "failures": [
+      {
+        "failure": "tests/frontend-workflow.test.ts > A28/A29 identity task card collects sources, protects manual fields and previews a versioned decision",
+        "message": "AssertionError: expected null not to be null"
+      },
+      {
+        "failure": "tests/frontend-workflow.test.ts > A31 old offer hashes replace the URL with the canonical public ID",
+        "message": "AssertionError: expected [] to deeply equal [ '#offer-public-offer' ]"
+      }
+    ]
+  },
+  {
+    "log": "task6-urgent-red.log",
+    "sha256": "1a0672121574cdacb1722481f36323c25461771c0dcb96ff49561b8cb07d8056",
+    "failures": [
+      {
+        "failure": "tests/identity-notifications.test.ts > A17 an urgent initial announcement suppresses the same publication new event",
+        "message": "AssertionError: expected [ { …(8) } ] to have a length of +0 but got 1"
+      }
+    ]
+  },
+  {
+    "log": "task7-proposal-red.log",
+    "sha256": "469343157cca42081bd093d9114836aeada241e1a39f0d3c895c0c3d1a211d50",
+    "failures": [
+      {
+        "failure": "tests/identity-backfill.test.ts > A32 a preserved legacy proposal has a candidate and an actionable versioned review task",
+        "message": "AssertionError: expected { n: +0 } to deeply equal { n: 1 }"
+      }
+    ]
+  },
+  {
+    "log": "task7-red.log",
+    "sha256": "cc3931eb1f819c0ee597836e9b1e5aae231c8c65df9df0ad9a410e9deaa97cd4",
+    "failures": [
+      {
+        "failure": "tests/identity-backfill.test.ts [ tests/identity-backfill.test.ts ]",
+        "message": "Error: Cannot find module '../scripts/identity/backfill' imported from <worktree>/tests/identity-backfill.test.ts"
+      },
+      {
+        "failure": "tests/identity-merge-plan.test.ts [ tests/identity-merge-plan.test.ts ]",
+        "message": "Error: Cannot find module '../src/worker/identity/merge-plan' imported from <worktree>/tests/identity-merge-plan.test.ts"
+      }
+    ]
+  },
+  {
+    "log": "task8-cache-red.log",
+    "sha256": "f7bc62211f95c5cabdc8c9c6314261cf62a93f73de8d258db1bd80bd098a9ee8",
+    "failures": [
+      {
+        "failure": "tests/identity-merge.test.ts > A31/A43 an existing edge cache entry cannot re-expose aliases after merge",
+        "message": "AssertionError: expected 2 to be 1 // Object.is equality"
+      }
+    ]
+  },
+  {
+    "log": "task8-cli-red.log",
+    "sha256": "b45d910b0886773380d715a393b7bedec0a5b75832fb4d788fe033642ab4c91e",
+    "failures": [
+      {
+        "failure": "tests/identity-history-cli.test.ts > A30 merge CLI defaults to dry-run and rejects missing explicit input without production fallback",
+        "message": "AssertionError: expected 'node:internal/modules/esm/resolve:272…' to match /required/"
+      }
+    ]
+  },
+  {
+    "log": "task8-constraints-red.log",
+    "sha256": "941a395b00dd415d9dc816590f07a0b8d8ad99fa5548a665057abca80ea18b7d",
+    "failures": [
+      {
+        "failure": "tests/identity-merge.test.ts > A29 manual different constraints remain hard vetoes between canonical groups",
+        "message": "TypeError: differentCanonicalEntities is not a function"
+      }
+    ]
+  },
+  {
+    "log": "task8-integration-red.log",
+    "sha256": "d3574f809ce71d729a59ad43553834466bfdb76ebc52b9102c3442916f599052",
+    "failures": [
+      {
+        "failure": "tests/identity-merge.test.ts > A37 subsequent identity retrieval resolves old aliases to one active entity",
+        "message": "AssertionError: expected 'entity-1' to be 'entity-0' // Object.is equality"
+      },
+      {
+        "failure": "tests/identity-merge.test.ts > A37 equal proposal tasks become one canonical card retaining both original drafts and sources",
+        "message": "AssertionError: expected [ { …(41) } ] to have a length of +0 but got 1"
+      }
+    ]
+  },
+  {
+    "log": "task8-lead-red.log",
+    "sha256": "d40785c6b72dfa2c9cd94525a0739416278bc4877e5e36f3c35ad91411abd17f",
+    "failures": [
+      {
+        "failure": "tests/identity-merge.test.ts > A37 lead reads normalize old offer references and retain their original IDs",
+        "message": "AssertionError: expected 'offer-1' to be 'offer-0' // Object.is equality"
+      }
+    ]
+  },
+  {
+    "log": "task8-live-version-red.log",
+    "sha256": "030e3edc4f948fcb3b01e0fee3b42b092745c784ad26a87752291c4c5026990b",
+    "failures": [
+      {
+        "failure": "tests/identity-merge.test.ts > A29/A35 merge invalidates old live edit versions while a freshly read canonical version can edit",
+        "message": "AssertionError: promise resolved \"{ taskId: null, revision: 2, …(1) }\" instead of rejecting"
+      }
+    ]
+  },
+  {
+    "log": "task8-new-link-red.log",
+    "sha256": "6fc44527ef763a65a6d557602d3c177b4fe6c9373db2cea22562e3bdb0b4ba7a",
+    "failures": [
+      {
+        "failure": "tests/identity-merge.test.ts > A37 new legacy lead links store the canonical ID and retain the submitted origin ID",
+        "message": "AssertionError: expected 'offer-1' to be 'offer-0' // Object.is equality"
+      }
+    ]
+  },
+  {
+    "log": "task8-off-write-red.log",
+    "sha256": "2addcb456a14bc06b4059be8507c0f06250f346c1d91d90c7f7e32b5da60de65",
+    "failures": [
+      {
+        "failure": "tests/identity-merge.test.ts > A43 rollback mode preserves reads and defers legacy pipeline writes for a merged product",
+        "message": "AssertionError: expected { Object (id, unchanged, ...) } to match object { retryable: true, …(1) }"
+      }
+    ]
+  },
+  {
+    "log": "task8-platform-red.log",
+    "sha256": "c776163f2c726a9c8c76d1db96b95d1ba8b0a47f47e4a762974ea6484ca42b69",
+    "failures": [
+      {
+        "failure": "tests/identity-merge.test.ts > A31/A35 platform admission changes invalidate the promised public merge projection",
+        "message": "AssertionError: expected 'applied' to be 'conflict' // Object.is equality"
+      }
+    ]
+  },
+  {
+    "log": "task8-red.log",
+    "sha256": "25711b7da780b8ef49e195aebed3e608c132dfe6e43450e2449297cdd8e2c8ee",
+    "failures": [
+      {
+        "failure": "tests/identity-merge.test.ts [ tests/identity-merge.test.ts ]",
+        "message": "Error: Cannot find module '../src/worker/identity/merge' imported from <worktree>/tests/identity-merge.test.ts"
+      },
+      {
+        "failure": "tests/identity-rollback.test.ts [ tests/identity-rollback.test.ts ]",
+        "message": "Error: Cannot find module '../src/worker/identity/merge' imported from <worktree>/tests/identity-rollback.test.ts"
+      }
+    ]
+  },
+  {
+    "log": "task8-routing-red.log",
+    "sha256": "b4a67998e51c146e53d2ed94d026ec3daacb5a0125af68e0c7a6e21db8919031",
+    "failures": [
+      {
+        "failure": "tests/identity-rollback.test.ts > A42 version-route changes after merge are not overwritten by rollback",
+        "message": "AssertionError: expected 'applied' to be 'conflict' // Object.is equality"
+      }
+    ]
+  },
+  {
+    "log": "task8-transition-red.log",
+    "sha256": "28ef7bf142459280beaad4150b6d1630f3e1a44dd2adcece292970c001182947",
+    "failures": [
+      {
+        "failure": "tests/identity-merge.test.ts > A17/A40 changed notices inherit a proven transition only at the merge publication boundary",
+        "message": "AssertionError: expected [ { …(38) } ] to have a length of +0 but got 1"
+      }
+    ]
+  },
+  {
+    "log": "task8-verify-route-red.log",
+    "sha256": "d9c21246446669d4747473fbbc20a8873a833d83ae667d7846511e80fdf06fa2",
+    "failures": [
+      {
+        "failure": "tests/identity-merge.test.ts > A37 automatic verification queues and stale results cannot mutate a merged alias",
+        "message": "AssertionError: expected [ 'offer-0', 'offer-1' ] to deeply equal [ 'offer-0' ]"
+      }
+    ]
+  },
+  {
+    "log": "task9-fixture-product-red.log",
+    "sha256": "694b6d67f0f6da350f5c94420d042f40917086846fff412029a2b81aae99bd44",
+    "failures": [
+      {
+        "failure": "tests/identity-evaluation.test.ts > the frozen four-pair synthetic example has a genuine old-to-new changed pair and remains below the field cohort",
+        "message": "AssertionError: expected 'other' to be 'vendor' // Object.is equality"
+      }
+    ]
+  },
+  {
+    "log": "task9-fixture-red.log",
+    "sha256": "61f3039e61a911a6752584647c762b75bd3e943b73282e60534060d897bc18aa",
+    "failures": [
+      {
+        "failure": "tests/identity-evaluation.test.ts > the frozen four-pair synthetic example has a genuine old-to-new changed pair and remains below the field cohort",
+        "message": "AssertionError: expected '20' to be '10' // Object.is equality"
+      }
+    ]
+  },
+  {
+    "log": "task9-red.log",
+    "sha256": "38409d70ec63a29154ab1b97f969e1ef56f3c6c7f3cb7fdf7f18c1a4f1190eaa",
+    "failures": [
+      {
+        "failure": "tests/identity-evaluation.test.ts [ tests/identity-evaluation.test.ts ]",
+        "message": "Error: Cannot find module '../scripts/identity/evaluate' imported from <worktree>/tests/identity-evaluation.test.ts"
+      }
+    ]
+  },
+  {
+    "log": "task9-report-red.log",
+    "sha256": "96c711137249c6e5e1c89b58dc40a3ef27a6b5bcbd253bf605d7ea55ad883298",
+    "failures": [
+      {
+        "failure": "tests/identity-evaluation.test.ts > acceptance report cannot pass merely from scenario IDs when a covered test is skipped or fails",
+        "message": "Error: Cannot find module '/scripts/identity/acceptance-report' imported from <worktree>/tests/identity-evaluation.test.ts"
+      }
+    ]
+  }
+]
