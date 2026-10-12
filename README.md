@@ -30,4 +30,6 @@ npm test
 
 前端源在 `web/`，构建产物在 `public/`；Worker 在 `src/worker/`，共享字段和检查在 `src/shared/`，采集在 `pipeline/`，迁移在 `migrations/`。
 
+公开 Agent 接入（Skill、只读 MCP、最新日报与条件筛选）见[规格](docs/specs/public-agent-access.md)和[运维说明](docs/operations.md)；技能源在 `integrations/agent/`，独立于本机 Hermes 管理工具。
+
 发布按[运维说明](docs/operations.md)执行。代码推送、Worker部署、D1数据写入与消息送达分别核验；文档整理不能代替这些动作。

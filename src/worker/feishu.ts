@@ -8,6 +8,8 @@ import { zonedTime } from '../shared/lifecycle';
 import { valuationSummary } from '../shared/valuation';
 import { ackDelivery, buildNotice, claimNotice, type ClaimedNotice } from './admin';
 import type { Env } from './index';
+import { generateDaily } from './daily';
+import {z} from 'zod';
 
 export const CRON = { digest: '0 0 * * *', urgent: '7 * * * *', collect: '17 */6 * * *', leads: '27 * * * *' } as const; // UTC；日报 = 东京 09:00
 type Item = ClaimedNotice['items']['new'][number];
@@ -107,16 +109,23 @@ function itemBlock(it: Item, n: number, tr: Map<string, string>, section: string
   const benefit = it.excerpts?.benefit;
   // 管理员实测、媒体转述的摘录不是官方原话，不能标成“官方原文”
   const official = !['media', 'tested'].includes(it.evidenceTier);
-  if (benefit && section !== 'changed') lines.push(`📄 **${official ? '官方原文' : '原文（媒体 / 社区转述）'}**：“${safe(zh(tr, benefit))}”`);
+  if (benefit && section !== 'changed') {
+    lines.push(`📄 **${official ? '官方原文' : '原文（媒体 / 社区转述）'}**：“${safe(benefit)}”`);
+    if (tr.has(benefit.trim())) lines.push(`　译文：“${safe(zh(tr, benefit))}”`);
+  }
   if (it.adminNote) lines.push(`💬 **牧场心得**：${safe(it.adminNote.replace(/\s*\n+\s*/g, ' '))}`);
   lines.push(`📥 **怎么领**：${CLAIM[it.claimMethod] ?? it.claimMethod}`);
   (it.steps ?? []).filter(x => !/^官方出处：/.test(x)).slice(0, 8).forEach((st, i) => lines.push(`　${i + 1}. ${safe(zh(tr, st))}`));
   const eligibility = it.excerpts?.eligibility;
   lines.push(`✅ **条件**：${it.requirements.map(reqText).join('、')}；适用：${AUD[it.audience] ?? it.audience}`);
-  if (eligibility) lines.push(`　${official ? '官方说明' : '转述说明'}：“${safe(zh(tr, eligibility))}”`);
+  if (eligibility) {
+    lines.push(`　${official ? '官方说明' : '转述说明'}：“${safe(eligibility)}”`);
+    if (tr.has(eligibility.trim())) lines.push(`　译文：“${safe(zh(tr, eligibility))}”`);
+  }
   lines.push(`⏰ **截止**：${startText(it)}${deadline(it)}`);
   lines.push(`⌛ **额度有效期**：${it.creditValidity ? safe(zh(tr, it.creditValidity)) : '官方未写明'}`);
   lines.push(`🔎 **信源**：${TIER[it.evidenceTier] ?? it.evidenceTier}`);
+  lines.push(`🕒 **核验时间**：${it.lastVerifiedAt??'原通知未保存核验时间，请查当前详情'}`);
   return [
     md(lines.join('\n')),
     { tag: 'action', actions: [
@@ -191,11 +200,16 @@ export async function postCard(env: Env, card: unknown): Promise<{ ok: boolean; 
 }
 
 /** 占位 → 排卡片 → 逐张发送 → 回报结果。飞书明确拒收时释放占位，下次重试；结果不明时留待人工核对。 */
-export async function sendFeishu(env: Env, kind: Kind): Promise<{ sent: number; cards: number; skipped?: string; error?: string }> {
+export async function sendFeishu(env: Env, kind: Kind, editionRetries=1): Promise<{ sent: number; cards: number; skipped?: string; error?: string }> {
+  const daily = kind === 'digest' ? await generateDaily(env) : null;
   if (!env.FEISHU_WEBHOOK) return { sent: 0, cards: 0, skipped: '未配置 FEISHU_WEBHOOK' };
-  const notice = await claimNotice(env, kind, 'feishu');
+  if(daily?.sourceDeliveryId)return {sent:0,cards:0,skipped:'没有新内容'};
+  if (daily && await env.DB.prepare("SELECT id FROM deliveries WHERE channel='feishu' AND kind='digest' AND status='sent' AND json_extract(payload,'$.digestDay')=? LIMIT 1").bind(daily.public.day).first()) return {sent:0,cards:0,skipped:'没有新内容'};
+  const notice = await claimNotice(env, kind, 'feishu', daily?.notice);
+  if(notice.editionChanged)return editionRetries>0?sendFeishu(env,kind,editionRetries-1):{sent:0,cards:0,error:'日报版本正在更新，请稍后重试'};
+  if(notice.staleContent)return {sent:0,cards:0,error:'日报条目版本已变化；管理员可重新准备尚未发送的日报，查询不会自动改写。'};
   if (notice.empty || !notice.deliveryId) return { sent: 0, cards: 0, skipped: notice.alreadyClaimed ? '已有同样内容在发送或待核对' : '没有新内容' };
-  const cards = await buildCards(env, notice);
+  const cards = daily?.cards ?? await buildCards(env, notice);
   let sent = 0;
   for (const card of cards) {
     const r = await postCard(env, card);
@@ -263,4 +277,11 @@ feishuAdmin.get('/feishu/preview', async c => {
   return c.json({ empty: notice.empty, cards: await buildCards(c.env, notice) });
 });
 feishuAdmin.post('/feishu/send', async c => c.json(await sendFeishu(c.env, c.req.query('kind') === 'urgent' ? 'urgent' : 'digest')));
+/** Prepare/adopt the public edition without sending. Repair is restricted to definitely-unsent editions. */
+feishuAdmin.post('/feishu/digest/prepare',async c=>{
+  const parsed=z.object({refreshUnsent:z.boolean().default(false)}).strict().safeParse(await c.req.json().catch(()=>null));
+  if(!parsed.success)return c.json({error:'请求体须为 {"refreshUnsent":false} 或 true'},400);
+  try{const daily=await generateDaily(c.env,new Date(),parsed.data.refreshUnsent);return c.json({report:daily.public,sent:0,adoptedDelivery:!!daily.sourceDeliveryId});}
+  catch{return c.json({error:'日报准备未完成或本期已有发送/待核对记录；请检查状态后重试'},409);}
+});
 feishuAdmin.post('/collect/dispatch', async c => c.json(await dispatchCollect(c.env)));

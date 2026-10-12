@@ -1,5 +1,7 @@
 import {readCollectionStatus} from './collection-status';
 import {publicationError} from './publication';
+import {agentRoutes,handleAgentMcp} from './agent';
+import {quotaCircuitOpen,tripQuotaCircuit} from './quota-circuit';
 import {readMembershipCatalog,collectedMembership} from './membership';
 import {ensureRelatedReadIndexes} from './d1-read-indexes';
 import {snapshotActive,snapshotResponse,quotaFailure} from './public-snapshot';
@@ -35,6 +37,8 @@ import { feishuAdmin, runScheduled } from './feishu';
 
 export interface Env {
   DB: D1Database;
+  AGENT_FORCE_SNAPSHOT?:boolean;
+  AGENT_READ_KEY?:D1Database;
   D1_PUBLIC_SNAPSHOT_UNTIL?:string;
   D1_REPAIR_RELATED_INDEXES?:string;
   ASSETS: Fetcher;
@@ -63,9 +67,9 @@ const app = new Hono<{ Bindings: Env }>();
 const db = (env: Env) => drizzle(env.DB, { schema: s });
 type OfferRow = typeof s.offers.$inferSelect;
 
-let quotaCircuitUntil=0;
 app.use('/api/*',async(c,next)=>{
- if(snapshotActive(c.env.D1_PUBLIC_SNAPSHOT_UNTIL)||Date.now()<quotaCircuitUntil){
+ if(snapshotActive(c.env.D1_PUBLIC_SNAPSHOT_UNTIL)||quotaCircuitOpen()){
+  if(c.req.path==='/api/mcp'||c.req.path.startsWith('/api/agent')){c.env={...c.env,AGENT_FORCE_SNAPSHOT:true};return next();}
   if(c.req.path==='/api/health')return c.json({ok:true,dataMode:'approved-snapshot',readOnly:true});
   const response=c.req.method==='GET'?await snapshotResponse(c.req.raw,c.env.ASSETS):null;
   return response??c.json({error:'数据库当日读取额度已用尽，目前只读浏览，审核和采集暂时暂停',degraded:true,readOnly:true},503);
@@ -74,14 +78,14 @@ app.use('/api/*',async(c,next)=>{
 });
 app.onError(async(error,c)=>{
  if(!quotaFailure(error))return c.json({error:'服务暂不可用，请稍后重试'},500);
- const nextDay=new Date();nextDay.setUTCHours(24,5,0,0);quotaCircuitUntil=nextDay.getTime();
+ tripQuotaCircuit();
  const response=c.req.method==='GET'?await snapshotResponse(c.req.raw,c.env.ASSETS):null;
  return response??c.json({error:'数据库当日读取额度已用尽，目前只读浏览，审核和采集暂时暂停',degraded:true,readOnly:true},503);
 });
 
 // 初期不让搜索引擎收录；接口不缓存旧状态太久
 app.use('/api/*', async (c, next) => {
-  if(c.env.IDENTITY_MODE==='enforce'||/\/api\/(?:ingest\/(?:identity-|observations|candidates)|admin\/identity)/.test(c.req.path))c.env={...c.env,DB:withIdentityQueryBudget(c.env.DB)};
+  if(c.env.IDENTITY_MODE==='enforce'||/\/api\/(?:ingest\/(?:identity-|observations|candidates)|admin\/identity)/.test(c.req.path))c.env={...c.env,AGENT_READ_KEY:c.env.DB,DB:withIdentityQueryBudget(c.env.DB)};
   await next();
   c.header('X-Robots-Tag', 'noindex');
   if(c.req.method==='GET'&&c.req.path.startsWith('/api/offers'))c.header('Cache-Control','no-cache');
@@ -112,6 +116,9 @@ for (const path of ['/api/offers', '/api/platforms', '/api/meta', '/api/coverage
 });
 
 // 公开接口不输出内部核验记录
+app.route('/api/agent',agentRoutes);
+app.all('/api/mcp',c=>{let ctx:Pick<ExecutionContext,'waitUntil'>|undefined;try{ctx=c.executionCtx;}catch{}return handleAgentMcp(c.req.raw,c.env,ctx);});
+
 const withStatus = (o: OfferRow, now: Date) => {
   const { reviewMemo: _memo, reviewSuggestion: _suggestion, officialReview: _officialReview, withdrawnReason: _withdrawnReason, valuation: rawValuation, ...pub } = o;
   const valuation = publicSafeValuation(rawValuation);
@@ -719,5 +726,5 @@ app.all('/api/*', c => c.json({ error: '没有这个接口' }, 404));
 export default {
   fetch: (req, env, ctx) => app.fetch(req, env, ctx),
   // 定时任务：飞书日报（东京 09:00）、每小时加急检查、每 6 小时触发采集
-  scheduled: (controller, env, ctx) => { if(snapshotActive(env.D1_PUBLIC_SNAPSHOT_UNTIL)||Date.now()<quotaCircuitUntil)return;ctx.waitUntil((async()=>{if(env.D1_REPAIR_RELATED_INDEXES==='1')await ensureRelatedReadIndexes(env.DB);await runScheduled(controller.cron, env);})()); },
+  scheduled: (controller, env, ctx) => { if(snapshotActive(env.D1_PUBLIC_SNAPSHOT_UNTIL)||quotaCircuitOpen())return;ctx.waitUntil((async()=>{if(env.D1_REPAIR_RELATED_INDEXES==='1')await ensureRelatedReadIndexes(env.DB);await runScheduled(controller.cron, env);})()); },
 } satisfies ExportedHandler<Env>;

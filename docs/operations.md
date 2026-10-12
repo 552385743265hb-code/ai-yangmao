@@ -91,6 +91,16 @@ Telegram审核提醒按对象版本去重，每批最多10条，临期优先并�
 
 飞书日报选常驻5、新星3、末班车3，跨榜去重。新星为近14天未通知，末班车为3天内截止；不含待审、独立变更或已结束榜。webhook未配置或未验证时不能声称送达。
 
+公开 Agent 接入源在 `integrations/agent/`，与本机 Hermes 管理技能分开。官网 `#agent` 提供安装说明，`/ai-yangmao-public/SKILL.md` 与安装脚本由 `npm run build:web` 打包；`/llms.txt` 指向服务端能力说明。匿名只读 HTTP：`GET /api/agent`、`GET|POST /api/agent/search`、`GET /api/agent/offers/:id`、`GET /api/agent/catalog`、`GET /api/agent/daily`；可选 `format=markdown`。个人条件使用查询 POST，只在当前请求计算，不保存个人档案。远程 MCP `/api/mcp` 使用无会话 Streamable HTTP，工具为 `yangmao_search_offers`、`yangmao_get_offer`、`yangmao_get_daily`、`yangmao_get_catalog`，不提供管理员操作。
+
+发布前须应用 `0039_public_daily_digest.sql`。原飞书每日调度会生成单例固定日报，即使未配置 webhook 也生成；飞书发送与公开读取使用同一份条目和卡片。公开读取不会生成、翻译、占位或发消息。只返回最新一期，无历史查询；尚无日报明确返回 unavailable，当天尚未生成则标记最近一期日期。原语言摘录与译文分开展示。生产迁移、正式部署与飞书发送仍按该次授权分别执行，不能用查询触发或用本地演示声称线上完成。
+
+首次上线可由管理员 `POST /api/admin/feishu/digest/prepare`，JSON `{"refreshUnsent":false}` 准备公开版，**不发消息**；若当天已有确认送达的飞书日报，优先沿用该次条目，并避免重发。冻结后身份版本失效会返回明确冲突；管理员可用 `{"refreshUnsent":true}` 重建确认未送达的版本，修订号公开展示。存在 sent/pending/unknown 记录时禁止重建，不释放待核对消息。新生成日报保存各条 lastVerifiedAt；旧发送快照未保存的时间保持未知。
+
+发送占位同时核对固定日报的 day/revision；若管理员修订先完成，发送方重新读取最新版本（最多一次）；若发送先占位，修订被拒绝。部署后可运行 `node scripts/smoke-public-agent.mjs https://ai-yangmao.com` 做公开只读验收，安装器验收使用临时 --dir，不更改本机管理技能。安装中断遗留锁时先核对锁内 PID，确认进程已退出后再人工清理；安装器不自动争抢/清除现存锁。
+
+Agent 数据缓存按公开 generation 失效，同实例冷并发合并读取；边缘缓存故障可回退数据库，额度失败使用网站共用熔断，后续跳过 D1。搜索只输出有体积预算的摘要与详情地址，groups 引用 ID，客户端按 nextOffset 翻页。会员非空清单默认不完整，只有显式 subscriptionsComplete 才作闭合匹配。安装器校验全部独立文件、使用互斥锁，最终替换失败时恢复原技能。
+
 健康页展示最近全量尝试与coverageDegraded、快速任务、重要线索积压，以及官方补证的待处理/退避/耗尽/超时。抓取成功不等于核验成功，sweep不冒充完整collect成功。D1用量依赖`CF_ANALYTICS_TOKEN`；代码门槛读500万、写10万行/UTC日，读取超过70%按日去重提醒。未配置/读取失败不报零，实际配额以账户为准。
 
 本机管理HTTP凭据经curl stdin传入；只重试尚未发出HTTP的DNS、连接、TLS握手失败。写请求超时或空响应不能盲目重试，须读回业务状态或投递台账。

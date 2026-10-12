@@ -53,7 +53,7 @@ function view(o: OfferRow, platformName: string, now = new Date()) {
     membershipRequirement:o.membershipRequirement??null, requirements: o.requirements, audience: o.audience, claimMethod: o.claimMethod, creditValidity: o.creditValidity,
     sourceTz: o.sourceTz, claimStart: o.claimStart, claimEnd: o.claimEnd, endKind: o.endKind,
     evidenceUrl: o.evidence.url, evidenceTier: o.evidence.tier, excerpts: o.evidence.excerpts, missingEvidence: missingEvidence(o.evidence.excerpts),
-    steps: o.steps, models: o.models ?? [], tags: o.tags ?? [], publishedAt: o.publishedAt ?? null, modalities: o.modalities, usdEstimate: o.usdEstimate, usdMax: o.usdMax ?? null, valuation: parseValuation(o.valuation), adminNote: o.adminNote ?? null, reviewMemo: o.reviewMemo ?? null, officialReview: o.officialReview ?? null, suggestion: o.reviewSuggestion ?? null,
+    steps: o.steps, models: o.models ?? [], tags: o.tags ?? [], publishedAt: o.publishedAt ?? null, lastVerifiedAt:o.lastVerifiedAt??null, modalities: o.modalities, usdEstimate: o.usdEstimate, usdMax: o.usdMax ?? null, valuation: parseValuation(o.valuation), adminNote: o.adminNote ?? null, reviewMemo: o.reviewMemo ?? null, officialReview: o.officialReview ?? null, suggestion: o.reviewSuggestion ?? null,
     // 上架前检查：缺了哪些字段、影响哪些栏目（规格见 src/shared/spec.ts）
     checks: checkOffer(o, now).map(i => ({ ...i, sections: i.sections.map(k => SECTIONS[k]) })),
     link: `https://ai-yangmao.com/#${o.reviewState === 'pending' ? 'admin-offer-' : 'offer-'}${encodeURIComponent(o.id)}`,
@@ -569,8 +569,8 @@ type NoticeMark = { offerId: string; stage: NoticeStage; messageId?: string;even
 const FIELD_NAME: Record<string, string> = { title: '标题', type: '类型', modalities: '模态', claimMethod: '领取方式', requirements: '门槛', audience: '适用对象', valueText: '额度', usdEstimate: '价值估算', usdMax: '价值上限', models: '免费模型', tags: '标签', publishedAt: '发布时间', claimStart: '领取开始', claimEnd: '领取截止', endKind: '截止方式', creditValidity: '额度有效期', sourceTz: '官方时区', steps: '领取步骤', evidence: '官方证据' };
 const showValue = (value: unknown) => value == null ? '未写明' : Array.isArray(value) ? value.join('、') : typeof value === 'object' ? '已更新' : String(value);
 
-export async function buildNotice(env: Env, kind: NoticeKind, channel: NoticeChannel) {
-  const d = db(env), names = await platformNames(env), now = new Date();
+export async function buildNotice(env: Env, kind: NoticeKind, channel: NoticeChannel, now = new Date()) {
+  const d = db(env), names = await platformNames(env);
   const approvedPlatforms = new Set((await d.select({ id: s.platforms.id }).from(s.platforms).where(eq(s.platforms.status, 'approved'))).map(p => p.id));
   const approved = (await d.select().from(s.offers).where(and(eq(s.offers.reviewState, 'approved'),canonicalOffers))).filter(o => approvedPlatforms.has(o.platformId));
   const inherited=await notificationInheritance(env.DB,approved.map(o=>o.id),channel);
@@ -722,21 +722,23 @@ admin.get('/notify', async c => {
 });
 
 /** 原子占位避免并发重复；失败或结果不明时不会自动重发。Telegram（经 Hermes）与飞书（Worker 定时任务）共用。 */
-export type ClaimedNotice = Awaited<ReturnType<typeof buildNotice>> & { deliveryId?: string; alreadyClaimed?: boolean };
-export async function claimNotice(env: Env, kind: NoticeKind, channel: NoticeChannel): Promise<ClaimedNotice> {
-  const notice = await buildNotice(env, kind, channel);
+export type ClaimedNotice = Awaited<ReturnType<typeof buildNotice>> & { deliveryId?: string; alreadyClaimed?: boolean; staleContent?:boolean; editionChanged?:boolean };
+export async function claimNotice(env: Env, kind: NoticeKind, channel: NoticeChannel, frozen?: Awaited<ReturnType<typeof buildNotice>>): Promise<ClaimedNotice> {
+  const notice = frozen ?? await buildNotice(env, kind, channel);
   if (notice.empty) return { ...notice, alreadyClaimed: notice.blockedCount > 0 };
   const day = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
   const content = JSON.stringify({ kind: notice.kind, channel: notice.channel,
+    ...(frozen?{digestDay:(frozen as {digestDay?:string}).digestDay,digestRevision:(frozen as {digestRevision?:number}).digestRevision}:{}),
     marks: notice.marks, reviewKeys: notice.reviewAlerts.map(a=>a.key),
     ...(!notice.marks.length && !notice.reviewAlerts.length ? { day, pendingCount: notice.pendingCount,
       suggestAutoPublish: notice.suggestAutoPublish, needsVerificationCount: notice.needsVerificationCount, coverageDegraded: notice.coverageDegraded } : {}) });
   const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(content));
   const fingerprint = [...new Uint8Array(hash)].map(x => x.toString(16).padStart(2, '0')).join('');
   const id = crypto.randomUUID();
+  const editionGuard=frozen?"(json_extract(?5,'$.digestRevision') IS NULL OR EXISTS(SELECT 1 FROM daily_digest WHERE id=1 AND day=json_extract(?5,'$.digestDay') AND json_extract(payload,'$.public.revision')=json_extract(?5,'$.digestRevision')))":'1';
   const created = await env.DB.prepare(`
     INSERT INTO deliveries(id,fingerprint,channel,kind,payload)
-    SELECT ?1,?2,?3,?4,?5 WHERE ${deliveryIdentityGuard} AND NOT EXISTS (
+    SELECT ?1,?2,?3,?4,?5 WHERE ${deliveryIdentityGuard} AND ${editionGuard} AND NOT EXISTS (
       SELECT 1 FROM deliveries prior WHERE prior.channel=?3 AND prior.status IN ('pending','unknown') AND (
         EXISTS (SELECT 1 FROM json_tree(prior.payload,'$.items') old_item, json_tree(?5,'$.items') new_item
           WHERE old_item.key='id' AND new_item.key='id' AND coalesce((SELECT root.canonical_offer_id FROM benefit_entities old JOIN benefit_entities root ON root.id=old.merged_into WHERE old.canonical_offer_id=old_item.value AND old.state='merged'),old_item.value)=new_item.value)
@@ -745,7 +747,11 @@ export async function claimNotice(env: Env, kind: NoticeKind, channel: NoticeCha
           WHERE (json_extract(old_alert.value,'$.key')=json_extract(new_alert.value,'$.key') OR EXISTS(SELECT 1 FROM merge_task_sources m WHERE m.status='active' AND m.source_task_id=json_extract(old_alert.value,'$.taskId') AND m.canonical_task_id=json_extract(new_alert.value,'$.taskId')) OR ${reviewAlertOverlap('old_alert.value',"json_extract(new_alert.value,'$.taskId')")}))
       )) ON CONFLICT(fingerprint) DO NOTHING RETURNING id`)
     .bind(id,fingerprint,channel,kind,JSON.stringify(notice)).all<{id:string}>();
-  return created.results.length ? { ...notice, deliveryId: id } : { ...notice, empty: true, alreadyClaimed: true };
+  if(created.results.length)return {...notice,deliveryId:id};
+  if(frozen){const edition=await env.DB.prepare(`SELECT (${editionGuard.replaceAll('?5','?1')}) AS valid`).bind(JSON.stringify(notice)).first<{valid:number}>();if(!edition?.valid)return {...notice,empty:true,editionChanged:true};}
+  if(frozen){const validity=await env.DB.prepare(`SELECT (${deliveryIdentityGuard.replaceAll('?5','?1')}) AS valid`).bind(JSON.stringify(notice)).first<{valid:number}>();
+    if(!validity?.valid)return {...notice,empty:true,staleContent:true};}
+  return { ...notice, empty: true, alreadyClaimed: true };
 }
 admin.post('/notify/claim', async c => {
   const parsed = z.object({ kind: z.enum(['digest', 'urgent']), channel: z.enum(['telegram', 'feishu']) }).safeParse(await c.req.json().catch(() => null));

@@ -13,6 +13,7 @@
 | 社区稿如何自动寻找官方出处 | [自动官方复核](official-review-workflow.md) |
 | 命令、调度、故障、发布与回滚 | [运维说明](operations.md) |
 | 逐条审核的操作流程 | [仓库审核技能](../.claude/skills/yangmao-review/SKILL.md) |
+| 外部 Agent 查询与 MCP 接入 | [公开接入规格](specs/public-agent-access.md) / [公开 Skill](../integrations/agent/ai-yangmao-public/SKILL.md) |
 | Hermes 的查询和管理操作 | [Hermes 接入模板](../integrations/hermes/ai-yangmao/SKILL.md)；安装副本需单独核对 |
 | 最近一次知识与运行态核对 | [2026-10-09 整理凭证](closeout-2026-10-09.md) |
 

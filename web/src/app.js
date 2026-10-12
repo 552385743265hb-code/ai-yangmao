@@ -336,6 +336,7 @@ function emptySheep(msg) {
 /* ---------- 图标 ---------- */
 const svgI = inner => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${inner}</svg>`;
 const ICON = {
+  agent: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="4" y="6" width="16" height="13" rx="4"/><path d="M12 2v4M8 22v-3M16 22v-3M1 11h3M20 11h3M8 15h8"/><circle cx="8" cy="10" r="1"/><circle cx="16" cy="10" r="1"/></svg>',
   today: svgI('<circle class="ic-dot" cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/>'),
   calendar: svgI('<rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/><rect class="ic-dot" x="7" y="13" width="4" height="4" rx="1"/>'),
   timeline: svgI('<rect class="ic-dot" x="3" y="5" width="11" height="3.6" rx="1.8"/><rect x="8" y="10.2" width="13" height="3.6" rx="1.8"/><rect x="5" y="15.4" width="9" height="3.6" rx="1.8"/>'),
@@ -2071,12 +2072,34 @@ function ecg(h) {
 /* ============================================================
  * 外壳：导航、条件面板、对比、路由
  * ============================================================ */
-const PAGES = { today: pToday, calendar: pCalendar, timeline: pTimeline, insights: pInsights, all: pAll, library: pLibrary, apply: pApply, models: pModels, mine: pMine, coverage: pCoverage, 'valuation-method': pValuationMethod, admin: pAdmin };
+function pAgent() {
+  const mcp='https://ai-yangmao.com/api/mcp';
+  const install='curl --fail --silent --show-error https://ai-yangmao.com/ai-yangmao-public/install.sh -o /tmp/ai-yangmao-install.sh\nbash /tmp/ai-yangmao-install.sh';
+  const config=JSON.stringify({mcpServers:{'ai-yangmao':{url:mcp}}},null,2);
+  const prompt='安装并使用 AI 羊毛牧场公开查询 Skill：https://ai-yangmao.com/ai-yangmao-public/SKILL.md 。先读取 https://ai-yangmao.com/api/agent 的能力说明，然后查询最新日报，或按我的用途和领取条件筛选权益。';
+  const block=(label,text,id)=>`<div class="agent-code"><div class="row" style="justify-content:space-between"><span class="small muted">${label}</span><button type="button" class="btn sm" data-agent-copy="${id}">复制</button></div><pre id="${id}">${esc(text)}</pre></div>`;
+  main().innerHTML=ph('Agent 接入','让你的 agent 读日报、找羊毛，并按你的条件判断能不能领。')+`
+    <div class="agent-page"><div class="agent-intro"><b>直接连接，不需要 Key</b><p>公开查询，无需项目仓库。支持最新日报、权益筛选、领取详情和会员套餐目录。</p><div class="chips"><span class="chip">Skill</span><span class="chip">只读 MCP</span><span class="chip">按条件匹配</span></div></div>
+    <section>${secH('安装 Skill','适合能使用技能与 HTTP 工具的 agent')}<p>把下面这段话交给你的 agent，或将技能文件保存到它使用的技能目录。</p>${block('给 agent 的提示词',prompt,'agentPrompt')}
+      <div class="row"><a class="btn" href="/ai-yangmao-public/SKILL.md" target="_blank" rel="noopener">查看 Skill</a><a class="btn" href="/ai-yangmao-public/agents/openai.yaml" target="_blank" rel="noopener">查看技能元数据</a></div>
+      <details class="agent-install"><summary>用终端安装（macOS / Linux）</summary><p class="small muted">默认安装到 ~/.agents/skills/ai-yangmao-public；可用 --dir 指定你的 agent 技能目录。更新前会保留旧版备份。</p>${block('下载安装脚本，再执行',install,'agentInstall')}</details>
+    </section>
+    <section>${secH('连接 MCP','适合支持远程 MCP 的客户端')}<p>在客户端的 MCP 设置中添加以下地址，连接方式选择 Streamable HTTP。</p>${block('MCP 地址',mcp,'agentMcp')}
+      <details class="agent-install"><summary>JSON 配置示例</summary><p class="small muted">适用于接受 mcpServers + url 配置的客户端；其他客户端直接填上方地址。</p>${block('MCP 配置',config,'agentConfig')}</details>
+    </section>
+    <section>${secH('可以这样问')}<ul class="agent-examples"><li>给我最新一期羊毛日报。</li><li>找不绑卡、不用付费的图像生成工具。</li><li>我不是学生，没有海外手机号，但有某个会员，哪些羊毛适合我？</li><li>列出未来 3 天截止的权益，附官方出处和领取步骤。</li></ul></section>
+    <section>${secH('结果怎么看')}<p>日报与飞书共用一份固定内容，只提供最新一期；不是当天的会标明日期。领取前，agent 会继续查询当前详情。</p><p>资格分为符合、不符合和还需确认。你没提供的条件不会被猜成满足；价值待定不会按零计算。遇到快照或采集覆盖不完整，会注明时间与限制。</p><div class="row"><a class="btn" href="/api/agent" target="_blank" rel="noopener">读取能力说明</a><a class="btn" href="/api/agent/daily?format=markdown" target="_blank" rel="noopener">读取最新日报</a><a class="btn" href="/api/agent/search?requirement=nopay&format=markdown" target="_blank" rel="noopener">查看筛选示例</a></div></section></div>`;
+  $$('[data-agent-copy]').forEach(button=>button.addEventListener('click',async()=>{
+    try{await navigator.clipboard.writeText(document.getElementById(button.dataset.agentCopy).textContent);toast('已复制');}
+    catch{toast('复制未完成，请选中文字手动复制');}
+  }));
+}
+const PAGES = { today: pToday, calendar: pCalendar, timeline: pTimeline, insights: pInsights, all: pAll, library: pLibrary, apply: pApply, models: pModels, mine: pMine, coverage: pCoverage, 'valuation-method': pValuationMethod, agent:pAgent, admin: pAdmin };
 const NAVS = [
   ['逛牧场', [['today', '今天'], ['calendar', '日历'], ['timeline', '时间线'], ['insights', '洞察']]],
   ['找羊毛', [['all', '全部羊毛'], ['library', '常驻额度库'], ['apply', '申请制'], ['models', '按模型找']]],
   ['我', [['mine', '我的']]],
-  ['关于', [['valuation-method', '参考价值怎么算'], ['coverage', '覆盖范围']]],
+  ['关于', [['agent','Agent 接入'], ['valuation-method', '参考价值怎么算'], ['coverage', '覆盖范围']]],
 ];
 const TITLES = Object.fromEntries(NAVS.flatMap(g => g[1]));
 function drawShell() {
@@ -2084,6 +2107,7 @@ function drawShell() {
   $('#sideNav').innerHTML = NAVS.map(([g, items]) => `<div class="nav-sep">${g}</div>${items.map(([k, l]) => `<a href="#${k}" data-nav="${k}">${ICON[k]}${l}</a>`).join('')}`).join('');
   $('#tabbar').innerHTML = [['today', '今天'], ['calendar', '日历'], ['timeline', '时间线'], ['insights', '洞察']].map(([k, l]) => `<a href="#${k}" data-nav="${k}">${ICON[k]}<span>${l}</span></a>`).join('') + `<button type="button" data-more>${ICON.more}<span>更多</span></button>`;
   $('#sideFoot').innerHTML = `<span class="live"><i></i>最近更新 ${LAST_OK ? hm(LAST_OK) : '—'}</span><a href="/rss.xml" target="_blank" rel="noopener" style="text-decoration:underline">RSS 订阅</a><a href="#coverage" style="text-decoration:underline">只收能追到官方出处的羊毛，不保证覆盖所有活动</a>`;
+  $('#sideFoot').insertAdjacentHTML('beforeend', window.YMTheme?.control() || '');
   drawCondBtn();
 }
 function drawCondBtn() {
@@ -2109,8 +2133,8 @@ function closeSheet() {
 }
 function openCond() { openSheet('我的条件', condForm()); }
 function openMore() {
-  const items = [['all', '全部羊毛'], ['library', '常驻额度库'], ['apply', '申请制'], ['models', '按模型找'], ['mine', '我的'], ['valuation-method', '参考价值怎么算'], ['coverage', '覆盖范围'], ...(ADM.token ? [['admin', '后台']] : [])];
-  openSheet('更多', `<div class="more-nav">${items.map(([k, l]) => `<a href="#${k}" data-close>${ICON[k]}${l}</a>`).join('')}</div>`);
+  const items = [['all', '全部羊毛'], ['library', '常驻额度库'], ['apply', '申请制'], ['models', '按模型找'], ['mine', '我的'], ['agent','Agent 接入'], ['valuation-method', '参考价值怎么算'], ['coverage', '覆盖范围'], ...(ADM.token ? [['admin', '后台']] : [])];
+  openSheet('更多', `<div class="more-nav">${items.map(([k, l]) => `<a href="#${k}" data-close>${ICON[k]}${l}</a>`).join('')}</div><div class="appearance-row"><span>外观</span>${window.YMTheme?.control() || ''}</div>`);
 }
 function drawTray() {
   const t = $('#tray');
@@ -2235,15 +2259,40 @@ setInterval(() => {
   const endedOrStarted = $$('[data-end], [data-estimated-end]').some(el => +(el.dataset.end || el.dataset.estimatedEnd) <= now);
   if (!refreshInFlight && !keepPage() && (ymd(new Date()) !== ymd(T0) || now - lastRefreshAt >= 5 * 60_000 || (endedOrStarted && now - lastRefreshAt >= 10_000))) refreshPage();
 }, 1000);
-const reTheme = () => { if (!keepPage()) render(true); }; // 深色模式按时切换时，后台只换配色（CSS 变量），不重画
-matchMedia('(prefers-color-scheme: dark)').addEventListener('change', reTheme);
+// Recolour charts in place so filters, zoom, dialogs, focus and form drafts survive.
+const reTheme = () => {
+  const previous = TK;
+  TK = tk();
+  const colours = new Map();
+  Object.keys(TK).forEach(key => {
+    const before = [].concat(previous[key]), after = [].concat(TK[key]);
+    before.forEach((colour, index) => {
+      colours.set(colour.toLowerCase(), after[index]);
+      // Gradients and overlays also use rgba() versions of the same tokens.
+      const rgb = colour.replace('#', '').match(/.{2}/g)?.map(x => parseInt(x, 16));
+      if (rgb) colours.set(rgb.join(','), after[index].replace('#', '').match(/.{2}/g).map(x => parseInt(x, 16)).join(','));
+    });
+  });
+  const recolour = value => {
+    if (typeof value === 'string') return value.replace(/#[\da-f]{6}\b|rgba?\([\d.,\s]+\)/gi, colour => {
+      if (colour[0] === '#') return colours.get(colour.toLowerCase()) || colour;
+      return colour.replace(/\d+\s*,\s*\d+\s*,\s*\d+/, rgb => colours.get(rgb.replace(/\s/g, '')) || rgb);
+    });
+    if (Array.isArray(value)) return value.map(recolour);
+    if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, recolour(item)]));
+    return value;
+  };
+  [...CHARTS, ...SHEET_CHARTS].forEach(c => { if (!c.isDisposed()) c.setOption(recolour(c.getOption())); });
+};
 new MutationObserver(reTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
 (async function boot() {
-  $$('[data-brand]').forEach(el => { el.innerHTML = BRAND; });
-  main().innerHTML = emptySheep('正在把羊赶进草地…');
+  drawShell();
+  const agentLanding = route()[0] === 'agent';
+  if (agentLanding) render(false);
+  else main().innerHTML = emptySheep('正在把羊赶进草地…');
   try { await loadData(); }
-  catch (e) { main().innerHTML = emptySheep('数据没有加载成功，请稍后刷新。'); return; }
+  catch (e) { if (route()[0] !== 'agent') main().innerHTML = emptySheep('数据没有加载成功，请稍后刷新。'); return; }
   prepare();
   drawShell();
   if (window.echarts) render(false);

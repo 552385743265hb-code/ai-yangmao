@@ -185,6 +185,14 @@ export const deliveries = sqliteTable('deliveries', {
   updatedAt: text('updated_at').notNull().default(now),
 });
 
+/** Latest fixed daily digest. The payload contains a private delivery selection and a public projection. */
+export const dailyDigest = sqliteTable('daily_digest', {
+  id: integer('id').primaryKey(),
+  day: text('day').notNull(),
+  generatedAt: text('generated_at').notNull(),
+  payload: text('payload', {mode:'json'}).$type<Record<string,unknown>>().notNull(),
+});
+
 export const runs = sqliteTable('runs', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   kind: text('kind', { enum: ['collect', 'verify', 'sweep', 'digest', 'health', 'model'] }).notNull(),

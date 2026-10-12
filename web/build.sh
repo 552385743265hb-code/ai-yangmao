@@ -16,5 +16,8 @@ node --input-type=module -e 'import { build } from "esbuild"; await build({entry
 cat web/src/data.js web/src/membership.js web/src/app.js > public/app.js
 cp node_modules/echarts/dist/echarts.min.js public/vendor/echarts.min.js
 cp web/_headers public/_headers
+cp web/src/theme.js public/theme.js
+node scripts/build-public-skill.mjs
+node --check public/theme.js
 node --check public/app.js
 echo "built public/index.html ($(wc -c < public/index.html) bytes)"
