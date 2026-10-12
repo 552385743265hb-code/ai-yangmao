@@ -428,6 +428,7 @@
 
 ## huaweicloud
 
+- 2026-10-12 OfficeAce 去重：同一新人活动的4,000注册积分已包含在「首次注册4,000＋首次体验另得500」合计4,500的条目中，只保留 `huaweicloud-huawei-cloud-officeace-free-experience-points`（6mqt）。`huaweicloud-huawei-cloud-officeace-free-points`（ti6o）因重复计入4,000已按duplicate撤下，保留审核历史；两条经offer_id及OfficeAce标题/URL检索均无关联leads.id，内部如实记为无关联线索号。华为云活动页明确两阶段另得，可合计一次；每日登录1,000是独立周期，不并入。https://activity.huaweicloud.com/828_promotion/index.html
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - 码道福利不是仅GLM：当前四款专属福利模型deepseek-v4.1-flash、glm-5.3-flash、deepseek-v4-flash-0731、deepseek-v4-pro-0813，共享每位用户每日1000万Token（不逐模型乘4）；所有用户登录自动领，24:00 UTC+8清零，与积分包不互通。IDE/插件2026-08-19 22:00、桌面/网页9-15、小程序9-17开始；截止另行通知。同平台输入价缺口时不能拿火山/智谱价格替代。https://support.huaweicloud.com/offers-codeartsagent/codeartsagent_offers_0001.html
 - OfficeAce官网首次注册登录赠4000积分，与个人体验版基础500（一次发放、不失效）是不同来源；不把两者混称、直接相加或把500永不过期套到活动4000。积分用于推理、解析、工具；2026-10-08 复核：官网仍列首次注册登录赠4000及首次体验500；华为云828活动页明确“首次注册，解锁4000积分”“首次体验，再得500积分”，支持两份奖励叠加合计4500（4000有效期未注明，500不过期）。同页列每日登录1000、当日有效，须单独核实当前领取条件，不计入一次性奖励或无限累加；活动页条款不能据页名猜活动截止。https://activity.huaweicloud.com/828_promotion/index.html 。没有加购单价时按最低套餐费率折算：个人标准版 ¥98 含 2,000 积分 ≈ ¥0.049/积分，并在额度里写明（2026-10-03 批量审核）。https://www.huaweicloud.com/product/officeace.html https://support.huaweicloud.com/price-officeace/officeace_05_0003.html
