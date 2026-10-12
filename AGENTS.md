@@ -18,4 +18,5 @@
 - 检索优先用 `rg`；具体运维命令见 [operations.md](docs/operations.md)。
 - 收尾区分本地提交、远端推送、部署和线上核验；不要从测试通过推断已上线。
 - 文档职责见 [索引](docs/README.md)，运行与发布按 [运维说明](docs/operations.md)；带日期的审核/事故/整理凭证只证明当次快照，发布前实时核对。
+- Mem0 可用时按任务检索 `app_id=AI_Freebies` 的项目记忆（仓库 `accesaver-byte/ai-yangmao`）；代码与现役文档优先于记忆。仅在用户明确要求时增改记忆，不存密钥、生产数据或过时发布快照。
 - 本项目 Codex/Grok 的 yangmao-review 链接统一指向仓库副本；外部全局技能库不自动同步。
