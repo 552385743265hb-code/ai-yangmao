@@ -648,6 +648,12 @@ it('R02 offerless claim cards let administrators inspect and explicitly preview 
  await f.run('admQueue()');const card=f.document.querySelector('[data-identity-task="claim-task"]')!;expect(card.querySelector('[data-identity-claim-search]')).not.toBeNull();card.querySelector('[data-identity-claim-search]')!.dispatchEvent(new f.window.Event('click'));await pause();expect(card.textContent).toContain('Original claim evidence');card.querySelector('[data-identity-claim-choice]')!.dispatchEvent(new f.window.Event('click'));
  (card.querySelector('[data-identity-reason]') as HTMLInputElement).value='核对两份官方原文确为同一项已拒奖励';card.querySelector('[data-identity-action="same_claim"]')!.dispatchEvent(new f.window.Event('click'));expect(sent).toHaveLength(0);expect(card.querySelector('[data-identity-preview]')!.textContent).toContain('原拒绝');card.querySelector('[data-identity-confirm]')!.dispatchEvent(new f.window.Event('click'));await pause();expect(sent[0]).toMatchObject({action:'same_claim',candidateId:'c-new',decisionId:'original-refusal',expectedRevision:2});
 });
+it('original-refusal lookup uses the verified preparation product when candidate facts are still unknown',async()=>{
+ const queries:string[]=[];const task={id:'prepared-refusal',kind:'identity',revision:2,reviewPreparation:{state:'ready',canDecide:true,productId:'vendor',scanned:0},historyOptions:[],sources:[{candidateId:'c',final_url:'https://vendor.example/new',quotes:[{id:'q',quote:'Official grant'}],facts:{issuerProductId:{state:'unknown'},mechanism:{state:'unknown'}}}]};
+ const f=fixture(url=>{if(url.includes('/claim-decisions')){queries.push(url);return{decisions:[],nextCursor:null};}return url.includes('/identity/tasks')?{tasks:[task]}:queue([]);});await f.run('admQueue()');
+ f.document.querySelector('[data-identity-task="prepared-refusal"] [data-identity-claim-search]')!.dispatchEvent(new f.window.Event('click'));await pause();
+ expect(queries[0]).toContain('productId=vendor');
+});
 it('R02 an offerless evidence reopen requires identity resolution before any approval control',async()=>{
  const task={id:'reopen-claim',kind:'evidence_reopen',entity:null,revision:0,sources:[{candidateId:'c',final_url:'https://vendor.example',quotes:[],facts:{}}]};const f=fixture(url=>url.includes('/identity/tasks')?{tasks:[task]}:queue([]));await f.run('admQueue()');const card=f.document.querySelector('[data-identity-task="reopen-claim"]')!;expect(card.querySelector('[data-identity-action="new"]')).not.toBeNull();expect(card.querySelector('[data-identity-action="approve"]')).toBeNull();
 });
@@ -724,7 +730,7 @@ it('identity review shows the real incoming benefit and withholds identity decis
  f.run(`renderIdentityTasks(document.querySelector('#admBody'),{tasks:[{id:'unproven',kind:'identity',revision:2,candidateDisplay:{title:'Qoder 限时免费模型',valueText:'调用不消耗 Credits',platformId:'qoder'},reviewPreparation:{state:'history_incomplete',canDecide:false,reason:'历史活动尚未查完'},sources:[{candidateId:'candidate',final_url:'https://vendor.example/notice',quotes:[{quote:'调用该模型不消耗 Credits'}],provenance:{sourceVerified:true,productId:'qoder'}}],entity:null}]})`);
  const card=f.document.querySelector('[data-identity-task="unproven"]')!;
  expect(card.textContent).toContain('Qoder 限时免费模型');expect(card.textContent).toContain('调用不消耗 Credits');expect(card.textContent).toContain('历史活动尚未查完');
- expect(card.querySelector('[data-identity-action]')).toBeNull();expect(card.querySelector('[data-identity-target]')).toBeNull();
+ expect(card.querySelector('[data-identity-action="new"], [data-identity-action="same"], [data-identity-action="approve"]')).toBeNull();expect(card.querySelector('[data-identity-target]')).toBeNull();
 });
 it('an imminent identity card shows deadline priority but still withholds the identity decision',()=>{
  const f=fixture(()=>queue([]));f.run(`renderIdentityTasks(document.querySelector('#admBody'),{tasks:[{id:'expiring',kind:'identity',revision:0,candidateDisplay:{title:'临期福利'},reviewPreparation:{state:'needs_system_review',canDecide:false,urgency:'imminent',deadline:'2026-10-14',nextAttemptAt:'2026-10-12T07:00:00Z',reason:'系统仍在核对历史活动'},sources:[]}]})`);
@@ -736,10 +742,38 @@ it('an urgent verified candidate offers a bounded immediate history check withou
  const task={id:'urgent-manual',kind:'identity',revision:0,candidateDisplay:{title:'即将结束的权益'},reviewPreparation:{state:'needs_system_review',canDecide:false,urgency:'imminent',deadline:'2026-10-14',reason:'系统仍在核对历史活动'},sources:[{candidateId:'candidate',final_url:'https://vendor.example/notice',quotes:[],provenance:{sourceVerified:true,truncated:false}}]};
  const f=fixture((url,init)=>{if(init?.method==='POST'){writes.push({url,body:JSON.parse(String(init.body))});prepared=true;return{status:'ready',revision:1};}if(url.includes('/identity/tasks'))return{tasks:[prepared?{...task,revision:1,reviewPreparation:{...task.reviewPreparation,state:'ready',canDecide:true,scanned:0},historyOptions:[]}:task]};return queue([]);});
  await f.run('admQueue()');let card=f.document.querySelector('[data-identity-task="urgent-manual"]')!;
- const button=card.querySelector('[data-identity-prepare-now]');expect(button).not.toBeNull();expect(card.querySelector('[data-identity-action]')).toBeNull();
+ const button=card.querySelector('[data-identity-prepare-now]');expect(button).not.toBeNull();expect(card.querySelector('[data-identity-action="new"], [data-identity-action="same"]')).toBeNull();
  button!.dispatchEvent(new f.window.Event('click'));await pause();await pause();
  expect(writes).toHaveLength(1);expect(writes[0].url).toContain('/identity/tasks/urgent-manual/prepare');expect(writes[0].body.expectedRevision).toBe(0);
  card=f.document.querySelector('[data-identity-task="urgent-manual"]')!;expect(card.querySelector('[data-identity-action="new"]')).not.toBeNull();
+});
+it('any verified candidate can request immediate history preparation before identity decisions',()=>{
+ const f=fixture(()=>queue([]));f.run(`renderIdentityTasks(document.querySelector('#admBody'),{tasks:[{id:'ordinary-verified',kind:'identity',revision:0,reviewPreparation:{state:'needs_system_review',canDecide:false,urgency:null,reason:'系统仍在核对'},sources:[{candidateId:'candidate',provenance:{sourceVerified:true,truncated:false},quotes:[]}]}]})`);
+ const card=f.document.querySelector('[data-identity-task="ordinary-verified"]')!;
+ expect(card.querySelector('[data-identity-prepare-now]')).not.toBeNull();expect(card.querySelector('[data-identity-action="new"]')).toBeNull();
+});
+it('an unverified single candidate can be explicitly rejected early only after a reason and confirmation',async()=>{
+ const writes:any[]=[];const task={id:'known-duplicate',kind:'identity',revision:2,candidateDisplay:{title:'重复报送候选'},reviewPreparation:{state:'needs_source',canDecide:false,reason:'来源尚待核实'},sources:[{candidateId:'candidate-1',final_url:'https://example.invalid/report',provenance:{sourceVerified:false},quotes:[]}]};
+ const f=fixture((url,init)=>{if(init?.method==='POST'){writes.push({url,body:JSON.parse(String(init.body))});return {decisionId:'decision',publicationRevision:0};}return url.includes('/identity/tasks')?{tasks:[task]}:queue([]);});await f.run('admQueue()');
+ const card=f.document.querySelector('[data-identity-task="known-duplicate"]')!;
+ const reject=card.querySelector('[data-identity-early-review] [data-identity-action="reject"]');expect(reject).not.toBeNull();
+ reject!.dispatchEvent(new f.window.Event('click'));expect(writes).toHaveLength(0);expect(card.querySelector('[data-identity-confirm]')).toBeNull();
+ (card.querySelector('[data-identity-reason]') as HTMLInputElement).value='已核对原拒绝记录与同一权益规则';
+ reject!.dispatchEvent(new f.window.Event('click'));expect(writes).toHaveLength(0);
+ card.querySelector('[data-identity-confirm]')!.dispatchEvent(new f.window.Event('click'));await pause();
+ expect(writes).toHaveLength(1);expect(writes[0].url).toContain('/identity/tasks/known-duplicate/resolve');
+ expect(writes[0].body).toMatchObject({action:'reject',expectedRevision:2,scope:{kind:'claim',candidateId:'candidate-1'}});
+});
+it('an unresolved candidate can be marked as suspected duplicate without a rejection or publication decision',async()=>{
+ const writes:any[]=[];const task={id:'hint-task',kind:'identity',revision:4,candidateDisplay:{title:'可疑重复'},reviewPreparation:{state:'needs_source',canDecide:false,reason:'来源待核'},sources:[{candidateId:'candidate',final_url:'https://example.invalid/notice',provenance:{sourceVerified:false},quotes:[]}]};
+ const f=fixture((url,init)=>{if(init?.method==='POST'){writes.push({url,body:JSON.parse(String(init.body))});return {revision:5,state:'manual'};}return url.includes('/identity/tasks')?{tasks:[task]}:queue([]);});await f.run('admQueue()');
+ const card=f.document.querySelector('[data-identity-task="hint-task"]')!;
+ const mark=card.querySelector('[data-identity-hint="suspected_duplicate"]');expect(mark).not.toBeNull();
+ mark!.dispatchEvent(new f.window.Event('click'));expect(writes).toHaveLength(0);
+ (card.querySelector('[data-identity-reason]') as HTMLInputElement).value='与此前核对过的同一官方活动重复';
+ mark!.dispatchEvent(new f.window.Event('click'));await pause();
+ expect(writes).toHaveLength(1);expect(writes[0].url).toContain('/identity/tasks/hint-task/hint');
+ expect(writes[0].body).toMatchObject({expectedRevision:4,kind:'suspected_duplicate',reason:'与此前核对过的同一官方活动重复'});
 });
 it('completed identity scan offers named historical activities without asking the reviewer to type an internal ID',async()=>{
  const requests:any[]=[];
@@ -764,7 +798,7 @@ it('a product with more history than the task snapshot requires complete paged c
  const f=fixture(url=>url.includes('/comparisons')?url.includes('cursor=next')?{entries:[{entityId:'last',offerId:'old-201',title:'最后一项',valueText:'20 USD'}],complete:true,nextCursor:null,issuerProductId:'vendor'}:{entries:[{entityId:'first',offerId:'old-1',title:'第一项',valueText:'10 USD'}],complete:false,nextCursor:'next',issuerProductId:'vendor'}:queue([]));
  f.run(`renderIdentityTasks(document.querySelector('#admBody'),{tasks:[${JSON.stringify(task)}]})`);
  let card=f.document.querySelector('[data-identity-task="large-history"]')!;
- expect(card.querySelector('[data-identity-action]')).toBeNull();expect(card.querySelector('[data-identity-load-history]')).not.toBeNull();
+ expect(card.querySelector('[data-identity-action="new"], [data-identity-action="same"]')).toBeNull();expect(card.querySelector('[data-identity-load-history]')).not.toBeNull();
  card.querySelector('[data-identity-load-history]')!.dispatchEvent(new f.window.Event('click'));await pause();await pause();
  card=f.document.querySelector('[data-identity-task="large-history"]')!;
  expect(card.textContent).toContain('最后一项');expect(card.querySelector('[data-identity-action="same"]')).not.toBeNull();

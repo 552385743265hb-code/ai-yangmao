@@ -45,6 +45,9 @@ try{
  const urgentEnd=new Date(Date.now()+2*86400_000).toISOString().slice(0,10),urgent=await makeTimedTask('imminent-benefit',urgentEnd);
  const priority=await call('ingest/identity-preparations');assert.equal(priority.tasks[0].id,urgent.taskId);assert.ok(priority.tasks.some(task=>task.id===older.taskId));
  const immediately=await call('admin/identity/tasks/'+urgent.taskId+'/prepare',{requestId:'immediate-history-check',expectedRevision:0},true);assert.equal(immediately.status,'ready');
+ const hinted=await call('admin/identity/tasks/'+older.taskId+'/hint',{requestId:'manual-duplicate-hint',expectedRevision:0,kind:'suspected_duplicate',reason:'Synthetic reviewer noticed the same official campaign already exists'},true);assert.equal(hinted.revision,1);
+ const hintedScan=await call('admin/identity/tasks/'+older.taskId+'/prepare',{requestId:'hinted-history-check',expectedRevision:hinted.revision},true);assert.equal(hintedScan.status,'ready');
+ const hintedTask=await db.prepare('SELECT suggestion_json FROM review_tasks WHERE id=?').bind(older.taskId).first();assert.equal(JSON.parse(hintedTask.suggestion_json).manualHint.kind,'suspected_duplicate');
  assert.equal((await db.prepare('SELECT count(*) n FROM offers').first()).n,before.offers);assert.equal((await db.prepare('SELECT count(*) n FROM review_decisions').first()).n,before.decisions);
 
  assert.deepEqual((await db.prepare('PRAGMA foreign_key_check').all()).results,[]);

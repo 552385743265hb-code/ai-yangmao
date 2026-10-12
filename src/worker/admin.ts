@@ -65,7 +65,7 @@ export const admin = new Hono<{ Bindings: Env; Variables: { role: 'admin' | 'rev
 /** 审核员能用的接口：看待审、通过、拒绝、修改、核验记录、线索、补录、补信源、送交平台准入。 */
 const REVIEWER_ALLOWED: [string, RegExp][] = [
   ['GET', /^\/memberships(?:\/[^/]+\/impact)?$/], ['POST', /^\/memberships$/],
-  ['GET', /^\/identity\/tasks$/], ['GET', /^\/identity\/tasks\/[^/]+\/comparisons$/], ['POST', /^\/identity\/tasks\/[^/]+\/(prepare|resolve)$/],
+  ['GET', /^\/identity\/tasks$/], ['GET', /^\/identity\/tasks\/[^/]+\/comparisons$/], ['POST', /^\/identity\/tasks\/[^/]+\/(hint|prepare|resolve)$/],
   ['GET', /^\/(whoami|queue|leads)$/], ['GET', /^\/offers\/[^/]+$/],
   ['POST', /^\/offers\/[^/]+\/(approve|reject|edit|memo|note|retested|suggest|official-retry)$/],
   ['POST', /^\/leads\/\d+\/(dismiss|reviewing|retry|resolve)$/], ['POST', /^\/(manual|sources|platforms)$/],
