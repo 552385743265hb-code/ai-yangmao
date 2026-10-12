@@ -1,3 +1,5 @@
+import {fetchPage} from './lib';
+import {fetchedSource} from './fetch-evidence';
 import { z } from 'zod';
 import { api } from './lib';
 import { intakeReceiptSchema } from '../src/shared/identity/types';
@@ -21,6 +23,29 @@ export async function resumeIdentityIntake(deadlineAt:number):Promise<IdentityMa
   try {const receipt=intakeReceiptSchema.parse(await api('/identity-candidates/'+encodeURIComponent(candidate.id)+'/resolve',{requestId:crypto.randomUUID(),expectedRevision:candidate.revision}));if(receipt.retryable)stats.deferred++;else stats.resolved++;}
   catch {stats.deferred++;}
  }
+ // Preparation is a bounded read of existing history. Failed official fetches remain deferred.
+ try {
+  const prepared=z.object({tasks:z.array(z.object({id:z.string(),revision:z.number().int()})).max(4)}).parse(await api('/identity-preparations'));
+  for(const task of prepared.tasks){
+   let revision=task.revision;
+   for(let page=0;page<4&&Date.now()<deadlineAt;page++){
+    try {
+     let outcome=await api<{status:string;revision:number}>('/identity-preparations/'+encodeURIComponent(task.id)+'/scan',{requestId:crypto.randomUUID(),expectedRevision:revision});revision=outcome.revision;
+     if(outcome.status==='needs_source'){
+      const source=await api<{url:string;officialSource:boolean;issuerProductHint:string|null}>('/identity-preparations/'+encodeURIComponent(task.id)+'/source');
+      if(source.officialSource&&source.issuerProductHint){
+       try {const page=await fetchPage(source.url,{tries:1,timeoutMs:10000,minimumTextLength:120});const proof=fetchedSource(page);
+        if(proof.sourceText&&proof.sourceFetch?.sourceVerified&&!proof.sourceFetch.truncated)outcome=await api('/identity-preparations/'+encodeURIComponent(task.id)+'/scan',{requestId:crypto.randomUUID(),expectedRevision:revision,freshSource:proof});
+       }catch{stats.deferred++;}
+      }else stats.deferred++;
+     }
+     if(outcome.status==='ready')break;
+     if(outcome.status!=='scanning')break;
+     revision=outcome.revision;
+    }catch{stats.deferred++;break;}
+   }
+  }
+ }catch{stats.deferred++;}
  if(process.env.IDENTITY_MODEL_ASSIST!=='true'||Date.now()>=deadlineAt)return stats;
  const tasks=z.object({tasks:z.array(z.object({id:z.string(),revision:z.number().int()})).max(4)}).parse(await api('/identity-tasks'));
  for(const task of tasks.tasks){

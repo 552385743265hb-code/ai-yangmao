@@ -652,7 +652,7 @@ it('R02 an offerless evidence reopen requires identity resolution before any app
  const task={id:'reopen-claim',kind:'evidence_reopen',entity:null,revision:0,sources:[{candidateId:'c',final_url:'https://vendor.example',quotes:[],facts:{}}]};const f=fixture(url=>url.includes('/identity/tasks')?{tasks:[task]}:queue([]));await f.run('admQueue()');const card=f.document.querySelector('[data-identity-task="reopen-claim"]')!;expect(card.querySelector('[data-identity-action="new"]')).not.toBeNull();expect(card.querySelector('[data-identity-action="approve"]')).toBeNull();
 });
 it('R03 budget-sized manual history checks continue with the same request and keep the task actionable',async()=>{
- const sent:any[]=[];const task={id:'paged-task',kind:'identity',revision:3,sources:[{candidateId:'c',final_url:'https://vendor.example',quotes:[{id:'q',quote:'Known new activity'}],facts:{}}]};
+ const sent:any[]=[];const task={id:'paged-task',kind:'identity',revision:3,sources:[{candidateId:'c',final_url:'https://vendor.example',quotes:[{id:'q',quote:'Known new signup activity'}],facts:{issuerProductId:{state:'known',value:'vendor',evidenceRefs:['q']},mechanism:{state:'known',value:'signup_grant',evidenceRefs:['q']}}}]};
  const f=fixture((url,init)=>{if(init?.method==='POST'){sent.push(JSON.parse(String(init.body)));return sent.length===1?{outcome:'deferred',retryable:true,reasonCodes:['manual_history_continue']}:{outcome:'created_pending'};}return url.includes('/identity/tasks')?{tasks:[task]}:queue([]);});await f.run('admQueue()');const card=f.document.querySelector('[data-identity-task="paged-task"]')!;(card.querySelector('[data-identity-reason]') as HTMLInputElement).value='Verified an independent new benefit.';card.querySelector('[data-identity-action="new"]')!.dispatchEvent(new f.window.Event('click'));const confirm=card.querySelector('[data-identity-confirm]') as HTMLButtonElement;confirm.dispatchEvent(new f.window.Event('click'));await pause();expect(confirm.disabled).toBe(false);expect(card.textContent).toContain('继续检查');confirm.dispatchEvent(new f.window.Event('click'));await pause();expect(sent).toHaveLength(2);expect(sent[1]).toEqual(sent[0]);expect(confirm.disabled).toBe(true);
 });
 it('R04 a published card submits its visibility token rather than a draft review token',async()=>{
@@ -705,4 +705,39 @@ describe('membership draft saving without implicit approval',()=>{
     expect(page.run('saveMessages.join("；")')).toContain(live?'已保存':'草稿已保存，尚未通过上架');
     if(live)expect(page.run('saveMessages.join("；")')).not.toContain('草稿');
   });
+});
+it('identity review shows the real incoming benefit and withholds identity decisions while system history is incomplete',()=>{
+ const f=fixture(()=>queue([]));
+ f.run(`renderIdentityTasks(document.querySelector('#admBody'),{tasks:[{id:'unproven',kind:'identity',revision:2,candidateDisplay:{title:'Qoder 限时免费模型',valueText:'调用不消耗 Credits',platformId:'qoder'},reviewPreparation:{state:'history_incomplete',canDecide:false,reason:'历史活动尚未查完'},sources:[{candidateId:'candidate',final_url:'https://vendor.example/notice',quotes:[{quote:'调用该模型不消耗 Credits'}],provenance:{sourceVerified:true,productId:'qoder'}}],entity:null}]})`);
+ const card=f.document.querySelector('[data-identity-task="unproven"]')!;
+ expect(card.textContent).toContain('Qoder 限时免费模型');expect(card.textContent).toContain('调用不消耗 Credits');expect(card.textContent).toContain('历史活动尚未查完');
+ expect(card.querySelector('[data-identity-action]')).toBeNull();expect(card.querySelector('[data-identity-target]')).toBeNull();
+});
+it('completed identity scan offers named historical activities without asking the reviewer to type an internal ID',async()=>{
+ const requests:any[]=[];
+ const task={id:'readable-task',kind:'identity',revision:3,candidateDisplay:{title:'新人赠额候选',valueText:'10 USD'},reviewPreparation:{state:'ready',canDecide:true,productId:'vendor',scanned:1,reason:'历史活动已核对'},historyOptions:[{entityId:'old-entity',offerId:'old-offer',title:'旧的注册礼',valueText:'10 USD',sourceUrl:'https://vendor.example/old'}],sources:[{candidateId:'candidate',final_url:'https://vendor.example/new',quotes:[{id:'benefit',quote:'Signup grants 10 USD.'}],facts:{schemaVersion:'terms-v1',issuerProductId:{state:'unknown'},mechanism:{state:'unknown'},benefitPools:[],eligibility:{state:'unknown'},geography:{state:'unknown'},claimChannels:{state:'unknown'},costs:{state:'unknown'},claimWindow:{state:'unknown'},occurrenceAnchor:{state:'unknown'}}}]};
+ const f=fixture((url,init)=>{if(init?.method==='POST'){requests.push(JSON.parse(String(init.body)));return {outcome:'duplicate_pending'};}return url.includes('/identity/tasks')?{tasks:[task]}:queue([]);});await f.run('admQueue()');const card=f.document.querySelector('[data-identity-task="readable-task"]')!;
+ expect(card.textContent).toContain('新人赠额候选');expect(card.textContent).toContain('旧的注册礼');expect(card.querySelector('input[data-identity-target]')).toBeNull();
+ expect(card.querySelector('[data-identity-guidance]')?.textContent).toContain('系统建议');
+ const choice=card.querySelector('select[data-identity-target]') as HTMLSelectElement;expect(choice).not.toBeNull();choice.querySelector('option[value="old-entity"]')!.setAttribute('selected','');(card.querySelector('[data-identity-mechanism] option[value="signup_grant"]') as HTMLOptionElement).setAttribute('selected','');(card.querySelector('[data-identity-reason]') as HTMLInputElement).value='已核对官方注册条件与同一次活动';
+ card.querySelector('[data-identity-action="same"]')!.dispatchEvent(new f.window.Event('click'));card.querySelector('[data-identity-confirm]')!.dispatchEvent(new f.window.Event('click'));await pause();expect(requests[0].entityId).toBe('old-entity');
+});
+it('a newly verified replacement source is labeled as such when the archived source was indirect',()=>{
+ const f=fixture(()=>queue([]));f.run(`renderIdentityTasks(document.querySelector('#admBody'),{tasks:[{id:'refetched',kind:'identity',revision:1,candidateDisplay:{title:'重新核实的候选'},reviewPreparation:{state:'ready',canDecide:true,productId:'vendor',scanned:0,reason:'已核实',sourceReverified:true,sourceCandidateId:'c',sourceUrl:'https://vendor.example/new'},historyOptions:[],sources:[{candidateId:'c',final_url:'https://vendor.example/old',quotes:[{id:'q',quote:'Official benefit quote'}],facts:{mechanism:{state:'unknown'}},provenance:{sourceVerified:false,productId:null}}]}]})`);
+ const card=f.document.querySelector('[data-identity-task="refetched"]')!;expect(card.textContent).toContain('已重新核验这一段官方原文');expect(card.textContent).not.toContain('来源尚待核实');
+});
+it('one refreshed candidate cannot mark another indirect source as verified',()=>{
+ const f=fixture(()=>queue([]));f.run(`renderIdentityTasks(document.querySelector('#admBody'),{tasks:[{id:'mixed-sources',kind:'identity',revision:1,reviewPreparation:{state:'ready',canDecide:true,sourceReverified:true,sourceCandidateId:'first'},historyOptions:[],sources:[{candidateId:'first',final_url:'https://vendor.example/first',quotes:[],provenance:{sourceVerified:true}},{candidateId:'second',final_url:'https://other.example/second',quotes:[],provenance:{sourceVerified:false}}]}]})`);
+ const text=f.document.querySelector('[data-identity-task="mixed-sources"]')!.textContent||'';
+ expect(text).toContain('已重新核验这一段官方原文');expect(text).toContain('来源尚待核实');
+});
+it('a product with more history than the task snapshot requires complete paged comparison before review',async()=>{
+ const task={id:'large-history',kind:'identity',revision:6,candidateDisplay:{title:'新人福利'},reviewPreparation:{state:'ready',canDecide:true,productId:'vendor',scanned:201,reason:'历史活动较多'},historyOptions:[{entityId:'first',offerId:'old-1',title:'第一项',valueText:'10 USD'}],sources:[{candidateId:'candidate',final_url:'https://vendor.example/current',quotes:[],facts:{mechanism:{state:'unknown'}}}]};
+ const f=fixture(url=>url.includes('/comparisons')?url.includes('cursor=next')?{entries:[{entityId:'last',offerId:'old-201',title:'最后一项',valueText:'20 USD'}],complete:true,nextCursor:null,issuerProductId:'vendor'}:{entries:[{entityId:'first',offerId:'old-1',title:'第一项',valueText:'10 USD'}],complete:false,nextCursor:'next',issuerProductId:'vendor'}:queue([]));
+ f.run(`renderIdentityTasks(document.querySelector('#admBody'),{tasks:[${JSON.stringify(task)}]})`);
+ let card=f.document.querySelector('[data-identity-task="large-history"]')!;
+ expect(card.querySelector('[data-identity-action]')).toBeNull();expect(card.querySelector('[data-identity-load-history]')).not.toBeNull();
+ card.querySelector('[data-identity-load-history]')!.dispatchEvent(new f.window.Event('click'));await pause();await pause();
+ card=f.document.querySelector('[data-identity-task="large-history"]')!;
+ expect(card.textContent).toContain('最后一项');expect(card.querySelector('[data-identity-action="same"]')).not.toBeNull();
 });
