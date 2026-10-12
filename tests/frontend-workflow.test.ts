@@ -280,7 +280,7 @@ describe('V1 valuation across public pages', () => {
     expect(page.document.querySelector('[data-detail-value]')!.textContent).toContain('价值待定');
     expect(page.document.querySelector('[data-detail-value]')!.textContent).not.toContain('$0');
     page.run("pOffer('future')");
-    expect(page.document.querySelector('[data-valuation]')!.textContent).toContain('已审核估值口径');
+    expect(page.document.querySelector('[data-valuation]')!.textContent).toContain('缺少完整计算依据');
     expect(page.document.querySelector('[data-valuation]')!.textContent).not.toContain('按 V1');
   });
   it('plots an application model reference separately from real grant caps without inventing an award amount', () => {

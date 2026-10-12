@@ -191,7 +191,11 @@ const VALUE_METHOD = { face_value: '官方面额', official_price: '官方价格
 const VALUE_STATUS = { beta_unpriced: '公测免费 · 价值待定', unpriceable: '免费权益 · 暂无法折算', needs_judgment: '估值待核实' };
 const VALUE_GROUPS = [['official', '官方口径', 0], ['scenario', '用量估算', 3]];
 // Present existing valuation records in plain Chinese without changing their inputs.
-const valuationText = text => String(text ?? '').replace(/(?:首|前)\s*30\s*天/g, '一个月');
+const valuationText = text => String(text ?? '').replace(/(?:首|前)\s*30\s*天/g, '一个月')
+  .replace(/\b(text|coding|image|video|stt|tts)[-_]v[12]\b/gi, (_, kind) => ({ text: '文本标准用量', coding: '编程标准用量', image: '图像标准用量', video: '视频标准用量', stt: '转写标准用量', tts: '语音合成标准用量' })[kind.toLowerCase()])
+  .replace(/编程-v1\b/gi, '编程标准用量')
+  .replace(/本轮管理员指定医疗场景为普通文本用量30倍/g, '此处假设医疗场景使用普通文本用量的30倍')
+  .replace(/(?:本轮|本次)?管理员(?:本次|本轮)?(?:明确)?(?:指定|选择|采用|接受)/g, '本项估算采用');
 const validAmount = n => typeof n === 'number' && Number.isFinite(n) && n >= 0 ? n : null;
 const valuationOf = o => ['v1', 'v2'].includes(o?.valuation?.version) ? o.valuation : null;
 const isPriced = o => { const v = valuationOf(o); return !!v && ['priced', 'provisional'].includes(v.status) && ['face_value', 'official_price', 'scenario'].includes(v.method); };
@@ -212,18 +216,18 @@ function valueSummary(list) {
   const official = by('official'), scenario = by('scenario');
   return { official: sum(official, valueNumber), scenario: sum(scenario, valueNumber), officialN: official.length, scenarioN: scenario.length, priced: official.length + scenario.length, total: pool.length, unknown: pool.filter(o => valueNumber(o) == null).length, legacy: pool.filter(o => !valuationOf(o)).length };
 }
-const coverageText = s => `已计价 ${s.priced}/${s.total} 条${s.unknown ? ` · ${s.unknown} 条价值待定` : ''}${s.legacy ? `（含 ${s.legacy} 条尚未重估）` : ''}`;
+const coverageText = s => `已计价 ${s.priced}/${s.total} 条${s.unknown ? ` · ${s.unknown} 条价值待定` : ''}`;
 const summaryAmount = (s, group) => s[group + 'N'] ? `${group === 'scenario' ? '≈ ' : ''}${money(s[group])}` : '暂无已计价金额';
 const summaryText = s => `官方口径 ${summaryAmount(s, 'official')} · 用量估算 ${summaryAmount(s, 'scenario')} · ${coverageText(s)}`;
 const summaryHtml = list => { const s = valueSummary(list); return `<div class="valuation-summary"><span>官方口径 <b>${summaryAmount(s, 'official')}</b></span><span>用量估算 <b>${summaryAmount(s, 'scenario')}</b></span><small>${coverageText(s)} · 统一按一个月比较，申请制另列</small></div>`; };
 function valuePeriod(o) {
   const v = valuationOf(o);
-  if (!v) return '旧值 · 周期待重估';
+  if (!v) return '价值待定';
   if (o.ty === 'apply') return isApplyBenchmark(o) ? '月度使用方案参考' : '完整申请权益上限';
   return { one_time: '一次性 · 月度参考', monthly: '每月刷新 · 月度参考', first30: '月度参考', apply_max: '最高可申请' }[v.period] || '月度参考';
 }
 function valueTag(o) {
-  const v = valuationOf(o), method = isReferenceBenchmark(o) ? (v.method === 'scenario' ? '模型成本参照' : '套餐价格参照') : v ? VALUE_METHOD[v.method] : '旧值未重估';
+  const v = valuationOf(o), method = isReferenceBenchmark(o) ? (v.method === 'scenario' ? '模型成本参照' : '套餐价格参照') : v ? VALUE_METHOD[v.method] : '计算依据待补充';
   return `<span class="value-tag ${valueGroup(o) || 'unknown'}">${esc(method)}${v?.status === 'provisional' ? ' · 暂定' : ''}</span>`;
 }
 const valueAssumption = o => { const v = valuationOf(o); return valuationText((v?.assumptions || []).find(x => /期限|持续|截止|覆盖|\d+\s*天|duration|days?/i.test(x)) || v?.assumptions?.[0] || (v?.coverage?.days ? `估值覆盖 ${v.coverage.days} 天` : '')); };
@@ -248,7 +252,7 @@ function detailValueLabel(o, alternative) {
 }
 function valuationBlock(o) {
   const v = valuationOf(o);
-  if (!v) return `<div class="card" data-valuation><h3>估值说明</h3><p class="sub">旧参考金额尚未按已审核估值口径重估，比较周期与依据待确认；不计入美元排行和汇总。</p></div>`;
+  if (!v) return `<div class="card" data-valuation><h3>估值说明</h3><p class="sub">当前金额缺少完整计算依据，暂不参与金额排行和汇总。</p></div>`;
   const alternatives = valuationAlternatives(o);
   const internalInputKeys = new Set(['alternatives', 'usageVersion', 'ruleIds', 'calculationEngine', 'sourceBindings']);
   const inputs = Object.entries(v.inputs || {}).filter(([key]) => !internalInputKeys.has(key)), sources = (v.sources || []).filter(s => { try { return ['https:', 'http:'].includes(new URL(s.url).protocol); } catch { return false; } });
@@ -802,7 +806,7 @@ function pAll() {
     ${sel('f-c', '领取方式', [['', '全部方式'], ...Object.entries(CLAIM)])}
     ${sel('f-p', '平台', [['', '全部平台'], ...PLATFORMS.filter(p => OFFERS.some(o => o.p === p.id)).map(p => [p.id, p.name])])}
     ${sel('f-st', '状态', [['claimable', '现在或即将可领'], ['', '全部状态'], ['active', '进行中'], ['ending', '即将结束'], ['upcoming', '未开始'], ['standing', '常驻'], ['stale', '待核验'], ['ended', '已结束']])}
-    ${sel('f-value', '估值方法', [['', '全部方法'], ['official', '仅看官方价值'], ['scenario', '用量估算'], ['unknown', '价值待定 / 未重估']])}
+    ${sel('f-value', '估值方法', [['', '全部方法'], ['official', '仅看官方价值'], ['scenario', '用量估算'], ['unknown', '价值待定']])}
     ${sel('f-sort', '排序', [['score', '薅度分高'], ['new', '新上架'], ['end', '快截止'], ['value', '月度参考价值高']])}
   </div>
   <div class="row small muted" style="justify-content:space-between;margin-bottom:10px"><span id="allCount"></span><button class="btn sm" type="button" id="resetF">清空筛选</button></div>
