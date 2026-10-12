@@ -11,7 +11,7 @@ function catalog(){f.sqlite.prepare('UPDATE membership_catalog SET revision=1,da
 it('catalog writes require authorization, create pending identities and reject concurrent stale writers',async()=>{
  const no=await f.call('admin/memberships',{kind:'product',name:'Vendor',sourceUrl:'https://vendor.example/plans',expectedCatalogRevision:0});expect(no.status).toBe(401);
  const created=await f.call('admin/memberships',{kind:'product',name:'Vendor',sourceUrl:'https://vendor.example/plans',expectedCatalogRevision:0},true);expect(created.status).toBe(201);expect(created.body.entry.status).toBe('pending');
- expect((await f.call('memberships')).body.products).toHaveLength(0);
+ expect((await f.call('memberships')).body.products).toEqual([created.body.entry]);
  expect((await f.call('admin/memberships',{kind:'product',name:'Other',sourceUrl:'https://other.example',expectedCatalogRevision:0},true)).status).toBe(409);
  const verified=await f.call('admin/memberships/'+created.body.entry.id+'/verify',{kind:'product',expectedCatalogRevision:1,expectedRevision:1,acknowledgeAffectedOffers:true},true);expect(verified.status).toBe(200);
  expect((await f.call('memberships')).body.products).toHaveLength(1);

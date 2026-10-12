@@ -3,10 +3,18 @@ import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 const source = () => readFileSync('web/src/membership.js', 'utf8');
 function context() {
- const c = vm.createContext({ structuredClone, YMMembership: { migrateLegacyMembership: (r: string[]) => ({status:r.some(x=>x.startsWith('member:'))?'needs_review':'not_required'}), matchMembership: (r: any) => r.status==='confirmed'?'yes':r.status==='not_required'?'yes':'unknown', migrateMemberSelections: () => ({subscriptions:[],unresolved:['Pro']}) }, MEMBERSHIP_CATALOG:{revision:1,products:[],plans:[]}, MEMBERSHIP_CATALOG_OK:true });
+ const c = vm.createContext({ structuredClone, esc:(s:unknown)=>String(s), C:{subscriptions:[]}, YMMembership: { migrateLegacyMembership: (r: string[]) => ({status:r.some(x=>x.startsWith('member:'))?'needs_review':'not_required'}), matchMembership: (r: any) => r.status==='confirmed'?'yes':r.status==='not_required'?'yes':'unknown', migrateMemberSelections: () => ({subscriptions:[],unresolved:['Pro']}), formatMembership:()=> 'New Vendor Pro' }, MEMBERSHIP_CATALOG:{revision:1,products:[],plans:[]}, MEMBERSHIP_CATALOG_OK:true });
  vm.runInContext(source(), c); return c;
 }
 describe('membership browser contract', () => {
+ it('shows newly recorded pending vendors to visitors without claiming eligibility', () => {
+  const c=context();
+  vm.runInContext(`MEMBERSHIP_CATALOG={revision:2,products:[{id:'new-vendor',name:'New Vendor',status:'pending'}],plans:[{id:'new-vendor-pro',productId:'new-vendor',name:'Pro',status:'pending'}]}`,c);
+  const html=vm.runInContext(`subscriptionControls()`,c);
+  expect(html).toContain('New Vendor（待核实）');
+  expect(html).toContain('data-add-subscription="new-vendor-pro"');
+  expect(html).toContain('New Vendor Pro（待核实）');
+ });
  it('treats unstructured member text as unknown without exact-string matching', () => {
   expect(vm.runInContext(`membershipResult({r:['member:Pro']},[])`, context())).toBe('unknown');
  });

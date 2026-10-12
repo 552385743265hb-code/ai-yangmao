@@ -129,7 +129,7 @@ const withStatus = (o: OfferRow, now: Date) => {
 };
 
 app.get('/api/health', c => c.json({ ok: true, time: new Date().toISOString() }));
-app.get('/api/memberships',async c=>{const catalog=await readMembershipCatalog(c.env.DB);c.header('Cache-Control','no-store');return c.json({...catalog,products:catalog.products.filter(p=>p.status!=='pending'),plans:catalog.plans.filter(p=>p.status!=='pending'&&catalog.products.some(x=>x.id===p.productId&&x.status!=='pending'))});});
+app.get('/api/memberships',async c=>{const catalog=await readMembershipCatalog(c.env.DB);c.header('Cache-Control','no-store');return c.json(catalog);});
 
 app.get('/api/meta', async c => c.json(await readCollectionStatus(c.env.DB)));
 
