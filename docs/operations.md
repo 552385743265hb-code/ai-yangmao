@@ -1,14 +1,12 @@
 # 运维说明
 
-校对日期：2026-10-09。本文描述现役命令和源码机制；当次线上版本、任务和未完成项见[整理凭证](closeout-2026-10-09.md)。字段与业务口径由[数据合同](data-contract.md)维护，文档职责见[索引](README.md)。
+校对日期：2026-10-12。本文描述现役命令和源码机制；当次线上版本、任务和未完成项见[整理凭证](closeout-2026-10-12.md)。字段与业务口径由[数据合同](data-contract.md)维护，文档职责见[索引](README.md)。
 
 ## 身份改造发布状态
 
-2026-10-10已按本次用户授权合并PR #6–#13，生产迁移到0035，并部署兼容代码 `32ccacc53d185c2754d881089077d438f2808e3f`。当前版本、线上检查和数据保留证据见 [发布凭证](dedupe-release-2026-10-10.md)；正式规格仍为 [dedupe-identity-2026-10-10](specs/dedupe-identity-2026-10-10/README.md)。
+第二、第三阶段的七个增量和后续修复已合并并发布；最初的 off 兼容上线只记录于[2026-10-10发布凭证](dedupe-release-2026-10-10.md)。强制身份去重、模型辅助和受控历史合并的后续启用及真实历史回放边界见[身份启用验证](dedupe-activation-2026-10-11.md)。运行开关、迁移台账和生产版本每次发布前实时核对，不能把旧 off 快照当当前状态。
 
-生产Worker及GitHub采集身份模式显式off，辅助模型关闭，历史apply关闭，预算未增加。第二/第三阶段代码与schema已就绪，enforce仍要求明确产品canary、全部状态对账以及冻结人工语料/资源验收；本次没有执行生产历史回填或合并。未来迁移编号以仓库和目标台账为准，不能覆盖已占用编号，始终先兼容迁移再部署Worker。
-
-关闭写入仍须保留canonical、通知映射和缓存generation读取。兼容代码以本次部署或后续经同等验证的版本为准；保留全部新表和原记录，禁止为回滚删除人工决定或释放pending/unknown送达。数据恢复、历史apply及扩大canary须另有相应授权。
+关闭身份写入仍须保留 canonical、通知映射和缓存 generation 读取；保留全部新表和原记录，禁止为回滚删除人工决定或释放 pending/unknown 送达。历史合并只能先输出 planHash 与冲突报告，再按具体授权执行；运行预算不可因文档同步扩大。
 
 ## 查询、审核与权限
 
@@ -47,11 +45,11 @@ npx tsx .claude/skills/yangmao-review/scripts/offer.ts plan <短码> patch.json
 
 Worker UTC 00:00对应东京09:00、上海08:00。Hermes未设置独立任务时区时使用调度器时区，不能从脚本“东京时间”注释推断；2026-10-09实际安装为纽约时间09:00，详见整理凭证。安装脚本会重建定时任务，不能作为文档同步命令运行。
 
-两种collect任务共用并发组、不取消正在执行的任务，默认研判最多50条。快速通道采AIHOT与社区feed，之后研判并执行官方补证；全量再处理其他官方信源和已批准条目核验。初抽最多15分钟，并给后续补证留时间；整轮40分钟工作窗口，Actions45分钟限时。
+两种collect任务共用并发组、不取消正在执行的任务，默认研判最多50条。快速通道采AIHOT与社区feed，之后研判并执行待审官方补证；全量再处理其他官方信源。已批准条目不再因旧证据页定期重抓而转待核验；新发现的明确业务变化仍生成待审更新。初抽最多15分钟，并给后续补证留时间；整轮40分钟工作窗口，Actions45分钟限时。
 
 人工补录优先；调度给自动发现留名额，并保留20%最老积压。排序只决定先后。成功入库后才标linked；部分失败、未知平台、重要福利漏抽等转reviewing，并自动进入受阻线索官方复核。取不到原文时可用备注/摘要形成媒体级稿；失效补录不无限占据new队首。后台支持状态筛选和游标分页，全部受阻线索在待审区有进度与处理入口；可筛选已关联/已结束追溯依据。详见自动官方复核文档的受阻线索环节。
 
-社区稿的固定官方搜索、机制一致性检查、占位、输入版本、退避和恢复由[自动官方复核](official-review-workflow.md)维护。普通`/api/ingest/verify`须显式传`trustedDirect:true`才刷新核验；Jina正文不经普通核验路径升级。核验或提案写入检查读取时版本，旧结果不能覆盖人工修改。approved旧版保持公开，仅有同源官方正文证明条款改变才进入提案；采集器附完整sourceText，纯模型漂移或拒绝过的同版条款不入队，合并后重新校验。新ID查重是独立入口，须同时验收；完整行为见数据合同。
+社区稿的固定官方搜索、机制一致性检查、占位、输入版本、退避和恢复由[自动官方复核](official-review-workflow.md)维护。旧采集器的 `/api/ingest/verification-queue` 返回空队列，`/api/ingest/verify` 对已批准条目只返回无需复核、不写记录；Jina正文不能借旧路径升级证据。新提案写入检查读取时版本，旧结果不能覆盖人工修改。approved旧版保持公开，仅有同源官方正文证明条款改变才进入提案；采集器附完整sourceText，纯模型漂移或拒绝过的同版条款不入队，合并后重新校验。新ID查重是独立入口，须同时验收；完整行为见数据合同。
 
 手动补跑会写线索和待审，只在任务授权范围执行：
 
@@ -75,9 +73,7 @@ gh workflow run collect.yml --ref main -f fast_leads=true -f lead_limit=50
 
 ## 证据拦截的处置
 
-重复的evidence_missing核验失败不再推进条目reviewVersion，避免同一失败不断生成新提醒；官方正文恢复时仍正常刷新核验。X/status的第一方嵌入读取须绑定ID/作者，finalUrl为验证后的原帖地址，fetchedUrl记录实际cdn.syndication.twimg.com读取地址；失败或身份不符回退普通读取，不将导航或登录页当原帖。
-
-“当前官方页面未能再次确认原条款”来自evidence_missing，和字段拦截数不同。先核对证据URL、跳转、默认页/弹窗及保存摘录；如WorkBuddy个人有效期藏在完整规则弹窗，普通抓取缺失不能直接判结束。人工读到当前官方规则后可修正摘录并用`retested`记录已核实仍有效；这不是接受更新，也不把site证据改成tested。只有管理员明确亲测过权益才用tested级别。
+已批准条目的历史 `evidence_missing` 只作诊断记录，不推进 reviewVersion、不生成重新审批任务，也不撤销已批准条款。新待审材料和真实条款变化仍须核实证据；X/status 第一方嵌入读取须绑定 ID/作者，finalUrl 为验证后的原帖地址，fetchedUrl 记录实际读取地址；失败或身份不符回退普通读取，不将导航或登录页当原帖。普通抓取缺失不能单独判定活动已结束，只有管理员明确亲测过权益才用 tested 级别。
 
 管理员亲测停止领取时，管理接口`POST /api/admin/offers/:ref/withdraw`可传`basis:"tested"`、reason及实测入口evidenceUrl；默认basis为official。withdrawnAt是确认时刻，实际截止未知仍留空。legacy条目结束会清除过时提案、退出可领和自动复核队列，历史approved记录保留；identity管理的活动保留草稿并取消旧任务/租约，显式重开后才可进入新的恢复审核。
 
@@ -85,7 +81,7 @@ gh workflow run collect.yml --ref main -f fast_leads=true -f lead_limit=50
 
 页眉“最近一次抓取”使用meta.lastCollectedAt：最近已完成collect/sweep中fetchedSources>0（兼容旧stats.ok>0或旧ok=true）的时间。仅全失败批次不更新。抓取成功与抽取/核验/入库完整成功分开，后者仍保留lastSuccessfulCollect用于后台完整性告警；页面覆盖不完整提示取最近完成批次，不因存在部分成功就假报全覆盖。meta/coverage缓存使用partial-fetch-v1版本。
 
-公开offers/platforms接口有5分钟缓存，后台no-store。内部memo、suggestion、officialReview及完整修订明细不公开；公开简介和步骤只写领取者需要的权益与条件，核验过程写内部记录。后台不定时重画输入表单；编辑延迟挂载并保留草稿，心得持续显示未保存/保存中/已保存/失败。待审链接`#admin-offer-ID`登录后定位；提交带reviewVersion，内容变化或竞争返回409。更新提案展示公开值与候选值的增删改对比，证据拆项，忽略单纯抓取元数据变化。
+公开 offers/platforms 最多使用 5 分钟边缘缓存；offers 响应要求浏览器每次重验证，评论接口 no-store，后台 no-store。内部 memo、suggestion、officialReview 及完整修订明细不公开；公开简介和步骤只写领取者需要的权益与条件，核验过程写内部记录。后台不定时重画输入表单；编辑延迟挂载并保留草稿，心得持续显示未保存/保存中/已保存/失败。待审链接 `#admin-offer-ID` 登录后定位；提交带 reviewVersion，内容变化或竞争返回 409。更新提案展示公开值与候选值的增删改对比，证据拆项，忽略单纯抓取元数据变化。
 
 Telegram审核提醒按对象版本去重，每批最多10条，临期优先并保留积压名额。`digest`/`urgent`仅预览；`dispatch digest|urgent`经Hermes实际发送，须有授权。发送前占位，成功后ack；pending/unknown不能换批次重发，人工确认后用delivery-delivered或delivery-unsent结案。正常定时任务可能已送达新条目，手动推送前查台账。
 
@@ -109,7 +105,7 @@ Agent 数据缓存按公开 generation 失效，同实例冷并发合并读取�
 
 ### 公开匿名牧场心得
 
-发布前应用 `0040_offer_comments.sql`，再部署 Worker 和前端。迁移新增匿名身份、共同留言、限频三张表，并把已有非空管理员心得复制为同列表的 `admin` 留言；不改变条目条款及审核状态。发布前导出 `offers` 中的旧心得和迁移台账，核对台账仅缺本次迁移，备份当前 Worker 版本。原 `adminNote` 编辑入口事务同步对应留言；详情页只有一个共同留言框。访客体验不进入通知、审核证据或 `tested` 标记。
+新环境发布前先应用 `0040_offer_comments.sql`，再部署 Worker 和前端，不重复执行已登记的迁移。2026-10-12 公开留言路由已在线返回 200；本次知识整理没有读取生产迁移台账或执行生产数据库操作，详见[整理凭证](closeout-2026-10-12.md)。迁移新增匿名身份、共同留言、限频三张表，并把已有非空管理员心得复制为同列表的 `admin` 留言；不改变条目条款及审核状态。新环境发布前导出 `offers` 中的旧心得和迁移台账，核对台账仅缺本次迁移，备份当前 Worker 版本。原 `adminNote` 编辑入口事务同步对应留言；详情页只有一个共同留言框。访客体验不进入通知、审核证据或 `tested` 标记。
 
 - `POST /api/community/session`：分配/恢复匿名身份。Cookie 为 HttpOnly、SameSite=Strict，HTTPS 下 Secure；有效期一年。服务端检查六位 ID 唯一性，数据库只保存随机会话令牌的 SHA-256。
 - `GET /api/offers/:id/comments?before=<id>`：倒序分页，每页 20 条，返回公开姓名、文字、时间和留言编号，不返回会话令牌、IP、内部作者编号。`Cache-Control: no-store`，可点“刷新留言”读回。

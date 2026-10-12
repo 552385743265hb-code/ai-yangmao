@@ -46,9 +46,9 @@ npx tsx scripts/identity/evaluate.ts --input /approved/pairs.json --environment 
 
 ## 兼容回滚包
 
-本次已部署的兼容代码：`32ccacc53d185c2754d881089077d438f2808e3f`，需要迁移 0016–0035。较旧 P3-B 只证明历史 canonical 读取保护，不能替代包含本轮关闭审核/拒绝/估值修复的回滚代码。A31/A43/A44 和实际本地 D1 证明关闭身份写入仍只公开 canonical、旧 ID 解析、通知映射和缓存 generation 有效，未映射记录保持可见。
+2026-10-10 初次部署的兼容代码：`32ccacc53d185c2754d881089077d438f2808e3f`，需要迁移 0016–0035；这不是当前生产版本，后续启用见[身份启用验证](../../dedupe-activation-2026-10-11.md)。较旧 P3-B 只证明历史 canonical 读取保护，不能替代包含本轮关闭审核/拒绝/估值修复的回滚代码。A31/A43/A44 和实际本地 D1 证明关闭身份写入仍只公开 canonical、旧 ID 解析、通知映射和缓存 generation 有效，未映射记录保持可见。
 
-写入回滚是在经授权环境部署这个兼容版本并设置 `IDENTITY_MODE=off`、`IDENTITY_MODEL_ASSIST=false`、`HISTORICAL_MERGE_ENABLED=false`，保留 identity 表及 alias-aware 读取。已合并产品旧采集写入会 retryable 暂停，避免在关闭解析后重新制造重复；未合并产品按原路径工作。暂停不等于丢弃线索，应监控重试积压。当前生产已使用本轮兼容代码并关闭上述开关；没有执行历史数据撤销。
+写入回滚是在经授权环境部署这个兼容版本并设置 `IDENTITY_MODE=off`、`IDENTITY_MODEL_ASSIST=false`、`HISTORICAL_MERGE_ENABLED=false`，保留 identity 表及 alias-aware 读取。已合并产品旧采集写入会 retryable 暂停，避免在关闭解析后重新制造重复；未合并产品按原路径工作。暂停不等于丢弃线索，应监控重试积压。回滚步骤不是当前生产开关的说明；执行前须核对当时版本、迁移与授权。
 
 禁止直接回退 PR #6 或其它不认识 canonical/alias/generation 的旧 Worker；禁止为回滚 drop 表、删除原记录或重写 sent payload。单组数据撤销按 post-manifest 与 revision 检查；后续审核、证据、发送或人工修改无法归属时输出 rollback_conflict。全库恢复/Time Travel 需要独立灾难恢复授权。
 

@@ -1,6 +1,6 @@
 # Codex 实施规格：第二、第三阶段
 
-本目录是本次交付的统一实施入口；第二、第三阶段已在七个独立增量中实现；当前已完成PR #6–#13合并、必要生产迁移及off兼容部署，最新状态见 [发布凭证](../../dedupe-release-2026-10-10.md)。本轮 PR 审计修复与最新结果见 [整改报告](AUDIT-REMEDIATION.md)；原七增量交付快照见 [交付证据](P3-C-EVIDENCE.md)，未来发布与兼容回滚见 [RELEASE.md](RELEASE.md)。目录外同主题旧草稿仅供追溯，不能据此另建一套subject/entity表。
+本目录是第二、第三阶段交付的统一实施入口；七个独立增量、后续修复和生产启用分别见 [初始发布凭证](../../dedupe-release-2026-10-10.md)、[身份启用验证](../../dedupe-activation-2026-10-11.md) 与[本次整理凭证](../../closeout-2026-10-12.md)。最初的 off 兼容部署是历史阶段，不能代替当前运行态。原七增量交付快照见 [交付证据](P3-C-EVIDENCE.md)，回滚边界见 [RELEASE.md](RELEASE.md)。目录外同主题旧草稿仅供追溯，不能据此另建一套 subject/entity 表。
 
 按顺序阅读：本 README、[主规格](SPEC.md)、[九项实施任务](IMPLEMENTATION.md)、[验收矩阵](ACCEPTANCE.md)、[执行提示](CODEX-HANDOFF.md)。以下补充是主规格的组成部分，编码时并入对应schema和测试。
 
