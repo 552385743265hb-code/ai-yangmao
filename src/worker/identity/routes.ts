@@ -1,3 +1,5 @@
+import {preparationQueue,preparationSource,scanIdentityTask} from './preparation';
+import {identityReviewPresentation} from './review-presentation';
 import {previewBackfillObject,applyBackfillObject,backfillSourceSchema,objectBackfillPlanSchema} from './production-backfill';
 import {taskSourcesCte} from './task-sources';
 import {visibilityState,visibilityView} from './visibility';
@@ -46,12 +48,15 @@ identityIngestRoutes.get('/identity-candidates',async c=>{
   if(query.data.anchor)facts.occurrenceAnchor={state:'known',value:query.data.anchor,evidenceRefs:['query']};
   return c.json(await new IdentityStore(c.env.DB).retrieveCandidates(query.data.productId,facts,query.data.cursor));
 });
-const selectedTaskSql=`EXISTS(SELECT 1 FROM task_candidates tc WHERE tc.task_id=t.id) AND NOT EXISTS(SELECT 1 FROM task_candidates tc JOIN intake_candidates c ON c.id=tc.candidate_id WHERE tc.task_id=t.id AND json_extract(c.facts_json,'$.issuerProductId.state')='known' AND NOT EXISTS(SELECT 1 FROM json_each(?) selected WHERE selected.value='*' OR selected.value=json_extract(c.facts_json,'$.issuerProductId.value')))`;
+const selectedTaskSql=`EXISTS(SELECT 1 FROM task_candidates tc WHERE tc.task_id=t.id) AND NOT EXISTS(SELECT 1 FROM task_candidates tc JOIN intake_candidates c ON c.id=tc.candidate_id WHERE tc.task_id=t.id AND json_extract(c.facts_json,'$.issuerProductId.state')='known' AND NOT EXISTS(SELECT 1 FROM json_each(?2) selected WHERE selected.value='*' OR selected.value=json_extract(c.facts_json,'$.issuerProductId.value'))) AND NOT EXISTS(SELECT 1 FROM task_candidates tc JOIN intake_candidates c ON c.id=tc.candidate_id WHERE tc.task_id=t.id AND json_extract(c.raw_candidate_json,'$.candidate.platformId') IS NOT NULL AND NOT EXISTS(SELECT 1 FROM json_each(?2) selected WHERE selected.value='*' OR selected.value=json_extract(c.raw_candidate_json,'$.candidate.platformId')))`;
 const taskProducts=(env:Env)=>(env.IDENTITY_CANARY_PLATFORMS??'').split(',').map(p=>p.trim()).filter(Boolean);
 async function requireTaskSelected(env:Env,id:string){
  const products=taskProducts(env);
  if(env.IDENTITY_MODE!=='enforce'||!products.length||!await env.DB.prepare(`SELECT 1 FROM review_tasks t WHERE t.id=? AND ${selectedTaskSql}`).bind(id,JSON.stringify(products)).first())throw new IdentityError(409,'identity task is outside the active Worker canary');
 }
+identityIngestRoutes.get('/identity-preparations',async c=>{const products=taskProducts(c.env);if(c.env.IDENTITY_MODE!=='enforce'||!products.length)return c.json({tasks:[]});return c.json(await preparationQueue(c.env.DB,products));});
+identityIngestRoutes.get('/identity-preparations/:id/source',async c=>{await requireTaskSelected(c.env,c.req.param('id'));return c.json(await preparationSource(c.env.DB,c.req.param('id')));});
+identityIngestRoutes.post('/identity-preparations/:id/scan',async c=>{await requireTaskSelected(c.env,c.req.param('id'));return c.json(await scanIdentityTask(c.env.DB,c.req.param('id'),await c.req.json()));});
 identityIngestRoutes.get('/identity-tasks',async c=>{
  const products=taskProducts(c.env);if(c.env.IDENTITY_MODE!=='enforce'||!products.length)return c.json({tasks:[]});
  const rows=await c.env.DB.prepare(`SELECT id,revision,kind FROM review_tasks t WHERE kind='identity' AND (state='open' OR (state='checking' AND lease_until<?)) AND ${selectedTaskSql} ORDER BY created_at,id LIMIT 4`).bind(new Date().toISOString(),JSON.stringify(products)).all();
@@ -92,9 +97,22 @@ identityAdminRoutes.get('/tasks',async c=>{
   const decisions=task.entity_id?await c.env.DB.prepare('SELECT id,action,reason_code,reason_text,scope_json,reopen_policy_json,actor,created_at FROM review_decisions WHERE entity_id=? ORDER BY created_at DESC LIMIT 10').bind(task.entity_id).all():{results:[]};
   const proposal=entity?.canonical_offer_id?await c.env.DB.prepare('SELECT manual_fields FROM offer_proposals WHERE offer_id=?').bind(entity.canonical_offer_id).first<{manual_fields:string}>():null;
   const visibility=task.entity_id?await visibilityState(c.env.DB,String(task.entity_id)):null;
-  tasks.push({...task,visibilityHold:visibilityView(visibility),visibilityBlocked:!!visibility?.closed&&visibility.restorationTaskId!==task.id,visibilityRestoration:visibility?.restorationTaskId===task.id,protectedFields:proposal?JSON.parse(proposal.manual_fields):[],entity,previousFacts:previous?JSON.parse(previous.facts_json):null,facts:version?JSON.parse(String(version.facts_json)):null,display:version?JSON.parse(String(version.display_candidate_json)):null,sources:sources.results.slice(0,10).map(row=>({...row,facts:JSON.parse(String(row.facts_json)),quotes:JSON.parse(String(row.raw_candidate_json)).quotes??[]})),sourcesComplete:sources.results.length<=10,decisions:decisions.results,reviewVersion:`identity:${task.id}:${task.revision}`});
+  const presentation=identityReviewPresentation({kind:String(task.kind),suggestion_json:task.suggestion_json?String(task.suggestion_json):null},sources.results as Array<{raw_candidate_json:string;trust_json:string|null;facts_json:string;text_truncated:number|string|null}>);
+  tasks.push({...task,...presentation,visibilityHold:visibilityView(visibility),visibilityBlocked:!!visibility?.closed&&visibility.restorationTaskId!==task.id,visibilityRestoration:visibility?.restorationTaskId===task.id,protectedFields:proposal?JSON.parse(proposal.manual_fields):[],entity,previousFacts:previous?JSON.parse(previous.facts_json):null,facts:version?JSON.parse(String(version.facts_json)):null,display:version?JSON.parse(String(version.display_candidate_json)):null,sources:sources.results.slice(0,10).map(row=>({...row,facts:JSON.parse(String(row.facts_json)),quotes:JSON.parse(String(row.raw_candidate_json)).quotes??[],provenance:presentation.provenance[sources.results.indexOf(row)]})),sourcesComplete:sources.results.length<=10,decisions:decisions.results,reviewVersion:`identity:${task.id}:${task.revision}`});
  }
  return c.json({tasks,nextCursor:rows.results.length>query.data.limit?String(rows.results[query.data.limit-1]?.id):null});
+});
+identityAdminRoutes.get('/tasks/:id/comparisons',async c=>{
+ const input=z.object({cursor:z.string().max(200).default('')}).safeParse(c.req.query());if(!input.success)throw new IdentityError(400,'invalid history cursor');
+ const task=await c.env.DB.prepare("SELECT id,kind,state FROM review_tasks WHERE id=? AND kind IN ('identity','merge_conflict') AND state IN ('open','checking','manual')").bind(c.req.param('id')).first<{id:string;kind:string;state:string}>();if(!task)throw new IdentityError(404,'review task missing');
+ const sources=(await c.env.DB.prepare(taskSourcesCte+" SELECT coalesce(f.provenance_json,o.trust_json) trust_json,coalesce(json_extract(f.provenance_json,'$.truncated'),o.text_truncated) truncated FROM task_candidates tc JOIN intake_candidates candidate ON candidate.id=tc.candidate_id JOIN source_observations o ON o.id=candidate.observation_id LEFT JOIN source_observation_fetches f ON f.id=candidate.source_fetch_id AND f.observation_id=o.id WHERE tc.task_id IN (SELECT id FROM task_sources) ORDER BY candidate.id LIMIT 11").bind(task.id).all<{trust_json:string;truncated:number}>()).results;
+ if(sources.length>10)throw new IdentityError(409,'more than ten source candidates require separate review');
+ const trusted=[...new Set(sources.filter(r=>!r.truncated).map(r=>JSON.parse(r.trust_json)).filter(p=>p.sourceVerified===true&&typeof p.productId==='string').map(p=>p.productId as string))];
+ if(trusted.length!==1)return c.json({issuerProductId:null,entries:[],complete:false,nextCursor:null,reason:'发放产品的官方来源尚未核实，不能据当前历史列表确认活动身份。'});
+ const product=await c.env.DB.prepare('SELECT status FROM platforms WHERE id=?').bind(trusted[0]).first<{status:string}>();if(product?.status!=='approved')return c.json({issuerProductId:trusted[0],entries:[],complete:false,nextCursor:null,reason:'发放产品尚未准入，需要先完成平台核验。'});
+ const rows=(await c.env.DB.prepare("SELECT e.id,e.business_revision,e.canonical_offer_id,o.title,o.value_text,o.review_state,json_extract(o.evidence,'$.url') source_url FROM benefit_entities e LEFT JOIN offers o ON o.id=e.canonical_offer_id WHERE e.state='active' AND e.platform_id=? AND e.id>? ORDER BY e.id LIMIT 41").bind(trusted[0],input.data.cursor).all<{id:string;business_revision:number;canonical_offer_id:string|null;title:string|null;value_text:string|null;review_state:string|null;source_url:string|null}>()).results;
+ const entries=rows.slice(0,40).map(r=>({entityId:r.id,entityRevision:r.business_revision,offerId:r.canonical_offer_id,title:r.title??'历史条目资料不全',valueText:r.value_text??'',reviewState:r.review_state,sourceUrl:r.source_url}));
+ return c.json({issuerProductId:trusted[0],entries,complete:rows.length<=40,nextCursor:rows.length>40?rows[39].id:null,reason:rows.length>40?'正在继续读取同一发放产品的历史活动。':'同一发放产品的活动列表已读取；是否为同一次发放仍需核对权益与轮次。'});
 });
 identityAdminRoutes.post('/tasks/:id/resolve',async c=>{
  const raw=await c.req.json() as Record<string,unknown>;

@@ -276,7 +276,9 @@ export class IdentityService {
   if((input.result.relation!=='UNRESOLVED'&&!input.result.evidenceRefs.length)||input.result.evidenceRefs.some(ref=>!Object.hasOwn(context.evidence.quoteById,ref)||!context.evidence.fullText.includes(context.evidence.quoteById[ref])))throw new IdentityError(400,'invalid suggestion citation');
   const builder=new MutationBuilder(this.db,command,hash);
   builder.require("EXISTS(SELECT 1 FROM review_tasks WHERE id=? AND state='checking' AND lease_token=? AND lease_until>=?)",[taskId,input.leaseToken,new Date().toISOString()]);
-  builder.update('review_tasks',{state:'manual',revision:input.expectedRevision+1,lease_token:null,lease_until:null,suggestion_json:JSON.stringify(input.result)},'id=?',[taskId]);
+  const priorSuggestion=task.suggestion_json?JSON.parse(task.suggestion_json) as Record<string,unknown>:null;
+  const suggestion=priorSuggestion?.kind==='identity_preparation_v1'?{...priorSuggestion,modelResult:input.result}:input.result;
+  builder.update('review_tasks',{state:'manual',revision:input.expectedRevision+1,lease_token:null,lease_until:null,suggestion_json:JSON.stringify(suggestion)},'id=?',[taskId]);
   builder.assert("EXISTS(SELECT 1 FROM review_tasks WHERE id=? AND state='manual' AND revision=?)",[taskId,input.expectedRevision+1]);
   return this.commit(builder,[{kind:'task',id:taskId,revision:input.expectedRevision},...context.entities.map(e=>({kind:'entity' as const,id:e.id,revision:e.revision}))],{taskId,revision:input.expectedRevision+1,state:'manual'});
  }
