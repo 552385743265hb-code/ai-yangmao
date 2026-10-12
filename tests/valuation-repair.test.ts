@@ -31,8 +31,8 @@ it('makes at most one repair call even when the repaired factor remains invalid'
  let count=0;vi.stubGlobal('fetch',vi.fn(async()=>++count===1?response({offers:[offer(facts('USD 12'))]}):response({repairs:[{key:'gift',valuationFactors:facts('USD 12')}]})));
  const {extract}=await import('../pipeline/llm');const result=await extract('Vendor',url,text);expect(count).toBe(2);expect(result.tokens).toBe(200);expect((await valueOf(result.offers[0])).valuation?.status).toBe('needs_judgment');
 });
-it('does not retry unknown or unavailable pricing recipes',async()=>{
- const recipes=[{kind:'unknown',sources:[source()]},{kind:'plan',price:{catalogId:'missing.amount'},billingPeriod:'month',sources:[source()]}];let count=0;vi.stubGlobal('fetch',vi.fn(async()=>response({offers:[offer(recipes[count++])]})));
+it('does not retry unknown without actionable evidence or unavailable pricing recipes',async()=>{
+ const recipes=[{kind:'unknown',sources:[source()]},{kind:'plan',price:{catalogId:'missing.amount'},billingPeriod:'month',sources:[source()]}];let count=0;vi.stubGlobal('fetch',vi.fn(async()=>response({offers:[{...offer(recipes[count++]),excerpts:{benefit:'Free access is available.'}}]})));
  const {extract}=await import('../pipeline/llm');await extract('Vendor',url,text);await extract('Vendor',url,text);expect(count).toBe(2);
 });
 it('degrades without a repair request when additional budget is unavailable',async()=>{
@@ -56,4 +56,24 @@ it('halts rather than bypassing a failed repair budget settlement',async()=>{
  let count=0;vi.stubGlobal('fetch',vi.fn(async()=>++count===1?response({offers:[offer(facts('USD 12'))]}):response({repairs:[{key:'gift',valuationFactors:facts()}]})));
  const {BudgetLedgerError}=await import('../pipeline/budget');const reserve=vi.fn(async()=>({id:reserve.mock.calls.length,tokens:1000,costCny:0}));const settle=vi.fn(async()=>{if(settle.mock.calls.length===2)throw new BudgetLedgerError('Ledger unavailable');});const {extract}=await import('../pipeline/llm');
  await expect(extract('Vendor',url,text,undefined,{budget:{reserve,settle}})).rejects.toThrow('Ledger unavailable');expect(count).toBe(2);expect(settle).toHaveBeenCalledTimes(2);
+});
+
+it.each([undefined,{kind:'unknown',sources:[]}])('repairs omitted or unknown factors when the original benefit names a concrete USD grant: %j',async recipe=>{
+ let count=0;vi.stubGlobal('fetch',vi.fn(async()=>++count===1?response({offers:[offer(recipe)]}):response({repairs:[{key:'gift',valuationFactors:facts()}]})));
+ const {extract}=await import('../pipeline/llm');const result=await extract('Vendor',url,text);expect(count).toBe(2);expect((await valueOf(result.offers[0])).valuation?.usdEstimate).toBe(12);
+});
+it('repairs unknown credits using an available matching price without choosing an amount in the preflight',async()=>{
+ vi.useFakeTimers({toFake:['Date']});vi.setSystemTime(new Date('2026-10-11T12:00:00Z'));
+ const sourceUrl='https://elevenlabs.io/free',body='Free plan: all registered accounts receive 10,000 credits monthly.';
+ const recipe={kind:'credits',cadence:'month',benchmark:'entry_plan',entitlementUnits:{value:10000,sourceId:'benefit',quote:body},packageUnits:{catalogId:'elevenlabs-starter.packageUnits'},packagePrice:{catalogId:'elevenlabs-starter.amount'},sources:[source(body,sourceUrl)]};
+ let count=0;vi.stubGlobal('fetch',vi.fn(async()=>++count===1?response({offers:[{...offer({kind:'unknown',sources:[source(body,sourceUrl)]}),platformId:'elevenlabs',type:'standing',valueText:'每月10000积分',endKind:'standing',excerpts:{benefit:body}}]}):response({repairs:[{key:'gift',valuationFactors:recipe}]})));
+ const {extract}=await import('../pipeline/llm');const result=await extract('ElevenLabs',sourceUrl,body);expect(count).toBe(2);expect((await valueOf(result.offers[0],body,sourceUrl)).valuation?.usdEstimate).toBe(2);
+});
+it('does not spend a repair call for omitted factors with an invented money excerpt',async()=>{
+ const fetcher=vi.fn(async()=>response({offers:[{...offer(undefined),excerpts:{benefit:'All new accounts receive USD 999 API credits.'}}]}));vi.stubGlobal('fetch',fetcher);
+ const {extract}=await import('../pipeline/llm');await extract('Vendor',url,text);expect(fetcher).toHaveBeenCalledTimes(1);
+});
+it('keeps truncation as a failure and records safe provider completion diagnostics without retrying it',async()=>{
+ const fetcher=vi.fn(async()=>new Response(JSON.stringify({candidates:[{finishReason:'MAX_TOKENS',content:{parts:[{text:'{"offers":['}]}}],usageMetadata:{totalTokenCount:4096}})));vi.stubGlobal('fetch',fetcher);
+ const log=vi.fn();const {extract}=await import('../pipeline/llm');await expect(extract('Vendor',url,text,log)).rejects.toThrow('截断');expect(fetcher).toHaveBeenCalledTimes(1);expect(log.mock.calls.flat().join(' ')).toContain('finish=MAX_TOKENS，chars=11，tokens=4096');
 });

@@ -1,5 +1,6 @@
 import { computeCollectedValuation, type ValuationCollectedSource } from '../src/shared/valuation-intake';
 import { sha256 } from '../src/shared/identity/normalize';
+import { VALUATION_PRICE_CATALOG, valuationPriceIsFresh } from '../src/shared/valuation-catalog';
 import type { Extracted } from './llm';
 
 export interface FactorRepairIssue { index:number;key:string;errors:string[];valuationFactors:unknown }
@@ -10,8 +11,18 @@ export async function valuationRepairIssues(offers:Extracted[],context:{url:stri
   for(const [index,offer] of offers.entries()){
     const raw=offer.valuationFactors;
     const recipe=Array.isArray(raw)&&raw.length===1?raw[0]:raw;
-    if(!recipe||typeof recipe!=='object'||Array.isArray(recipe)||!('kind' in recipe)||recipe.kind==='unknown')continue;
     const platformId=(offer as Extracted&{platformId?:string}).platformId??context.platformIds?.find(id=>!!id)??'';
+    if(!recipe||typeof recipe!=='object'||Array.isArray(recipe)||!('kind' in recipe)||recipe.kind==='unknown'){
+      // Only ask to recover evidence already present. This is not a pricing decision:
+      // repaired factors still pass the identical source/units/policy checks below and at intake.
+      const benefit=offer.excerpts?.benefit?.trim()??'';
+      const grounded=benefit.length>=12&&context.text.includes(benefit);
+      const directMoney=/(?:USD\s*[\d,]+|[\d,]+\s*(?:USD|美元))/i.test(benefit);
+      const matchedPrice=VALUATION_PRICE_CATALOG.some(price=>valuationPriceIsFresh(price,now)&&(price.platformId===platformId||price.kind==='token_model'&&(offer.models??[]).some(model=>model.toLowerCase()===price.model.toLowerCase())));
+      const quantity=/\d[\d,.]*\s*(?:credits?|tokens?|积分|点数|次|个月|天|days?|months?)/i.test(benefit);
+      if(grounded&&(directMoney||matchedPrice&&quantity))issues.push({index,key:offer.key,errors:['Missing actionable valuationFactors: recover only from the original benefit and matching trusted prices; remain unknown if evidence is insufficient'],valuationFactors:raw??null});
+      continue;
+    }
     const result=await computeCollectedValuation({platformId,type:offer.type,models:offer.models,tags:offer.tags,valuationFactors:raw,valuationSources:context.valuationSources,
       sourceText:context.text,sourceFetch:{originalUrl:context.url,finalUrl:context.url,fetchedUrl:context.url,method:'direct',sourceVerified:true,truncated:false,contentHash},
       evidence:{url:context.url,tier:'official',capturedAt:now,excerpts:offer.excerpts??{}}},now);

@@ -3,7 +3,7 @@ import { blocking, checkOffer, type SpecInput } from '../src/shared/spec';
 import { liveStatus } from '../src/shared/lifecycle';
 
 const base: SpecInput = {
-  type: 'free', title: '某平台限时免费', valueText: '7 天免费使用', usdEstimate: 5, claimStart: '2026-09-01', claimEnd: '2026-12-31', endKind: 'date',
+  type: 'free', title: '某平台限时免费', valueText: '7 天免费使用', usdEstimate: 5, valuation: {version:'v1',status:'priced',method:'face_value',period:'one_time',usdEstimate:5,usdMax:null,fullValue:5,formula:'官方赠送 5 USD',inputs:{},sources:[{url:'https://vendor.example',checkedAt:'2026-10-01',excerpt:'5 USD credit',priceBasis:'官方面额'}],assumptions:[],reviewedAt:'2026-10-01'}, claimStart: '2026-09-01', claimEnd: '2026-12-31', endKind: 'date',
   sourceTz: 'Asia/Shanghai', requirements: ['none'], audience: 'all', creditValidity: '7 天', models: [], tags: [], steps: ['注册'],
   evidence: { tier: 'site', excerpts: { benefit: '免费' } },
 };
@@ -23,6 +23,11 @@ describe('羊毛数据规格', () => {
     const o = { ...base, title: 'Free access to GLM-4.7-Flash for everyone', valueText: '免费调用 GLM-4.7-Flash', usdEstimate: null, tags: ['reset'], requirements: ['unknown'] };
     expect(fields(o)).toEqual(expect.arrayContaining(['warn:title', 'block:requirements', 'warn:usdEstimate', 'warn:models', 'warn:publishedAt']));
     expect(checkOffer({ ...o, models: ['GLM-4.7-Flash'], publishedAt: '2026-09-01T08:00:00Z' }, now).some(i => ['models', 'publishedAt'].includes(i.field))).toBe(false);
+  });
+  it('无估值依据的数字阻止批准，未知金额仍允许留空', () => {
+    for (const amount of [0, 5]) expect(fields({...base, usdEstimate:amount, valuation:null})).toContain('block:valuation');
+    expect(fields({...base,usdEstimate:null,usdMax:10,valuation:null})).toContain('block:valuation');
+    expect(fields({...base,usdEstimate:null,valuation:null})).not.toContain('block:valuation');
   });
   it('每条提醒都写明影响哪些栏目', () => {
     for (const i of checkOffer({ ...base, usdEstimate: null, endKind: 'unknown', claimEnd: null }, now)) expect(i.sections.length).toBeGreaterThan(0);

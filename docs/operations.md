@@ -63,7 +63,7 @@ gh workflow run collect.yml --ref main -f fast_leads=true -f lead_limit=50
 
 ## 模型、预算与回归
 
-全局一周限免由`src/shared/campaign-deadline.ts`执行，采集`toOffer`与服务端`collectedOfferIn`均可补日期；原文周期、日期锚点及精度存入evidence.claimEndDerivation。原文已有明确截止不覆盖，媒体/无锚点/个人领取后有效期不推算。普通存量校验不自动回填已批准基线。修改须同时推送采集代码并部署Worker。
+全局活动的明确周期（分钟/小时/天/周/自然月/自然年及复合周期）由`src/shared/campaign-deadline.ts`执行，采集`toOffer`与服务端`collectedOfferIn`均可补日期；原文周期、日期锚点及精度存入evidence.claimEndDerivation。原文已有明确截止不覆盖，媒体/无锚点/个人领取后有效期不推算。普通存量校验不自动回填已批准基线。修改须同时推送采集代码并部署Worker。
 
 海外网络门槛由`src/shared/network-requirements.ts`统一执行：采集抽取保留/补上国际产品的net，入库共享schema再次执行，none不会与net并存，其他资格与官方identityFacts不改。国内WorkBuddy、火山引擎等保持独立口径；共用平台ID按产品入口/明确版本判定，版本未明且原为none时改为unknown，不能假定国内直领。新增平台准入时须同时登记该模块的国内/国际/混合分类；未登记ID不能凭域名猜厂商归属。修改此规则须推送GitHub采集代码并部署Worker入库校验。
 

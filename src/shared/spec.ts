@@ -88,6 +88,7 @@ export function checkOffer(o: SpecInput, now = new Date()): SpecIssue[] {
   if (o.requirements.includes('unknown')) add('requirements', '门槛', 'block', '门槛写的是“待确认”，要按官方原文写清', ['mine', 'all', 'score', 'insights', 'push']);
 
   const valuation = parseValuation(o.valuation);
+  if (o.valuation == null && (o.usdEstimate != null || o.usdMax != null)) add('valuation', '估值依据', 'block', '美元金额缺少可核验的估值依据，请补充来源与计算公式，无法定价时金额留空', ['all', 'insights', 'detail', 'score']);
   if (o.valuation != null && (!valuation || !valuationMatchesAmounts(valuation, o))) add('valuation', '估值依据', 'block', '估值元数据无效或与美元字段不一致，请核对金额、状态与规则版本', ['all', 'insights', 'detail', 'score']);
   if (o.usdEstimate == null && !valuationClosesUsdGap(o.valuation, o)) add('usdEstimate', '折合美元', 'warn', '美元参考价值待核实，不计入金额排名和合计，评分仅使用已知维度',
     o.type === 'apply' ? ['apply', 'score'] : o.type === 'standing' ? ['today', 'library', 'insights', 'score', 'mine'] : ['today', 'calendar', 'insights', 'score', 'mine']);

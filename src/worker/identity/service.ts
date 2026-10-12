@@ -15,6 +15,7 @@ import { offerIn,type OfferIn } from '../../shared/ingest';
 import { computeCollectedValuation, protectedValuationFields, stripValuationTransport, automaticValuation } from '../../shared/valuation-intake';
 import { sourceFetchSchema, type SourceFetch } from '../../shared/identity/fetch-evidence';
 import { publicationError,validateStoredOffer } from '../publication';
+import { blocking, checkOffer } from '../../shared/spec';
 import { canonicalTermsSchema,resolutionResultSchema,decisionScopeSchema,reopenPolicySchema,intakeReceiptSchema,reviewDecisionSchema,type IntakeReceipt,type CanonicalTermsV1,type ResolutionResult,type EvidenceContext,type VersionedEntity } from '../../shared/identity/types';
 import { compareCandidate,evidenceGrounded,factSlots,RESOLVER_VERSION,RULES_VERSION } from '../../shared/identity/compare';
 import { decisionApplies,evaluateReopen,reviewTaskKey } from '../../shared/identity/decision-policy';
@@ -188,6 +189,11 @@ export class IdentityService {
   if(membershipChanged&&selected&&!input.identityFacts)facts=withMembershipFacts(facts,selected,['admin-membership:'+input.requestId]);
   if(input.identityFacts&&!membershipFactConsistent(facts,selected))throw new IdentityError(400,'membership facts differ from selected eligibility');
   if(!materialFields.length&&!input.identityFacts){
+   // This branch edits the public row immediately, without a later approval gate.
+   if(!task&&!proposal&&original.reviewState==='approved'&&Object.keys(input.fields).some(key=>['valuation','usdEstimate','usdMax'].includes(key))){
+    const issue=blocking(checkOffer(parsed.data)).find(issue=>issue.field==='valuation');
+    if(issue)throw new IdentityError(400,issue.problem);
+   }
    const builder=new MutationBuilder(this.db,command,hash),expected:ExpectedRevision[]=[{kind:'entity',id:entity.id,revision:entity.business_revision}];
    if(Object.hasOwn(input.fields,'membershipRequirement')&&selected)builder.require('EXISTS(SELECT 1 FROM membership_catalog WHERE id=1 AND revision=?)',[selected.catalogRevision]);
    builder.require('EXISTS(SELECT 1 FROM offers WHERE id=? AND updated_at=?)',[offerId,original.updatedAt]);

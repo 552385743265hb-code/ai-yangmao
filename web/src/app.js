@@ -552,10 +552,11 @@ function seriesTo(end, n = 14, seed = 1, spread = 0.35) {
 function countdownWindow(o) {
   if (!isLimited(o) || o.withdrawnAt) return null;
   const derivation = o.evidence?.claimEndDerivation;
-  if (derivation?.kind === 'relative_duration' && derivation.durationDays === 7) {
+  if (derivation?.kind === 'relative_duration') {
+    if (derivation.latestEndAt) return { end: new Date(derivation.latestEndAt), earliest: derivation.precision === 'date' ? new Date(derivation.earliestEndAt) : null, estimated: true };
     if (derivation.estimatedEndAt) return { end: new Date(derivation.estimatedEndAt), estimated: true };
     const [y,m,d] = derivation.anchorValue.slice(0,10).split('-').map(Number);
-    return { earliest: zonedToDate(y,m-1,d+7,0,0,o.tz || 'UTC'), end: zonedToDate(y,m-1,d+8,0,0,o.tz || 'UTC'), estimated: true };
+    return { earliest: zonedToDate(y,m-1,d+(derivation.durationDays || 7),0,0,o.tz || 'UTC'), end: zonedToDate(y,m-1,d+(derivation.durationDays || 7)+1,0,0,o.tz || 'UTC'), estimated: true };
   }
   const globalWeek = o.ty === 'free' && /(?:免费|限免).{0,4}(?:一周|7\s*天)|free.{0,20}(?:a|one|1)\s*week/i.test(o.t)
     && !/(?:领取|激活|注册|兑换)后.{0,8}(?:一周|7\s*天)/.test(o.v || '');
@@ -1228,10 +1229,10 @@ function pOffer(id) {
   else timeBlock = `<div class="ring-big">${ringSvg(st === 'stale' ? 0.35 : 1, 92, st === 'stale' ? 'var(--warn)' : o.ty === 'apply' ? 'var(--s7)' : 'var(--s6)', 8)}<div><div class="cd">${st === 'stale' ? '待核验' : o.ty === 'apply' ? '长期开放' : '常驻'}</div><div class="small muted">每 7 天核验一次 · 上次成功核验在${ago(o.vf)}</div></div></div>`;
   if (o.evidence?.claimEndDerivation && st !== 'ended' && st !== 'upcoming') {
     const window = countdownWindow(o);
-    if (window) timeBlock = `<div class="ring-big">${ringSvg(0.6,92,st === 'stale' ? 'var(--warn)' : 'var(--good)',8)}<div><div class="small muted">距离推算截止</div><div class="cd" data-estimated-end="${window.end.getTime()}"${window.earliest ? ` data-estimated-start="${window.earliest.getTime()}"` : ''}>${estimatedCountdown(window)}</div><div class="small muted">按公告的一周限免推算 · 精确截止待确认</div></div></div>`;
+    if (window) timeBlock = `<div class="ring-big">${ringSvg(0.6,92,st === 'stale' ? 'var(--warn)' : 'var(--good)',8)}<div><div class="small muted">距离推算截止</div><div class="cd" data-estimated-end="${window.end.getTime()}"${window.earliest ? ` data-estimated-start="${window.earliest.getTime()}"` : ''}>${estimatedCountdown(window)}</div><div class="small muted">按公告活动周期推算 · 精确截止待确认</div></div></div>`;
   }
   const endLocal = o.ek === 'date' ? endInstant(o) : null;
-  const deadline = o.evidence?.claimEndDerivation ? `${md(dayAt(o.e))}（推算）<small>按公告的一周限免推算，官方未公布精确截止时刻</small>` : o.ek === 'date' ? `${md(dayAt(o.e))} 23:59<small>官方按${tzName}${endLocal && o.tz !== viewerTz ? `；你的本地时间 ${md(endLocal)} ${hm(endLocal)}` : ''}</small>` : o.ek === 'unknown' ? '截止未知<small>必须有仍然有效的权益页作证据</small>' : '长期<small>没有截止日期</small>';
+  const deadline = o.evidence?.claimEndDerivation ? `${md(dayAt(o.e))}（推算）<small>按公告活动周期推算，官方未公布精确截止时刻</small>` : o.ek === 'date' ? `${md(dayAt(o.e))} 23:59<small>官方按${tzName}${endLocal && o.tz !== viewerTz ? `；你的本地时间 ${md(endLocal)} ${hm(endLocal)}` : ''}</small>` : o.ek === 'unknown' ? '截止未知<small>必须有仍然有效的权益页作证据</small>' : '长期<small>没有截止日期</small>';
   const verify = st === 'stale' ? (o.verify === 'evidence_missing' ? '当前证据页不再支持保存的条款，待人工核验' : `${ago(o.vf)}最后一次核验成功，之后没有核验成功，已转为待核验`) : `${ago(o.vf)}核验：${o.verify || '官方页面可以打开'}`;
   const officialUrl = (o.evidence && o.evidence.url) || o.plat.site;
   const hist = [];

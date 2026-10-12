@@ -1,6 +1,7 @@
 import {beforeEach,afterEach,it,expect} from 'vitest';
 import {auditFixture,auditTerms} from './fixtures/identity/audit';
 import {known} from './fixtures/identity/terms';
+import {displayOffer} from './fixtures/identity/offer';
 import {IdentityService} from '../src/worker/identity/service';
 import type {Valuation} from '../src/shared/valuation';
 let f:ReturnType<typeof auditFixture>,service:IdentityService;
@@ -24,3 +25,39 @@ for(const mode of ['amount','unknown','application'] as const)it(`R08 approved_p
 it('R08 model valuation without human edit remains protected at approval',async()=>{const {a,b}=await setup();await service.decideTask(b.taskId!,{requestId:'approve-model-price',expectedRevision:0,action:'approve',actor:'admin',role:'admin'});const read=await f.call('admin/offers/'+a.canonicalOfferId,undefined,true);expect(read.body.offer).toMatchObject({usdEstimate:10,valuation:value(10)});});
 it('R08 initial pending offer keeps validated manual valuation',async()=>{const {a,b}=await setup(false,true);const fields={usdEstimate:20,usdMax:null,valuation:value(20)};const edit=await f.call('admin/offers/'+a.canonicalOfferId+'/edit',{requestId:'initial-price',identityTaskId:b.taskId,expectedIdentityRevision:0,fields},true);expect(edit.status).toBe(200);await service.decideTask(b.taskId!,{requestId:'approve-initial-price',expectedRevision:edit.body.revision,action:'approve',actor:'admin',role:'admin'});expect((await f.call('admin/offers/'+a.canonicalOfferId,undefined,true)).body.offer).toMatchObject(fields);});
 it('R08 inconsistent manual valuation is rejected without changing the proposal',async()=>{const {a,b}=await setup();const before=f.sqlite.prepare('SELECT * FROM offer_proposals').get();const edit=await f.call('admin/offers/'+a.canonicalOfferId+'/edit',{requestId:'invalid-price',identityTaskId:b.taskId,expectedIdentityRevision:0,fields:{usdEstimate:20,valuation:value(999)}},true);expect(edit.status).toBe(400);expect(f.sqlite.prepare('SELECT * FROM offer_proposals').get()).toEqual(before);});
+it('R08 initial approval rejects a scalar valuation without evidence metadata and keeps the draft pending',async()=>{
+ const {a}=await setup(false,true);
+ const edit=await f.call('admin/offers/'+a.canonicalOfferId+'/edit',{requestId:'bare-price',identityTaskId:a.taskId,expectedIdentityRevision:0,fields:{usdEstimate:20,usdMax:null,valuation:null}},true);
+ expect(edit.status).toBe(200);
+ const approve=await f.call('admin/identity/tasks/'+a.taskId+'/resolve',{requestId:'approve-bare-price',expectedRevision:edit.body.revision,action:'approve'},true);
+ expect(approve.status).toBe(400);expect(approve.body.error).toContain('估值依据');
+ expect(f.sqlite.prepare('SELECT review_state FROM offers').get()).toEqual({review_state:'pending'});
+});
+it('R08 direct live identity edit cannot remove valuation evidence while retaining dollars',async()=>{
+ const {a}=await setup(false,true);
+ const seeded=await f.call('admin/offers/'+a.canonicalOfferId+'/edit',{requestId:'live-price',identityTaskId:a.taskId,expectedIdentityRevision:0,fields:{usdEstimate:10,usdMax:null,valuation:value(10)}},true);
+ expect(seeded.status).toBe(200);
+ await service.decideTask(a.taskId!,{requestId:'approve-live',expectedRevision:seeded.body.revision,action:'approve',actor:'admin',role:'admin'});
+ const before=f.sqlite.prepare('SELECT * FROM offers').get();
+ const card=(await f.call('admin/offers/'+a.canonicalOfferId,undefined,true)).body.offer;
+ const edit=await f.call('admin/offers/'+a.canonicalOfferId+'/edit',{requestId:'strip-live-price',expectedReviewVersion:card.reviewVersion,fields:{valuation:null,usdEstimate:999}},true);
+ expect(edit.status).toBe(400);expect(f.sqlite.prepare('SELECT * FROM offers').get()).toEqual(before);
+});
+
+it('R08 legacy admin approval cannot publish dollars without valuation metadata',async()=>{
+ const offer=displayOffer();
+ expect((await f.call('ingest/offers',[offer],false,{IDENTITY_MODE:'off'})).status).toBe(200);
+ f.sqlite.prepare('UPDATE offers SET usd_estimate=20,usd_max=NULL,valuation=NULL WHERE id=?').run(offer.id);
+ const approve=await f.call('admin/offers/'+offer.id+'/approve',{},true);
+ expect(approve.status).toBe(400);expect(approve.body.error).toContain('估值依据');
+ expect(f.sqlite.prepare('SELECT review_state FROM offers').get()).toEqual({review_state:'pending'});
+});
+it('R08 legacy direct live edit cannot strip valuation metadata without approval',async()=>{
+ const offer=displayOffer();
+ expect((await f.call('ingest/offers',[offer],false,{IDENTITY_MODE:'off'})).status).toBe(200);
+ f.sqlite.prepare("UPDATE offers SET review_state='approved',usd_estimate=10,usd_max=NULL,valuation=? WHERE id=?").run(JSON.stringify(value(10)),offer.id);
+ const before=f.sqlite.prepare('SELECT * FROM offers').get();
+ const edit=await f.call('admin/offers/'+offer.id+'/edit',{approve:false,fields:{usdEstimate:999,valuation:null}},true);
+ expect(edit.status).toBe(400);expect(edit.body.error).toContain('估值依据');
+ expect(f.sqlite.prepare('SELECT * FROM offers').get()).toEqual(before);
+});

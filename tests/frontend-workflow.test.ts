@@ -33,6 +33,19 @@ function publicOffer(run: (code: string) => any, extra: Record<string, unknown> 
 }
 
 describe('frontend review workflow', () => {
+  it('shows calculated value, formula, evidence and unknown conclusions before approval', async () => {
+    const valuation={version:'v2',status:'provisional',method:'scenario',period:'first30',usdEstimate:45,usdMax:null,formula:'10 × 3 + 1 × 15 = 45',inputs:{},assumptions:['共享额度只计算一次'],sources:[{url:'https://vendor.example/pricing',checkedAt:'2026-10-12',priceBasis:'官方价格',excerpt:'Input $3; output $15'}]};
+    const f=fixture(()=>queue([offer('priced',{valuation}),offer('unknown',{valuation:{...valuation,status:'unpriceable',method:'none',usdEstimate:null,formula:null}})]));
+    await f.run('admQueue()');
+    const blocks=f.document.querySelectorAll('[data-review-valuation]');
+    expect(blocks).toHaveLength(2);
+    expect(blocks[0].textContent).toContain('$45');
+    expect(blocks[0].textContent).toContain('10 × 3 + 1 × 15 = 45');
+    expect(blocks[0].querySelector('a')?.getAttribute('href')).toBe('https://vendor.example/pricing');
+    expect(blocks[1].textContent).toContain('金额留空，不按零元');
+    expect(blocks[1].textContent).not.toContain('$0');
+  });
+
   it('shows proposal additions, removals and edits against public values, including zero and nested evidence', async () => {
     const changes = [
       {field:'valueText',from:'新人送20积分',to:'新人送40积分'},

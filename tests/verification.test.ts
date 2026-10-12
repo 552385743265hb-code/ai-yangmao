@@ -273,6 +273,11 @@ async function withAutomaticUsd(base:Record<string,any>,amount:number,max?:numbe
   const sourceText=Object.values(base.evidence.excerpts).filter(Boolean).join('\n')+'\n'+quote;
   return {...base,sourceText,sourceFetch:{originalUrl:base.evidence.url,finalUrl:base.evidence.url,fetchedUrl:base.evidence.url,method:'direct',sourceVerified:true,truncated:false,contentHash:await sha256(sourceText)},valuationFactors:{kind:'direct_usd',amount:{value:amount,sourceId:'benefit',quote},...(max===undefined?{}:{maximum:{value:max,sourceId:'benefit',quote}}),sources:[{id:'benefit',url:base.evidence.url,checkedAt:base.evidence.capturedAt,excerpt:quote,priceBasis:'synthetic official grant terms'}]}};
 }
+function reviewedUsd(amount:number,maximum:number) {
+  return {version:'v1',status:'priced',method:'official_price',period:'one_time',usdEstimate:amount,usdMax:maximum,fullValue:maximum,
+    formula:`100 tokens / 100 × ${amount} USD; official benefit maximum ${maximum} USD`,inputs:{quantity:100,packageUnits:100,packagePrice:amount,currency:'USD'},
+    sources:[{url:'https://vendor.example/pricing',checkedAt:'2026-10-09',excerpt:`100 tokens cost ${amount} USD. Free benefit maximum ${maximum} USD.`,priceBasis:'Synthetic official token purchase price and entitlement ceiling'}],assumptions:[],reviewedAt:'2026-10-09'};
+}
 function legacyProposal(candidate: object) {
   sqlite.prepare("INSERT INTO offer_proposals(offer_id,candidate,diff) VALUES('vendor-free',?,?)").run(JSON.stringify(candidate),JSON.stringify([{field:'valueText',from:'100 tokens',to:'200 tokens'}]));
 }
@@ -329,12 +334,12 @@ describe('official evidence verification', () => {
   });
   it('protects a human amount and maximum together instead of mixing them with untrusted model money',async()=>{
     await call('ingest/offers',[offer]);
-    expect((await call('admin/offers/vendor-free/edit',{fields:{usdEstimate:20,usdMax:20,valuation:null}},'admin')).status).toBe(200);
-    await call('admin/offers/vendor-free/approve',{},'admin');
+    expect((await call('admin/offers/vendor-free/edit',{fields:{usdEstimate:20,usdMax:20,valuation:reviewedUsd(20,20)}},'admin')).status).toBe(200);
+    expect((await call('admin/offers/vendor-free/approve',{},'admin')).status).toBe(200);
     const result=await call('ingest/offers',[{...offer,usdEstimate:0,usdMax:0,valueText:'200 tokens',sourceText:'Free 200 tokens. All users. No published end date.',evidence:{...evidence,excerpts:{...evidence.excerpts,benefit:'Free 200 tokens'}}}]);
     expect((result.body.results as any[])[0].error).toBeUndefined();
     const candidate=JSON.parse(String(sqlite.prepare('SELECT candidate FROM offer_proposals').get()?.candidate));
-    expect(candidate).toMatchObject({usdEstimate:20,usdMax:20,valuation:null});
+    expect(candidate).toMatchObject({usdEstimate:20,usdMax:20,valuation:reviewedUsd(20,20)});
     expect(sqlite.prepare('SELECT usd_estimate,usd_max FROM offers').get()).toEqual({usd_estimate:20,usd_max:20});
   });
   it('preserves a manually edited proposal when a no-change extraction arrives',async()=>{
@@ -678,8 +683,8 @@ describe('review gates and preserved public version', () => {
 
   it('keeps known dates and valuations when a later extraction omits them', async () => {
     await call('ingest/offers', [{ ...offer, usdEstimate: 1, usdMax: 10, claimStart: '2026-01-01', claimEnd: '2099-12-31', endKind: 'date' }]);
-    expect((await call('admin/offers/vendor-free/edit',{fields:{usdEstimate:1,usdMax:10,valuation:null}},'admin')).status).toBe(200);
-    await call('admin/offers/vendor-free/approve', {}, 'admin');
+    expect((await call('admin/offers/vendor-free/edit',{fields:{usdEstimate:1,usdMax:10,valuation:reviewedUsd(1,10)}},'admin')).status).toBe(200);
+    expect((await call('admin/offers/vendor-free/approve',{},'admin')).status).toBe(200);
     const result = await call('ingest/offers', [{ ...offer, audience: 'unclear', requirements: ['unknown'] }]);
     expect((result.body.results as { unchanged: boolean }[])[0].unchanged).toBe(true);
     expect((await call('admin/queue', undefined, 'admin')).body.pending).toEqual([]);
@@ -1372,4 +1377,11 @@ describe('relative campaign duration at intake',()=>{
     const result=await call('ingest/offers',[payload]);expect(result.status).toBe(200);
     expect(sqlite.prepare("SELECT claim_end,end_kind,review_state,json_extract(evidence,'$.claimEndDerivation.quote') quote FROM offers WHERE id='vendor-week-campaign'").get()).toMatchObject({claim_end:'2026-10-16',end_kind:'date',review_state:'pending',quote});
   });
+});
+
+describe('general duration intake persistence',()=>{
+ it.each([['Free for 14 days','2026-10-09T13:55:42Z','2026-10-23','day'],['Free for 30 days','2026-10-09T13:55:42Z','2026-11-08','day'],['Free for a month','2026-01-31T13:55:42Z','2026-02-28','month']])('persists %s and retains pending status',async(quote,published,end,unit)=>{
+  const result=await call('ingest/offers',[{...offer,id:'vendor-generic-window',type:'free',publishedAt:published,sourceText:quote,evidence:{...evidence,excerpts:{benefit:quote,validity:quote}}}]);expect(result.status).toBe(200);
+  expect(sqlite.prepare("SELECT claim_end,end_kind,review_state,json_extract(evidence,'$.claimEndDerivation.components[0].unit') unit FROM offers WHERE id='vendor-generic-window'").get()).toMatchObject({claim_end:end,end_kind:'date',review_state:'pending',unit});
+ });
 });

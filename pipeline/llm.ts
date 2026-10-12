@@ -84,7 +84,7 @@ const PROMPT = `你是"AI 羊毛牧场"的信息抽取器。下面是某个 AI �
   - 所有购买价格必须写目录或价格原文的currency，不能把CNY/INR当USD。非美元还须fx:{currency:"CNY"或"INR",usdRate:{catalogId:"当前ECB目录ID"},date:"ECB实际数据日"}；scenario的fx放对应component里。原文价格/币种/单位不匹配则unknown。
   - 缺数量/匹配价格/支持方式：{kind:"unknown",reason:"供内部审核看的具体缺口",sources}；公测无匹配价格可加beta:true。不能把unknown当0。
   原文数量与价格可能不同句，excerpt可用覆盖两者的一段连续原文。不能将计算、来源缺口或审核待办写进公开title/valueText/steps/creditValidity。
-- claimStart / claimEnd：官方时区下的日期 YYYY-MM-DD；原文没有绝对截止、但声明全平台从明确开始日/发布日起免费一周时，完整摘录周期到excerpts.validity，并填写有来源的claimStart/publishedAt；claimEnd留null交程序自动推算。个人注册/领取/激活后7天是creditValidity，不是活动截止。不能把标题猜测或抓取日期当周期依据。
+- claimStart / claimEnd：官方时区下的日期 YYYY-MM-DD；原文没有绝对截止、但声明活动从明确开始日/发布日起持续明确周期（分钟/小时/天/周/自然月/自然年或复合周期）时，完整摘录周期到excerpts.validity，并填写有来源的claimStart/publishedAt；claimEnd留null交程序自动推算。个人注册/领取/激活后的有效期是creditValidity，不是活动截止。不能把标题猜测或抓取日期当周期依据。
 - 只有“2026年5月”时，不能输出2026-05-01；日精度不能补成00:00:00Z。原计划5月推出、本轮10月6日新增权益，抽当前扩展权益时claimStart=2026-10-06，publishedAt仅有日期就保留2026-10-06，不猜时刻。
 - 输出前逐项核对日期来源：原计划推出月份不能充当本次新增/扩展权益的开始日；只知道月份时不得补任何具体日，应留空。若正文明确本轮扩展的生效日期，则使用该日期。
 - endKind：有明确截止日期用 date；没写截止日期的活动（包括长期有效的新人礼、充值赠送）用 unknown；只有 type 为 standing 或 apply 时才用 standing

@@ -21,11 +21,12 @@ if (selected.some(id => !cases.some(c => c.id === id))) throw Error('Unknown VAL
 const results: object[] = [];
 const deadline = Date.now() + 12 * 60_000;
 for (const fixture of cases.filter(c => !selected.length || selected.includes(c.id))) {
+  const diagnostics:string[]=[];
   try {
     const url = `https://fixture.invalid/valuation-v2/${fixture.id}`;
     const page = { text: fixture.text, via: 'direct' as const, originalUrl: url, finalUrl: url,
       fetchedUrl: url, fetchMethod: 'direct' as const, sourceVerified: true, truncated: false };
-    const r = await extract(fixture.name, url, fixture.text, () => undefined,
+    const r = await extract(fixture.name, url, fixture.text, (...args) => { if(diagnostics.length<30)diagnostics.push(args.map(String).join(' ').slice(0,500)); },
       { platformIds: [fixture.platformId], allowPaid: false, budget: modelBudget,
         corrections: ['本次是只读程序验收：fixture.invalid承载合成的官方原文，不因测试域名或现实中没有这场活动而丢弃。仍逐字抽取并严格执行正常收录、价格及单位规则，不新增原文没有的数量或价格；结果不写条目或审批。'],
         deadlineAt: Math.min(deadline, Date.now() + 180_000) });
@@ -40,11 +41,11 @@ for (const fixture of cases.filter(c => !selected.length || selected.includes(c.
     const passed = !!value && value.version === 'v2' && value.usdEstimate === fixture.expected && value.usdMax === null
       && preview.errors.length === 0;
     results.push({ id: fixture.id, passed, expected: fixture.expected, provider: r.provider, tokens: r.tokens,
-      costCny: r.costCny, valuation: value, errors: preview.errors, factors: offer.valuationFactors });
+      costCny: r.costCny, diagnostics, valuation: value, errors: preview.errors, factors: offer.valuationFactors });
     console.log(JSON.stringify({ id: fixture.id, passed, expected: fixture.expected, actual: value?.usdEstimate ?? null,
       provider: r.provider, tokens: r.tokens, errors: preview.errors }));
   } catch (error) {
-    results.push({ id: fixture.id, passed: false, error: (error as Error).message });
+    results.push({ id: fixture.id, passed: false, diagnostics, error: (error as Error).message });
     console.log(JSON.stringify({ id: fixture.id, passed: false, error: (error as Error).message }));
   }
 }
