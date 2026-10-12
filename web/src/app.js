@@ -1708,8 +1708,11 @@ function renderIdentityTasks(box,data,append=false,managedIds=new Set()){
  if(managedIds.has(t.id))continue;
  const card=document.createElement('article');card.className='card';card.dataset.identityTask=t.id;card.dataset.offerId=t.entity?.canonical_offer_id||'';card.style.marginBottom='14px';
  const candidate=t.sources?.[0],historyOverflow=!!t.reviewPreparation?.canDecide&&t.reviewPreparation.scanned>(t.historyOptions||[]).length&&!t._historyLoaded,canDecide=t.reviewPreparation?.canDecide!==false&&!historyOverflow,historyOptions=(t.historyOptions||[]).filter(o=>o.offerId),needsIdentity=['identity','merge_conflict'].includes(t.kind)||(t.kind==='evidence_reopen'&&!t.entity);
+ const canPrepareNow=needsIdentity&&!canDecide&&['imminent','time_limited'].includes(t.reviewPreparation?.urgency)&&['needs_system_review','history_incomplete'].includes(t.reviewPreparation?.state)&&(t.sources||[]).length>0&&(t.sources||[]).every(source=>source.provenance?.sourceVerified&&!source.provenance?.truncated);
+ const nextAttemptMs=Date.parse(t.reviewPreparation?.nextAttemptAt||''),nextAttemptLabel=Number.isFinite(nextAttemptMs)?nextAttemptMs<=Date.now()?'等待下一轮定时任务':new Date(nextAttemptMs).toLocaleString('zh-CN'):null;
  card.innerHTML=`<div class="row" style="justify-content:space-between"><b>${esc(t.display?.title||t.candidateDisplay?.title||IDENTITY_KIND[t.kind]||'活动审核')}</b><span class="chip">${esc(t.visibilityRestoration?'恢复发布待审':IDENTITY_KIND[t.kind]||t.kind)}</span></div><p>${esc(t.display?.valueText||t.candidateDisplay?.valueText||'先核对原文，再决定是否属于同一活动。')}</p>
- ${!canDecide?`<div class="card small" data-identity-preparation><b>${historyOverflow?'历史活动需要逐页核对':'系统核查中'}</b><p>${esc(t.reviewPreparation?.reason||'历史活动尚未查完')}</p><p>${historyOverflow?'请加载完整列表；读完之前不能判断是否为独立活动。':'这一步不用填写内部身份 ID，也不需要先通过或拒绝。'}</p>${historyOverflow?'<button type="button" class="btn sm" data-identity-load-history>加载完整历史活动</button>':''}</div>`:''}
+ ${t.reviewPreparation?.urgency==='imminent'?`<p class="small warn-note" data-identity-urgency>记录的领取截止：${esc(t.reviewPreparation.deadline||'即将到期')}。系统优先核查；证据不足时仍保持待审，不会自动上架。</p>`:t.reviewPreparation?.urgency==='time_limited'?`<p class="small warn-note" data-identity-urgency>${t.reviewPreparation.deadline?`记录的领取截止：${esc(t.reviewPreparation.deadline)}。`:'限时权益，准确截止日期尚未确认。'}系统优先核查；请留意实际截止时间。</p>`:t.reviewPreparation?.urgency==='dated'?`<p class="small" data-identity-urgency>记录的领取截止：${esc(t.reviewPreparation.deadline)}</p>`:t.reviewPreparation?.urgency==='expired'?'<p class="small warn-note" data-identity-urgency>记录的领取期限已过；如仍属实，只能核对是否作为历史活动保留。</p>':''}
+ ${!canDecide?`<div class="card small" data-identity-preparation><b>${historyOverflow?'历史活动需要逐页核对':'系统核查中'}</b><p>${esc(t.reviewPreparation?.reason||'历史活动尚未查完')}</p><p>${historyOverflow?'请加载完整列表；读完之前不能判断是否为独立活动。':'这一步不用填写内部身份 ID，也不需要先通过或拒绝。'}</p>${nextAttemptLabel?`<p>最早可重试：${esc(nextAttemptLabel)}；由下一轮定时任务执行。</p>`:''}${historyOverflow?'<button type="button" class="btn sm" data-identity-load-history>加载完整历史活动</button>':''}${canPrepareNow?'<button type="button" class="btn sm" data-identity-prepare-now>立即核对历史活动</button>':''}</div>`:''}
  ${canDecide&&needsIdentity?`<div class="card small" data-identity-guidance><b>系统建议 · 仍需人工决定</b><p>${esc(t.reviewPreparation?.reason||'请根据官方原文核对是否为同一次发放。')}</p>${t.reviewPreparation?.modelResult?.relation==='SAME'&&historyOptions.some(o=>o.entityId===t.reviewPreparation.modelResult.entityId)?`<p>模型辅助找到可能对应的旧活动：${esc(historyOptions.find(o=>o.entityId===t.reviewPreparation.modelResult.entityId)?.title)}。请核对领取机制与活动轮次，不能据此直接通过。</p>`:t.reviewPreparation?.modelResult?'<p>模型未能确认唯一对应活动；请以官方原文和完整历史列表为准。</p>':''}</div>`:''}
  ${needsIdentity&&t.candidateDisplay?`<div class="small"><b>本次候选</b> · ${esc(PMAP[t.candidateDisplay.platformId]?.name||t.candidateDisplay.platformId||'发放方待核')} · ${esc(t.candidateDisplay.claimMethod||'领取方式待核')}</div>`:''}
  ${!needsIdentity && t.display ? reviewValuationBlock(t.display) : ''}
@@ -1726,6 +1729,19 @@ function renderIdentityTasks(box,data,append=false,managedIds=new Set()){
  <div class="row review-actions">${(t.visibilityBlocked||!canDecide?[]:!needsIdentity?[['approve','预览通过'],['reject','预览拒绝']]:[...(t.historyOptions&&!historyOptions.length?[]:[['same','关联同一活动']]),['new','建立独立待审活动'],...(t.historyOptions&&!historyOptions.length?[]:[['distinct','确认与所选旧活动不同']]),...(ADM.role!=='reviewer'?[['same_claim','关联原拒绝主张']]:[]),['reject','预览拒绝']]).map(([a,l])=>`<button type="button" class="btn sm" data-identity-action="${a}">${l}</button>`).join('')}</div>
  <div data-identity-preview hidden></div><p role="status" data-identity-feedback></p>`;
  box.append(card);
+ card.querySelector('[data-identity-prepare-now]')?.addEventListener('click',async event=>{
+  const button=event.currentTarget,feedback=card.querySelector('[data-identity-feedback]');button.disabled=true;
+  try{
+   for(let page=0;page<4;page++){
+    const result=await adm('/identity/tasks/'+encodeURIComponent(t.id)+'/prepare',{requestId:'ui-identity-prepare-'+Date.now()+'-'+Math.random().toString(36).slice(2),expectedRevision:t.revision});
+    t.revision=result.revision;
+    if(result.status==='scanning')continue;
+    if(result.status==='needs_source'){feedback.textContent='历史核对已启动，但官方来源仍需系统补证；请保留待审。';button.disabled=false;return;}
+    await admQueue();return;
+   }
+   feedback.textContent='已核对四页历史活动；点击可继续，尚不能作身份决定。';button.disabled=false;
+  }catch(error){feedback.textContent=error.message;button.disabled=false;}
+ });
  card.querySelector('[data-identity-load-history]')?.addEventListener('click',async event=>{
   const button=event.currentTarget;button.disabled=true;
   try{

@@ -1,4 +1,4 @@
-import {preparationView} from './preparation';
+import {identityUrgency,preparationView} from './preparation';
 import {offerIn} from '../../shared/ingest';
 import type {CanonicalTermsV1} from '../../shared/identity/types';
 
@@ -15,6 +15,7 @@ export function identityReviewPresentation(task:{kind:string;suggestion_json?:st
  const facts=source?JSON.parse(source.facts_json) as CanonicalTermsV1:null;
  const suggestion=task.suggestion_json?JSON.parse(task.suggestion_json):null;
  const prepared=preparationView(suggestion);
+ const temporal=identityUrgency(sources.map(row=>row.raw_candidate_json),sources.map(row=>row.facts_json));
  const sourceReverified=prepared?.status==='ready'&&!!prepared.sourceCandidateId&&!!prepared.sourceOriginalObservationId;
  const needsSource=!provenance.some(p=>p.sourceVerified&&!p.truncated);
  const needsFacts=!facts||facts.issuerProductId.state!=='known'||facts.mechanism.state!=='known'||!facts.benefitPools.length;
@@ -27,5 +28,5 @@ export function identityReviewPresentation(task:{kind:string;suggestion_json?:st
   :state==='history_incomplete'?'历史活动尚未查完，不能根据当前结果确认是否独立。'
   :state==='needs_system_review'?'系统仍在提取领取机制并核对历史活动；现在不需要你猜测内部身份 ID。'
   :'候选来源与历史范围已经核对，可以继续人工审核。');
- return {candidateDisplay,provenance,historyOptions:prepared?.entries??[],reviewPreparation:{state:effectiveState,reason,canDecide:effectiveState==='ready',scanned:prepared?.scanned??0,productId:prepared?.productId??null,nextAttemptAt:prepared?.nextAttemptAt??null,sourceReverified,sourceCandidateId:prepared?.sourceCandidateId??null,sourceReverifiedCandidateIds:prepared?.sourceReverifiedCandidateIds??[],sourceUrl:prepared?.sourceUrl??null,modelResult:prepared?.modelResult??null}};
+ return {candidateDisplay,provenance,historyOptions:prepared?.entries??[],reviewPreparation:{state:effectiveState,reason,canDecide:effectiveState==='ready',deadline:temporal.deadline,urgency:temporal.urgency,scanned:prepared?.scanned??0,productId:prepared?.productId??null,nextAttemptAt:prepared?.nextAttemptAt??null,sourceReverified,sourceCandidateId:prepared?.sourceCandidateId??null,sourceReverifiedCandidateIds:prepared?.sourceReverifiedCandidateIds??[],sourceUrl:prepared?.sourceUrl??null,modelResult:prepared?.modelResult??null}};
 }

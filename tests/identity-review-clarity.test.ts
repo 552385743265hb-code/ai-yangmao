@@ -19,6 +19,17 @@ it('A candidate with unknown identity shows its actual activity and provenance w
   expect(f.sqlite.prepare('SELECT count(*) n FROM offers').get()).toEqual({n:0});
  }finally{f.sqlite.close();}
 });
+it('an imminent unknown-identity candidate exposes its deadline without unlocking publication',async()=>{
+ const f=auditFixture();try{
+  const text='Campaign deadline grants a free benefit to new accounts.',o=await f.observation('imminent-card',text);
+  const facts=canonicalTermsSchema.parse({schemaVersion:'terms-v1',issuerProductId:unknown,mechanism:unknown,benefitPools:[],eligibility:unknown,geography:unknown,claimChannels:unknown,costs:unknown,claimWindow:unknown,occurrenceAnchor:unknown});
+  const end=new Date(Date.now()+2*86400_000).toISOString().slice(0,10);
+  const candidate=await f.candidate('imminent-card',o,text,facts,{id:'imminent-card',title:'两天后截止的福利',endKind:'date',claimEnd:end});
+  const created=await f.call('ingest/identity-candidates/'+candidate.candidateId+'/resolve',{requestId:'imminent-card-resolve'});
+  const task=(await f.call('admin/identity/tasks',undefined,true)).body.tasks.find((x:any)=>x.id===created.body.taskId);
+  expect(task.reviewPreparation).toMatchObject({urgency:'imminent',deadline:end,canDecide:false});
+ }finally{f.sqlite.close();}
+});
 it('identity history comparison paginates the whole verified issuer scope and exposes old activity labels',async()=>{
  const f=auditFixture();try{
   for(let i=0;i<41;i++)f.sqlite.prepare("INSERT INTO benefit_entities(id,platform_id) VALUES(?,'vendor')").run('historical-'+String(i).padStart(2,'0'));
