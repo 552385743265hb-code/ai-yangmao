@@ -93,13 +93,9 @@ function statusOf(o, k = 0) {
   const at = k === 0 ? new Date() : dayAt(k);
   if (o.withdrawnAt && Date.parse(o.withdrawnAt) <= at.getTime()) return 'ended';
   if (o.ek === 'date' && endInstant(o).getTime() < at.getTime()) return 'ended';
-  if (o.verify === 'evidence_missing') return 'stale';
-  const age = o.verifiedAt ? at.getTime() - Date.parse(o.verifiedAt) : Infinity;
-  if (o.ty === 'standing') return age >= 14 * DAY ? 'stale' : 'standing';
-  if (o.ty === 'apply') return age >= 14 * DAY ? 'stale' : 'open';
+  if (o.ty === 'standing') return 'standing';
+  if (o.ty === 'apply') return 'open';
   if (o.s != null && startInstant(o).getTime() > at.getTime()) return 'upcoming';
-  // 与 src/shared/lifecycle.ts 一致：管理员实测的限时活动，有截止日期就到截止前一直有效，否则 7 天内要复测
-  if (age > (o.st === 'tested' ? (o.ek === 'date' ? Infinity : 7 * DAY) : 48 * 3600_000)) return 'stale';
   if (o.ek === 'date' && endInstant(o).getTime() - at.getTime() <= 3 * DAY) return 'ending';
   return 'active';
 }
@@ -278,7 +274,7 @@ function leftText(o) {
   if (st === 'standing') return `常驻 · ${ago(o.vf)}核验`;
   if (st === 'open') return '长期开放申请';
   if (o.evidence?.claimEndDerivation) { const window = countdownWindow(o); if (window) return `${estimatedCountdown(window)} · 截止估算`; }
-  if (o.ek === 'unknown') return '截止未知 · 每 24 小时复核';
+  if (o.ek === 'unknown') return '截止未知';
   if (o.e === 0) return '今天结束';
   if (o.e === 1) return '明天结束';
   return `还剩 ${o.e} 天`;
@@ -614,14 +610,13 @@ function pToday() {
     ${kpi('3 天内结束', ending.length, '条', daily((o, k) => activeOn(o, k) && o.ek === 'date' && o.e - k <= 3), 'var(--serious)')}
     ${kpi('常驻额度', stand.length, '项', daily((o, k) => o.ty === 'standing' && o.since <= k), 'var(--s6)')}
   </section>
-  <section>${secH('倒计时', '未来 7 天内结束；约为按公告周期估算，待核验活动请先确认领取页')}
+  <section>${secH('倒计时', '未来 7 天内结束；“约”为按公告周期估算')}
     <div class="clocks">${soon.map(({o,window}) => {
       const end = window.end, total = Math.max(DAY, end - startInstant(o)), frac = clamp((end - NOW) / total, 0, 1);
-      const stale = statusOf(o) === 'stale';
-      const col = stale ? 'var(--warn)' : end - NOW <= DAY ? 'var(--critical)' : end - NOW <= 3 * DAY ? 'var(--serious)' : 'var(--good)';
+      const col = end - NOW <= DAY ? 'var(--critical)' : end - NOW <= 3 * DAY ? 'var(--serious)' : 'var(--good)';
       const timer = window.estimated ? `<div class="cd" data-estimated-end="${end.getTime()}"${window.earliest ? ` data-estimated-start="${window.earliest.getTime()}"` : ''}>${estimatedCountdown(window)}</div>` : `<div class="cd" data-end="${end.getTime()}">${cdText(end - NOW)}</div>`;
-      const note = [window.estimated ? '截止估算 · 官方未公布精确时刻' : '', stale ? '待核验 · 请先确认领取页' : ''].filter(Boolean).join('；');
-      return `<a class="clock" href="#offer-${o.id}">${ringSvg(frac, 54, col)}<div style="min-width:0">${timer}<div class="ttl">${esc(o.t)}</div>${note ? `<div class="small ${stale ? 'warn-note' : 'muted'}">${esc(note)}</div>` : ''}</div></a>`;
+      const note = window.estimated ? '截止估算 · 官方未公布精确时刻' : '';
+      return `<a class="clock" href="#offer-${o.id}">${ringSvg(frac, 54, col)}<div style="min-width:0">${timer}<div class="ttl">${esc(o.t)}</div>${note ? `<div class="small muted">${esc(note)}</div>` : ''}</div></a>`;
     }).join('') || emptySheep('没有即将结束的活动。')}</div>
   </section>
   <section class="grid g2">
@@ -814,7 +809,7 @@ function pAll() {
     ${sel('f-req', '门槛', [['', '不限'], ['zero', '零门槛'], ['nooversea', '不需要海外条件'], ['nopay', '不用花钱'], ['special', '学生 / 企业 / 邀请 / 定向']])}
     ${sel('f-c', '领取方式', [['', '全部方式'], ...Object.entries(CLAIM)])}
     ${sel('f-p', '平台', [['', '全部平台'], ...PLATFORMS.filter(p => OFFERS.some(o => o.p === p.id)).map(p => [p.id, p.name])])}
-    ${sel('f-st', '状态', [['claimable', '现在或即将可领'], ['', '全部状态'], ['active', '进行中'], ['ending', '即将结束'], ['upcoming', '未开始'], ['standing', '常驻'], ['stale', '待核验'], ['ended', '已结束']])}
+    ${sel('f-st', '状态', [['claimable', '现在或即将可领'], ['', '全部状态'], ['active', '进行中'], ['ending', '即将结束'], ['upcoming', '未开始'], ['standing', '常驻'], ['ended', '已结束']])}
     ${sel('f-value', '估值方法', [['', '全部方法'], ['official', '仅看官方价值'], ['scenario', '用量估算'], ['unknown', '价值待定']])}
     ${sel('f-sort', '排序', [['score', '薅度分高'], ['new', '新上架'], ['end', '快截止'], ['value', '月度参考价值高']])}
   </div>
@@ -856,14 +851,14 @@ function pLibrary() {
   const mods = Object.keys(MODAL);
   const fresh = list.slice().sort((a, b) => a.vf - b.vf);
   const rank = pids.filter(pid => totals(pid).priced > 0);
-  main().innerHTML = ribbon() + ph('常驻额度库', '长期免费的额度，没有变化时不重复推送。每 7 天核验一次，14 天没核验成功就转为待核验。') + summaryHtml(available) + `
+  main().innerHTML = ribbon() + ph('常驻额度库', '长期权益沿用已批准条款；如发放方明确撤回或条件变化，再由管理员修订。') + summaryHtml(available) + `
   <section class="grid g2" style="margin-top:0">
     ${VALUE_GROUPS.map(([group, label]) => `<div class="card"><h3>平台 × 模态 · ${label}</h3><p class="sub">月度参考价值；同一共享权益在各适用模态展示，格子之间不能相加。? 表示覆盖但此口径未计价。</p><div class="chart" id="cMatrix-${group}" style="height:${pids.length * 30 + 60}px"></div></div>`).join('')}
   </section>
   <section><div class="card"><h3>常驻额度月度价值排行</h3><p class="sub">按平台汇总当前可领权益，官方口径与用量估算分别列值；未知不进入美元排行。刷新周期见各活动。</p><div class="chart" id="cRank" style="height:${rank.length * 42 + 90}px"></div></div></section>
-  <section>${secH('核验新鲜度', '上线后由管线每 7 天自动核验')}
+  <section>${secH('批准与证据记录', '最近一次核验时间仅作记录，不会使已批准权益自动失效')}
     <div class="card tbl" style="padding:4px 8px"><table><thead><tr><th>额度</th><th>平台</th><th>月度参考价值</th><th>最近核验</th><th>状态</th></tr></thead><tbody>
-    ${fresh.map(o => { const st = statusOf(o), d = -o.vf; const status = st !== 'standing' ? stChip(o) : d >= 8 ? stBadge('warn', '!', '快到核验期') : stBadge('good', '✓', '新鲜'); return `<tr class="link" data-href="#offer-${o.id}"><td>${esc(o.t)}</td><td>${esc(o.plat.name)}</td><td class="n">${valLabel(o)}</td><td class="n">${ago(o.vf)}</td><td>${status}</td></tr>`; }).join('')}
+    ${fresh.map(o => { const status = statusOf(o) === 'standing' ? stBadge('good', '✓', '已批准') : stChip(o); return `<tr class="link" data-href="#offer-${o.id}"><td>${esc(o.t)}</td><td>${esc(o.plat.name)}</td><td class="n">${valLabel(o)}</td><td class="n">${ago(o.vf)}</td><td>${status}</td></tr>`; }).join('')}
     </tbody></table></div>
   </section>
   <section>${secH('全部常驻额度')}${ocards(list.slice().sort((a, b) => score(b) - score(a)))}</section>`;
@@ -1226,15 +1221,15 @@ function pOffer(id) {
     const col = o.e === 0 ? 'var(--critical)' : st === 'ending' ? 'var(--serious)' : st === 'upcoming' ? 'var(--s1)' : 'var(--good)';
     timeBlock = `<div class="ring-big">${ringSvg(frac, 92, col, 8)}<div><div class="small muted">${st === 'upcoming' ? '距离开始' : '距离领取截止'}</div><div class="cd" data-end="${target.getTime()}">${cdText(target - NOW)}</div><div class="small muted">按官方${tzName}换算成你的本地时间</div></div></div>`;
   } else if (st === 'ended') timeBlock = `<div class="ring-big">${ringSvg(0, 92, 'var(--muted)', 8)}<div><div class="cd">已结束</div><div class="small muted">${leftText(o)}${o.why ? ` · ${esc(o.why)}` : ''}</div></div></div>`;
-  else if (o.ek === 'unknown') timeBlock = `<div class="ring-big">${ringSvg(0.6, 92, 'var(--muted)', 8)}<div><div class="cd">截止未知</div><div class="small muted">官方没写截止日期；每 24 小时复核一次权益页</div></div></div>`;
-  else timeBlock = `<div class="ring-big">${ringSvg(st === 'stale' ? 0.35 : 1, 92, st === 'stale' ? 'var(--warn)' : o.ty === 'apply' ? 'var(--s7)' : 'var(--s6)', 8)}<div><div class="cd">${st === 'stale' ? '待核验' : o.ty === 'apply' ? '长期开放' : '常驻'}</div><div class="small muted">每 7 天核验一次 · 上次成功核验在${ago(o.vf)}</div></div></div>`;
+  else if (o.ek === 'unknown') timeBlock = `<div class="ring-big">${ringSvg(0.6, 92, 'var(--muted)', 8)}<div><div class="cd">截止未知</div><div class="small muted">发放方未公布截止日；明确撤回或条件变化时更新</div></div></div>`;
+  else timeBlock = `<div class="ring-big">${ringSvg(1, 92, o.ty === 'apply' ? 'var(--s7)' : 'var(--s6)', 8)}<div><div class="cd">${o.ty === 'apply' ? '长期开放' : '常驻'}</div><div class="small muted">沿用已批准条款 · 证据核验于${ago(o.vf)}</div></div></div>`;
   if (o.evidence?.claimEndDerivation && st !== 'ended' && st !== 'upcoming') {
     const window = countdownWindow(o);
     if (window) timeBlock = `<div class="ring-big">${ringSvg(0.6,92,st === 'stale' ? 'var(--warn)' : 'var(--good)',8)}<div><div class="small muted">距离推算截止</div><div class="cd" data-estimated-end="${window.end.getTime()}"${window.earliest ? ` data-estimated-start="${window.earliest.getTime()}"` : ''}>${estimatedCountdown(window)}</div><div class="small muted">按公告活动周期推算 · 精确截止待确认</div></div></div>`;
   }
   const endLocal = o.ek === 'date' ? endInstant(o) : null;
-  const deadline = o.evidence?.claimEndDerivation ? `${md(dayAt(o.e))}（推算）<small>按公告活动周期推算，官方未公布精确截止时刻</small>` : o.ek === 'date' ? `${md(dayAt(o.e))} 23:59<small>官方按${tzName}${endLocal && o.tz !== viewerTz ? `；你的本地时间 ${md(endLocal)} ${hm(endLocal)}` : ''}</small>` : o.ek === 'unknown' ? '截止未知<small>必须有仍然有效的权益页作证据</small>' : '长期<small>没有截止日期</small>';
-  const verify = st === 'stale' ? (o.verify === 'evidence_missing' ? '当前证据页未能逐字确认保存的原文；可能是网页改写或权益变化。此前的审核通过仍保留，待重新核验。' : `${ago(o.vf)}最后一次核验成功，之后没有核验成功，已转为待核验；此前的审核通过仍保留。`) : `${ago(o.vf)}核验：${o.verify || '官方页面可以打开'}`;
+  const deadline = o.evidence?.claimEndDerivation ? `${md(dayAt(o.e))}（推算）<small>按公告活动周期推算，官方未公布精确截止时刻</small>` : o.ek === 'date' ? `${md(dayAt(o.e))} 23:59<small>官方按${tzName}${endLocal && o.tz !== viewerTz ? `；你的本地时间 ${md(endLocal)} ${hm(endLocal)}` : ''}</small>` : o.ek === 'unknown' ? '截止未知<small>发放方未公布截止日期</small>' : '长期<small>没有截止日期</small>';
+  const verify = o.verify === 'evidence_missing' ? '此前的抓取未能逐字匹配原文，可能是网页改写；批准记录保留，当前状态按截止日期或明确撤回判定，不要求重新审批。' : `${ago(o.vf)}核验：${o.verify || '官方页面可以打开'}`;
   const officialUrl = (o.evidence && o.evidence.url) || o.plat.site;
   const hist = [];
   hist.push([o.fs, `系统发现（最早出现在：${o.early}）`]);

@@ -17,7 +17,7 @@ describe('home deadline reminders',()=>{
   const f=fixture();const rows=[campaign('OpenCode',{ek:'date',e:3,verify:'evidence_missing',publishedAt:'2026-10-08T14:43:24Z',evidence:{excerpts:{benefit:'Step 5 Preview is now free on OpenCode for a week'}}}),campaign('Nous',{publishedAt:'2026-10-08'}),campaign('Cline'),campaign('Kilo',{publishedAt:'2026-10-09T13:55:42Z',s:-3})];
   f.run(`OFFERS=${JSON.stringify(rows)};`);expect(f.run('countdownCandidates(OFFERS).map(x=>x.o.id)')).toEqual(['OpenCode','Cline','Nous','Kilo']);
   expect(f.run('countdownCandidates(OFFERS).filter(x=>x.window.estimated).length')).toBe(4);
-  expect(f.run('statusOf(OFFERS[0])')).toBe('stale');
+  expect(f.run('statusOf(OFFERS[0])')).toBe('active');
  });
  it('does not truncate at five or include ended, future, personal-validity, or unanchored campaigns',()=>{
   const f=fixture();const good=Array.from({length:6},(_,i)=>campaign('p'+i));const bad=[campaign('ended',{ek:'date',e:-1}),campaign('future',{s:1}),campaign('personal',{v:'注册后免费使用一周'}),campaign('unanchored',{s:null,publishedAt:null}),campaign('long',{ek:'date',e:20})];

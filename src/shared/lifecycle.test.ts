@@ -20,6 +20,15 @@ describe('时区换算', () => {
 });
 
 describe('状态', () => {
+  it('已批准条目以批准的期限和明确撤回判定状态，旧核验失败不撤销批准', () => {
+    const approved = { ...base, reviewState: 'approved' as const, lastVerifiedAt: '2026-01-01T00:00:00Z', verifyResult: 'evidence_missing' };
+    expect(liveStatus(approved, at('2026-10-05T12:00:00Z'))).toBe('active');
+    expect(liveStatus(approved, at('2026-10-08T00:00:00Z'))).toBe('ending');
+    expect(liveStatus(approved, at('2026-10-10T16:00:01Z'))).toBe('ended');
+    expect(liveStatus({ ...approved, withdrawnAt: '2026-10-04T00:00:00Z' }, at('2026-10-05T12:00:00Z'))).toBe('ended');
+    expect(liveStatus({ ...approved, type: 'standing', endKind: 'standing', claimEnd: null }, at('2026-10-05T12:00:00Z'))).toBe('standing');
+    expect(liveStatus({ ...approved, endKind: 'unknown', claimEnd: null }, at('2026-10-05T12:00:00Z'))).toBe('active');
+  });
   it('截止前 3 天内为即将结束', () => {
     expect(liveStatus(fresh(base, '2026-10-08T00:00:00Z'), at('2026-10-08T00:00:00Z'))).toBe('ending');
     expect(liveStatus(base, at('2026-10-05T12:00:00Z'))).toBe('active');

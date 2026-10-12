@@ -81,7 +81,7 @@ it('A29 manual different constraints remain hard vetoes between canonical groups
 });
 it('A37 automatic verification queues and stale results cannot mutate a merged alias',async()=>{
  const ids=await seedMerge(f),plan=await mergePlan(f,ids);await service.applyMerge(plan,'verification',plan.planHash);const env={DB:f.db,INGEST_TOKEN:'synthetic-ingest-token'} as any,headers={Authorization:'Bearer synthetic-ingest-token','Content-Type':'application/json'};
- const queued=await worker.fetch(new Request('https://local.test/api/ingest/verification-queue?force=1',{headers}),env,{} as any);expect((await queued.json() as any).offers.map((o:any)=>o.id)).toEqual(['offer-0']);
+ const queued=await worker.fetch(new Request('https://local.test/api/ingest/verification-queue?force=1',{headers}),env,{} as any);expect((await queued.json() as any).offers).toEqual([]);
  const {displayOffer}=await import('./fixtures/identity/offer');const evidence=displayOffer().evidence;const result=await worker.fetch(new Request('https://local.test/api/ingest/verify',{method:'POST',headers,body:JSON.stringify({offerId:'offer-1',url:evidence.url,text:Object.values(evidence.excerpts).join('\n'),trustedDirect:true})}),env,{} as any);expect(result.status).toBe(404);
  f.sqlite.exec("UPDATE offers SET review_state='pending',evidence=json_set(evidence,'$.tier','media') WHERE id='offer-1'");const claim=await worker.fetch(new Request('https://local.test/api/ingest/official-reviews/offer-1/claim',{method:'POST',headers,body:'{}'}),env,{} as any);expect(await claim.json()).toMatchObject({claimed:false});
 });

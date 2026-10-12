@@ -165,13 +165,13 @@ describe('workflow recovery and race regressions',()=>{
     }
     expect(sqlite.prepare('SELECT last_verified_at FROM offers').get()).toEqual({last_verified_at:'2026-01-01T00:00:00Z'});
   });
-  it('does not restore old evidence over an administrator edit made during verification',async()=>{
+  it('does not write approved evidence during a legacy verification request',async()=>{
     await call('ingest/offers',[offer]);await call('admin/offers/vendor-free/approve',{},'admin');
     const corrected={...evidence,url:'https://vendor.example/corrected'};
     beforeStatement=sql=>{if(sql.startsWith('update "offers"')){beforeStatement=undefined;sqlite.prepare("UPDATE offers SET evidence=?,updated_at='2030-01-01T00:00:00Z' WHERE id='vendor-free'").run(JSON.stringify(corrected));}};
     const result=await call('ingest/verify',{trustedDirect:true,offerId:offer.id,url:evidence.url,text:Object.values(evidence.excerpts).join(' ')});
-    expect(result.body).toMatchObject({verified:false,stale:true});
-    expect(JSON.parse((sqlite.prepare('SELECT evidence FROM offers').get() as any).evidence).url).toBe(corrected.url);
+    expect(result.body).toMatchObject({verified:false,notRequired:true});
+    expect(JSON.parse((sqlite.prepare('SELECT evidence FROM offers').get() as any).evidence).url).toBe(evidence.url);
   });
   it('keeps a reviewer proposal edit made while a new extraction is being saved',async()=>{
     await call('ingest/offers',[offer]);await call('admin/offers/vendor-free/approve',{},'admin');
@@ -284,6 +284,16 @@ function legacyProposal(candidate: object) {
 }
 
 describe('official evidence verification', () => {
+  it('does not schedule or apply a legacy evidence probe after a human has approved the offer', async () => {
+    await call('ingest/offers', [offer]);
+    expect((await call('admin/offers/vendor-free/approve', {}, 'admin')).status).toBe(200);
+    const before = sqlite.prepare("SELECT last_verified_at,verify_result,updated_at FROM offers WHERE id='vendor-free'").get();
+    expect((await call('ingest/verification-queue?force=1')).body.offers).toEqual([]);
+    const probe = await call('ingest/verify', { trustedDirect: true, offerId: offer.id, url: evidence.url, text: 'The old sentence disappeared.' });
+    expect(probe.body).toMatchObject({ verified: false, notRequired: true });
+    expect(sqlite.prepare("SELECT last_verified_at,verify_result,updated_at FROM offers WHERE id='vendor-free'").get()).toEqual(before);
+    expect((await call('offers/vendor-free')).body.offer).toMatchObject({ reviewState: 'approved', status: 'active' });
+  });
   it('blocks a new-ID FAQ daily-credit duplicate and preserves the approved amount',async()=>{
     await call('ingest/offers',[{...offer,id:'vendor-daily',type:'standing',endKind:'standing',title:'Vendor 免费档每日积分／签到奖励',valueText:'每日60积分'}]);
     await call('admin/offers/vendor-daily/approve',{},'admin');
@@ -403,7 +413,7 @@ describe('official evidence verification', () => {
     const denied = await worker.fetch(new Request('https://local.test/api/admin/offers/vendor-free'), env, {} as ExecutionContext);
     expect(denied.status).toBe(401);
   });
-  it('keeps verification, review queue and notices within D1 limits above 100 offers', async () => {
+  it('keeps the disabled verification queue, review queue and notices within D1 limits above 100 offers', async () => {
     await call('ingest/offers', [offer]);
     sqlite.prepare("UPDATE offers SET review_state='approved',last_verified_at=NULL WHERE id='vendor-free'").run();
     const columns = (sqlite.prepare('PRAGMA table_info(offers)').all() as { name: string }[]).map(c => c.name);
@@ -414,10 +424,7 @@ describe('official evidence verification', () => {
     for (const suffix of ['', '?sourceId=source&force=1']) {
       const queue = await call(`ingest/verification-queue${suffix}`);
       expect(queue.status).toBe(200);
-      const offers = queue.body.offers as { id: string; proposalHash: string | null }[];
-      expect(offers).toHaveLength(120);
-      expect(offers.find(o => o.id === 'vendor-free-119')?.proposalHash).toBe('proposal-hash');
-      expect(offers.find(o => o.id === 'vendor-free')?.proposalHash).toBeNull();
+      expect(queue.body.offers).toEqual([]);
     }
     expect((await call('ingest/verification-queue?sourceId=missing')).body.offers).toEqual([]);
     await expect(buildNotice(env, 'digest', 'telegram')).resolves.toBeDefined();
@@ -430,19 +437,19 @@ describe('official evidence verification', () => {
     expect(review.body.pending).toHaveLength(120);
   });
 
-  it('refreshes an unchanged offer only when its saved quotations still appear', async () => {
+  it('does not refresh an approved offer when a legacy verifier submits saved quotations', async () => {
     expect((await call('ingest/offers', [offer])).status).toBe(200);
     sqlite.prepare("UPDATE offers SET review_state='approved',last_verified_at='2026-09-27T00:00:00Z' WHERE id='vendor-free'").run();
     await call('ingest/snapshots', { sourceId: 'source', url: evidence.url, ok: true, hash: 'unchanged' });
     const before = sqlite.prepare("SELECT last_verified_at FROM offers WHERE id='vendor-free'").get() as { last_verified_at: string };
     expect(before.last_verified_at).toBe('2026-09-27T00:00:00Z');
     const queue = await call('ingest/verification-queue');
-    expect((queue.body.offers as { id: string }[]).map(row => row.id)).toContain('vendor-free');
+    expect(queue.body.offers).toEqual([]);
 
     const verified = await call('ingest/verify', { trustedDirect: true, offerId: 'vendor-free', url: evidence.url, text: Object.values(evidence.excerpts).join('\n') });
-    expect(verified.body.verified).toBe(true);
+    expect(verified.body).toMatchObject({ verified: false, notRequired: true });
     const after = sqlite.prepare("SELECT last_verified_at FROM offers WHERE id='vendor-free'").get() as { last_verified_at: string };
-    expect(Date.parse(after.last_verified_at)).toBeGreaterThan(Date.parse(before.last_verified_at));
+    expect(after.last_verified_at).toBe(before.last_verified_at);
     expect((await call('ingest/verification-queue')).body.offers).toEqual([]);
 
     const missing = await call('ingest/verify', { trustedDirect: true, offerId: 'vendor-free', url: evidence.url, text: 'Offer removed' });
@@ -455,14 +462,14 @@ describe('official evidence verification', () => {
     expect(liveStatus({ type: 'standing', claimStart: null, claimEnd: null, endKind: 'standing', sourceTz: 'UTC', lastVerifiedAt: '2026-09-30T00:00:00Z', withdrawnAt: '2026-09-30T01:00:00Z' }, new Date('2026-09-30T02:00:00Z'))).toBe('ended');
   });
 
-  it('removes an offer when current official evidence disappears and records a confirmed withdrawal', async () => {
+  it('keeps approved terms despite an old probe error, then ends on an explicit withdrawal', async () => {
     await call('ingest/offers', [offer]);
     await call('admin/offers/vendor-free/approve', {}, 'admin');
     const missing = await call('ingest/verify', { trustedDirect: true, offerId: 'vendor-free', url: evidence.url, text: 'The benefit has been discontinued.' });
     expect(missing.body.verified).toBe(false);
-    expect((await call('offers?view=claimable')).body.count).toBe(0);
+    expect((await call('offers?view=claimable')).body.count).toBe(1);
     expect((await call('admin/notify?kind=digest', undefined, 'admin')).body).toMatchObject({ needsVerificationCount: 0 });
-    expect((await call('admin/queue', undefined, 'admin')).body.needsVerification).toEqual([expect.objectContaining({id:'vendor-free',reviewState:'approved',status:'stale'})]);
+    expect((await call('admin/queue', undefined, 'admin')).body.needsVerification).toEqual([]);
     const withdrawn = await call('admin/offers/vendor-free/withdraw', { reason: 'The vendor ended its free allowance', evidenceUrl: 'https://vendor.example/withdrawal' }, 'admin');
     expect(withdrawn.body.status).toBe('ended');
     expect((await call('admin/queue', undefined, 'admin')).body.needsVerification).toHaveLength(0);
@@ -612,7 +619,7 @@ describe('review gates and preserved public version', () => {
     const verified = await call('ingest/verify', { trustedDirect: true, offerId: offer.id, url: evidence.url,
       text: 'All members can receive one hundred tokens when they register.', pageHash: hash, processedChange: true });
     expect(verified.body.verified).toBe(false);
-    expect((await call('admin/queue', undefined, 'admin')).body.needsVerification).toEqual([expect.objectContaining({id:'vendor-free',reviewState:'approved',status:'stale'})]);
+    expect((await call('admin/queue', undefined, 'admin')).body.needsVerification).toEqual([]);
   });
   it('does not claim a missing quote when all saved excerpts remain on an unprocessed changed page',async()=>{
     await call('ingest/offers',[{...offer,evidence:{...evidence,pageHash:'a'.repeat(64)}}]);
@@ -620,7 +627,7 @@ describe('review gates and preserved public version', () => {
     const before=sqlite.prepare("SELECT last_verified_at,verify_result FROM offers WHERE id='vendor-free'").get() as {last_verified_at:string;verify_result:string};
     const result=await call('ingest/verify',{trustedDirect:true,offerId:offer.id,url:evidence.url,
       text:Object.values(evidence.excerpts).join('\n')+'\nUnrelated footer changed.',pageHash:'b'.repeat(64),processedChange:false});
-    expect(result.body).toMatchObject({verified:false,unprocessedChange:true,unchanged:true});
+    expect(result.body).toMatchObject({verified:false,notRequired:true,unchanged:true});
     const after=sqlite.prepare("SELECT last_verified_at,verify_result FROM offers WHERE id='vendor-free'").get();
     expect(after).toEqual(before);
     expect((await call('admin/queue',undefined,'admin')).body.needsVerification).toEqual([]);
@@ -690,7 +697,7 @@ describe('review gates and preserved public version', () => {
     const body = { trustedDirect: true, offerId: offer.id, url: evidence.url, text: 'Unrelated page', pageHash: 'b'.repeat(64), processedChange: true };
     expect((await call('ingest/verify', body)).body.verified).toBe(false);
     expect((await call('ingest/verify', body)).body.verified).toBe(false);
-    expect((await call('admin/queue', undefined, 'admin')).body.needsVerification).toEqual([expect.objectContaining({id:'vendor-free',reviewState:'approved',status:'stale'})]);
+    expect((await call('admin/queue', undefined, 'admin')).body.needsVerification).toEqual([]);
   });
 
   it('keeps known dates and valuations when a later extraction omits them', async () => {
@@ -790,12 +797,12 @@ describe('notification delivery receipts', () => {
     expect(next.body.empty).toBe(true);
   });
 
-  it('never sends an urgent notice for an offer whose evidence is stale', async () => {
+  it('keeps an approved expiring offer eligible for an urgent preview despite an old verification date', async () => {
     const tomorrow = new Date(Date.now() + 86400_000).toISOString().slice(0, 10);
     await call('ingest/offers', [{ ...offer, claimEnd: tomorrow, endKind: 'date' }]);
     await call('admin/offers/vendor-free/approve', {}, 'admin');
     sqlite.prepare("UPDATE offers SET last_verified_at='2026-09-01T00:00:00Z' WHERE id='vendor-free'").run();
-    expect((await call('admin/notify?kind=urgent', undefined, 'admin')).body.empty).toBe(true);
+    expect((await call('admin/notify?kind=urgent', undefined, 'admin')).body.empty).toBe(false);
   });
 });
 
@@ -1211,7 +1218,7 @@ describe('repeated failed evidence checks are idempotent',()=>{
   const before=sqlite.prepare('SELECT * FROM offers WHERE id=?').get(offer.id);
   for(const next of [probe,{...probe,finalUrl:'https://unrelated.example/login'},probe]){expect((await call('ingest/verify',next)).body).toMatchObject({verified:false,unchanged:true});}
   expect(sqlite.prepare('SELECT * FROM offers WHERE id=?').get(offer.id)).toEqual(before);
-  const recovered=await call('ingest/verify',{...probe,text:Object.values(evidence.excerpts).join(' ')});expect(recovered.body.verified).toBe(true);
+  const recovered=await call('ingest/verify',{...probe,text:Object.values(evidence.excerpts).join(' ')});expect(recovered.body).toMatchObject({verified:false,notRequired:true,unchanged:true});
  });
 });
 

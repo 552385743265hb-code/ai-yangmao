@@ -7,6 +7,7 @@ export type EndKind = 'date' | 'unknown' | 'standing';
 export type LiveStatus = 'upcoming' | 'active' | 'ending' | 'ended' | 'standing' | 'stale' | 'open';
 
 export interface OfferTiming {
+  reviewState?: 'pending' | 'approved' | 'rejected';
   type: OfferType;
   claimStart: string | null; // 官方时区下的日期 YYYY-MM-DD
   claimEnd: string | null; // 官方时区下的日期 YYYY-MM-DD，当天 23:59:59 截止
@@ -54,13 +55,21 @@ export function isLimited(type: OfferType) {
   return type !== 'standing' && type !== 'apply';
 }
 
-/** 当前状态。抓取失败只会让状态变成 stale（待核验），永远不会直接判定结束。 */
+/** 当前状态。已批准权益按审核过的条款和期限展示；草稿仍须满足证据新鲜度。 */
 export function liveStatus(o: OfferTiming, now: Date = new Date()): LiveStatus {
   const t = now.getTime();
   const verifiedAge = o.lastVerifiedAt ? t - Date.parse(o.lastVerifiedAt) : Infinity;
   if (o.withdrawnAt && Date.parse(o.withdrawnAt) <= t) return 'ended';
   const end = claimEndAt(o);
   if (end && end.getTime() < t) return 'ended';
+  if (o.reviewState === 'approved') {
+    if (o.type === 'standing') return 'standing';
+    if (o.type === 'apply') return 'open';
+    const start = claimStartAt(o);
+    if (start && start.getTime() > t) return 'upcoming';
+    if (end && end.getTime() - t <= ENDING_WINDOW) return 'ending';
+    return 'active';
+  }
   if (o.verifyResult === 'evidence_missing') return 'stale';
   if (o.type === 'standing') return verifiedAge >= STANDING_STALE_AFTER ? 'stale' : 'standing';
   if (o.type === 'apply') return verifiedAge >= STANDING_STALE_AFTER ? 'stale' : 'open';
