@@ -668,6 +668,19 @@ it('keeps rich activity cards, authoritative totals and a separate evidence queu
  await f.run('admQueue()');expect(f.document.querySelector('[data-review-summary]')?.textContent).toContain('活动待审 9');expect(f.document.querySelector('[data-review-summary]')?.textContent).toContain('线索复核 80');expect(f.document.querySelector('[data-review-summary]')?.textContent).toContain('暂停发布 6');
  expect(f.document.querySelectorAll('[data-code="ready"]')).toHaveLength(1);expect(f.document.querySelector('[data-identity-task="t1"]')).toBeNull();expect(f.document.querySelector('[data-code="ready"] [data-act="approve"]')).not.toBeNull();expect(f.document.querySelector('[data-system-evidence] [data-code="waiting"]')).not.toBeNull();expect(f.document.querySelector('[data-code="waiting"] [data-act="approve"]')).toBeNull();expect(f.document.querySelector('[data-paused-section]')?.hasAttribute('open')).toBe(false);
 });
+it('a failed scope supplement with existing official benefit text is shown as a manual decision, not an active blocker',async()=>{
+ const item=offer('compose',{preparation:{stage:'ready',label:'等待你决定',reason:'已有官方权益原文；请人工核对资格和领取方式'},officialReview:{status:'failed',reason:'搜索受限',attempts:4,checkedAt:'2026-10-12T00:21:20Z',nextAttemptAt:'2026-10-12T08:21:20Z',queries:[],candidates:[]}});
+ const f=fixture(url=>url.includes('/identity/tasks')?{tasks:[]}:queue([item]));await f.run('admQueue()');
+ const card=f.document.querySelector('[data-code="compose"]')!;
+ expect(card.closest('[data-system-evidence]')).toBeNull();expect(card.querySelector('[data-act="approve"]')).not.toBeNull();
+ expect(card.querySelector('[data-official-review] summary')?.textContent).toContain('可人工审核');
+ expect(card.querySelector('[data-official-review] summary')?.textContent).not.toContain('等待重试');
+});
+it('an approved activity labels older failed supplementation as history',()=>{
+ const f=fixture(()=>queue([]));
+ const html=f.run(`officialReviewBlock({reviewState:'approved',preparation:{stage:'ready'},evidenceTier:'docs',officialReview:{status:'failed',reason:'旧页面不可读',attempts:4,checkedAt:'2026-10-12T00:00:00Z',queries:[],candidates:[]}})`);
+ expect(html).toContain('审批前的补证记录（已人工通过）');expect(html).not.toContain('复核受阻，等待重试');
+});
 
 it('later identity pages cannot duplicate already displayed managed activity cards',async()=>{const a=offer('one'),b=offer('two');const q={...queue([a,b]),managedTaskIds:['t1','t2']};const f=fixture(url=>url.includes('/identity/tasks?')?{tasks:[{id:'t2',kind:'initial',sources:[]}]}:url.includes('/identity/tasks')?{tasks:[{id:'t1',kind:'initial',sources:[]}],nextCursor:'t1'}:q);await f.run('admQueue()');const button=f.document.querySelector('[data-identity-slot] button')!;button.dispatchEvent(new f.window.Event('click'));await pause();expect(!!f.document.querySelector('[data-identity-task="t2"]')).toBe(false);expect(f.document.querySelectorAll('[data-code]')).toHaveLength(2);});
 it('managed card records manual testing as a draft without claiming publication or decrementing review totals',async()=>{const sent:any[]=[];const q=queue([offer('managed',{evidenceTier:'media',reviewVersion:'identity:task:0'})]);const f=fixture((url,init)=>{if(init?.method==='POST'){sent.push({url,body:JSON.parse(String(init.body))});return {approved:false,reviewVersion:'identity:task:1'};}return url.includes('/identity/tasks')?{tasks:[]}:q;});await f.run('admQueue()');f.document.querySelector('[data-act="tested"]')!.dispatchEvent(new f.window.Event('click'));await pause();expect(sent).toHaveLength(1);expect(sent[0].body.approve).toBe(false);expect(f.document.querySelector('[data-activity-count]')?.textContent).toBe('1');});
