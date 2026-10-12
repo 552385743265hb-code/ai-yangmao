@@ -13,6 +13,8 @@ const cases = [
     text: 'OpenAI 官方额外福利：向现有 ChatGPT Plus 用户发放1次额外额度重置。用户登录后自动获得；这是独立额外重置，不是每月套餐基础用量，也不是之前发放的执行进度。没有公布活动截止日。' },
   { id: 'elevenlabs-free', platformId: 'elevenlabs', name: 'ElevenLabs', expected: 2,
     text: 'ElevenLabs 官方 Free plan：所有注册用户每月获赠10,000 credits，可用于语音合成。无需信用卡，无需购买订阅；每月刷新，未用完不结转。这是常驻免费版。' },
+  { id: 'fixed-token-grant', platformId: 'devin', name: 'Devin', expected: 81.818182,
+    text: 'Devin 官方独立新用户活动：注册后一次性获赠20M tokens，仅用于 SWE-2 编程模型。无需付费或绑卡。赠额领取后7天有效，用完即止，不会刷新。活动没有公布领取截止日期。' },
   { id: 'swe-unlimited', platformId: 'devin', name: 'Devin', expected: 45,
     text: 'Devin 官方 SWE-2 Free 独立免费活动：任何用户登录桌面应用或 CLI 即可免费使用 SWE-2 编程模型，不限Token额度。每个用户激活后可免费使用30天，无需支付或信用卡。活动没有公布领取截止日期。' },
 ];

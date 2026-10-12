@@ -109,7 +109,7 @@ export async function computeCollectedValuation(input:ValuationIntakeInput,now=n
   if(!Array.isArray(factors.sources)||!factors.sources.length||factors.sources.some(s=>!s||!(s.url===input.evidence.url&&input.sourceText!.includes(s.excerpt)||validSources.some(v=>v.url===s.url&&v.text.includes(s.excerpt)))))return unknown('因子引用未绑定本次正文',['unbound_factor_source']);
   const actualFact=(value:unknown)=>!value||typeof value==='object'&&'value' in value&&'sourceId' in value&&factors.sources!.some(s=>s.id===(value as {sourceId:string}).sourceId&&s.url===input.evidence.url);
   const recipe=factors as unknown as Record<string,unknown>;
-  for(const key of ['amount','maximum','fullAmount','first30Maximum','entitlementUnits','monthlyCap','months','multiplier','coverageDays'])if(!actualFact(recipe[key]))return unknown('实际赠额与权益数量必须来自本次活动原文',['entitlement_source_mismatch']);
+  for(const key of ['amount','maximum','fullAmount','first30Maximum','entitlementUnits','totalTokens','monthlyCap','months','multiplier','coverageDays'])if(!actualFact(recipe[key]))return unknown('实际赠额与权益数量必须来自本次活动原文',['entitlement_source_mismatch']);
   if(recipe.denominator&&!singleReset&&!glmTrialCard)return unknown('当前权益未匹配受控套餐分数约定',['unsupported_fraction_policy']);
   if((input.type==='apply')!==(factors.kind==='apply')&&factors.kind!=='unknown')return unknown('申请制与计算周期不一致',['valuation_type_mismatch']);
   const available={...getValuationFactCatalog(now),...runtimeCatalog};
@@ -124,7 +124,7 @@ export async function computeCollectedValuation(input:ValuationIntakeInput,now=n
     if(glmTrialCard||recipe.currency==='CNY')recipe.fx=fx;
     if(medicalRule)((recipe.scenario as {components:Array<Record<string,unknown>>}).components[0]).fx=fx;
   }
-  const scenario=(factors.kind==='scenario'?factors:(factors as {scenario?:unknown}).scenario) as {benchmark?:string;components?:Array<{models?:Array<Record<string,unknown>>}>}|undefined;
+  const scenario=(factors.kind==='token_grant'?{components:[recipe]}:factors.kind==='scenario'?factors:(factors as {scenario?:unknown}).scenario) as {benchmark?:string;components?:Array<{models?:Array<Record<string,unknown>>}>}|undefined;
   if(scenario?.components)for(const component of scenario.components){
     for(const cap of Object.values((component as {caps?:Record<string,unknown>}).caps??{}))if(!actualFact(cap))return unknown('实际免费用量上限必须来自本次活动原文',['entitlement_source_mismatch']);
     for(const model of component.models??[]){

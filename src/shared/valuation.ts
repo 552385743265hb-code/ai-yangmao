@@ -101,7 +101,7 @@ const publicInputFields = new Set([
   'recipientCount', 'sharedPool', 'model', 'modelVersion', 'sourceType', 'priceUnit', 'priceApplicableAt',
   'specification', 'dimensions', 'resolution', 'quality', 'mode', 'duration', 'availableQuantity',
   'dailyQuantity', 'monthlyQuantity', 'eligibleModels', 'pricedModels', 'totalModels', 'limits',
-  'input', 'output', 'total', 'perDay', 'perMonth', 'requests', 'tokens', 'credits', 'seconds', 'minutes',
+  'input', 'output', 'total', 'totalTokens', 'perDay', 'perMonth', 'requests', 'tokens', 'credits', 'seconds', 'minutes',
   'characters', 'images', 'days', 'seats', 'months', 'years', 'amount', 'rate', 'units', 'price',
   'components', 'fx', 'quantities', 'rates', 'cnyValue', 'entitlementUnits', 'numerator', 'denominator',
   'fxDate', 'fxSource', 'fromCurrency', 'toCurrency', 'inputPerMillion', 'outputPerMillion',

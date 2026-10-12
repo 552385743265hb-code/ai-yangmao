@@ -33,6 +33,7 @@ export const valuationFactorsSchema = z.discriminatedUnion('kind', [
   z.object({ ...common, kind: z.literal('plan'), price: fact, billingPeriod: z.enum(['month', 'year']), months: fact.optional(), numerator: fact.optional(), denominator: fact.optional(), multiplier: fact.optional(), benchmark: z.enum(['entry_plan', 'plan_fraction', 'plan_multiplier']).optional(), referencePlan: z.string().min(1).max(200).optional() }),
   z.object({ ...common, kind: z.literal('credits'), entitlementUnits: fact, cadence: z.enum(['once', 'day', 'month']).default('once'), monthlyCap: fact.optional(), packageUnits: fact, packagePrice: fact, benchmark: z.literal('entry_plan').optional(), referencePlan: z.string().min(1).max(200).optional() }),
   z.object({ ...common, kind: z.literal('scenario'), ...scenarioShape }),
+  z.object({ ...common, kind: z.literal('token_grant'), scenario:z.enum(['text','coding']), totalTokens:fact, models:z.array(modelSchema).min(1).max(100) }).strict(),
   z.object({ ...common, kind: z.literal('apply'), maximum: fact.optional(), first30Maximum: fact.optional(), scenario: scenarioSchema.optional() }),
   z.object({ ...common, kind: z.literal('unknown'), reason: z.string().max(1_000).optional(), beta: z.boolean().default(false), resolved: z.boolean().default(false) }),
 ]);
@@ -270,7 +271,19 @@ export function calculateValuationV2(raw: unknown, context: ValuationEngineConte
       Object.assign(inputs, { officialMonthlyPrice: monthly, numerator, denominator, usageMultiplier: multiplier, months, currency: f.currency, rate });
       return finish({ ...base, status: benchmark ? 'provisional' : 'priced', method: 'official_price', usdEstimate: round(estimate), fullValue: benchmark ? null : round(full), formula: `${paid} / ${f.billingPeriod === 'year' ? 12 : 1} × (${numerator}/${denominator}) × ${multiplier} × ${windowFactor} × ${rate}; full = monthly × ${months}` });
     }
-    const scenario = f.kind === 'scenario' ? f : f.scenario;
+    let grantTokens:number|undefined;
+    if(f.kind==='token_grant'){
+      grantTokens=resolve(f.totalTokens,'totalTokens');
+      if(!('value' in f.totalTokens)||grantTokens<=0)throw new Error('Fixed token grant requires a positive literal entitlement');
+      const quote=canonicalNumericText(f.totalTokens.quote);
+      const tokenAmount=new RegExp(`${numericPattern(grantTokens)}\\s*(?:tokens?|令牌)(?![a-z])`,'i');
+      if(!tokenAmount.test(quote)||!/gift|grant|receiv|free|quota|赠|领取|获|额度/i.test(quote)||/daily|monthly|weekly|per\s+(?:day|month|week)|every\s+(?:day|month|week)|each\s+(?:day|month|week)|每(?:日|天|月|周)|无限|unlimited/i.test(quote))throw new Error('Fixed token grant needs a non-recurring token-denominated benefit quote');
+      const entitlementText=f.totalTokens.quote.toLowerCase();
+      if(f.models.some(model=>!entitlementText.includes((model.canonicalId??model.id).toLowerCase())))throw new Error('Fixed token grant must identify its actual eligible model');
+      Object.assign(inputs,{totalTokens:grantTokens,pricingBasis:'fixed-token-grant',scenario:f.scenario});
+      assumptions.push(`一次性 Token 总额完整折算；输入与输出按${f.scenario==='text'?' 5:1':' 10:1'}标准比例分配，不代表实际使用分布，不按月度用量或有效天数截断。`);
+    }
+    const scenario:z.infer<typeof scenarioSchema>|undefined = f.kind === 'scenario' ? f : f.kind==='token_grant'?{kind:'scenario',independentPools:false,components:[{scenario:f.scenario,models:f.models,fx:f.fx}]}:f.scenario;
     const first30Release = (maximum: number) => {
       if (f.kind !== 'apply' || !f.first30Maximum) return null;
       const release = entitlement(f.first30Maximum, 'first30Maximum', f.currency, /first\s*30\s*days|first\s*month|首\s*(?:30\s*天|月)|第一个月/i) * fx(f.currency);
@@ -317,8 +330,8 @@ export function calculateValuationV2(raw: unknown, context: ValuationEngineConte
       const cap = (key: keyof z.infer<typeof capsSchema>, fallback = Infinity) => caps?.[key] ? resolve(caps[key], `components.${index}.caps.${key}`) : fallback;
       let input = 0, output = 0, quantity = 0;
       if ('inputTokens' in usage) {
-        input = Math.min(usage.inputTokens * days / 30 * multiplier, cap('inputTokens'));
-        output = Math.min(usage.outputTokens * days / 30 * multiplier, cap('outputTokens'));
+        input = grantTokens===undefined?Math.min(usage.inputTokens * days / 30 * multiplier, cap('inputTokens')):grantTokens*usage.inputTokens/(usage.inputTokens+usage.outputTokens);
+        output = grantTokens===undefined?Math.min(usage.outputTokens * days / 30 * multiplier, cap('outputTokens')):grantTokens-input;
         const ratio = Math.min(1, cap('totalTokens') / (input + output));
         input *= ratio; output *= ratio;
       } else quantity = Math.min(usage.quantity * days / 30 * multiplier, cap('quantity'), cap('dailyQuantity') * days, cap('monthlyQuantity'));
@@ -424,7 +437,7 @@ export function calculateValuationV2(raw: unknown, context: ValuationEngineConte
       return finish({ ...base, status: 'priced', method: 'face_value', period: 'apply_max', usdEstimate: null, usdMax: round(maximum), fullValue: round(maximum), formula: `Maximum application ${maximum} USD; independent usage cost reference ${round(total)} USD (${formulas.join(' + ')})`.slice(0, 2_000) });
     }
     if (f.kind === 'apply') { inputs.first30Max = null; inputs.fullApplyMax = null; }
-    return finish({ ...base, status: scenario.benchmark || incomplete ? 'provisional' : 'priced', method: 'scenario', period: f.kind === 'apply' ? 'apply_max' : 'first30', usdEstimate: round(total), usdMax: null, fullValue: null, formula: formulas.join(' + ').slice(0, 2_000), coverage: { pricedModels: pricedCount, totalModels: totalCount, days } });
+    return finish({ ...base, status: scenario.benchmark || incomplete ? 'provisional' : 'priced', method: 'scenario', period: f.kind === 'apply' ? 'apply_max' : f.kind==='token_grant'?'one_time':'first30', usdEstimate: round(total), usdMax: null, fullValue: f.kind==='token_grant'?round(total):null, formula: formulas.join(' + ').slice(0, 2_000), coverage: { pricedModels: pricedCount, totalModels: totalCount, days } });
   } catch (error) {
     return { valuation: null, errors: [error instanceof Error ? error.message : String(error)] };
   }
