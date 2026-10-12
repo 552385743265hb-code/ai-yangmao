@@ -470,7 +470,7 @@ describe('review gates and preserved public version', () => {
   it('requires the WorkBuddy official account on WorkBuddy rather than its parent platform', async () => {
     sqlite.prepare("INSERT INTO platforms(id,name,type,status,site,x_handles) VALUES('workbuddy','WorkBuddy','tool','approved','https://www.workbuddy.cn','[]')").run();
     sqlite.prepare("INSERT INTO platforms(id,name,type,status,x_handles) VALUES('tencent-hy','腾讯混元','lab','approved','[\"@WorkBuddy_AI\"]')").run();
-    const referral={...offer,id:'workbuddy-referral',platformId:'workbuddy',sourceId:undefined,evidence:{...evidence,tier:'official',url:'https://x.com/WorkBuddy_AI/status/2108082016860413973'}};
+    const referral={...offer,id:'workbuddy-referral',title:'WorkBuddy 国际版邀请奖励',platformId:'workbuddy',sourceId:undefined,evidence:{...evidence,tier:'official',url:'https://x.com/WorkBuddy_AI/status/2108082016860413973'}};
     await call('ingest/offers',[referral]);
     const blocked=await call('admin/offers/workbuddy-referral/approve',{},'admin');
     expect(blocked.status).toBe(400);expect(blocked.body.error).toContain('已登记官方信源');

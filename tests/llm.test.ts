@@ -35,11 +35,11 @@ describe('model result contract', () => {
     await expect(extract('Vendor','https://vendor.example/free','比赛前三名获奖$1000。另有独立科研资助，提交课题材料，审批后最高$200 API额度。')).rejects.toThrow('疑似漏掉');
     expect(fetcher).toHaveBeenCalledTimes(2);
   });
-  it('does not infer an overseas-network requirement from a foreign billing account',async()=>{
+  it('applies administrator network policy to foreign providers alongside billing requirements',async()=>{
     vi.stubGlobal('fetch',vi.fn(async()=>gemini(JSON.stringify({offers:[{...offer,requirements:['card','net']}]}))));
     const {extract}=await import('../pipeline/llm');
     const r=await extract('AWS','https://vendor.example','按量计费账户需要绑定支持的支付方式，无需预付款。');
-    expect(r.offers[0].requirements).toEqual(['card']);
+    expect(r.offers[0].requirements).toEqual(['card','net']);
     const explicit=await extract('Vendor','https://vendor.example','须使用海外网络、境外IP地址并绑定支付方式。');
     expect(explicit.offers[0].requirements).toContain('net');
   });

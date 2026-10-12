@@ -1,3 +1,4 @@
+import {applyNetworkRequirements} from './network-requirements';
 import {valuationSourceSchema} from './valuation-intake';
 import {membershipSchema} from './membership';
 import {sourceFetchSchema} from './identity/fetch-evidence';
@@ -76,7 +77,7 @@ export const offerIn = z.object({
   .refine(o => !o.valuation || valuationMatchesAmounts(o.valuation, o), { message: '估值元数据金额须与条目美元字段一致', path: ['valuation'] })
   .refine(o => !o.valuation || (o.valuation.period === 'apply_max') === (o.type === 'apply'), { message: '申请制估值须使用申请口径，其他活动不能使用申请上限口径', path: ['valuation', 'period'] })
   .refine(o => !o.claimStart || !o.claimEnd || o.claimStart <= o.claimEnd, { message: '领取开始日期不能晚于截止日期', path: ['claimEnd'] })
-  .refine(o => (o.type === 'standing' || o.type === 'apply') === (o.endKind === 'standing'), { message: '常驻额度和申请制的 endKind 必须为 standing，其他类型不能是 standing', path: ['endKind'] });
+  .refine(o => (o.type === 'standing' || o.type === 'apply') === (o.endKind === 'standing'), { message: '常驻额度和申请制的 endKind 必须为 standing，其他类型不能是 standing', path: ['endKind'] }).transform(o => applyNetworkRequirements(o));
 
 export const runIn = z.object({
   kind: z.enum(['collect', 'verify', 'sweep', 'digest', 'health', 'model']),

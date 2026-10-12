@@ -63,6 +63,8 @@ gh workflow run collect.yml --ref main -f fast_leads=true -f lead_limit=50
 
 ## 模型、预算与回归
 
+海外网络门槛由`src/shared/network-requirements.ts`统一执行：采集抽取保留/补上国际产品的net，入库共享schema再次执行，none不会与net并存，其他资格与官方identityFacts不改。国内WorkBuddy、火山引擎等保持独立口径；共用平台ID按产品入口/明确版本判定，版本未明且原为none时改为unknown，不能假定国内直领。新增平台准入时须同时登记该模块的国内/国际/混合分类；未登记ID不能凭域名猜厂商归属。修改此规则须推送GitHub采集代码并部署Worker入库校验。
+
 `pipeline/llm.ts`加载通用规则、相关平台要点及管理员纠正。GitHub采集读取远端文件；修改规则后只部署Worker不会更新管线，需推送。
 
 模型链为Gemini免费层、OpenRouter、可选GLM、预算内DeepSeek付费兜底。免费供应商受限会本轮冷却；重要或积压超过2小时的线索可使用既有付费预算。默认`DAILY_TOKEN_CAP=0`、`MONTHLY_COST_CAP_CNY=10`，实际覆盖以部署变量和Actions配置为准。预算先原子预留再结算，用量不明保留预留；RSS单篇失败不阻断后续，FORCE可以重抽。
