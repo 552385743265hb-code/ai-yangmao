@@ -3,7 +3,7 @@ import { DeferError } from '../llm';
 import { findNearDuplicate, gateVerdict, matchTitleRule, type GateSubject } from '../../src/shared/screening/gate0';
 import type { LegacyIdentityReceipt } from '../identity-client';
 import type { OfferIn } from '../../src/shared/ingest';
-import type { MemorySnapshot, ScreeningVerdict } from '../../src/shared/screening/types';
+import type { MemorySnapshot, ScreeningVerdict, UrgencyResult } from '../../src/shared/screening/types';
 import { itemId } from '../../src/worker/screening/store';
 import { loadMemory } from './memory';
 import { screenSubject, SCREENING_PROMPT_VERSION, type ScreeningSubject } from './screener';
@@ -67,8 +67,8 @@ export async function runScreening(o: { ids?: string[]; deadlineAt: number; dry:
   return stats;
 }
 
-function verdictUrgency(tier: QueueItem['tier']) {
-  return { tier, deadline: null, signals: [], quote: null } as const;
+function verdictUrgency(tier: QueueItem['tier']): UrgencyResult {
+  return { tier, deadline: null, signals: [], quote: null };
 }
 
 export async function screenCandidateReceipts(results: LegacyIdentityReceipt[], offers: OfferIn[], memory: MemorySnapshot, o: { deadlineAt: number; dry: boolean; log: (...a: unknown[]) => void }): Promise<void> {

@@ -6,6 +6,7 @@ import { validateVerdict } from '../../src/shared/screening/validate';
 import type { MemorySnapshot, ScreeningVerdict } from '../../src/shared/screening/types';
 
 export { SCREENING_PROMPT_VERSION } from './prompt';
+export type { ScreeningSubject } from './context';
 
 function unsure(subject: ScreeningSubject): ScreeningVerdict {
   return { verdict: 'unsure', matchId: null, ruleId: null, reasonCategory: null, occurrenceCheck: null, confidence: 0, evidenceQuote: '', explanation: '', urgency: subject.deterministicUrgency };
