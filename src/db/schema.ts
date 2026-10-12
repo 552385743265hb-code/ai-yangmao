@@ -135,6 +135,7 @@ export const leads = sqliteTable('leads', {
   raw: text('raw'),
   status: text('status', { enum: ['new', 'reviewing', 'linked', 'rejected'] }).notNull().default('new'),
   offerId: text('offer_id').references(() => offers.id),
+  urlKey: text('url_key'),
   createdAt: text('created_at').notNull().default(now),
 }, t => [uniqueIndex('leads_url_uq').on(t.url), index('leads_offer_idx').on(t.offerId)]);
 

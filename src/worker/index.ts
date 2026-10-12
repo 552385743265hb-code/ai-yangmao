@@ -32,6 +32,11 @@ import { z } from 'zod';
 import * as s from '../db/schema';
 import { isoDate, leadIn, offerIn, collectedOfferIn, runIn } from '../shared/ingest';
 import { differentOccurrence, findDuplicate, crossPlatformDuplicate, sameRecurringCreditPlan, sameModelAnnouncement, sameEvidenceBenefit } from '../shared/dedupe';
+import { gateVerdict, matchTitleRule, urlKey } from '../shared/screening/gate0';
+import { screeningMode } from '../shared/screening/types';
+import type { ScreeningRule } from '../shared/screening/types';
+import { classifyUrgency, systemDueAt } from '../shared/screening/urgency';
+import { ScreeningStore } from './screening/store';
 import { activeOnDate, isClaimable, liveStatus, missingEvidence } from '../shared/lifecycle';
 import { admin } from './admin';
 import { feishuAdmin, runScheduled } from './feishu';
@@ -62,6 +67,7 @@ export interface Env {
   GEMINI_MODEL?: string;
   GH_DISPATCH_TOKEN?: string; // 只对本仓库有 Actions 写权限的令牌，用于准点触发采集
   GH_REPO?: string;
+  SCREENING_MODE?: string;
 }
 
 const app = new Hono<{ Bindings: Env }>();
@@ -227,11 +233,45 @@ ingest.post('/leads', async c => {
   const body = z.array(leadIn).max(100).safeParse(await c.req.json().catch(() => null));
   if (!body.success) return c.json({ error: '数据格式不正确', issues: body.error.issues }, 400);
   if (!body.data.length) return c.json({ created: 0 });
-  // D1 单条语句最多 100 个绑定参数，线索每行 4 列，按 20 行一批插入
+  const mode = screeningMode(c.env);
+  const stamped = body.data.map(row => ({ ...row, urlKey: urlKey(row.url) }));
+  const taken = await c.env.DB.prepare(`SELECT url, url_key FROM leads WHERE url IN (SELECT value FROM json_each(?1)) OR (url_key IS NOT NULL AND url_key IN (SELECT value FROM json_each(?2)))`).bind(JSON.stringify(stamped.map(row => row.url)), JSON.stringify(stamped.map(row => row.urlKey))).all<{ url: string; url_key: string | null }>();
+  const seenUrl = new Set(taken.results.map(row => row.url));
+  const seenKey = new Set(taken.results.flatMap(row => row.url_key ? [row.url_key] : []));
+  const fresh = stamped.filter(row => {
+    if (seenUrl.has(row.url) || seenKey.has(row.urlKey)) return false;
+    seenUrl.add(row.url); seenKey.add(row.urlKey); return true;
+  });
+  // D1 单条语句最多 100 个绑定参数。线索带 url_key 后仍按 20 行一批插入。
   let created = 0;
-  for (let i = 0; i < body.data.length; i += 20) {
-    const res = await db(c.env).insert(s.leads).values(body.data.slice(i, i + 20)).onConflictDoNothing().returning({ id: s.leads.id });
+  const createdRows: { id: number; url: string }[] = [];
+  for (let i = 0; i < fresh.length; i += 20) {
+    const res = await db(c.env).insert(s.leads).values(fresh.slice(i, i + 20)).onConflictDoNothing().returning({ id: s.leads.id, url: s.leads.url });
     created += res.length;
+    createdRows.push(...res);
+  }
+  if (mode !== 'off' && createdRows.length) {
+    const store = new ScreeningStore(c.env.DB);
+    const ruleRows = await c.env.DB.prepare(`SELECT id, kind, scope_kind, scope_value, category, description, pattern, status FROM screening_rules WHERE status='active' AND kind='title_pattern'`).all<{ id: string; kind: 'title_pattern'; scope_kind: ScreeningRule['scopeKind']; scope_value: string | null; category: ScreeningRule['category']; description: string; pattern: string | null; status: ScreeningRule['status'] }>();
+    const rules: ScreeningRule[] = ruleRows.results.map(row => ({ id: row.id, kind: row.kind, scopeKind: row.scope_kind, scopeValue: row.scope_value, category: row.category, description: row.description, pattern: row.pattern, status: row.status }));
+    const now = new Date();
+    for (const row of createdRows) {
+      const input = fresh.find(item => item.url === row.url)!;
+      const urgency = classifyUrgency({ title: input.title ?? '', text: input.raw ?? '' }, now);
+      await store.upsertItem({ subjectKind: 'lead', subjectId: String(row.id), origin: input.origin, state: 'awaiting_screen', tier: urgency.tier, deadline: urgency.deadline, signals: urgency.signals, urgencyQuote: urgency.quote, tierBy: 'gate0', discoveredAt: now.toISOString(), dueAt: systemDueAt(urgency.tier, now.toISOString()) });
+      const rule = matchTitleRule({ title: input.title ?? '', origin: input.origin, platformId: null, sourceId: null }, rules);
+      if (!rule) continue;
+      const subject = { kind: 'lead' as const, url: input.url, origin: input.origin, platformId: null, title: input.title ?? '', openingText: input.raw ?? '' };
+      const verdict = gateVerdict({ rule }, subject, { generatedAt: now.toISOString(), records: [], rules, profiles: [], calibrations: [] });
+      const decision = await store.recordDecision({ requestId: `gate0:${row.id}:${rule.id}`, itemId: `lead:${row.id}`, verdict: verdict.verdict, matchRef: verdict.matchId, ruleId: verdict.ruleId, reasonCategory: verdict.reasonCategory, occurrenceCheck: verdict.occurrenceCheck, confidence: verdict.confidence, evidenceQuote: verdict.evidenceQuote, explanation: verdict.explanation, urgency: verdict.urgency, model: 'gate0', calibrated: false, promptVersion: 'screening-v1', contextHash: 'gate0', mode: mode === 'auto' ? 'auto' : mode === 'suggest' ? 'suggest' : 'shadow' });
+      if (mode === 'auto') {
+        const lead = await c.env.DB.prepare('SELECT id, url, status, raw, title, resolution, offer_id FROM leads WHERE id=?').bind(row.id).first<{ id: number; url: string; status: string; raw: string | null; title: string | null; resolution: string | null; offer_id: string | null }>();
+        if (lead) {
+          await closeIdentityLead(c.env.DB, { ...lead, offerId: lead.offer_id, resolution: lead.resolution ? JSON.parse(lead.resolution) : null }, { status: 'closed', jobId: `gate0-${row.id}`, attempts: 0, inconclusive: 0, checkedAt: now.toISOString(), nextAttemptAt: null, reason: verdict.explanation, queries: [], candidates: [], offerIds: [] }, input.raw ?? input.title ?? '', { actor: 'pipeline:gate0' });
+          await store.markApplied(decision.id, 'closed');
+        }
+      }
+    }
   }
   return c.json({ created, skipped: body.data.length - created });
 });
