@@ -1,4 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import worker from '../src/worker/index';
+import { identityDb } from './fixtures/identity/db';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -45,5 +47,21 @@ describe('model attempts consume their own budget records', () => {
     expect(result.tokens).toBe(10000);
     expect(result.costCny).toBe(0.1);
     expect(settle).not.toHaveBeenCalled();
+  });
+
+  it('keeps screening spend off the extraction cap and enforces free pools', async () => {
+    const f = identityDb();
+    const seedModelRuns = (spec: { line?: string; costCny?: number; pool?: string; purpose?: string; count?: number }) => {
+      for (let i = 0; i < (spec.count ?? 1); i++) f.sqlite.prepare(`INSERT INTO runs(kind, started_at, ok, stats, tokens, cost_cny) VALUES ('model', ?, 0, ?, 10, ?)`).run(new Date().toISOString(), JSON.stringify({ line: spec.line ?? null, pool: spec.pool ?? null, purpose: spec.purpose ?? null }), spec.costCny ?? 0);
+    };
+    const reserve = (body: Record<string, unknown>) => worker.fetch(new Request('https://local.test/api/ingest/model-budget/reserve', { method: 'POST', headers: { Authorization: 'Bearer ingest-test-token-123', 'Content-Type': 'application/json' }, body: JSON.stringify({ provider: 'openrouter', tokens: 10, ...body }) }), { DB: f.db, INGEST_TOKEN: 'ingest-test-token-123', ADMIN_TOKEN: 'admin-test-token-123456', MONTHLY_COST_CAP_CNY: '10' } as never, {} as ExecutionContext);
+    const free = { costCny: 0, line: 'screening', pool: 'openrouter-free' };
+    seedModelRuns({ line: 'extraction', costCny: 10 });
+    expect((await reserve({ provider: 'openrouter', tokens: 10, costCny: 0.1, line: 'screening' })).status).toBe(200);
+    seedModelRuns({ pool: 'openrouter-free', purpose: 'backfill', count: 400 });
+    expect((await reserve({ provider: 'openrouter', tokens: 10, costCny: 0, line: 'screening', pool: 'openrouter-free', purpose: 'backfill' })).status).toBe(429);
+    seedModelRuns({ pool: 'openrouter-free', purpose: 'normal', count: 400 });
+    expect((await reserve({ ...free, purpose: 'normal' })).status).toBe(429);
+    expect((await reserve({ ...free, purpose: 'urgent' })).status).toBe(200);
   });
 });

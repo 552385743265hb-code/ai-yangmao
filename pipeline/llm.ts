@@ -187,7 +187,12 @@ export const modelAvailable = (allowPaid = false) => providers().some(p => !unav
 // 免费档有每分钟请求数限制：两次调用至少间隔 MIN_GAP 毫秒
 const MIN_GAP = Number(process.env.LLM_MIN_GAP_MS ?? 4500);
 let nextCall = 0;
-async function pace() { const start = Math.max(Date.now(), nextCall); nextCall = start + MIN_GAP; const wait = start - Date.now(); if (wait > 0) await new Promise(r => setTimeout(r, wait)); }
+export async function pace() { const start = Math.max(Date.now(), nextCall); nextCall = start + MIN_GAP; const wait = start - Date.now(); if (wait > 0) await new Promise(r => setTimeout(r, wait)); }
+export async function providerCall(name: 'gemini', system: string, user: string, timeoutMs: number) {
+  const provider = providers().find(item => item.name === name);
+  if (!provider) throw Object.assign(new Error('gemini unavailable'), { httpStatus: 503 });
+  return provider.call(system, user, timeoutMs);
+}
 export const paidAvailable = () => providers().some(p => p.paid);
 
 /**

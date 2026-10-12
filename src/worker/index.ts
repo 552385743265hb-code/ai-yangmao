@@ -69,6 +69,10 @@ export interface Env {
   GH_DISPATCH_TOKEN?: string; // 只对本仓库有 Actions 写权限的令牌，用于准点触发采集
   GH_REPO?: string;
   SCREENING_MODE?: string;
+  SCREENING_MONTHLY_CAP_CNY?: string;
+  OPENROUTER_FREE_DAILY?: string;
+  SCREENING_URGENT_RESERVE?: string;
+  SCREENING_BACKFILL_DAILY?: string;
 }
 
 const app = new Hono<{ Bindings: Env }>();
@@ -673,20 +677,38 @@ ingest.get('/offers-index', async c => {
 
 /** 模型预算：今日 token、本月费用。 */
 ingest.post('/model-budget/reserve', async c => {
-  const body = z.object({ provider: z.string().max(40), tokens: z.number().int().positive().max(400000), costCny: z.number().nonnegative().max(1000) })
-    .safeParse(await c.req.json().catch(() => null));
+  const body = z.object({
+    provider: z.string().max(40), tokens: z.number().int().positive().max(400000), costCny: z.number().nonnegative().max(1000),
+    line: z.enum(['extraction', 'screening']).optional(), pool: z.enum(['openrouter-free']).optional(), purpose: z.enum(['urgent', 'normal', 'backfill']).optional(),
+  }).safeParse(await c.req.json().catch(() => null));
   if (!body.success) return c.json({ error: '预算预留参数不正确' }, 400);
-  const tokenCap = Number(c.env.DAILY_TOKEN_CAP ?? 0), costCap = Number(c.env.MONTHLY_COST_CAP_CNY ?? 10);
-  if (!Number.isFinite(tokenCap) || !Number.isFinite(costCap) || tokenCap < 0 || costCap < 0) return c.json({ error: '服务端预算配置不正确' }, 503);
+  const line = body.data.line ?? 'extraction';
+  const tokenCap = Number(c.env.DAILY_TOKEN_CAP ?? 0);
+  const costCap = line === 'screening' ? Number(c.env.SCREENING_MONTHLY_CAP_CNY ?? 72) : Number(c.env.MONTHLY_COST_CAP_CNY ?? 10);
+  const freeDaily = Number(c.env.OPENROUTER_FREE_DAILY ?? 1000);
+  const urgentReserve = Number(c.env.SCREENING_URGENT_RESERVE ?? 200);
+  const backfillDaily = Number(c.env.SCREENING_BACKFILL_DAILY ?? 400);
+  if ([tokenCap, costCap, freeDaily, urgentReserve, backfillDaily].some(value => !Number.isFinite(value) || value < 0)) return c.json({ error: '服务端预算配置不正确' }, 503);
   const nowIso = new Date().toISOString(), today = nowIso.slice(0, 10), month = nowIso.slice(0, 7);
+  const stats = JSON.stringify({ state: 'reserved', provider: body.data.provider, line, pool: body.data.pool ?? null, purpose: body.data.purpose ?? null });
+  const nonUrgentCap = Math.max(0, freeDaily - urgentReserve);
   // 一条 INSERT ... WHERE 同时判定与占用余额，多个并发采集任务也不能越过上限。
   const reserved = await c.env.DB.prepare(`INSERT INTO runs (kind,started_at,finished_at,ok,stats,tokens,cost_cny)
     SELECT 'model', ?1, ?1, 0, ?2, ?3, ?4
     WHERE (?6 = 0 OR (SELECT COALESCE(SUM(tokens),0) FROM runs WHERE substr(started_at,1,10)=?5) + ?3 <= ?6)
-      AND (SELECT COALESCE(SUM(cost_cny),0) FROM runs WHERE substr(started_at,1,7)=?7) + ?4 <= ?8
-    RETURNING id`).bind(nowIso, JSON.stringify({ state: 'reserved', provider: body.data.provider }), body.data.tokens,
-    body.data.costCny, today, tokenCap, month, costCap).first<{ id: number }>();
-  return reserved ? c.json({ id: reserved.id }) : c.json({ error: '模型预算不足，本次调用已推迟' }, 429);
+      AND (SELECT COALESCE(SUM(cost_cny),0) FROM runs WHERE substr(started_at,1,7)=?7 AND (
+        (?9 = 'screening' AND json_extract(stats,'$.line')='screening')
+        OR (?9 <> 'screening' AND (json_extract(stats,'$.line') IS NULL OR json_extract(stats,'$.line')='extraction'))
+      )) + ?4 <= ?8
+      AND (?10 IS NULL OR (
+        (SELECT COUNT(*) FROM runs WHERE substr(started_at,1,10)=?5 AND json_extract(stats,'$.pool')='openrouter-free') + 1 <= ?11
+        AND (?12 = 'urgent' OR (SELECT COUNT(*) FROM runs WHERE substr(started_at,1,10)=?5 AND json_extract(stats,'$.pool')='openrouter-free' AND json_extract(stats,'$.purpose') IN ('normal','backfill')) + 1 <= ?13)
+        AND (?12 <> 'backfill' OR (SELECT COUNT(*) FROM runs WHERE substr(started_at,1,10)=?5 AND json_extract(stats,'$.pool')='openrouter-free' AND json_extract(stats,'$.purpose')='backfill') + 1 <= ?14)
+      ))
+    RETURNING id`).bind(nowIso, stats, body.data.tokens, body.data.costCny, today, tokenCap, month, costCap, line, body.data.pool ?? null, freeDaily, body.data.purpose ?? '', nonUrgentCap, backfillDaily).first<{ id: number }>();
+  if (reserved) return c.json({ id: reserved.id });
+  const poolFull = body.data.pool === 'openrouter-free';
+  return c.json({ error: '模型预算不足，本次调用已推迟', quota: poolFull ? 'pool_exhausted' : 'cost_exhausted' }, 429);
 });
 
 ingest.post('/model-budget/:id/settle', async c => {

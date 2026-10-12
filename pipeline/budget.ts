@@ -8,12 +8,12 @@ export interface ModelPrice { in: number; out: number }
 export interface ModelReservation { id: number; tokens: number; costCny: number }
 
 /** UTF-8 字节数是文本 token 的保守上界，再加最大输出和协议余量。 */
-export async function reserveModel(provider: string, system: string, user: string, price?: ModelPrice): Promise<ModelReservation> {
+export async function reserveModel(provider: string, system: string, user: string, price?: ModelPrice, opts?: { line?: 'extraction' | 'screening'; pool?: 'openrouter-free'; purpose?: 'urgent' | 'normal' | 'backfill' }): Promise<ModelReservation> {
   const inputCeiling = Buffer.byteLength(system + user, 'utf8') + 1024;
   const tokens = inputCeiling + MODEL_OUTPUT_LIMIT;
   const costCny = price ? (inputCeiling * price.in + MODEL_OUTPUT_LIMIT * price.out) / 1e6 : 0;
   try {
-    const result = await api<{ id: number }>('/model-budget/reserve', { provider, tokens, costCny });
+    const result = await api<{ id: number }>('/model-budget/reserve', { provider, tokens, costCny, line: opts?.line, pool: opts?.pool, purpose: opts?.purpose });
     return { id: result.id, tokens, costCny };
   } catch (error) {
     throw new BudgetExhaustedError(`模型预算无法预留：${(error as Error).message}`);
