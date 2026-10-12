@@ -29,7 +29,9 @@ const FORCE = process.env.FORCE === '1'; // 忽略上次的哈希，强制重新
 const LEAD_LIMIT = Number(process.env.LEAD_LIMIT ?? 50);
 const onlyList = (process.env.ONLY_SOURCES ?? '').split(',').map(s => s.trim()).filter(Boolean);
 const only = onlyList.length ? onlyList : null; // 留空 = 全部信源
-const stats = { leadsTriaged: 0, leadOffers: 0, costCny: 0, deferred: 0, sources: 0, ok: 0, failed: 0, changed: 0, leads: 0, offers: 0, pending: 0, extractSkipped: 0, verificationChecked: 0, verificationFailed: 0, verificationDeferred: 0, tokens: 0, coverageDegraded: false, errors: [] as string[] };
+const stats = { leadsTriaged: 0, leadOffers: 0, costCny: 0, deferred: 0, sources: 0, fetchedSources: 0, ok: 0, failed: 0, changed: 0, leads: 0, offers: 0, pending: 0, extractSkipped: 0, verificationChecked: 0, verificationFailed: 0, verificationDeferred: 0, tokens: 0, coverageDegraded: false, errors: [] as string[] };
+const fetchedSourceIds=new Set<string>();
+function noteSourceFetched(src:Source){fetchedSourceIds.add(src.id);stats.fetchedSources=fetchedSourceIds.size;}
 let tokensLeft = DAILY_TOKEN_CAP > 0 ? DAILY_TOKEN_CAP : Infinity;
 let budgetBlocked = false;
 let deadline = Infinity;
@@ -39,6 +41,7 @@ const budgetFailure = (error: unknown) => error instanceof BudgetExhaustedError 
 const log = (...a: unknown[]) => console.log(new Date().toISOString().slice(11, 19), ...a);
 
 async function report(src: Source, ok: boolean, extra: { hash?: string; text?: string; error?: string; deferred?: boolean } = {}) {
+  if(ok)noteSourceFetched(src);
   if (DRY) return { changed: extra.hash ? extra.hash !== src.lastHash : false };
   return api<{ changed?: boolean }>('/snapshots', { sourceId: src.id, url: src.url, ok, ...extra });
 }
@@ -136,7 +139,7 @@ async function extractAndPostUnlocked(src: Source, url: string, text: string, so
 }
 
 async function officialPage(src: Source) {
-  const fetchedPage=await fetchPage(src.url);const {text,via,finalUrl}=fetchedPage;
+  const fetchedPage=await fetchPage(src.url);noteSourceFetched(src);const {text,via,finalUrl}=fetchedPage;
   const rel = relevantText(text);
   const hash = sha256(rel);
   if (hash === src.lastHash && !FORCE) { await report(src, true); log(`  无变化（${via}）`); return; }
@@ -166,6 +169,7 @@ async function officialFeed(src: Source) {
   // RSS 里的文章链接可能是相对路径（如 Sakana 的 /sail/），用 RSS 地址补全
   const abs = (link: string) => { try { return new URL(link, src.url).href; } catch { return ''; } };
   const items = parseFeed(await fetchText(src.url, { accept: 'application/rss+xml' })).map(i => ({ ...i, link: abs(i.link) })).filter(i => i.link && isFreebie(`${i.title} ${i.summary}`));
+  noteSourceFetched(src);
   const links = [...new Set(items.map(i => i.link))].sort();
   const hash = sha256(links.join('\n'));
   if (hash === src.lastHash && !FORCE) { await report(src, true); log('  无新文章'); return; }
@@ -201,11 +205,12 @@ async function runSource(src: Source) {
   stats.sources++;
   log(`[${src.id}] ${src.kind} ${src.url}`);
   try {
-    if (src.kind === 'aihot') { await postLeads(await aihot(src)); await report(src, true); }
-    else if (src.kind === 'hn') { await postLeads(await hn(src)); await report(src, true); }
-    else if (src.kind === 'reddit') { await postLeads(await reddit(src)); await report(src, true); }
-    else if (src.kind === 'feed') { await postLeads(await feed(src)); await report(src, true); }
-    else if (src.kind === 'discord') { const result=await collectDiscord(src); await postLeads(result.leads); await report(src,true,{hash:`discord:${result.cursor}`}); log(`  Discord ${result.messages} 条新消息，${result.leads.length} 条官方线索，${result.pages} 页`); }
+    const fetchedLeads=async(leads:LeadIn[])=>{noteSourceFetched(src);await postLeads(leads);await report(src,true);};
+    if (src.kind === 'aihot') await fetchedLeads(await aihot(src));
+    else if (src.kind === 'hn') await fetchedLeads(await hn(src));
+    else if (src.kind === 'reddit') await fetchedLeads(await reddit(src));
+    else if (src.kind === 'feed') await fetchedLeads(await feed(src));
+    else if (src.kind === 'discord') { const result=await collectDiscord(src); noteSourceFetched(src); await postLeads(result.leads); await report(src,true,{hash:`discord:${result.cursor}`}); log(`  Discord ${result.messages} 条新消息，${result.leads.length} 条官方线索，${result.pages} 页`); }
     else if (src.kind === 'rss' && src.platformId) await officialFeed(src);
     else if ((src.kind === 'web_list' || src.kind === 'json') && src.platformId) await officialPage(src);
     else { log('  暂不支持这种信源，跳过'); return; }

@@ -148,6 +148,8 @@ describe('official RSS progress', () => {
     expect(h.reads).toContain(good);
     expect(h.payloads('/offers')).toHaveLength(1);
     expect(h.payloads('/snapshots').find(snapshot => snapshot.hash)?.text).toBe(good);
+    expect(result.stats.fetchedSources).toBe(1);
+    expect(result.stats.ok).toBe(0);
     expect(result.stats.coverageDegraded).toBe(true);
     expect(result.ok).toBe(false);
   });

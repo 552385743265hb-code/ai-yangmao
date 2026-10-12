@@ -1385,3 +1385,17 @@ describe('general duration intake persistence',()=>{
   expect(sqlite.prepare("SELECT claim_end,end_kind,review_state,json_extract(evidence,'$.claimEndDerivation.components[0].unit') unit FROM offers WHERE id='vendor-generic-window'").get()).toMatchObject({claim_end:end,end_kind:'date',review_state:'pending',unit});
  });
 });
+
+describe('public collection freshness',()=>{
+ const insert=(kind:string,at:string,ok:number,stats:Record<string,unknown>)=>sqlite.prepare('INSERT INTO runs(kind,started_at,finished_at,ok,stats) VALUES(?,?,?,?,?)').run(kind,at,at,ok,JSON.stringify(stats));
+ it('uses the latest partially successful fetch, excluding a later completely failed run',async()=>{
+  insert('collect','2026-10-08T06:30:00Z',1,{ok:200});insert('collect','2026-10-12T00:29:00Z',0,{ok:241,failed:2,coverageDegraded:true});insert('collect','2026-10-12T01:29:00Z',0,{ok:0,failed:243,coverageDegraded:true});
+  const response=await call('meta');expect(response.body).toMatchObject({lastCollectedAt:'2026-10-12T00:29:00Z',lastSuccessfulCollect:'2026-10-08T06:30:00Z',coverageDegraded:true});
+  expect((await call('coverage')).body.lastCollectedAt).toBe('2026-10-12T00:29:00Z');
+ });
+ it('counts a successful sweep and fetched content even if later processing fails',async()=>{
+  insert('sweep','2026-10-12T02:32:00Z',0,{ok:7,coverageDegraded:true});insert('collect','2026-10-12T03:32:00Z',0,{ok:0,fetchedSources:2,failed:2,coverageDegraded:true});insert('model','2026-10-12T04:32:00Z',1,{});
+  expect((await call('meta')).body).toMatchObject({lastCollectedAt:'2026-10-12T03:32:00Z',lastSuccessfulCollect:null,coverageDegraded:true});
+ });
+ it('does not invent a fetch time when every source failed',async()=>{insert('collect','2026-10-12T00:29:00Z',0,{ok:0,fetchedSources:0,failed:243});expect((await call('meta')).body.lastCollectedAt).toBeNull();});
+});

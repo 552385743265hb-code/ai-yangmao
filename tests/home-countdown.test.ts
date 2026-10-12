@@ -28,3 +28,5 @@ describe('home deadline reminders',()=>{
   expect(f.run('estimatedCountdown(win)')).toBe('约 3–4 天');expect(f.run('JSON.stringify(item)===before')).toBe(true);
  });
 });
+
+ describe('fetch freshness ribbon',()=>{it('shows partial-fetch freshness rather than the older completely successful run',()=>{const f=fixture();f.run("OFFERS=[];PLATFORMS=[];META={lastCollectedAt:'2026-10-12T02:32:00Z',lastSuccessfulCollect:'2026-10-08T06:30:00Z',coverageDegraded:true};prepare();");expect(f.run('LAST_OK.toISOString()')).toBe('2026-10-12T02:32:00.000Z');expect(f.run('ribbon()')).toContain('最近一次抓取');expect(f.run('ribbon()')).not.toContain('最近成功抓取');});});

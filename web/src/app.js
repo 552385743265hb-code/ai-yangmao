@@ -72,7 +72,7 @@ function prepare() {
   OMAP = Object.fromEntries(OFFERS.map(o => [o.id, o]));
   Object.assign(C, migrateMembershipPreferences(C));
   LS.set('ym-cond', C);
-  LAST_OK = META.lastSuccessfulCollect ? new Date(META.lastSuccessfulCollect) : null;
+  LAST_OK = (META.lastCollectedAt ?? META.lastSuccessfulCollect) ? new Date(META.lastCollectedAt ?? META.lastSuccessfulCollect) : null;
   RACE = computeRace(); TREND = computeTrend();
   HOLIDAYS.forEach(h => { h.past = holidayPast(h); });
 }
@@ -517,7 +517,7 @@ const secH = (title, hint = '') => `<div class="sec-h"><h2>${title}</h2>${hint ?
 function ribbon() {
   if(META.degraded)return `<div class="ribbon" role="status">只读模式：数据库今日额度已用尽，显示 ${esc(new Date(META.snapshotAt).toLocaleString())} 的已批准快照。数据可能延迟，领取前请核对官方；后台审核与采集暂时暂停。</div>`;
   const ago2 = LAST_OK ? Math.max(0, Math.round((NOW - LAST_OK) / 3600000)) : null;
-  return `<div class="ribbon"><span class="live"><i></i>最近成功抓取：<b>${LAST_OK ? `${ago2 < 1 ? '1 小时内' : ago2 + ' 小时前'}（${hm(LAST_OK)}）` : '—'}</b></span><span>${META.coverageDegraded ? '部分新增内容待抽取；现有权益仍按官方证据复核' : '只收能追到官方出处的羊毛，每条都附官方原文'}</span></div>`;
+  return `<div class="ribbon"><span class="live"><i></i>最近一次抓取：<b>${LAST_OK ? `${ago2 < 1 ? '1 小时内' : ago2 + ' 小时前'}（${hm(LAST_OK)}）` : '—'}</b></span><span>${META.coverageDegraded ? '部分抓取或核验尚未完成' : '只收能追到官方出处的羊毛，每条都附官方原文'}</span></div>`;
 }
 function ocard(o) {
   const [frac, col] = barOf(o);

@@ -83,6 +83,8 @@ gh workflow run collect.yml --ref main -f fast_leads=true -f lead_limit=50
 
 ## 展示、通知与健康
 
+页眉“最近一次抓取”使用meta.lastCollectedAt：最近已完成collect/sweep中fetchedSources>0（兼容旧stats.ok>0或旧ok=true）的时间。仅全失败批次不更新。抓取成功与抽取/核验/入库完整成功分开，后者仍保留lastSuccessfulCollect用于后台完整性告警；页面覆盖不完整提示取最近完成批次，不因存在部分成功就假报全覆盖。meta/coverage缓存使用partial-fetch-v1版本。
+
 公开offers/platforms接口有5分钟缓存，后台no-store。内部memo、suggestion、officialReview及完整修订明细不公开；公开简介和步骤只写领取者需要的权益与条件，核验过程写内部记录。后台不定时重画输入表单；编辑延迟挂载并保留草稿，心得持续显示未保存/保存中/已保存/失败。待审链接`#admin-offer-ID`登录后定位；提交带reviewVersion，内容变化或竞争返回409。更新提案展示公开值与候选值的增删改对比，证据拆项，忽略单纯抓取元数据变化。
 
 Telegram审核提醒按对象版本去重，每批最多10条，临期优先并保留积压名额。`digest`/`urgent`仅预览；`dispatch digest|urgent`经Hermes实际发送，须有授权。发送前占位，成功后ack；pending/unknown不能换批次重发，人工确认后用delivery-delivered或delivery-unsent结案。正常定时任务可能已送达新条目，手动推送前查台账。
