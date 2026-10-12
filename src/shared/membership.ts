@@ -126,7 +126,7 @@ export function formatMembership(r: MembershipRequirement, catalog: MembershipCa
     if (l?.legacy !== undefined) qualifiers.push(l.legacy ? '仅旧版套餐' : '不含旧版套餐');
     return text + (qualifiers.length ? `（${qualifiers.join('；')}）` : '');
   }).join(' 且 ')).map(t => r.anyOf.length > 1 ? `（${t}）` : t).join(' 或 ');
-  return r.status === 'needs_review' ? `待核实：${text || r.legacyText?.join('；') || '会员条件'}` : text;
+  return r.status === 'needs_review' ? `会员条件未映射：${text || r.legacyText?.join('；') || '请查看原条件'}` : text;
 }
 const and = (values: MembershipMatch[]): MembershipMatch => values.includes('no') ? 'no' : values.includes('unknown') ? 'unknown' : 'yes';
 const or = (values: MembershipMatch[]): MembershipMatch => values.includes('yes') ? 'yes' : values.includes('unknown') ? 'unknown' : 'no';

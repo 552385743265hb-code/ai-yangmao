@@ -31,7 +31,7 @@ export async function prepareMembershipFields(db:D1Database,original:MemberOffer
   requirements=requirements.filter(v=>v!=='none');
   if(r.status==='needs_review'&&!r.anyOf.length){
    const legacy=r.legacyText?.length?r.legacyText:memberTexts(original.requirements).map(t=>t.slice(7));
-   requirements.push(...(legacy.length?legacy.map(t=>'member:'+t):['member:会员资格待核实']));
+   requirements.push(...(legacy.length?legacy.map(t=>'member:'+t):['member:会员条件未映射']));
   }else requirements.push('member:'+formatMembership(r,catalog));
  }
  return {...fields,membershipRequirement:r,requirements:requirements.length?requirements:['none']};
@@ -40,7 +40,7 @@ export async function membershipPublicationError(db:D1Database,offer:MemberOffer
  const r=offer.membershipRequirement;
  if(!r){return memberTexts(offer.requirements).length?'会员资格尚未结构化确认，请选择产品、套餐和限制':null;}
  const parsed=membershipSchema.safeParse(r);if(!parsed.success)return '会员资格结构不正确';
- if(r.status==='needs_review')return '会员资格仍待核实，请确认产品、套餐和限制';
+ if(r.status==='needs_review')return '新的会员资格组合尚未确认，请明确产品、套餐和限制';
  if(r.status==='not_required')return memberTexts(offer.requirements).length?'会员资格与门槛文案冲突':null;
  const catalog=await readMembershipCatalog(db);
  const errors=validateMembership(r,catalog);
