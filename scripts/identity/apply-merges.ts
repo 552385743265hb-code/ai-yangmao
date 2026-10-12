@@ -20,7 +20,7 @@ export async function main(args=process.argv.slice(2)){
  const plan=mergePlanSchema.parse(readApprovedJson(argument(args,'--plan'),environment));if(plan.environment!==env)throw new Error('environment mismatch');
  if(apply&&argument(args,'--approve-plan')!==plan.planHash)throw new Error('exact --approve-plan required');
  const opened=openHistoryInput(input,environment,{writable:apply});try{
-  if(!apply){const current=await buildMergePlan(opened.db,{environment:env,snapshotHash:plan.snapshotHash,sourceCodeSha:plan.sourceCodeSha,groups:plan.groups.map(g=>({entityIds:g.entityIds,canonicalEntityId:g.canonicalEntityId,canonicalReason:g.canonicalReason,evidence:g.evidence}))});console.log(JSON.stringify({mode:'dry-run',writes:0,...current},null,2));return;}
+  if(!apply){const current=await buildMergePlan(opened.db,{environment:env,snapshotHash:plan.snapshotHash,sourceCodeSha:plan.sourceCodeSha,groups:plan.groups.map(g=>({entityIds:g.entityIds,canonicalEntityId:g.canonicalEntityId,canonicalReason:g.canonicalReason,evidence:g.evidence,...(g.reconciliation?{reconciliation:g.reconciliation}:{})}))});console.log(JSON.stringify({mode:'dry-run',writes:0,...current},null,2));return;}
   const service=new IdentityMergeService(opened.db,{environment:env,enabled:true,actor:actor!}),receipts:MergeReceipt[]=[];
   for(const group of plan.groups){const receipt=await service.applyMerge(plan,requestId!,plan.planHash,group.id);receipts.push(receipt);if(receipt.status==='conflict')break;}
   console.log(JSON.stringify({mode:'isolated-apply',planHash:plan.planHash,receipts,remainingGroups:plan.groups.slice(receipts.length).map(g=>g.id)},null,2));if(receipts.some(r=>r.status==='conflict'))process.exitCode=1;
