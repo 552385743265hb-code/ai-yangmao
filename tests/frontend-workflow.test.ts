@@ -210,6 +210,14 @@ describe('frontend review workflow', () => {
     expect(rows.join('')).not.toContain('新鲜');
     expect(page.charts.get('cRank').series[0].data).toEqual([]);
   });
+  it('explains that stale evidence does not revoke a prior human approval',()=>{
+    const page=fixture(()=>({}));publicOffer(page.run,{verify:'evidence_missing'});page.run("pOffer('public-offer')");
+    const text=page.document.querySelector('#main')!.textContent||'';
+    expect(text).toContain('此前的审核通过仍保留');expect(text).toContain('可能是网页改写');
+    expect(text).not.toContain('当前证据页不再支持保存的条款');
+    expect(page.document.querySelector('a[href="#admin-offer-public-offer"]')?.textContent).toContain('后台核对证据');
+    page.run("ADM.token='';pOffer('public-offer')");expect(page.document.querySelector('a[href="#admin-offer-public-offer"]')).toBeNull();
+  });
 
   it('uses an early withdrawal date in details, cemetery, and weekly ended counts', () => {
     const page = fixture(() => ({}));
@@ -673,6 +681,32 @@ it('keeps rich activity cards, authoritative totals and a separate evidence queu
  const f=fixture(url=>url.includes('/identity/tasks')?{tasks:[{id:'t1',kind:'initial',display:{title:ready.title},sources:[]}]}:url.includes('/visibility-holds')?{holds:[{offerId:'paused',title:'暂停活动',reason:'历史可见性状态需要明确重开',visibilityVersion:'v'}]}:q);
  await f.run('admQueue()');expect(f.document.querySelector('[data-review-summary]')?.textContent).toContain('活动待审 9');expect(f.document.querySelector('[data-review-summary]')?.textContent).toContain('线索复核 80');expect(f.document.querySelector('[data-review-summary]')?.textContent).toContain('暂停发布 6');
  expect(f.document.querySelectorAll('[data-code="ready"]')).toHaveLength(1);expect(f.document.querySelector('[data-identity-task="t1"]')).toBeNull();expect(f.document.querySelector('[data-code="ready"] [data-act="approve"]')).not.toBeNull();expect(f.document.querySelector('[data-system-evidence] [data-code="waiting"]')).not.toBeNull();expect(f.document.querySelector('[data-code="waiting"] [data-act="approve"]')).toBeNull();expect(f.document.querySelector('[data-paused-section]')?.hasAttribute('open')).toBe(false);
+});
+it('approved stale offers have a separate lazy verification review with evidence editing, not a second approval',async()=>{
+ const item=offer('stale-approved',{reviewState:'approved',status:'stale',verifyResult:'evidence_missing',lastVerifiedAt:'2026-10-10T00:00:00Z',evidenceUrl:'https://vendor.example/pricing',excerpts:{benefit:'Old exact benefit quote'}});
+ const q={...queue([]),needsVerification:[item]};const f=fixture(url=>url.includes('/identity/tasks')?{tasks:[]}:q);await f.run('admQueue()');
+ const section=f.document.querySelector('[data-stale-approved]') as HTMLDetailsElement;expect(section).not.toBeNull();expect(section.textContent).toContain('已批准');expect(section.textContent).toContain('待核验');
+ expect(f.document.querySelector('[data-code="stale-approved"]')).toBeNull();
+ section.open=true;section.dispatchEvent(new f.window.Event('toggle'));await pause();
+ const card=section.querySelector('[data-code="stale-approved"]')!;expect(card).not.toBeNull();
+ expect(card.textContent).toContain('已批准 · 待核验');expect(card.textContent).toContain('公开字段检查');expect(card.textContent).not.toContain('上架前检查');expect(card.querySelector('[data-act="approve"]')).toBeNull();
+ card.querySelector('[data-act="edit"]')!.dispatchEvent(new f.window.Event('click'));await pause();
+ expect(card.querySelector('[data-editform] [name="evidenceUrl"]')).not.toBeNull();
+});
+it('an admin deep link opens the matching previously approved stale card',async()=>{
+ const item=offer('stale-approved',{reviewState:'approved',status:'stale',verifyResult:'evidence_missing'});
+ const f=fixture(url=>url.includes('/identity/tasks')?{tasks:[]}: {...queue([]),needsVerification:[item]});
+ f.context.location.hash='#admin-offer-stale-approved';await f.run('admQueue()');
+ const section=f.document.querySelector('[data-stale-approved]') as HTMLDetailsElement;
+ expect(section.open).toBe(true);expect(section.querySelector('[data-offer-id="stale-approved"]')).not.toBeNull();
+ expect(section.querySelector('[data-offer-id="stale-approved"]')?.getAttribute('data-focused')).toBe('1');
+});
+it('loads approved stale cards ten at a time so the review page stays responsive',async()=>{
+ const items=Array.from({length:25},(_,index)=>offer('stale-'+index,{reviewState:'approved',status:'stale',verifyResult:'evidence_missing'}));
+ const f=fixture(url=>url.includes('/identity/tasks')?{tasks:[]}: {...queue([]),needsVerification:items});await f.run('admQueue()');
+ const section=f.document.querySelector('[data-stale-approved]') as HTMLDetailsElement;section.open=true;section.dispatchEvent(new f.window.Event('toggle'));await pause();
+ expect(section.querySelectorAll('[data-code]')).toHaveLength(10);
+ section.querySelector('[data-stale-more]')!.dispatchEvent(new f.window.Event('click'));expect(section.querySelectorAll('[data-code]')).toHaveLength(20);
 });
 it('a failed scope supplement with existing official benefit text is shown as a manual decision, not an active blocker',async()=>{
  const item=offer('compose',{preparation:{stage:'ready',label:'等待你决定',reason:'已有官方权益原文；请人工核对资格和领取方式'},officialReview:{status:'failed',reason:'搜索受限',attempts:4,checkedAt:'2026-10-12T00:21:20Z',nextAttemptAt:'2026-10-12T08:21:20Z',queries:[],candidates:[]}});

@@ -266,6 +266,7 @@
 ## magnific
 
 - 2026-10-09核实Magnific One独立发布活动：官网https://www.magnific.com/pricing及https://www.magnific.com/one均明确10月8–15日desktop app Unlimited；仅Premium+/Pro/Business，Draft和Final的High quality 2K/4K，Max仍扣credits，不扩成所有账号/所有质量/API免费。桌面入口https://www.magnific.com/desktop；平台默认官网改为magnific.com，magnific.ai留作legacy upscaler服务。活动仍待审，精确截止时刻/时区未公布，不编不限量美元估值；不能与套餐自带年度Unlimited混为一项。
+- 2026-10-12再次核对：https://www.magnific.com/pricing 仍写 Magnific One 桌面端不限量、至10月15日、Premium+/Pro/Business及High quality 2K/4K，Max仍扣credits；https://www.magnific.com/one 与 https://www.magnific.com/desktop 仍写桌面端10月8–15日。定价页把旧摘录“Unlimited in the desktop app from Oct 8 to 15.”改成不同句式，旧摘录逐字匹配失败不等于活动撤回。修订证据时以当前页原句为准，保留会员与质量限制；不能只因网页可读就盲目刷新核验时间。
 - 年付档自带的年度积分和全年不限量模型是档位权益，不收。（2026-10-03 批量审核）
 - 本节补充按 2026-10-01 官方资料核验；日期、型号、价格是当日快照，后续更新须重新读原文，未证实项继续保留缺口。
 - https://www.magnific.com/pricing 是原Freepik Creative Suite；导航明确 magnific.ai 是 legacy service。平台登记需区别新creative-suite站与旧upscaler站，纳入magnific.com官方域名才可用新站证据通过。
