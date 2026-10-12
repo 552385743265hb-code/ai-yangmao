@@ -227,7 +227,7 @@ describe('V2 valuation compatibility', () => {
         { waitUntil: (promise: Promise<unknown>) => pending.push(promise) } as any);
       expect((await (await get()).json() as any).offers[0]).toMatchObject({ id: offer.id, valuation: value });
       await Promise.all(pending);
-      const key = [...cache.keys()].find(url => new URL(url).searchParams.get('__response_schema') === 'valuation-v2');
+      const key = [...cache.keys()].find(url => new URL(url).searchParams.get('__response_schema') === 'valuation-v2-public-notes');
       expect(key).toBeDefined();
       expect(new URL(key!).searchParams.get('__canonical_generation')).toBe(new URL(oldKey).searchParams.get('__canonical_generation'));
       expect((await (await get()).json() as any).offers[0].valuation.version).toBe('v2');

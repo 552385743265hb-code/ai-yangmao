@@ -94,14 +94,15 @@ describe('V1 persisted valuation integration', () => {
     await call(`admin/offers/${offer.id}/approve`, {}, 'admin');
     const raw = { ...priced, reason: 'internal reason', sources: [{ ...priced.sources[0], oldUsd: 100 }],
       inputs: { amount: 5, currency: 'USD', reviewMemo: 'internal input', limits: { days: 30, previousAmount: 123 } } };
-    sqlite.prepare('UPDATE offers SET valuation=?,usd_estimate=5,review_memo=?,review_suggestion=? WHERE id=?')
-      .run(JSON.stringify(raw), 'private audit', JSON.stringify({ reason: 'private suggestion' }), offer.id);
+    sqlite.prepare('UPDATE offers SET valuation=?,usd_estimate=5,review_memo=?,review_suggestion=?,withdrawn_reason=? WHERE id=?')
+      .run(JSON.stringify(raw), 'private audit', JSON.stringify({ reason: 'private suggestion' }), 'private withdrawal workflow', offer.id);
     for (const path of ['offers?view=all', `offers/${offer.id}`, 'platforms/vendor']) {
       const publicBody = (await call(path)).body as any;
       const published = publicBody.offer ?? publicBody.offers[0];
       expect(published.valuation).toMatchObject({ status: 'priced', usdEstimate: 5, inputs: { amount: 5, currency: 'USD', limits: { days: 30 } } });
       expect(published).not.toHaveProperty('reviewMemo');
       expect(published).not.toHaveProperty('reviewSuggestion');
+      expect(published).not.toHaveProperty('withdrawnReason');
       expect(JSON.stringify(publicBody)).not.toMatch(/internal reason|internal input|private audit|oldUsd|previousAmount/);
     }
     sqlite.prepare('UPDATE offers SET usd_estimate=8 WHERE id=?').run(offer.id);

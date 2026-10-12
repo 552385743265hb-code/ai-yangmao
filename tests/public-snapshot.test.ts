@@ -17,3 +17,10 @@ it('returns explicit missing-detail and filters without claiming current verific
  const r=await snapshotResponse(new Request('https://local.test/api/offers/missing'),assets);expect(r!.status).toBe(404);
  const filtered=await snapshotResponse(new Request('https://local.test/api/offers?platform=other'),assets);expect((await filtered!.json() as any).offers).toEqual([]);
 });
+it('strips internal withdrawal and review notes from older snapshots',async()=>{
+ const oldAssets={fetch:async()=>Response.json({...snapshot,offers:[{...snapshot.offers[0],withdrawnReason:'private workflow',reviewMemo:'private memo',reviewSuggestion:{reason:'private choice'},officialReview:{reason:'private check'}}]})} as unknown as Fetcher;
+ for(const path of ['/api/offers?view=all','/api/offers/public']){
+  const response=await snapshotResponse(new Request('https://local.test'+path),oldAssets);
+  expect(await response!.text()).not.toMatch(/private|withdrawnReason|reviewMemo|reviewSuggestion|officialReview/);
+ }
+});

@@ -21,7 +21,7 @@ if (!Array.isArray(platforms) || platforms.some(p => p.status !== 'approved')) t
 const fields = new Set(['id', 'platformId', 'title', 'type', 'tags', 'models', 'modalities', 'claimMethod', 'requirements',
   'membershipRequirement', 'audience', 'valueText', 'usdEstimate', 'usdMax', 'valuation', 'claimStart', 'claimEnd',
   'endKind', 'creditValidity', 'sourceTz', 'publishedAt', 'discoveredAt', 'lastVerifiedAt', 'verifyResult',
-  'withdrawnAt', 'withdrawnReason', 'adminNote', 'reviewState', 'evidence', 'steps', 'firstChannel', 'createdAt', 'updatedAt']);
+  'withdrawnAt', 'adminNote', 'reviewState', 'evidence', 'steps', 'firstChannel', 'createdAt', 'updatedAt']);
 if (!Array.isArray(offerResponse.offers)) throw Error('Missing public offers');
 const offers = offerResponse.offers.map((raw: Record<string, any>) => {
   if (raw.reviewState !== 'approved' || !platforms.some(p => p.id === raw.platformId)) throw Error('Unexpected unpublished offer');
