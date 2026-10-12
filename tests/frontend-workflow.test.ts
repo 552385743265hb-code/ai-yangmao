@@ -201,6 +201,19 @@ describe('frontend review workflow', () => {
     expect((page.document.querySelector('#noteForm textarea') as HTMLTextAreaElement).value).toBe('草稿 B');
   });
 
+  it('places ranch comments beneath the right-column status timeline for every visitor', () => {
+    const page=fixture(()=>({comments:[],nextCursor:null}));
+    publicOffer(page.run);
+    for(const admin of [true,false]){
+      page.run(`ADM.token=${admin ? "'fixture'" : "''"};ADM.role=${admin ? "'admin'" : "''"};pOffer('public-offer')`);
+      const columns=page.document.querySelectorAll('.dt-grid > div');
+      const note=page.document.querySelector('#noteBox')!;
+      expect(note.parentElement).toBe(columns[1]);
+      expect(note.previousElementSibling?.textContent).toContain('状态时间轴');
+      expect(note.nextElementSibling).toBeNull();
+    }
+  });
+
   it('offers the same public comment form to anonymous readers and escapes all user content', async () => {
     const writes: any[] = [];
     const raw = '<img src=x onerror=alert(1)>\n到账很快';
