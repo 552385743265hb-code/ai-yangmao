@@ -35,12 +35,21 @@ export async function computeCollectedValuation(input:ValuationIntakeInput,now=n
   };
   if(!input.sourceText||!input.sourceFetch?.sourceVerified||input.sourceFetch.truncated||input.evidence.tier==='media'||input.evidence.tier==='tested')return unknown('完整官方正文及可靠抓取证明尚未齐备');
   if(input.sourceFetch.finalUrl!==input.evidence.url||await sha256(input.sourceText)!==input.sourceFetch.contentHash)return unknown('抓取正文与所引来源未绑定',['source_binding_mismatch']);
-  if(!input.valuationFactors&&!(input.platformId==='openai'&&input.tags?.includes('reset')))return unknown('未抽取可计算因子，等待补证');
-  let selectedFactors:unknown=input.valuationFactors;
+  const resetSentence=quote.split(/[。！？!?；;\n]/).find(sentence=>
+    /(?:发放|赠送|获得).{0,35}(?:1|一)\s*(?:次|张).{0,20}(?:额外|独立).{0,12}重置|(?:额外|独立).{0,12}(?:发放|赠送).{0,12}(?:1|一)\s*(?:次|张).{0,12}重置|(?:receive|get|grant|give|giving|issue|issuing|offer).{0,45}(?:1|one|a single)\s+(?:extra|additional|independent|banked|bonus).{0,25}reset/i.test(sentence)
+    && !/every\s*(?:day|week|month)|daily|monthly|每(?:天|周|月)|进度|执行中|正在执行|progress|rollout|processing|status update/i.test(sentence)
+    && !/(?:不会|没有|不再|取消|未)(?:.{0,16})(?:发放|赠送|获得|额外|重置)|\b(?:not|never|won't|cannot|no)\b.{0,45}(?:receive|grant|give|extra|additional|reset)/i.test(sentence));
+  const singleReset=input.platformId==='openai'&&!!resetSentence;
+  if(!input.valuationFactors&&!singleReset)return unknown('未抽取可计算因子，等待补证');
+  if(Array.isArray(input.valuationFactors)&&input.valuationFactors.length!==1)return unknown('多个计算方案不能自动合并',['multiple_valuation_recipes']);
+  const raw=Array.isArray(input.valuationFactors)&&input.valuationFactors.length===1?input.valuationFactors[0]:input.valuationFactors;
+  let selectedFactors:unknown=raw&&typeof raw==='object'?structuredClone(raw):raw;
+  const selectionRules:string[]=[];
   // Authorized V2 reset convention is selected by code, never fabricated as a source number.
-  if(input.platformId==='openai'&&input.tags?.includes('reset')&&/重置|reset/i.test(quote)){
-    const supplied=input.valuationFactors as Record<string,unknown>|undefined;
-    selectedFactors={kind:'plan',price:supplied?.kind==='plan'&&supplied.price&&typeof supplied.price==='object'&&'value' in supplied.price?supplied.price:{catalogId:'chatgpt-plus.amount'},billingPeriod:'month',benchmark:'plan_fraction',referencePlan:'ChatGPT Plus',denominator:{ruleId:'plan_fraction_quarter'},sources:supplied?.kind==='plan'&&Array.isArray(supplied.sources)?supplied.sources:sources,...(supplied?.kind==='plan'&&supplied.multiplier?{multiplier:supplied.multiplier}:{})};
+  if(singleReset){
+    // Quantity 1 is grounded above; price and quarter denominator are independently controlled.
+    selectedFactors={kind:'plan',price:{catalogId:'chatgpt-plus.amount'},billingPeriod:'month',benchmark:'plan_fraction',referencePlan:'ChatGPT Plus',denominator:{ruleId:'plan_fraction_quarter'},sources};
+    selectionRules.push('official_single_extra_reset_plus_quarter');
   }
   const factors=selectedFactors as {sources?:Array<{id:string;url:string;excerpt:string}>;kind?:string};
   const sourceTexts:Record<string,string>={};
@@ -62,8 +71,8 @@ export async function computeCollectedValuation(input:ValuationIntakeInput,now=n
   if(!Array.isArray(factors.sources)||!factors.sources.length||factors.sources.some(s=>!s||!(s.url===input.evidence.url&&input.sourceText!.includes(s.excerpt)||validSources.some(v=>v.url===s.url&&v.text.includes(s.excerpt)))))return unknown('因子引用未绑定本次正文',['unbound_factor_source']);
   const actualFact=(value:unknown)=>!value||typeof value==='object'&&'value' in value&&'sourceId' in value&&factors.sources!.some(s=>s.id===(value as {sourceId:string}).sourceId&&s.url===input.evidence.url);
   const recipe=factors as unknown as Record<string,unknown>;
-  for(const key of ['amount','maximum','fullAmount','first30Maximum','entitlementUnits','months','multiplier','coverageDays'])if(!actualFact(recipe[key]))return unknown('实际赠额与权益数量必须来自本次活动原文',['entitlement_source_mismatch']);
-  if(recipe.denominator&&!(input.platformId==='openai'&&input.tags?.includes('reset')))return unknown('当前权益未匹配受控套餐分数约定',['unsupported_fraction_policy']);
+  for(const key of ['amount','maximum','fullAmount','first30Maximum','entitlementUnits','monthlyCap','months','multiplier','coverageDays'])if(!actualFact(recipe[key]))return unknown('实际赠额与权益数量必须来自本次活动原文',['entitlement_source_mismatch']);
+  if(recipe.denominator&&!singleReset)return unknown('当前权益未匹配受控套餐分数约定',['unsupported_fraction_policy']);
   if((input.type==='apply')!==(factors.kind==='apply')&&factors.kind!=='unknown')return unknown('申请制与计算周期不一致',['valuation_type_mismatch']);
   const available={...getValuationFactCatalog(now),...runtimeCatalog};
   const permitted=VALUATION_PRICE_CATALOG.filter(p=>p.kind!=='token_model'?p.platformId===input.platformId:p.platformId===input.platformId||input.sourceText!.toLowerCase().includes(p.model.toLowerCase())&&(input.models??[]).some(m=>m.toLowerCase()===p.model.toLowerCase()));
@@ -72,6 +81,39 @@ export async function computeCollectedValuation(input:ValuationIntakeInput,now=n
   if(scenario?.components)for(const component of scenario.components){
     for(const cap of Object.values((component as {caps?:Record<string,unknown>}).caps??{}))if(!actualFact(cap))return unknown('实际免费用量上限必须来自本次活动原文',['entitlement_source_mismatch']);
     for(const model of component.models??[]){
+    const normalize=(s:string)=>s.toLowerCase().replace(/[^a-z0-9]/g,'');
+    const exact=permitted.find(p=>p.kind==='token_model'&&p.platformId===input.platformId
+      &&[p.id,p.model].some(name=>normalize(name)===normalize(String(model.canonicalId??model.id??'')))
+      &&input.sourceText!.toLowerCase().includes(p.model.toLowerCase()));
+    if(exact?.kind==='token_model'&&(model.currency===undefined||model.currency===exact.currency)
+      &&(model.specification===undefined||model.specification===exact.specification)
+      &&catalog[exact.id+'.inputPrice']&&catalog[exact.id+'.outputPrice']&&catalog[exact.id+'.tokenPriceUnits']){
+      const prices=[model.inputPrice??model.inputPerMillion,model.outputPrice??model.outputPerMillion];
+      const boundLiteral=(v:unknown)=>!!v&&typeof v==='object'&&'value' in v&&'sourceId' in v&&'quote' in v
+        &&factors.sources!.some(source=>source.id===(v as {sourceId:string}).sourceId&&source.excerpt.includes(String((v as {quote:string}).quote))
+          &&(source.url===input.evidence.url?input.sourceText!:validSources.find(s=>s.url===source.url)?.text??'').includes(String((v as {quote:string}).quote))
+          &&[...String((v as {quote:string}).quote).matchAll(/(?<![\w.])\d+(?:,\d{3})*(?:\.\d+)?(?![\w.])/g)].some(m=>Number(m[0].replaceAll(',',''))===(v as {value:number}).value));
+      const invalidCatalog=prices.some((v,index)=>v&&typeof v==='object'&&'catalogId' in v
+        &&v.catalogId!==exact.id+(index===0?'.inputPrice':'.outputPrice'));
+      const unresolvedLiterals=prices.some(v=>v&&typeof v==='object'&&'value' in v&&!boundLiteral(v));
+      const anyActualPrice=prices.some(boundLiteral);
+      const invalidUnitCatalog=model.tokenPriceUnits&&typeof model.tokenPriceUnits==='object'&&'catalogId' in model.tokenPriceUnits&&model.tokenPriceUnits.catalogId!==exact.id+'.tokenPriceUnits';
+      const knownUnitString=model.tokenPriceUnits==='million_tokens'&&exact.tokenPriceUnits===1_000_000;
+      if(!invalidCatalog&&!invalidUnitCatalog&&!anyActualPrice&&(unresolvedLiterals||knownUnitString)){
+        delete model.inputPerMillion;delete model.outputPerMillion;
+        model.inputPrice={catalogId:exact.id+'.inputPrice'};model.outputPrice={catalogId:exact.id+'.outputPrice'};model.tokenPriceUnits={catalogId:exact.id+'.tokenPriceUnits'};
+        model.currency=exact.currency;model.specification=exact.specification;model.sourceType=exact.authority;
+        const componentRecord=component as unknown as Record<string,unknown>;
+        if(exact.currency!=='USD'&&!componentRecord.fx&&!recipe.fx){
+          const rates=Object.entries(catalog).filter(([id,entry])=>entry.kind==='fx'&&entry.currency===exact.currency&&/^ecb-\d{4}-\d{2}-\d{2}\./.test(id))
+            .sort(([a],[b])=>b.localeCompare(a));
+          if(rates[0])componentRecord.fx={currency:exact.currency,date:rates[0][0].slice(4,14),usdRate:{catalogId:rates[0][0]}};
+        }
+        selectionRules.push('same_model_verified_catalog:'+exact.id);
+      }else if(knownUnitString&&!invalidCatalog&&!invalidUnitCatalog){
+        model.tokenPriceUnits={catalogId:exact.id+'.tokenPriceUnits'};selectionRules.push('same_model_verified_token_unit:'+exact.id);
+      }
+    }
     const names=Object.values(model).flatMap(v=>v&&typeof v==='object'&&'catalogId' in v?[String(v.catalogId)]:[]);
     const used=VALUATION_PRICE_CATALOG.filter(p=>p.kind==='token_model'&&names.some(id=>id.startsWith(p.id+'.')));
     if(used.length>1)return unknown('不同模型价格不能混算',['model_catalog_mismatch']);
@@ -91,7 +133,7 @@ export async function computeCollectedValuation(input:ValuationIntakeInput,now=n
   if(factors.kind==='unknown')return unknown((factors as {reason?:string}).reason??'当前事实不足以自动定价');
   const result=calculateValuationV2(selectedFactors,{...context,sourceTexts,now});
   if(!result.valuation)return unknown('计算因子未通过验证',result.errors);
-  return {valuation:{...result.valuation,inputs:{...result.valuation.inputs,calculationEngine:'v2-auto'}},errors:result.errors};
+  return {valuation:{...result.valuation,inputs:{...result.valuation.inputs,calculationEngine:'v2-auto',...(selectionRules.length?{ruleIds:[...(Array.isArray(result.valuation.inputs.ruleIds)?result.valuation.inputs.ruleIds:[]),...selectionRules]}:{})},assumptions:[...result.valuation.assumptions,...(selectionRules.length?['采用已核验同型号价格目录及适用的受控权益计算约定。']:[])]},errors:result.errors};
 }
 /** Transport details never become public offer fields or canonical identity facts. */
 export function stripValuationTransport<T extends Record<string,unknown>>(input:T) {

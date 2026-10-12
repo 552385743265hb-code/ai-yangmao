@@ -46,7 +46,7 @@ it('unknown and unverified source keep null needs_judgment and model cannot decl
 it('default ChatGPT reset uses trusted Plus price and program quarter convention, not a forged source 4',async()=>{
  const text='All eligible ChatGPT accounts receive 1 extra reset.',sourceUrl='https://openai.com/reset';
  const result=await computeCollectedValuation({platformId:'openai',type:'perk',tags:['reset'],sourceText:text,sourceFetch:{originalUrl:sourceUrl,finalUrl:sourceUrl,fetchedUrl:sourceUrl,method:'direct',sourceVerified:true,truncated:false,contentHash:await sha256(text)},evidence:{url:sourceUrl,tier:'official',capturedAt:date,excerpts:{benefit:text}}});
- expect(result.valuation).toMatchObject({usdEstimate:5,status:'provisional',inputs:{ruleIds:['plan_fraction_quarter']}});expect(result.valuation?.sources.some(s=>s.url.includes('valuation-policy'))).toBe(false);
+ expect(result.valuation).toMatchObject({usdEstimate:5,status:'provisional',inputs:{ruleIds:expect.arrayContaining(['plan_fraction_quarter'])}});expect(result.valuation?.sources.some(s=>s.url.includes('valuation-policy'))).toBe(false);
 });
 it('human values are protected as a group while auto drafts remain recomputable',async()=>{
  const automatic=(await computeCollectedValuation(await draft())).valuation!;
@@ -94,4 +94,54 @@ it('enforce proposal and approval preserve a human amount even when its edited m
  const proposal=JSON.parse(String(f.sqlite.prepare('SELECT candidate FROM offer_proposals').get()?.candidate));expect(proposal).toMatchObject({usdEstimate:7,valuation:reviewed});
  expect((await f.call('admin/identity/tasks/'+next.taskId+'/resolve',{requestId:'approve-next-terms',expectedRevision:0,action:'approve'},true)).status).toBe(200);
  expect(f.sqlite.prepare('SELECT usd_estimate FROM offers').get()).toEqual({usd_estimate:7});expect(JSON.parse(String(f.sqlite.prepare('SELECT valuation FROM offers').get()?.valuation))).toEqual(reviewed);
+});
+
+it('detects an independently issued single OpenAI extra reset without model tags and removes fabricated price/fraction factors',async()=>{
+ const text='OpenAI 官方额外福利：向现有 ChatGPT Plus 用户发放1次额外额度重置。用户登录后自动获得；这是独立额外重置，不是每月套餐基础用量，也不是之前发放的执行进度。没有公布活动截止日。';
+ const sourceUrl='https://openai.com/reset',proof={originalUrl:sourceUrl,finalUrl:sourceUrl,fetchedUrl:sourceUrl,method:'direct' as const,sourceVerified:true,truncated:false,contentHash:await sha256(text)};
+ const result=await computeCollectedValuation({platformId:'openai',type:'perk',sourceText:text,sourceFetch:proof,evidence:{url:sourceUrl,tier:'official',capturedAt:date,excerpts:{benefit:text}},valuationFactors:{kind:'plan',price:{value:20,sourceId:'benefit',quote:'$20/month'},numerator:{ruleId:'plan_fraction_quarter'},billingPeriod:'month',sources:[{...sources(text)[0],url:sourceUrl}]}});
+ expect(result.valuation).toMatchObject({usdEstimate:5,status:'provisional',inputs:{ruleIds:expect.arrayContaining(['official_single_extra_reset_plus_quarter'])}});
+});
+
+it.each(['Every month users receive 1 extra reset.','This is rollout progress: users receive 1 extra reset.','Users will not receive 1 extra reset.','不会向用户发放1次额外重置。'])('does not treat recurring, progress or denied resets as a new one-time grant: %s',async text=>{
+ const sourceUrl='https://openai.com/reset';const result=await computeCollectedValuation({platformId:'openai',type:'perk',tags:['reset'],sourceText:text,sourceFetch:{originalUrl:sourceUrl,finalUrl:sourceUrl,fetchedUrl:sourceUrl,method:'direct',sourceVerified:true,truncated:false,contentHash:await sha256(text)},evidence:{url:sourceUrl,tier:'official',capturedAt:date,excerpts:{benefit:text}}});expect(result.valuation?.status).toBe('needs_judgment');expect(result.valuation?.usdEstimate).toBeNull();
+});
+
+it('normalizes a single recipe and replaces SWE-2 model-memory prices and string unit using the exact fresh catalog',async()=>{
+ const text='Devin 官方 SWE-2 Free 独立免费活动：任何用户登录桌面应用或 CLI 即可免费使用 SWE-2 编程模型，不限Token额度。每个用户激活后可免费使用30天。',sourceUrl='https://docs.devin.ai/free';
+ const recipe={kind:'scenario',sources:[{...sources(text)[0],url:sourceUrl}],components:[{scenario:'coding',models:[{id:'SWE-2',currency:'USD',inputPrice:{value:15,sourceId:'benefit',quote:'SWE-2'},outputPrice:{value:75,sourceId:'benefit',quote:'SWE-2'},tokenPriceUnits:'million_tokens'}]}]};
+ const base={platformId:'devin',type:'free',models:['SWE-2'],sourceText:text,sourceFetch:{originalUrl:sourceUrl,finalUrl:sourceUrl,fetchedUrl:sourceUrl,method:'direct' as const,sourceVerified:true,truncated:false,contentHash:await sha256(text)},evidence:{url:sourceUrl,tier:'official',capturedAt:date,excerpts:{benefit:text}}};
+ const result=await computeCollectedValuation({...base,valuationFactors:[recipe]});expect(result.valuation?.usdEstimate).toBe(45);expect(result.valuation?.inputs.ruleIds).toContain('same_model_verified_catalog:swe-2');expect(recipe.components[0].models[0].inputPrice.value).toBe(15);
+ expect((await computeCollectedValuation({...base,valuationFactors:[recipe,recipe]})).valuation?.status).toBe('needs_judgment');
+ for(const patch of [{currency:'CNY'},{inputPrice:{catalogId:'nonexistent.inputPrice'}},{id:'AnotherModel'}]){const invalid=structuredClone(recipe);Object.assign(invalid.components[0].models[0],patch);expect((await computeCollectedValuation({...base,valuationFactors:invalid})).valuation?.status).toBe('needs_judgment');}
+ const expired=await computeCollectedValuation({...base,valuationFactors:[recipe]},'2026-12-01T00:00:00Z');expect(expired.valuation?.status).toBe('needs_judgment');
+});
+
+it('preserves a genuinely source-bound current SWE-2 price instead of overwriting it with the catalog',async()=>{
+ const price='SWE-2: input USD 4 and output USD 20 per 1M Token.',text='SWE-2 is free with unlimited coding requests.\n'+price,sourceUrl='https://docs.devin.ai/free';
+ const result=await computeCollectedValuation({platformId:'devin',type:'free',models:['SWE-2'],sourceText:text,sourceFetch:{originalUrl:sourceUrl,finalUrl:sourceUrl,fetchedUrl:sourceUrl,method:'direct',sourceVerified:true,truncated:false,contentHash:await sha256(text)},evidence:{url:sourceUrl,tier:'official',capturedAt:date,excerpts:{benefit:text}},valuationFactors:{kind:'scenario',sources:[{...sources(text)[0],url:sourceUrl}],components:[{scenario:'coding',models:[{id:'SWE-2',currency:'USD',inputPerMillion:{value:4,sourceId:'benefit',quote:price},outputPerMillion:{value:20,sourceId:'benefit',quote:price}}]}]}});
+ expect(result.valuation?.usdEstimate).toBe(60);expect(result.valuation?.inputs.ruleIds??[]).not.toContain('same_model_verified_catalog:swe-2');
+});
+
+it('supports the affirmative extra-before-verb reset wording without treating negated extra grants as issued',async()=>{
+ for(const [text,amount] of [['向 ChatGPT Plus 用户额外发放1次额度重置。',5],['向 ChatGPT Plus 用户不会额外发放1次额度重置。',null]] as const){
+ const sourceUrl='https://openai.com/reset';const result=await computeCollectedValuation({platformId:'openai',type:'perk',sourceText:text,sourceFetch:{originalUrl:sourceUrl,finalUrl:sourceUrl,fetchedUrl:sourceUrl,method:'direct',sourceVerified:true,truncated:false,contentHash:await sha256(text)},evidence:{url:sourceUrl,tier:'official',capturedAt:date,excerpts:{benefit:text}}});expect(result.valuation?.usdEstimate).toBe(amount);
+ }
+});
+
+it('does not repair prices that are actually quoted for a different model, nor wrong catalog-purpose bindings',async()=>{
+ const price='OtherModel: input USD 15 and output USD 75 per 1M Token.',text='SWE-2 is free for coding.\n'+price,sourceUrl='https://docs.devin.ai/free';
+ const base={platformId:'devin',type:'free',models:['SWE-2'],sourceText:text,sourceFetch:{originalUrl:sourceUrl,finalUrl:sourceUrl,fetchedUrl:sourceUrl,method:'direct' as const,sourceVerified:true,truncated:false,contentHash:await sha256(text)},evidence:{url:sourceUrl,tier:'official',capturedAt:date,excerpts:{benefit:text}}};
+ const recipe={kind:'scenario',sources:[{...sources(text)[0],url:sourceUrl}],components:[{scenario:'coding',models:[{id:'SWE-2',inputPerMillion:{value:15,sourceId:'benefit',quote:price},outputPerMillion:{value:75,sourceId:'benefit',quote:price}}]}]};
+ expect((await computeCollectedValuation({...base,valuationFactors:recipe})).valuation?.status).toBe('needs_judgment');
+ const invalid=structuredClone(recipe);Object.assign(invalid.components[0].models[0],{inputPerMillion:{catalogId:'swe-2.outputPrice'},outputPerMillion:{catalogId:'swe-2.outputPrice'},tokenPriceUnits:'million_tokens'});expect((await computeCollectedValuation({...base,valuationFactors:invalid})).valuation?.status).toBe('needs_judgment');
+});
+
+it('repairs a matched non-USD catalog price with the latest verified ECB rate, retaining explicit wrong-currency rejection',async()=>{
+ const text='Tencent Qwen3.5-Flash Guangzhou is free with unlimited text requests.',sourceUrl='https://cloud.tencent.com/free',fxUrl='https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml';
+ const xml=`<Cube time='2026-10-11'><Cube currency='USD' rate='1.2'/><Cube currency='CNY' rate='9'/><Cube currency='INR' rate='90'/></Cube>`;
+ const base={platformId:'tencent',type:'free',models:['Qwen3.5-Flash'],sourceText:text,sourceFetch:{originalUrl:sourceUrl,finalUrl:sourceUrl,fetchedUrl:sourceUrl,method:'direct' as const,sourceVerified:true,truncated:false,contentHash:await sha256(text)},evidence:{url:sourceUrl,tier:'official',capturedAt:date,excerpts:{benefit:text}},valuationSources:[{id:'fx',url:fxUrl,text:xml,checkedAt:date,role:'fx' as const,sourceFetch:{originalUrl:fxUrl,finalUrl:fxUrl,fetchedUrl:fxUrl,method:'direct' as const,sourceVerified:true,truncated:false,contentHash:await sha256(xml)}}]};
+ const recipe={kind:'scenario',sources:[{...sources(text)[0],url:sourceUrl}],components:[{scenario:'text',models:[{id:'Qwen3.5-Flash',inputPrice:{value:99,sourceId:'benefit',quote:'Qwen3.5-Flash'},outputPrice:{value:99,sourceId:'benefit',quote:'Qwen3.5-Flash'},tokenPriceUnits:'million_tokens'}]}]};
+ const result=await computeCollectedValuation({...base,valuationFactors:recipe});expect(result.valuation?.usdEstimate).toBeCloseTo(0.08,4);expect(result.valuation?.inputs.ruleIds).toContain('same_model_verified_catalog:tencent-qwen3.5-flash');
+ const invalid=structuredClone(recipe);Object.assign(invalid.components[0].models[0],{currency:'USD'});expect((await computeCollectedValuation({...base,valuationFactors:invalid})).valuation?.status).toBe('needs_judgment');
 });
