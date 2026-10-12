@@ -37,7 +37,7 @@ npx tsx .claude/skills/yangmao-review/scripts/offer.ts plan <短码> patch.json
 | 执行方 | 时间基准与调度 | 工作 |
 |---|---|---|
 | Worker | UTC 00:00每日 | 配置了webhook时发飞书日报 |
-| Worker | UTC每小时第7分钟 | 飞书48小时临期检查 |
+| Worker | UTC每小时第7分钟 | 飞书48小时临期检查；东京09:00后再补跑本日漏发日报 |
 | Worker → GitHub Actions | UTC每6小时第17分钟 | 全量采集 |
 | Worker → GitHub Actions | UTC每小时第27分钟 | 快速线索与官方补证 |
 | Hermes | 调度器时区每日09:00 | Telegram日报 |
@@ -89,9 +89,11 @@ Telegram审核提醒按对象版本去重，每批最多10条，临期优先并�
 
 公开 Agent 接入源在 `integrations/agent/`，与本机 Hermes 管理技能分开。官网 `#agent` 提供安装说明，`/ai-yangmao-public/SKILL.md` 与安装脚本由 `npm run build:web` 打包；`/llms.txt` 指向服务端能力说明。匿名只读 HTTP：`GET /api/agent`、`GET|POST /api/agent/search`、`GET /api/agent/offers/:id`、`GET /api/agent/catalog`、`GET /api/agent/daily`；可选 `format=markdown`。个人条件使用查询 POST，只在当前请求计算，不保存个人档案。远程 MCP `/api/mcp` 使用无会话 Streamable HTTP，工具为 `yangmao_search_offers`、`yangmao_get_offer`、`yangmao_get_daily`、`yangmao_get_catalog`，不提供管理员操作。
 
-发布前须应用 `0039_public_daily_digest.sql`。原飞书每日调度会生成单例固定日报，即使未配置 webhook 也生成；飞书发送与公开读取使用同一份条目和卡片。公开读取不会生成、翻译、占位或发消息。只返回最新一期，无历史查询；尚无日报明确返回 unavailable，当天尚未生成则标记最近一期日期。原语言摘录与译文分开展示。生产迁移、正式部署与飞书发送仍按该次授权分别执行，不能用查询触发或用本地演示声称线上完成。
+发布前须应用 `0039_public_daily_digest.sql`。原飞书每日调度会生成单例固定日报，即使未配置 webhook 也生成；飞书发送与公开读取使用同一份条目和卡片。公开读取不会生成、翻译、占位或发消息。只返回最新一期，无历史查询；尚无日报明确返回 unavailable，当天尚未生成则标记最近一期日期。推送卡片与公开日报 Markdown 只展示标题、额度、简要条件、截止时间、额度有效期、信源和详情链接；官方原文、领取步骤、牧场心得和核验时间留在详情与结构化数据中。生产迁移、正式部署与飞书发送仍按该次授权分别执行，不能用查询触发或用本地演示声称线上完成。
 
 首次上线可由管理员 `POST /api/admin/feishu/digest/prepare`，JSON `{"refreshUnsent":false}` 准备公开版，**不发消息**；若当天已有确认送达的飞书日报，优先沿用该次条目，并避免重发。冻结后身份版本失效会返回明确冲突；管理员可用 `{"refreshUnsent":true}` 重建确认未送达的版本，修订号公开展示。存在 sent/pending/unknown 记录时禁止重建，不释放待核对消息。新生成日报保存各条 lastVerifiedAt；旧发送快照未保存的时间保持未知。
+
+飞书日报仍于东京09:00生成/发送；若只读保护或临时故障跳过，每小时第7分钟在东京09:00之后补跑本期。已确认送达跳过，pending/unknown 保持待核对，不能自动释放重发；先完成加急检查，再补跑日报，补跑挂起或失败不阻断本轮加急。东京09:00前不生成次日日报。若冻结的新星榜/末班车条目后来已由加急确认送达，补跑仅重建本期确认未发送的版本并递增修订号，避免重复推送；已发送或 pending/unknown 的日报仍禁止改写。常驻榜作为每日栏目保留。
 
 发送占位同时核对固定日报的 day/revision；若管理员修订先完成，发送方重新读取最新版本（最多一次）；若发送先占位，修订被拒绝。部署后可运行 `node scripts/smoke-public-agent.mjs https://ai-yangmao.com` 做公开只读验收，安装器验收使用临时 --dir，不更改本机管理技能。安装中断遗留锁时先核对锁内 PID，确认进程已退出后再人工清理；安装器不自动争抢/清除现存锁。
 
