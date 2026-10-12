@@ -102,7 +102,7 @@ const publicInputFields = new Set([
   'specification', 'dimensions', 'resolution', 'quality', 'mode', 'duration', 'availableQuantity',
   'dailyQuantity', 'monthlyQuantity', 'eligibleModels', 'pricedModels', 'totalModels', 'limits',
   'input', 'output', 'total', 'totalTokens', 'perDay', 'perMonth', 'requests', 'tokens', 'credits', 'seconds', 'minutes',
-  'characters', 'images', 'days', 'seats', 'months', 'years', 'amount', 'rate', 'units', 'price',
+  'characters', 'images', 'days', 'seats', 'months', 'years', 'amount', 'rate', 'units', 'price', 'value',
   'components', 'fx', 'quantities', 'rates', 'cnyValue', 'entitlementUnits', 'numerator', 'denominator',
   'fxDate', 'fxSource', 'fromCurrency', 'toCurrency', 'inputPerMillion', 'outputPerMillion',
   'alternatives', 'formula', 'first30Max', 'fullApplyMax',

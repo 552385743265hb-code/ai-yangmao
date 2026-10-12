@@ -227,7 +227,7 @@ describe('V2 valuation compatibility', () => {
         { waitUntil: (promise: Promise<unknown>) => pending.push(promise) } as any);
       expect((await (await get()).json() as any).offers[0]).toMatchObject({ id: offer.id, valuation: value });
       await Promise.all(pending);
-      const key = [...cache.keys()].find(url => new URL(url).searchParams.get('__response_schema') === 'valuation-v2-public-notes');
+      const key = [...cache.keys()].find(url => new URL(url).searchParams.get('__response_schema') === 'valuation-v2-public-inputs');
       expect(key).toBeDefined();
       expect(new URL(key!).searchParams.get('__canonical_generation')).toBe(new URL(oldKey).searchParams.get('__canonical_generation'));
       expect((await (await get()).json() as any).offers[0].valuation.version).toBe('v2');
@@ -260,4 +260,9 @@ describe('shared card and notification value wording', () => {
     expect(valuationSummary({ usdEstimate: 20 })).toContain('旧参考值 $20');
     expect(valuationSummary({ usdEstimate: null })).toBe('');
   });
+});
+
+it('retains numeric values inside public input units while hiding internal notes',()=>{
+ const value={version:'v2',status:'unpriceable',method:'none',period:'first30',usdEstimate:null,usdMax:null,fullValue:null,formula:null,inputs:{input:{value:1000000,unit:'Token',reviewMemo:'private'}},sources:[{url:'https://example.com',checkedAt:'2026-10-12',excerpt:'Published terms',priceBasis:'official'}],assumptions:[],reviewedAt:'2026-10-12'};
+ expect(publicSafeValuation(value)?.inputs).toEqual({input:{value:1000000,unit:'Token'}});
 });

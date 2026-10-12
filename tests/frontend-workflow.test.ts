@@ -274,7 +274,7 @@ describe('V1 valuation across public pages', () => {
       modalities: ['text'], requirements: ['none'], claimMethod: 'auto', endKind: 'standing',
       lastVerifiedAt: new Date().toISOString(), discoveredAt: new Date().toISOString(), evidence: { tier: 'docs', excerpts: {} } };
     const page = fixture(url => url === '/api/platforms' ? { platforms: [{ id: 'vendor', name: 'Vendor', type: 'lab' }] }
-      : url.startsWith('/api/offers') ? { offers: [{ ...old, valuation: new URL(url, 'https://ai-yangmao.com').searchParams.get('valuation') === 'v2' && new URL(url, 'https://ai-yangmao.com').searchParams.get('schema') === 'valuation-v2-public-notes' ? valuation() : null }] } : {});
+      : url.startsWith('/api/offers') ? { offers: [{ ...old, valuation: new URL(url, 'https://ai-yangmao.com').searchParams.get('valuation') === 'v2' && new URL(url, 'https://ai-yangmao.com').searchParams.get('schema') === 'valuation-v2-public-inputs' ? valuation() : null }] } : {});
     await page.run('loadData()'); page.run('prepare();pToday()');
     expect(page.run('valueSummary(OFFERS)')).toMatchObject({ official: 20, priced: 1, legacy: 0 });
     expect(page.document.querySelector('.total')!.textContent).toContain('已计价 1/1');

@@ -96,7 +96,7 @@ for (const path of ['/api/offers', '/api/platforms', '/api/meta', '/api/coverage
   // Schema changes must not serve a cached pre-valuation response to the new UI.
   const cacheUrl = new URL(c.req.url);
   cacheUrl.searchParams.delete('fresh');
-  cacheUrl.searchParams.set('__response_schema', 'valuation-v2-public-notes');
+  cacheUrl.searchParams.set('__response_schema', 'valuation-v2-public-inputs');
   if(path==='/api/meta'||path==='/api/coverage')cacheUrl.searchParams.set('__collection_schema','partial-fetch-v1');
   if(path==='/api/offers'){const state=await c.env.DB.prepare('SELECT generation FROM identity_public_state WHERE id=1').first<{generation:number}>();if(!state)return next();cacheUrl.searchParams.set('__canonical_generation',String(state.generation));}
   const key = new Request(cacheUrl, { method: 'GET' });
