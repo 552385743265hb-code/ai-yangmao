@@ -264,15 +264,15 @@ describe('V1 valuation across public pages', () => {
     const page = fixture(() => ({}));
     valuedOffers(page, [{ id: 'v1', valuation: valuation() },
       { id: 'v2', valuation: valuation({ version: 'v2', method: 'official_price', status: 'provisional', usdEstimate: 15,
-        inputs: { benchmarkType: 'entry_plan', referencePlan: 'Starter <img src=x onerror=alert(1)>', usageMultiplier: 1 } }) },
+        inputs: { benchmarkType: 'entry_plan', referencePlan: 'Starter <img src=x onerror=alert(1)>', usageMultiplier: 1, usageVersion: 'v2', ruleIds: ['V2-INTERNAL-RULE'] } }) },
       { id: 'v2-null', valuation: valuation({ version: 'v2', status: 'beta_unpriced', method: 'none', usdEstimate: null, formula: null }) },
       { id: 'future', usd: 999, valuation: valuation({ version: 'v3', usdEstimate: 999 }) }]);
     expect(page.run('valueSummary(OFFERS)')).toMatchObject({ official: 35, priced: 2, unknown: 2, legacy: 1 });
     page.run("pOffer('v1')");
-    expect(page.document.querySelector('[data-valuation]')!.textContent).toContain('· V1');
+    expect(page.document.querySelector('[data-valuation]')!.textContent).not.toMatch(/\bV[12]\b|用量基准版本/);
     page.run("pOffer('v2')");
     const block = page.document.querySelector('[data-valuation]')!;
-    expect(block.textContent).toContain('· V2');
+    expect(block.textContent).not.toMatch(/\bV[12]\b|用量基准版本|V2-INTERNAL-RULE/);
     expect(block.textContent).toContain('Starter <img src=x onerror=alert(1)>');
     expect(block.querySelector('img')).toBeNull();
     expect(page.document.querySelector('[data-detail-value]')!.textContent).toContain('≈ $15');

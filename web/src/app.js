@@ -250,11 +250,12 @@ function valuationBlock(o) {
   const v = valuationOf(o);
   if (!v) return `<div class="card" data-valuation><h3>估值说明</h3><p class="sub">旧参考金额尚未按已审核估值口径重估，比较周期与依据待确认；不计入美元排行和汇总。</p></div>`;
   const alternatives = valuationAlternatives(o);
-  const inputs = Object.entries(v.inputs || {}).filter(([key]) => key !== 'alternatives'), sources = (v.sources || []).filter(s => { try { return ['https:', 'http:'].includes(new URL(s.url).protocol); } catch { return false; } });
+  const internalInputKeys = new Set(['alternatives', 'usageVersion', 'ruleIds', 'calculationEngine', 'sourceBindings']);
+  const inputs = Object.entries(v.inputs || {}).filter(([key]) => !internalInputKeys.has(key)), sources = (v.sources || []).filter(s => { try { return ['https:', 'http:'].includes(new URL(s.url).protocol); } catch { return false; } });
   const text = x => valuationText(typeof x === 'object' && x !== null ? JSON.stringify(x) : String(x ?? '未公布'));
   const labels = { scenario: '场景', usageVersion: '用量基准版本', inputTokens: '输入 Token', outputTokens: '输出 Token', inputPrice: '输入单价', outputPrice: '输出单价', unitPrice: '单位价格', quantity: '数量', unit: '单位', currency: '币种', coverageDays: '覆盖天数', packagePrice: '套餐价格', packageUnits: '套餐额度', officialMonthlyPrice: '官方月价', first30Max: '月度参考上限', fullApplyMax: '完整申请权益上限', benchmarkType: '参考类型', referencePlan: '参考套餐', referenceModel: '参考模型', ruleIds: '计算规则', usageMultiplier: '用量倍数', pricingBasis: '定价依据', calculationBasis: '计算依据', model: '模型', specification: '规格', resolution: '分辨率', quality: '质量', mode: '模式', priceUnit: '计费单位', priceApplicableAt: '价格适用时间', recipientCount: '领取人数', sharedPool: '共享额度', limits: '适用限制' };
   const benchmarks = { entry_plan: '入门套餐参考', lowest_plan: '最低套餐参考', middle_plan: '中档套餐参考', substitute_model: '替代模型用量参考', accepted_reference: '套餐价格参考', package_ratio: '套餐额度比例参考', modality_sum: '多模态用量参考', discount_reference: '优惠价格参考', reset_reference: '额度重置参考' };
-  return `<div class="card" data-valuation><h3>估值说明</h3><p class="sub">${valueTag(o)} ${esc(valuePeriod(o))} · ${esc(v.version.toUpperCase())}${v.reviewedAt ? ` · 核价 ${esc(v.reviewedAt.slice(0, 10))}` : ''}<br>参考购买成本，不代表现金或已实际节省的费用。</p>
+  return `<div class="card" data-valuation><h3>估值说明</h3><p class="sub">${valueTag(o)} ${esc(valuePeriod(o))}${v.reviewedAt ? ` · 核价 ${esc(v.reviewedAt.slice(0, 10))}` : ''}<br>参考购买成本，不代表现金或已实际节省的费用。</p>
     ${o.ty === 'apply' ? `<div class="valuation-summary" data-apply-values>${isApplyBenchmark(o) ? `<span>月度使用方案参考 <b>${applyScenarioReference(o) == null ? '价值待定' : `≈ ${money(applyScenarioReference(o))}`}</b></span><small>按参考价格与固定用量计算的购买成本，不代表申请额度或保证获批；没有保证可得的下限。</small>` : `<span>月度参考上限 <b>${applyFirst30Maximum(o) == null ? '价值待定' : `${v.method === 'scenario' ? '≈ ' : ''}${money(applyFirst30Maximum(o))}`}</b></span>`}<span>完整申请权益上限 <b>${applyMaximum(o) == null ? '价值待定' : money(applyMaximum(o))}</b></span><small>权益期限：${esc(o.val || '以官方计划为准')}。完整上限覆盖整个计划，各计划期限不同；最高可申请不代表保证获批${v.usdEstimate == null ? '，没有保证可得的下限' : ''}。</small></div>` : ''}
     ${v.baselineModel ? `<p class="small">基准模型：<b>${esc(v.baselineModel)}</b></p>` : ''}
     ${alternatives.length ? `<label class="field" for="valueModel">选择模型使用方案<select id="valueModel"><option value="default" selected>${esc(v.baselineModel || '默认估值')} · 默认基准</option>${alternatives.map((x, i) => x.model === v.baselineModel ? '' : `<option value="${i}">${esc(x.model)} · ≈ ${money(x.amount)}</option>`).join('')}</select></label><p class="small muted" data-model-note role="status">当前为默认基准。其他模型是另一个使用方案；金额已按此活动的覆盖期与配额计算。全站排序、汇总和领取记录使用默认估值。</p>` : ''}
@@ -1309,7 +1310,7 @@ function pMine() {
   main().innerHTML = ribbon() + ph('我的', '你的条件决定全站显示什么；想领和已领的清单只存在这台设备上。') + `
   <section class="grid g2" style="margin-top:0">
     <div class="card"><h3>本月薅羊毛进度</h3><p class="sub">本月领取时记录的月度参考价值 / 当前可领及本月已领参考价值。按方法分别计算，不代表已实际节省的费用。</p>
-      <div class="value-progress">${VALUE_GROUPS.map(([group, label, col]) => `<div class="prog">${ringSvg(potential[group] > 0 ? claimed[group] / potential[group] : 0, 110, `var(--s${col + 1})`, 10)}<div class="kv"><span class="small muted">本月已记领 · ${label}</span><b>${summaryAmount(claimed, group)}</b><span class="small muted">可领及已领 ${summaryAmount(potential, group)}</span></div></div>`).join('')}</div><p class="small muted">本月记录 ${claims.length} 条 · ${coverageText(claimed)}。旧领取记录未保存 V1 方法和周期，保留记录并不计金额。</p></div>
+      <div class="value-progress">${VALUE_GROUPS.map(([group, label, col]) => `<div class="prog">${ringSvg(potential[group] > 0 ? claimed[group] / potential[group] : 0, 110, `var(--s${col + 1})`, 10)}<div class="kv"><span class="small muted">本月已记领 · ${label}</span><b>${summaryAmount(claimed, group)}</b><span class="small muted">可领及已领 ${summaryAmount(potential, group)}</span></div></div>`).join('')}</div><p class="small muted">本月记录 ${claims.length} 条 · ${coverageText(claimed)}。部分旧领取记录缺少计算依据和领取周期，保留记录，但不计入金额。</p></div>
     <div class="card"><h3>我的条件</h3>${condForm()}</div>
   </section>
   <section>${secH(`想领（${want.length}）`)}${want.length ? `<div class="rows">${want.map(o => orow(o, leftText(o))).join('')}</div>` : emptySheep('在详情页点"想领"，会出现在这里。')}</section>
@@ -1379,7 +1380,6 @@ function pValuationMethod() {
     <section id="method-evidence" tabindex="-1">
       <h2>每一条，都可以回到计算依据</h2>
       <p>打开羊毛详情的<strong>“估值说明”</strong>，可以查看采用的套餐或模型、数量与单位、公式、来源、核价日期、汇率和适用限制。金额看起来相近，也可能来自不同的权益期限或假设，请把说明一起看。</p>
-      <p>站内保留 V1 和 V2 两种已核算记录。V2 增加了特定套餐与模型参照等规则，旧 V1 记录仍按各自注明的依据展示，不会因为规则更新就自动重算全部历史金额。</p>
       <a class="btn pri" href="#today">回牧场挑羊毛</a>
     </section>
   </article>`;
