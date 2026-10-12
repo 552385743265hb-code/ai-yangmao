@@ -141,11 +141,14 @@ function missing(o) {
 }
 const eligible = o => missing(o).length === 0;
 const view = arr => C.only ? arr.filter(eligible) : arr;
-function reqLabel(r) { if (r === 'membership_unknown') return '会员资格还需确认（请核对或补充订阅资料）'; const [k, p] = r.split(':'); if (k === 'member') return `需会员 · ${p}`; if (k === 'pay') return `需充值 ${p}`; return REQ[k]; }
+function reqLabel(r) { if (r === 'membership_unknown') return '活动已批准；旧会员条件尚未自动匹配，请按详情原条件核对'; const [k, p] = r.split(':'); if (k === 'member') return `需会员 · ${p}`; if (k === 'pay') return `需充值 ${p}`; return REQ[k]; }
 function reqChips(o, mark = false) {
   const nonmember = o.r.filter(r => !r.startsWith('member:'));
   const requirement = membershipRequirementOf(o), result = membershipResult(o, C.subscriptions || []);
-  const member = requirement.status !== 'not_required' ? `<span style="white-space:normal;overflow-wrap:anywhere" class="chip ${mark && result === 'yes' ? 'have' : mark && result === 'no' ? 'miss' : ''}">${result === 'unknown' ? '？还需确认 · ' : mark ? result === 'yes' ? '✓ ' : '✕ ' : ''}${esc(YMMembership.formatMembership(requirement, MEMBERSHIP_CATALOG))}</span>` : '';
+  const membershipText = requirement.status === 'needs_review'
+    ? `活动已批准 · 个人会员自动匹配未完成：${(requirement.legacyText || []).join('；') || '请查看原会员条件'}`
+    : YMMembership.formatMembership(requirement, MEMBERSHIP_CATALOG);
+  const member = requirement.status !== 'not_required' ? `<span style="white-space:normal;overflow-wrap:anywhere" class="chip ${mark && result === 'yes' ? 'have' : mark && result === 'no' ? 'miss' : ''}">${result === 'unknown' ? '？待匹配 · ' : mark ? result === 'yes' ? '✓ ' : '✕ ' : ''}${esc(membershipText)}</span>` : '';
   return `<div class="chips">${nonmember.map(r => {
     const k = r.split(':')[0];
     const cls = mark && k !== 'none' && k !== 'targeted' ? (!C[k] ? 'miss' : 'have') : '';
@@ -1449,7 +1452,7 @@ function pOffer(id) {
 
 /* ---------- 我的 ---------- */
 function condForm() {
-  return `<label class="tog"><span>只看我能薅的<small>全站只显示你满足门槛的羊毛</small></span><input type="checkbox" data-c="only" ${C.only ? 'checked' : ''}></label>
+  return `<label class="tog"><span>只看确定符合的<small>旧版已批准会员条件若尚未自动匹配，会暂时隐藏；关闭筛选可按原条件查看。</small></span><input type="checkbox" data-c="only" ${C.only ? 'checked' : ''}></label>
   ${COND_ITEMS.map(([k, l]) => `<label class="tog"><span>${l}</span><input type="checkbox" data-c="${k}" ${C[k] ? 'checked' : ''}></label>`).join('')}
   <div class="small muted" style="margin:14px 0 6px">我已有的会员</div>
   ${subscriptionControls()}
@@ -1703,7 +1706,8 @@ function reviewActions(o, live) {
   if(o.preparation?.stage==='collecting')return '<p class="small muted">系统正在补齐官方证据，暂不需要你作通过或拒绝决定。</p><div class="row review-actions"><button class="btn sm" data-act="edit">补充准确入口或资料</button></div>';
   const accept = o.pendingUpdate ? '接受更新' : o.status === 'ended' ? '通过并收录历史' : '通过并上架';
   const tested = o.evidenceTier === 'media';
-  const blocked = o.preparation?.stage==='blocked'||(o.checks || []).some(i => i.level === 'block');
+  const blocked = o.preparation?.stage==='blocked'||(o.checks || []).some(i => i.level === 'block')
+    || o.pendingUpdate && o.membershipRequirement?.status === 'needs_review';
   return `<div class="row review-actions"><button class="btn sm good" type="button" ${blocked ? `disabled title="先点“${edit}”补齐标红的字段"` : `data-act="${tested ? 'tested' : 'approve'}"${tested ? ' title="官方没有文字公告，但你亲自领到过"' : ''}`}>✓ ${tested ? '我已实测，' : ''}${accept}</button><button class="btn sm" type="button" data-act="edit">${edit}</button><button class="btn sm bad" type="button" data-act="rejectopen">✕ ${o.pendingUpdate ? '拒绝更新，保留已上架内容' : '拒绝收录'}</button></div>${blocked ? `<p class="small" style="margin:0;color:var(--critical-ink)">先点“${edit}”补齐“必须补”的字段</p>` : ''}${o.pendingUpdate ? '<p class="small muted" style="margin:0">接受更新会替换已上架内容；拒绝更新会保留已上架内容。</p>' : ''}`;
 }
 function pAdmin(focusId) {
@@ -2279,7 +2283,7 @@ function drawShell() {
 }
 function drawCondBtn() {
   const n = COND_ITEMS.filter(([k]) => !['realname', 'pay'].includes(k) && C[k]).length + (C.subscriptions || []).length;
-  $$('[data-open-cond]').forEach(b => { if (b.classList.contains('cond-btn')) b.innerHTML = `我的条件${n ? `<span class="badge">${n}</span>` : ''}${C.only ? ' · 只看能薅' : ''}`; });
+  $$('[data-open-cond]').forEach(b => { if (b.classList.contains('cond-btn')) b.innerHTML = `我的条件${n ? `<span class="badge">${n}</span>` : ''}${C.only ? ' · 只看确定符合' : ''}`; });
 }
 function markNav(name) {
   $$('[data-nav]').forEach(a => { const on = a.dataset.nav === name; a.classList.toggle('on', on); if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });

@@ -11,6 +11,14 @@ const now = new Date('2026-10-01T00:00:00Z');
 const fields = (o: SpecInput) => checkOffer(o, now).map(i => `${i.level}:${i.field}`);
 
 describe('羊毛数据规格', () => {
+  it('旧会员条件未结构化时保留已批准活动，不生成新的资格审批拦截', () => {
+    const requirement = { schemaVersion: 'membership-v1' as const, status: 'needs_review' as const,
+      catalogRevision: 1, anyOf: [], evidenceUrls: [], legacyText: ['OpenCode Go 或 Go Plus'] };
+    const pending = checkOffer({ ...base, reviewState: 'pending', requirements: ['member:OpenCode Go 或 Go Plus'], membershipRequirement: requirement }, now);
+    const approved = checkOffer({ ...base, reviewState: 'approved', requirements: ['member:OpenCode Go 或 Go Plus'], membershipRequirement: requirement }, now);
+    expect(pending.find(i => i.field === 'membershipRequirement')?.level).toBe('block');
+    expect(approved.find(i => i.field === 'membershipRequirement')).toMatchObject({ level: 'info', problem: expect.stringContaining('已批准') });
+  });
   it('字段齐全时没有拦截也没有提醒', () => {
     expect(checkOffer(base, now).filter(i => i.level !== 'info')).toEqual([]);
   });

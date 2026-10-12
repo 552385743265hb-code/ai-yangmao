@@ -6,6 +6,13 @@ const catalog = { revision: 0, products: [], plans: [] };
 const offer = (id: string, extra = {}) => ({ id, platformId:'vendor', platform:'Vendor', title:id, type:'free', modalities:['text'], models:['Model A'], tags:[], claimMethod:'signup', requirements:['none'], audience:'all', valueText:'免费额度', usdEstimate:null, usdMax:null, valuation:null, claimStart:null, claimEnd:null, endKind:'unknown', creditValidity:null, sourceTz:'UTC', discoveredAt:now.toISOString(), lastVerifiedAt:now.toISOString(), verifyResult:'ok', withdrawnAt:null, evidence:{tier:'site',url:'https://vendor.example',excerpts:{benefit:'Free credits'}}, steps:[], ...extra });
 
 describe('public agent filtering and qualification', () => {
+  it('keeps approved legacy membership visible as unmatched without requesting a new offer approval', () => {
+    const requirement = {schemaVersion:'membership-v1',status:'needs_review',catalogRevision:1,anyOf:[],evidenceUrls:[],legacyText:['OpenCode Go 或 Go Plus']};
+    const result = searchAgentOffers([offer('legacy',{reviewState:'approved',requirements:['member:OpenCode Go 或 Go Plus'],membershipRequirement:requirement})] as any,
+      catalog,agentSearchSchema.parse({profile:{subscriptions:[{planId:'opencode-go'}]}}),now);
+    expect(result.groups.unknown[0].eligibility.reasons.join(' ')).toContain('已批准');
+    expect(result.groups.eligible).toHaveLength(0);
+  });
   it('keeps absent user conditions unknown and distinguishes explicit false', () => {
     const offers = [offer('free'),offer('student',{requirements:['student']}),offer('card',{requirements:['card']})];
     const result = searchAgentOffers(offers as any,catalog,agentSearchSchema.parse({profile:{student:false}}),now);

@@ -39,6 +39,7 @@ export type Level = 'block' | 'warn' | 'info';
 export interface SpecIssue { field: string; label: string; level: Level; problem: string; sections: Section[] }
 
 export interface SpecInput {
+  reviewState?: 'pending' | 'approved' | 'rejected';
   type: OfferType;
   title: string;
   valueText: string;
@@ -84,7 +85,12 @@ export function checkOffer(o: SpecInput, now = new Date()): SpecIssue[] {
   if (!o.valueText?.trim()) add('valueText', '额度', 'block', '没有额度描述', ['all', 'detail', 'push']);
   else if (englishOnly(o.valueText)) add('valueText', '额度', 'warn', '额度是整句英文，要写中文', ['detail', 'push']);
 
-  if(o.membershipRequirement?.status==='needs_review')add('membershipRequirement','会员资格','block','请确认会员产品、套餐与限制',['mine','all']);
+  if(o.membershipRequirement?.status==='needs_review') {
+    const approved = o.reviewState === 'approved';
+    add('membershipRequirement','会员资格',approved?'info':'block',approved
+      ? '已批准的原会员条件继续有效；个人会员自动匹配未完成，不要求重新审批活动'
+      : '请确认会员产品、套餐与限制',['mine','all']);
+  }
   if (o.requirements.includes('unknown')) add('requirements', '门槛', 'block', '门槛写的是“待确认”，要按官方原文写清', ['mine', 'all', 'score', 'insights', 'push']);
 
   const valuation = parseValuation(o.valuation);

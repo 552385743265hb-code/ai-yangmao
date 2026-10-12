@@ -59,7 +59,9 @@ export function qualifyOffer(o:AgentOffer, profile:AgentSearch['profile'], catal
     let result=profile?.subscriptions===undefined?'unknown':matchMembership(membership,profile.subscriptions,catalog);
     if(result==='no'&&profile?.subscriptions?.length&&!profile.subscriptionsComplete)result='unknown';
     if(result==='no')failed.push('未满足会员资格');
-    if(result==='unknown')unknown.push('会员资格还需确认');
+    if(result==='unknown')unknown.push(membership.status==='needs_review'
+      ? '活动已批准；旧会员条件尚未自动匹配，请按原条件核对'
+      : '会员资格还需确认');
   }
   if(o.sourceDegraded)unknown.push('只读快照中的资格待重新确认');
   if(o.lastVerifiedAt&&Date.parse(o.lastVerifiedAt)>now.getTime()+300_000)unknown.push('核验时间晚于当前时间，需重新确认');
