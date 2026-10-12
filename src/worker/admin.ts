@@ -9,6 +9,7 @@ import {notificationInheritance} from './identity/notification-inheritance';
 import {noticeIdentities,pendingIdentityNotices,identityReviewAlerts,identityGuard,deliveryIdentityGuard,reviewAlertOverlap} from './identity/notifications';
 import {canonicalOffers,resolveCanonicalOffer,entityOfferVersion} from './identity/canonical';
 import { identityAdminRoutes } from './identity/routes';
+import { screeningAdminRoutes } from './screening/routes';
 import { IdentityService } from './identity/service';
 import { IdentityError } from './identity/store';
 import { sha256,stableJson } from '../shared/identity/normalize';
@@ -94,6 +95,7 @@ admin.use('*', async (c, next) => {
 });
 
 admin.route('/identity',identityAdminRoutes);
+admin.route('/screening', screeningAdminRoutes);
 admin.route('/memberships',membershipAdminRoutes);
 
 admin.get('/whoami', c => c.json({ role: c.get('role'), who: c.get('who') }));

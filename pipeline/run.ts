@@ -19,6 +19,7 @@ import { BudgetExhaustedError, BudgetLedgerError, modelBudget } from './budget';
 import { offerIn, type LeadIn, type OfferIn } from '../src/shared/ingest';
 import { runScreening, screenCandidateReceipts } from './screening/run';
 import { loadMemory } from './screening/memory';
+import type { PlatformProfile } from '../src/shared/screening/types';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -28,6 +29,15 @@ let costLeft = MONTHLY_COST_CAP;
 const DRY = process.env.DRY_RUN === '1';
 const FAST = process.env.FAST_LEADS === '1';
 const FORCE = process.env.FORCE === '1'; // 忽略上次的哈希，强制重新抽取（提示词改进后补跑）
+let screeningProfileCache: PlatformProfile[] | null = null;
+async function screeningProfiles(): Promise<PlatformProfile[]> {
+  if ((process.env.SCREENING_MODE ?? 'off') === 'off') return [];
+  if (!screeningProfileCache) {
+    try { screeningProfileCache = (await loadMemory()).profiles; }
+    catch { screeningProfileCache = []; }
+  }
+  return screeningProfileCache;
+}
 const LEAD_LIMIT = Number(process.env.LEAD_LIMIT ?? 50);
 const onlyList = (process.env.ONLY_SOURCES ?? '').split(',').map(s => s.trim()).filter(Boolean);
 const only = onlyList.length ? onlyList : null; // 留空 = 全部信源
@@ -83,7 +93,7 @@ async function extractAndPostUnlocked(src: Source, url: string, text: string, so
   let r: Awaited<ReturnType<typeof extract>>;
   try {
     const idx = (await offerIndex()).filter(k => k.platformId === src.platformId);
-    r = await extract(src.platform?.name ?? src.platformId ?? '', url, text, log, { allowPaid, deadlineAt: deadline, platformIds: [src.platformId], corrections: await correctionsFor(src.platformId, src.id), existing: formatOfferIndex(idx) || undefined, budget: modelBudget });
+    r = await extract(src.platform?.name ?? src.platformId ?? '', url, text, log, { allowPaid, deadlineAt: deadline, platformIds: [src.platformId], profiles: await screeningProfiles(), corrections: await correctionsFor(src.platformId, src.id), existing: formatOfferIndex(idx) || undefined, budget: modelBudget });
     // 同一个权益沿用已有 id，避免模型换个说法就生成重复条目
     for (const e of r.offers as (Extracted & { sameAs?: string | null; fixedId?: string })[]) { const hit = idx.find(k => k.id === e.sameAs); if (hit) e.fixedId = hit.id; }
   }
@@ -331,7 +341,7 @@ async function triageLeads(plats: Plat[]) {
     }
     catch { /* 补录失败也研判已有备注为媒体级草稿；不能让失效链接永远占据 new 队首。 */ }
     let r;
-    try { r = await extract('（见平台白名单）', l.url, text, log, { allowPaid, evidenceText, deadlineAt: triageDeadline, platformList: list, platformIds: mentionedPlatforms(`${l.title ?? ''}\n${text}`), existing, corrections: await correctionsFor(null, null), budget: modelBudget }); }
+    try { r = await extract('（见平台白名单）', l.url, text, log, { allowPaid, evidenceText, deadlineAt: triageDeadline, platformList: list, platformIds: mentionedPlatforms(`${l.title ?? ''}\n${text}`), profiles: await screeningProfiles(), existing, corrections: await correctionsFor(null, null), budget: modelBudget }); }
     catch (e) {
       log(`  #${l.id} 抽取失败：${(e as Error).message.slice(0, 80)}`);
       if (budgetFailure(e)) { budgetBlocked = true; stats.deferred++; break; }

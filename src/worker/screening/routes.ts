@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { screeningMode, screeningVerdictSchema } from '../../shared/screening/types';
+import { platformProfileSchema, screeningMode, screeningVerdictSchema } from '../../shared/screening/types';
+import { putProfile } from './profiles';
 import { compareQueueOrder, latestUsefulReviewAt, systemDueAt } from '../../shared/screening/urgency';
 import { buildMemoryPage } from './memory';
 import { ScreeningStore } from './store';
@@ -95,4 +96,20 @@ screeningIngestRoutes.post('/items/:id/escalate', async c => {
     urgency: { tier: item.tier, deadline: item.deadline, signals: item.signals, quote: item.urgencyQuote }, model: 'escalate', calibrated: false, promptVersion: 'screening-v1', contextHash: 'escalate', mode: 'shadow',
   });
   return c.json({ ok: true, duplicate: false });
+});
+
+export const screeningAdminRoutes = new Hono<{ Bindings: Env; Variables: { role: 'admin' | 'reviewer'; who: string } }>();
+
+screeningAdminRoutes.get('/profiles/:platformId', async c => {
+  const row = await c.env.DB.prepare('SELECT profile_json FROM platform_profiles WHERE platform_id=?').bind(c.req.param('platformId')).first<{ profile_json: string }>();
+  if (!row) return c.json({ error: '没有这个平台画像' }, 404);
+  return c.json({ profile: platformProfileSchema.parse(JSON.parse(row.profile_json)) });
+});
+
+screeningAdminRoutes.put('/profiles/:platformId', async c => {
+  const body = z.object({ profile: platformProfileSchema, expectedRevision: z.number().int().nonnegative() }).safeParse(await c.req.json().catch(() => null));
+  if (!body.success) return c.json({ error: '平台画像格式不正确' }, 400);
+  const saved = await putProfile(c.env.DB, c.req.param('platformId'), { ...body.data.profile, platformId: c.req.param('platformId') }, body.data.expectedRevision, c.get('who'));
+  if (!saved) return c.json({ error: '平台画像已更新，请刷新后再保存' }, 409);
+  return c.json({ ok: true, revision: body.data.expectedRevision + 1 });
 });
