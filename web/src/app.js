@@ -1706,6 +1706,7 @@ function renderIdentityTasks(box,data,append=false,managedIds=new Set()){
  const card=document.createElement('article');card.className='card';card.dataset.identityTask=t.id;card.dataset.offerId=t.entity?.canonical_offer_id||'';card.style.marginBottom='14px';
  const candidate=t.sources?.[0],needsIdentity=['identity','merge_conflict'].includes(t.kind)||(t.kind==='evidence_reopen'&&!t.entity);
  card.innerHTML=`<div class="row" style="justify-content:space-between"><b>${esc(t.display?.title||IDENTITY_KIND[t.kind]||'活动审核')}</b><span class="chip">${esc(t.visibilityRestoration?'恢复发布待审':IDENTITY_KIND[t.kind]||t.kind)}</span></div><p>${esc(t.display?.valueText||'先确认实际发放活动，再决定是否收录。')}</p>
+ ${!needsIdentity && t.display ? reviewValuationBlock(t.display) : ''}
  <details><summary>查看结构化事实与去重详情</summary>${identityFactsTable(t.previousFacts,t.facts||candidate?.facts)}</details>
  <p class="small">人工保留字段（只读）：${(t.protectedFields||[]).map(x=>esc(FIELD_L[x]||x)).join('、')||'无'}</p>
  <details><summary>过往决定</summary>${(t.decisions||[]).map(d=>`<p>${esc(d.action)}：${esc(d.reason_text||d.reason_code)}<br><small>${esc(d.scope_json)}</small></p>`).join('')||'<p>暂无决定</p>'}</details>

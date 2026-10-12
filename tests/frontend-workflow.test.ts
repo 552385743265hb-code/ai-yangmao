@@ -33,6 +33,12 @@ function publicOffer(run: (code: string) => any, extra: Record<string, unknown> 
 }
 
 describe('frontend review workflow', () => {
+  it('also shows valuation in identity-managed approval tasks', async () => {
+    const f=fixture(()=>queue([]));
+    f.run(`renderIdentityTasks(document.querySelector('#admBody'),{tasks:[{id:'valuation-task',kind:'initial',display:{title:'待审活动',valuation:{version:'v2',status:'unpriceable',method:'none',period:'first30',usdEstimate:null,usdMax:null,formula:null,assumptions:[],sources:[]}},sources:[]}]})`);
+    expect(f.document.querySelector('[data-identity-task] [data-review-valuation]')?.textContent).toContain('金额留空');
+  });
+
   it('shows calculated value, formula, evidence and unknown conclusions before approval', async () => {
     const valuation={version:'v2',status:'provisional',method:'scenario',period:'first30',usdEstimate:45,usdMax:null,formula:'10 × 3 + 1 × 15 = 45',inputs:{},assumptions:['共享额度只计算一次'],sources:[{url:'https://vendor.example/pricing',checkedAt:'2026-10-12',priceBasis:'官方价格',excerpt:'Input $3; output $15'}]};
     const f=fixture(()=>queue([offer('priced',{valuation}),offer('unknown',{valuation:{...valuation,status:'unpriceable',method:'none',usdEstimate:null,formula:null}})]));
