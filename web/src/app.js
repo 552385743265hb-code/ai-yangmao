@@ -543,6 +543,35 @@ function seriesTo(end, n = 14, seed = 1, spread = 0.35) {
   out[n - 1] = end; return out;
 }
 
+/** Deadline reminders are separate from current-claimability/valuation totals. */
+function countdownWindow(o) {
+  if (!isLimited(o) || o.withdrawnAt) return null;
+  if (o.ek === 'date') return { end: endInstant(o), estimated: false };
+  // A global one-week free campaign is not a personal credit-validity period.
+  if (o.ty !== 'free' || !/(?:免费|限免).{0,4}(?:一周|7\s*天)|free.{0,20}(?:a|one|1)\s*week/i.test(o.t)
+      || /(?:领取|激活|注册|兑换)后.{0,8}(?:一周|7\s*天)/.test(o.v || '')) return null;
+  const published = o.publishedAt;
+  const exactAnchor = published && /T\d{2}:\d{2}/.test(published) ? new Date(published) : null;
+  const date = published && /^\d{4}-\d{2}-\d{2}$/.test(published) ? published : o.s != null ? ymd(dayAt(o.s)) : null;
+  if (!exactAnchor && !date) return null;
+  if (exactAnchor && Number.isFinite(exactAnchor.getTime())) return { end: new Date(exactAnchor.getTime() + 7 * DAY), estimated: true };
+  const [y,m,d] = date.split('-').map(Number);
+  // Date-only announcements give a full-day uncertainty window, never a fictitious exact midnight deadline.
+  const earliest = zonedToDate(y,m-1,d+7,0,0,o.tz || 'UTC');
+  const end = zonedToDate(y,m-1,d+8,0,0,o.tz || 'UTC');
+  return { end, earliest, estimated: true };
+}
+function countdownCandidates(offers, now = NOW) {
+  return offers.map(o => ({ o, window: countdownWindow(o) })).filter(({o,window}) => window
+    && statusOf(o) !== 'ended' && statusOf(o) !== 'upcoming'
+    && window.end > now && window.end - now <= 7 * DAY).sort((a,b) => a.window.end - b.window.end);
+}
+function estimatedCountdown(window, now = NOW) {
+  const hi = Math.max(0, Math.ceil((window.end - now) / DAY));
+  const lo = window.earliest ? Math.max(0, Math.ceil((window.earliest - now) / DAY)) : hi;
+  return lo === hi ? `约 ${hi} 天` : `约 ${lo}–${hi} 天`;
+}
+
 /* ---------- 今天 ---------- */
 function pToday() {
   const act = view(OFFERS.filter(activeLimited));
@@ -551,7 +580,7 @@ function pToday() {
   const ending = act.filter(o => statusOf(o) === 'ending');
   const wx = weatherNow();
   const todayValues = [...act, ...stand];
-  const soon = act.filter(o => o.ek === 'date').sort((a, b) => endInstant(a) - endInstant(b)).slice(0, 5);
+  const soon = countdownCandidates(view(OFFERS));
   main().innerHTML = ribbon() + ph('今天', '今天能薅的羊毛都在这片草地上。点一只羊看详情。') + `
   <div class="hero">
     <div class="hero-over">
@@ -568,11 +597,14 @@ function pToday() {
     ${kpi('3 天内结束', ending.length, '条', daily((o, k) => activeOn(o, k) && o.ek === 'date' && o.e - k <= 3), 'var(--serious)')}
     ${kpi('常驻额度', stand.length, '项', daily((o, k) => o.ty === 'standing' && o.since <= k), 'var(--s6)')}
   </section>
-  <section>${secH('倒计时', '最快结束的 5 条，按官方时区换算成你的本地时间')}
-    <div class="clocks">${soon.map(o => {
-      const end = endInstant(o), total = end - startInstant(o), frac = (end - NOW) / total;
-      const col = o.e === 0 ? 'var(--critical)' : statusOf(o) === 'ending' ? 'var(--serious)' : 'var(--good)';
-      return `<a class="clock" href="#offer-${o.id}">${ringSvg(frac, 54, col)}<div style="min-width:0"><div class="cd" data-end="${end.getTime()}">${cdText(end - NOW)}</div><div class="ttl">${esc(o.t)}</div></div></a>`;
+  <section>${secH('倒计时', '未来 7 天内结束；约为按公告周期估算，待核验活动请先确认领取页')}
+    <div class="clocks">${soon.map(({o,window}) => {
+      const end = window.end, total = Math.max(DAY, end - startInstant(o)), frac = clamp((end - NOW) / total, 0, 1);
+      const stale = statusOf(o) === 'stale';
+      const col = stale ? 'var(--warn)' : end - NOW <= DAY ? 'var(--critical)' : end - NOW <= 3 * DAY ? 'var(--serious)' : 'var(--good)';
+      const timer = window.estimated ? `<div class="cd" data-estimated-end="${end.getTime()}"${window.earliest ? ` data-estimated-start="${window.earliest.getTime()}"` : ''}>${estimatedCountdown(window)}</div>` : `<div class="cd" data-end="${end.getTime()}">${cdText(end - NOW)}</div>`;
+      const note = [window.estimated ? '截止估算 · 官方未公布精确时刻' : '', stale ? '待核验 · 请先确认领取页' : ''].filter(Boolean).join('；');
+      return `<a class="clock" href="#offer-${o.id}">${ringSvg(frac, 54, col)}<div style="min-width:0">${timer}<div class="ttl">${esc(o.t)}</div>${note ? `<div class="small ${stale ? 'warn-note' : 'muted'}">${esc(note)}</div>` : ''}</div></a>`;
     }).join('') || emptySheep('没有即将结束的活动。')}</div>
   </section>
   <section class="grid g2">
@@ -2161,8 +2193,9 @@ setInterval(() => {
   if (document.hidden || keepPage()) return;
   const now = Date.now();
   $$('[data-end]').forEach(el => { el.textContent = cdText(+el.dataset.end - now); });
+  $$('[data-estimated-end]').forEach(el => { el.textContent = estimatedCountdown({ end: new Date(+el.dataset.estimatedEnd), earliest: el.dataset.estimatedStart ? new Date(+el.dataset.estimatedStart) : null }, now); });
   $$('[data-since]').forEach(el => { el.textContent = cdText(now - +el.dataset.since); });
-  const endedOrStarted = $$('[data-end]').some(el => +el.dataset.end <= now);
+  const endedOrStarted = $$('[data-end], [data-estimated-end]').some(el => +(el.dataset.end || el.dataset.estimatedEnd) <= now);
   if (!refreshInFlight && !keepPage() && (ymd(new Date()) !== ymd(T0) || now - lastRefreshAt >= 5 * 60_000 || (endedOrStarted && now - lastRefreshAt >= 10_000))) refreshPage();
 }, 1000);
 const reTheme = () => { if (!keepPage()) render(true); }; // 深色模式按时切换时，后台只换配色（CSS 变量），不重画
