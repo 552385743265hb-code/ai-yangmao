@@ -17,6 +17,8 @@ import { api, fetchPage, fetchText, isFreebie, norm, relevantText, sha256 } from
 import { DeferError, extract, llmAvailable, modelAvailable, paidAvailable, type Extracted } from './llm';
 import { BudgetExhaustedError, BudgetLedgerError, modelBudget } from './budget';
 import { offerIn, type LeadIn, type OfferIn } from '../src/shared/ingest';
+import { runScreening, screenCandidateReceipts } from './screening/run';
+import { loadMemory } from './screening/memory';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -119,6 +121,10 @@ async function extractAndPostUnlocked(src: Source, url: string, text: string, so
   if (!offers.length) return false; // 原文里有候选但全部校验失败，不能把页面标记为已处理
   if (DRY) { offers.forEach(o => log('  羊毛', o.id, o.title, `类型=${o.type} 对象=${o.audience} 门槛=${o.requirements.join(',')} 额度=${o.valueText}`)); stats.offers += offers.length; return true; }
   const res = await postIdentityOffers(offers);
+  if (process.env.SCREENING_MODE && process.env.SCREENING_MODE !== 'off') {
+    try { await screenCandidateReceipts(res.results, offers, await loadMemory(), { deadlineAt: deadline, dry: DRY, log }); }
+    catch (error) { stats.errors.push(`candidate screening: ${(error as Error).message}`); }
+  }
   let hasWriteError = false;
   for (const x of res.results) {
     if (x.error) stats.errors.push(`${x.id}: ${x.error}`);
@@ -424,6 +430,8 @@ export async function runPipeline() {
   }
   try {
     const { platforms } = await fetch(`${(process.env.API_BASE ?? 'https://ai-yangmao.com').replace(/\/$/, '')}/api/platforms`, { signal: AbortSignal.timeout(30000) }).then(r => r.json()) as { platforms: Plat[] };
+    const screening = await runScreening({ ids: (process.env.SCREENING_IDS ?? '').split(',').map(id => id.trim()).filter(Boolean), deadlineAt: deadline, dry: DRY, log });
+    Object.assign(stats, { screening, memoryRecords: screening.memoryRecords });
     await triageLeads(platforms);
   } catch (e) { stats.errors.push(`线索研判：${(e as Error).message}`); stats.deferred++; log('线索研判出错', (e as Error).message); }
   try {

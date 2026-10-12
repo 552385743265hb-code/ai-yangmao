@@ -75,6 +75,11 @@ screeningIngestRoutes.get('/queue', async c => {
   return c.json({ items });
 });
 
+screeningIngestRoutes.get('/items/:id', async c => {
+  const row = await c.env.DB.prepare(`SELECT verdict, urgency_json FROM screening_decisions WHERE item_id=? ORDER BY created_at DESC LIMIT 1`).bind(c.req.param('id')).first<{ verdict: string; urgency_json: string }>();
+  return c.json({ decision: row ?? null });
+});
+
 screeningIngestRoutes.post('/items/:id/escalate', async c => {
   const body = z.object({ requestId: z.string().min(1), suggestion: z.enum(['screening_unavailable', 'unverified', 'new_platform']), note: z.string().default('') }).safeParse(await c.req.json().catch(() => null));
   if (!body.success) return c.json({ error: 'invalid escalation' }, 400);
