@@ -26,7 +26,7 @@ import { drizzle } from 'drizzle-orm/d1';
 import { Hono } from 'hono';
 import { z } from 'zod';
 import * as s from '../db/schema';
-import { isoDate, leadIn, offerIn, runIn } from '../shared/ingest';
+import { isoDate, leadIn, offerIn, collectedOfferIn, runIn } from '../shared/ingest';
 import { differentOccurrence, findDuplicate, crossPlatformDuplicate, sameRecurringCreditPlan, sameModelAnnouncement, sameEvidenceBenefit } from '../shared/dedupe';
 import { activeOnDate, isClaimable, liveStatus, missingEvidence } from '../shared/lifecycle';
 import { admin } from './admin';
@@ -246,7 +246,7 @@ ingest.post('/offers', async c => {
     if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
     const { valuation: _valuation, usdEstimate:_estimate, usdMax:_max, ...fields } = value as Record<string, unknown>;
     return {...fields,usdEstimate:null,usdMax:null};
-  }, offerIn);
+  }, collectedOfferIn);
   const rawOffers = await c.req.json().catch(() => null);
   const body = z.array(extractionIn).max(50).safeParse(rawOffers);
   if (!body.success) return c.json({ error: '数据格式不正确', issues: body.error.issues }, 400);

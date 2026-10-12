@@ -1,3 +1,4 @@
+import {claimEndDerivationSchema,fillCampaignDeadline} from './campaign-deadline';
 import {applyNetworkRequirements} from './network-requirements';
 import {valuationSourceSchema} from './valuation-intake';
 import {membershipSchema} from './membership';
@@ -68,6 +69,7 @@ export const offerIn = z.object({
     // tested：管理员亲自领到过（官方只在客户端里提示、网上没有公告时用），只能在后台人工设置，采集管线不能写入
     tier: z.enum(['site', 'docs', 'official', 'staff', 'media', 'tested']),
     capturedAt: z.string(),
+    claimEndDerivation: claimEndDerivationSchema.optional(),
     pageHash: z.string().regex(/^[a-f0-9]{64}$/).optional(),
     excerpts: z.object({ benefit: z.string().optional(), eligibility: z.string().optional(), claim: z.string().optional(), validity: z.string().optional() }),
   }),
@@ -78,6 +80,9 @@ export const offerIn = z.object({
   .refine(o => !o.valuation || (o.valuation.period === 'apply_max') === (o.type === 'apply'), { message: '申请制估值须使用申请口径，其他活动不能使用申请上限口径', path: ['valuation', 'period'] })
   .refine(o => !o.claimStart || !o.claimEnd || o.claimStart <= o.claimEnd, { message: '领取开始日期不能晚于截止日期', path: ['claimEnd'] })
   .refine(o => (o.type === 'standing' || o.type === 'apply') === (o.endKind === 'standing'), { message: '常驻额度和申请制的 endKind 必须为 standing，其他类型不能是 standing', path: ['endKind'] }).transform(o => applyNetworkRequirements(o));
+
+/** Collection boundary fills a grounded global campaign duration; ordinary stored validation preserves reviewed dates. */
+export const collectedOfferIn = offerIn.transform(o => fillCampaignDeadline(o));
 
 export const runIn = z.object({
   kind: z.enum(['collect', 'verify', 'sweep', 'digest', 'health', 'model']),

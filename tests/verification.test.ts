@@ -1364,3 +1364,12 @@ describe('phase1 rejection transaction', () => {
     expect(phase1Count('rejected_offer_updates')).toBe(1);
   });
 });
+
+describe('relative campaign duration at intake',()=>{
+  it('persists a grounded one-week deadline and its provenance without approving the offer',async()=>{
+    const quote='Step 5 Preview is free on the platform for a week.';
+    const payload={...offer,id:'vendor-week-campaign',type:'free',publishedAt:'2026-10-09T13:55:42Z',sourceText:quote,evidence:{...evidence,excerpts:{...evidence.excerpts,benefit:quote,validity:quote}}};
+    const result=await call('ingest/offers',[payload]);expect(result.status).toBe(200);
+    expect(sqlite.prepare("SELECT claim_end,end_kind,review_state,json_extract(evidence,'$.claimEndDerivation.quote') quote FROM offers WHERE id='vendor-week-campaign'").get()).toMatchObject({claim_end:'2026-10-16',end_kind:'date',review_state:'pending',quote});
+  });
+});

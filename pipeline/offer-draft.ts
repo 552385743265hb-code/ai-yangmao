@@ -1,3 +1,4 @@
+import {fillCampaignDeadline} from '../src/shared/campaign-deadline';
 import {fetchedSource} from './fetch-evidence';
 import type {FetchedPage} from './lib';
 import { canonicalTermsSchema } from '../src/shared/identity/types';
@@ -13,7 +14,7 @@ export function toOffer(src: Source, e: Extracted & { fixedId?: string; sameAs?:
   // Keep whole authenticated pages; omitting an oversized price page leaves the recipe unresolved.
   let priceBytes=0;
   const valuationSources=(e.valuationSources??[]).filter(source=>{const size=JSON.stringify(source).length;if(priceBytes+size>340000)return false;priceBytes+=size;return true;});
-  return {
+  return fillCampaignDeadline({
     ...fetchedSource(page),
     ...(facts.success?{identityFacts:facts.data}:{}),
     id: e.fixedId ?? `${src.platformId}-${slug(e.key)}`.slice(0, 80), platformId: src.platformId!, sourceId: src.id || undefined,
@@ -29,5 +30,5 @@ export function toOffer(src: Source, e: Extracted & { fixedId?: string; sameAs?:
     endKind: e.endKind === 'date' && !e.claimEnd ? 'unknown' : e.endKind,
     creditValidity: e.creditValidity ? clip(e.creditValidity, 100) : null, sourceTz: e.sourceTz || 'UTC', steps: (e.steps ?? []).slice(0, 4).map(x => clip(x, 200)), firstChannel: src.kind,
     evidence: { url, tier: (src.tier === 'lead' ? 'site' : src.tier) as OfferIn['evidence']['tier'], capturedAt: new Date().toISOString(), pageHash: sha256(text), excerpts: e.excerpts },
-  };
+  });
 }

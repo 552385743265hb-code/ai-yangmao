@@ -12,6 +12,7 @@ function fixture(){
 }
 const campaign=(id:string,extra={})=>({id,t:`${id} Step 5 Preview 免费一周`,ty:'free',ek:'unknown',s:-4,e:null,publishedAt:'2026-10-08T17:34:16Z',vf:-1,tz:'UTC',v:'平台限时免费使用',...extra});
 describe('home deadline reminders',()=>{
+ it('keeps persisted derived deadlines labelled as estimates',()=>{const f=fixture();f.run(`const derived=${JSON.stringify(campaign('derived',{ek:'date',e:4,t:'活动',evidence:{claimEndDerivation:{kind:'relative_duration',durationDays:7,anchorValue:'2026-10-09T13:55:42Z',estimatedEndAt:'2026-10-16T13:55:42Z'}}}))};`);expect(f.run('countdownWindow(derived).estimated')).toBe(true);expect(f.run('estimatedCountdown(countdownWindow(derived))')).toBe('约 5 天');});
  it('keeps all four Step 5 platform campaigns even when one needs verification and others lack exact cutoffs',()=>{
   const f=fixture();const rows=[campaign('OpenCode',{ek:'date',e:3,verify:'evidence_missing',publishedAt:'2026-10-08T14:43:24Z',evidence:{excerpts:{benefit:'Step 5 Preview is now free on OpenCode for a week'}}}),campaign('Nous',{publishedAt:'2026-10-08'}),campaign('Cline'),campaign('Kilo',{publishedAt:'2026-10-09T13:55:42Z',s:-3})];
   f.run(`OFFERS=${JSON.stringify(rows)};`);expect(f.run('countdownCandidates(OFFERS).map(x=>x.o.id)')).toEqual(['OpenCode','Cline','Nous','Kilo']);
