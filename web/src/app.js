@@ -1744,6 +1744,18 @@ function renderVisibilityHolds(box,data,append=false){
  if(data.nextCursor){const button=document.createElement('button');button.className='btn sm';button.textContent='加载更多暂停活动';box.append(button);button.addEventListener('click',async()=>{button.disabled=true;try{const page=await adm('/identity/visibility-holds?cursor='+encodeURIComponent(data.nextCursor));button.remove();renderVisibilityHolds(box,page,true);}catch(error){button.disabled=false;button.textContent=error.message;}});}
 }
 
+function reviewValuationBlock(o) {
+  const v = valuationOf(o);
+  if (!v) return '<div class="small warn-note" data-review-valuation>参考价值尚无完整计算依据；不能仅填写金额后通过审核。</div>';
+  const sources = (v.sources || []).filter(s => { try { return ['https:', 'http:'].includes(new URL(s.url).protocol); } catch { return false; } });
+  return `<details data-review-valuation open><summary>参考价值：${esc(({priced:'已估值',provisional:'暂定估值',...VALUE_STATUS})[v.status] || '待核实')}${v.usdEstimate != null ? ` · ${money(v.usdEstimate)}` : ''}${v.usdMax != null ? ` · 最高可申请 ${money(v.usdMax)}` : ''}</summary>
+    <p class="small">${esc(({one_time:'一次性',monthly:'每月',first30:'月度参考价值',apply_max:'申请制'})[v.period] || v.period)}${v.baselineModel ? ` · 基准模型：${esc(v.baselineModel)}` : ''}</p>
+    ${v.formula ? `<div class="value-formula">${esc(v.formula)}</div>` : '<p class="small">金额留空，不按零元计入汇总。</p>'}
+    ${(v.assumptions || []).map(x => `<p class="small">${esc(x)}</p>`).join('')}
+    ${sources.map(s => `<div class="value-source"><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.priceBasis || '价格与权益依据')} ↗</a><small>核价 ${esc(s.checkedAt || '')}</small><blockquote>${esc(s.excerpt || '')}</blockquote></div>`).join('')}
+    <p class="small muted">请核对权益数量、模型、单位与计算依据；通过审核后才公开本次结果。</p></details>`;
+}
+
 async function admQueue() {
   const box = $('#admBody');
   const [q,identity,holds] = await Promise.all([adm('/queue'),adm('/identity/tasks').catch(error=>({tasks:[],error:error.message})),ADM.role==='reviewer'?Promise.resolve({holds:[]}):adm('/identity/visibility-holds').catch(error=>({holds:[],error:error.message})),refreshAdminPlatforms()]);
@@ -1760,6 +1772,7 @@ async function admQueue() {
     ${reviewDiffBlock(o)}
     ${sugBlock(o, live)}
     ${checksBlock(o)}
+    ${reviewValuationBlock(o)}
     <div class="rows">${EX_L.filter(([k]) => k !== 'claim' || o.excerpts[k]).map(([k, l]) => `<div class="orow" style="grid-template-columns:auto minmax(0,1fr);padding:6px 2px">${o.excerpts[k] ? `<span class="st good"><b>✓</b>${l}</span>` : `<span class="st warn"><b>!</b>${l}</span>`}<span class="t" style="font-weight:400;font-size:13.5px">${o.excerpts[k] ? '「' + esc(o.excerpts[k]) + '」' : '原文里没有找到'}</span></div>`).join('')}</div>
     <div class="small" style="word-break:break-all">来源：<a href="${esc(o.evidenceUrl)}" target="_blank" rel="noopener" style="text-decoration:underline">${esc(o.evidenceUrl)}</a></div>
     ${officialReviewBlock(o)}
@@ -1905,6 +1918,7 @@ async function admQueue() {
       const fields = { ...fd, ...membershipEditFields(o, form.membershipEditor, req, !!form.nonmemberTouched, newEvidence.url), models: [...new Set(String(fd.models || '').split(/[,，、;；]/).map(x => x.trim()).filter(Boolean))],
         usdEstimate: num(fd.usdEstimate), usdMax: num(fd.usdMax), modalities: checked('modalities'), tags: checked('tags'), publishedAt: pub ? (pub === dateTimeInput(o.publishedAt) ? o.publishedAt : new Date(pub).toISOString()) : null,
         steps: String(fd.steps || '').split('\n').map(x => x.trim()).filter(Boolean).slice(0, 10), sourceTz: String(fd.sourceTz || 'UTC').trim() };
+      if (o.valuation && (fields.usdEstimate !== (o.usdEstimate ?? null) || fields.usdMax !== (o.usdMax ?? null))) throw new Error('金额须与公式和价格来源一起修改，不能只改数字；当前表单保留原估值，请通过完整估值审核提交更正');
       if (newEvidence.url !== o.evidenceUrl || newEvidence.tier !== o.evidenceTier || EX_L.some(([key]) => newEvidence.excerpts[key] !== (o.excerpts[key] || ''))) fields.evidence = newEvidence;
       ['claimStart', 'claimEnd', 'creditValidity'].forEach(k => { if (!fields[k]) fields[k] = null; });
       const managed=/^(identity|entity):/.test(o.reviewVersion||'');

@@ -134,7 +134,7 @@ const TRIAGE = `\n\n补充规则（本文可能是媒体报道、社区帖子或
 - 再加一个字段 sameAs：如果这条和下面"已收录条目"里的某条是同一个活动（同一平台、同一权益，只是说法不同），填那条的 id；否则 null。
 平台白名单（id=名称）：`;
 
-interface Provider { name: string; paid?: boolean; price?: ModelPrice; call: (sys: string, user: string, timeoutMs: number) => Promise<{ text: string; tokens: number; costCny?: number; usageKnown: boolean }> }
+interface Provider { name: string; paid?: boolean; price?: ModelPrice; call: (sys: string, user: string, timeoutMs: number) => Promise<{ text: string; tokens: number; costCny?: number; usageKnown: boolean; finishReason?: string }> }
 
 function providers(): Provider[] {
   const list: Provider[] = [];
@@ -148,8 +148,8 @@ function providers(): Provider[] {
         signal: AbortSignal.timeout(timeoutMs),
       });
       if (!r.ok) throw Object.assign(new Error(`Gemini ${r.status}: ${(await r.text()).slice(0, 200)}`), { retryable: r.status >= 500 || r.status === 404 || r.status === 429, httpStatus: r.status });
-      const j = await r.json() as { candidates?: { content?: { parts?: { text?: string }[] } }[]; usageMetadata?: { totalTokenCount?: number } };
-      return { text: j.candidates?.[0]?.content?.parts?.map(p => p.text ?? '').join('') ?? '', tokens: j.usageMetadata?.totalTokenCount ?? 0, usageKnown: Number.isFinite(j.usageMetadata?.totalTokenCount) };
+      const j = await r.json() as { candidates?: { finishReason?: string; content?: { parts?: { text?: string }[] } }[]; usageMetadata?: { totalTokenCount?: number } };
+      return { text: j.candidates?.[0]?.content?.parts?.map(p => p.text ?? '').join('') ?? '', tokens: j.usageMetadata?.totalTokenCount ?? 0, finishReason:j.candidates?.[0]?.finishReason, usageKnown: Number.isFinite(j.usageMetadata?.totalTokenCount) };
     },
   });
   const openaiLike = (name: string, url: string, key: string | undefined, model: string | undefined, price?: { in: number; out: number }) => {
@@ -162,9 +162,9 @@ function providers(): Provider[] {
           signal: AbortSignal.timeout(timeoutMs),
         });
         if (!r.ok) throw Object.assign(new Error(`${name} ${r.status}: ${(await r.text()).slice(0, 200)}`), { httpStatus: r.status });
-        const j = await r.json() as { choices?: { message?: { content?: string } }[]; usage?: { total_tokens?: number; prompt_tokens?: number; completion_tokens?: number } };
+        const j = await r.json() as { choices?: { finish_reason?: string; message?: { content?: string } }[]; usage?: { total_tokens?: number; prompt_tokens?: number; completion_tokens?: number } };
         const costCny = price ? ((j.usage?.prompt_tokens ?? 0) * price.in + (j.usage?.completion_tokens ?? 0) * price.out) / 1e6 : 0;
-        return { text: j.choices?.[0]?.message?.content ?? '', tokens: j.usage?.total_tokens ?? 0, costCny,
+        return { text: j.choices?.[0]?.message?.content ?? '', tokens: j.usage?.total_tokens ?? 0, costCny, finishReason:j.choices?.[0]?.finish_reason,
           usageKnown: Number.isFinite(j.usage?.total_tokens) && (!price || (Number.isFinite(j.usage?.prompt_tokens) && Number.isFinite(j.usage?.completion_tokens))) };
       },
     });
@@ -364,7 +364,7 @@ export async function extract(platformName: string, url: string, text: string, l
     const p=chain[providerIndex];
     try {
       const currentSystem=lastErr instanceof ModelOutputError?sys+'\n上次抽取未通过校验，请按原文修正：'+lastErr.message.slice(0,350):sys;
-      let res: { text: string; tokens: number; costCny?: number; usageKnown: boolean } | null = null;
+      let res: Awaited<ReturnType<Provider['call']>> | null = null;
       for (let i = 0; i < 3 && !res; i++) {
         if (Date.now() >= (opts.deadlineAt ?? Infinity)) throw new DeferError('本轮即将结束，留到下一轮抽取');
         const reservation = opts.budget ? await opts.budget.reserve(p.name, currentSystem, user, p.price) : null;
@@ -401,6 +401,7 @@ export async function extract(platformName: string, url: string, text: string, l
         }
       }
       const { text: out } = res!;
+      log(`  ${p.name} 输出：finish=${res!.finishReason??'unknown'}，chars=${out.length}，tokens=${res!.tokens}`);
       let tokens=res!.tokens,costCny=res!.costCny??0;
       const evidence = opts.evidenceText ?? text;
       const leadResult=opts.leadTarget?parseLeadResponse(out,evidence):null;
