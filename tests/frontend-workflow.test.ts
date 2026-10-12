@@ -14,7 +14,7 @@ function fixture(handle: (url: string, init?: RequestInit) => unknown | Promise<
   window.scrollTo = () => {};
   const charts = new Map<string, any>();
   const storage = { getItem: () => null, setItem() {}, removeItem() {} };
-  const context = createContext({YMMembership, structuredClone, window, document, console, Intl, Date, Map, Set, URL, URLSearchParams, Response, FormData,
+  const context = createContext({YMMembership, structuredClone, crypto, window, document, console, Intl, Date, Map, Set, URL, URLSearchParams, Response, FormData,
     location: { hash: '#admin' }, navigator: {}, getComputedStyle: () => ({ getPropertyValue: () => '#123456' }),
     matchMedia: () => ({ matches: false, addEventListener() {} }), MutationObserver: class { observe() {} },
     localStorage: storage, sessionStorage: storage, setTimeout, clearTimeout, setInterval() {},
@@ -179,9 +179,9 @@ describe('frontend review workflow', () => {
     expect(name.value).toBe('未提交的平台草稿');
   });
 
-  it('keeps a newer note dirty after an earlier save completes, including after blur', async () => {
+  it('keeps a newer comment draft after an earlier submission completes, including after blur', async () => {
     let finish: (() => void) | undefined;
-    const page = fixture((url, init) => init?.body ? new Promise(resolve => { finish = () => resolve({ adminNote: JSON.parse(String(init.body)).note }); }) : {});
+    const page = fixture((url, init) => init?.body ? new Promise(resolve => { finish = () => resolve({ comment: {id:1,author:'admin',content:JSON.parse(String(init.body)).content,createdAt:new Date().toISOString()} }); }) : {comments:[],nextCursor:null});
     publicOffer(page.run); page.run("pOffer('public-offer')");
     const form = page.document.querySelector('#noteForm')!;
     const input = form.querySelector('textarea') as HTMLTextAreaElement;
@@ -192,13 +192,77 @@ describe('frontend review workflow', () => {
     const currentForm = page.document.querySelector('#noteForm')!;
     expect((currentForm.querySelector('button') as HTMLButtonElement).disabled).toBe(true);
     expect((currentForm.querySelector('textarea') as HTMLTextAreaElement).value).toBe('草稿 B');
-    finish!(); await pause();
+    await pause(); finish!(); await pause();
     expect(currentForm.querySelector('[data-notemsg]')!.textContent).toBe('当前修改未保存');
-    expect(page.run('OMAP["public-offer"].note')).toBe('草稿 A');
+    expect(currentForm.closest('#noteBox')!.querySelector('[data-comments]')!.textContent).toContain('草稿 A');
     Object.defineProperty(page.document, 'activeElement', { value: page.document.body, configurable: true });
     expect(page.run('keepPage()')).toBe(true);
     page.run("pOffer('public-offer')");
     expect((page.document.querySelector('#noteForm textarea') as HTMLTextAreaElement).value).toBe('草稿 B');
+  });
+
+  it('offers the same public comment form to anonymous readers and escapes all user content', async () => {
+    const writes: any[] = [];
+    const raw = '<img src=x onerror=alert(1)>\n到账很快';
+    const page = fixture((url, init) => {
+      if (url.endsWith('/community/session')) return {name:'羊毛党345876'};
+      if (init?.method==='POST') {writes.push({url,body:JSON.parse(String(init.body))});return {comment:{id:2,author:'羊毛党345876',content:raw,createdAt:'2026-10-12T12:00:00Z'}};}
+      return {comments:[{id:1,author:'admin',content:'原有心得',createdAt:'2026-10-12T11:00:00Z'}],nextCursor:null};
+    });
+    publicOffer(page.run); page.run("ADM.token='';ADM.role='';pOffer('public-offer')"); await pause();
+    const form = page.document.querySelector('#noteForm')!;
+    expect(form).not.toBeNull();expect(form.textContent).toContain('羊毛党345876');
+    const input = form.querySelector('textarea') as HTMLTextAreaElement;
+    input.value=raw;input.dispatchEvent(new page.window.Event('input',{bubbles:true}));form.dispatchEvent(new page.window.Event('submit'));await pause();await pause();
+    expect(writes).toHaveLength(1);expect(writes[0].url).toBe('/api/offers/public-offer/comments');expect(writes[0].body.content).toBe(raw);
+    expect(page.document.querySelector('[data-comments]')!.textContent).toContain(raw);
+    expect(page.document.querySelector('[data-comments] img')).toBeNull();
+    expect(page.document.querySelector('[data-comments]')!.textContent).toContain('admin');
+    expect(input.value).toBe('');
+  });
+
+  it('preserves a failed comment and its retry identity instead of publishing twice', async () => {
+    const attempts: any[]=[];
+    const page=fixture((url,init)=>{
+      if(url.endsWith('/community/session'))return{name:'羊毛党654321'};
+      if(init?.method==='POST'){attempts.push(JSON.parse(String(init.body)));if(attempts.length===1)throw new Error('网络中断');return{comment:{id:3,author:'羊毛党654321',content:'体验不错',createdAt:new Date().toISOString()}};}
+      return{comments:[],nextCursor:null};
+    });
+    publicOffer(page.run);page.run("ADM.token='';pOffer('public-offer')");await pause();
+    const form=page.document.querySelector('#noteForm')!,input=form.querySelector('textarea') as HTMLTextAreaElement;
+    input.value='体验不错';input.dispatchEvent(new page.window.Event('input',{bubbles:true}));form.dispatchEvent(new page.window.Event('submit'));await pause();await pause();
+    expect(input.value).toBe('体验不错');expect(form.querySelector('[data-notemsg]')!.textContent).toContain('网络中断');
+    form.dispatchEvent(new page.window.Event('submit'));await pause();await pause();
+    expect(attempts).toHaveLength(2);expect(attempts[0].requestId).toBe(attempts[1].requestId);expect(input.value).toBe('');
+  });
+
+  it('protects an open comment deletion confirmation from automatic page refresh', async () => {
+    const page=fixture(()=>({comments:[{id:1,author:'羊毛党123456',content:'测试体验',createdAt:new Date().toISOString()}],nextCursor:null}));
+    publicOffer(page.run);page.run("pOffer('public-offer')");await pause();
+    page.document.querySelector('[data-comment-delete]')!.dispatchEvent(new page.window.Event('click',{bubbles:true}));
+    expect(page.document.querySelector('[data-comment-delete-confirm]')).not.toBeNull();
+    Object.defineProperty(page.document,'activeElement',{value:page.document.body,configurable:true});
+    expect(page.run('keepPage()')).toBe(true);
+  });
+  it('restores an administrator role before rendering comments after a browser reload', async () => {
+    const page=fixture(url=>url.endsWith('/whoami')?{role:'admin',who:'admin'}:{comments:[],nextCursor:null});
+    publicOffer(page.run);page.run('ADM.role=undefined');
+    await page.run('restoreAdminRole()');page.run("pOffer('public-offer')");
+    expect(page.document.querySelector('[data-comment-author]')!.textContent).toBe('admin');
+  });
+  it('keeps existing comments when a visitor submits before the initial list finishes loading', async () => {
+    let release: ((value:unknown)=>void)|undefined;
+    const page=fixture((url,init)=>{
+      if(url.endsWith('/community/session'))return{name:'羊毛党654321'};
+      if(init?.method==='POST')return{comment:{id:2,author:'羊毛党654321',content:'新体验',createdAt:new Date().toISOString()}};
+      return new Promise(resolve=>{release=resolve;});
+    });
+    publicOffer(page.run);page.run("ADM.token='';pOffer('public-offer')");
+    const form=page.document.querySelector('#noteForm')!,input=form.querySelector('textarea') as HTMLTextAreaElement;
+    input.value='新体验';input.dispatchEvent(new page.window.Event('input',{bubbles:true}));form.dispatchEvent(new page.window.Event('submit'));
+    await pause();release!({comments:[{id:1,author:'admin',content:'原有体验',createdAt:new Date().toISOString()}],nextCursor:null});await pause();await pause();
+    const list=page.document.querySelector('[data-comments]')!.textContent;
+    expect(list).toContain('原有体验');expect(list).toContain('新体验');
   });
 
   it('keeps approved standing offers claimable despite old probe errors, but excludes withdrawn offers', () => {

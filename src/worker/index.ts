@@ -1,4 +1,5 @@
 import {readCollectionStatus} from './collection-status';
+import { commentRoutes } from './comments';
 import {publicationError} from './publication';
 import {agentRoutes,handleAgentMcp} from './agent';
 import {quotaCircuitOpen,tripQuotaCircuit} from './quota-circuit';
@@ -72,7 +73,7 @@ app.use('/api/*',async(c,next)=>{
   if(c.req.path==='/api/mcp'||c.req.path.startsWith('/api/agent')){c.env={...c.env,AGENT_FORCE_SNAPSHOT:true};return next();}
   if(c.req.path==='/api/health')return c.json({ok:true,dataMode:'approved-snapshot',readOnly:true});
   const response=c.req.method==='GET'?await snapshotResponse(c.req.raw,c.env.ASSETS):null;
-  return response??c.json({error:'数据库当日读取额度已用尽，目前只读浏览，审核和采集暂时暂停',degraded:true,readOnly:true},503);
+  return response??c.json({error:'数据库当日读取额度已用尽，目前只读浏览，留言、审核和采集暂时暂停',degraded:true,readOnly:true},503);
  }
  return next();
 });
@@ -80,7 +81,7 @@ app.onError(async(error,c)=>{
  if(!quotaFailure(error))return c.json({error:'服务暂不可用，请稍后重试'},500);
  tripQuotaCircuit();
  const response=c.req.method==='GET'?await snapshotResponse(c.req.raw,c.env.ASSETS):null;
- return response??c.json({error:'数据库当日读取额度已用尽，目前只读浏览，审核和采集暂时暂停',degraded:true,readOnly:true},503);
+ return response??c.json({error:'数据库当日读取额度已用尽，目前只读浏览，留言、审核和采集暂时暂停',degraded:true,readOnly:true},503);
 });
 
 // 初期不让搜索引擎收录；接口不缓存旧状态太久
@@ -88,7 +89,7 @@ app.use('/api/*', async (c, next) => {
   if(c.env.IDENTITY_MODE==='enforce'||/\/api\/(?:ingest\/(?:identity-|observations|candidates)|admin\/identity)/.test(c.req.path))c.env={...c.env,AGENT_READ_KEY:c.env.DB,DB:withIdentityQueryBudget(c.env.DB)};
   await next();
   c.header('X-Robots-Tag', 'noindex');
-  if(c.req.method==='GET'&&c.req.path.startsWith('/api/offers'))c.header('Cache-Control','no-cache');
+  if(c.req.method==='GET'&&c.req.path.startsWith('/api/offers')&&c.res.headers.get('Cache-Control')!=='no-store')c.header('Cache-Control','no-cache');
   if (c.req.method === 'GET' && !c.res.headers.get('Cache-Control')) c.header('Cache-Control', 'public, max-age=60');
 });
 
@@ -117,6 +118,7 @@ for (const path of ['/api/offers', '/api/platforms', '/api/meta', '/api/coverage
 
 // 公开接口不输出内部核验记录
 app.route('/api/agent',agentRoutes);
+app.route('/api', commentRoutes);
 app.all('/api/mcp',c=>{let ctx:Pick<ExecutionContext,'waitUntil'>|undefined;try{ctx=c.executionCtx;}catch{}return handleAgentMcp(c.req.raw,c.env,ctx);});
 
 const withStatus = (o: OfferRow, now: Date) => {

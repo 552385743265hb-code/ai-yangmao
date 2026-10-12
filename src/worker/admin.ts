@@ -15,6 +15,7 @@ import { publicationError, validateStoredOffer } from './publication';
 import {leadTask,leadReviewVersion,leadReviewDue,type LeadResolution} from '../shared/lead-review';
 import { leadPriority } from '../shared/leads';
 import { isReviewField } from '../shared/spec';
+import { createComment, removeComment, legacyNoteStatement, commentMutationGuard, commentBodyLimit } from './comments';
 // 管理接口（Bearer ADMIN_TOKEN）：审核、编辑、补录、日报、健康检查。
 // 调用方：Hermes Agent 的"AI 羊毛牧场"技能（scripts/ym.ts），以后还有网页后台。
 import { and, desc, eq, gte, inArray, lt, sql } from 'drizzle-orm';
@@ -95,6 +96,8 @@ admin.route('/identity',identityAdminRoutes);
 admin.route('/memberships',membershipAdminRoutes);
 
 admin.get('/whoami', c => c.json({ role: c.get('role'), who: c.get('who') }));
+admin.post('/offers/:ref/comments', commentMutationGuard, commentBodyLimit, c => createComment(c, c.req.param('ref'), true));
+admin.post('/comments/:id/delete', commentMutationGuard, commentBodyLimit, c => removeComment(c, c.req.param('id')));
 
 /** 补信源：给已登记平台加一个官方信源，下一轮采集开始抓取；不会打开自动上架。 */
 admin.post('/sources', async c => {
@@ -478,7 +481,10 @@ admin.post('/offers/:ref/note', async c => {
   if (!body.success) return c.json({ error: '心得最多 500 字' }, 400);
   const note = body.data.note.trim() || null;
   const updatedAt = new Date().toISOString();
-  await db(c.env).update(s.offers).set({ adminNote: note, updatedAt }).where(eq(s.offers.id, o.id));
+  await c.env.DB.batch([
+    c.env.DB.prepare('UPDATE offers SET admin_note=?,updated_at=? WHERE id=?').bind(note, updatedAt, o.id),
+    legacyNoteStatement(c.env.DB, o.id, note, updatedAt),
+  ]);
   return c.json({ ok: true, code: shortCode(o.id), adminNote: note, reviewVersion: updatedAt });
 });
 

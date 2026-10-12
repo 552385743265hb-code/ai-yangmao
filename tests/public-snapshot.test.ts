@@ -13,6 +13,13 @@ it('snapshot mode blocks admin/ingest before database and expires',async()=>{
  const response=await worker.fetch(new Request('https://local.test/api/admin/queue'),{DB:{prepare(){throw Error('DB read')}},ASSETS:assets,D1_PUBLIC_SNAPSHOT_UNTIL:'2099-01-01T00:00:00Z'} as any,{} as any);expect(response.status).toBe(503);expect((await response.json() as any).error).toContain('只读');
  expect(snapshotActive('2000-01-01T00:00:00Z')).toBe(false);
 });
+it('returns truthful unavailability for comments rather than a missing offer in snapshot mode',async()=>{
+ const db={prepare(){throw Error('D1 must not be queried');}} as unknown as D1Database;
+ for(const [path,method] of [['/api/offers/public/comments','GET'],['/api/offers/public/comments','POST'],['/api/community/session','POST']]){
+  const response=await worker.fetch(new Request('https://local.test'+path,{method}),{DB:db,ASSETS:assets,D1_PUBLIC_SNAPSHOT_UNTIL:'2099-01-01T00:00:00Z'} as any,{} as any);
+  expect(response.status).toBe(503);expect(await response.json()).toMatchObject({readOnly:true,degraded:true});
+ }
+});
 it('returns explicit missing-detail and filters without claiming current verification',async()=>{
  const r=await snapshotResponse(new Request('https://local.test/api/offers/missing'),assets);expect(r!.status).toBe(404);
  const filtered=await snapshotResponse(new Request('https://local.test/api/offers?platform=other'),assets);expect((await filtered!.json() as any).offers).toEqual([]);

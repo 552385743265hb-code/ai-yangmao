@@ -1200,6 +1200,132 @@ const STEPS = {
 };
 const NOTE_DRAFTS = new Map();
 const NOTE_SAVES = new Set();
+const COMMENT_STATE = new Map();
+let ANON_SESSION = null;
+let ANON_NAME = '';
+const commentAdmin = () => !!ADM.token && ADM.role === 'admin';
+async function commentRequest(path, body, administrator = false) {
+  const headers = { Accept: 'application/json' };
+  if (body !== undefined) headers['Content-Type'] = 'application/json';
+  if (administrator) headers.Authorization = 'Bearer ' + ADM.token;
+  const response = await fetch(path, { method: body === undefined ? 'GET' : 'POST', credentials: 'same-origin', cache: 'no-store', headers, body: body === undefined ? undefined : JSON.stringify(body) });
+  const result = await response.json();
+  if (!response.ok) { const error = new Error(result.error || '留言暂时不可用'); error.status = response.status; throw error; }
+  return result;
+}
+function anonymousCommentSession() {
+  if (!ANON_SESSION) ANON_SESSION = commentRequest('/api/community/session', {}).then(result => {
+    if (!/^羊毛党\d{6}$/.test(result.name)) throw new Error('匿名身份暂时不可用');
+    ANON_NAME = result.name; return result.name;
+  }).catch(error => { ANON_SESSION = null; throw error; });
+  return ANON_SESSION;
+}
+function commentState(id) {
+  if (!COMMENT_STATE.has(id)) COMMENT_STATE.set(id, { comments: [], nextCursor: null, loaded: false, loading: false, version: 0, attempt: null, message: '', removing: new Set() });
+  return COMMENT_STATE.get(id);
+}
+function commentCard(o) {
+  const state = commentState(o.id);
+  return `<div class="card" id="noteBox"><h3>💬 牧场心得</h3>
+    <p class="small muted">分享你实际领取、使用的体验，帮助大家参考和避雷。留言公开可见。</p>
+    <form id="noteForm" style="display:flex;flex-direction:column;gap:8px">
+      <label class="small" for="commentInput">以 <strong data-comment-author>${commentAdmin() ? 'admin' : esc(ANON_NAME || '匿名访客')}</strong> 留言</label>
+      <textarea id="commentInput" name="note" rows="3" maxlength="500" required style="width:100%;padding:10px;border:1px solid var(--line-2);border-radius:10px;background:var(--surface);resize:vertical" placeholder="实际薅到了吗？到账、速度、限流或踩坑情况如何？（最多 500 字）">${esc(NOTE_DRAFTS.get(o.id) || '')}</textarea>
+      <div class="row" style="align-items:center;flex-wrap:wrap"><button class="btn sm pri" type="submit" ${NOTE_SAVES.has(o.id) ? 'disabled' : ''}>${NOTE_SAVES.has(o.id) ? '发表中…' : '发表心得'}</button><span class="small muted" data-comment-count>${(NOTE_DRAFTS.get(o.id) || '').length}/500</span><span data-notemsg role="status" class="small" style="font-weight:600">${esc(state.message || (NOTE_DRAFTS.has(o.id) ? '未发表' : ''))}</span></div>
+      <p class="small muted" style="margin:0">无需登录；匿名名字保留在此浏览器。请勿发布隐私、广告或辱骂内容。</p>
+    </form>
+    <div class="row" style="justify-content:space-between;margin:18px 0 8px"><strong class="small">大家的心得</strong><button class="btn sm" type="button" data-comment-refresh>刷新留言</button></div>
+    <div data-comments aria-live="polite"></div><p class="small" data-comment-loadmsg role="status"></p><button class="btn sm" type="button" data-comment-more hidden>加载更多</button>
+  </div>`;
+}
+function paintComments(box, state) {
+  const list = $('[data-comments]', box);
+  list.innerHTML = state.comments.length ? state.comments.map(comment => `<article data-comment-id="${esc(comment.id)}" style="padding:12px 0;border-top:1px solid var(--line)">
+    <div class="row small" style="align-items:center;flex-wrap:wrap"><strong>${esc(comment.author)}</strong><time class="muted" datetime="${esc(comment.createdAt)}">${esc(new Date(comment.createdAt).toLocaleString('zh-CN'))}</time>${commentAdmin() ? `<button class="btn sm" type="button" data-comment-delete="${esc(comment.id)}" style="margin-left:auto" ${state.removing.has(String(comment.id)) ? 'disabled' : ''}>删除</button>` : ''}</div>
+    <p style="margin:7px 0 0;white-space:pre-wrap;overflow-wrap:anywhere">${esc(comment.content)}</p></article>`).join('') : `<p class="small muted">${state.loaded ? '还没有心得，来分享第一条吧。' : '正在加载心得…'}</p>`;
+  $('[data-comment-more]', box).hidden = !state.nextCursor;
+  $('[data-comment-more]', box).disabled = state.loading;
+}
+function setupComments(o) {
+  const box = $('#noteBox'), form = $('#noteForm'), state = commentState(o.id), input = $('[name="note"]', form);
+  const currentBox = () => route()[0] === 'offer' && route()[1] === o.id ? $('#noteBox') : null;
+  const message = (text, failed = false) => {
+    state.message = text;
+    const target = currentBox()?.querySelector('[data-notemsg]');
+    if (target) { target.textContent = text; target.style.color = failed ? 'var(--critical-ink)' : ''; }
+  };
+  paintComments(box, state);
+  const load = async (more = false) => {
+    if (more && (!state.nextCursor || state.loading)) return;
+    const version = ++state.version, cursor = more ? state.nextCursor : null;
+    state.loading = true;
+    const live = currentBox(); if (live) { paintComments(live, state); $('[data-comment-loadmsg]', live).textContent = '加载中…'; }
+    try {
+      const result = await commentRequest(`/api/offers/${encodeURIComponent(o.id)}/comments${cursor ? '?before=' + encodeURIComponent(cursor) : ''}`);
+      if (!Array.isArray(result.comments)) throw new Error('留言暂时不可用');
+      if (state.version !== version) return;
+      state.comments = more ? [...state.comments, ...result.comments.filter(c => !state.comments.some(old => old.id === c.id))] : result.comments;
+      state.nextCursor = result.nextCursor; state.loaded = true;
+      const live = currentBox(); if (live) $('[data-comment-loadmsg]', live).textContent = '';
+    } catch (error) { const live = currentBox(); if (live && state.version === version) $('[data-comment-loadmsg]', live).textContent = '未能加载心得：' + error.message; }
+    finally { if (state.version === version) { state.loading = false; const live = currentBox(); if (live) paintComments(live, state); } }
+  };
+  $('[data-comment-refresh]', box).addEventListener('click', () => load());
+  $('[data-comment-more]', box).addEventListener('click', () => load(true));
+  if (!commentAdmin()) anonymousCommentSession().then(name => { const live = currentBox(); if (live) $('[data-comment-author]', live).textContent = name; }).catch(error => message('获取匿名身份失败：' + error.message, true));
+  form.addEventListener('input', () => {
+    if (input.value) NOTE_DRAFTS.set(o.id, input.value); else NOTE_DRAFTS.delete(o.id);
+    $('[data-comment-count]', form).textContent = input.value.length + '/500';
+    message(NOTE_SAVES.has(o.id) ? '发表中，当前修改会保留' : input.value ? '未发表' : '');
+  });
+  form.addEventListener('submit', async event => {
+    event.preventDefault();
+    if (NOTE_SAVES.has(o.id)) return;
+    const draft = input.value, content = draft.trim(), administrator = commentAdmin();
+    if (!content || content.length > 500) { message('请填写 1–500 字的心得', true); return; }
+    NOTE_DRAFTS.set(o.id, draft);
+    if (!state.attempt || state.attempt.content !== content || state.attempt.administrator !== administrator) state.attempt = { content, requestId: crypto.randomUUID(), administrator };
+    const attempt = state.attempt;
+    NOTE_SAVES.add(o.id); $('button[type="submit"]', form).disabled = true; message('发表中…');
+    try {
+      if (!administrator) await anonymousCommentSession();
+      if (!state.loaded) await state.initialLoad;
+      const path = `/api/${administrator ? 'admin/' : ''}offers/${encodeURIComponent(o.id)}/comments`;
+      const result = await commentRequest(path, { content: attempt.content, requestId: attempt.requestId }, administrator);
+      if (!result.comment?.id) throw new Error('未能确认是否发表成功，请重试');
+      ++state.version; state.loading = false;
+      state.comments = [result.comment, ...state.comments.filter(c => c.id !== result.comment.id)];
+      state.loaded = true; state.attempt = null;
+      const live = currentBox(), currentInput = live?.querySelector('[name="note"]');
+      const current = currentInput?.value ?? NOTE_DRAFTS.get(o.id);
+      if (current === draft) { NOTE_DRAFTS.delete(o.id); if (currentInput) currentInput.value = ''; message('已发表，所有人可见'); }
+      else message('当前修改未保存');
+      if (live) { paintComments(live, state); $('[data-comment-loadmsg]', live).textContent = ''; $('[data-comment-count]', live).textContent = (currentInput?.value.length || 0) + '/500'; }
+    } catch (error) {
+      if (error.status === 401 && !administrator) { ANON_SESSION = null; ANON_NAME = ''; }
+      message('没有发表：' + error.message, true);
+    } finally {
+      NOTE_SAVES.delete(o.id);
+      const button = currentBox()?.querySelector('button[type="submit"]'); if (button) { button.disabled = false; button.textContent = '发表心得'; }
+    }
+  });
+  box.addEventListener('click', async event => {
+    const button = event.target.closest('[data-comment-delete]');
+    if (!button || button.disabled || !commentAdmin()) return;
+    const article = button.closest('[data-comment-id]');
+    if (!article.querySelector('[data-comment-delete-confirm]')) { button.insertAdjacentHTML('afterend', '<span data-comment-delete-confirm class="small">确定删除？ <button class="btn sm" type="button" data-comment-confirm>确认删除</button><button class="btn sm" type="button" data-comment-cancel>取消</button></span>'); return; }
+  });
+  box.addEventListener('click', async event => {
+    const cancel = event.target.closest('[data-comment-cancel]'); if (cancel) { cancel.closest('[data-comment-delete-confirm]').remove(); return; }
+    const button = event.target.closest('[data-comment-confirm]'); if (!button || button.disabled) return;
+    const article = button.closest('[data-comment-id]'), id = article.dataset.commentId;
+    button.disabled = true; state.removing.add(id);
+    try { await commentRequest(`/api/admin/comments/${encodeURIComponent(id)}/delete`, {}, true); ++state.version; state.loading = false; state.comments = state.comments.filter(c => String(c.id) !== id); const live = currentBox(); if (live) paintComments(live, state); message('已删除'); }
+    catch (error) { button.disabled = false; message('删除失败：' + error.message, true); }
+    finally { state.removing.delete(id); }
+  });
+  state.initialLoad = load();
+}
 async function resolveOfferHash(id) {
   const hash=location.hash;
   try {const response=await fetch('/api/offers/'+encodeURIComponent(id),{headers:{Accept:'application/json'}});if(!response.ok)throw new Error('not found');const data=await response.json();if(location.hash!==hash)return;
@@ -1262,7 +1388,7 @@ function pOffer(id) {
         <div class="fact"><div class="l">适用对象</div><div class="v">${AUD[o.aud]}</div></div>
         <div class="fact"><div class="l">模态</div><div class="v">${o.m.map(m => MODAL[m]).join('、')}</div></div>
       </div>
-      ${o.note || ADM.token ? `<div class="card" id="noteBox"><h3>💬 牧场心得</h3><p data-note-display style="margin:0;white-space:pre-wrap">${esc(o.note || '还没有心得。')}</p>${ADM.token ? `<form id="noteForm" style="display:flex;flex-direction:column;gap:8px;margin-top:10px"><textarea name="note" rows="3" maxlength="500" placeholder="实际用下来怎么样？比如：速度慢、容易限流、适合做翻译…（公开显示，最多 500 字）">${esc(NOTE_DRAFTS.get(o.id) ?? o.note)}</textarea><div class="row" style="align-items:center"><button class="btn sm pri" type="submit" ${NOTE_SAVES.has(o.id) ? 'disabled' : ''}>保存心得</button><span data-notemsg role="status" class="small" style="font-weight:600">${NOTE_SAVES.has(o.id) ? '保存中…' : NOTE_DRAFTS.has(o.id) ? '未保存' : ''}</span></div></form>` : ''}</div>` : ''}
+      ${commentCard(o)}
       <div class="card"><h3>适用资格</h3><p class="sub">${miss.length ? `按你的条件，还差 ${miss.length} 项` : '按你的条件，全部满足'} · <a href="#" data-open-cond style="text-decoration:underline">修改我的条件</a></p>${reqChips(o, true)}${o.r.includes('targeted') ? '<p class="small muted" style="margin:8px 0 0">定向发放：只有部分账号收到，能不能领要看你的账号。</p>' : ''}${o.aud === 'unclear' ? '<p class="small muted" style="margin:8px 0 0">官方没写清楚谁能领，这里不宣称人人可领。</p>' : ''}</div>
       <div class="card"><h3>领取步骤</h3><ol class="steps">${((o.steps && o.steps.length) ? o.steps : (STEPS[o.c] || [])).map(s => `<li>${esc(s)}</li>`).join('')}</ol></div>
       <div class="card"><h3>官方证据</h3><p class="sub">信源：${SRC[o.st]}${o.st === 'staff' ? '（白名单内的在职员工账号）' : ''} · ${verify}</p>${st==='stale'&&ADM.token?`<p class="small"><a href="#admin-offer-${encodeURIComponent(o.id)}">去后台核对证据 →</a></p>`:''}
@@ -1286,28 +1412,7 @@ function pOffer(id) {
     $('[data-detail-formula]').textContent = valuationText(alternative?.formula || valuationOf(o).formula);
     $('[data-model-note]').textContent = alternative ? `另一个使用方案：${alternative.model}。参考金额已按此活动的覆盖期与配额计算；全站仍按默认基准 ${valuationOf(o).baselineModel || '估值'} 排序、汇总和记录领取。` : '当前为默认基准。其他模型是另一个使用方案；金额已按此活动的覆盖期与配额计算。全站排序、汇总和领取记录使用默认估值。';
   });
-  const noteForm = $('#noteForm');
-  noteForm?.addEventListener('input', () => {
-    const value = noteForm.querySelector('[name="note"]').value;
-    if (value === o.note) NOTE_DRAFTS.delete(o.id); else NOTE_DRAFTS.set(o.id, value);
-    noteForm.querySelector('[data-notemsg]').textContent = value === o.note ? '' : '未保存';
-  });
-  noteForm?.addEventListener('submit', async e => {
-    e.preventDefault(); const f = e.currentTarget, msg = f.querySelector('[data-notemsg]'), button = f.querySelector('button'), input = f.querySelector('[name="note"]');
-    if (button.disabled || NOTE_SAVES.has(o.id)) return;
-    const note = input.value;
-    NOTE_DRAFTS.set(o.id, note); NOTE_SAVES.add(o.id); button.disabled = true; msg.style.color = ''; msg.textContent = '保存中…';
-    const visibleForm = () => route()[0] === 'offer' && route()[1] === o.id ? $('#noteForm') : null;
-    try {
-      const r = await adm(`/offers/${encodeURIComponent(o.id)}/note`, { note }); o.note = r.adminNote || '';
-      const currentForm = visibleForm(), currentInput = currentForm?.querySelector('[name="note"]'), current = currentInput?.value ?? NOTE_DRAFTS.get(o.id);
-      const currentMessage = currentForm?.querySelector('[data-notemsg]') || msg;
-      if (current === note || current === o.note) { if (currentInput) currentInput.value = o.note; NOTE_DRAFTS.delete(o.id); currentMessage.textContent = '已保存'; }
-      else { if (current != null) NOTE_DRAFTS.set(o.id, current); currentMessage.textContent = '当前修改未保存'; }
-      if (currentForm) $('#noteBox [data-note-display]').textContent = o.note || '还没有心得。';
-    } catch (err) { const currentMessage = visibleForm()?.querySelector('[data-notemsg]') || msg; currentMessage.style.color = 'var(--critical-ink)'; currentMessage.textContent = '没有保存：' + err.message; }
-    finally { NOTE_SAVES.delete(o.id); button.disabled = false; const currentButton = visibleForm()?.querySelector('button'); if (currentButton) currentButton.disabled = false; }
-  });
+  setupComments(o);
   // 修订记录按需读取
   const revisionBox = $('#revBox');
   (revisionBox ? adm(`/offers/${encodeURIComponent(o.id)}`) : Promise.resolve(null)).then(j => {
@@ -1473,6 +1578,11 @@ const admStore = {
   clear() { try { sessionStorage.removeItem(ADM_KEY); localStorage.removeItem(ADM_KEY); } catch (e) { /* 忽略 */ } },
 };
 const ADM = { token: admStore.load(), tab: 'queue' };
+async function restoreAdminRole() {
+  if (!ADM.token || ADM.role) return;
+  try { const me = await adm('/whoami'); ADM.role = me.role; ADM.who = me.who; }
+  catch { /* Normal browsing remains available if the stored administrator session fails. */ }
+}
 function dateTimeInput(value) {
   const d = new Date(value);
   if (/^\d{4}-\d{2}-\d{2}$/.test(value || '')) return Number.isFinite(d.getTime()) && d.toISOString().slice(0, 10) === value ? `${value}T00:00` : '';
@@ -2290,7 +2400,7 @@ window.addEventListener('resize', () => {
 });
 let refreshInFlight = false, lastRefreshAt = Date.now();
 // 后台页、或者正在填表时不自动重画：重画会清空正在修改的表单（2026-10-03 管理员反馈）。后台的数据点“待审”标签或刷新浏览器即可更新。
-const keepPage = () => route()[0] === 'admin' || (route()[0] === 'offer' && NOTE_DRAFTS.has(route()[1])) || !!document.activeElement?.closest?.('form, textarea, input, select') || $$('[data-editform]:not([hidden])').length > 0;
+const keepPage = () => route()[0] === 'admin' || (route()[0] === 'offer' && (NOTE_DRAFTS.has(route()[1]) || NOTE_SAVES.has(route()[1]) || COMMENT_STATE.get(route()[1])?.removing.size || !!$('[data-comment-delete-confirm]'))) || !!document.activeElement?.closest?.('form, textarea, input, select') || $$('[data-editform]:not([hidden])').length > 0;
 async function refreshPage() {
   if (refreshInFlight) return;
   refreshInFlight = true;
@@ -2348,7 +2458,7 @@ new MutationObserver(reTheme).observe(document.documentElement, { attributes: tr
   const agentLanding = route()[0] === 'agent';
   if (agentLanding) render(false);
   else main().innerHTML = emptySheep('正在把羊赶进草地…');
-  try { await loadData(); }
+  try { await Promise.all([loadData(), restoreAdminRole()]); }
   catch (e) { if (route()[0] !== 'agent') main().innerHTML = emptySheep('数据没有加载成功，请稍后刷新。'); return; }
   prepare();
   drawShell();
