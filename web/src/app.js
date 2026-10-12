@@ -1245,7 +1245,7 @@ function pOffer(id) {
   hist.sort((a, b) => b[0] - a[0]);
   const same = OFFERS.filter(x => x.p === o.p && x.id !== o.id);
   const wanted = MINE.want.includes(o.id), got = claimedThisMonth(o.id);
-  main().innerHTML = ribbon() + `<div class="crumb"><a href="javascript:history.back()">← 返回</a> / <a href="#platform-${o.p}">${esc(o.plat.name)}</a></div>
+  main().innerHTML = ribbon() + `<div class="crumb"><a href="${esc(offerReturnHash)}" data-offer-back>← 返回</a> / <a href="#platform-${o.p}">${esc(o.plat.name)}</a></div>
   <div class="dt-top">${etag(o.ty)}${stChip(o)}<span class="score" title="薅度分">${sc}<small>薅度</small></span></div>
   <h1 class="dt-title">${esc(o.t)}</h1>
   <div class="row" style="margin:6px 0 18px">
@@ -2133,6 +2133,7 @@ function openCompare() {
   });
 }
 
+let offerReturnHash = '#today';
 function route() {
   const h = decodeURIComponent(location.hash.slice(1)) || 'today';
   if (h.startsWith('admin-offer-')) return ['admin', h.slice(12)];
@@ -2144,6 +2145,7 @@ function render(keepScroll) {
   NOW = new Date();
   TK = tk();
   const [name, arg] = route();
+  if (name !== 'offer') offerReturnHash = location.hash || '#today';
   CHARTS.forEach(c => c.dispose()); CHARTS.clear(); hideTip();
   const y = window.scrollY;
   if (name === 'offer') pOffer(arg); else if (name === 'platform') pPlatform(arg); else if (name === 'admin') pAdmin(arg); else PAGES[name]();
