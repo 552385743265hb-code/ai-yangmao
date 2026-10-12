@@ -12,6 +12,8 @@ import { drizzle } from 'drizzle-orm/d1';
 import { eq } from 'drizzle-orm';
 import * as tables from '../../db/schema';
 import { offerIn,type OfferIn } from '../../shared/ingest';
+import { computeCollectedValuation, protectedValuationFields, stripValuationTransport, automaticValuation } from '../../shared/valuation-intake';
+import { sourceFetchSchema, type SourceFetch } from '../../shared/identity/fetch-evidence';
 import { publicationError,validateStoredOffer } from '../publication';
 import { canonicalTermsSchema,resolutionResultSchema,decisionScopeSchema,reopenPolicySchema,intakeReceiptSchema,reviewDecisionSchema,type IntakeReceipt,type CanonicalTermsV1,type ResolutionResult,type EvidenceContext,type VersionedEntity } from '../../shared/identity/types';
 import { compareCandidate,evidenceGrounded,factSlots,RESOLVER_VERSION,RULES_VERSION } from '../../shared/identity/compare';
@@ -31,10 +33,14 @@ function offerValues(value:OfferIn):Record<string,Binding> {
  const data:Record<string,Binding>={};for(const [field,column]of Object.entries(columns)) {const v=(value as unknown as Record<string,unknown>)[field];if(v!==undefined)data[column]=v!==null&&typeof v==='object'?JSON.stringify(v):v as Binding;}
  return data;
 }
-function displayFromRaw(raw:string):OfferIn|null {
+const evidenceSource=new WeakMap<EvidenceContext,{sourceUrl:string;sourceFetch?:SourceFetch}>();
+async function displayFromRaw(raw:string,evidence:EvidenceContext):Promise<OfferIn|null> {
  const value=JSON.parse(raw) as {candidate?:unknown};const parsed=offerIn.safeParse(value.candidate);
  if(!parsed.success||parsed.data.evidence.tier==='tested')return null;
- return parsed.data;
+ const input={...parsed.data,sourceText:evidence.fullText,sourceFetch:evidenceSource.get(evidence)?.sourceFetch};
+ const computed=await computeCollectedValuation(input);
+ const display=stripValuationTransport({...parsed.data,usdEstimate:computed.valuation?.usdEstimate??null,usdMax:computed.valuation?.usdMax??null,valuation:computed.valuation});
+ return offerIn.parse(display);
 }
 export class IdentityService {
  private store:IdentityStore;
@@ -42,12 +48,15 @@ export class IdentityService {
  private async entity(id:string){return this.db.prepare("SELECT * FROM benefit_entities WHERE id=? AND state='active'").bind(id).first<EntityRow>();}
  private async offer(id:string|null):Promise<OfferRow|null>{if(!id)return null;return (await drizzle(this.db,{schema:tables}).select().from(tables.offers).where(eq(tables.offers.id,id)))[0]??null;}
  private async evidence(candidate:CandidateRow):Promise<EvidenceContext> {
-  const row=await this.db.prepare("SELECT o.text,coalesce(json_extract(f.provenance_json,'$.truncated'),o.text_truncated) text_truncated,coalesce(f.provenance_json,o.trust_json) trust_json FROM source_observations o LEFT JOIN source_observation_fetches f ON f.id=? AND f.observation_id=o.id WHERE o.id=?").bind(candidate.source_fetch_id??null,candidate.observation_id).first<{text:string;text_truncated:number;trust_json:string}>();
+  const row=await this.db.prepare("SELECT o.text,o.final_url,coalesce(f.provenance_json,o.fetch_provenance_json) fetch_proof,coalesce(json_extract(f.provenance_json,'$.truncated'),o.text_truncated) text_truncated,coalesce(f.provenance_json,o.trust_json) trust_json FROM source_observations o LEFT JOIN source_observation_fetches f ON f.id=? AND f.observation_id=o.id WHERE o.id=?").bind(candidate.source_fetch_id??null,candidate.observation_id).first<{text:string;final_url:string;fetch_proof:string;text_truncated:number;trust_json:string}>();
   if(!row)throw new IdentityError(409,'candidate observation missing');
   const raw=JSON.parse(candidate.raw_candidate_json) as {quotes?:Array<{id:string;quote:string}>};
   const trust=z.object({sourceVerified:z.boolean(),productId:z.string().nullable()}).parse(JSON.parse(row.trust_json));
   const facts=canonicalTermsSchema.parse(JSON.parse(candidate.facts_json));
-  return {observationId:candidate.observation_id,fullText:row.text,truncated:!!row.text_truncated,sourceVerified:trust.sourceVerified&&facts.issuerProductId.state==='known'&&trust.productId===facts.issuerProductId.value,quoteById:Object.fromEntries((raw.quotes??[]).map(q=>[q.id,q.quote]))};
+  const proof=JSON.parse(row.fetch_proof??'{}');
+  const fetch=sourceFetchSchema.safeParse(Object.fromEntries(['originalUrl','finalUrl','fetchedUrl','method','sourceVerified','truncated','contentHash','originalContentHash'].filter(k=>proof[k]!==undefined).map(k=>[k,proof[k]])));
+  const result:EvidenceContext={observationId:candidate.observation_id,fullText:row.text,truncated:!!row.text_truncated,sourceVerified:trust.sourceVerified&&facts.issuerProductId.state==='known'&&trust.productId===facts.issuerProductId.value,quoteById:Object.fromEntries((raw.quotes??[]).map(q=>[q.id,q.quote]))};
+  evidenceSource.set(result,{sourceUrl:row.final_url,...(fetch.success?{sourceFetch:fetch.data}:{} )});return result;
  }
  private async commit<T>(builder:MutationBuilder,expected:ExpectedRevision[],receipt:T):Promise<T>{const result=await commitIdentityMutation(this.db,{...builder.plan(expected,receipt),replayChecked:true});if(result.status==='conflict'||result.value===null)throw new IdentityError(409,'identity revisions changed; retry retrieval');return result.value;}
 
@@ -335,6 +344,7 @@ export class IdentityService {
   if(!stored)throw new IdentityError(409,'candidate lacks intake receipt');
   const ambiguousFamily=!!candidate.claim_family_key&&!!await this.db.prepare('SELECT 1 FROM intake_candidates WHERE claim_family_key=? AND id<>? LIMIT 1').bind(candidate.claim_family_key,candidate.id).first();
   const facts=canonicalTermsSchema.parse(control?.facts??JSON.parse(candidate.facts_json)),evidence=await this.evidence({...candidate,facts_json:JSON.stringify(control?.facts??JSON.parse(candidate.facts_json))});
+  let candidateDisplay:Promise<OfferIn|null>|undefined;const readDisplay=()=>candidateDisplay??=displayFromRaw(candidate.raw_candidate_json,evidence);
   const builder=new MutationBuilder(this.db,command,payloadHash),expected:ExpectedRevision[]=[];
   if(control){expected.push({kind:'task',id:control.task.id,revision:control.task.revision});builder.require("EXISTS(SELECT 1 FROM review_tasks WHERE id=? AND state IN ('open','checking','manual'))",[control.task.id]);}
   builder.require('EXISTS(SELECT 1 FROM intake_candidates WHERE id=? AND revision=?)',[candidate.id,candidate.revision]);
@@ -447,7 +457,7 @@ export class IdentityService {
    }
    versionId=version?.id??crypto.randomUUID();baseVersionId=entity.current_approved_version_id;
    receipt.versionId=versionId;
-   const display=displayFromRaw(candidate.raw_candidate_json);
+   const display=await readDisplay();
 
    const superseded=new Set(decisions.flatMap(d=>d.supersedesId?[d.supersedesId]:[]));
    const mappedVersions=facts.schemaVersion==='terms-v2'&&version?await this.db.prepare('SELECT old_version_id FROM membership_version_migrations WHERE new_version_id=?').bind(version.id).all<{old_version_id:string}>():{results:[]};
@@ -515,13 +525,14 @@ export class IdentityService {
    builder.insert('task_candidates',{task_id:taskId,candidate_id:candidate.id},'nothing');
   }
   if(receipt.outcome==='duplicate_pending'&&entity&&receipt.canonicalOfferId&&receipt.taskId&&evidence.sourceVerified){
-   const pending=await this.offer(receipt.canonicalOfferId),incoming=displayFromRaw(candidate.raw_candidate_json);
+   const pending=await this.offer(receipt.canonicalOfferId),incoming=await readDisplay();
    const protectedEvidence=await this.db.prepare("SELECT 1 FROM offer_revisions r,json_each(r.diff) j WHERE r.offer_id=? AND r.author='admin' AND json_extract(j.value,'$.field')='evidence' LIMIT 1").bind(receipt.canonicalOfferId).first();
-   if(pending?.reviewState==='pending'&&pending.evidence.tier==='media'&&incoming&&incoming.evidence.tier!=='media'&&!protectedEvidence){
+   const autoValueChanged=pending&&incoming&&automaticValuation(pending.valuation)&&stableJson([pending.usdEstimate,pending.usdMax,pending.valuation?.status,pending.valuation?.formula])!==stableJson([incoming.usdEstimate,incoming.usdMax,incoming.valuation?.status,incoming.valuation?.formula]);
+   if(pending?.reviewState==='pending'&&incoming&&incoming.evidence.tier!=='media'&&((pending.evidence.tier==='media'&&!protectedEvidence)||autoValueChanged)){
     const task=await this.db.prepare('SELECT revision,material_revision FROM review_tasks WHERE id=?').bind(receipt.taskId).first<{revision:number;material_revision:number}>();
-    if(task){const display=validateStoredOffer({...pending,evidence:incoming.evidence});if(!display.success)throw new IdentityError(400,'enriched evidence invalid');
+    if(task){const edits=await this.db.prepare("SELECT diff FROM offer_revisions WHERE offer_id=? AND author='admin'").bind(pending.id).all<{diff:string}>();const protectedFields=protectedValuationFields(pending,edits.results.flatMap(r=>JSON.parse(r.diff).map((d:{field:string})=>d.field)));const money=Object.fromEntries(['usdEstimate','usdMax','valuation'].map(k=>[k,protectedFields.has(k)?(pending as unknown as Record<string,unknown>)[k]:(incoming as unknown as Record<string,unknown>)[k]]));const display=validateStoredOffer({...pending,...money,evidence:protectedEvidence?pending.evidence:incoming.evidence});if(!display.success)throw new IdentityError(400,'enriched evidence invalid');
      builder.require('EXISTS(SELECT 1 FROM offers WHERE id=? AND updated_at=?)',[pending.id,pending.updatedAt]);
-     builder.update('offers',{evidence:JSON.stringify(incoming.evidence),updated_at:new Date().toISOString()},'id=?',[pending.id]);
+     builder.update('offers',{...offerValues(offerIn.parse({...display.data,sourceId:display.data.sourceId??undefined,firstChannel:display.data.firstChannel??undefined})),evidence:JSON.stringify(display.data.evidence),updated_at:new Date().toISOString()},'id=?',[pending.id]);
      builder.update('benefit_versions',{display_candidate_json:JSON.stringify(display.data)},'id=? AND entity_id=?',[receipt.versionId,entity.id]);
      builder.update('review_tasks',{revision:task.revision+1,material_revision:task.material_revision+1,state:'open',lease_token:null,lease_until:null},'id=?',[receipt.taskId]);
      builder.insert('identity_events',{id:crypto.randomUUID(),event_key:`review:${receipt.taskId}:${task.material_revision+1}:telegram`,entity_id:entity.id,version_id:receipt.versionId,task_id:receipt.taskId,kind:'review',payload_json:JSON.stringify({taskId:receipt.taskId,materialRevision:task.material_revision+1,channel:'telegram'})});material=true;
@@ -529,9 +540,9 @@ export class IdentityService {
    }
   }
   if(receipt.outcome==='proposed_update'&&receipt.canonicalOfferId) {
-   const original=await this.offer(receipt.canonicalOfferId),incoming=displayFromRaw(candidate.raw_candidate_json);
+   const original=await this.offer(receipt.canonicalOfferId),incoming=await readDisplay();
    const existing=await this.db.prepare('SELECT offer_id FROM offer_proposals WHERE offer_id=?').bind(receipt.canonicalOfferId).first();
-   if(original&&incoming&&!existing){const merged={...incoming,id:original.id,platformId:original.platformId,usdEstimate:original.usdEstimate,usdMax:original.usdMax,valuation:original.valuation};const diff=Object.entries(merged).filter(([key,value])=>key in columns&&stableJson(value)!==stableJson((original as unknown as Record<string,unknown>)[key])).map(([field,to])=>({field,from:(original as unknown as Record<string,unknown>)[field]??null,to}));builder.insert('offer_proposals',{offer_id:original.id,candidate:JSON.stringify(merged),diff:JSON.stringify(diff),manual_fields:'[]'});}
+   if(original&&incoming&&!existing){const edits=await this.db.prepare("SELECT diff FROM offer_revisions WHERE offer_id=? AND author='admin' LIMIT 1001").bind(original.id).all<{diff:string}>();if(edits.results.length>1000)throw new IdentityError(409,'manual value history requires reconciliation');const protectedFields=protectedValuationFields(original,edits.results.flatMap(r=>JSON.parse(r.diff).map((d:{field:string})=>d.field)));const merged={...incoming,id:original.id,platformId:original.platformId,...Object.fromEntries([...protectedFields].map(key=>[key,(original as unknown as Record<string,unknown>)[key]]))};const diff=Object.entries(merged).filter(([key,value])=>key in columns&&stableJson(value)!==stableJson((original as unknown as Record<string,unknown>)[key])).map(([field,to])=>({field,from:(original as unknown as Record<string,unknown>)[field]??null,to}));builder.insert('offer_proposals',{offer_id:original.id,candidate:JSON.stringify(merged),diff:JSON.stringify(diff),manual_fields:'[]'});}
   }
   if(entity&&material)builder.update('benefit_entities',{business_revision:entity.business_revision+1},'id=?',[entity.id]);
   if(blockKey&&material){builder.insert('identity_blocks',{block_key:blockKey,revision:blockRevision},'nothing');builder.update('identity_blocks',{revision:blockRevision+1},'block_key=?',[blockKey]);}
@@ -587,7 +598,9 @@ export class IdentityService {
   if(input.action==='approve'&&visibility?.closed&&!restoring)throw new IdentityError(409,'publication is paused; a fresh explicit reopen review is required');
   let accepted:OfferIn|null=null,reviewedDisplay:OfferIn|null=null;
   const manualFields=new Set<string>(proposal?JSON.parse(proposal.manual_fields):[]);
-  const protectedReviewDisplay=(raw:Record<string,unknown>)=>offerIn.parse({...raw,...(original?{id:original.id,platformId:original.platformId,...Object.fromEntries((['usdEstimate','usdMax','valuation'] as const).map(key=>[key,manualFields.has(key)?raw[key]:original[key]]))}:{})});
+  const moneyEdits=original?await this.db.prepare("SELECT diff FROM offer_revisions WHERE offer_id=? AND author='admin' LIMIT 1001").bind(original.id).all<{diff:string}>():{results:[]};if(moneyEdits.results.length>1000)throw new IdentityError(409,'manual value history requires reconciliation');
+  const protectedMoney=original?protectedValuationFields(original,moneyEdits.results.flatMap(r=>JSON.parse(r.diff).map((d:{field:string})=>d.field))):new Set<string>();
+  const protectedReviewDisplay=(raw:Record<string,unknown>)=>offerIn.parse({...raw,...(original?{id:original.id,platformId:original.platformId,...Object.fromEntries((['usdEstimate','usdMax','valuation'] as const).map(key=>[key,manualFields.has(key)||!protectedMoney.has(key)?raw[key]:original[key]]))}:{})});
   if(original&&(input.action==='approve'||(proposal&&task.kind==='evidence_reopen')))reviewedDisplay=protectedReviewDisplay(JSON.parse(version.display_candidate_json));
   if(input.action==='approve') {
    if(!original||!reviewedDisplay)throw new IdentityError(400,'reviewable offer fields required');

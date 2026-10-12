@@ -107,6 +107,7 @@ const publicInputFields = new Set([
   'fxDate', 'fxSource', 'fromCurrency', 'toCurrency', 'inputPerMillion', 'outputPerMillion',
   'alternatives', 'formula', 'first30Max', 'fullApplyMax',
   'benchmarkType', 'referencePlan', 'referenceModel', 'ruleIds', 'usageMultiplier', 'pricingBasis', 'calculationBasis',
+  'usdPerCny', 'usdPerInr', 'date', 'source', 'cards', 'benefitDays', 'plan',
 ]);
 function publicInputs(value: JsonValue): JsonValue {
   if (Array.isArray(value)) return value.map(publicInputs);

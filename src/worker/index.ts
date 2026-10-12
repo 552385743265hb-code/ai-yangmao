@@ -17,6 +17,8 @@ import { resetEventDay } from '../shared/reset-event';
 import { selectLeads } from '../shared/leads';
 import { changedOfficialTerms, changedOfficialBenefit, rejectedTermsStillPresent } from '../shared/review-stability';
 import { publicSafeValuation, valuationMatchesAmounts } from '../shared/valuation';
+import { computeCollectedValuation, protectedValuationFields, valuationSourceSchema } from '../shared/valuation-intake';
+import { sourceFetchSchema } from '../shared/identity/fetch-evidence';
 import { isReviewField, reviewChanges } from '../shared/spec';
 // Cloudflare Worker 入口：/api/* 走这里，其余由静态资源（网站页面）处理。
 import { and, desc, eq, gte, inArray, sql, getTableColumns } from 'drizzle-orm';
@@ -232,12 +234,18 @@ ingest.post('/leads', async c => {
  * 平台已准入、信源已放开自动上架、不是员工账号来源、四项证据齐全。
  * 已上架的羊毛内容变化时写修订记录，并重新进待审（除非满足自动上架条件）。
  */
+ingest.post('/valuation-preview', async c => {
+  const parsed=z.object({platformId:z.string().min(1),type:z.string().min(1),sourceUrl:z.url(),sourceText:z.string().max(250000).optional(),sourceFetch:sourceFetchSchema.optional(),valuationFactors:z.json().optional(),valuationSources:z.array(valuationSourceSchema).max(30).optional(),tags:z.array(z.string()).optional(),models:z.array(z.string()).optional(),capturedAt:z.string().optional(),benefitQuote:z.string().optional()}).safeParse(await c.req.json().catch(()=>null));
+  if(!parsed.success)return c.json({error:'invalid valuation preview payload',issues:parsed.error.issues},400);
+  const input=parsed.data;
+  return c.json(await computeCollectedValuation({...input,evidence:{url:input.sourceUrl,tier:'official',capturedAt:input.capturedAt??new Date().toISOString(),excerpts:{benefit:input.benefitQuote}}}));
+});
 ingest.post('/offers', async c => {
   // Valuation is reviewed data. Drop a collector/model-supplied copy before amount validation.
   const extractionIn = z.preprocess(value => {
     if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
-    const { valuation: _valuation, ...fields } = value as Record<string, unknown>;
-    return fields;
+    const { valuation: _valuation, usdEstimate:_estimate, usdMax:_max, ...fields } = value as Record<string, unknown>;
+    return {...fields,usdEstimate:null,usdMax:null};
   }, offerIn);
   const rawOffers = await c.req.json().catch(() => null);
   const body = z.array(extractionIn).max(50).safeParse(rawOffers);
@@ -257,6 +265,10 @@ ingest.post('/offers', async c => {
   let peersCache: Awaited<ReturnType<typeof loadPeers>> | null = null;
   const membershipCatalog=body.data.some(o=>o.membershipRequirement||o.requirements.some(r=>r.startsWith('member:')))?await readMembershipCatalog(c.env.DB):null;
   for (const o of body.data) {
+    const valuationPlatform=plats.find(p=>p.id===o.platformId);
+    const officialValuationSource=valuationPlatform&&officialTier(o.evidence.url,valuationPlatform,srcs.filter(s=>s.platformId===o.platformId));
+    const computed=await computeCollectedValuation({...o,sourceFetch:o.sourceFetch?{...o.sourceFetch,sourceVerified:o.sourceFetch.sourceVerified&&!!officialValuationSource}:undefined});
+    o.valuation=computed.valuation;o.usdEstimate=computed.valuation?.usdEstimate??null;o.usdMax=computed.valuation?.usdMax??null;
     if(membershipCatalog)o.membershipRequirement=collectedMembership(o.requirements,o.membershipRequirement,membershipCatalog);
     if(mergedProducts.has(o.platformId)){results.push({id:o.id,error:'identity canonical writes paused; enable the reconciled product enforce path',retryable:true});continue;}
     if(o.leadReviewJobId){
@@ -334,19 +346,19 @@ ingest.post('/offers', async c => {
         continue; // Keep manual proposals and verification metadata; the /verify route verifies source health.
       }
     }
-    const { identityFacts: _identityFacts, identityRequestId: _identityRequestId, leadId, leadReviewJobId, officialReviewJobId, sameOccurrenceAs, sourceFetch: _sourceFetch, sourceText, valuation: _pipelineValuation, ...od } = o;
+    const { identityFacts: _identityFacts, identityRequestId: _identityRequestId, leadId, leadReviewJobId, officialReviewJobId, sameOccurrenceAs, sourceFetch: _sourceFetch, sourceText, valuationFactors:_recipe,valuationSources:_prices, valuation: _pipelineValuation, ...od } = o;
     const row = {
-      ...od, usdEstimate: o.usdEstimate ?? null, usdMax: o.usdMax ?? null, valuation: prev?.valuation ?? null, claimStart: o.claimStart ?? null, claimEnd: o.claimEnd ?? null,
+      ...od, usdEstimate: o.usdEstimate ?? null, usdMax: o.usdMax ?? null, valuation: o.valuation ?? null, claimStart: o.claimStart ?? null, claimEnd: o.claimEnd ?? null,
       creditValidity: o.creditValidity ?? null, publishedAt: o.publishedAt ?? null, sourceId: o.sourceId ?? null,
       lastVerifiedAt: o.evidence.tier === 'media' ? null : nowIso, verifyResult: o.evidence.tier === 'media' ? '线索待核验，尚无可采信的官方证据' : '官方页面已抽取字段', updatedAt: nowIso,
     };
     // 人工改过的字段是已经核准的事实，后续模型提案不得静默覆盖。
     if (prev) {
       // Structured reviewed values belong to the administrator; extraction cannot recalculate them.
-      if (prev.valuation) { row.usdEstimate = prev.usdEstimate; row.usdMax = prev.usdMax; }
+
       const adminRevisions = await d.select({ diff: s.offerRevisions.diff }).from(s.offerRevisions)
         .where(and(eq(s.offerRevisions.offerId, prev.id), eq(s.offerRevisions.author, 'admin')));
-      const protectedFields = new Set([
+      const protectedFields = protectedValuationFields(prev, [
         ...adminRevisions.flatMap(revision => revision.diff.map(change => change.field)),
         ...(existingProposal?.manualFields ?? []),
       ]);
@@ -382,7 +394,7 @@ ingest.post('/offers', async c => {
     if (prev.reviewState === 'approved') {
       // 未抽到的可空字段不是官方取消：保留已审核的值，不制造“丢字段”提案。
       for (const field of ['usdEstimate', 'usdMax', 'claimStart', 'claimEnd', 'publishedAt'] as const) {
-        if (row[field] == null && prev[field] != null) (row as Record<string, unknown>)[field] = prev[field];
+        if (row[field] == null && prev[field] != null && !(['usdEstimate','usdMax'].includes(field) && prev.valuation?.inputs.calculationEngine==='v2-auto')) (row as Record<string, unknown>)[field] = prev[field];
       }
       if (!o.claimEnd && o.endKind === 'unknown' && o.type === prev.type && prev.endKind === 'date') row.endKind = prev.endKind;
       if (row.audience === 'unclear') row.audience = prev.audience;

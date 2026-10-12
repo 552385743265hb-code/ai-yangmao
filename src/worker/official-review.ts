@@ -1,6 +1,7 @@
 import {publicationError} from './publication';
 import {liveStatus} from '../shared/lifecycle';
 import {offerIn} from '../shared/ingest';
+import {computeCollectedValuation,protectedValuationFields} from '../shared/valuation-intake';
 import {officialActivityMismatch} from '../shared/official-review';
 import {canonicalTermsSchema} from '../shared/identity/types';
 import {hasKnownTerms} from './identity/reviewed-legacy';
@@ -107,14 +108,15 @@ officialReviewRoutes.post('/:id/draft',async c=>{
  const command='official-evidence:'+input.jobId,hash=await sha256(stableJson(input));
  const replay=await readIdentityReceipt(c.env.DB,command,hash);if(replay)return c.json(replay.status==='conflict'?{error:'evidence payload changed'}:replay.value,replay.status==='conflict'?409:200);
  const state=await context(c.env,c.req.param('id')),candidate=input.candidate;
+ const computed=await computeCollectedValuation(candidate);candidate.valuation=computed.valuation;candidate.usdEstimate=computed.valuation?.usdEstimate??null;candidate.usdMax=computed.valuation?.usdMax??null;
  if(!state?.evidenceDraft||state.offer.withdrawnAt||state.offer.reviewState!=='pending'||!state.platform||state.platform.status!=='approved')return c.json({error:'only an active provisional pending draft can receive evidence'},409);
  const task=state.evidenceDraft,job=state.offer.officialReview;
  if(!job||job.status!=='checking'||job.jobId!==input.jobId||job.inputVersion!==state.version||job.identityRevision!==state.identityRevision)return c.json({error:'official review version changed'},409);
  const fetch=candidate.sourceFetch,text=candidate.sourceText;
  if(candidate.id!==state.offer.id||candidate.platformId!==state.offer.platformId||candidate.evidence.tier==='tested'||needsEvidence(candidate)||officialActivityMismatch(state.target,candidate)||!officialTier(candidate.evidence.url,state.platform,state.sources)||!fetch?.sourceVerified||fetch.truncated||fetch.finalUrl!==candidate.evidence.url||!text||await sha256(text)!==fetch.contentHash||Object.values(candidate.evidence.excerpts).some(q=>q&&!text.includes(q)))return c.json({error:'official evidence is incomplete, ungrounded or for another activity'},400);
  const edits=await c.env.DB.prepare("SELECT diff FROM offer_revisions WHERE offer_id=? AND author='admin' ORDER BY id LIMIT 1001").bind(state.offer.id).all<{diff:string}>();if(edits.results.length>1000)return c.json({error:'manual field history requires reconciliation'},409);
- const protectedFields=new Set(['usdEstimate','usdMax','valuation',...edits.results.flatMap(r=>JSON.parse(r.diff).map((d:{field:string})=>d.field))]);
- const {sourceText:_text,sourceFetch:_fetch,identityFacts:_facts,identityRequestId:_request,officialReviewJobId:_job,leadReviewJobId:_lead,...raw}=candidate;
+ const protectedFields=protectedValuationFields(state.target,edits.results.flatMap(r=>JSON.parse(r.diff).map((d:{field:string})=>d.field)));
+ const {sourceText:_text,sourceFetch:_fetch,identityFacts:_facts,identityRequestId:_request,officialReviewJobId:_job,leadReviewJobId:_lead,valuationFactors:_recipe,valuationSources:_prices,...raw}=candidate;
  const display=offerIn.parse({...raw,...Object.fromEntries([...protectedFields].filter(k=>k in state.target).map(k=>[k,(state.target as Record<string,unknown>)[k]]))});
  if(needsEvidence(display))return c.json({error:'protected manual evidence cannot be replaced automatically'},409);
  const protectedChanges=[...protectedFields].filter(k=>k in state.target&&k in raw&&stableJson((state.target as Record<string,unknown>)[k])!==stableJson((raw as Record<string,unknown>)[k]));

@@ -1,0 +1,36 @@
+name: V2 估值真实 Agent 验收
+on:
+  workflow_dispatch:
+    inputs:
+      only_cases:
+        description: '只验这些案例id（逗号分隔；留空全部），不写业务数据'
+        type: string
+        default: ''
+concurrency:
+  group: valuation-v2-evaluate
+  cancel-in-progress: false
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx tsx scripts/eval-valuation-v2.ts
+        env:
+          API_BASE: ${{ secrets.API_BASE }}
+          INGEST_TOKEN: ${{ secrets.INGEST_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          OPENROUTER_MODEL: ${{ vars.OPENROUTER_MODEL || 'openrouter/free' }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+          VALUATION_CASES: ${{ inputs.only_cases }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: valuation-v2-workflow-results
+          path: valuation-v2-workflow-results.json

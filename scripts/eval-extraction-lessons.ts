@@ -16,7 +16,7 @@ const cases: Case[] = [
   { id: 'vidu', name: 'Vidu', text: 'Vidu新用户注册获得一次性20试用积分。Free为$0/月；Q4 540P每秒消耗4积分；My References每月10个参考素材管理配额，不是免费视频生成次数。',
     check: (o: Awaited<ReturnType<typeof extract>>['offers']) => o.length === 1 && o[0].type === 'new' && o[0].modalities.length === 1 && o[0].modalities[0] === 'video' && /20/.test(o[0].valueText) && !/每月\s*20\s*(试用)?积分|每月\s*10\s*(条视频|次视频|次生成)/.test(o[0].valueText) },
   { id: 'anthropic', name: 'Anthropic', text: 'Claude Startups原计划2026年5月推出（月份精度，无具体日）。2026年10月6日公布扩展：获批公司获一次性$1,000 Claude API额度，发放后6个月有效；首次使用Team的组织最多5个Premium席位免费一年，官方按年付$100/席/月算价值最高$6,000。第三方合作商最高$45,000优惠不是Anthropic API赠金。公司须成立5年内或近2年获融资、同域公司邮箱并审核；受限地区不适用。',
-    check: (o: Awaited<ReturnType<typeof extract>>['offers']) => o.length === 1 && o[0].type === 'apply' && o[0].modalities.length === 1 && o[0].modalities[0] === 'text' && o[0].usdEstimate === 1000 && o[0].usdMax === 7000 && o[0].claimStart === '2026-10-06' && (!o[0].publishedAt || o[0].publishedAt === '2026-10-06') },
+    check: (o: Awaited<ReturnType<typeof extract>>['offers']) => o.length === 1 && o[0].type === 'apply' && o[0].modalities.length === 1 && o[0].modalities[0] === 'text' && o[0].usdEstimate === null && o[0].usdMax === null && /1[,，]?000/.test(o[0].valueText) && o[0].claimStart === '2026-10-06' && (!o[0].publishedAt || o[0].publishedAt === '2026-10-06') },
   { id:'reset-same-day',name:'OpenAI',platformIds:['openai'],existing:'openai-reset-morning｜Codex 重置卡发放｜1张｜开始:2026-10-08｜发布:2026-10-08T12:00:00Z｜证据:https://fixture.invalid/morning',
     text:'OpenAI官方公告，发布时间2026-10-08T18:00:00Z：今天稍早我们已发放一张Codex重置卡。现在向所有Codex订阅用户独立再发放第二张重置卡，这是另一次额外发放，不是上午发放的传播进度说明。发放仅限今天，卡可保留到使用时。',
     check:o=>o.length===1&&o[0].tags?.includes('reset')===true&&o[0].claimStart==='2026-10-08'&&o[0].claimEnd==='2026-10-08'&&Date.parse(o[0].publishedAt??'')===Date.parse('2026-10-08T18:00:00Z')&&o[0].sameAs!=='openai-reset-morning' },
@@ -28,13 +28,13 @@ const cases: Case[] = [
   { id:'grant-vs-prize',name:'Example AI',text:'Example AI官方公告包含两项不同机制。编程比赛前三名每人奖励$1,000 API额度，仅赢家可获奖。另有独立科研资助，研究者提交课题材料，经人工审批可获最高$200 API额度，不参与排名或比赛；申请项目全年常驻。',
     check:o=>o.length===1&&o[0].type==='apply'&&o[0].endKind==='standing'&&/200/.test(o[0].valueText)&&!(/1,?000/.test(o[0].valueText)) },
   { id:'claim-vs-validity',name:'Example AI',text:'Example AI注册送$10模型推理API赠金。所有新账号可在2026年10月10日到10月12日（UTC）注册并领取，无需支付或绑卡，领取后的额度30天有效。仅限推理API，不能抵扣云服务器。',
-    check:o=>o.length===1&&o[0].type==='new'&&o[0].claimStart==='2026-10-10'&&o[0].claimEnd==='2026-10-12'&&/30/.test(o[0].creditValidity??'')&&o[0].usdEstimate===10 },
+    check:o=>o.length===1&&o[0].type==='new'&&o[0].claimStart==='2026-10-10'&&o[0].claimEnd==='2026-10-12'&&/30/.test(o[0].creditValidity??'')&&o[0].usdEstimate===null&&/10/.test(o[0].valueText) },
   { id:'official-wrong-monthly',name:'Example AI',target:{title:'发布会赠送一张重置卡',valueText:'今天向会员发一张额度重置卡',type:'perk',tags:['reset']},
     text:'Example AI 官方文档：Max 会员每月额外领取100美元API额度。这是新的独立长期福利，不属于套餐基础用量；按月自动到账。本页没有重置卡或发布会活动。',check:o=>o.length===0 },
   { id:'official-wrong-trial',name:'Example Video',target:{title:'7天每日签到送积分',valueText:'连续7天签到共25积分',type:'trial',tags:['daily']},
     text:'Example Video MCP首次体验可免费生成4条视频和20张图片，首次连接客户端自动到账。这个页面仅说明MCP试用，不涉及每日签到。',check:o=>o.length===0 },
   { id:'official-correct-monthly',name:'Example AI',target:{title:'Max每月额外API赠金',valueText:'每月100至200美元',type:'perk'},
-    text:'Example AI 官方额外赠金计划：两档Max会员每月分别获得100美元和200美元独立API赠金。它不是原套餐基础额度，免费加赠给已有会员，按月自动到账，月底失效，下一月重新发放。',check:o=>o.length===1&&o[0].usdEstimate===100&&o[0].usdMax===200&&!o[0].tags?.includes('reset') },
+    text:'Example AI 官方额外赠金计划：两档Max会员每月分别获得100美元和200美元独立API赠金。它不是原套餐基础额度，免费加赠给已有会员，按月自动到账，月底失效，下一月重新发放。',check:o=>o.length===1&&o[0].usdEstimate===null&&o[0].usdMax===null&&/100/.test(o[0].valueText)&&/200/.test(o[0].valueText)&&!o[0].tags?.includes('reset') },
 ];
 const results: object[] = [];
 const deadline=Date.now()+15*60_000;
@@ -46,7 +46,7 @@ for (const c of cases.filter(c => !selected.length || selected.includes(c.id))) 
     const r = await extract(c.name, `https://fixture.invalid/${c.id}`, c.text, () => undefined,
       { platformIds: c.platformIds??[c.id], existing: c.existing, verificationTarget:c.target?JSON.stringify(c.target):undefined, allowPaid: false, budget: modelBudget, deadlineAt: Math.min(deadline,Date.now() + 180_000) });
     const usable=c.target?r.offers.filter(o=>!officialActivityMismatch(c.target!,o)):r.offers;
-    const passed = c.check(usable), blockedByIdentity=r.offers.length-usable.length;
+    const passed = c.check(usable) && usable.every(o => o.usdEstimate === null && o.usdMax === null), blockedByIdentity=r.offers.length-usable.length;
     results.push({ id: c.id, passed, provider: r.provider, tokens: r.tokens, costCny: r.costCny, blockedByIdentity, offers: r.offers });
     console.log(JSON.stringify({ id: c.id, passed, provider: r.provider, tokens: r.tokens, costCny: r.costCny, offers: r.offers.length,blockedByIdentity }));
   } catch (error) {

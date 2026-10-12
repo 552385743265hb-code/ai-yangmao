@@ -4,6 +4,7 @@ import { beforeEach, afterEach, describe, expect, it } from 'vitest';
 import worker from '../src/worker/index';
 import { buildNotice } from '../src/worker/admin';
 import { offerIn } from '../src/shared/ingest';
+import {sha256} from '../src/shared/identity/normalize';
 import { liveStatus } from '../src/shared/lifecycle';
 
 let sqlite: DatabaseSync;
@@ -127,9 +128,9 @@ describe('V1 persisted valuation integration', () => {
 
   it('rejects inconsistent administrator amounts while ignoring extractor-supplied valuation on a new draft', async () => {
     await call('ingest/offers', [{ ...offer, valuation: { ...unpriced, reason: 'model generated audit' } }]);
-    expect((sqlite.prepare('SELECT valuation FROM offers WHERE id=?').get(offer.id) as any).valuation).toBeNull();
+    expect(JSON.parse((sqlite.prepare('SELECT valuation FROM offers WHERE id=?').get(offer.id) as any).valuation)).toMatchObject({version:'v2',status:'needs_judgment',usdEstimate:null});
     expect((await call(`admin/offers/${offer.id}/edit`, { fields: { valuation: priced, usdEstimate: 9 } }, 'admin')).status).toBe(400);
-    expect((sqlite.prepare('SELECT valuation FROM offers WHERE id=?').get(offer.id) as any).valuation).toBeNull();
+    expect(JSON.parse((sqlite.prepare('SELECT valuation FROM offers WHERE id=?').get(offer.id) as any).valuation)).toMatchObject({version:'v2',status:'needs_judgment',usdEstimate:null});
   });
 });
 
@@ -267,6 +268,11 @@ function changedOffer(valueText='200 tokens') {
   const benefit='Free '+valueText;
   return {...offer,valueText,sourceText:benefit+'. All users. No published end date.',evidence:{...evidence,excerpts:{...evidence.excerpts,benefit}}};
 }
+async function withAutomaticUsd(base:Record<string,any>,amount:number,max?:number) {
+  const quote=`Receives ${amount} USD free credit.${max===undefined?'':` Maximum grant ${max} USD credit.`}`;
+  const sourceText=Object.values(base.evidence.excerpts).filter(Boolean).join('\n')+'\n'+quote;
+  return {...base,sourceText,sourceFetch:{originalUrl:base.evidence.url,finalUrl:base.evidence.url,fetchedUrl:base.evidence.url,method:'direct',sourceVerified:true,truncated:false,contentHash:await sha256(sourceText)},valuationFactors:{kind:'direct_usd',amount:{value:amount,sourceId:'benefit',quote},...(max===undefined?{}:{maximum:{value:max,sourceId:'benefit',quote}}),sources:[{id:'benefit',url:base.evidence.url,checkedAt:base.evidence.capturedAt,excerpt:quote,priceBasis:'synthetic official grant terms'}]}};
+}
 function legacyProposal(candidate: object) {
   sqlite.prepare("INSERT INTO offer_proposals(offer_id,candidate,diff) VALUES('vendor-free',?,?)").run(JSON.stringify(candidate),JSON.stringify([{field:'valueText',from:'100 tokens',to:'200 tokens'}]));
 }
@@ -321,14 +327,15 @@ describe('official evidence verification', () => {
     const realChange=await call('ingest/offers',[{...next,valueText:'300 tokens',sourceText:'Free 300 tokens. All users. No published end date.',evidence:{...evidence,excerpts:{...evidence.excerpts,benefit:'Free 300 tokens'}}}]);
     expect((realChange.body.results as any[])[0].reviewState).toBe('pending_update');
   });
-  it('rejects an invalid merged valuation instead of queueing a maximum below the approved minimum',async()=>{
-    await call('ingest/offers',[{...offer,usdEstimate:20,usdMax:20}]);await call('admin/offers/vendor-free/approve',{},'admin');
-    await call('admin/offers/vendor-free/edit',{fields:{usdEstimate:20,valueText:'100 tokens, worth $20'}},'admin');
-    // Explicitly protect the approved estimate as an administrator correction.
-    sqlite.prepare("INSERT INTO offer_revisions(offer_id,diff,author) VALUES('vendor-free',?, 'admin')").run(JSON.stringify([{field:'usdEstimate',from:null,to:20}]));
+  it('protects a human amount and maximum together instead of mixing them with untrusted model money',async()=>{
+    await call('ingest/offers',[offer]);
+    expect((await call('admin/offers/vendor-free/edit',{fields:{usdEstimate:20,usdMax:20,valuation:null}},'admin')).status).toBe(200);
+    await call('admin/offers/vendor-free/approve',{},'admin');
     const result=await call('ingest/offers',[{...offer,usdEstimate:0,usdMax:0,valueText:'200 tokens',sourceText:'Free 200 tokens. All users. No published end date.',evidence:{...evidence,excerpts:{...evidence.excerpts,benefit:'Free 200 tokens'}}}]);
-    expect((result.body.results as any[])[0].error).toContain('校验');
-    expect(sqlite.prepare('SELECT count(*) n FROM offer_proposals').get()).toEqual({n:0});
+    expect((result.body.results as any[])[0].error).toBeUndefined();
+    const candidate=JSON.parse(String(sqlite.prepare('SELECT candidate FROM offer_proposals').get()?.candidate));
+    expect(candidate).toMatchObject({usdEstimate:20,usdMax:20,valuation:null});
+    expect(sqlite.prepare('SELECT usd_estimate,usd_max FROM offers').get()).toEqual({usd_estimate:20,usd_max:20});
   });
   it('preserves a manually edited proposal when a no-change extraction arrives',async()=>{
     await call('ingest/offers',[offer]);await call('admin/offers/vendor-free/approve',{},'admin');
@@ -546,9 +553,9 @@ describe('review gates and preserved public version', () => {
   });
 
   it('exposes original and candidate values for review while leaving the public offer unchanged', async () => {
-    await call('ingest/offers', [{...offer,usdEstimate:10}]);
+    await call('ingest/offers', [await withAutomaticUsd(offer,10)]);
     await call('admin/offers/vendor-free/approve', {}, 'admin');
-    await call('ingest/offers', [{ ...changedOffer(), usdEstimate: 0, models:['New Model'] }]);
+    await call('ingest/offers', [await withAutomaticUsd({...changedOffer(),models:['New Model']},0)]);
     sqlite.prepare("UPDATE offer_proposals SET diff='[]' WHERE offer_id='vendor-free'").run();
     const queue=await call('admin/queue',undefined,'admin');
     const proposal=(queue.body.pending as any[]).find(o=>o.id==='vendor-free');
@@ -608,9 +615,10 @@ describe('review gates and preserved public version', () => {
   ])('requires review for necessary field %s and preserves the published version', async (field, value) => {
     await call('ingest/offers', [offer]);
     await call('admin/offers/vendor-free/approve', {}, 'admin');
-    const changed = await call('ingest/offers', [{ ...offer, sourceText:'Free 200 tokens. Replacement terms for '+field, evidence:{...evidence,excerpts:{benefit:'Free 200 tokens. Replacement terms for '+field}}, [field]: value,
+    const rawChange={ ...offer, sourceText:'Free 200 tokens. Replacement terms for '+field, evidence:{...evidence,excerpts:{benefit:'Free 200 tokens. Replacement terms for '+field}}, [field]: value,
       ...(field === 'claimEnd' ? { endKind: 'date' } : {}),
-      ...(field === 'usdMax' ? { usdEstimate: 1 } : {}) }]);
+      ...(field === 'usdMax' ? { usdEstimate: 1 } : {}) };
+    const changed=await call('ingest/offers',[field==='usdMax'?await withAutomaticUsd(rawChange,1,10):rawChange]);
     expect((changed.body.results as { reviewState: string }[])[0].reviewState).toBe('pending_update');
     const pending = (await call('admin/queue', undefined, 'admin')).body.pending as { changedFields: string[] }[];
     expect(pending[0].changedFields).toContain(field);
@@ -670,6 +678,7 @@ describe('review gates and preserved public version', () => {
 
   it('keeps known dates and valuations when a later extraction omits them', async () => {
     await call('ingest/offers', [{ ...offer, usdEstimate: 1, usdMax: 10, claimStart: '2026-01-01', claimEnd: '2099-12-31', endKind: 'date' }]);
+    expect((await call('admin/offers/vendor-free/edit',{fields:{usdEstimate:1,usdMax:10,valuation:null}},'admin')).status).toBe(200);
     await call('admin/offers/vendor-free/approve', {}, 'admin');
     const result = await call('ingest/offers', [{ ...offer, audience: 'unclear', requirements: ['unknown'] }]);
     expect((result.body.results as { unchanged: boolean }[])[0].unchanged).toBe(true);

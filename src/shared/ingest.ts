@@ -1,3 +1,4 @@
+import {valuationSourceSchema} from './valuation-intake';
 import {membershipSchema} from './membership';
 import {sourceFetchSchema} from './identity/fetch-evidence';
 import { canonicalTermsSchema } from './identity/types';
@@ -40,7 +41,10 @@ export const offerIn = z.object({
   valueText: z.string().min(1).max(200),
   usdEstimate: z.number().nonnegative().nullable().optional(),
   usdMax: z.number().nonnegative().nullable().optional(),
-  // Pipeline never supplies or clears reviewed valuation; administrator/stored validation uses this field.
+  // Private recipe extracted by the model; Worker calculates and validates its result.
+  valuationFactors: z.json().optional(),
+  valuationSources: z.array(valuationSourceSchema).max(30).optional(),
+  // Collector-computed copies are ignored by intake; administrator/stored validation uses this field.
   valuation: valuationSchema.nullable().optional(),
   claimStart: isoDate.nullable().optional(),
   claimEnd: isoDate.nullable().optional(),

@@ -98,11 +98,11 @@ beforeEach(() => {
 afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); vi.unstubAllEnvs(); vi.restoreAllMocks(); });
 
 describe('lead evidence and value delivery', () => {
-  it('keeps an unreachable official link at media tier and preserves the complete value range', async () => {
+  it('keeps an unreachable official link at media tier and ignores untrusted model dollar amounts', async () => {
     const h = harness({ leads: [lead], pages: { [lead.url]: 403 } });
     const { runPipeline } = await import('../pipeline/run');
     await runPipeline();
-    expect(h.payloads('/offers')[0][0]).toMatchObject({ usdEstimate: 100, usdMax: 200, evidence: { tier: 'media', excerpts: { benefit } } });
+    expect(h.payloads('/offers')[0][0]).toMatchObject({ usdEstimate: null, usdMax: null, evidence: { tier: 'media', excerpts: { benefit } } });
     expect(h.payloads('/status')[0]).toMatchObject({ status: 'linked' });
   });
 
@@ -265,7 +265,7 @@ describe('scheduled official review integration',()=>{
     expect(h.reads).toContain('https://mcp.exa.ai/mcp');expect(h.reads).toContain('https://vendor.example/confirmed');
     const writes=h.payloads('/offers');expect(writes).toHaveLength(2);
     expect(writes[0][0].evidence.tier).toBe('media');
-    expect(writes[1][0]).toMatchObject({id:'vendor-max-api',officialReviewJobId:'12345678-1234-4234-8234-123456789012',usdMax:200,evidence:{url:'https://vendor.example/confirmed',tier:'site',excerpts:{benefit}}});
+    expect(writes[1][0]).toMatchObject({id:'vendor-max-api',officialReviewJobId:'12345678-1234-4234-8234-123456789012',usdMax:null,evidence:{url:'https://vendor.example/confirmed',tier:'site',excerpts:{benefit}}});
     expect((result.stats as any).officialReview.matched).toBe(1);
   });
   it('records search failure and coverage degradation rather than pretending no official benefit exists',async()=>{

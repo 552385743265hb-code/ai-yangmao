@@ -89,8 +89,8 @@ describe('model result contract', () => {
     expect(system).toContain('steps只写用户操作，不写审核员待办');
     expect(system).toContain('仅作内部判断依据，不得将核验经过、历史错误或审核待办复制到公开字段');
     expect(system).toContain('权益估值V1');
-    expect(system).toContain('金额来源依据保留在同页连续原文excerpts');
-    expect(system).toContain('本次模型不输出此字段');
+    expect(system).toContain('Fact 数字必须为');
+    expect(system).toContain('不要计算最终美元');
     expect(system).toContain('视频600秒生成素材');
     expect(system).toContain('输入输出各按对应单价');
     expect(system).toContain('不代表$0');
@@ -133,9 +133,9 @@ describe('model result contract', () => {
     expect(result.offers[0].excerpts).toEqual({});
   });
 
-  it('normalizes both endpoints of a value range, including string numbers', async () => {
+  it('ignores model-computed final amounts, including numeric strings', async () => {
     const { tidy } = await import('../pipeline/llm');
-    expect(tidy({ ...offer, usdEstimate: '100', usdMax: '200' } as never)).toMatchObject({ usdEstimate: 100, usdMax: 200 });
+    expect(tidy({ ...offer, usdEstimate: '100', usdMax: '200' } as never)).toMatchObject({ usdEstimate: null, usdMax: null });
   });
 
   it('keeps publication day precision without inventing a midnight timestamp', async () => {

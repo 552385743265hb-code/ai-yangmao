@@ -3,6 +3,9 @@ import { jsonrepair } from 'jsonrepair';
 // 模型抽取：主用 Gemini Flash 免费档，GLM Flash、OpenRouter 免费模型备用。
 // 模型只做"把官方文本抽成字段"，不做搜索；摘录必须能在原文里逐字找到，否则丢弃。
 import { norm } from './lib';
+import {collectValuationSources,valuationSourcesPrompt,type ValuationSourceCache} from './valuation-sources';
+const valuationSourceCache:ValuationSourceCache=new Map();
+import { getValuationCatalogPrompt } from '../src/shared/valuation-catalog';
 import { BudgetExhaustedError, BudgetLedgerError, MODEL_OUTPUT_LIMIT, type ModelPrice, type ModelReservation } from './budget';
 
 export interface Extracted {
@@ -18,6 +21,8 @@ export interface Extracted {
   requirements: string[];
   audience: 'new' | 'old' | 'all' | 'unclear';
   valueText: string;
+  valuationSources?: import("../src/shared/valuation-intake").ValuationCollectedSource[];
+  valuationFactors?: import("../src/shared/valuation").JsonValue;
   usdEstimate: number | null;
   usdMax?: number | null;
   claimStart: string | null;
@@ -66,9 +71,16 @@ const PROMPT = `你是"AI 羊毛牧场"的信息抽取器。下面是某个 AI �
   - phone/card/net 要有相应资格证据；不凭英文页面、海外品牌或域名就推断需要海外网络。AWS这个按量计费案例保留card，不自动添net或pay。
 - audience：new / old / all / unclear（原文没写清楚就用 unclear）
 - valueText：有具体数量和单位时必须写出（如"每天1000次请求""新用户2000万tokens"），数字从原文来。没有具体数量时只描述原文明示的权益及实际限制，不编数值、不输出“官方未写明具体额度：”等核验报告前缀。原文写了可用模型、速率限制或客户端范围时一并写清。
-- usdEstimate：权益估值V1，表示领取/激活后首30天购买参考值。当前正文有可定位的官方面额或数量及适用购买价时才能给候选数字，金额来源依据保留在同页连续原文excerpts；只有模型记忆、旧价格、访问失败或缺价格/单位/条件时填null，不编单价、汇率或每次Token。一次性固定赠金不按7天/30天缩减、不除以12；一年会员首月与全年完整权益分开，不能把整年值填首月。文本场景输入输出各按对应单价，限速率不能乘整月当典型用量；场景量依下方V1标准。人民币等须核实汇率来源日期，没有依据留null，不能默认7.1。
-- usdMax：只表示实际赠额/权益上限，不能装模型选择成本范围。申请最高额不是必得保底；当前抽取不生成管理员valuation，无保底申请的最高额写在valueText、两个美元暂留null，由管理员核实后以apply_max结构写入。不得输出、重新估算或覆盖已有reviewed valuation及对应美元。
-- valuation是管理员审核的结构化计算区，本次模型不输出此字段。价格来源、公式、必要假设由管理员核实后保存在valuation，内部缺口/旧值纠错留reviewMemo；不把计算核验过程塞进公开title/valueText/steps/creditValidity。价格参考不能替代活动发放方证据，也不改变收录范围或审批状态。beta_unpriced/unpriceable允许美元null，不代表$0；暂未查明仍待核查。
+- usdEstimate / usdMax：一律 null。不要计算最终美元，也不要输出 valuation；自动估值由服务器使用下方 valuationFactors 计算。不得重新估算或覆盖已有管理员 valuation。
+- valuationFactors：只抽当前原文明示的数量、单位、周期和参考类型，不能写模型记忆价格或最终金额。Fact 数字必须为 {value:原文数字,sourceId:"benefit",quote:"包含数字与单位的连续逐字原文"}，受控价格才可用 {catalogId:"下方目录中的真实ID"}。sources 固定为 [{id:"benefit",url:"当前来源URL",checkedAt:"当前日期YYYY-MM-DD",excerpt:"连续原文逐字摘录",priceBasis:"此原文支撑的数量或价格"}]。所有 literal Fact 的quote必须是excerpt子串，价格quote必须包含货币与计费单位；价格在另一个网站时不可伪装为本页。参考套餐/月付入门价格不由你猜：从目录选择明确匹配当前平台、套餐及计费周期的 catalogId；目录无匹配则unknown。
+  - 已明示USD固定赠金：{kind:"direct_usd",amount:Fact,period:"one_time",sources}；真实赠额上限可加maximum:Fact。只有明确写USD美元才用，不能看到$就猜币种。
+  - 会员/重置等套餐参考：{kind:"plan",currency:"USD"或"CNY"或"INR",price:Fact,billingPeriod:"month"或"year",months?:Fact,numerator?:Fact,denominator?:Fact,multiplier?:Fact,benchmark:"entry_plan"或"plan_fraction"或"plan_multiplier",referencePlan:"明确套餐名",sources}。重置卡明确按每张月费/4参考时 numerator可省略、denominator只能用受控{ruleId:"plan_fraction_quarter"}约定，不能假装原文写了4。ChatGPT额外重置由服务端选择Plus $20/4，不需要你编4。其他未授权分数保持unknown。
+  - 积分：{kind:"credits",currency:"USD"或"CNY"或"INR",entitlementUnits:Fact,cadence:"once"或"day"或"month",monthlyCap?:Fact,packageUnits:Fact,packagePrice:Fact,benchmark?:"entry_plan",referencePlan?:"目录中套餐全名",sources}。每日额度只填每日原数字，程序按覆盖天数汇总并按monthlyCap封顶，不计算一个正文中没有的新数值。目录已核实本平台同单位积分的普通月付入门档时可用entry_plan作暂定价格参照，不宣称已证明跨套餐互换；未知平台/单位/规格无匹配才unknown。cadence必须原文明示日/月/一次性。
+  - 申请最高额：{kind:"apply",maximum?:Fact,first30Maximum?:Fact,sources}；未明确首30天发放量则不要补。
+  - scenario 用于明示同模型的免费调用：{kind:"scenario",components:[{scenario:"text"或"coding"或"image"或"video"或"stt"或"tts",models:[{id:"原文明示模型",currency:"USD"或"CNY"或"INR",inputPrice:Fact,outputPrice:Fact,tokenPriceUnits:Fact}],caps?:{totalTokens:Fact,quantity:Fact,dailyQuantity:Fact}}],sources}。价格使用同版本model目录Fact，inputPrice/outputPrice/tokenPriceUnits三项必须一起选同一个目录price ID，保留其原始每千或每百万计费单位。输入输出各按对应单价；unlimited不填虚构cap，标准用量由程序计算。覆盖时间明示时可加coverageDays:Fact，所有缺价保持null，不代表$0。
+  - 所有购买价格必须写目录或价格原文的currency，不能把CNY/INR当USD。非美元还须fx:{currency:"CNY"或"INR",usdRate:{catalogId:"当前ECB目录ID"},date:"ECB实际数据日"}；scenario的fx放对应component里。原文价格/币种/单位不匹配则unknown。
+  - 缺数量/匹配价格/支持方式：{kind:"unknown",reason:"供内部审核看的具体缺口",sources}；公测无匹配价格可加beta:true。不能把unknown当0。
+  原文数量与价格可能不同句，excerpt可用覆盖两者的一段连续原文。不能将计算、来源缺口或审核待办写进公开title/valueText/steps/creditValidity。
 - claimStart / claimEnd：官方时区下的日期 YYYY-MM-DD，没写就 null
 - 只有“2026年5月”时，不能输出2026-05-01；日精度不能补成00:00:00Z。原计划5月推出、本轮10月6日新增权益，抽当前扩展权益时claimStart=2026-10-06，publishedAt仅有日期就保留2026-10-06，不猜时刻。
 - 输出前逐项核对日期来源：原计划推出月份不能充当本次新增/扩展权益的开始日；只知道月份时不得补任何具体日，应留空。若正文明确本轮扩展的生效日期，则使用该日期。
@@ -268,7 +280,7 @@ export function tidy(o: Extracted): Extracted {
       ? /^\d{4}-\d{2}-\d{2}$/.test(o.publishedAt.trim()) ? o.publishedAt.trim() : new Date(o.publishedAt).toISOString() : null,
     models: [...new Set((Array.isArray(o.models) ? o.models.map(String) : typeof o.models === 'string' ? (o.models as string).split(/[,，、;；]+/) : []).map(x => x.trim()).filter(x => x && x.length <= 80 && !/^(等|系列|and more|etc\.?)$/i.test(x)))].slice(0, 80),
     steps: toList(o.steps).length && Array.isArray(o.steps) ? o.steps : typeof o.steps === 'string' ? [o.steps] : [],
-    usdEstimate: numberOrNull(o.usdEstimate), usdMax: numberOrNull(o.usdMax),
+    usdEstimate: null, usdMax: null,
     claimStart: isoOrNull(o.claimStart), claimEnd, creditValidity: o.creditValidity || null,
   };
 }
@@ -336,7 +348,9 @@ export async function extract(platformName: string, url: string, text: string, l
   const leadInstruction=opts.leadTarget?`\n你在复核尚未形成条目的受阻线索：${opts.leadTarget}。只处理这个目标，不能以同厂商其他赠额凑数。必须读原文，预告/进度/异常不自动视为新发放，历史真实权益仍可抽取。输出JSON顶层允许offers和leadAssessment：后者为{outcome:"not_benefit"|"existing"|"unresolved",reason:"具体中文理由",quote:"支持理由的连续原文",offerId:"仅existing时填索引中真实ID"}。有可收新权益填offers；原文明确只有异常/传播进度/无赠额的新闻且无独立可领权益才可not_benefit；同一次发放的预告或确认已存在用existing；正文不足或无法判断用unresolved，绝不把搜不到当不属实。非unresolved的quote必须原样来自本次正文，不来自标题或历史索引。offers非空时leadAssessment可以省略。`:'';
   const identityPrompt=!['shadow','enforce'].includes(process.env.IDENTITY_MODE??'')?'':`
 可选 identityFacts：若能逐项引用当前原文，可补 terms-v1 结构化事实。Fact 仅为 {state:'known',value:...,evidenceRefs:['benefit'|'eligibility'|'claim'|'validity']} 或 {state:'unknown'}。只引用对应连续原文，不能从中文展示文案倒推。字段：schemaVersion:'terms-v1'；issuerProductId；mechanism(signup_grant/recurring_quota/referral/identity_grant/trial/temporary_free_access/extra_reset/application_grant/other)；benefitPools[{poolKey,amount({value:规范十进制字符串,unit,currency:明确ISO代码或null}),cadence({kind:once}或{kind:calendar,unit:day/week/month,count:整数,timezone:明确时区或null}),models(数组),modalities(数组),creditValidity({kind:duration/absolute/no_expiry,value:字符串或null})}]；eligibility({audience:new/old/all,requirements:数组})；geography(数组)；claimChannels(数组)；costs({upfrontAmount:十进制字符串,currency:ISO,subscriptionRequired:布尔,autoRenewal:布尔或null})；claimWindow({startsAt,endsAt,timezone:可null})；occurrenceAnchor。除schemaVersion、benefitPools数组、poolKey外，全部字段须包Fact状态。未知池不造ID；未知产品、机制、独立轮次均unknown，美元符号不能猜USD。表达不完整时省略identityFacts，交给持久身份任务，不要制造事实。`;
-  const sys = identityPrompt + (opts.platformList ? base + TRIAGE + opts.platformList + known : base + same + known) + verification+leadInstruction;
+  const valuationSources=await collectValuationSources((opts.platformIds??[]).filter((id):id is string=>!!id),{deadlineAt:opts.deadlineAt,cache:valuationSourceCache});
+  const valuationPrompt="\n\n受控估值因子目录（仅允许当前平台/明确同版本模型匹配，目录是价格参照不是活动事实）：\n"+getValuationCatalogPrompt(new Date().toISOString())+'\n本次可信采集的价格/汇率正文（只能支撑估值因子，不替代活动原文；各sources用它的真实url/id/date/excerpt，价格literal quote逐字来自此页）：\n'+valuationSourcesPrompt(valuationSources);
+  const sys = valuationPrompt + identityPrompt + (opts.platformList ? base + TRIAGE + opts.platformList + known : base + same + known) + verification+leadInstruction;
   let lastErr: unknown;
   const all = providers().filter(p => !unavailableProviders.has(p.name));
   const free = all.filter(p => !p.paid), paid = all.filter(p => p.paid);
@@ -402,7 +416,7 @@ export async function extract(platformName: string, url: string, text: string, l
         const networkEvidence=/海外网络|网络限制|网络代理|境外\s*IP|海外\s*IP|\b(?:VPN|proxy|IP address|network restrictions?)\b/i.test(evidence)
           && !/无需.{0,5}(?:VPN|代理|海外网络)|no\s+(?:VPN|proxy)\s+(?:is\s+)?(?:needed|required)/i.test(evidence);
         const requirements=normalized.requirements.filter(r=>r!=='net'||networkEvidence);
-        return { ...normalized, requirements:requirements.length?requirements:['unknown'], publishedAt: groundedPublication(o.publishedAt, normalized.publishedAt, evidence), excerpts: keepVerbatim(o.excerpts, evidence) };
+        return { ...normalized,valuationSources, requirements:requirements.length?requirements:['unknown'], publishedAt: groundedPublication(o.publishedAt, normalized.publishedAt, evidence), excerpts: keepVerbatim(o.excerpts, evidence) };
       });
       return { offers, ...(leadResult?{leadAssessment:leadResult.assessment}:{}), tokens, costCny, provider: p.name };
     } catch (e) {

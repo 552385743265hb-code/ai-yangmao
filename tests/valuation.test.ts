@@ -170,6 +170,13 @@ describe('V2 valuation compatibility', () => {
     expect(JSON.stringify(publicSafeValuation(value))).not.toMatch(/private|selectedBy|reviewMemo|issues|reason/);
   });
 
+  it('retains dated FX and per-card inputs needed to reproduce V2 values', () => {
+    const value = { ...unpriced, version: 'v2', inputs: { cards: 8, benefitDays: 7, plan: 'Pro',
+      fx: { usdPerCny: 0.14942927245572862, date: '2026-10-09', source: 'https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml', reviewMemo: 'private' } } };
+    expect(publicSafeValuation(value)?.inputs).toEqual({ cards: 8, benefitDays: 7, plan: 'Pro',
+      fx: { usdPerCny: 0.14942927245572862, date: '2026-10-09', source: 'https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml' } });
+  });
+
   it('protects administrator V2 metadata from extractor updates and filters it on every public offer route', async () => {
     const f = auditFixture();
     try {
@@ -178,7 +185,7 @@ describe('V2 valuation compatibility', () => {
         formula: '100 积分 × ($15 ÷ 100 积分) = $15', inputs: { benchmarkType: 'entry_plan', referencePlan: 'Starter',
           pricingBasis: { packagePrice: 15, packageUnits: 100 }, calculationBasis: { quantity: 100, unit: '积分' } } };
       expect((await call('ingest/offers', [{ ...offer, usdEstimate: 999, valuation: { ...value, usdEstimate: 999 } }])).status).toBe(200);
-      expect(f.sqlite.prepare('SELECT valuation FROM offers WHERE id=?').get(offer.id)?.valuation).toBeNull();
+      expect(JSON.parse(String(f.sqlite.prepare('SELECT valuation FROM offers WHERE id=?').get(offer.id)?.valuation))).toMatchObject({version:'v2',status:'needs_judgment',usdEstimate:null,inputs:{calculationEngine:'v2-auto'}});
       expect((await call(`admin/offers/${offer.id}/edit`, { fields: { usdEstimate: 15, usdMax: null, valuation: value } }, true)).status).toBe(200);
       const stored = f.sqlite.prepare('SELECT valuation,usd_estimate,review_state FROM offers WHERE id=?').get(offer.id);
       expect(stored).toMatchObject({ usd_estimate: 15, review_state: 'pending' });

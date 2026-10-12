@@ -42,7 +42,7 @@ export async function adaptLegacyOffer(env:Env,offer:OfferIn,raw:unknown):Promis
  }
 
  const transport=z.object({identityFacts:canonicalTermsSchema.optional(),identityRequestId:z.string().min(1).max(160).optional()}).parse(raw);
- const payloadHash=await sha256(stableJson({offer,identityFacts:transport.identityFacts??null}));
+ const payloadHash=await sha256(stableJson({offer:{...offer,usdEstimate:null,usdMax:null,valuation:null},identityFacts:transport.identityFacts??null}));
  const request=transport.identityRequestId??payloadHash;
  const reservation=await commitIdentityMutation(env.DB,new MutationBuilder(env.DB,'legacy-request:'+request,payloadHash).plan([],{accepted:true}));
  if(reservation.status==='conflict')throw new IdentityError(409,'legacy request payload conflict');
