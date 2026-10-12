@@ -726,6 +726,21 @@ it('identity review shows the real incoming benefit and withholds identity decis
  expect(card.textContent).toContain('Qoder 限时免费模型');expect(card.textContent).toContain('调用不消耗 Credits');expect(card.textContent).toContain('历史活动尚未查完');
  expect(card.querySelector('[data-identity-action]')).toBeNull();expect(card.querySelector('[data-identity-target]')).toBeNull();
 });
+it('an imminent identity card shows deadline priority but still withholds the identity decision',()=>{
+ const f=fixture(()=>queue([]));f.run(`renderIdentityTasks(document.querySelector('#admBody'),{tasks:[{id:'expiring',kind:'identity',revision:0,candidateDisplay:{title:'临期福利'},reviewPreparation:{state:'needs_system_review',canDecide:false,urgency:'imminent',deadline:'2026-10-14',nextAttemptAt:'2026-10-12T07:00:00Z',reason:'系统仍在核对历史活动'},sources:[]}]})`);
+ const card=f.document.querySelector('[data-identity-task="expiring"]')!;
+ expect(card.textContent).toContain('2026-10-14');expect(card.textContent).toContain('优先核查');expect(card.textContent).toContain('最早可重试');expect(card.querySelector('[data-identity-action]')).toBeNull();
+});
+it('an urgent verified candidate offers a bounded immediate history check without approving it',async()=>{
+ let prepared=false;const writes:any[]=[];
+ const task={id:'urgent-manual',kind:'identity',revision:0,candidateDisplay:{title:'即将结束的权益'},reviewPreparation:{state:'needs_system_review',canDecide:false,urgency:'imminent',deadline:'2026-10-14',reason:'系统仍在核对历史活动'},sources:[{candidateId:'candidate',final_url:'https://vendor.example/notice',quotes:[],provenance:{sourceVerified:true,truncated:false}}]};
+ const f=fixture((url,init)=>{if(init?.method==='POST'){writes.push({url,body:JSON.parse(String(init.body))});prepared=true;return{status:'ready',revision:1};}if(url.includes('/identity/tasks'))return{tasks:[prepared?{...task,revision:1,reviewPreparation:{...task.reviewPreparation,state:'ready',canDecide:true,scanned:0},historyOptions:[]}:task]};return queue([]);});
+ await f.run('admQueue()');let card=f.document.querySelector('[data-identity-task="urgent-manual"]')!;
+ const button=card.querySelector('[data-identity-prepare-now]');expect(button).not.toBeNull();expect(card.querySelector('[data-identity-action]')).toBeNull();
+ button!.dispatchEvent(new f.window.Event('click'));await pause();await pause();
+ expect(writes).toHaveLength(1);expect(writes[0].url).toContain('/identity/tasks/urgent-manual/prepare');expect(writes[0].body.expectedRevision).toBe(0);
+ card=f.document.querySelector('[data-identity-task="urgent-manual"]')!;expect(card.querySelector('[data-identity-action="new"]')).not.toBeNull();
+});
 it('completed identity scan offers named historical activities without asking the reviewer to type an internal ID',async()=>{
  const requests:any[]=[];
  const task={id:'readable-task',kind:'identity',revision:3,candidateDisplay:{title:'新人赠额候选',valueText:'10 USD'},reviewPreparation:{state:'ready',canDecide:true,productId:'vendor',scanned:1,reason:'历史活动已核对'},historyOptions:[{entityId:'old-entity',offerId:'old-offer',title:'旧的注册礼',valueText:'10 USD',sourceUrl:'https://vendor.example/old'}],sources:[{candidateId:'candidate',final_url:'https://vendor.example/new',quotes:[{id:'benefit',quote:'Signup grants 10 USD.'}],facts:{schemaVersion:'terms-v1',issuerProductId:{state:'unknown'},mechanism:{state:'unknown'},benefitPools:[],eligibility:{state:'unknown'},geography:{state:'unknown'},claimChannels:{state:'unknown'},costs:{state:'unknown'},claimWindow:{state:'unknown'},occurrenceAnchor:{state:'unknown'}}}]};

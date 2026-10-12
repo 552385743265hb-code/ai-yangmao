@@ -114,6 +114,11 @@ identityAdminRoutes.get('/tasks/:id/comparisons',async c=>{
  const entries=rows.slice(0,40).map(r=>({entityId:r.id,entityRevision:r.business_revision,offerId:r.canonical_offer_id,title:r.title??'历史条目资料不全',valueText:r.value_text??'',reviewState:r.review_state,sourceUrl:r.source_url}));
  return c.json({issuerProductId:trusted[0],entries,complete:rows.length<=40,nextCursor:rows.length>40?rows[39].id:null,reason:rows.length>40?'正在继续读取同一发放产品的历史活动。':'同一发放产品的活动列表已读取；是否为同一次发放仍需核对权益与轮次。'});
 });
+identityAdminRoutes.post('/tasks/:id/prepare',async c=>{
+ await requireTaskSelected(c.env,c.req.param('id'));
+ const input=z.strictObject({requestId:z.string().min(1).max(160),expectedRevision:z.number().int().nonnegative()}).parse(await c.req.json());
+ return c.json(await scanIdentityTask(c.env.DB,c.req.param('id'),input));
+});
 identityAdminRoutes.post('/tasks/:id/resolve',async c=>{
  const raw=await c.req.json() as Record<string,unknown>;
  const service=new IdentityService(c.env.DB);

@@ -35,6 +35,16 @@ try{
  const sourced=await call('ingest/identity-preparations/'+otherTask.taskId+'/scan',{requestId:'recovered-source',expectedRevision:missing.revision,freshSource:{sourceText:text,sourceFetch:{originalUrl:'https://vendor.example/new',finalUrl:'https://vendor.example/new',fetchedUrl:'https://vendor.example/new',method:'direct',sourceVerified:true,truncated:false,contentHash:await sha256(text)}}});assert.equal(sourced.status,'ready');
  const rebound=await db.prepare('SELECT observation_id,source_fetch_id FROM intake_candidates WHERE id=?').bind(other.receipts[0].candidateId).first();assert.notEqual(rebound.observation_id,indirect.observationId);assert.ok(rebound.source_fetch_id);
  const preserved=await db.prepare('SELECT suggestion_json FROM review_tasks WHERE id=?').bind(otherTask.taskId).first();assert.equal(JSON.parse(preserved.suggestion_json).sourceReverifications[0].originalObservationId,indirect.observationId);
+ const makeTimedTask=async(name,claimEnd)=>{
+  const body=`Official ${name} campaign grants a separate free benefit to new accounts.`;
+  const observed=await call('ingest/observations',{requestId:name+'-observation',originalUrl:'https://vendor.example/'+name,finalUrl:'https://vendor.example/'+name,text:body,sourceId:'vendor-source',fetchKind:'direct',observedAt:'2026-10-12T12:00:00Z'});
+  const row=await call('ingest/candidates',{requestId:name+'-candidate',observationId:observed.observationId,extractionVersion:'local-v1',extractionComplete:true,candidates:[{inputId:name,span:{start:0,end:body.length,quote:body},quotes:[{id:'quote-1',start:0,end:body.length,quote:body}],rawCandidate:{...displayOffer(),id:name,title:name,...(claimEnd?{endKind:'date',claimEnd}:{})},facts:unknownIdentityTerms()}]});
+  return call('ingest/identity-candidates/'+row.receipts[0].candidateId+'/resolve',{requestId:name+'-resolve'});
+ };
+ const older=await makeTimedTask('ordinary-backlog',null);
+ const urgentEnd=new Date(Date.now()+2*86400_000).toISOString().slice(0,10),urgent=await makeTimedTask('imminent-benefit',urgentEnd);
+ const priority=await call('ingest/identity-preparations');assert.equal(priority.tasks[0].id,urgent.taskId);assert.ok(priority.tasks.some(task=>task.id===older.taskId));
+ const immediately=await call('admin/identity/tasks/'+urgent.taskId+'/prepare',{requestId:'immediate-history-check',expectedRevision:0},true);assert.equal(immediately.status,'ready');
  assert.equal((await db.prepare('SELECT count(*) n FROM offers').first()).n,before.offers);assert.equal((await db.prepare('SELECT count(*) n FROM review_decisions').first()).n,before.decisions);
 
  assert.deepEqual((await db.prepare('PRAGMA foreign_key_check').all()).results,[]);

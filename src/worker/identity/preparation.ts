@@ -15,8 +15,32 @@ type Preparation={kind:'identity_preparation_v1';status:'scanning'|'ready'|'need
 const empty=(status:Preparation['status'],reason:string,productId:string|null=null):Preparation=>({kind:'identity_preparation_v1',status,productId,cursor:null,scanned:0,entries:[],sourceObservationId:null,sourceUrl:null,reason,nextAttemptAt:null});
 function readPreparation(value:string|null):Preparation|null{if(!value)return null;const raw=JSON.parse(value);return raw.kind==='identity_preparation_v1'?raw as Preparation:null;}
 const sourceIsVerified=(source:{trust_json:string;text_truncated:number})=>{const trust=JSON.parse(source.trust_json);return trust.sourceVerified===true&&!source.text_truncated&&typeof trust.productId==='string';};
+export function identityUrgency(rawCandidates:string[],factCandidates:string[]=[]){
+ const now=Date.now();let earliest=Number.POSITIVE_INFINITY,deadline:string|null=null,hinted=false,expired=false;
+ for(const [index,raw] of rawCandidates.entries()){const candidate=JSON.parse(raw).candidate??{},facts=factCandidates[index]?JSON.parse(factCandidates[index]):null;
+  const structured=facts?.claimWindow?.state==='known'?facts.claimWindow.value?.endsAt:null;
+  const date=typeof candidate.claimEnd==='string'?candidate.claimEnd:typeof structured==='string'?structured:null;
+  const end=date?Date.parse(date+(date.length===10?'T23:59:59Z':'')):NaN;
+  if(Number.isFinite(end)&&end>=now&&end<earliest){earliest=end;deadline=date;}
+  if(Number.isFinite(end)&&end<now)expired=true;
+  if(/限时|免费期|截止|体验卡|limited[ -]?time|deadline|expires?/i.test(String(candidate.title??'')))hinted=true;
+ }
+ const remaining=earliest-now;
+ return {deadline,urgency:remaining<=3*86400_000?'imminent' as const:remaining<=7*86400_000?'time_limited' as const:deadline?'dated' as const:expired?'expired' as const:hinted?'time_limited' as const:null};
+}
+function evidenceRetryDelay(rawCandidates:string[],factCandidates:string[]){const urgency=identityUrgency(rawCandidates,factCandidates).urgency;return urgency==='imminent'?30*60_000:urgency==='time_limited'?60*60_000:6*60*60_000;}
 export async function preparationQueue(db:D1Database,products:string[]){
- const now=new Date().toISOString();const rows=(await db.prepare("SELECT id,revision FROM review_tasks WHERE kind IN ('identity','merge_conflict') AND (state IN ('open','manual') OR (state='checking' AND lease_until<?1)) AND EXISTS(SELECT 1 FROM task_candidates tc WHERE tc.task_id=review_tasks.id) AND NOT EXISTS(SELECT 1 FROM task_candidates tc JOIN intake_candidates c ON c.id=tc.candidate_id WHERE tc.task_id=review_tasks.id AND ((json_extract(c.raw_candidate_json,'$.candidate.platformId') IS NOT NULL AND NOT EXISTS(SELECT 1 FROM json_each(?2) selected WHERE selected.value='*' OR selected.value=json_extract(c.raw_candidate_json,'$.candidate.platformId'))) OR (json_extract(c.facts_json,'$.issuerProductId.state')='known' AND NOT EXISTS(SELECT 1 FROM json_each(?2) selected WHERE selected.value='*' OR selected.value=json_extract(c.facts_json,'$.issuerProductId.value'))))) AND (suggestion_json IS NULL OR json_extract(suggestion_json,'$.kind') IS NOT 'identity_preparation_v1' OR (json_extract(suggestion_json,'$.status') NOT IN ('ready','history_unusable') AND (json_extract(suggestion_json,'$.nextAttemptAt') IS NULL OR json_extract(suggestion_json,'$.nextAttemptAt')<=?1))) ORDER BY created_at,id LIMIT 4").bind(now,JSON.stringify(products)).all<{id:string;revision:number}>()).results;return {tasks:rows};
+ const now=new Date().toISOString(),selected=JSON.stringify(products);
+ const eligible=`FROM review_tasks task WHERE kind IN ('identity','merge_conflict') AND (state IN ('open','manual') OR (state='checking' AND lease_until<?1)) AND EXISTS(SELECT 1 FROM task_candidates tc WHERE tc.task_id=task.id) AND NOT EXISTS(SELECT 1 FROM task_candidates tc JOIN intake_candidates c ON c.id=tc.candidate_id WHERE tc.task_id=task.id AND ((json_extract(c.raw_candidate_json,'$.candidate.platformId') IS NOT NULL AND NOT EXISTS(SELECT 1 FROM json_each(?2) choice WHERE choice.value='*' OR choice.value=json_extract(c.raw_candidate_json,'$.candidate.platformId'))) OR (json_extract(c.facts_json,'$.issuerProductId.state')='known' AND NOT EXISTS(SELECT 1 FROM json_each(?2) choice WHERE choice.value='*' OR choice.value=json_extract(c.facts_json,'$.issuerProductId.value'))))) AND (suggestion_json IS NULL OR json_extract(suggestion_json,'$.kind') IS NOT 'identity_preparation_v1' OR (json_extract(suggestion_json,'$.status') NOT IN ('ready','history_unusable') AND (json_extract(suggestion_json,'$.nextAttemptAt') IS NULL OR json_extract(suggestion_json,'$.nextAttemptAt')<=?1)))`;
+ const source=`FROM task_candidates pt JOIN intake_candidates c ON c.id=pt.candidate_id WHERE pt.task_id=task.id`;
+ const deadline=`coalesce(json_extract(c.raw_candidate_json,'$.candidate.claimEnd'),CASE WHEN json_extract(c.facts_json,'$.claimWindow.state')='known' THEN json_extract(c.facts_json,'$.claimWindow.value.endsAt') END)`;
+ const days=`(julianday(${deadline})+CASE WHEN length(${deadline})=10 THEN 1 ELSE 0 END-julianday(?1))`;
+ const hint=`(instr(json_extract(c.raw_candidate_json,'$.candidate.title'),'限时')>0 OR instr(json_extract(c.raw_candidate_json,'$.candidate.title'),'免费期')>0 OR instr(json_extract(c.raw_candidate_json,'$.candidate.title'),'截止')>0 OR instr(json_extract(c.raw_candidate_json,'$.candidate.title'),'体验卡')>0 OR lower(json_extract(c.raw_candidate_json,'$.candidate.title')) LIKE '%limited%')`;
+ const priority=`CASE WHEN EXISTS(SELECT 1 ${source} AND ${days} BETWEEN 0 AND 3) THEN 0 WHEN EXISTS(SELECT 1 ${source} AND ${days} BETWEEN 0 AND 7) THEN 1 WHEN EXISTS(SELECT 1 ${source} AND ${hint} AND (${deadline} IS NULL OR ${days}>=0)) THEN 2 WHEN EXISTS(SELECT 1 ${source} AND ${days}>7) THEN 3 ELSE 4 END`;
+ const top=(await db.prepare(`SELECT id,revision ${eligible} ORDER BY ${priority},created_at,id LIMIT 4`).bind(now,selected).all<{id:string;revision:number}>()).results;
+ const oldest=await db.prepare(`SELECT id,revision ${eligible} ORDER BY created_at,id LIMIT 1`).bind(now,selected).first<{id:string;revision:number}>();
+ const tasks=oldest&&!top.slice(0,3).some(task=>task.id===oldest.id)?[...top.slice(0,3),oldest]:top;
+ return {tasks};
 }
 export async function preparationSource(db:D1Database,taskId:string){
  const task=await db.prepare("SELECT id FROM review_tasks WHERE id=? AND kind IN ('identity','merge_conflict') AND state IN ('open','manual','checking')").bind(taskId).first();if(!task)throw new IdentityError(404,'identity task missing');
@@ -37,6 +61,7 @@ export async function scanIdentityTask(db:D1Database,taskId:string,raw:unknown){
  if(!task||task.revision!==input.expectedRevision||!['open','manual','checking'].includes(task.state)||(task.state==='checking'&&task.lease_until&&Date.parse(task.lease_until)>Date.now()))throw new IdentityError(409,'identity task changed or leased');
  const sources=(await db.prepare(taskSourcesCte+" SELECT c.id,c.revision,c.raw_candidate_json,c.facts_json,c.observation_id,o.final_url,coalesce(f.provenance_json,o.trust_json) trust_json,coalesce(json_extract(f.provenance_json,'$.truncated'),o.text_truncated) text_truncated FROM task_candidates tc JOIN intake_candidates c ON c.id=tc.candidate_id JOIN source_observations o ON o.id=c.observation_id LEFT JOIN source_observation_fetches f ON f.id=c.source_fetch_id AND f.observation_id=o.id WHERE tc.task_id IN (SELECT id FROM task_sources) ORDER BY c.id LIMIT 11").bind(taskId).all<Source>()).results;
  if(!sources.length||sources.length>10)throw new IdentityError(409,'identity task needs a bounded candidate set');
+ const retryAt=()=>new Date(Date.now()+evidenceRetryDelay(sources.map(source=>source.raw_candidate_json),sources.map(source=>source.facts_json))).toISOString();
  let freshObservationId:string|null=null,freshFetchId:string|null=null;
  const sourceToRefresh=sources.find(source=>!sourceIsVerified(source))??sources[0];
  if(input.freshSource){const source=sourceToRefresh,candidate=JSON.parse(source.raw_candidate_json),offer=offerIn.safeParse(candidate.candidate);if(!offer.success)throw new IdentityError(400,'source candidate has no valid offer fields');
@@ -52,14 +77,14 @@ export async function scanIdentityTask(db:D1Database,taskId:string,raw:unknown){
  if(preparedObservationId){const observed=await db.prepare('SELECT trust_json,text_truncated FROM source_observations WHERE id=?').bind(preparedObservationId).first<{trust_json:string;text_truncated:number}>();const proof=observed?JSON.parse(observed.trust_json):null;if(proof?.sourceVerified===true&&!observed?.text_truncated&&typeof proof.productId==='string')trusted.push(proof.productId);}
  const products=[...new Set(trusted)];
  let next:Preparation;
- if(products.length!==1||sources.some(source=>!sourceIsVerified(source)&&!(freshObservationId&&source.id===sourceToRefresh.id))){next=empty('needs_source','仍有候选来源未核实发放产品；系统需逐条重新核验官方原文。');next.nextAttemptAt=new Date(Date.now()+6*3600_000).toISOString();}
+ if(products.length!==1||sources.some(source=>!sourceIsVerified(source)&&!(freshObservationId&&source.id===sourceToRefresh.id))){next=empty('needs_source','仍有候选来源未核实发放产品；系统需逐条重新核验官方原文。');next.nextAttemptAt=retryAt();}
  else {
   const product=products[0],parsedCandidates=sources.map(s=>offerIn.safeParse(JSON.parse(s.raw_candidate_json).candidate)),declared=parsedCandidates.filter(v=>v.success).map(v=>v.data.platformId);
-  if(parsedCandidates.some(v=>!v.success)){next=empty('needs_source','候选活动字段不完整，需要先恢复可核对的原始资料。');next.nextAttemptAt=new Date(Date.now()+6*3600_000).toISOString();}
-  else if(declared.some(id=>id!==product)){next=empty('needs_source','候选记录的发放产品与已核实的官方来源不一致，不能据此合并或建立新活动。');next.nextAttemptAt=new Date(Date.now()+6*3600_000).toISOString();}
+  if(parsedCandidates.some(v=>!v.success)){next=empty('needs_source','候选活动字段不完整，需要先恢复可核对的原始资料。');next.nextAttemptAt=retryAt();}
+  else if(declared.some(id=>id!==product)){next=empty('needs_source','候选记录的发放产品与已核实的官方来源不一致，不能据此合并或建立新活动。');next.nextAttemptAt=retryAt();}
   else {
   const platform=await db.prepare('SELECT status FROM platforms WHERE id=?').bind(product).first<{status:string}>();
-  if(platform?.status!=='approved'){next=empty('needs_source','发放产品尚未准入，不能判断是否重复。',product);next.nextAttemptAt=new Date(Date.now()+6*3600_000).toISOString();}
+  if(platform?.status!=='approved'){next=empty('needs_source','发放产品尚未准入，不能判断是否重复。',product);next.nextAttemptAt=retryAt();}
   else {
    const basis=prior?.productId===product&&prior.sourceObservationId===(preparedObservationId??sources[0].observation_id)?prior:empty('scanning','正在逐页读取该产品的历史活动。',product);
    const facts=canonicalTermsSchema.parse(JSON.parse(sources[0].facts_json));
