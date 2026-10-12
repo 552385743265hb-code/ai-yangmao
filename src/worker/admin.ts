@@ -2,6 +2,7 @@ import type {MembershipRequirement} from '../shared/membership';
 import {membershipAdminRoutes,prepareMembershipFields,MembershipError} from './membership';
 import {needsEvidence,reviewPreparation} from '../shared/review-preparation';
 import {closeIdentityLead} from './identity/lead-closure';
+import {ownerRejectInput,recordOwnerLabel} from './screening/labels';
 import {visibilityState,visibilityView} from './identity/visibility';
 import {canonicalLeadProjection} from './identity/lead-projection';
 import {notificationInheritance} from './identity/notification-inheritance';
@@ -237,7 +238,10 @@ admin.post('/offers/:ref/:action{approve|reject}', async c => {
   const o = await findOffer(c.env, c.req.param('ref'));
   if (!o) return c.json({ error: '找不到这条羊毛' }, 404);
   const action = c.req.param('action') as 'approve' | 'reject';
-  const body = await c.req.json().catch(() => ({})) as { reason?: string; reasonCode?: string; reviewer?: string; expectedReviewVersion?: string };
+  const body = await c.req.json().catch(() => ({})) as { reason?: string; reasonCode?: string; reasonCategory?: string; reviewer?: string; expectedReviewVersion?: string };
+  const ownerLabel = action === 'reject' ? ownerRejectInput(body) : null;
+  if (action === 'reject' && !ownerLabel) return c.json({ error: '请选择拒绝类别' }, 400);
+  if (ownerLabel) body.reasonCode = ownerLabel.code;
   const entity=await c.env.DB.prepare('SELECT id FROM benefit_entities WHERE canonical_offer_id=?').bind(o.id).first<{id:string}>();
   if(entity){
     const transport=body as typeof body & {identityTaskId?:string;expectedIdentityRevision?:number;requestId?:string};
@@ -248,6 +252,7 @@ admin.post('/offers/:ref/:action{approve|reject}', async c => {
     if(!belongs)return c.json({error:'审核任务不属于这条活动'},409);
     const requestId=transport.requestId??await sha256(stableJson({taskId,revision,action,actor:c.get('who'),reason:body.reason??null,reasonCode:body.reasonCode??'other'}));
     const receipt=await new IdentityService(c.env.DB).decideTask(taskId,{requestId,expectedRevision:revision,action,actor:c.get('who'),role:c.get('role'),reason:body.reason,reasonCode:body.reasonCode as never});
+    if (ownerLabel) await recordOwnerLabel(c.env.DB, { subjectKind: 'offer', subjectId: o.id, category: ownerLabel.category, actor: c.get('who'), justification: body.reason });
     return c.json({ok:true,code:shortCode(o.id),reviewState:action==='approve'?'approved':'rejected',identityDecision:receipt});
   }
   const d = db(c.env);
@@ -309,6 +314,7 @@ admin.post('/offers/:ref/:action{approve|reject}', async c => {
   }
   const end = claimEndAt(proposal ? proposalOffer(o, proposal.candidate) : o);
   const urgent = action === 'approve' && !!end && end.getTime() - Date.now() <= 48 * 3600_000 && end.getTime() > Date.now();
+  if (ownerLabel) await recordOwnerLabel(c.env.DB, { subjectKind: 'offer', subjectId: o.id, category: ownerLabel.category, actor: c.get('who'), justification: body.reason });
   return c.json({ ok: true, code: shortCode(o.id), title: o.title, reviewState: action === 'approve' ? 'approved' : 'rejected', sourceCleanStreak: streak, urgent });
 });
 
@@ -433,8 +439,10 @@ admin.post('/offers/:ref/reopen-visibility',async c=>{
 admin.post('/offers/:ref/unpublish', async c => {
   const o = await findOffer(c.env, c.req.param('ref'));
   if (!o) return c.json({ error: '找不到这条羊毛' }, 404);
-  const body = z.object({ reasonCode: z.string().max(40).default('other'), reason: z.string().min(2).max(500),expectedReviewVersion:z.string().optional() }).safeParse(await c.req.json().catch(() => null));
+  const body = z.object({ reasonCategory: z.string().max(40).optional(), reasonCode: z.string().max(40).default('other'), reason: z.string().min(2).max(500),expectedReviewVersion:z.string().optional() }).safeParse(await c.req.json().catch(() => null));
   if (!body.success) return c.json({ error: '请写明下架理由' }, 400);
+  const ownerLabel = ownerRejectInput(body.data);
+  if (ownerLabel) body.data.reasonCode = ownerLabel.code;
   if(await c.env.DB.prepare('SELECT id FROM benefit_entities WHERE canonical_offer_id=?').bind(o.id).first()){
     const version=c.req.header('If-Match')??body.data.expectedReviewVersion;if(!version)return c.json({error:'请携带当前活动版本 If-Match'},409);
     const requestId=await sha256(stableJson({offerId:o.id,action:'unpublish',version,body:body.data,actor:c.get('who')}));
@@ -445,6 +453,7 @@ admin.post('/offers/:ref/unpublish', async c => {
   await d.delete(s.offerProposals).where(eq(s.offerProposals.offerId, o.id));
   await d.update(s.offers).set({ reviewState: 'rejected', updatedAt: new Date().toISOString() }).where(eq(s.offers.id, o.id));
   await d.insert(s.reviews).values({ offerId: o.id, action: 'reject', reviewer: c.get('who'), reason: `下架：${body.data.reason}`, reasonCode: body.data.reasonCode });
+  if (ownerLabel) await recordOwnerLabel(c.env.DB, { subjectKind: 'offer', subjectId: o.id, category: ownerLabel.category, actor: c.get('who'), justification: body.data.reason });
   return c.json({ ok: true, code: shortCode(o.id), title: o.title, reviewState: 'rejected' });
 });
 
@@ -525,7 +534,13 @@ admin.post('/leads/:id/:action{dismiss|reviewing|retry}', async c => {
   if(!['new','reviewing'].includes(l.status)||body.expectedVersion!==leadReviewVersion(l))return c.json({error:'线索版本已变化或缺少版本，请刷新后处理'},409);
   if(l.resolution?.identityTaskIds?.length)return c.json({error:'请使用身份任务或拒绝决定的显式重开接口'},409);
   const resolution:LeadResolution={status:action==='dismiss'?'closed':'retry',jobId:crypto.randomUUID(),attempts:0,inconclusive:0,checkedAt:new Date().toISOString(),nextAttemptAt:action==='dismiss'?null:new Date().toISOString(),reason:String(body.reason??(action==='dismiss'?'管理员忽略线索':'管理员要求重新官方核验')).slice(0,1000),queries:[],candidates:[]};
-  if(c.env.IDENTITY_MODE==='enforce'&&action==='dismiss'){await closeIdentityLead(c.env.DB,l,resolution,l.raw??l.title??resolution.reason??'管理员关闭线索',{actor:c.get('who')});return c.json({ok:true,identityHandled:true});}
+  if(action==='dismiss'){
+    const ownerLabel=ownerRejectInput(body as {reasonCategory?:unknown;reasonCode?:unknown});
+    if(!ownerLabel)return c.json({error:'请选择拒绝类别'},400);
+    await closeIdentityLead(c.env.DB,l,resolution,l.raw??l.title??resolution.reason??'管理员关闭线索',{actor:c.get('who'),reasonCode:ownerLabel.code});
+    await recordOwnerLabel(c.env.DB,{subjectKind:'lead',subjectId:String(l.id),category:ownerLabel.category,actor:c.get('who'),justification:resolution.reason});
+    return c.json({ok:true,identityHandled:true});
+  }
   const changed=await d.update(s.leads).set({status:action==='dismiss'?'rejected':'reviewing',resolution}).where(and(eq(s.leads.id,l.id),eq(s.leads.status,l.status),sql`COALESCE(${s.leads.resolution},'')=COALESCE(${l.resolution?JSON.stringify(l.resolution):null},'')`)).returning({id:s.leads.id});
   return changed.length?c.json({ok:true}):c.json({error:'线索已更新，请刷新'},409);
 });

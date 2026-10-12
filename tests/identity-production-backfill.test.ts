@@ -22,7 +22,7 @@ it('global enforce wildcard includes admitted products without a silent first-tw
  }finally{f.sqlite.close();}
 });
 it('admin dismissal in enforce records a scoped decision without stopping unrelated future intake',async()=>{
- const f=auditFixture();try{const page=await f.call('admin/leads?status=reviewing',undefined,true);const lead=page.body.leads.find((x:any)=>x.id===1);expect(lead).toBeTruthy();const dismissed=await f.call('admin/leads/1/dismiss',{expectedVersion:lead.reviewVersion,reason:'管理员确认这条线索没有独立权益'},true);expect(dismissed.status).toBe(200);const next=await f.call('ingest/offers',[{...displayOffer(),identityRequestId:'after-admin-dismiss',sourceText:Object.values(displayOffer().evidence.excerpts).join('\n')}]);expect(next.body.results[0].error).toBeUndefined();expect(f.sqlite.prepare("SELECT count(*) n FROM review_decisions WHERE actor='admin'").get()).toEqual({n:1});
+ const f=auditFixture();try{const page=await f.call('admin/leads?status=reviewing',undefined,true);const lead=page.body.leads.find((x:any)=>x.id===1);expect(lead).toBeTruthy();const dismissed=await f.call('admin/leads/1/dismiss',{expectedVersion:lead.reviewVersion,reason:'管理员确认这条线索没有独立权益',reasonCategory:'other'},true);expect(dismissed.status).toBe(200);const next=await f.call('ingest/offers',[{...displayOffer(),identityRequestId:'after-admin-dismiss',sourceText:Object.values(displayOffer().evidence.excerpts).join('\n')}]);expect(next.body.results[0].error).toBeUndefined();expect(f.sqlite.prepare("SELECT count(*) n FROM review_decisions WHERE actor='admin'").get()).toEqual({n:1});
  }finally{f.sqlite.close();}
 });
 it('bounded readiness and object status expose actual missing work and completed receipts',async()=>{

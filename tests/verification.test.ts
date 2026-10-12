@@ -335,7 +335,7 @@ describe('official evidence verification', () => {
     await call('ingest/offers',[offer]);await call('admin/offers/vendor-free/approve',{},'admin');
     const next={...offer,valueText:'200 tokens',sourceText:'Free 200 tokens. All users. No published end date.',evidence:{...evidence,excerpts:{...evidence.excerpts,benefit:'Free 200 tokens'}}};
     await call('ingest/offers',[next]);
-    expect((await call('admin/offers/vendor-free/reject',{reason:'不要这次变更'},'admin')).status).toBe(200);
+    expect((await call('admin/offers/vendor-free/reject',{reason:'不要这次变更',reasonCode:'other'},'admin')).status).toBe(200);
     const again=await call('ingest/offers',[{...next,id:'vendor-another-key',evidence:{...next.evidence,capturedAt:new Date().toISOString(),pageHash:'c'.repeat(64),excerpts:{...next.evidence.excerpts,benefit:'Free 200 tokens. All users.'}}}]);
     expect(sqlite.prepare('SELECT count(*) n FROM offers').get()).toEqual({n:1});
     expect(sqlite.prepare('SELECT count(*) n FROM offer_proposals').get()).toEqual({n:0});
@@ -1111,7 +1111,7 @@ describe('stuck lead rescue lifecycle',()=>{
   });
   it('ignores stale task results after an administrator ends a lead',async()=>{
     seed();const lease=await call('ingest/lead-reviews/1312/claim',{});
-    await call('admin/leads/1312/dismiss',{expectedVersion:((await call('admin/queue',undefined,'admin')).body.leadTasks as any[])[0].reviewVersion,reason:'并非独立发放，管理员核对原文'},'admin');
+    await call('admin/leads/1312/dismiss',{expectedVersion:((await call('admin/queue',undefined,'admin')).body.leadTasks as any[])[0].reviewVersion,reason:'并非独立发放，管理员核对原文',reasonCategory:'other'},'admin');
     const result=await call('ingest/lead-reviews/1312/result',{jobId:lease.body.jobId,outcome:'manual',reason:'旧任务',queries:[],candidates:[]});
     expect(result.status).toBe(409);
     expect((sqlite.prepare('SELECT status FROM leads WHERE id=1312').get() as any).status).toBe('rejected');
@@ -1142,7 +1142,7 @@ it('leased lead extraction cannot publish automatically or overwrite an existing
 it('dismissal during lead processing stops a late new draft insert',async()=>{
   sqlite.prepare("INSERT INTO leads(id,origin,url,title,status) VALUES(1312,'aihot','https://vendor.example/free','Vendor 免费额度','reviewing')").run();
   const lease=await call('ingest/lead-reviews/1312/claim',{});
-  await call('admin/leads/1312/dismiss',{expectedVersion:((await call('admin/queue',undefined,'admin')).body.leadTasks as any[])[0].reviewVersion},'admin');
+  await call('admin/leads/1312/dismiss',{expectedVersion:((await call('admin/queue',undefined,'admin')).body.leadTasks as any[])[0].reviewVersion,reasonCategory:'other'},'admin');
   const result=await call('ingest/offers',[{...offer,leadId:1312,leadReviewJobId:lease.body.jobId}]);
   expect((result.body.results as any[])[0].error).toBeTruthy();
   expect((sqlite.prepare('SELECT count(*) n FROM offers').get() as any).n).toBe(0);
