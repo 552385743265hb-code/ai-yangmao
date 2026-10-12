@@ -5,7 +5,7 @@
   "scripts": {
     "build:web": "bash web/build.sh",
     "dev": "npm run build:web && wrangler dev",
-    "deploy": "npm run build:web && wrangler deploy",
+    "deploy": "npm run build:web && wrangler deploy --keep-vars",
     "db:generate": "drizzle-kit generate",
     "db:migrate:local": "wrangler d1 migrations apply ai-yangmao --local",
     "db:migrate": "wrangler d1 migrations apply ai-yangmao --remote",
