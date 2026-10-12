@@ -33,6 +33,24 @@ function publicOffer(run: (code: string) => any, extra: Record<string, unknown> 
 }
 
 describe('frontend review workflow', () => {
+  it('labels approved legacy membership as an automatic-matching gap rather than a new offer review', () => {
+    const page = fixture(() => ({}));
+    const membershipRequirement = { schemaVersion: 'membership-v1', status: 'needs_review',
+      catalogRevision: 2, anyOf: [], evidenceUrls: [], legacyText: ['OpenCode Go 或 OpenCode Go Plus'] };
+    publicOffer(page.run, { r: ['member:OpenCode Go 或 OpenCode Go Plus'], membershipRequirement });
+    const chip = page.run('reqChips(OFFERS[0],true)');
+    expect(chip).toContain('活动已批准');
+    expect(chip).toContain('自动匹配未完成');
+    expect(chip).not.toContain('待核实：');
+    expect(page.run("reqLabel('membership_unknown')")).toContain('已批准');
+    expect(page.run('condForm()')).toContain('只看确定符合的');
+  });
+  it('still blocks acceptance when a pending update introduces unconfirmed membership', () => {
+    const page = fixture(() => ({}));
+    const html = page.run("reviewActions({pendingUpdate:true,status:'active',evidenceTier:'docs',membershipRequirement:{status:'needs_review'},checks:[{field:'membershipRequirement',level:'info'}]},false)");
+    expect(html).toContain('disabled');
+    expect(html).not.toContain('data-act="approve"');
+  });
   it('also shows valuation in identity-managed approval tasks', async () => {
     const f=fixture(()=>queue([]));
     f.run(`renderIdentityTasks(document.querySelector('#admBody'),{tasks:[{id:'valuation-task',kind:'initial',display:{title:'待审活动',valuation:{version:'v2',status:'unpriceable',method:'none',period:'first30',usdEstimate:null,usdMax:null,formula:null,assumptions:[],sources:[]}},sources:[]}]})`);
