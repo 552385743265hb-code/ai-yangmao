@@ -3,6 +3,29 @@ import {it,expect} from 'vitest';
 import {auditFixture} from './fixtures/identity/audit';
 import {displayOffer} from './fixtures/identity/offer';
 import {captureLocalSnapshot,buildBackfillPlan,applyBackfillPage} from '../scripts/identity/backfill';
+import {reviewPreparation} from '../src/shared/review-preparation';
+it('a failed automatic scope search no longer blocks explicit review when official benefit text is already present',()=>{
+ const evidence={tier:'docs',excerpts:{benefit:'compose_video 工具调用费用限时免费'}};
+ const officialReview={status:'failed',reason:'资格和领取方式尚未核实',nextAttemptAt:'2026-10-12T08:21:20Z'} as never;
+ expect(reviewPreparation({evidence,officialReview})).toMatchObject({stage:'ready',recommendation:'review'});
+ expect(reviewPreparation({evidence,officialReview,verifyResult:'evidence_missing'})).not.toMatchObject({stage:'ready'});
+ expect(reviewPreparation({evidence:{...evidence,excerpts:{benefit:'限免'}},officialReview})).not.toMatchObject({stage:'ready'});
+});
+it('a previously blocked managed draft can be approved explicitly when its saved official benefit is sufficient',async()=>{
+ const f=auditFixture();try{
+  const offer=displayOffer();offer.evidence.excerpts={benefit:'Campaign signup-2026 grants 10 USD to new individual accounts.'};
+  await f.call('ingest/offers',[offer],false,{IDENTITY_MODE:'off'});
+  const plan=await buildBackfillPlan(await captureLocalSnapshot(f.db,{environment:'synthetic',sourceDatabaseId:'manual-fallback',sourceCodeSha:'a'.repeat(40),approvedBy:'test'}));
+  await applyBackfillPage(f.db,plan,{environment:'synthetic',approvedPlanHash:plan.planHash,actor:'test'});
+  f.sqlite.prepare('UPDATE offers SET official_review=? WHERE id=?').run(JSON.stringify({status:'failed',reason:'资格和领取方式页面暂不可读',checkedAt:'2026-10-12T00:00:00Z',nextAttemptAt:'2026-10-12T08:00:00Z',attempts:4,queries:[],candidates:[],changedFields:[]}),offer.id);
+  const q=await f.call('admin/queue',undefined,true);expect(q.body.pending[0].preparation).toMatchObject({stage:'ready'});
+  expect((await f.call('offers')).body.offers).toHaveLength(0);
+  const approved=await f.call('admin/offers/'+offer.id+'/approve',{expectedReviewVersion:q.body.pending[0].reviewVersion},true);
+  expect(approved.status,JSON.stringify(approved.body)).toBe(200);
+  expect((await f.call('offers')).body.offers).toHaveLength(1);
+  expect((await f.call('admin/queue',undefined,true)).body.pending).toHaveLength(0);
+ }finally{f.sqlite.close();}
+});
 async function seed(f:ReturnType<typeof auditFixture>){await f.call('ingest/offers',[displayOffer()],false,{IDENTITY_MODE:'off'});const p=await buildBackfillPlan(await captureLocalSnapshot(f.db,{environment:'synthetic',sourceDatabaseId:'review-ui',sourceCodeSha:'a'.repeat(40),approvedBy:'test'}));await applyBackfillPage(f.db,p,{environment:'synthetic',approvedPlanHash:p.planHash,actor:'test'});}
 it('admin queue includes a migrated pending activity once, with its rich card and authoritative totals',async()=>{const f=auditFixture();try{await seed(f);const q=await f.call('admin/queue',undefined,true);expect(q.status).toBe(200);expect(q.body.pending).toHaveLength(1);expect(q.body.pending[0]).toMatchObject({title:displayOffer().title,reviewVersion:expect.stringMatching(/^identity:/),value:displayOffer().valueText});expect(q.body.counts).toMatchObject({activities:1,leadReview:1,paused:0});}finally{f.sqlite.close();}});
 it('short official excerpts enter automatic evidence work and remain pending, never treated as ready by source tier',async()=>{const f=auditFixture();try{const o=displayOffer();o.evidence.excerpts={benefit:'限时免费'};await f.call('ingest/offers',[o],false,{IDENTITY_MODE:'off'});const p=await buildBackfillPlan(await captureLocalSnapshot(f.db,{environment:'synthetic',sourceDatabaseId:'review-ui',sourceCodeSha:'a'.repeat(40),approvedBy:'test'}));await applyBackfillPage(f.db,p,{environment:'synthetic',approvedPlanHash:p.planHash,actor:'test'});const q=await f.call('ingest/official-reviews/queue');expect(q.body.jobs.map((x:any)=>x.id)).toContain(o.id);const claimed=await f.call('ingest/official-reviews/'+o.id+'/claim',{});expect(claimed.body.claimed).toBe(true);const admin=await f.call('admin/queue',undefined,true);expect(admin.body.pending[0].preparation.stage).toBe('collecting');expect(admin.body.pending[0].reviewState).toBe('pending');}finally{f.sqlite.close();}});

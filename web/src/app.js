@@ -1632,7 +1632,9 @@ function officialReviewBlock(o) {
   if(!r && o.evidenceTier!=='media'&&o.preparation?.stage!=='collecting')return '';
   const at=value=>Number.isNaN(Date.parse(value))?'时间未知':new Date(value).toLocaleString('zh-CN');
   const labels={checking:'正在搜索与复核',matched:'AI 已匹配官方原文，待你审核',unresolved:'暂未找到充分官方证据',failed:'复核受阻，等待重试'};
-  return `<details class="small" data-official-review><summary style="cursor:pointer;font-weight:600">🔎 ${r?labels[r.status]||'官方复核':'等待自动搜索官方出处'}</summary>
+  const manualReady=o.preparation?.stage==='ready'&&['failed','unresolved'].includes(r?.status);
+  const historical=o.reviewState==='approved';
+  return `<details class="small" data-official-review><summary style="cursor:pointer;font-weight:600">🔎 ${historical?'审批前的补证记录（已人工通过）':manualReady?'系统补证未完成 · 可人工审核':r?labels[r.status]||'官方复核':'等待自动搜索官方出处'}</summary>
     <p>${esc(r?.reason || '工作流会自动搜索官网、官方文档和已登记的官方 X 账号，找到原文后补全待审字段。')}</p>
     ${r?`<p>已尝试 ${r.attempts} 次 · ${esc(at(r.checkedAt))}${r.nextAttemptAt?` · 下次重试 ${esc(at(r.nextAttemptAt))}`:r.status==='unresolved'||r.status==='failed'?(o.evidenceTier==='media'?' · 等待人工核对，可重新排队':' · 已保留现有官方证据，等待人工审核'):''}</p>`:''}
     ${r?.originUrl?`<p>原社区线索：<a href="${esc(r.originUrl)}" target="_blank" rel="noopener">${esc(r.originUrl)}</a></p>`:''}

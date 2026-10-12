@@ -6,6 +6,7 @@ export function reviewPreparation(o:EvidenceOffer){
  if(!needsEvidence(o))return {stage:'ready' as const,recommendation:'review' as const,label:'等待你决定',reason:'已保留权益原文。请核对领取条件与重复关系，再决定收录；系统不会自动上架。'};
  const r=o.officialReview;
  if(r?.status==='checking')return {stage:'collecting' as const,label:'系统补证中',reason:'正在读取官方出处、核对原文；完成后仍需人工决定。'};
+ if(r&&['failed','unresolved'].includes(r.status)&&!needsEvidence(o,false))return {stage:'ready' as const,recommendation:'review' as const,label:'等待你决定',reason:'系统未能补齐资格或领取方式原文，但已保存权益原文。请亲自核对官方页面与领取条件后再决定；系统不会自动通过。'};
  if(r&&!r.nextAttemptAt)return {stage:'blocked' as const,label:'补证受阻，暂缓收录',reason:r.reason||'未找到足够证据。建议保留待审或补充准确官方入口，不建议直接通过。'};
  return {stage:'collecting' as const,label:r?.nextAttemptAt?'等待系统重试':'等待系统补证',reason:r?.reason||'官方权益原文不足，已纳入自动补证队列；无需先作通过或拒绝决定。'};
 }
