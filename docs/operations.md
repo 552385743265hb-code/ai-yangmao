@@ -157,7 +157,7 @@ OpenRouter默认备用为`openrouter/free`；404须检查模型可用性，不�
 
 ## 选择式会员资格运维
 
-`GET /api/memberships`返回已核实/历史目录，`GET /api/admin/memberships`包含待核实项。管理员通过POST同路径创建pending产品/套餐；`/:id/impact?kind=product|plan`预览影响，`/:id/verify`带目录和条目修订及影响确认独立核实。目录核实不批准福利。目录缺项不准按品牌或档位相似度猜测。
+`GET /api/memberships`返回已核实、历史及待核实目录；访客可以选待核实项，但匹配结果仍为“还需确认”，不能因此认定福利可领。`GET /api/admin/memberships`返回同一完整目录供审核。管理员通过POST同路径创建pending产品/套餐，公开选择器随目录更新自动出现新项；`/:id/impact?kind=product|plan`预览影响，`/:id/verify`带目录和条目修订及影响确认独立核实。审核新厂商或新档位时，按仓库yangmao-review技能逐项建立目录、读回公开接口与访客选择器，再确认结构化资格。目录核实不批准福利。目录缺项不准按品牌或档位相似度猜测。
 
 0036新增会员目录、目录审计与offers.membership_requirement；0037以保留行的方式扩展benefit_versions到terms-v2并增加版本迁移映射。发布前备份所涉表与当前版本；D1有FTS虚拟表时整库export不支持，使用明确的`--table`导出相关表并保存只读JSON快照。
 
