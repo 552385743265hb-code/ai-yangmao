@@ -1,6 +1,6 @@
 # 文档索引
 
-当前文档校对：2026-10-09。按下面的职责找现役答案；带日期的记录仅证明当次操作与快照，不能据此批准活动或推断当前数量。
+当前文档校对：2026-10-12。按下面的职责找现役答案；带日期的记录仅证明当次操作与快照，不能据此批准活动或推断当前数量。
 
 ## 现役文档
 
@@ -15,20 +15,20 @@
 | 逐条审核的操作流程 | [仓库审核技能](../.claude/skills/yangmao-review/SKILL.md) |
 | 外部 Agent 查询与 MCP 接入 | [公开接入规格](specs/public-agent-access.md) / [公开 Skill](../integrations/agent/ai-yangmao-public/SKILL.md) |
 | Hermes 的查询和管理操作 | [Hermes 接入模板](../integrations/hermes/ai-yangmao/SKILL.md)；安装副本需单独核对 |
-| 最近一次知识与运行态核对 | [2026-10-09 整理凭证](closeout-2026-10-09.md) |
+| 最近一次知识与运行态核对 | [2026-10-12 整理凭证](closeout-2026-10-12.md) |
 
 ## 方案与实施范围
 
 - [20:05会员资格上线结果](membership-live-2026-10-11.md)：D1关联索引、0036–0038、目录与保守资格迁移及线上验证已完成。
 
-- [选择式会员资格交付与发布状态](membership-release-2026-10-11.md)：代码、本地浏览器与回滚验收完成；生产迁移因D1当日读取额度耗尽受阻，尚未上线。
+- [选择式会员资格交付记录](membership-release-2026-10-11.md)：记录当时 D1 配额受阻的快照；之后的上线结果见[20:05会员资格上线结果](membership-live-2026-10-11.md)。
 
 - [会员资格选择式录入与匹配设计](superpowers/specs/2026-10-11-membership-eligibility-design.md)：日常审核不再手写会员句子，采用标准目录、条件选择和结构化匹配；用户已确认并直接实施，生产结果见发布凭证。
 
-- [去重第二、三阶段正式入口](specs/dedupe-identity-2026-10-10/README.md)：七个增量、九项任务的源码与本地验证；独立 PR 尚未合并或部署。
+- [去重第二、三阶段正式入口](specs/dedupe-identity-2026-10-10/README.md)：七个增量、九项任务已合并并发布；后续启用和历史数据边界见[身份启用验证](dedupe-activation-2026-10-11.md)。
 - [主规格](specs/dedupe-identity-2026-10-10/SPEC.md) / [实施任务](specs/dedupe-identity-2026-10-10/IMPLEMENTATION.md) / [45 组验收](specs/dedupe-identity-2026-10-10/ACCEPTANCE.md)。旧草稿只供历史追溯。
 - [交付证据](specs/dedupe-identity-2026-10-10/P3-C-EVIDENCE.md) / [发布与兼容回滚](specs/dedupe-identity-2026-10-10/RELEASE.md)：区分本地工程验证、尚缺人工语料的现场验收及生产授权。
-- [第一阶段去重修复验证](phase1-dedupe-fix-2026-10-10.md)：三个具体缺陷的修复与测试；包含0016增量迁移，部署前须先迁移。远端提交不等于生产上线。
+- [第一阶段去重修复验证](phase1-dedupe-fix-2026-10-10.md)：三个具体缺陷及0016迁移的历史验收凭证；现役迁移台账以目标环境实时检查为准。
 - [权益估值与存量字段补全方案 V1](plans/benefit-valuation-and-field-completion-v1.md)：V1月度比较窗口、创作者标准用量、多模型成本中位、公测未定价与字段结案的历史方案；53条管理员研判已承接到V2，现役规则以数据合同和通用规则为准。
 - [权益估值与存量字段补全方案 V2](plans/benefit-valuation-and-field-completion-v2.md)：落实53条管理员研判，新增入门套餐、模型代理、保守算法及特殊用量参照；[逐条结果](valuation-v2-results-2026-10-11.md)记录数值和实际录入状态。
 
