@@ -11,7 +11,7 @@ import {MutationBuilder,commitIdentityMutation,readIdentityReceipt} from './comm
 type Task={id:string;kind:string;state:string;revision:number;suggestion_json:string|null;lease_until:string|null};
 type Source={id:string;revision:number;raw_candidate_json:string;facts_json:string;observation_id:string;trust_json:string;text_truncated:number;final_url?:string};
 type Entry={entityId:string;revision:number;offerId:string|null;title:string;valueText:string;reviewState:string|null;sourceUrl:string|null;sameSource:boolean};
-type Preparation={kind:'identity_preparation_v1';status:'scanning'|'ready'|'needs_source'|'history_unusable';productId:string|null;cursor:string|null;scanned:number;entries:Entry[];sourceObservationId:string|null;sourceOriginalObservationId?:string|null;sourceCandidateId?:string|null;sourceReverifications?:Array<{candidateId:string;originalObservationId:string;replacementObservationId:string;fetchId:string}>;sourceUrl:string|null;reason:string;nextAttemptAt:string|null;previousModelSuggestion?:unknown;modelResult?:unknown};
+type Preparation={kind:'identity_preparation_v1';status:'scanning'|'ready'|'needs_source'|'history_unusable';productId:string|null;cursor:string|null;scanned:number;entries:Entry[];sourceObservationId:string|null;sourceOriginalObservationId?:string|null;sourceCandidateId?:string|null;sourceReverifications?:Array<{candidateId:string;originalObservationId:string;replacementObservationId:string;fetchId:string}>;sourceUrl:string|null;reason:string;nextAttemptAt:string|null;previousModelSuggestion?:unknown;modelResult?:unknown;manualHint?:{kind:'suspected_duplicate'|'previously_rejected';reason:string;actor:string;at:string}};
 const empty=(status:Preparation['status'],reason:string,productId:string|null=null):Preparation=>({kind:'identity_preparation_v1',status,productId,cursor:null,scanned:0,entries:[],sourceObservationId:null,sourceUrl:null,reason,nextAttemptAt:null});
 function readPreparation(value:string|null):Preparation|null{if(!value)return null;const raw=JSON.parse(value);return raw.kind==='identity_preparation_v1'?raw as Preparation:null;}
 const sourceIsVerified=(source:{trust_json:string;text_truncated:number})=>{const trust=JSON.parse(source.trust_json);return trust.sourceVerified===true&&!source.text_truncated&&typeof trust.productId==='string';};
@@ -36,7 +36,7 @@ export async function preparationQueue(db:D1Database,products:string[]){
  const deadline=`coalesce(json_extract(c.raw_candidate_json,'$.candidate.claimEnd'),CASE WHEN json_extract(c.facts_json,'$.claimWindow.state')='known' THEN json_extract(c.facts_json,'$.claimWindow.value.endsAt') END)`;
  const days=`(julianday(${deadline})+CASE WHEN length(${deadline})=10 THEN 1 ELSE 0 END-julianday(?1))`;
  const hint=`(instr(json_extract(c.raw_candidate_json,'$.candidate.title'),'限时')>0 OR instr(json_extract(c.raw_candidate_json,'$.candidate.title'),'免费期')>0 OR instr(json_extract(c.raw_candidate_json,'$.candidate.title'),'截止')>0 OR instr(json_extract(c.raw_candidate_json,'$.candidate.title'),'体验卡')>0 OR lower(json_extract(c.raw_candidate_json,'$.candidate.title')) LIKE '%limited%')`;
- const priority=`CASE WHEN EXISTS(SELECT 1 ${source} AND ${days} BETWEEN 0 AND 3) THEN 0 WHEN EXISTS(SELECT 1 ${source} AND ${days} BETWEEN 0 AND 7) THEN 1 WHEN EXISTS(SELECT 1 ${source} AND ${hint} AND (${deadline} IS NULL OR ${days}>=0)) THEN 2 WHEN EXISTS(SELECT 1 ${source} AND ${days}>7) THEN 3 ELSE 4 END`;
+ const priority=`CASE WHEN EXISTS(SELECT 1 ${source} AND ${days} BETWEEN 0 AND 3) THEN 0 WHEN EXISTS(SELECT 1 ${source} AND ${days} BETWEEN 0 AND 7) THEN 1 WHEN json_extract(task.suggestion_json,'$.manualHint.kind') IS NOT NULL THEN 2 WHEN EXISTS(SELECT 1 ${source} AND ${hint} AND (${deadline} IS NULL OR ${days}>=0)) THEN 3 WHEN EXISTS(SELECT 1 ${source} AND ${days}>7) THEN 4 ELSE 5 END`;
  const top=(await db.prepare(`SELECT id,revision ${eligible} ORDER BY ${priority},created_at,id LIMIT 4`).bind(now,selected).all<{id:string;revision:number}>()).results;
  const oldest=await db.prepare(`SELECT id,revision ${eligible} ORDER BY created_at,id LIMIT 1`).bind(now,selected).first<{id:string;revision:number}>();
  const tasks=oldest&&!top.slice(0,3).some(task=>task.id===oldest.id)?[...top.slice(0,3),oldest]:top;
@@ -106,6 +106,7 @@ export async function scanIdentityTask(db:D1Database,taskId:string,raw:unknown){
  if(next.sourceReverifications.length){const latest=next.sourceReverifications.at(-1)!;next.sourceCandidateId=latest.candidateId;next.sourceOriginalObservationId=latest.originalObservationId;next.sourceObservationId=latest.replacementObservationId;}
  next.previousModelSuggestion=prior?.previousModelSuggestion??(originalSuggestion&&!prior?originalSuggestion:undefined);
  next.modelResult=prior?.modelResult;
+ next.manualHint=prior?.manualHint;
  const builder=new MutationBuilder(db,command,hash);builder.require("EXISTS(SELECT 1 FROM review_tasks WHERE id=? AND revision=? AND state IN ('open','manual','checking'))",[task.id,task.revision]);builder.require('EXISTS(SELECT 1 FROM intake_candidates WHERE id=? AND observation_id=? AND revision=?)',[sourceToRefresh.id,sourceToRefresh.observation_id,sourceToRefresh.revision]);
  if(freshObservationId&&freshFetchId){builder.update('intake_candidates',{observation_id:freshObservationId,source_fetch_id:freshFetchId,revision:sourceToRefresh.revision+1},'id=?',[sourceToRefresh.id]);}
  const firstFacts=canonicalTermsSchema.parse(JSON.parse(sources[0].facts_json));
@@ -113,4 +114,23 @@ export async function scanIdentityTask(db:D1Database,taskId:string,raw:unknown){
  builder.update('review_tasks',{state:modelReady?'open':'manual',revision:task.revision+1,lease_token:null,lease_until:null,suggestion_json:JSON.stringify(next)},'id=?',[task.id]);
  const result=await commitIdentityMutation(db,builder.plan([{kind:'task',id:task.id,revision:task.revision}],{status:next.status,scanned:next.scanned,revision:task.revision+1}));if(result.status==='conflict')throw new IdentityError(409,'identity preparation changed');return result.value;
 }
-export function preparationView(raw:unknown){const parsed=raw&&typeof raw==='object'&&'kind' in raw&&raw.kind==='identity_preparation_v1'?raw as Preparation:null;return parsed?{status:parsed.status,productId:parsed.productId,scanned:parsed.scanned,reason:parsed.reason,entries:parsed.entries,nextAttemptAt:parsed.nextAttemptAt,sourceObservationId:parsed.sourceObservationId,sourceCandidateId:parsed.sourceCandidateId??null,sourceOriginalObservationId:parsed.sourceOriginalObservationId??null,sourceReverifiedCandidateIds:(parsed.sourceReverifications??[]).map(item=>item.candidateId),sourceUrl:parsed.sourceUrl,modelResult:parsed.modelResult??null}:null;}
+export async function recordIdentityHint(db:D1Database,taskId:string,raw:unknown,actor:string){
+ const input=z.strictObject({requestId:z.string().min(1).max(160),expectedRevision:z.number().int().nonnegative(),kind:z.enum(['suspected_duplicate','previously_rejected']),reason:z.string().trim().min(8).max(2000)}).parse(raw);
+ const command='identity-hint:'+input.requestId,hash=await sha256(stableJson({taskId,...input,actor}));
+ const replay=await readIdentityReceipt(db,command,hash);if(replay){if(replay.status==='conflict')throw new IdentityError(409,'manual hint request changed');return replay.value;}
+ const task=await db.prepare("SELECT id,kind,state,revision,suggestion_json FROM review_tasks WHERE id=? AND kind IN ('identity','merge_conflict') AND state IN ('open','manual')").bind(taskId).first<Task>();
+ if(!task||task.revision!==input.expectedRevision)throw new IdentityError(409,'identity task changed');
+ const previous=readPreparation(task.suggestion_json),saved=task.suggestion_json?JSON.parse(task.suggestion_json):null;
+ const sources=(await db.prepare(taskSourcesCte+" SELECT coalesce(f.provenance_json,o.trust_json) trust_json,coalesce(json_extract(f.provenance_json,'$.truncated'),o.text_truncated) text_truncated FROM task_candidates tc JOIN intake_candidates c ON c.id=tc.candidate_id JOIN source_observations o ON o.id=c.observation_id LEFT JOIN source_observation_fetches f ON f.id=c.source_fetch_id AND f.observation_id=o.id WHERE tc.task_id IN (SELECT id FROM task_sources) ORDER BY c.id LIMIT 11").bind(taskId).all<{trust_json:string;text_truncated:number}>()).results;
+ if(!sources.length||sources.length>10)throw new IdentityError(409,'identity task needs a bounded candidate set');
+ const verified=sources.every(sourceIsVerified);
+ const next=previous??empty(verified?'scanning':'needs_source','已记录人工线索，系统继续核对来源与历史活动。');
+ if(saved&&!previous)next.previousModelSuggestion=saved;
+ next.manualHint={kind:input.kind,reason:input.reason,actor,at:new Date().toISOString()};next.nextAttemptAt=null;
+ const builder=new MutationBuilder(db,command,hash);
+ builder.require("EXISTS(SELECT 1 FROM review_tasks WHERE id=? AND revision=? AND state IN ('open','manual'))",[task.id,task.revision]);
+ builder.update('review_tasks',{revision:task.revision+1,suggestion_json:JSON.stringify(next)},'id=?',[task.id]);
+ const result=await commitIdentityMutation(db,builder.plan([{kind:'task',id:task.id,revision:task.revision}],{revision:task.revision+1,state:task.state}));
+ if(result.status==='conflict')throw new IdentityError(409,'identity task changed');return result.value;
+}
+export function preparationView(raw:unknown){const parsed=raw&&typeof raw==='object'&&'kind' in raw&&raw.kind==='identity_preparation_v1'?raw as Preparation:null;return parsed?{status:parsed.status,productId:parsed.productId,scanned:parsed.scanned,reason:parsed.reason,entries:parsed.entries,nextAttemptAt:parsed.nextAttemptAt,sourceObservationId:parsed.sourceObservationId,sourceCandidateId:parsed.sourceCandidateId??null,sourceOriginalObservationId:parsed.sourceOriginalObservationId??null,sourceReverifiedCandidateIds:(parsed.sourceReverifications??[]).map(item=>item.candidateId),sourceUrl:parsed.sourceUrl,modelResult:parsed.modelResult??null,manualHint:parsed.manualHint??null}:null;}

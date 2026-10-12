@@ -1,4 +1,4 @@
-import {preparationQueue,preparationSource,scanIdentityTask} from './preparation';
+import {preparationQueue,preparationSource,recordIdentityHint,scanIdentityTask} from './preparation';
 import {identityReviewPresentation} from './review-presentation';
 import {previewBackfillObject,applyBackfillObject,backfillSourceSchema,objectBackfillPlanSchema} from './production-backfill';
 import {taskSourcesCte} from './task-sources';
@@ -119,6 +119,7 @@ identityAdminRoutes.post('/tasks/:id/prepare',async c=>{
  const input=z.strictObject({requestId:z.string().min(1).max(160),expectedRevision:z.number().int().nonnegative()}).parse(await c.req.json());
  return c.json(await scanIdentityTask(c.env.DB,c.req.param('id'),input));
 });
+identityAdminRoutes.post('/tasks/:id/hint',async c=>c.json(await recordIdentityHint(c.env.DB,c.req.param('id'),await c.req.json(),c.get('who'))));
 identityAdminRoutes.post('/tasks/:id/resolve',async c=>{
  const raw=await c.req.json() as Record<string,unknown>;
  const service=new IdentityService(c.env.DB);

@@ -19,6 +19,39 @@ it('A candidate with unknown identity shows its actual activity and provenance w
   expect(f.sqlite.prepare('SELECT count(*) n FROM offers').get()).toEqual({n:0});
  }finally{f.sqlite.close();}
 });
+it('a single unprepared claim can be explicitly rejected with a narrow scope and audit reason',async()=>{
+ const f=auditFixture();try{
+  const text='A repeated announcement claims a free signup benefit.';
+  const observed=await f.call('ingest/observations',{requestId:'manual-reject-ob',originalUrl:'https://vendor.example/repeated',finalUrl:'https://vendor.example/repeated',text,sourceId:'vendor-source',fetchKind:'indirect',observedAt:'2026-10-12T10:00:00Z'});
+  const facts=canonicalTermsSchema.parse({schemaVersion:'terms-v1',issuerProductId:unknown,mechanism:unknown,benefitPools:[],eligibility:unknown,geography:unknown,claimChannels:unknown,costs:unknown,claimWindow:unknown,occurrenceAnchor:unknown});
+  const candidate=await f.candidate('manual-reject',observed.body.observationId,text,facts,{id:'repeated-candidate',title:'明显重复的候选'});
+  const task=(await f.call('ingest/identity-candidates/'+candidate.candidateId+'/resolve',{requestId:'manual-reject-task'})).body;
+  expect((await f.call('admin/identity/tasks',undefined,true)).body.tasks.find((item:any)=>item.id===task.taskId).reviewPreparation.canDecide).toBe(false);
+  const rejected=await f.call('admin/identity/tasks/'+task.taskId+'/resolve',{requestId:'manual-reject-decision',expectedRevision:0,action:'reject',reasonCode:'other',reason:'人工已核对原拒绝记录，确认本条重复且不应收录',scope:{kind:'claim',candidateId:candidate.candidateId}},true);
+  expect(rejected.status,JSON.stringify(rejected.body)).toBe(200);expect(rejected.body.decisionId).toEqual(expect.any(String));
+  expect(f.sqlite.prepare('SELECT action,reason_text FROM review_decisions WHERE id=?').get(rejected.body.decisionId)).toEqual({action:'reject',reason_text:'人工已核对原拒绝记录，确认本条重复且不应收录'});
+  expect(f.sqlite.prepare('SELECT state FROM review_tasks WHERE id=?').get(task.taskId)).toEqual({state:'resolved'});
+  expect(f.sqlite.prepare('SELECT count(*) n FROM offers').get()).toEqual({n:0});
+ }finally{f.sqlite.close();}
+});
+it('an early suspected-duplicate hint persists through automatic preparation without creating a decision',async()=>{
+ const f=auditFixture();try{
+  const text='Official campaign grants a free benefit to new accounts.',o=await f.observation('human-hint',text);
+  const facts=canonicalTermsSchema.parse({schemaVersion:'terms-v1',issuerProductId:unknown,mechanism:unknown,benefitPools:[],eligibility:unknown,geography:unknown,claimChannels:unknown,costs:unknown,claimWindow:unknown,occurrenceAnchor:unknown});
+  const candidate=await f.candidate('human-hint',o,text,facts,{id:'human-hint',title:'疑似重复的候选'});
+  const task=(await f.call('ingest/identity-candidates/'+candidate.candidateId+'/resolve',{requestId:'human-hint-create'})).body;
+  const hint=await f.call('admin/identity/tasks/'+task.taskId+'/hint',{requestId:'human-hint-write',expectedRevision:0,kind:'suspected_duplicate',reason:'人工核对标题与原文，疑似旧活动再次报送'},true);
+  expect(hint.status,JSON.stringify(hint.body)).toBe(200);expect(hint.body.revision).toBe(1);
+  expect((await f.call('admin/identity/tasks/'+task.taskId+'/hint',{requestId:'human-hint-write',expectedRevision:0,kind:'suspected_duplicate',reason:'人工核对标题与原文，疑似旧活动再次报送'},true)).body).toEqual(hint.body);
+  expect((await f.call('admin/identity/tasks/'+task.taskId+'/hint',{requestId:'stale-human-hint',expectedRevision:0,kind:'previously_rejected',reason:'另一个旧拒绝主张的依据尚未核实'},true)).status).toBe(409);
+  expect((await f.call('admin/identity/tasks',undefined,true)).body.tasks.find((item:any)=>item.id===task.taskId).reviewPreparation.state).toBe('history_incomplete');
+  const scanned=await f.call('ingest/identity-preparations/'+task.taskId+'/scan',{requestId:'human-hint-scan',expectedRevision:1});expect(scanned.status).toBe(200);
+  const card=(await f.call('admin/identity/tasks',undefined,true)).body.tasks.find((item:any)=>item.id===task.taskId);
+  expect(card.reviewPreparation.manualHint).toMatchObject({kind:'suspected_duplicate',reason:'人工核对标题与原文，疑似旧活动再次报送'});
+  expect(f.sqlite.prepare('SELECT count(*) n FROM offers').get()).toEqual({n:0});
+  expect(f.sqlite.prepare('SELECT count(*) n FROM review_decisions').get()).toEqual({n:0});
+ }finally{f.sqlite.close();}
+});
 it('an imminent unknown-identity candidate exposes its deadline without unlocking publication',async()=>{
  const f=auditFixture();try{
   const text='Campaign deadline grants a free benefit to new accounts.',o=await f.observation('imminent-card',text);
