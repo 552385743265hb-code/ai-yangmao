@@ -37,6 +37,7 @@ import { screeningMode } from '../shared/screening/types';
 import type { ScreeningRule } from '../shared/screening/types';
 import { classifyUrgency, systemDueAt } from '../shared/screening/urgency';
 import { ScreeningStore } from './screening/store';
+import { screeningIngestRoutes } from './screening/routes';
 import { activeOnDate, isClaimable, liveStatus, missingEvidence } from '../shared/lifecycle';
 import { admin } from './admin';
 import { feishuAdmin, runScheduled } from './feishu';
@@ -226,6 +227,7 @@ ingest.use('*', async (c, next) => {
 });
 
 ingest.route('/', identityIngestRoutes);
+ingest.route('/screening', screeningIngestRoutes);
 ingest.route('/official-reviews', officialReviewRoutes);
 ingest.route('/lead-reviews', leadReviewRoutes);
 
