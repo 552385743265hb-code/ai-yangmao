@@ -546,10 +546,14 @@ function seriesTo(end, n = 14, seed = 1, spread = 0.35) {
 /** Deadline reminders are separate from current-claimability/valuation totals. */
 function countdownWindow(o) {
   if (!isLimited(o) || o.withdrawnAt) return null;
-  if (o.ek === 'date') return { end: endInstant(o), estimated: false };
+  const globalWeek = o.ty === 'free' && /(?:免费|限免).{0,4}(?:一周|7\s*天)|free.{0,20}(?:a|one|1)\s*week/i.test(o.t)
+    && !/(?:领取|激活|注册|兑换)后.{0,8}(?:一周|7\s*天)/.test(o.v || '');
+  const source = Object.values(o.evidence?.excerpts || {}).join(' ');
+  const relativeOnly = globalWeek && /(?:for|next)\s+(?:a|one|1)\s+week|免费.{0,4}一周|一周.{0,4}免费|7\s*days?/i.test(source)
+    && !/(?:until|through|ends?\s+on|截止|截至).{0,24}(?:\d{4}-\d{2}-\d{2}|\d{1,2}[月/]\d{1,2}|[A-Za-z]+\s+\d{1,2})/i.test(source);
+  if (o.ek === 'date' && !relativeOnly) return { end: endInstant(o), estimated: false };
   // A global one-week free campaign is not a personal credit-validity period.
-  if (o.ty !== 'free' || !/(?:免费|限免).{0,4}(?:一周|7\s*天)|free.{0,20}(?:a|one|1)\s*week/i.test(o.t)
-      || /(?:领取|激活|注册|兑换)后.{0,8}(?:一周|7\s*天)/.test(o.v || '')) return null;
+  if (!globalWeek) return null;
   const published = o.publishedAt;
   const exactAnchor = published && /T\d{2}:\d{2}/.test(published) ? new Date(published) : null;
   const date = published && /^\d{4}-\d{2}-\d{2}$/.test(published) ? published : o.s != null ? ymd(dayAt(o.s)) : null;
