@@ -156,6 +156,29 @@ section{margin-block:28px}
 .value-source{padding:10px 0;border-bottom:1px solid var(--line);font-size:13px}.value-source a{text-decoration:underline}.value-source small{display:block;color:var(--muted);margin-top:4px}.value-source blockquote{margin:8px 0 0;padding-left:10px;border-left:2px solid var(--line-2);white-space:pre-wrap;overflow-wrap:anywhere}
 .value-assumptions{padding-left:18px;font-size:13px}.value-progress{display:flex;flex-wrap:wrap;gap:16px}.value-progress .prog{flex:1;min-width:160px}
 
+/* Calculation guide follows the pasture palette, with a single reading column. */
+.method-page{max-width:760px;font-size:15px;line-height:1.85}
+.method-page p{margin:10px 0;max-width:70ch}
+.method-intro{padding:16px 20px;background:var(--tag-soft);border-left:4px solid var(--tag);border-radius:0 12px 12px 0}
+.method-intro>b{font-size:17px;line-height:1.55;display:block}
+.method-intro p{margin:6px 0 0;color:var(--ink-2)}
+.method-toc{display:flex;flex-wrap:wrap;gap:4px 16px;margin:16px 0 24px;padding-bottom:16px;border-bottom:1px solid var(--line)}
+.method-toc button{background:none;border:0;border-bottom:1px solid var(--line-2);padding:4px 0;cursor:pointer;font-size:13px;color:var(--ink-2)}
+.method-toc button:hover{color:var(--ink);border-bottom-color:var(--ink)}
+.method-page section{margin-block:30px;scroll-margin-top:78px}
+.method-page h2{font-family:var(--f-display);font-size:24px;font-weight:400;line-height:1.4;margin:0 0 12px}
+.method-page ul{padding-left:22px}.method-page li{padding-left:3px;margin-block:10px}
+.method-defs{margin:0}.method-defs>div{display:grid;grid-template-columns:100px minmax(0,1fr);gap:16px;padding:12px 0;border-bottom:1px solid var(--line)}
+.method-defs dt{font-weight:600}.method-defs dd{margin:0;color:var(--ink-2)}
+.method-note{border-left:3px solid var(--line-2);padding:6px 0 6px 14px;color:var(--ink-2);font-size:13px}
+.method-table-wrap{margin:16px 0;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface)}
+.method-table{width:100%;border-collapse:collapse;font-size:14px;text-align:left}
+.method-table th,.method-table td{padding:10px 16px;border-bottom:1px solid var(--line);vertical-align:top;white-space:normal}
+.method-table thead{background:var(--surface-2)}.method-table tbody th{width:32%;font-weight:500}.method-table tr:last-child>*{border-bottom:0}
+.method-example{margin:16px 0;padding:12px 16px;background:var(--surface-2);border-radius:12px;font-size:14px}
+.method-example p{margin:4px 0 0}.method-page .btn{margin-top:12px}
+@media (max-width:480px){.method-page{font-size:14px}.method-intro{padding:14px 16px}.method-page h2{font-size:22px}.method-defs>div{grid-template-columns:1fr;gap:3px}.method-table th,.method-table td{padding:10px 12px}.method-toc{gap:4px 14px}}
+
 /* ---------- buttons & inputs ---------- */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 14px;border-radius:999px;border:1px solid var(--line-2);background:var(--surface);cursor:pointer;font-size:14px;font-weight:500;white-space:nowrap}
 .btn:hover{border-color:var(--ink-2)}
@@ -203,6 +226,9 @@ select,input[type="date"],input[type="url"],input[type="text"]{width:100%;min-wi
 .meadow .snip{animation:snip 1.6s ease-in-out infinite;transform-box:fill-box;transform-origin:30% 70%}
 @keyframes snip{0%,100%{transform:rotate(0)}50%{transform:rotate(-16deg)}}
 .flock-legend{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;font-size:12.5px;color:var(--ink-2);padding:10px 16px;border-top:1px solid var(--line);background:var(--surface)}
+.flock-value-note{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:4px 12px;padding:10px 16px;background:var(--tag-soft);color:var(--ink);border-top:1px solid var(--line);font-size:13px}
+.flock-value-note a{padding:3px 0;text-decoration:underline;text-underline-offset:3px;font-weight:600}
+.flock-value-note a:hover{color:var(--warn-ink)}
 @media (max-width:640px){ .hero-over{position:static;padding:14px 14px 0} }
 
 .kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}

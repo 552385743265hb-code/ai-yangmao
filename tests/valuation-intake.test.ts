@@ -145,3 +145,36 @@ it('repairs a matched non-USD catalog price with the latest verified ECB rate, r
  const result=await computeCollectedValuation({...base,valuationFactors:recipe});expect(result.valuation?.usdEstimate).toBeCloseTo(0.08,4);expect(result.valuation?.inputs.ruleIds).toContain('same_model_verified_catalog:tencent-qwen3.5-flash');
  const invalid=structuredClone(recipe);Object.assign(invalid.components[0].models[0],{currency:'USD'});expect((await computeCollectedValuation({...base,valuationFactors:invalid})).valuation?.status).toBe('needs_judgment');
 });
+
+async function profileInput(platformId:string,type:string,text:string){
+ const sourceUrl=platformId==='zhipu'?'https://bigmodel.cn/coding-trial':'https://www.baichuan-ai.com/haina';
+ return {platformId,type,sourceText:text,sourceFetch:{originalUrl:sourceUrl,finalUrl:sourceUrl,fetchedUrl:sourceUrl,method:'direct' as const,sourceVerified:true,truncated:false,contentHash:await sha256(text)},evidence:{url:sourceUrl,tier:'official',capturedAt:date,excerpts:{benefit:text}},valuationFactors:{kind:'unknown',sources:[{...sources(text)[0],url:sourceUrl}]}};
+}
+it('GLM Coding Plan seven-day free trial card uses the scoped monthly Lite quarter rule rather than seven cards or 7/30',async()=>{
+ const result=await computeCollectedValuation(await profileInput('zhipu','gift','GLM Coding Plan：注册用户可免费领取7天体验卡，一张体验卡有效7天。'));
+ expect(result.valuation).toMatchObject({status:'provisional',period:'first30',usdEstimate:4.408164,usdMax:null,fullValue:null,inputs:{denominator:4,usageMultiplier:1,ruleIds:expect.arrayContaining(['glm_coding_plan_single_seven_day_trial_quarter'])}});
+});
+it.each(['GLM Coding Plan：注册用户可免费使用7天。','GLM Coding Plan：可免费领取2张7天体验卡。','另一个产品：注册用户可免费领取7天体验卡。','GLM Coding Plan 不再提供免费7天体验卡。'])('does not apply the single GLM card rule to other mechanisms: %s',async text=>{
+ expect((await computeCollectedValuation(await profileInput('zhipu','gift',text))).valuation?.status).toBe('needs_judgment');
+});
+it.each(['Baichuan-M3-Plus','Baichuan M3 Plus'])('the exact Haina permanent-free medical institution API profile supports %s with raw per-1000 catalog prices and the 30x proxy',async model=>{
+ const result=await computeCollectedValuation(await profileInput('baichuan','apply',`海纳百川计划：医疗机构提交申请审核后可使用 ${model} 永久免费 API。`));
+ expect(result.valuation).toMatchObject({status:'provisional',period:'apply_max',usdEstimate:30.483572,usdMax:null,fullValue:null,inputs:{usageMultiplier:30,ruleIds:expect.arrayContaining(['baichuan_haina_medical_m3_plus_text_workload_30'])}});
+});
+it.each(['其他项目：医疗机构申请 Baichuan-M3-Plus 永久免费 API。','海纳百川计划：普通开发者申请 Baichuan-M3-Plus 永久免费 API。','海纳百川计划：医疗机构申请 Baichuan-M3-Plus 免费 API 试用7天。','海纳百川计划：医疗机构申请 OtherModel 永久免费 API。'])('does not apply the Haina workload profile beyond its exact scope: %s',async text=>{
+ expect((await computeCollectedValuation(await profileInput('baichuan','apply',text))).valuation?.status).toBe('needs_judgment');
+});
+it('a clearly denominated actual Haina application maximum takes priority over its usage proxy',async()=>{
+ const result=await computeCollectedValuation(await profileInput('baichuan','apply','海纳百川计划：医疗机构提交申请后可使用 Baichuan M3 Plus 永久免费 API。另有最高可申请 USD 100 的独立额度。'));
+ expect(result.valuation).toMatchObject({status:'priced',method:'face_value',period:'apply_max',usdEstimate:null,usdMax:100,fullValue:100,inputs:{usageCostReference:30.483572}});
+});
+it('scoped profiles remain unresolved after their trusted FX or prices expire',async()=>{
+ const input=await profileInput('zhipu','gift','GLM Coding Plan：免费领取7天体验卡。');expect((await computeCollectedValuation(input,'2026-12-01T00:00:00Z')).valuation?.status).toBe('needs_judgment');
+});
+
+it('Haina keeps a validated real maximum and explicit first-30-day release when selecting its medical proxy',async()=>{
+ const maximum='最高可申请 USD 100 的独立额度。',release='First 30 days release USD 40 of the grant.';
+ const input=await profileInput('baichuan','apply','海纳百川计划：医疗机构申请 Baichuan M3 Plus 永久免费 API。'+maximum+release);
+ Object.assign(input.valuationFactors,{kind:'apply',currency:'USD',maximum:{value:100,sourceId:'benefit',quote:maximum},first30Maximum:{value:40,sourceId:'benefit',quote:release}});
+ const result=await computeCollectedValuation(input);expect(result.valuation).toMatchObject({status:'priced',usdEstimate:null,usdMax:100,inputs:{first30Max:40,usageCostReference:30.483572}});
+});

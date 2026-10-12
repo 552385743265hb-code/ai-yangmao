@@ -340,6 +340,7 @@ const ICON = {
   models: svgI('<circle class="ic-dot" cx="6" cy="7" r="2.6"/><circle cx="18" cy="6" r="2.2"/><circle cx="12" cy="17.5" r="2.6"/><path d="M8.3 8.3l2.6 6.7M15.9 7.3l-2.9 7.9M8.5 6.8l7.3-.6"/>'),
   mine: svgI('<circle class="ic-dot" cx="12" cy="8.5" r="3.8"/><path d="M4.5 20c1.2-3.8 4.1-5.6 7.5-5.6s6.3 1.8 7.5 5.6"/>'),
   coverage: svgI('<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle class="ic-dot" cx="12" cy="12" r="1.4"/><path d="M12 12l6-6"/>'),
+  'valuation-method': svgI('<path d="M5 3.5h14v17H5zM8 7h8M8 11h2M14 11h2M8 15h2M14 15h2"/><path class="ic-dot" d="M8 18h8"/>'),
   admin: svgI('<circle class="ic-dot" cx="12" cy="12" r="3"/><path d="M12 2.8v2.6M12 18.6v2.6M21.2 12h-2.6M5.4 12H2.8M18.5 5.5l-1.8 1.8M7.3 16.7l-1.8 1.8M18.5 18.5l-1.8-1.8M7.3 7.3L5.5 5.5"/>'),
   more: svgI('<circle class="ic-dot" cx="5.5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="18.5" cy="12" r="1.7"/>'),
 };
@@ -557,7 +558,8 @@ function pToday() {
       <div class="wx" title="指数参考新增条数、即将结束条数与官方口径月度参考价值；用量估算和未知价值不作零处理"><div>${wxIcon(wx.i)}</div><div><div class="row" style="gap:6px;align-items:baseline"><span class="i">${wx.i}</span><span class="t">今日羊毛指数 · ${wx.t}</span></div><div class="t">${wx.adv}</div><div class="t">条数与官方参考值</div></div></div>
     </div>
     <div id="flock"></div>
-    <div class="flock-legend"><span><b>羊越大</b>，月度参考价值越高（方法见详情）</span><span><b>价值待定</b>的羊用固定大小，并标 ?</span><span><b>毛越厚</b>，剩余时间越多</span><span><b>剃秃的</b>今明两天结束</span><span class="legend">${Object.keys(TYPES).filter(isTypeLimited).map(t => `<span>${etagSvg(typeVar(t)).replace('<svg ', '<svg style="width:12px;height:14px" ')}${TYPES[t].l}</span>`).join('')}</span></div>
+    <div class="flock-value-note"><span>羊的大小按月度购买参考成本比较。</span><a href="#valuation-method">参考价值怎么算？</a></div>
+    <div class="flock-legend"><span><b>羊越大</b>，月度参考价值越高</span><span><b>价值待定</b>的羊用固定大小，并标 ?</span><span><b>毛越厚</b>，剩余时间越多</span><span><b>剃秃的</b>今明两天结束</span><span class="legend">${Object.keys(TYPES).filter(isTypeLimited).map(t => `<span>${etagSvg(typeVar(t)).replace('<svg ', '<svg style="width:12px;height:14px" ')}${TYPES[t].l}</span>`).join('')}</span></div>
   </div>
   <section class="kpis">
     ${kpi('进行中', act.length, '条', daily((o, k) => activeOn(o, k) && statusOf(o, k) !== 'upcoming'))}
@@ -1315,6 +1317,80 @@ function pMine() {
   ${MINE.legacyGot.length ? `<section>${secH(`旧版已领（日期未知 · ${MINE.legacyGot.length}）`)}<p class="small muted">这些记录保留在本机，不计入本月金额。</p><div class="rows">${MINE.legacyGot.map(id => OMAP[id] ? `<div class="row">${orow(OMAP[id], '日期未知')}<button class="btn sm" type="button" data-remove-legacy="${esc(id)}">移除</button></div>` : '').join('')}</div></section>` : ''}`;
 }
 
+/* ---------- 参考价值计算方法 ---------- */
+function pValuationMethod() {
+  const topics = [['meaning', '先看懂金额'], ['window', '月度与有效期'], ['prices', '价格从哪来'], ['usage', '默认用量'], ['pools', '模型与额度池'], ['benchmarks', '参照与申请制'], ['evidence', '查看每条依据']];
+  main().innerHTML = ribbon() + `<div class="crumb"><a href="#today">今天的牧场</a><span>/</span><span>参考价值</span></div>` + ph('参考价值怎么算', '把不同羊毛放在同一把尺子上，方便你挑适合自己的权益。') + `
+  <article class="method-page">
+    <div class="method-intro"><b>参考价值，是买到相近权益的参考成本。</b><p>它不代表现金、保证到账、实际节省，也不是你的实际账单。能否领取、用得完多少，仍要看活动条件和你的需要。</p></div>
+    <nav class="method-toc" aria-label="计算方法目录">${topics.map(([id, label]) => `<button type="button" data-method-section="${id}">${label}</button>`).join('')}</nav>
+    <section id="method-meaning" tabindex="-1">
+      <h2>先看懂页面上的金额</h2>
+      <dl class="method-defs">
+        <div><dt>官方口径</dt><dd>按真实赠金面额或官方购买价折算。标为“套餐价格参照”的暂定金额还包含参照假设，需要看该条说明；这一组同样只是购买参考成本。</dd></div>
+        <div><dt>用量估算</dt><dd>按代表模型的价格，乘一份固定的使用量，再考虑实际期限和配额。通常带有“≈”。</dd></div>
+        <div><dt>价值待定</dt><dd>价格、兑换关系或规格还不足以可靠计算。留空不等于 $0，也不按零参与金额排行和汇总。</dd></div>
+      </dl>
+    </section>
+    <section id="method-window" tabindex="-1">
+      <h2>统一看一个月，保留完整权益</h2>
+      <p>“月度”使用领取或激活后<strong>最多 30 天</strong>的比较窗口，方便把期限不同的活动放在一起看。它不是自然月账单，也不会把短试用放大成一个月。</p>
+      <ul>
+        <li><strong>短期使用权：</strong>按实际覆盖天数缩小默认用量。例如只开放 1 天的视频体验，600 秒 ÷ 30 = 20 秒，再按真实配额封顶。</li>
+        <li><strong>固定一次性赠金或积分：</strong>按实际赠额算购买参考成本。赠金只有效 7 天，不会因为 7 ÷ 30 而抹掉余额；有效期和使用限制会另行说明。</li>
+        <li><strong>年会员：</strong>明确采用年价时，月度参考为年价 ÷ 12，完整年值另列。例如 $120/年 ÷ 12 = $10/月；附带模型和功能不再重复叠加。</li>
+      </ul>
+      <p class="method-note">领取截止决定还能不能领，额度有效期决定领到后能用多久。两者都需要看，参考金额不能替代这两个日期。</p>
+    </section>
+    <section id="method-prices" tabindex="-1">
+      <h2>先找匹配的正常购买价</h2>
+      <p>同一份权益，优先用<strong>本平台同权益的售价或加购价</strong>；其次是<strong>同版本原厂价</strong>；再其次是<strong>同版本 OpenRouter 付费价</strong>。模型、规格、计费单位、输入与输出方向都要匹配，不能借另一个版本的低价来算。</p>
+      <p>套餐通常选<strong>普通月付入门档的正常价</strong>。首月优惠、指定套餐、年付折月价或地区价若被采用，会在该条说明中写清楚，不能当作常规续费价。</p>
+      <p>外币按有来源和日期的汇率折成美元，先算总量再统一舍入。周末可用最近工作日汇率；具体价格与汇率日期请看每条“估值说明”。</p>
+    </section>
+    <section id="method-usage" tabindex="-1">
+      <h2>不限量，也用一份固定用量比较</h2>
+      <p>“不限量”没有可直接相加的面额，所以用<strong>代表模型 × 标准用量</strong>来算。下面是一整个月的默认比较用量，不是平台承诺的免费额度，也不是对所有人实际用量的预测。</p>
+      <div class="method-table-wrap"><table class="method-table"><caption class="sr">月度默认比较用量</caption><thead><tr><th scope="col">用途</th><th scope="col">默认月度用量</th></tr></thead><tbody>
+        <tr><th scope="row">通用文本</th><td>输入 100 万 Token<br>输出 20 万 Token</td></tr>
+        <tr><th scope="row">编程</th><td>输入 1,000 万 Token<br>输出 100 万 Token</td></tr>
+        <tr><th scope="row">图像</th><td>100 张</td></tr>
+        <tr><th scope="row">视频</th><td>600 秒</td></tr>
+        <tr><th scope="row">语音转写</th><td>1,200 分钟</td></tr>
+        <tr><th scope="row">语音合成</th><td>10,000 字符</td></tr>
+      </tbody></table></div>
+      <p>文本和编程是同一模态下的两种消费方案，根据活动用途选用；同一份共享额度不会按两种方案重复相加。短期限按实际覆盖缩小用量，免费配额不足时按配额封顶。</p>
+      <div class="method-example"><b>文本计算例子</b><p>若输入价为 $2/百万 Token、输出价为 $8/百万 Token，完整月度参考为 1 × $2 + 0.2 × $8 = <strong>$3.60</strong>。若只能用 15 天，先把用量减半；若实际配额更少，再按配额算。</p></div>
+    </section>
+    <section id="method-pools" tabindex="-1">
+      <h2>多个模型与多个额度池，怎么避免重复算</h2>
+      <p>普通多模型活动先按<strong>同用途、同规格</strong>去掉别名和重复版本，再分别计算成本，取<strong>较低中位数</strong>：奇数取中间项，偶数取较低的中间项。例如 $2、$4、$8、$10，参考值为 $4。不会把每个模型的金额全加起来。</p>
+      <p>缺价模型不会当成 $0。若只覆盖部分模型，说明中会标出缺价和暂定范围；信息不足时保留“价值待定”。同版本公测模型还没有付费价时，也不会拿免费期的 $0 生成购买参考值。</p>
+      <p>文本、图片、视频等有<strong>真实独立的免费额度池</strong>，才可各选一个匹配的用途计算后相加。若共用一份积分或余额，只算一次，通常采用一个用途，不能把同一池同时当成图片、视频和文本三份权益。</p>
+    </section>
+    <section id="method-benchmarks" tabindex="-1">
+      <h2>有些金额是参照方案，要连着假设一起看</h2>
+      <p>积分兑换关系不透明，或权益没有直接售价时，部分条目采用指定入门套餐、代表模型或套餐倍数作<strong>暂定参照</strong>。这会注明是“套餐价格参照”或“模型成本参照”，并写出选择与限制。参照套餐的积分单价，不表示已证明不同套餐的同名积分可以等量互换；参照模型也不等于实际赠送的模型。</p>
+      <div class="method-example"><b>试用卡与重置的分数参照</b><p>若某条明确采用 $20 月费 ÷ 4，参考就是 <strong>$5</strong>；它不是所有 7 天卡的通用算法，也不表示恢复了四分之一的真实 Token。多张卡先算单卡参照，再乘本次实际卡数；不据此声称每张卡都有额外独立 Token 池。</p></div>
+      <p>有两种都适用、可复算的算法时，可以取较低值，并保留其他算法与规格差异。特定条目接受的套餐、倍数或候选价，只适用于该条，不自动推广给其他活动。</p>
+      <p><strong>申请制单独看：</strong>真实的最高可申请额度，按官方计划和完整期限列出；月度上限只有明确释放安排时才算。“月度使用方案参考”则是指定模型与工作量的购买成本，和申请额度独立，既不表示保证获批，也不表示有保证可得的下限，不混入普通羊毛合计。</p>
+      <p class="method-note">例如海纳百川的特定医疗机构方案，采用通用文本月用量的 30 倍（输入 3,000 万、输出 600 万 Token）。这是该方案的工作量假设，不是所有医疗工具的默认用量，也不是机构资助上限。</p>
+    </section>
+    <section id="method-evidence" tabindex="-1">
+      <h2>每一条，都可以回到计算依据</h2>
+      <p>打开羊毛详情的<strong>“估值说明”</strong>，可以查看采用的套餐或模型、数量与单位、公式、来源、核价日期、汇率和适用限制。金额看起来相近，也可能来自不同的权益期限或假设，请把说明一起看。</p>
+      <p>站内保留 V1 和 V2 两种已核算记录。V2 增加了特定套餐与模型参照等规则，旧 V1 记录仍按各自注明的依据展示，不会因为规则更新就自动重算全部历史金额。</p>
+      <a class="btn pri" href="#today">回牧场挑羊毛</a>
+    </section>
+  </article>`;
+  $$('[data-method-section]').forEach(button => button.addEventListener('click', () => {
+    const section = $('#method-' + button.dataset.methodSection);
+    if (!section) return;
+    section.scrollIntoView({ behavior: REDUCED ? 'instant' : 'smooth', block: 'start' });
+    section.focus({ preventScroll: true });
+  }));
+}
+
 /* ---------- 覆盖范围 ---------- */
 function pCoverage() {
   const cv = COVERAGE || { platforms: PLATFORMS.length, sources: 0, byKind: {}, officialPages: [] };
@@ -1928,12 +2004,12 @@ function ecg(h) {
 /* ============================================================
  * 外壳：导航、条件面板、对比、路由
  * ============================================================ */
-const PAGES = { today: pToday, calendar: pCalendar, timeline: pTimeline, insights: pInsights, all: pAll, library: pLibrary, apply: pApply, models: pModels, mine: pMine, coverage: pCoverage, admin: pAdmin };
+const PAGES = { today: pToday, calendar: pCalendar, timeline: pTimeline, insights: pInsights, all: pAll, library: pLibrary, apply: pApply, models: pModels, mine: pMine, coverage: pCoverage, 'valuation-method': pValuationMethod, admin: pAdmin };
 const NAVS = [
   ['逛牧场', [['today', '今天'], ['calendar', '日历'], ['timeline', '时间线'], ['insights', '洞察']]],
   ['找羊毛', [['all', '全部羊毛'], ['library', '常驻额度库'], ['apply', '申请制'], ['models', '按模型找']]],
   ['我', [['mine', '我的']]],
-  ['关于', [['coverage', '覆盖范围']]],
+  ['关于', [['valuation-method', '参考价值怎么算'], ['coverage', '覆盖范围']]],
 ];
 const TITLES = Object.fromEntries(NAVS.flatMap(g => g[1]));
 function drawShell() {
@@ -1966,7 +2042,7 @@ function closeSheet() {
 }
 function openCond() { openSheet('我的条件', condForm()); }
 function openMore() {
-  const items = [['all', '全部羊毛'], ['library', '常驻额度库'], ['apply', '申请制'], ['models', '按模型找'], ['mine', '我的'], ['coverage', '覆盖范围'], ...(ADM.token ? [['admin', '后台']] : [])];
+  const items = [['all', '全部羊毛'], ['library', '常驻额度库'], ['apply', '申请制'], ['models', '按模型找'], ['mine', '我的'], ['valuation-method', '参考价值怎么算'], ['coverage', '覆盖范围'], ...(ADM.token ? [['admin', '后台']] : [])];
   openSheet('更多', `<div class="more-nav">${items.map(([k, l]) => `<a href="#${k}" data-close>${ICON[k]}${l}</a>`).join('')}</div>`);
 }
 function drawTray() {

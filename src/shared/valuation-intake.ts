@@ -40,7 +40,15 @@ export async function computeCollectedValuation(input:ValuationIntakeInput,now=n
     && !/every\s*(?:day|week|month)|daily|monthly|每(?:天|周|月)|进度|执行中|正在执行|progress|rollout|processing|status update/i.test(sentence)
     && !/(?:不会|没有|不再|取消|未)(?:.{0,16})(?:发放|赠送|获得|额外|重置)|\b(?:not|never|won't|cannot|no)\b.{0,45}(?:receive|grant|give|extra|additional|reset)/i.test(sentence));
   const singleReset=input.platformId==='openai'&&!!resetSentence;
-  if(!input.valuationFactors&&!singleReset)return unknown('未抽取可计算因子，等待补证');
+  const glmTrialCard=input.platformId==='zhipu'&&input.type!=='apply'&&/GLM\s+Coding\s+Plan/i.test(quote)
+    &&/(?:7|七)\s*天.{0,12}(?:免费)?体验卡|(?:免费)?体验卡.{0,12}(?:7|七)\s*天|7[- ]day.{0,20}free trial card/i.test(quote)
+    &&/免费|free/i.test(quote)&&!/[2-9]\d*\s*张|[二三四五六七八九十]\s*张|多张|multiple cards|(?:two|several)\s+(?:trial )?cards/i.test(quote)
+    &&!/不(?:再|提供|赠送).{0,16}(?:体验卡|免费)|not.{0,16}free/i.test(quote);
+  const medicalRule=input.platformId==='baichuan'&&input.type==='apply'&&/海纳百川/i.test(quote)
+    &&/Baichuan[-\s]+M3[-\s]+Plus/i.test(quote)&&/医疗机构|medical institution/i.test(quote)
+    &&/永久免费|permanently free|free forever/i.test(quote)&&/API/i.test(quote)
+    &&!/并非|不是永久免费|不(?:再|提供).{0,16}(?:免费|API)|not.{0,16}(?:free|API)/i.test(quote);
+  if(!input.valuationFactors&&!singleReset&&!glmTrialCard&&!medicalRule)return unknown('未抽取可计算因子，等待补证');
   if(Array.isArray(input.valuationFactors)&&input.valuationFactors.length!==1)return unknown('多个计算方案不能自动合并',['multiple_valuation_recipes']);
   const raw=Array.isArray(input.valuationFactors)&&input.valuationFactors.length===1?input.valuationFactors[0]:input.valuationFactors;
   let selectedFactors:unknown=raw&&typeof raw==='object'?structuredClone(raw):raw;
@@ -50,6 +58,36 @@ export async function computeCollectedValuation(input:ValuationIntakeInput,now=n
     // Quantity 1 is grounded above; price and quarter denominator are independently controlled.
     selectedFactors={kind:'plan',price:{catalogId:'chatgpt-plus.amount'},billingPeriod:'month',benchmark:'plan_fraction',referencePlan:'ChatGPT Plus',denominator:{ruleId:'plan_fraction_quarter'},sources};
     selectionRules.push('official_single_extra_reset_plus_quarter');
+  }
+  if(glmTrialCard){
+    selectedFactors={kind:'plan',currency:'CNY',price:{catalogId:'glm-coding-lite.amount'},billingPeriod:'month',benchmark:'plan_fraction',referencePlan:'GLM Coding Lite',denominator:{ruleId:'plan_fraction_quarter'},sources};
+    selectionRules.push('glm_coding_plan_single_seven_day_trial_quarter');
+  }
+  if(medicalRule){
+    const supplied=selectedFactors as Record<string,unknown>|undefined;
+    let maximum:unknown=supplied?.kind==='apply'?supplied.maximum:undefined;
+    let maxCurrency=supplied?.kind==='apply'?supplied.currency:undefined;
+    const profileSources=[...sources];
+    const citeAmount=(value:unknown,id:string)=>{
+      if(!value||typeof value!=='object'||!('quote' in value)||!input.sourceText!.includes(String(value.quote)))return undefined;
+      profileSources.push({id,url:input.evidence.url,checkedAt:input.evidence.capturedAt||now,excerpt:String(value.quote),priceBasis:'本次官方原文的申请额度及释放安排'});
+      return {...value,sourceId:id};
+    };
+    const first30Maximum=supplied?.kind==='apply'?citeAmount(supplied.first30Maximum,'first30-release'):undefined;
+    if(maximum&&typeof maximum==='object'&&'quote' in maximum&&input.sourceText.includes(String(maximum.quote))){
+      maximum=citeAmount(maximum,'maximum');
+      if(!maxCurrency)maxCurrency=/CNY|RMB|人民币/i.test(String((maximum as {quote?:string})?.quote))?'CNY':'USD';
+    }else{
+      maximum=undefined;
+      for(const [currency,name] of [['USD','USD|美元'],['CNY','CNY|RMB|人民币']] as const){
+        const expression=new RegExp(`(?:最高|上限|up to|maximum)[^。;\\n]{0,24}(?:(?:${name})\\s*([0-9][0-9,]*(?:\\.[0-9]+)?)|([0-9][0-9,]*(?:\\.[0-9]+)?)\\s*(?:${name}))`,'i');
+        const match=expression.exec(quote);
+        if(match){maximum={value:Number((match[1]??match[2]).replaceAll(',','')),sourceId:'benefit',quote:match[0]};maxCurrency=currency;break;}
+      }
+    }
+    selectedFactors={kind:'apply',currency:maximum?maxCurrency??'USD':'CNY',...(maximum?{maximum}:{}),...(first30Maximum?{first30Maximum}:{}),sources:profileSources,
+      scenario:{kind:'scenario',benchmark:'substitute_model',referenceModel:'Baichuan-M3-Plus',usageMultiplier:{ruleId:'baichuan_medical_usage_30'},components:[{scenario:'text',models:[{id:'Baichuan-M3-Plus',currency:'CNY',inputPrice:{catalogId:'baichuan-m3-plus.inputPrice'},outputPrice:{catalogId:'baichuan-m3-plus.outputPrice'},tokenPriceUnits:{catalogId:'baichuan-m3-plus.tokenPriceUnits'}}]}]}};
+    selectionRules.push('baichuan_haina_medical_m3_plus_text_workload_30');
   }
   const factors=selectedFactors as {sources?:Array<{id:string;url:string;excerpt:string}>;kind?:string};
   const sourceTexts:Record<string,string>={};
@@ -72,11 +110,20 @@ export async function computeCollectedValuation(input:ValuationIntakeInput,now=n
   const actualFact=(value:unknown)=>!value||typeof value==='object'&&'value' in value&&'sourceId' in value&&factors.sources!.some(s=>s.id===(value as {sourceId:string}).sourceId&&s.url===input.evidence.url);
   const recipe=factors as unknown as Record<string,unknown>;
   for(const key of ['amount','maximum','fullAmount','first30Maximum','entitlementUnits','monthlyCap','months','multiplier','coverageDays'])if(!actualFact(recipe[key]))return unknown('实际赠额与权益数量必须来自本次活动原文',['entitlement_source_mismatch']);
-  if(recipe.denominator&&!singleReset)return unknown('当前权益未匹配受控套餐分数约定',['unsupported_fraction_policy']);
+  if(recipe.denominator&&!singleReset&&!glmTrialCard)return unknown('当前权益未匹配受控套餐分数约定',['unsupported_fraction_policy']);
   if((input.type==='apply')!==(factors.kind==='apply')&&factors.kind!=='unknown')return unknown('申请制与计算周期不一致',['valuation_type_mismatch']);
   const available={...getValuationFactCatalog(now),...runtimeCatalog};
   const permitted=VALUATION_PRICE_CATALOG.filter(p=>p.kind!=='token_model'?p.platformId===input.platformId:p.platformId===input.platformId||input.sourceText!.toLowerCase().includes(p.model.toLowerCase())&&(input.models??[]).some(m=>m.toLowerCase()===p.model.toLowerCase()));
   const catalog=Object.fromEntries(Object.entries(available).filter(([id])=>id.startsWith('ecb-')||permitted.some(p=>id.startsWith(p.id+'.'))));
+  const latestFx=(currency:string)=>{
+    const rates=Object.entries(catalog).filter(([id,entry])=>entry.kind==='fx'&&entry.currency===currency&&/^ecb-\d{4}-\d{2}-\d{2}\./.test(id)).sort(([a],[b])=>b.localeCompare(a));
+    return rates[0]?{currency,date:rates[0][0].slice(4,14),usdRate:{catalogId:rates[0][0]}}:null;
+  };
+  if(glmTrialCard||medicalRule){
+    const fx=latestFx('CNY');if(!fx)return unknown('已授权权益缺少有效官方汇率',['fresh_profile_fx_missing']);
+    if(glmTrialCard||recipe.currency==='CNY')recipe.fx=fx;
+    if(medicalRule)((recipe.scenario as {components:Array<Record<string,unknown>>}).components[0]).fx=fx;
+  }
   const scenario=(factors.kind==='scenario'?factors:(factors as {scenario?:unknown}).scenario) as {benchmark?:string;components?:Array<{models?:Array<Record<string,unknown>>}>}|undefined;
   if(scenario?.components)for(const component of scenario.components){
     for(const cap of Object.values((component as {caps?:Record<string,unknown>}).caps??{}))if(!actualFact(cap))return unknown('实际免费用量上限必须来自本次活动原文',['entitlement_source_mismatch']);
@@ -122,12 +169,12 @@ export async function computeCollectedValuation(input:ValuationIntakeInput,now=n
       const normalize=(s:string)=>s.toLowerCase().replace(/[^a-z0-9]/g,'');
       if(![chosen.id,chosen.model].some(name=>normalize(name)===normalize(String(model.id??''))))return unknown('计算型号与可信目录型号不一致',['model_catalog_mismatch']);
       const proxy=scenario.benchmark==='substitute_model'&&chosen.genericProxyEligible&&chosen.platformId===input.platformId;
-      if(!proxy&&!input.sourceText!.toLowerCase().includes(chosen.model.toLowerCase()))return unknown('权益原文未确认此模型免费',['model_entitlement_unproven']);
+      if(!proxy&&!input.sourceText!.toLowerCase().includes(chosen.model.toLowerCase())&&!(medicalRule&&chosen.id==='baichuan-m3-plus'))return unknown('权益原文未确认此模型免费',['model_entitlement_unproven']);
       if(chosen.tokenPriceUnits!==1_000_000&&('inputPerMillion' in model||'outputPerMillion' in model))return unknown('模型价格的原始计费单位不同',['model_unit_mismatch']);
     }else if(!input.sourceText!.toLowerCase().includes(String(model.id??'').toLowerCase()))return unknown('权益原文未确认此模型免费',['model_entitlement_unproven']);
   }
   }
-  const medicalRule=input.platformId==='baichuan'&&/海纳百川/i.test(input.sourceText!)&&/Baichuan[- ]M3[- ]Plus/i.test(input.sourceText!)&&/医疗机构|medical institution/i.test(input.sourceText!)&&/免费|free/i.test(input.sourceText!);
+
   const context={catalog,platformId:input.platformId,allowedRuleIds:medicalRule?['baichuan_medical_usage_30']:[]};
   for(const source of factors.sources){sourceTexts[source.id]=source.url===input.evidence.url?input.sourceText:validSources.find(v=>v.url===source.url)!.text;}
   if(factors.kind==='unknown')return unknown((factors as {reason?:string}).reason??'当前事实不足以自动定价');
