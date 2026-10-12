@@ -48,16 +48,33 @@ export interface ValuationEngineContext {
 }
 export interface ValuationEngineResult { valuation: Valuation | null; errors: string[] }
 const round = (n: number) => Math.round((n + Number.EPSILON) * 1_000_000) / 1_000_000;
-const numbers = (text: string) => [...text.matchAll(/(?<![\w.])\d+(?:,\d{3})*(?:\.\d+)?(?:e[+-]?\d+)?(?!\w|\.\d)/gi)].map(m => Number(m[0].replaceAll(',', '')));
+/** Matching-only canonicalization; the original fetched text, quotes and hashes never change. */
+export function canonicalNumericText(text: string): string {
+  const scales: Record<string, number> = { 千: 1_000, 万: 10_000, 百万: 1_000_000, 亿: 100_000_000, k: 1_000, m: 1_000_000, b: 1_000_000_000 };
+  return text.replace(/(?<![\w.-])(\d+(?:,\d{3})*(?:\.\d+)?)(\s*)(百万|千|万|亿|[KMB])(?=\s*(?:tokens?|credits?|points?|积分|点数|令牌|张|images?|seconds?|minutes?|characters?|秒|分钟|字符|USD|CNY|INR|美元|人民币|元))/gi, (_match, value: string, _space: string, suffix: string, offset: number, original: string) => {
+    const normalized = Number(value.replaceAll(',', '')) * scales[suffix.toLowerCase()];
+    const separator = /^[a-z]/i.test(original.slice(offset + _match.length)) ? ' ' : '';
+    return Number.isFinite(normalized) ? `${normalized}${separator}` : _match;
+  });
+}
+const numbers = (text: string) => [...canonicalNumericText(text).matchAll(/(?<![\w.])\d+(?:,\d{3})*(?:\.\d+)?(?:e[+-]?\d+)?(?!\w|\.\d)/gi)].map(m => Number(m[0].replaceAll(',', '')));
+/** Accept typography changes only: grouping commas and mathematically exact trailing zeros. */
+function numericPattern(value: number): string {
+  const [integer, decimal] = value.toLocaleString('en-US', { useGrouping: false, maximumFractionDigits: 20 }).split('.');
+  const grouped = integer.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  const whole = integer === grouped ? integer : `(?:${integer}|${grouped})`;
+  return `${whole}${decimal ? `\\.${decimal}0*` : '(?:\\.0+)?'}`;
+}
 const currencyPatterns = { USD: /\bUSD\b|\$|美元/i, CNY: /\bCNY\b|\bRMB\b|[¥￥]|人民币/i, INR: /\bINR\b|₹|卢比/i };
 function moneyBound(v: ValuationFact | undefined, curr: 'USD' | 'CNY' | 'INR'): boolean {
   if (!v || !('value' in v)) return true;
   const symbols = { USD: '(?:USD\\s*\\$?|US\\$|美元|\\$)', CNY: '(?:CNY|RMB|[¥￥]|人民币)', INR: '(?:INR|₹|卢比)' };
   if (curr === 'USD' && !/\bUSD\b|US\$|美元/i.test(v.quote)) return false;
-  for (const match of v.quote.matchAll(/(?<![\w.])\d+(?:,\d{3})*(?:\.\d+)?(?:e[+-]?\d+)?(?!\w|\.\d)/gi)) {
+  const text = canonicalNumericText(v.quote);
+  for (const match of text.matchAll(/(?<![\w.])\d+(?:,\d{3})*(?:\.\d+)?(?:e[+-]?\d+)?(?!\w|\.\d)/gi)) {
     if (Number(match[0].replaceAll(',', '')) !== v.value) continue;
-    const before = v.quote.slice(Math.max(0, match.index - 20), match.index);
-    const after = v.quote.slice(match.index + match[0].length, match.index + match[0].length + 20);
+    const before = text.slice(Math.max(0, match.index - 20), match.index);
+    const after = text.slice(match.index + match[0].length, match.index + match[0].length + 20);
     if (new RegExp(`${symbols[curr]}\\s*$`, 'i').test(before) || new RegExp(`^\\s*${symbols[curr]}(?:\\s|[.,;]|$)`, 'i').test(after)) return true;
   }
   return false;
@@ -223,8 +240,8 @@ export function calculateValuationV2(raw: unknown, context: ValuationEngineConte
         if (packageMetadata && unitMetadata && packageMetadata.priceId !== unitMetadata.priceId) throw new Error('Catalog package price and units belong to different plans');
         for (const [label, p, role] of [['entitlementUnits', f.entitlementUnits, '(?:gift|free|receive|赠|获得|获赠)'], ['packageUnits', f.packageUnits, '(?:package|includes|buy|purchase|套餐|包含|购买)']] as const) {
           if ('value' in p) {
-            const n = String(p.value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            if (!new RegExp(`${role}[^\\d]{0,30}${n}(?![\\d.])\\s*(?:credits?|points?|积分|点数)|${n}(?![\\d.])\\s*(?:credits?|points?|积分|点数)[^\\d]{0,30}${role}`, 'i').test(p.quote)) throw new Error(`Source ${p.sourceId}: ${label} is not tied to the correct credit ledger role`);
+            const n = numericPattern(p.value);
+            if (!new RegExp(`${role}[^\\d]{0,30}${n}(?![\\d.])\\s*(?:credits?|points?|积分|点数)|${n}(?![\\d.])\\s*(?:credits?|points?|积分|点数)[^\\d]{0,30}${role}`, 'i').test(canonicalNumericText(p.quote))) throw new Error(`Source ${p.sourceId}: ${label} is not tied to the correct credit ledger role`);
           }
         }
         if (units <= 0) throw new Error('Package units must be positive');
@@ -343,8 +360,8 @@ export function calculateValuationV2(raw: unknown, context: ValuationEngineConte
           if (scenario.referenceModel && grouped.some(p => ![p.model, p.priceId].some(id => id?.toLowerCase() === scenario.referenceModel?.toLowerCase()))) throw new Error('Catalog reference model does not match its selected price');
           if (priceUnits <= 0) throw new Error('Token billing divisor must be positive');
           if (m.tokenPriceUnits && 'value' in m.tokenPriceUnits) {
-            const n = String(priceUnits).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            if (!new RegExp(`(?:per|/|每)\\s*${n}\\s*(?:token|Token|令牌)`, 'i').test(m.tokenPriceUnits.quote)) throw new Error('Source token divisor is not tied to the token billing unit');
+            const n = numericPattern(priceUnits);
+            if (!new RegExp(`(?:per|/|每)\\s*${n}\\s*(?:token|Token|令牌)`, 'i').test(canonicalNumericText(m.tokenPriceUnits.quote))) throw new Error('Source token divisor is not tied to the token billing unit');
           }
           if (inputPrice + outputPrice <= 0) { incomplete = true; continue; }
           // A free side is allowed when the other token direction has a real positive purchase price.
@@ -353,10 +370,10 @@ export function calculateValuationV2(raw: unknown, context: ValuationEngineConte
             if (p && 'value' in p) {
               const rows = p.quote.split(/[;\n]|\.(?!\d)/);
               if (!rows.some(row => row.toLowerCase().includes(modelIdentity.toLowerCase()) && numbers(row).includes(p.value) && moneyBound({ ...p, quote: row }, m.currency))) throw new Error(`Source ${p.sourceId}: price belongs to a different model row`);
-              const n = String(p.value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+              const n = numericPattern(p.value);
               const role = direction === 'input' ? '(?:input|输入)' : '(?:output|输出)';
-              if (!moneyBound(p, m.currency) || !new RegExp(`${role}[^\\d]{0,40}${n}(?![\\d.])|${n}(?![\\d.])[^\\d]{0,40}${role}`, 'i').test(p.quote)) throw new Error(`Source ${p.sourceId}: ${direction} token rate is not tied to its billing direction`);
-              if (m.inputPerMillion && !/per\s*(?:million|1[,.]?000[,.]?000|1m)|每\s*(?:百万|1[,.]?000[,.]?000)/i.test(p.quote)) throw new Error('Per-million token price requires an explicit million-token billing unit');
+              if (!moneyBound(p, m.currency) || !new RegExp(`${role}[^\\d]{0,40}${n}(?![\\d.])|${n}(?![\\d.])[^\\d]{0,40}${role}`, 'i').test(canonicalNumericText(p.quote))) throw new Error(`Source ${p.sourceId}: ${direction} token rate is not tied to its billing direction`);
+              if (m.inputPerMillion && !/per\s*(?:million|1[,.]?000[,.]?000|1m)|每\s*(?:百万|1[,.]?000[,.]?000)/i.test(canonicalNumericText(p.quote))) throw new Error('Per-million token price requires an explicit million-token billing unit');
             }
           }
           cost = (input * inputPrice + output * outputPrice) / priceUnits * rate;
@@ -374,7 +391,7 @@ export function calculateValuationV2(raw: unknown, context: ValuationEngineConte
             const rows = p.quote.split(/[;\n]|\.(?!\d)/).filter(row => row.toLowerCase().includes((m.canonicalId ?? m.id).toLowerCase()) && moneyBound({ ...p, quote: row }, m.currency));
             if (!rows.length || !rows.some(row => {
               if (!unitPatterns[component.scenario].test(row)) return false;
-              const divisor = row.match(/(?:per|\/|每)\s*(\d+(?:,\d{3})*)?\s*(images?|seconds?|minutes?|characters?|张|秒|分钟|字符)/i);
+              const divisor = canonicalNumericText(row).match(/(?:per|\/|每)\s*(\d+(?:,\d{3})*)?\s*(images?|seconds?|minutes?|characters?|张|秒|分钟|字符)/i);
               const literalDivisor = divisor?.[1] ? Number(divisor[1].replaceAll(',', '')) : 1;
               return literalDivisor === priceUnits && (!!divisor || /each|每张|每秒|每分钟|每字符/i.test(row));
             })) throw new Error('Unit price must identify the actual model, modality and purchase divisor in the same priced row');

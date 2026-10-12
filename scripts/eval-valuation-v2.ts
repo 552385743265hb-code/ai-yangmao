@@ -27,6 +27,7 @@ for (const fixture of cases.filter(c => !selected.length || selected.includes(c.
       fetchedUrl: url, fetchMethod: 'direct' as const, sourceVerified: true, truncated: false };
     const r = await extract(fixture.name, url, fixture.text, () => undefined,
       { platformIds: [fixture.platformId], allowPaid: false, budget: modelBudget,
+        corrections: ['本次是只读程序验收：fixture.invalid承载合成的官方原文，不因测试域名或现实中没有这场活动而丢弃。仍逐字抽取并严格执行正常收录、价格及单位规则，不新增原文没有的数量或价格；结果不写条目或审批。'],
         deadlineAt: Math.min(deadline, Date.now() + 180_000) });
     if (r.offers.length !== 1) throw Error(`Expected one offer, got ${r.offers.length}`);
     const offer = toOffer({ id: 'valuation-v2-fixture', platformId: fixture.platformId } as Parameters<typeof toOffer>[0], r.offers[0], url, fixture.text, page);

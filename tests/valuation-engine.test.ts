@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { calculateValuationV2, deriveEcbValuationFx } from '../src/shared/valuation-engine';
+import { calculateValuationV2, canonicalNumericText, deriveEcbValuationFx } from '../src/shared/valuation-engine';
 import { getValuationFactCatalog } from '../src/shared/valuation-catalog';
 import { parseValuation } from '../src/shared/valuation';
 
@@ -12,6 +12,24 @@ const model = (id: string, input: number, output: number) => { const quote = `${
 const catalogFact = (value: unknown, priceId: string, purpose: string, kind = 'price') => ({ value, priceId, purpose, kind, currency: 'USD', platformId: 'test', model: priceId, specification: 'test token spec', source: { url: source.url, checkedAt: source.checkedAt, excerpt, priceBasis: 'Trusted matched model price' } });
 
 describe('V2 source-grounded program calculations', () => {
+  it('canonicalizes explicit quantity magnitudes without changing model names', () => {
+    expect(canonicalNumericText('SWE-2 M3 10万积分 2000万 Token 1M Token 2K credits 3B tokens 1亿积分 2百万积分')).toBe('SWE-2 M3 100000积分 20000000 Token 1000000 Token 2000 credits 3000000000 tokens 100000000积分 2000000积分');
+    expect(canonicalNumericText('1MToken 2Kcredits')).toBe('1000000 Token 2000 credits');
+  });
+  it('prices canonical Chinese credit magnitudes and does not accept the unscaled numeral', () => {
+    const quote = '免费获赠10万积分。购买包包含10万积分，售价USD 20。';
+    const ctx = { ...context, sourceTexts: { official: quote } };
+    const factors = { kind: 'credits', sources: [{ ...source, excerpt: quote }], entitlementUnits: { value: 100000, sourceId: 'official', quote: '免费获赠10万积分。' }, packageUnits: { value: 100000, sourceId: 'official', quote: '购买包包含10万积分，售价USD 20。' }, packagePrice: { value: 20, sourceId: 'official', quote: '购买包包含10万积分，售价USD 20。' } };
+    expect(calculateValuationV2(factors, ctx).valuation?.usdEstimate).toBe(20);
+    expect(calculateValuationV2({ ...factors, entitlementUnits: { ...factors.entitlementUnits, value: 10 } }, ctx).valuation).toBeNull();
+    expect(calculateValuationV2({ ...factors, entitlementUnits: { ...factors.entitlementUnits, quote: factors.packageUnits.quote } }, ctx).valuation).toBeNull();
+  });
+  it('binds canonical token quotas and a 1M original billing divisor', () => {
+    const quote = 'actual: input USD 2 and output USD 4 per 1M Token. Free quota 2000万 Token.';
+    const ctx = { ...context, sourceTexts: { official: quote } };
+    const factors = { kind: 'scenario', sources: [{ ...source, excerpt: quote }], components: [{ scenario: 'text', caps: { totalTokens: { value: 20000000, sourceId: 'official', quote: 'Free quota 2000万 Token.' } }, models: [{ id: 'actual', inputPrice: { value: 2, sourceId: 'official', quote: 'actual: input USD 2 and output USD 4 per 1M Token.' }, outputPrice: { value: 4, sourceId: 'official', quote: 'actual: input USD 2 and output USD 4 per 1M Token.' }, tokenPriceUnits: { value: 1000000, sourceId: 'official', quote: 'actual: input USD 2 and output USD 4 per 1M Token.' } }] }] };
+    expect(calculateValuationV2(factors, ctx).valuation?.usdEstimate).toBe(2.8);
+  });
   it('calculates daily raw credits over the comparison window and caps the monthly entitlement', () => {
     const quote = 'Receive 5 credits daily. Monthly cap 30 credits.';
     const ctx = { ...context, sourceTexts: { official: quote }, catalog: getValuationFactCatalog(context.now) };
@@ -23,6 +41,20 @@ describe('V2 source-grounded program calculations', () => {
     const ctx = { ...context, sourceTexts: { official: quote }, catalog: getValuationFactCatalog(context.now) };
     const factors = { kind: 'credits', cadence: 'month', sources: [{ ...source, excerpt: quote }], entitlementUnits: { value: 10000, sourceId: 'official', quote }, packageUnits: { catalogId: 'elevenlabs-starter.packageUnits' }, packagePrice: { catalogId: 'elevenlabs-starter.amount' } };
     expect(calculateValuationV2(factors, ctx).valuation).toMatchObject({ usdEstimate: 2, period: 'monthly', inputs: { entitlementUnits: 10000 } });
+  });
+  it('accepts comma-formatted monthly entitlement and correctly calculates Starter reference cost', () => {
+    for (const quote of ['Free users receive 10,000 credits every month.', '每月获赠 10,000 credits。']) {
+      const ctx = { ...context, sourceTexts: { official: quote }, catalog: getValuationFactCatalog(context.now) };
+      const factors = { kind: 'credits', cadence: 'month', sources: [{ ...source, excerpt: quote }], entitlementUnits: { value: 10000, sourceId: 'official', quote }, packageUnits: { catalogId: 'elevenlabs-starter.packageUnits' }, packagePrice: { catalogId: 'elevenlabs-starter.amount' }, benchmark: 'entry_plan' };
+      expect(calculateValuationV2(factors, ctx).valuation).toMatchObject({ usdEstimate: 2, period: 'monthly' });
+    }
+  });
+  it('accepts exact trailing decimal zeros while preserving credit ledger roles', () => {
+    const quote = 'Gift 20.00 credits. Package includes 100.00 credits for USD 10.00.';
+    const ctx = { ...context, sourceTexts: { official: quote } };
+    const factors = { kind: 'credits', sources: [{ ...source, excerpt: quote }], entitlementUnits: { value: 20, sourceId: 'official', quote }, packageUnits: { value: 100, sourceId: 'official', quote }, packagePrice: { value: 10, sourceId: 'official', quote } };
+    expect(calculateValuationV2(factors, ctx).valuation?.usdEstimate).toBe(2);
+    expect(calculateValuationV2({ ...factors, entitlementUnits: { value: 100, sourceId: 'official', quote } }, ctx).valuation).toBeNull();
   });
   it('requires source evidence for recurring cadence and a monthly USD face value', () => {
     expect(calculate({ kind: 'credits', cadence: 'day', entitlementUnits: { ...fact(50), quote: 'gift 50 credits' }, packageUnits: fact(100), packagePrice: fact(10) }).valuation).toBeNull();

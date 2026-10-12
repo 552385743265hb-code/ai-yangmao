@@ -43,6 +43,7 @@ const PROMPT = `你是"AI 羊毛牧场"的信息抽取器。下面是某个 AI �
 - 免费套餐名称或只写 limited / generous limits 的有限聊天、搜索、生图功能，不等于可量化的免费额度，不输出
 - 同页混有付费档和免费档时逐项判断：排除付费套餐不能连带丢掉免费档的量化额度。例如 WorkBuddy 体验版每月 500 积分应输出 standing，付费三档月度“加赠”不输出。
 - 付费套餐本身包含的额度（例如 PRO 会员每月自带的 credits、订阅档内含的无限量或特权）：这是买套餐买到的，不是羊毛。可收的是免费档里可量化的 AI Token、积分、次数或 API 额度；订阅档额外的额度重置（reset）；常规套餐之外的加赠（如智谱加赠的重置卡、多送的 Token、限时翻倍）
+- 原文明示向已有会员独立额外发放一次额度重置时，应输出perk并打reset，保留会员门槛；不能因领取者已付费、未公布Token数或未写截止日期而丢掉。传播进度、普通周期刷新、买套餐自带额度仍排除。估值暂缺依据也不能作为丢掉已符合收录范围权益的理由，输出unknown因子即可。
 - 例外（要输出）：学生、教师、特定设备持有人（如买 Pixel 送 AI Pro）等身份认证专享的免费会员或大幅折扣（五折及以下），算羊毛，门槛写 student 或 pay:购买设备
 - 首月优惠（首月几折、新用户首月半价等订阅折扣）：很常见的拉新手段，不是免费额度，不输出；例外：首月实付不超过 $1（约 ¥7）、基本等于免费的保留，打 discount 标签（2026-10-03 管理员决定）
 - 价格页逐个付费档位的每月配额，包括拆成“基础 + 加赠”或标了“限时”的每月实得积分，仍可能是套餐定价，不因这些字样自动输出。必须有区别于普通订阅配置的独立活动条件/赠送机制证据，才收套餐之外的赠额；缺截止日期本身不等于没有活动。WorkBuddy 标准/高级/旗舰每月加赠 2,000/5,000/30,000 属于已明确不收的套餐配置，不输出，也不合并成一条羊毛。真实独立活动的多档赠额才合成一条写范围。
@@ -72,7 +73,7 @@ const PROMPT = `你是"AI 羊毛牧场"的信息抽取器。下面是某个 AI �
 - audience：new / old / all / unclear（原文没写清楚就用 unclear）
 - valueText：有具体数量和单位时必须写出（如"每天1000次请求""新用户2000万tokens"），数字从原文来。没有具体数量时只描述原文明示的权益及实际限制，不编数值、不输出“官方未写明具体额度：”等核验报告前缀。原文写了可用模型、速率限制或客户端范围时一并写清。
 - usdEstimate / usdMax：一律 null。不要计算最终美元，也不要输出 valuation；自动估值由服务器使用下方 valuationFactors 计算。不得重新估算或覆盖已有管理员 valuation。
-- valuationFactors：只抽当前原文明示的数量、单位、周期和参考类型，不能写模型记忆价格或最终金额。Fact 数字必须为 {value:原文数字,sourceId:"benefit",quote:"包含数字与单位的连续逐字原文"}，受控价格才可用 {catalogId:"下方目录中的真实ID"}。sources 固定为 [{id:"benefit",url:"当前来源URL",checkedAt:"当前日期YYYY-MM-DD",excerpt:"连续原文逐字摘录",priceBasis:"此原文支撑的数量或价格"}]。所有 literal Fact 的quote必须是excerpt子串，价格quote必须包含货币与计费单位；价格在另一个网站时不可伪装为本页。参考套餐/月付入门价格不由你猜：从目录选择明确匹配当前平台、套餐及计费周期的 catalogId；目录无匹配则unknown。
+- valuationFactors：只抽当前原文明示的数量、单位、周期和参考类型，不能写模型记忆价格或最终金额。Fact 数字必须为 {value:原文的规范数值,sourceId:"benefit",quote:"包含数字与单位的连续逐字原文"}，原文明示10万可写value:100000、1M可写value:1000000，程序验证明确单位缩放，quote仍逐字保留；不得从计算或记忆补数。受控价格才可用 {catalogId:"下方目录中的真实ID"}。sources 固定为 [{id:"benefit",url:"当前来源URL",checkedAt:"当前日期YYYY-MM-DD",excerpt:"连续原文逐字摘录",priceBasis:"此原文支撑的数量或价格"}]。所有 literal Fact 的quote必须是excerpt子串，价格quote必须包含货币与计费单位；价格在另一个网站时不可伪装为本页。参考套餐/月付入门价格不由你猜：从目录选择明确匹配当前平台、套餐及计费周期的 catalogId；目录无匹配则unknown。
   - 已明示USD固定赠金：{kind:"direct_usd",amount:Fact,period:"one_time",sources}；真实赠额上限可加maximum:Fact。只有明确写USD美元才用，不能看到$就猜币种。
   - 会员/重置等套餐参考：{kind:"plan",currency:"USD"或"CNY"或"INR",price:Fact,billingPeriod:"month"或"year",months?:Fact,numerator?:Fact,denominator?:Fact,multiplier?:Fact,benchmark:"entry_plan"或"plan_fraction"或"plan_multiplier",referencePlan:"明确套餐名",sources}。重置卡明确按每张月费/4参考时 numerator可省略、denominator只能用受控{ruleId:"plan_fraction_quarter"}约定，不能假装原文写了4。ChatGPT额外重置由服务端选择Plus $20/4，不需要你编4。其他未授权分数保持unknown。
   - 积分：{kind:"credits",currency:"USD"或"CNY"或"INR",entitlementUnits:Fact,cadence:"once"或"day"或"month",monthlyCap?:Fact,packageUnits:Fact,packagePrice:Fact,benchmark?:"entry_plan",referencePlan?:"目录中套餐全名",sources}。每日额度只填每日原数字，程序按覆盖天数汇总并按monthlyCap封顶，不计算一个正文中没有的新数值。目录已核实本平台同单位积分的普通月付入门档时可用entry_plan作暂定价格参照，不宣称已证明跨套餐互换；未知平台/单位/规格无匹配才unknown。cadence必须原文明示日/月/一次性。
