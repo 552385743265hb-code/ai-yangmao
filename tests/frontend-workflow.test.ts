@@ -201,21 +201,28 @@ describe('frontend review workflow', () => {
     expect((page.document.querySelector('#noteForm textarea') as HTMLTextAreaElement).value).toBe('草稿 B');
   });
 
-  it('excludes stale and withdrawn standing offers from current-value charts and uses lifecycle status', () => {
+  it('keeps approved standing offers claimable despite old probe errors, but excludes withdrawn offers', () => {
     const page = fixture(() => ({}));
     publicOffer(page.run, { verify: 'evidence_missing' });
     page.run("OFFERS.push({...OFFERS[0],id:'withdrawn',verify:'ok',withdrawnAt:new Date(Date.now()-DAY).toISOString()});prepare();pLibrary()");
     const rows = [...page.document.querySelectorAll('tbody tr')].map(row => row.textContent);
-    expect(rows[0]).toContain('待核验'); expect(rows[1]).toContain('已结束');
-    expect(rows.join('')).not.toContain('新鲜');
-    expect(page.charts.get('cRank').series[0].data).toEqual([]);
+    expect(rows[0]).toContain('常驻'); expect(rows[1]).toContain('已结束');
+    expect(page.run('claimable(OFFERS[0])')).toBe(true);
+    expect(page.run('claimable(OFFERS[1])')).toBe(false);
   });
-  it('explains that stale evidence does not revoke a prior human approval',()=>{
+  it('shows an approved dated offer through its deadline even when an old probe failed', () => {
+    const page = fixture(() => ({}));
+    publicOffer(page.run, { ty: 'free', ek: 'date', e: 2, verify: 'evidence_missing', verifiedAt: '2025-01-01T00:00:00Z' });
+    expect(page.run("statusOf(OFFERS[0])")).toBe('ending');
+    page.run("Object.assign(OFFERS[0],{e:-1});prepare()");
+    expect(page.run("statusOf(OFFERS[0])")).toBe('ended');
+  });
+  it('explains that an old probe error does not revoke a prior human approval',()=>{
     const page=fixture(()=>({}));publicOffer(page.run,{verify:'evidence_missing'});page.run("pOffer('public-offer')");
     const text=page.document.querySelector('#main')!.textContent||'';
-    expect(text).toContain('此前的审核通过仍保留');expect(text).toContain('可能是网页改写');
+    expect(text).toContain('批准记录保留');expect(text).toContain('可能是网页改写');
     expect(text).not.toContain('当前证据页不再支持保存的条款');
-    expect(page.document.querySelector('a[href="#admin-offer-public-offer"]')?.textContent).toContain('后台核对证据');
+    expect(page.document.querySelector('a[href="#admin-offer-public-offer"]')).toBeNull();
     page.run("ADM.token='';pOffer('public-offer')");expect(page.document.querySelector('a[href="#admin-offer-public-offer"]')).toBeNull();
   });
 

@@ -511,31 +511,12 @@ ingest.get('/sources', async c => {
   return c.json({ sources: rows.map(r => ({ ...r, lastHash: snap[r.id]?.hash ?? null, lastText: r.kind === 'rss' ? snap[r.id]?.text ?? null : null, platform: plats.find(p => p.id === r.platformId) ?? null })) });
 });
 
-/** 到期需要重新核验的权益。证据 URL 是逐条权益自己的 URL，RSS 和补录条目也能复核。 */
+/** 兼容旧采集器：已批准条款不再进入定期证据复抓队列。 */
 ingest.get('/verification-queue', async c => {
-  const now = Date.now();
-  const sourceId = c.req.query('sourceId');
-  const forced = c.req.query('force') === '1';
-  const d = db(c.env);
-  const approved = sourceId
-    ? and(eq(s.offers.reviewState, 'approved'), eq(s.offers.sourceId, sourceId),canonicalOffers)
-    : and(eq(s.offers.reviewState, 'approved'),canonicalOffers);
-  const rows = await d.select().from(s.offers).where(approved);
-  // Use a subquery: binding every approved ID exceeds D1's 100-parameter limit as the catalogue grows.
-  const proposals = rows.length ? await d.select().from(s.offerProposals).where(inArray(s.offerProposals.offerId,
-    d.select({ id: s.offers.id }).from(s.offers).where(approved))) : [];
-  return c.json({ offers: rows.filter(o => {
-    if (o.withdrawnAt || (o.endKind === 'date' && liveStatus(o, new Date(now)) === 'ended')) return false;
-    if (o.evidence.tier === 'tested') return false; // 管理员实测的条目没有可抓取的官方原文，不做自动复核
-    if (forced) return true;
-    const age = o.lastVerifiedAt ? now - Date.parse(o.lastVerifiedAt) : Infinity;
-    return age >= (o.type === 'standing' || o.type === 'apply' ? 7 : 1) * 86400_000;
-  }).map(o => ({ id: o.id, url: o.evidence.url, tier: o.evidence.tier, pageHash: o.evidence.pageHash ?? null,
-    proposalHash: (proposals.find(p => p.offerId === o.id)?.candidate.evidence as typeof o.evidence | undefined)?.pageHash ?? null,
-    sourceId: o.sourceId, platformId: o.platformId, excerpts: o.evidence.excerpts })) });
+  return c.json({ offers: [] });
 });
 
-/** 只有同一证据页仍含保存的关键原文，才刷新该权益的核验时间。 */
+/** 兼容旧采集器：验证请求只确认对象，不再改写已批准证据或状态。 */
 ingest.post('/verify', async c => {
   const body = z.object({ offerId: z.string(), url: z.url(), finalUrl: z.url().optional(), text: z.string().max(250000),
     trustedDirect: z.boolean().optional(), pageHash: z.string().regex(/^[a-f0-9]{64}$/).optional(), processedChange: z.boolean().optional() }).safeParse(await c.req.json().catch(() => null));
@@ -544,34 +525,7 @@ ingest.post('/verify', async c => {
   const [o] = await d.select().from(s.offers).where(and(eq(s.offers.id, body.data.offerId),canonicalOffers));
   if (!o || o.reviewState !== 'approved' || o.evidence.url !== body.data.url) return c.json({ error: '证据或活动不匹配' }, 404);
   if (body.data.trustedDirect !== true) return c.json({ verified: false, sourceUnverified: true });
-  const currentVersion = and(eq(s.offers.id,o.id),eq(s.offers.updatedAt,o.updatedAt),eq(s.offers.reviewState,'approved'));
-  if (body.data.finalUrl && new URL(body.data.finalUrl).hostname.toLowerCase() !== new URL(o.evidence.url).hostname.toLowerCase()) {
-    if(o.verifyResult==='evidence_missing')return c.json({verified:false,redirectedOutsideOfficialHost:true,unchanged:true});
-    const changed = await d.update(s.offers).set({ verifyResult: 'evidence_missing', updatedAt: new Date().toISOString() }).where(currentVersion).returning({id:s.offers.id});
-    return c.json({ verified: false, redirectedOutsideOfficialHost: true, stale: !changed.length });
-  }
-  const normalize = (value: string) => value.replace(/\s+/g, ' ').trim().toLowerCase();
-  const current = normalize(body.data.text);
-  const quotes = Object.values(o.evidence.excerpts).filter((value): value is string => typeof value === 'string' && !!value.trim());
-  const unprocessedChange = !!body.data.pageHash && body.data.pageHash !== o.evidence.pageHash && !body.data.processedChange;
-  const quotesMatch = quotes.length > 0 && quotes.every(quote => current.includes(normalize(quote)));
-  const [proposal] = await d.select().from(s.offerProposals).where(eq(s.offerProposals.offerId, o.id));
-  const unchangedTerms = !!body.data.pageHash && body.data.processedChange === true
-    && o.evidence.pageHash === body.data.pageHash && !proposal;
-  const verified = !unprocessedChange && (quotesMatch || unchangedTerms);
-  // A changed page awaiting extraction is not fresh verification, but quotes
-  // that are still present are not missing evidence either.
-  if(unprocessedChange&&quotesMatch)return c.json({verified:false,unprocessedChange:true,unchanged:true,matchedExcerpts:quotes.length});
-  const evidence = verified && body.data.processedChange && body.data.pageHash && !proposal
-    ? { ...o.evidence, pageHash: body.data.pageHash } : o.evidence;
-  const nowIso = new Date().toISOString();
-  // The same failed probe must not refresh reviewVersion and resend the same card.
-  if(!verified&&o.verifyResult==='evidence_missing')return c.json({verified:false,unchanged:true,matchedExcerpts:0});
-  const changed = await d.update(s.offers).set(verified
-    ? { lastVerifiedAt: nowIso, verifyResult: unchangedTerms ? '必要业务字段没有变化' : '官方证据原文仍在当前页面', evidence, updatedAt: nowIso }
-    : { verifyResult: 'evidence_missing', evidence, updatedAt: nowIso })
-    .where(currentVersion).returning({id:s.offers.id});
-  return c.json({ verified: verified && changed.length > 0, stale: !changed.length, matchedExcerpts: verified && changed.length ? quotes.length : 0 });
+  return c.json({ verified: false, notRequired: true, unchanged: true });
 });
 
 /** 一次抓取的结果：成功时记录内容哈希（变化才存快照），失败时累计连续失败次数。 */
