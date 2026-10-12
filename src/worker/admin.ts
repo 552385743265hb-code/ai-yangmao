@@ -52,7 +52,7 @@ function view(o: OfferRow, platformName: string, now = new Date()) {
     value: o.valueText, usd: o.usdEstimate, end: endText(o), status: liveStatus(o, now), reviewState: o.reviewState,
     membershipRequirement:o.membershipRequirement??null, requirements: o.requirements, audience: o.audience, claimMethod: o.claimMethod, creditValidity: o.creditValidity,
     sourceTz: o.sourceTz, claimStart: o.claimStart, claimEnd: o.claimEnd, endKind: o.endKind,
-    evidenceUrl: o.evidence.url, evidenceTier: o.evidence.tier, excerpts: o.evidence.excerpts, missingEvidence: missingEvidence(o.evidence.excerpts),
+    evidenceUrl: o.evidence.url, evidenceTier: o.evidence.tier, excerpts: o.evidence.excerpts, missingEvidence: missingEvidence(o.evidence.excerpts),verifyResult:o.verifyResult??null,
     steps: o.steps, models: o.models ?? [], tags: o.tags ?? [], publishedAt: o.publishedAt ?? null, lastVerifiedAt:o.lastVerifiedAt??null, modalities: o.modalities, usdEstimate: o.usdEstimate, usdMax: o.usdMax ?? null, valuation: parseValuation(o.valuation), adminNote: o.adminNote ?? null, reviewMemo: o.reviewMemo ?? null, officialReview: o.officialReview ?? null, suggestion: o.reviewSuggestion ?? null,
     // 上架前检查：缺了哪些字段、影响哪些栏目（规格见 src/shared/spec.ts）
     checks: checkOffer(o, now).map(i => ({ ...i, sections: i.sections.map(k => SECTIONS[k]) })),
@@ -154,10 +154,10 @@ admin.get('/queue', async c => {
   const suggest = (await d.select().from(s.sources).where(and(gte(s.sources.cleanStreak, 5), eq(s.sources.autoPublish, false))))
     .filter(source => source.enabled && ['site', 'docs', 'official'].includes(source.tier));
   const approvedRows = await d.select().from(s.offers).where(and(eq(s.offers.reviewState, 'approved'),canonicalOffers));
-  // 抓取/证据匹配失败留在健康页自动重试，不转成人工审批任务。
-  const needsVerification: OfferRow[] = [];
-  // 已上架但字段不全：和待审用同一份检查，补齐后各栏目才完整
-  const incomplete = approvedRows.filter(o => !o.withdrawnAt&&checkOffer(o, now).some(i => i.level !== 'info'));
+  // An approved offer can lose current-evidence status without losing its approval.
+  // Keep this separate from new-activity approval and render it lazily in the admin UI.
+  const needsVerification = approvedRows.filter(o=>!o.withdrawnAt&&liveStatus(o,now)==='stale').sort((a,b)=>Number(b.verifyResult==='evidence_missing')-Number(a.verifyResult==='evidence_missing')||(claimEndAt(a)?.getTime()??Infinity)-(claimEndAt(b)?.getTime()??Infinity)||String(a.id).localeCompare(String(b.id)));
+  const incomplete = approvedRows.filter(o => !o.withdrawnAt&&liveStatus(o,now)!=='stale'&&checkOffer(o, now).some(i => i.level !== 'info'));
   const identityTasks=(await c.env.DB.prepare("SELECT t.id,t.kind,t.revision,t.entity_id,t.suggestion_json,d.basis_json,e.canonical_offer_id,v.display_candidate_json FROM review_tasks t LEFT JOIN benefit_entities e ON e.id=t.entity_id LEFT JOIN benefit_versions v ON v.id=t.version_id AND v.entity_id=e.id LEFT JOIN review_decisions d ON d.id=t.decision_id WHERE t.state IN ('open','checking','manual') AND (e.id IS NULL OR e.state='active') ORDER BY t.created_at,t.id").all<{id:string;kind:string;revision:number;entity_id:string|null;suggestion_json:string|null;basis_json:string|null;canonical_offer_id:string|null;display_candidate_json:string|null}>()).results;
   const taskOfferIds=identityTasks.flatMap(t=>t.canonical_offer_id?[t.canonical_offer_id]:[]);
   const allOffers=taskOfferIds.length?await d.select().from(s.offers).where(sql`${s.offers.id} IN (SELECT value FROM json_each(${JSON.stringify(taskOfferIds)}))`):[];
@@ -181,7 +181,7 @@ admin.get('/queue', async c => {
     priorityLeads: (await d.select().from(s.leads).where(inArray(s.leads.status,['new','reviewing'])))
       .filter(l=>leadPriority(l)<=1).sort((a,b)=>leadPriority(a)-leadPriority(b)||b.id-a.id).slice(0,10)
       .map(l=>({ id:l.id,title:l.title,url:l.url,status:l.status,note:l.status==='reviewing'?l.raw?.split('[研判]').at(-1)?.slice(0,500):null })),
-    newLeads, needsVerification: needsVerification.map(queueView), incomplete: incomplete.map(queueView), pendingPlatforms: pendingPlatforms.map(p => ({ id: p.id, name: p.name, type: p.type, site: p.site })),
+    newLeads, needsVerification: needsVerification.filter(o=>!cards.some(card=>card.id===o.id)).map(queueView), incomplete: incomplete.map(queueView), pendingPlatforms: pendingPlatforms.map(p => ({ id: p.id, name: p.name, type: p.type, site: p.site })),
     suggestAutoPublish: suggest.map(x => ({ id: x.id, platformId: x.platformId, url: x.url, cleanStreak: x.cleanStreak })),
   });
 });

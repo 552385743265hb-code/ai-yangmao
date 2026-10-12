@@ -559,6 +559,9 @@ ingest.post('/verify', async c => {
   const unchangedTerms = !!body.data.pageHash && body.data.processedChange === true
     && o.evidence.pageHash === body.data.pageHash && !proposal;
   const verified = !unprocessedChange && (quotesMatch || unchangedTerms);
+  // A changed page awaiting extraction is not fresh verification, but quotes
+  // that are still present are not missing evidence either.
+  if(unprocessedChange&&quotesMatch)return c.json({verified:false,unprocessedChange:true,unchanged:true,matchedExcerpts:quotes.length});
   const evidence = verified && body.data.processedChange && body.data.pageHash && !proposal
     ? { ...o.evidence, pageHash: body.data.pageHash } : o.evidence;
   const nowIso = new Date().toISOString();

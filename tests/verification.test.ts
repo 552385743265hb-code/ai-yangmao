@@ -462,7 +462,7 @@ describe('official evidence verification', () => {
     expect(missing.body.verified).toBe(false);
     expect((await call('offers?view=claimable')).body.count).toBe(0);
     expect((await call('admin/notify?kind=digest', undefined, 'admin')).body).toMatchObject({ needsVerificationCount: 0 });
-    expect((await call('admin/queue', undefined, 'admin')).body.needsVerification).toHaveLength(0);
+    expect((await call('admin/queue', undefined, 'admin')).body.needsVerification).toEqual([expect.objectContaining({id:'vendor-free',reviewState:'approved',status:'stale'})]);
     const withdrawn = await call('admin/offers/vendor-free/withdraw', { reason: 'The vendor ended its free allowance', evidenceUrl: 'https://vendor.example/withdrawal' }, 'admin');
     expect(withdrawn.body.status).toBe('ended');
     expect((await call('admin/queue', undefined, 'admin')).body.needsVerification).toHaveLength(0);
@@ -612,7 +612,18 @@ describe('review gates and preserved public version', () => {
     const verified = await call('ingest/verify', { trustedDirect: true, offerId: offer.id, url: evidence.url,
       text: 'All members can receive one hundred tokens when they register.', pageHash: hash, processedChange: true });
     expect(verified.body.verified).toBe(false);
-    expect((await call('admin/queue', undefined, 'admin')).body.needsVerification).toEqual([]);
+    expect((await call('admin/queue', undefined, 'admin')).body.needsVerification).toEqual([expect.objectContaining({id:'vendor-free',reviewState:'approved',status:'stale'})]);
+  });
+  it('does not claim a missing quote when all saved excerpts remain on an unprocessed changed page',async()=>{
+    await call('ingest/offers',[{...offer,evidence:{...evidence,pageHash:'a'.repeat(64)}}]);
+    await call('admin/offers/vendor-free/approve',{},'admin');
+    const before=sqlite.prepare("SELECT last_verified_at,verify_result FROM offers WHERE id='vendor-free'").get() as {last_verified_at:string;verify_result:string};
+    const result=await call('ingest/verify',{trustedDirect:true,offerId:offer.id,url:evidence.url,
+      text:Object.values(evidence.excerpts).join('\n')+'\nUnrelated footer changed.',pageHash:'b'.repeat(64),processedChange:false});
+    expect(result.body).toMatchObject({verified:false,unprocessedChange:true,unchanged:true});
+    const after=sqlite.prepare("SELECT last_verified_at,verify_result FROM offers WHERE id='vendor-free'").get();
+    expect(after).toEqual(before);
+    expect((await call('admin/queue',undefined,'admin')).body.needsVerification).toEqual([]);
   });
 
   it.each([
@@ -679,7 +690,7 @@ describe('review gates and preserved public version', () => {
     const body = { trustedDirect: true, offerId: offer.id, url: evidence.url, text: 'Unrelated page', pageHash: 'b'.repeat(64), processedChange: true };
     expect((await call('ingest/verify', body)).body.verified).toBe(false);
     expect((await call('ingest/verify', body)).body.verified).toBe(false);
-    expect((await call('admin/queue', undefined, 'admin')).body.needsVerification).toEqual([]);
+    expect((await call('admin/queue', undefined, 'admin')).body.needsVerification).toEqual([expect.objectContaining({id:'vendor-free',reviewState:'approved',status:'stale'})]);
   });
 
   it('keeps known dates and valuations when a later extraction omits them', async () => {
