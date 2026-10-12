@@ -10,6 +10,7 @@ export function quotaFailure(error:unknown):boolean {
 /** Public data comes only from a pre-sanitized approved snapshot, never a raw DB dump. */
 export async function snapshotResponse(request:Request,assets:Fetcher):Promise<Response|null>{
  const u=new URL(request.url),path=u.pathname;
+ if(/^\/api\/offers\/[^/]+\/comments$/.test(path))return null;
  if(!['/api/offers','/api/platforms','/api/meta','/api/coverage'].includes(path)&&!path.startsWith('/api/offers/'))return null;
  const source=await assets.fetch(new Request(new URL('/public-snapshot.json',u.origin)));
  if(!source.ok)return Response.json({error:'只读快照暂不可用，请稍后重试',degraded:true},{status:503});

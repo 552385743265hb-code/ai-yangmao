@@ -107,6 +107,17 @@ Agent 数据缓存按公开 generation 失效，同实例冷并发合并读取�
 
 ## 发布与故障排查
 
+### 公开匿名牧场心得
+
+发布前应用 `0040_offer_comments.sql`，再部署 Worker 和前端。迁移新增匿名身份、共同留言、限频三张表，并把已有非空管理员心得复制为同列表的 `admin` 留言；不改变条目条款及审核状态。发布前导出 `offers` 中的旧心得和迁移台账，核对台账仅缺本次迁移，备份当前 Worker 版本。原 `adminNote` 编辑入口事务同步对应留言；详情页只有一个共同留言框。访客体验不进入通知、审核证据或 `tested` 标记。
+
+- `POST /api/community/session`：分配/恢复匿名身份。Cookie 为 HttpOnly、SameSite=Strict，HTTPS 下 Secure；有效期一年。服务端检查六位 ID 唯一性，数据库只保存随机会话令牌的 SHA-256。
+- `GET /api/offers/:id/comments?before=<id>`：倒序分页，每页 20 条，返回公开姓名、文字、时间和留言编号，不返回会话令牌、IP、内部作者编号。`Cache-Control: no-store`，可点“刷新留言”读回。
+- `POST /api/offers/:id/comments`：提交 `{content, requestId}`；1–500 字，requestId 为 UUID，重试幂等。JSON 限 4 KiB，校验同源。单访客每分钟 1 条、每天 20 条；同 IP 每 10 分钟 10 条、每天 100 条；新身份同 IP 每小时最多 30 个。网络标识使用管理密钥派生的 HMAC，不保存原 IP。限频原子更新并返回 429 / Retry-After；共享网络可能共同触发限额。
+- `POST /api/admin/offers/:id/comments`：同一列表中新增署名 `admin` 的留言，仅管理员可用。`POST /api/admin/comments/:id/delete`：软删除，前端有删除确认；审核员令牌无此权限。删除迁入的旧心得同时清空兼容字段，避免旧推送继续引用。
+
+立即公开的匿名留言仍可能包含广告或不实体验，需管理员日常移除；清 Cookie 可获得新身份，网络限频用于限制这种刷屏。数据库额度降级时浏览原有羊毛快照，留言明确显示暂不可用，不返回空列表冒充“没人留言”。留言使用独立表；Worker 回滚保留这些表及已发表内容。过期限频记录在分配身份时每次最多清理 100 条。
+
 发布前核对local、remote、当前生产版本及回滚边界：
 
 ```bash

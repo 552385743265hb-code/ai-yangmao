@@ -73,6 +73,8 @@ AIHOT 数据的使用边界：只作线索，页面引用官方原文。其条�
 
 ## 5. 数据模型
 
+详情页“牧场心得”是共同留言列表：`offer_comments` 存管理员和匿名访客的多条体验，`anonymous_comment_users` 分配唯一六位公开 ID 与持久会话，`comment_rate_limits` 原子限制写入。作者身份由服务端认证，管理员显示 `admin`、访客显示“羊毛党 + 六位数字”；文本直接公开，管理员可软删除。已有 `adminNote` 兼容原编辑及推送，迁移后与其他留言在同一列表展示。公开留言不参与福利审核或条款更新。接口、限频和发布顺序见[运维说明](operations.md)。
+
 ### 5.1 羊毛（offers）
 
 完整字段、校验和栏目映射以[数据合同](data-contract.md)为唯一说明，schema在`src/db/schema.ts`、入库校验在`src/shared/ingest.ts`。审核状态pending/approved/rejected与业务状态upcoming/active/ending/ended/standing/stale/open分开。

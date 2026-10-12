@@ -95,6 +95,28 @@ export interface Evidence {
   excerpts: { benefit?: string; eligibility?: string; claim?: string; validity?: string };
 }
 
+export const anonymousCommentUsers = sqliteTable('anonymous_comment_users', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  publicId: integer('public_id').notNull().unique(),
+  tokenHash: text('token_hash').notNull().unique(),
+  createdAt: text('created_at').notNull(),
+  expiresAt: integer('expires_at').notNull(),
+});
+export const offerComments = sqliteTable('offer_comments', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  offerId: text('offer_id').notNull().references(() => offers.id),
+  anonymousId: integer('anonymous_id').references(() => anonymousCommentUsers.id),
+  content: text('content').notNull(),
+  requestKey: text('request_key').notNull().unique(),
+  createdAt: text('created_at').notNull(),
+  deletedAt: text('deleted_at'),
+}, t => [index('offer_comments_public').on(t.offerId, t.deletedAt, t.id), index('offer_comments_author').on(t.anonymousId, t.offerId, t.id)]);
+export const commentRateLimits = sqliteTable('comment_rate_limits', {
+  key: text('key').primaryKey(),
+  used: integer('used').notNull(),
+  expiresAt: integer('expires_at').notNull(),
+}, t => [index('comment_rate_limits_expiry').on(t.expiresAt)]);
+
 export const snapshots = sqliteTable('snapshots', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   sourceId: text('source_id').notNull().references(() => sources.id),
