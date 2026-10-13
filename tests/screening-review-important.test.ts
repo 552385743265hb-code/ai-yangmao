@@ -53,7 +53,7 @@ describe('screening review corrections', () => {
     const result = await screenSubject({
       itemId: 'lead:1', kind: 'lead', origin: 'linuxdo', url: 'https://linux.do/t/x/1', title: 'title', text: 'body', truncated: false,
       platformIds: [], discoveredAt: '2026-10-12T00:00:00.000Z', deterministicUrgency: none,
-    }, snapshot([]), { purpose: 'urgent', deadlineAt: Date.now() + 60_000, platforms: [] });
+    }, snapshot([]), { purpose: 'urgent', deadlineAt: Date.now() + 60_000 });
     expect(model).toHaveBeenCalledTimes(1);
     expect(result.verdict.verdict).toBe('new_candidate');
     expect(result.verdict.urgency.tier).toBe('P3');
@@ -116,7 +116,7 @@ describe('screening review corrections', () => {
     const urls: string[] = [];
     vi.stubGlobal('fetch', vi.fn(async (url: unknown) => { urls.push(String(url)); return Response.json({ items: [] }); }));
     const { runScreening } = await import('../pipeline/screening/run');
-    const stats = await runScreening({ deadlineAt: Date.now() + 60_000, dry: false, log() {} });
+    const stats = await runScreening({ deadlineAt: Date.now() + 60_000, dry: false });
     expect(stats.screened).toBe(0);
     expect(urls).toEqual([]);
     for (const file of ['pipeline/run.ts', 'pipeline/screening/run.ts']) {
@@ -132,7 +132,7 @@ describe('screening review corrections', () => {
     vi.doMock('../pipeline/screening/memory', () => ({ loadMemory: async () => snapshot([]) }));
     vi.stubGlobal('fetch', vi.fn(async (url: unknown) => { urls.push(String(url)); return Response.json({ items: [] }); }));
     const { runScreening } = await import('../pipeline/screening/run');
-    await expect(runScreening({ deadlineAt: Date.now() + 60_000, dry: false, log() {} })).rejects.toThrow(/explicit API_BASE required/);
+    await expect(runScreening({ deadlineAt: Date.now() + 60_000, dry: false })).rejects.toThrow(/explicit API_BASE required/);
     expect(urls).toEqual([]);
   });
 

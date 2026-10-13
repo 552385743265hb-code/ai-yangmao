@@ -38,6 +38,7 @@ interface HarnessOptions {
   verificationStatus?: number;
   verified?: boolean;
   known?: Record<string, unknown>[];
+  profiles?: Record<string, unknown>[];
 }
 function harness(options: HarnessOptions = {}) {
   const writes: { url: string; body: any }[] = [];
@@ -64,6 +65,7 @@ function harness(options: HarnessOptions = {}) {
     if(url==='https://mcp.exa.ai/mcp' && options.partialSearch && ++searchCalls>1)return new Response('quota',{status:429});
     if(url==='https://mcp.exa.ai/mcp')return options.officialSearchStatus?new Response('unavailable',{status:options.officialSearchStatus}):json({result:{content:[{type:'text',text:(options.officialUrls??['https://vendor.example/confirmed']).map(u=>'URL: '+u).join('\n')}]}});
     if (url.includes('/offers-index')) return options.indexFailure?new Response('unavailable',{status:503}):json({ offers: options.known ?? [], complete:true, nextCursor:null });
+    if (url.includes('/screening/memory')) return json({ records: [], rules: [], profiles: options.profiles ?? [], calibrations: [], nextCursor: null });
     if (url.includes('/corrections?')) return json({ corrections: [] });
     if (url.endsWith('/model-budget/reserve')) return options.budgetDenied ? jsonError() : json({ id: ++reservation });
     if (url.endsWith('/settle')) return json({ ok: true });
@@ -443,6 +445,18 @@ it('R07 scheduled official pages and feeds transport the actual fetch descriptor
 });
 it('R07 scheduled Jina feed fallback preserves its reader provenance and media tier',async()=>{
  vi.stubEnv('FAST_LEADS','0');const url='https://vendor.example/article';const h=harness({sources:[rssSource],pages:{[rssSource.url]:rss(url),[url]:403},jinaBody:'URL Source: https://unrelated.example\nWarning: Target URL returned error 403\nMarkdown Content:\n'+benefit});const {runPipeline}=await import('../pipeline/run');await runPipeline();const posted=h.payloads('/offers')[0][0];expect(posted.evidence.tier).toBe('media');expect(posted.sourceFetch).toMatchObject({originalUrl:url,method:'jina',sourceVerified:false});expect(posted.sourceFetch.fetchedUrl).toContain('r.jina.ai');
+});
+it('uses a D1 platform profile during extraction when screening is off', async () => {
+  vi.stubEnv('FAST_LEADS', '0');
+  vi.stubEnv('SCREENING_MODE', 'off');
+  const h = harness({
+    sources: [rssSource],
+    pages: { [rssSource.url]: rss('https://vendor.example/article') },
+    profiles: [{ platformId: 'vendor', channels: [], patterns: [], pitfalls: [{ text: '画像专属要点XYZ', since: null }], cadence: [], fieldEditRates: {}, quicklyExhausted: false, revision: 1 }],
+  });
+  const { runPipeline } = await import('../pipeline/run');
+  await runPipeline();
+  expect(h.writes.some(write => JSON.stringify(write.body).includes('画像专属要点XYZ'))).toBe(true);
 });
 it('R07 official enrichment transports reader attestation rather than deriving it from source text',async()=>{
  const h=harness({officialJob:true});const {runPipeline}=await import('../pipeline/run');await runPipeline();const posted=h.payloads('/offers')[0][0];expect(posted.sourceFetch.originalUrl).toBe(posted.evidence.url);expect(posted.sourceFetch.sourceVerified).toBe(true);expect(posted.sourceFetch.contentHash).toBe(sha256(posted.sourceText));

@@ -37,7 +37,7 @@ function score(subject: ScreeningSubject, record: MemoryRecord): number {
   return similarity(`${subject.title}\n${subject.text}`, `${record.title}\n${record.valueText ?? ''}\n${record.benefitExcerpt ?? ''}`);
 }
 
-export function buildScreeningContext(subject: ScreeningSubject, memory: MemorySnapshot, _platforms: { id: string; name: string }[]): ScreeningContext {
+export function buildScreeningContext(subject: ScreeningSubject, memory: MemorySnapshot): ScreeningContext {
   const same = memory.records.filter(record => record.platformId != null && subject.platformIds.includes(record.platformId));
   const ranked = [...same].sort((a, b) => score(subject, b) - score(subject, a) || String(b.decidedAt ?? '').localeCompare(String(a.decidedAt ?? '')));
   const records = ranked.slice(0, 60);

@@ -1,6 +1,7 @@
 import type { ScreeningContext, ScreeningSubject } from './context';
+import { SCREENING_PROMPT_VERSION } from '../../src/shared/screening/version';
 
-export const SCREENING_PROMPT_VERSION = 'screening-v1';
+export { SCREENING_PROMPT_VERSION };
 
 export function buildScreeningPrompt(ctx: ScreeningContext, subject: ScreeningSubject): { system: string; user: string } {
   const refs = [...ctx.records, ...ctx.crossPlatform, ...ctx.precedents].map(record => record.ref);

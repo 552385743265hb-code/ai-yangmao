@@ -12,8 +12,8 @@ function unsure(subject: ScreeningSubject): ScreeningVerdict {
   return { verdict: 'unsure', matchId: null, ruleId: null, reasonCategory: null, occurrenceCheck: null, confidence: 0, evidenceQuote: '', explanation: '', urgency: subject.deterministicUrgency };
 }
 
-export async function screenSubject(subject: ScreeningSubject, memory: MemorySnapshot, o: { purpose: 'urgent' | 'normal' | 'backfill'; deadlineAt: number; platforms: { id: string; name: string }[] }): Promise<{ verdict: ScreeningVerdict; model: string; calibrated: boolean; contextHash: string; downgradeReasons: string[] }> {
-  const context = buildScreeningContext(subject, memory, o.platforms);
+export async function screenSubject(subject: ScreeningSubject, memory: MemorySnapshot, o: { purpose: 'urgent' | 'normal' | 'backfill'; deadlineAt: number }): Promise<{ verdict: ScreeningVerdict; model: string; calibrated: boolean; contextHash: string; downgradeReasons: string[] }> {
+  const context = buildScreeningContext(subject, memory);
   const hash = contextHash(context, subject, SCREENING_PROMPT_VERSION);
   const prompt = buildScreeningPrompt(context, subject);
   let note = '';

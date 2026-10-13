@@ -43,7 +43,7 @@ describe('screening queue content', () => {
       SCREENING_PROMPT_VERSION: 'screening-v1',
     }));
     const { runScreening } = await import('../pipeline/screening/run');
-    await runScreening({ deadlineAt: Date.now() + 60_000, dry: false, log() {} });
+    await runScreening({ deadlineAt: Date.now() + 60_000, dry: false });
     expect(seen[0]).toMatchObject({ title, text: body, url: 'https://linux.do/t/vendor-credits/42', origin: 'linuxdo', platformIds: ['vendor'], truncated: false });
     expect(seen[0].text).not.toContain('内部备注');
     expect(f.sqlite.prepare('SELECT count(*) n FROM screening_decisions').get()).toEqual({ n: 1 });
@@ -216,7 +216,7 @@ describe('screening failures stay inside the screening pass', () => {
       return Response.json({ ok: true });
     }));
     const { runScreening } = await import('../pipeline/screening/run');
-    const stats = await runScreening({ deadlineAt: Date.now() + 60_000, dry: false, log() {} });
+    const stats = await runScreening({ deadlineAt: Date.now() + 60_000, dry: false });
     expect(posted.find(item => item.path.includes('/escalate'))?.body).toMatchObject({ suggestion: 'screening_unavailable' });
     expect(stats.deferred).toBe(1);
   });

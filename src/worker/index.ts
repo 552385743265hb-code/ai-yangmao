@@ -33,6 +33,7 @@ import * as s from '../db/schema';
 import { isoDate, leadIn, offerIn, collectedOfferIn, runIn } from '../shared/ingest';
 import { differentOccurrence, findDuplicate, crossPlatformDuplicate, sameRecurringCreditPlan, sameModelAnnouncement, sameEvidenceBenefit } from '../shared/dedupe';
 import { gateVerdict, matchTitleRule, urlKey } from '../shared/screening/gate0';
+import { SCREENING_PROMPT_VERSION } from '../shared/screening/version';
 import { reasonCodeForCategory, screeningMode } from '../shared/screening/types';
 import type { ScreeningRule } from '../shared/screening/types';
 import { classifyUrgency, systemDueAt } from '../shared/screening/urgency';
@@ -270,7 +271,7 @@ ingest.post('/leads', async c => {
       if (!rule) continue;
       const subject = { kind: 'lead' as const, url: input.url, origin: input.origin, platformId: null, title: input.title ?? '', openingText: input.raw ?? '' };
       const verdict = gateVerdict({ rule }, subject, { generatedAt: now.toISOString(), records: [], rules, profiles: [], calibrations: [] });
-      const decision = await store.recordDecision({ requestId: `gate0:${row.id}:${rule.id}`, itemId: `lead:${row.id}`, verdict: verdict.verdict, matchRef: verdict.matchId, ruleId: verdict.ruleId, reasonCategory: verdict.reasonCategory, occurrenceCheck: verdict.occurrenceCheck, confidence: verdict.confidence, evidenceQuote: verdict.evidenceQuote, explanation: verdict.explanation, urgency: verdict.urgency, model: 'gate0', calibrated: false, promptVersion: 'screening-v1', contextHash: 'gate0', mode: mode === 'auto' ? 'auto' : mode === 'suggest' ? 'suggest' : 'shadow' });
+      const decision = await store.recordDecision({ requestId: `gate0:${row.id}:${rule.id}`, itemId: `lead:${row.id}`, verdict: verdict.verdict, matchRef: verdict.matchId, ruleId: verdict.ruleId, reasonCategory: verdict.reasonCategory, occurrenceCheck: verdict.occurrenceCheck, confidence: verdict.confidence, evidenceQuote: verdict.evidenceQuote, explanation: verdict.explanation, urgency: verdict.urgency, model: 'gate0', calibrated: false, promptVersion: SCREENING_PROMPT_VERSION, contextHash: 'gate0', mode: mode === 'auto' ? 'auto' : mode === 'suggest' ? 'suggest' : 'shadow' });
       if (mode === 'auto') {
         const lead = await c.env.DB.prepare('SELECT id, url, status, raw, title, resolution, offer_id FROM leads WHERE id=?').bind(row.id).first<{ id: number; url: string; status: string; raw: string | null; title: string | null; resolution: string | null; offer_id: string | null }>();
         if (lead) {

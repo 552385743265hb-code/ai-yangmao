@@ -1,10 +1,11 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { platformMentioned } from '../../shared/lead-scope';
+import { SCREENING_PROMPT_VERSION } from '../../shared/screening/version';
 import { platformProfileSchema, screeningMode, screeningVerdictSchema } from '../../shared/screening/types';
 import { putProfile } from './profiles';
 import { compareQueueOrder, latestUsefulReviewAt, systemDueAt } from '../../shared/screening/urgency';
-import { buildMemoryPage } from './memory';
+import { buildMemoryPage, reviewerNames } from './memory';
 import { ScreeningStore } from './store';
 import type { Env } from '../index';
 
@@ -13,7 +14,7 @@ export const screeningIngestRoutes = new Hono<{ Bindings: Env }>();
 screeningIngestRoutes.get('/memory', async c => {
   const limit = Math.min(500, Math.max(1, Number(c.req.query('limit') ?? 500) || 500));
   const cursor = c.req.query('cursor') || null;
-  const page = await buildMemoryPage(c.env.DB, cursor, limit);
+  const page = await buildMemoryPage(c.env.DB, cursor, limit, reviewerNames(c.env));
   const first = !cursor;
   const rules = first ? (await c.env.DB.prepare(`SELECT id, kind, scope_kind scopeKind, scope_value scopeValue, category, description, pattern, status FROM screening_rules`).all()).results : [];
   const profiles = first ? (await c.env.DB.prepare(`SELECT profile_json FROM platform_profiles ORDER BY platform_id`).all<{ profile_json: string }>()).results.map(row => JSON.parse(row.profile_json)) : [];
@@ -108,7 +109,7 @@ screeningIngestRoutes.post('/items/:id/escalate', async c => {
   if (!moved) return c.json({ error: 'stale item' }, 409);
   await store.recordDecision({
     requestId: body.data.requestId, itemId: item.id, verdict: 'unsure', confidence: 0, evidenceQuote: item.urgencyQuote ?? '', explanation: body.data.note || body.data.suggestion,
-    urgency: { tier: item.tier, deadline: item.deadline, signals: item.signals, quote: item.urgencyQuote }, model: 'escalate', calibrated: false, promptVersion: 'screening-v1', contextHash: 'escalate', mode: 'shadow',
+    urgency: { tier: item.tier, deadline: item.deadline, signals: item.signals, quote: item.urgencyQuote }, model: 'escalate', calibrated: false, promptVersion: SCREENING_PROMPT_VERSION, contextHash: 'escalate', mode: 'shadow',
   });
   return c.json({ ok: true, duplicate: false });
 });

@@ -28,7 +28,7 @@ async function postVerdict(item: QueueItem, verdict: ScreeningVerdict, meta: { m
   });
 }
 
-export async function runScreening(o: { ids?: string[]; deadlineAt: number; dry: boolean; log: (...a: unknown[]) => void }): Promise<ScreeningStats> {
+export async function runScreening(o: { ids?: string[]; deadlineAt: number; dry: boolean }): Promise<ScreeningStats> {
   const stats = blank();
   if (screeningMode({ SCREENING_MODE: process.env.SCREENING_MODE }) === 'off') return stats;
   if (!process.env.API_BASE?.trim()) throw new Error('explicit API_BASE required');
@@ -57,7 +57,7 @@ export async function runScreening(o: { ids?: string[]; deadlineAt: number; dry:
       platformIds: item.subject.platformIds ?? (subject.platformId ? [subject.platformId] : []), discoveredAt: item.discoveredAt, deterministicUrgency: verdictUrgency(item.tier),
     };
     try {
-      const screened = await screenSubject(screeningSubject, memory, { purpose: urgent ? 'urgent' : 'normal', deadlineAt: o.deadlineAt, platforms: [] });
+      const screened = await screenSubject(screeningSubject, memory, { purpose: urgent ? 'urgent' : 'normal', deadlineAt: o.deadlineAt });
       if (!o.dry) await postVerdict(item, screened.verdict, screened);
       stats.screened++; stats.byVerdict[screened.verdict.verdict] = (stats.byVerdict[screened.verdict.verdict] ?? 0) + 1;
     } catch (error) {
@@ -95,7 +95,7 @@ export async function screenCandidateReceipts(results: LegacyIdentityReceipt[], 
       platformIds: offer ? [offer.platformId] : [], discoveredAt: new Date().toISOString(), deterministicUrgency: verdictUrgency('P3'),
     };
     try {
-      const screened = await screenSubject(subject, memory, { purpose: 'normal', deadlineAt: o.deadlineAt, platforms: [] });
+      const screened = await screenSubject(subject, memory, { purpose: 'normal', deadlineAt: o.deadlineAt });
       if (!o.dry) await postVerdict({ itemId: subject.itemId, tier: screened.verdict.urgency.tier, discoveredAt: subject.discoveredAt, subject: { kind: 'task', taskId, title: subject.title, url: subject.url } }, screened.verdict, screened);
     } catch (error) {
       if (!(error instanceof DeferError)) throw error;

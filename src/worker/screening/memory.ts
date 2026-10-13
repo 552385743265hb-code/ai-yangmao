@@ -4,6 +4,13 @@ import { reasonCategoryFromCode, type MemoryRecord, type ReasonCategory } from '
 
 const recurring = /每月|每日|每周|monthly|daily|weekly|重置/i;
 
+export function reviewerNames(env: { REVIEWER_TOKENS?: string }): string[] {
+  return [...new Set((env.REVIEWER_TOKENS ?? '').split(',').flatMap(pair => {
+    const name = pair.slice(0, Math.max(0, pair.indexOf(':'))).trim();
+    return name ? [name] : [];
+  }))];
+}
+
 type OfferSql = {
   id: string; platform_id: string; title: string; value_text: string; type: string; claim_start: string | null; claim_end: string | null;
   end_kind: 'date' | 'unknown' | 'standing'; source_tz: string; review_state: 'pending' | 'approved' | 'rejected'; withdrawn_at: string | null;
@@ -15,7 +22,7 @@ type LeadSql = {
   offer_id: string | null; created_at: string; label_category: string | null; label_actor: 'owner' | 'model' | 'unknown' | null;
 };
 
-function offerRecord(row: OfferSql): MemoryRecord {
+function offerRecord(row: OfferSql, names: string[]): MemoryRecord {
   const evidence = JSON.parse(row.evidence) as { url?: string; excerpts?: { benefit?: string }; tier?: 'site' | 'docs' | 'official' | 'staff' | 'media' | 'tested' };
   const tags = JSON.parse(row.tags || '[]') as string[];
   const status = liveStatus({
@@ -28,24 +35,24 @@ function offerRecord(row: OfferSql): MemoryRecord {
     claimStart: row.claim_start, claimEnd: row.claim_end, sourceTz: row.source_tz, evidenceUrl: evidence.url ?? null, urlKey: null,
     benefitExcerpt: evidence.excerpts?.benefit ?? null, decision, linkedOfferId: null,
     reasonCategory: (row.label_category as ReasonCategory | null) ?? (row.reason_code ? reasonCategoryFromCode(row.reason_code) : null),
-    actorKind: actorKind({ reviewer: row.reviewer, labelActorKind: row.label_actor }),
+    actorKind: actorKind({ reviewer: row.reviewer, labelActorKind: row.label_actor, reviewerNames: names }),
     recurring: tags.includes('reset') || recurring.test(`${row.title}\n${row.value_text}`),
     decidedAt: row.decided_at,
   };
 }
 
-function leadRecord(row: LeadSql): MemoryRecord {
+function leadRecord(row: LeadSql, names: string[]): MemoryRecord {
   const resolution = row.resolution ? JSON.parse(row.resolution) as { reason?: string | null; checkedAt?: string | null } : null;
   return {
     ref: `lead:${row.id}`, kind: 'lead', platformId: null, origin: row.origin, title: row.title ?? '', valueText: null, type: null,
     claimStart: null, claimEnd: null, sourceTz: null, evidenceUrl: null, urlKey: row.url_key, benefitExcerpt: null,
     decision: row.status, linkedOfferId: row.offer_id, reasonCategory: (row.label_category as ReasonCategory | null) ?? null,
-    actorKind: actorKind({ leadRaw: row.raw, leadResolution: resolution, labelActorKind: row.label_actor }),
+    actorKind: actorKind({ leadRaw: row.raw, leadResolution: resolution, labelActorKind: row.label_actor, reviewerNames: names }),
     recurring: recurring.test(row.title ?? ''), decidedAt: resolution?.checkedAt ?? row.created_at,
   };
 }
 
-export async function buildMemoryPage(db: D1Database, cursor: string | null, limit: number): Promise<{ records: MemoryRecord[]; nextCursor: string | null }> {
+export async function buildMemoryPage(db: D1Database, cursor: string | null, limit: number, names: string[] = []): Promise<{ records: MemoryRecord[]; nextCursor: string | null }> {
   const phase = cursor?.startsWith('lead:') ? 'lead' : 'offer';
   const offerCursor = phase === 'offer' ? (cursor?.slice('offer:'.length) ?? '') : '\uffff';
   const leadCursor = phase === 'lead' ? Number(cursor!.slice('lead:'.length)) : 0;
@@ -59,7 +66,7 @@ export async function buildMemoryPage(db: D1Database, cursor: string | null, lim
       FROM offers o LEFT JOIN decision_labels l ON l.subject_kind='offer' AND l.subject_id=o.id
       WHERE o.id > ? ORDER BY o.id LIMIT ?`).bind(offerCursor, limit + 1).all<OfferSql>();
     const page = offers.results.slice(0, limit);
-    records.push(...page.map(offerRecord));
+    records.push(...page.map(row => offerRecord(row, names)));
     if (offers.results.length > limit) return { records, nextCursor: `offer:${page.at(-1)!.id}` };
   }
   const room = limit - records.length;
@@ -67,6 +74,6 @@ export async function buildMemoryPage(db: D1Database, cursor: string | null, lim
     FROM leads l LEFT JOIN decision_labels d ON d.subject_kind='lead' AND d.subject_id=CAST(l.id AS TEXT)
     WHERE l.status IN ('linked','rejected') AND l.id > ? ORDER BY l.id LIMIT ?`).bind(leadCursor, room + 1).all<LeadSql>();
   const page = leads.results.slice(0, room);
-  records.push(...page.map(leadRecord));
+  records.push(...page.map(row => leadRecord(row, names)));
   return { records, nextCursor: leads.results.length > room ? `lead:${page.at(-1)!.id}` : null };
 }

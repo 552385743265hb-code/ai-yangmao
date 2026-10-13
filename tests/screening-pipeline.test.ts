@@ -32,7 +32,7 @@ describe('screening pipeline', () => {
     const modelModule = await import('../pipeline/screening/model');
     const model = vi.spyOn(modelModule, 'callScreeningModel');
     const { runScreening } = await import('../pipeline/screening/run');
-    const s = await runScreening({ deadlineAt: Date.now() + 6e5, dry: false, log() {} });
+    const s = await runScreening({ deadlineAt: Date.now() + 6e5, dry: false });
     expect(model).not.toHaveBeenCalled(); expect(s.gate0).toBe(1);
     expect(api.posted('screening/verdicts')[0]).toMatchObject({ model: 'gate0', verdict: { verdict: 'rejected_by_rule' } });
   });
@@ -40,14 +40,14 @@ describe('screening pipeline', () => {
     mockApi({ queue: [item('P3'), item('P0')] });
     vi.doMock('../pipeline/screening/screener', () => ({ screenSubject: vi.fn(async () => newCandidate()), SCREENING_PROMPT_VERSION: 'screening-v1' }));
     const { runScreening } = await import('../pipeline/screening/run');
-    const s = await runScreening({ deadlineAt: Date.now() - 1, dry: false, log() {} });
+    const s = await runScreening({ deadlineAt: Date.now() - 1, dry: false });
     expect(s.urgent).toBe(1); expect(s.deferred).toBe(1);
   });
   it('posts verdicts with the prompt version', async () => {
     const api = mockApi({ queue: [item('P2')] });
     vi.doMock('../pipeline/screening/screener', () => ({ screenSubject: vi.fn(async () => newCandidate()), SCREENING_PROMPT_VERSION: 'screening-v1' }));
     const { runScreening } = await import('../pipeline/screening/run');
-    await runScreening({ deadlineAt: Date.now() + 6e5, dry: false, log() {} });
+    await runScreening({ deadlineAt: Date.now() + 6e5, dry: false });
     expect(api.posted('screening/verdicts')[0]).toMatchObject({ promptVersion: 'screening-v1' });
   });
 });
