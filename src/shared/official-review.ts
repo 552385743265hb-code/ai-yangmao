@@ -17,6 +17,8 @@ export interface OfficialReview {
 }
 export interface OfficialPlatform {
   id: string; name: string; site: string | null;
+  /** WeChat official-account __biz IDs, comma separated; other text in the field is ignored. */
+  wechat?: string | null;
   xHandles: string[]; staffHandles: string[];
 }
 export interface OfficialSource { url: string; tier: string; platformId?: string | null }
@@ -49,6 +51,11 @@ export function officialReviewDue(review: OfficialReview | null, now: number, ve
   return !!review.nextAttemptAt && Date.parse(review.nextAttemptAt) <= now;
 }
 const hosted = new Set(['github.com','gitee.com','huggingface.co','medium.com','substack.com','mp.weixin.qq.com']);
+/** The __biz account ID of a WeChat article URL, or null for short links and other hosts. */
+export function wechatBiz(value: string | null | undefined): string | null {
+  try { const url = new URL(value ?? ''); return url.hostname.toLowerCase() === 'mp.weixin.qq.com' ? url.searchParams.get('__biz') || null : null; } catch { return null; }
+}
+export const wechatAccounts = (field: string | null | undefined): string[] => (field ?? '').split(/[\s,，]+/).filter(token => /^[A-Za-z0-9+/]{10,}==$/.test(token));
 export function officialTier(value: string, platform: OfficialPlatform, sources: OfficialSource[]): 'site'|'docs'|'official'|'staff'|null {
   let url: URL;
   try { url = new URL(value); } catch { return null; }
@@ -62,6 +69,7 @@ export function officialTier(value: string, platform: OfficialPlatform, sources:
     if(platform.staffHandles.some(h=>h.toLowerCase()===handle))return 'staff';
     return null;
   }
+  if (host === 'mp.weixin.qq.com') { const biz = wechatBiz(url.href); if (biz && wechatAccounts(platform.wechat).includes(biz)) return 'official'; }
   const entries=[...sources.filter(s=>['site','docs','official'].includes(s.tier)),...(platform.site?[{url:platform.site,tier:'site'}]:[])];
   for(const entry of entries) {
     let base:URL;try{base=new URL(entry.url);}catch{continue;}
