@@ -17,11 +17,11 @@ export const validateStoredOffer = (offer: OfferRow) => offerIn.safeParse({
 });
 
 /** 管理员通过时的门槛：平台已准入、证据是该平台的官方出处。不能靠 reviewState 绕过准入。 */
-export async function publicationError(env: Pick<Env, 'DB'>, offer: OfferRow, options:{preserveExistingMembership?:boolean}={}): Promise<string | null> {
+export async function publicationError(env: Pick<Env, 'DB'>, offer: OfferRow, options:{preserveExistingMembership?:boolean;preserveExistingEvidence?:boolean}={}): Promise<string | null> {
   const valid = validateStoredOffer(offer);
   if (!valid.success) return '活动字段或日期不符合共享校验规则';
   const membershipIssue=options.preserveExistingMembership?null:await membershipPublicationError(env.DB,offer);if(membershipIssue)return membershipIssue;
-  if (offer.verifyResult === 'evidence_missing') return '当前官方页面未能再次确认原条款，先核验再通过';
+  if (offer.verifyResult === 'evidence_missing' && !options.preserveExistingEvidence) return '当前官方页面未能再次确认原条款，先核验再通过';
   const [platform] = await db(env).select().from(s.platforms).where(eq(s.platforms.id, offer.platformId));
   if (!platform || platform.status !== 'approved') return '平台尚未准入';
   if (offer.evidence.tier === 'media') return '媒体或社区转述不能作为上架证据，请先补齐官方出处';
@@ -32,7 +32,7 @@ export async function publicationError(env: Pick<Env, 'DB'>, offer: OfferRow, op
   if (block.length) return block.map(i => `${i.label}：${i.problem}`).join('；');
   // 自动补证要求领取/资格原文；最终人工审批可核对图片条件，但缺少核心权益原文仍先补证。
   // 管理员亲测仍通过 tested 显式确认，模型不能设置 tested。
-  if(needsEvidence(offer,false))return '官方权益原文不足，请等待系统补证或补充准确证据后再通过';
+  if(needsEvidence(options.preserveExistingEvidence?{...offer,verifyResult:null}:offer,false))return '官方权益原文不足，请等待系统补证或补充准确证据后再通过';
   let url: URL;
   try { url = new URL(offer.evidence.url); } catch { return '官方证据链接无效'; }
   if (!['https:', 'http:'].includes(url.protocol)) return '官方证据必须是网页链接';

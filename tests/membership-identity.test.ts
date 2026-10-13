@@ -120,7 +120,7 @@ it('approves a date-only correction to a published legacy member offer without c
  const f=await setupIdentity();try {
   const unresolved={...noMembers,status:'needs_review' as const,legacyText:['Pro']};
   const initial=await f.intake('grandfathered-date',f.old,{...displayOffer(),claimStart:'2026-10-10',requirements:['member:Pro'],membershipRequirement:unresolved});
-  f.sqlite.prepare("UPDATE offers SET review_state='approved' WHERE id=?").run(initial.canonicalOfferId);
+  f.sqlite.prepare("UPDATE offers SET review_state='approved',verify_result='evidence_missing' WHERE id=?").run(initial.canonicalOfferId);
   f.sqlite.prepare("UPDATE benefit_versions SET state='approved' WHERE id=?").run(initial.versionId);
   f.sqlite.prepare('UPDATE benefit_entities SET current_approved_version_id=? WHERE id=?').run(initial.versionId,initial.entityId);
   f.sqlite.prepare("UPDATE review_tasks SET state='resolved' WHERE id=?").run(initial.taskId);

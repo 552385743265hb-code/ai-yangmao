@@ -624,7 +624,8 @@ export class IdentityService {
     && original.membershipRequirement?.status==='needs_review'
     && stableJson(original.membershipRequirement)===stableJson(accepted.membershipRequirement)
     && stableJson(memberLabels(original.requirements))===stableJson(memberLabels(accepted.requirements));
-   const error=await publicationError({DB:this.db},{...original,...accepted,...(supplemented?{verifyResult:null}:{}),...(restoring?{withdrawnAt:null,withdrawnReason:null}:{})},{preserveExistingMembership});if(error)throw new IdentityError(400,error);
+   const preserveExistingEvidence=original.reviewState==='approved'&&task.kind!=='initial'&&stableJson(original.evidence)===stableJson(accepted.evidence);
+   const error=await publicationError({DB:this.db},{...original,...accepted,...(supplemented?{verifyResult:null}:{}),...(restoring?{withdrawnAt:null,withdrawnReason:null}:{})},{preserveExistingMembership,preserveExistingEvidence});if(error)throw new IdentityError(400,error);
   }
   const builder=new MutationBuilder(this.db,command,hash),expected:ExpectedRevision[]=[{kind:'task',id:task.id,revision:input.expectedRevision},{kind:'entity',id:entity.id,revision:entity.business_revision}];
   if(input.action==='approve'){
