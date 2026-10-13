@@ -33,7 +33,7 @@ import * as s from '../db/schema';
 import { isoDate, leadIn, offerIn, collectedOfferIn, runIn } from '../shared/ingest';
 import { differentOccurrence, findDuplicate, crossPlatformDuplicate, sameRecurringCreditPlan, sameModelAnnouncement, sameEvidenceBenefit } from '../shared/dedupe';
 import { gateVerdict, matchTitleRule, urlKey } from '../shared/screening/gate0';
-import { screeningMode } from '../shared/screening/types';
+import { reasonCodeForCategory, screeningMode } from '../shared/screening/types';
 import type { ScreeningRule } from '../shared/screening/types';
 import { classifyUrgency, systemDueAt } from '../shared/screening/urgency';
 import { ScreeningStore } from './screening/store';
@@ -274,7 +274,7 @@ ingest.post('/leads', async c => {
       if (mode === 'auto') {
         const lead = await c.env.DB.prepare('SELECT id, url, status, raw, title, resolution, offer_id FROM leads WHERE id=?').bind(row.id).first<{ id: number; url: string; status: string; raw: string | null; title: string | null; resolution: string | null; offer_id: string | null }>();
         if (lead) {
-          await closeIdentityLead(c.env.DB, { ...lead, offerId: lead.offer_id, resolution: lead.resolution ? JSON.parse(lead.resolution) : null }, { status: 'closed', jobId: `gate0-${row.id}`, attempts: 0, inconclusive: 0, checkedAt: now.toISOString(), nextAttemptAt: null, reason: verdict.explanation, queries: [], candidates: [], offerIds: [] }, input.raw ?? input.title ?? '', { actor: 'pipeline:gate0' });
+          await closeIdentityLead(c.env.DB, { ...lead, offerId: lead.offer_id, resolution: lead.resolution ? JSON.parse(lead.resolution) : null }, { status: 'closed', jobId: `gate0-${row.id}`, attempts: 0, inconclusive: 0, checkedAt: now.toISOString(), nextAttemptAt: null, reason: verdict.explanation, queries: [], candidates: [], offerIds: [] }, input.raw ?? input.title ?? '', { actor: 'pipeline:gate0', reasonCode: reasonCodeForCategory(rule.category) });
           await store.markApplied(decision.id, 'closed');
         }
       }

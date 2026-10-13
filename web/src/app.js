@@ -1607,10 +1607,11 @@ function checksBlock(o) {
   const line = i => `<div class="orow" style="grid-template-columns:auto minmax(0,1fr);padding:5px 2px">${i.level === 'block' ? stBadge('critical', '✕', '必须补') : stBadge('warn', '!', '建议补')}<span class="t" style="font-weight:400;font-size:13px">${esc(i.label)}：${esc(i.problem)}<small>影响：${esc(i.sections.join('、'))}</small></span></div>`;
   return `<div class="card" style="padding:8px 10px;background:var(--surface-2)"><div class="small" style="font-weight:600;margin-bottom:2px">${o.reviewState==='approved'?'公开字段检查':'上架前检查'}</div>${main.length ? `<div class="rows">${main.map(line).join('')}</div>` : '<div class="small" style="color:var(--good-ink)">✓ 字段齐全，网站所有栏目和推送都能正确显示</div>'}${info.length ? `<div class="small muted" style="margin-top:4px">可选：${info.map(i => esc(i.label)).join('、')}</div>` : ''}</div>`;
 }
-const RC = [['relay_station', '中转站'], ['account_pool', '号池'], ['personal_giveaway', '个人赠送'], ['ordinary_discount', '普通折扣'], ['model_news_only', '仅模型新闻'], ['unverifiable', '无法核实'], ['paid_bundle', '付费套餐自带'], ['non_ai', '不是 AI 额度'], ['not_ai', '不是 AI 额度'], ['wrong_platform', '平台归错'], ['duplicate', '重复'], ['expired', '旧活动 · 日期查不到'], ['vague', '额度不明'], ['insufficient_evidence', '证据不足'], ['other', '其他'], ['wrong_type', '分类错']];
+const REASON_LABEL = { relay_station: '中转站', account_pool: '号池', personal_giveaway: '个人赠送', ordinary_discount: '普通折扣', model_news_only: '仅模型新闻', unverifiable: '无法核实', paid_bundle: '付费套餐自带', non_ai: '不是 AI 额度', wrong_platform: '平台归错', duplicate: '重复', expired: '旧活动 · 日期查不到', other: '其他', not_ai: '不是 AI 额度', wrong_type: '分类错', vague: '额度不明', insufficient_evidence: '证据不足', wrong_field: '字段错' };
+const RC = ['relay_station', 'account_pool', 'personal_giveaway', 'ordinary_discount', 'model_news_only', 'unverifiable', 'paid_bundle', 'non_ai', 'wrong_platform', 'duplicate', 'expired', 'other'].map(code => [code, REASON_LABEL[code]]);
 const FIELD_L = { models: '免费模型', tags: '标签', publishedAt: '发布时间', usdMax: '最高可申请额度', valuation: '估值', steps: '领取步骤', sourceTz: '官方时区', modalities: '模态', title: '标题', type: '类型', valueText: '额度', usdEstimate: '折合美元', claimStart: '开始', claimEnd: '截止', endKind: '截止方式', creditValidity: '有效期', audience: '适用对象', membershipRequirement: '会员资格', requirements: '门槛', modalities: '模态', platformId: '平台', sourceTz: '时区', claimMethod: '领取方式' };
 const SUG = { approve: ['good', '✓', '建议通过'], history: ['good', '⌛', '建议作为历史上架'], reject: ['bad', '✕', '建议拒绝'], judge: ['warn', '?', '需要你判断'] };
-const RCL_ALL = Object.fromEntries([...RC, ['wrong_field', '字段错'], ['other', '其他']]);
+const RCL_ALL = { ...REASON_LABEL };
 function reviewDiffRows(changes) {
   const rows = [];
   const object = v => v !== null && typeof v === 'object' && !Array.isArray(v);
@@ -2146,7 +2147,7 @@ async function admQueue() {
 async function admQuality() {
   const q = await adm('/quality?days=30');
   const pct = (a, b) => b ? Math.round(a / b * 100) + '%' : '—';
-  const RCL = Object.fromEntries(RC.concat([['wrong_field', '字段错'], ['other', '其他']]));
+  const RCL = REASON_LABEL;
   const fields = Object.entries(q.fields).sort((a, b) => b[1] - a[1]);
   const reasons = Object.entries(q.reasons).sort((a, b) => b[1] - a[1]);
   const srcs = Object.entries(q.bySource).sort((a, b) => b[1].total - a[1].total);

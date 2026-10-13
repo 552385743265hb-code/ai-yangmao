@@ -19,7 +19,7 @@ import { BudgetExhaustedError, BudgetLedgerError, modelBudget } from './budget';
 import { offerIn, type LeadIn, type OfferIn } from '../src/shared/ingest';
 import { runScreening, screenCandidateReceipts } from './screening/run';
 import { loadMemory } from './screening/memory';
-import type { PlatformProfile } from '../src/shared/screening/types';
+import { screeningMode, type PlatformProfile } from '../src/shared/screening/types';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -31,7 +31,7 @@ const FAST = process.env.FAST_LEADS === '1';
 const FORCE = process.env.FORCE === '1'; // 忽略上次的哈希，强制重新抽取（提示词改进后补跑）
 let screeningProfileCache: PlatformProfile[] | null = null;
 async function screeningProfiles(): Promise<PlatformProfile[]> {
-  if ((process.env.SCREENING_MODE ?? 'off') === 'off') return [];
+  if (screeningMode({ SCREENING_MODE: process.env.SCREENING_MODE }) === 'off') return [];
   if (!screeningProfileCache) {
     try { screeningProfileCache = (await loadMemory()).profiles; }
     catch { screeningProfileCache = []; }
@@ -131,7 +131,7 @@ async function extractAndPostUnlocked(src: Source, url: string, text: string, so
   if (!offers.length) return false; // 原文里有候选但全部校验失败，不能把页面标记为已处理
   if (DRY) { offers.forEach(o => log('  羊毛', o.id, o.title, `类型=${o.type} 对象=${o.audience} 门槛=${o.requirements.join(',')} 额度=${o.valueText}`)); stats.offers += offers.length; return true; }
   const res = await postIdentityOffers(offers);
-  if (process.env.SCREENING_MODE && process.env.SCREENING_MODE !== 'off') {
+  if (screeningMode({ SCREENING_MODE: process.env.SCREENING_MODE }) !== 'off') {
     try { await screenCandidateReceipts(res.results, offers, await loadMemory(), { deadlineAt: deadline, dry: DRY, log }); }
     catch (error) { stats.errors.push(`candidate screening: ${(error as Error).message}`); }
   }

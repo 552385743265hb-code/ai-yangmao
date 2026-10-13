@@ -1,3 +1,6 @@
+import { itemId } from '../../shared/screening/item-id';
+
+export { itemId };
 export type ItemState = 'awaiting_screen' | 'cleared' | 'awaiting_verify' | 'owner' | 'parked' | 'closed';
 export type ItemTier = 'P0' | 'P1' | 'P2' | 'P3';
 
@@ -72,10 +75,6 @@ type SqlRow = {
   revision: number;
   updated_at: string;
 };
-
-export function itemId(kind: 'lead' | 'task', id: string | number): string {
-  return `${kind}:${id}`;
-}
 
 function mapItem(row: SqlRow): ItemRow {
   return {

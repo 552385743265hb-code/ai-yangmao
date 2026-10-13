@@ -39,7 +39,9 @@ export async function screenSubject(subject: ScreeningSubject, memory: MemorySna
       subjectDates: { claimStart: typeof subject.extracted?.claimStart === 'string' ? subject.extracted.claimStart : null, claimEnd: typeof subject.extracted?.claimEnd === 'string' ? subject.extracted.claimEnd : null },
       deterministicUrgency: subject.deterministicUrgency,
     });
-    if (!checked.downgradeReasons.length) return { verdict: checked.verdict, model, calibrated, contextHash: hash, downgradeReasons: [] };
+    if (!checked.downgradeReasons.length || (checked.downgradeReasons.length === 1 && checked.downgradeReasons[0] === 'urgency_quote_missing')) {
+      return { verdict: checked.verdict, model, calibrated, contextHash: hash, downgradeReasons: checked.downgradeReasons };
+    }
     lastReasons = checked.downgradeReasons;
     note = `\n上一次输出未通过校验：${lastReasons.join(',')}`;
   }

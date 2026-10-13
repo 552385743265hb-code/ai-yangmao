@@ -3,8 +3,8 @@ import { DeferError } from '../llm';
 import { findNearDuplicate, gateVerdict, matchTitleRule, type GateSubject } from '../../src/shared/screening/gate0';
 import type { LegacyIdentityReceipt } from '../identity-client';
 import type { OfferIn } from '../../src/shared/ingest';
-import type { MemorySnapshot, ScreeningVerdict, UrgencyResult } from '../../src/shared/screening/types';
-import { itemId } from '../../src/worker/screening/store';
+import { itemId } from '../../src/shared/screening/item-id';
+import { screeningMode, type MemorySnapshot, type ScreeningVerdict, type UrgencyResult } from '../../src/shared/screening/types';
 import { loadMemory } from './memory';
 import { screenSubject, SCREENING_PROMPT_VERSION, type ScreeningSubject } from './screener';
 
@@ -30,7 +30,8 @@ async function postVerdict(item: QueueItem, verdict: ScreeningVerdict, meta: { m
 
 export async function runScreening(o: { ids?: string[]; deadlineAt: number; dry: boolean; log: (...a: unknown[]) => void }): Promise<ScreeningStats> {
   const stats = blank();
-  if ((process.env.SCREENING_MODE ?? 'off') === 'off') return stats;
+  if (screeningMode({ SCREENING_MODE: process.env.SCREENING_MODE }) === 'off') return stats;
+  if (!process.env.API_BASE?.trim()) throw new Error('explicit API_BASE required');
   const memory = await loadMemory();
   stats.memoryRecords = memory.records.length;
   const query = new URLSearchParams({ limit: '50' });
@@ -73,7 +74,7 @@ function verdictUrgency(tier: QueueItem['tier']): UrgencyResult {
 }
 
 export async function screenCandidateReceipts(results: LegacyIdentityReceipt[], offers: OfferIn[], memory: MemorySnapshot, o: { deadlineAt: number; dry: boolean; log: (...a: unknown[]) => void }): Promise<void> {
-  if ((process.env.SCREENING_MODE ?? 'off') === 'off') return;
+  if (screeningMode({ SCREENING_MODE: process.env.SCREENING_MODE }) === 'off') return;
   for (const result of results) {
     const taskId = result.identityReceipt?.taskId;
     if (result.identityReceipt?.outcome !== 'needs_identity_review' || !taskId) continue;

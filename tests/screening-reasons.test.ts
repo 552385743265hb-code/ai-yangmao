@@ -19,7 +19,7 @@ function seedOffer(id: string) {
     .run(id, JSON.stringify({ url: 'https://vendor.example/perk', tier: 'official', capturedAt: '2026-10-01T00:00:00.000Z', excerpts: { benefit: 'free tokens' } }));
 }
 function admin(path: string, body?: unknown) {
-  return worker.fetch(new Request(`https://local.test/api/admin/${path}`, { method: 'POST', headers: { Authorization: 'Bearer admin-test-token-123456', 'Content-Type': 'application/json' }, body: JSON.stringify(body ?? {}) }), { DB: f.db, ADMIN_TOKEN: 'admin-test-token-123456', INGEST_TOKEN: 'ingest-test-token-123' } as never, {} as ExecutionContext);
+  return worker.fetch(new Request(`https://local.test/api/admin/${path}`, { method: 'POST', headers: { Authorization: 'Bearer admin-test-token-123456', 'Content-Type': 'application/json' }, body: JSON.stringify(body ?? {}) }), { DB: f.db, ADMIN_TOKEN: 'admin-test-token-123456', INGEST_TOKEN: 'ingest-test-token-123', IDENTITY_MODE: 'enforce' } as never, {} as ExecutionContext);
 }
 async function rejectOffer(id: string, body: unknown) {
   return admin(`offers/${id}/reject`, body);

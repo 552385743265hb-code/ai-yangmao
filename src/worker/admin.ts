@@ -539,9 +539,11 @@ admin.post('/leads/:id/:action{dismiss|reviewing|retry}', async c => {
   if(action==='dismiss'){
     const ownerLabel=ownerRejectInput(body as {reasonCategory?:unknown;reasonCode?:unknown});
     if(!ownerLabel)return c.json({error:'请选择拒绝类别'},400);
-    await closeIdentityLead(c.env.DB,l,resolution,l.raw??l.title??resolution.reason??'管理员关闭线索',{actor:c.get('who'),reasonCode:ownerLabel.code});
     await recordOwnerLabel(c.env.DB,{subjectKind:'lead',subjectId:String(l.id),category:ownerLabel.category,actor:c.get('who'),justification:resolution.reason});
-    return c.json({ok:true,identityHandled:true});
+    if(c.env.IDENTITY_MODE==='enforce'){
+      await closeIdentityLead(c.env.DB,l,resolution,l.raw??l.title??resolution.reason??'管理员关闭线索',{actor:c.get('who'),reasonCode:ownerLabel.code});
+      return c.json({ok:true,identityHandled:true});
+    }
   }
   const changed=await d.update(s.leads).set({status:action==='dismiss'?'rejected':'reviewing',resolution}).where(and(eq(s.leads.id,l.id),eq(s.leads.status,l.status),sql`COALESCE(${s.leads.resolution},'')=COALESCE(${l.resolution?JSON.stringify(l.resolution):null},'')`)).returning({id:s.leads.id});
   return changed.length?c.json({ok:true}):c.json({error:'线索已更新，请刷新'},409);

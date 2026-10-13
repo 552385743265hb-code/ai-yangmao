@@ -29,7 +29,8 @@ export function validateVerdict(raw: unknown, ctx: VerdictContext): { verdict: S
   const match = verdict.matchId ? ctx.supplied.get(verdict.matchId) : undefined;
   if (verdict.matchId && !match) reasons.push('unknown_match');
   if (match && duplicateVerdicts.has(verdict.verdict) && match.platformId && !ctx.subjectPlatformIds.includes(match.platformId) && !ctx.crossPlatformRefs.has(verdict.matchId!)) reasons.push('platform_mismatch');
-  if (verdict.evidenceQuote && !norm(ctx.subjectText).includes(norm(verdict.evidenceQuote))) reasons.push('quote_not_verbatim');
+  const quote = norm(verdict.evidenceQuote);
+  if (!quote || !norm(ctx.subjectText).includes(quote)) reasons.push('quote_not_verbatim');
   if (verdict.verdict === 'duplicate_rejected' && match && match.actorKind !== 'owner') reasons.push('non_authoritative_precedent');
   if (verdict.verdict === 'rejected_by_rule' && (!verdict.ruleId || !ctx.activeRuleIds.has(verdict.ruleId))) reasons.push('inactive_rule');
   if (match?.recurring && !verdict.occurrenceCheck) reasons.push('occurrence_check_missing');
