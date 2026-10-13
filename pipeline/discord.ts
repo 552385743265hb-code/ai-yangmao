@@ -12,7 +12,7 @@ async function read(route:string,token:string):Promise<unknown>{
   if(!response.ok)throw new Error(`Discord 读取失败 HTTP ${response.status}`);
   try{return await response.json();}catch{throw new Error('Discord 返回无效 JSON');}
 }
-export async function collectDiscord(src:Source):Promise<{leads:LeadIn[];cursor:string;pages:number;messages:number}>{
+export async function collectDiscord(src:Source):Promise<{leads:LeadIn[];cursor:string;pages:number;messages:number;unmapped:string[]}>{
   const token=process.env.DISCORD_BOT_TOKEN??'',channel=process.env.DISCORD_CHANNEL_ID??'',guild=process.env.DISCORD_GUILD_ID??'';
   if(!token||!snowflake(channel)||!snowflake(guild))throw new Error('Discord 缺少 Bot Token 或已授权频道/服务器配置');
   if(src.url!==`https://discord.com/channels/${guild}/${channel}`)throw new Error('Discord 信源不属于已授权频道');
@@ -35,13 +35,14 @@ export async function collectDiscord(src:Source):Promise<{leads:LeadIn[];cursor:
     const next=items.at(-1)!.id;if(before&&BigInt(next)>=BigInt(before))throw new Error('Discord 分页没有前进，保留检查点');before=next;
   }
   if(!complete)throw new Error('Discord 积压超过分页上限，未完整补回，保留检查点');
-  const leads=new Map<string,LeadIn>();
+  const leads=new Map<string,LeadIn>(),unmapped:string[]=[];
   for(const m of [...collected.values()].sort((a,b)=>BigInt(a.id)<BigInt(b.id)?-1:1)){
     if(m.type!==0||!((m.flags??0)&2)||((m.flags??0)&8))continue;
     const ref=m.message_reference;
     if(!ref||ref.type===1||!snowflake(ref.message_id))throw new Error('Discord 同步公告缺少原始出处，保留检查点');
     const publisher=publishers.find(p=>p.guildId===ref.guild_id&&p.channelId===ref.channel_id);
-    if(!publisher)throw new Error(`Discord 来源未登记：${ref.guild_id}/${ref.channel_id}`);
+    // An unregistered origin never becomes a lead, but it must not block the registered channels either.
+    if(!publisher){unmapped.push(`https://discord.com/channels/${ref.guild_id}/${ref.channel_id}/${ref.message_id}`);continue;}
     const text=[m.content,...(m.embeds??[]).flatMap(e=>[e.title,e.description,e.url,...(e.fields??[]).flatMap(f=>[f.name,f.value])]),...(m.attachments??[]).flatMap(a=>[a.filename,a.url])].filter(Boolean).join('\n');
     if(!text.trim())throw new Error('Discord 官方公告正文不可读取，请核对 Message Content Intent');
     if(!isFreebie(text)&&!(m.attachments??[]).length)continue;
@@ -50,5 +51,5 @@ export async function collectDiscord(src:Source):Promise<{leads:LeadIn[];cursor:
     if(raw.length>20000)throw new Error('Discord 公告正文超过线索上限，保留检查点等待人工处理');
     leads.set(url,{origin:'discord',url,title:`${publisher.name}：${m.content||m.embeds?.[0]?.title||'官方公告'}`.slice(0,300),raw});
   }
-  return{leads:[...leads.values()],cursor,pages,messages:collected.size};
+  return{leads:[...leads.values()],cursor,pages,messages:collected.size,unmapped};
 }
