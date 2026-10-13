@@ -1,3 +1,4 @@
+import { learnWechatAccount } from './wechat-accounts';
 import type {MembershipRequirement} from '../shared/membership';
 import {membershipAdminRoutes,prepareMembershipFields,MembershipError} from './membership';
 import {needsEvidence,reviewPreparation} from '../shared/review-preparation';
@@ -255,6 +256,7 @@ admin.post('/offers/:ref/:action{approve|reject}', async c => {
     const requestId=transport.requestId??await sha256(stableJson({taskId,revision,action,actor:c.get('who'),reason:body.reason??null,reasonCode:body.reasonCode??'other'}));
     const receipt=await new IdentityService(c.env.DB).decideTask(taskId,{requestId,expectedRevision:revision,action,actor:c.get('who'),role:c.get('role'),reason:body.reason,reasonCode:body.reasonCode as never});
     if (ownerLabel) await recordOwnerLabel(c.env.DB, { subjectKind: 'offer', subjectId: o.id, category: ownerLabel.category, actor: c.get('who'), justification: body.reason });
+    if(action==='approve')await learnWechatAccount(c.env.DB,o.platformId,o.evidence?.url);
     return c.json({ok:true,code:shortCode(o.id),reviewState:action==='approve'?'approved':'rejected',identityDecision:receipt});
   }
   const d = db(c.env);
@@ -317,6 +319,7 @@ admin.post('/offers/:ref/:action{approve|reject}', async c => {
   const end = claimEndAt(proposal ? proposalOffer(o, proposal.candidate) : o);
   const urgent = action === 'approve' && !!end && end.getTime() - Date.now() <= 48 * 3600_000 && end.getTime() > Date.now();
   if (ownerLabel) await recordOwnerLabel(c.env.DB, { subjectKind: 'offer', subjectId: o.id, category: ownerLabel.category, actor: c.get('who'), justification: body.reason });
+  if (action === 'approve') await learnWechatAccount(c.env.DB, o.platformId, o.evidence?.url);
   return c.json({ ok: true, code: shortCode(o.id), title: o.title, reviewState: action === 'approve' ? 'approved' : 'rejected', sourceCleanStreak: streak, urgent });
 });
 
