@@ -33,16 +33,17 @@ function publicOffer(run: (code: string) => any, extra: Record<string, unknown> 
 }
 
 describe('frontend review workflow', () => {
-  it('labels approved legacy membership as an automatic-matching gap rather than a new offer review', () => {
+  it('shows approved legacy offers as passed while leaving personal membership matching unknown', () => {
     const page = fixture(() => ({}));
     const membershipRequirement = { schemaVersion: 'membership-v1', status: 'needs_review',
       catalogRevision: 2, anyOf: [], evidenceUrls: [], legacyText: ['OpenCode Go 或 OpenCode Go Plus'] };
     publicOffer(page.run, { r: ['member:OpenCode Go 或 OpenCode Go Plus'], membershipRequirement });
     const chip = page.run('reqChips(OFFERS[0],true)');
-    expect(chip).toContain('活动已批准');
-    expect(chip).toContain('自动匹配未完成');
-    expect(chip).not.toContain('待核实：');
-    expect(page.run("reqLabel('membership_unknown')")).toContain('已批准');
+    expect(chip).toContain('✓ 活动已通过');
+    expect(chip).toContain('个人自动匹配尚未建立');
+    expect(chip).not.toContain('待匹配');
+    expect(page.run("reqLabel('membership_unknown')")).toContain('活动已通过');
+    expect(page.run('membershipResult(OFFERS[0],[])')).toBe('unknown');
     expect(page.run('condForm()')).toContain('只看确定符合的');
   });
   it('still blocks acceptance when a pending update introduces unconfirmed membership', () => {

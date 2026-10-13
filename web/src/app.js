@@ -141,14 +141,15 @@ function missing(o) {
 }
 const eligible = o => missing(o).length === 0;
 const view = arr => C.only ? arr.filter(eligible) : arr;
-function reqLabel(r) { if (r === 'membership_unknown') return '活动已批准；旧会员条件尚未自动匹配，请按详情原条件核对'; const [k, p] = r.split(':'); if (k === 'member') return `需会员 · ${p}`; if (k === 'pay') return `需充值 ${p}`; return REQ[k]; }
+function reqLabel(r) { if (r === 'membership_unknown') return '活动已通过；个人会员资格请按详情原条件核对'; const [k, p] = r.split(':'); if (k === 'member') return `需会员 · ${p}`; if (k === 'pay') return `需充值 ${p}`; return REQ[k]; }
 function reqChips(o, mark = false) {
   const nonmember = o.r.filter(r => !r.startsWith('member:'));
   const requirement = membershipRequirementOf(o), result = membershipResult(o, C.subscriptions || []);
   const membershipText = requirement.status === 'needs_review'
-    ? `活动已批准 · 个人会员自动匹配未完成：${(requirement.legacyText || []).join('；') || '请查看原会员条件'}`
+    ? `会员条件：${(requirement.legacyText || []).join('；') || '请查看原会员条件'}（个人自动匹配尚未建立）`
     : YMMembership.formatMembership(requirement, MEMBERSHIP_CATALOG);
-  const member = requirement.status !== 'not_required' ? `<span style="white-space:normal;overflow-wrap:anywhere" class="chip ${mark && result === 'yes' ? 'have' : mark && result === 'no' ? 'miss' : ''}">${result === 'unknown' ? '？待匹配 · ' : mark ? result === 'yes' ? '✓ ' : '✕ ' : ''}${esc(membershipText)}</span>` : '';
+  const memberPrefix = requirement.status === 'needs_review' ? '✓ 活动已通过 · ' : result === 'unknown' ? '？个人资格需核对 · ' : mark ? result === 'yes' ? '✓ ' : '✕ ' : '';
+  const member = requirement.status !== 'not_required' ? `<span style="white-space:normal;overflow-wrap:anywhere" class="chip ${mark && result === 'yes' ? 'have' : mark && result === 'no' ? 'miss' : ''}">${memberPrefix}${esc(membershipText)}</span>` : '';
   return `<div class="chips">${nonmember.map(r => {
     const k = r.split(':')[0];
     const cls = mark && k !== 'none' && k !== 'targeted' ? (!C[k] ? 'miss' : 'have') : '';
@@ -1342,6 +1343,10 @@ function pOffer(id) {
   const o = OMAP[id];
   if (!o) { main().innerHTML=ribbon()+emptySheep('正在查找活动…');resolveOfferHash(id);return; }
   const st = statusOf(o), d = dims(o), sc = score(o), miss = missing(o);
+  const definiteMissing = miss.filter(item => item !== 'membership_unknown').length;
+  const qualificationSummary = miss.includes('membership_unknown')
+    ? definiteMissing ? `按你的条件，还差 ${definiteMissing} 项；个人会员资格请按原条件核对` : '活动已通过；个人会员资格请按原条件核对'
+    : definiteMissing ? `按你的条件，还差 ${definiteMissing} 项` : '按你的条件，全部满足';
   const tzName = TZ[o.tz] || o.tz, viewerTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
   let timeBlock;
   if (isLimited(o) && o.ek === 'date' && st !== 'ended') {
@@ -1391,7 +1396,7 @@ function pOffer(id) {
         <div class="fact"><div class="l">适用对象</div><div class="v">${AUD[o.aud]}</div></div>
         <div class="fact"><div class="l">模态</div><div class="v">${o.m.map(m => MODAL[m]).join('、')}</div></div>
       </div>
-      <div class="card"><h3>适用资格</h3><p class="sub">${miss.length ? `按你的条件，还差 ${miss.length} 项` : '按你的条件，全部满足'} · <a href="#" data-open-cond style="text-decoration:underline">修改我的条件</a></p>${reqChips(o, true)}${o.r.includes('targeted') ? '<p class="small muted" style="margin:8px 0 0">定向发放：只有部分账号收到，能不能领要看你的账号。</p>' : ''}${o.aud === 'unclear' ? '<p class="small muted" style="margin:8px 0 0">官方没写清楚谁能领，这里不宣称人人可领。</p>' : ''}</div>
+      <div class="card"><h3>适用资格</h3><p class="sub">${qualificationSummary} · <a href="#" data-open-cond style="text-decoration:underline">修改我的条件</a></p>${reqChips(o, true)}${o.r.includes('targeted') ? '<p class="small muted" style="margin:8px 0 0">定向发放：只有部分账号收到，能不能领要看你的账号。</p>' : ''}${o.aud === 'unclear' ? '<p class="small muted" style="margin:8px 0 0">官方没写清楚谁能领，这里不宣称人人可领。</p>' : ''}</div>
       <div class="card"><h3>领取步骤</h3><ol class="steps">${((o.steps && o.steps.length) ? o.steps : (STEPS[o.c] || [])).map(s => `<li>${esc(s)}</li>`).join('')}</ol></div>
       <div class="card"><h3>官方证据</h3><p class="sub">信源：${SRC[o.st]}${o.st === 'staff' ? '（白名单内的在职员工账号）' : ''} · ${verify}</p>${st==='stale'&&ADM.token?`<p class="small"><a href="#admin-offer-${encodeURIComponent(o.id)}">去后台核对证据 →</a></p>`:''}
         <div class="rows">${[['benefit', '权益'], ['eligibility', '资格'], ['claim', '领取方式'], ['validity', '有效期']].map(([k, l]) => { const ex = o.evidence && o.evidence.excerpts && o.evidence.excerpts[k]; return `<div class="orow" style="grid-template-columns:auto minmax(0,1fr)">${ex ? `<span class="st good"><b>✓</b>${l}</span>` : `<span class="st warn"><b>!</b>${l}</span>`}<span class="t">${ex ? `「${esc(ex)}」` : '官方原文里没有找到对应说明'}<small>${ex ? '官方原文逐字摘录' : '以官方页面为准'}</small></span></div>`; }).join('')}</div>
