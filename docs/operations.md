@@ -1,6 +1,6 @@
 # 运维说明
 
-校对日期：2026-10-12。本文描述现役命令和源码机制；当次线上版本、任务和未完成项见[整理凭证](closeout-2026-10-12.md)。字段与业务口径由[数据合同](data-contract.md)维护，文档职责见[索引](README.md)。
+校对日期：2026-10-13。本文描述现役命令和源码机制；当次线上版本、任务和未完成项见[整理凭证](closeout-2026-10-13.md)。字段与业务口径由[数据合同](data-contract.md)维护，文档职责见[索引](README.md)。
 
 ## 身份改造发布状态
 
@@ -138,6 +138,14 @@ OpenRouter默认备用为`openrouter/free`；404须检查模型可用性，不�
 
 `ym leads`同时输出reviewVersion；`ym dismiss <线索ID> --version <reviewVersion>`使用查看时版本，避免旧指令覆盖已完成结果。线索页面的关联/结束/重试也检查版本。
 
+## 线索筛选（影子模式）
+
+里程碑 1（2026-10-13 上线）在身份系统之前为每条新线索记录筛选判定与紧急度（P0–P3），**不关闭、不关联、不重排、不发布**。开关为 Worker 与 GitHub 变量 `SCREENING_MODE=off|shadow|suggest|auto`（现为 `shadow`）；`SCREENING_MODELS` 为固定的 OpenRouter `:free` 模型（逗号分隔，校准前按顺序兜底）；可选 `SCREENING_PAID_MODEL` 与 `SCREENING_PAID_PRICE_IN/OUT` 仅供 P0 兜底。每次调用经预算台账预留/结算：筛选单独记账（`SCREENING_MONTHLY_CAP_CNY`，默认 72），免费池每日 1000 次（P0/P1 预留 200、非紧急 ≤800、回填 ≤400）。后续阶段与门槛见[实施计划](superpowers/plans/2026-10-12-lead-screening-redesign.md)。
+
+身份任务：管理员对“没有已知事实”的候选确认“与已上架 X 相同”时，只要 X 已批准且同平台即可关联（`owner_confirmed_same`）；有已知事实冲突的候选仍走原有守卫。
+
+公众号证据：`mp.weixin.qq.com` 文章仅当其 `__biz` 在平台 `wechat` 字段中才算官方；无 `__biz` 的短链、未登记账号不算。管理员通过以公众号文章为证据的条目时自动追加该 `__biz`。
+
 ## Discord 官方公告采集
 
 2026-10-10接入：自建服务器关注厂商官方公告，再由读取Bot通过Discord REST API读取自己的接收文字频道，不访问其他服务器的消息API。Discord follow只同步厂商选择发布的公告，不等于完整时间线。
@@ -146,7 +154,7 @@ OpenRouter默认备用为`openrouter/free`；404须检查模型可用性，不�
 
 信源discord-official-announcements加入每小时快速通道和每6小时全量通道。只接收IS_CROSSPOST且原始guild/channel匹配sources.config.publishers的公告；系统提示、普通成员发言、测试消息、原文已删除公告不产线索。当前已核实Midjourney guild662267976984297473 / announcements952771221915840552，依据为Midjourney官方文档直链。新增厂商需先核实官方入口与原始频道，再定向扩展映射；不能只凭Webhook名称、头像或正文自称官方。
 
-正文、embed字段及附件链接保留，原始Discord消息URL用于去重。文本命中福利关键词或附有待核实附件的官方公告先产线索，沿现有研判/官方补证进入待审；身份可靠不等于活动批准，autoPublish保持false。
+来自未登记服务器/频道的转发会被跳过（不产线索、不再让整个信源失败），其消息链接记入当轮统计 `discordUnmapped`，并列在后台 补录 → 补信源 的「Discord 频道」卡中，选平台即可一键登记。正文、embed字段及附件链接保留，原始Discord消息URL用于去重。文本命中福利关键词或附有待核实附件的官方公告先产线索，沿现有研判/官方补证进入待审；身份可靠不等于活动批准，autoPublish保持false。
 
 检查点为snapshots.hash的discord:<最后接收消息ID>，沿新到旧分页完整补回，先成功写线索才更新检查点。限流、权限错误、未知来源、正文不可读、超过分页上限或入库失败均保留原检查点并进入信源健康失败。默认20页（2,000消息），maxPages最大100；初次读取同样分页，适合本次新建接收频道。重放由原始消息URL去重；本版本不自动重抽旧消息的后续编辑，条款变更可人工补录/重新核验。
 
