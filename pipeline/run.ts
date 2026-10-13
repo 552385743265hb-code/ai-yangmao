@@ -225,7 +225,7 @@ async function runSource(src: Source) {
     else if (src.kind === 'hn') await fetchedLeads(await hn(src));
     else if (src.kind === 'reddit') await fetchedLeads(await reddit(src));
     else if (src.kind === 'feed') await fetchedLeads(await feed(src));
-    else if (src.kind === 'discord') { const result=await collectDiscord(src); noteSourceFetched(src); await postLeads(result.leads); await report(src,true,{hash:`discord:${result.cursor}`}); log(`  Discord ${result.messages} 条新消息，${result.leads.length} 条官方线索，${result.pages} 页`); }
+    else if (src.kind === 'discord') { const result=await collectDiscord(src); noteSourceFetched(src); await postLeads(result.leads); await report(src,true,{hash:`discord:${result.cursor}`}); log(`  Discord ${result.messages} 条新消息，${result.leads.length} 条官方线索，${result.pages} 页`); if(result.unmapped.length){Object.assign(stats,{discordUnmapped:result.unmapped});log(`  Discord 未登记来源 ${result.unmapped.length} 条，已跳过：${result.unmapped.slice(0,5).join(' ')}`);} }
     else if (src.kind === 'rss' && src.platformId) await officialFeed(src);
     else if ((src.kind === 'web_list' || src.kind === 'json') && src.platformId) await officialPage(src);
     else { log('  暂不支持这种信源，跳过'); return; }
