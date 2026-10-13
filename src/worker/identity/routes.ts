@@ -129,13 +129,14 @@ identityAdminRoutes.post('/tasks/:id/resolve',async c=>{
   const ownerLabel=ownerRejectInput(raw);
   if(!ownerLabel)return c.json({error:'请选择拒绝类别'},400);
   raw.reasonCode=ownerLabel.code;
-  const result=await service.decideTask(c.req.param('id'),{...raw,actor:c.get('who'),role:c.get('role')} as never);
+  const {reasonCategory:_category,...decision}=raw;
+  const result=await service.decideTask(c.req.param('id'),{...decision,actor:c.get('who'),role:c.get('role')} as never);
   const scope=raw.scope as {candidateId?:string}|undefined;
   await recordOwnerLabel(c.env.DB,{subjectKind:'candidate',subjectId:scope?.candidateId??c.req.param('id'),category:ownerLabel.category,actor:c.get('who'),justification:typeof raw.reason==='string'?raw.reason:undefined});
   return c.json(result);
  }
  const result=raw.action==='same'||raw.action==='new'||raw.action==='distinct'
-   ?await service.resolveIdentityTask(c.req.param('id'),{...raw,action:raw.action==='distinct'?'new':raw.action,actor:c.get('who')} as never)
+   ?await service.resolveIdentityTask(c.req.param('id'),{...raw,action:raw.action==='distinct'?'new':raw.action,actor:c.get('who'),ownerOverride:c.get('role')==='admin'} as never)
    :await service.decideTask(c.req.param('id'),{...raw,actor:c.get('who'),role:c.get('role')} as never);
  return c.json(result);
 });

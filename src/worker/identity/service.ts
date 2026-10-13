@@ -1,7 +1,7 @@
 import {prepareMembershipFields,MembershipError} from '../membership';
 import {membershipFacts} from '../../shared/membership';
 import {withMembershipFacts,membershipFactConsistent} from '../../shared/identity/membership';
-import {findReviewedLegacy} from './reviewed-legacy';
+import {findReviewedLegacy,hasKnownTerms} from './reviewed-legacy';
 import {visibilityState,activeVisibilityPredicate} from './visibility';
 import {taskSourcesCte} from './task-sources';
 import {retrieveManualHistory} from './manual-retrieval';
@@ -26,7 +26,7 @@ type OfferRow=typeof tables.offers.$inferSelect;
 type CandidateRow={id:string;observation_id:string;facts_json:string;facts_hash:string;raw_candidate_json:string;receipt_json:string|null;revision:number;entity_id:string|null;state:string;task_id:string|null;last_error:string|null;claim_family_key:string|null;assertion_facts_hash:string|null;source_fetch_id:string|null};
 type EntityRow={routing_generation?:number;id:string;platform_id:string;canonical_offer_id:string|null;business_revision:number;publication_revision:number;current_approved_version_id:string|null};
 type TaskRow={id:string;task_key:string;kind:string;entity_id:string|null;version_id:string|null;base_version_id:string|null;state:string;revision:number;material_revision:number;decision_id:string|null;lease_context_json?:string|null;suggestion_json?:string|null};
-type ResolutionControl={task:TaskRow;actor:string;action:'same'|'new';reason?:string;facts?:CanonicalTermsV1;entityId?:string};
+type ResolutionControl={task:TaskRow;actor:string;action:'same'|'new';reason?:string;facts?:CanonicalTermsV1;entityId?:string;ownerOverride?:boolean};
 const decisionInput=z.strictObject({requestId:z.string().min(1).max(200),expectedRevision:z.number().int().nonnegative(),action:z.enum(['approve','reject']),actor:z.string().min(1),role:z.enum(['admin','reviewer']),reasonCode:reviewDecisionSchema.shape.reasonCode.optional(),reason:z.string().max(2000).optional(),scope:decisionScopeSchema.optional(),reopenPolicy:reopenPolicySchema.optional()});
 export type TaskDecisionInput=z.infer<typeof decisionInput>;
 const columns:Record<string,string>={platformId:'platform_id',title:'title',type:'type',modalities:'modalities',models:'models',tags:'tags',claimMethod:'claim_method',requirements:'requirements',membershipRequirement:'membership_requirement',audience:'audience',valueText:'value_text',usdEstimate:'usd_estimate',usdMax:'usd_max',valuation:'valuation',claimStart:'claim_start',claimEnd:'claim_end',endKind:'end_kind',creditValidity:'credit_validity',sourceTz:'source_tz',publishedAt:'published_at',steps:'steps',evidence:'evidence',sourceId:'source_id',firstChannel:'first_channel'};
@@ -286,15 +286,15 @@ export class IdentityService {
   return this.commit(builder,[{kind:'task',id:taskId,revision:input.expectedRevision},...context.entities.map(e=>({kind:'entity' as const,id:e.id,revision:e.revision}))],{taskId,revision:input.expectedRevision+1,state:'manual'});
  }
 
- async resolveIdentityTask(taskId:string,raw:{requestId:string;expectedRevision:number;action:'same'|'new';candidateId:string;entityId?:string;facts?:CanonicalTermsV1;reason?:string;actor:string}):Promise<IntakeReceipt> {
-  const input=z.strictObject({requestId:z.string().min(1).max(200),expectedRevision:z.number().int().nonnegative(),action:z.enum(['same','new']),candidateId:z.string(),entityId:z.string().optional(),facts:canonicalTermsSchema.optional(),reason:z.string().min(2).max(2000).optional(),actor:z.string().min(1)}).parse(raw);
+ async resolveIdentityTask(taskId:string,raw:{requestId:string;expectedRevision:number;action:'same'|'new';candidateId:string;entityId?:string;facts?:CanonicalTermsV1;reason?:string;actor:string;ownerOverride?:boolean}):Promise<IntakeReceipt> {
+  const input=z.strictObject({requestId:z.string().min(1).max(200),expectedRevision:z.number().int().nonnegative(),action:z.enum(['same','new']),candidateId:z.string(),entityId:z.string().optional(),facts:canonicalTermsSchema.optional(),reason:z.string().min(2).max(2000).optional(),actor:z.string().min(1),ownerOverride:z.boolean().optional()}).parse(raw);
   const payload=await sha256(stableJson({candidateId:input.candidateId,suggestion:null,control:{taskId,revision:input.expectedRevision,actor:input.actor,action:input.action,facts:input.facts??null,entityId:input.entityId??null,reason:input.reason??null}}));
   const prior=await readIdentityReceipt<IntakeReceipt>(this.db,'resolve:human:'+input.requestId,payload);if(prior){if(prior.status==='conflict')throw new IdentityError(409,'request payload conflict');return intakeReceiptSchema.parse(prior.value);}
   const task=await this.db.prepare('SELECT * FROM review_tasks WHERE id=?').bind(taskId).first<TaskRow>();
   if(!task||!['identity','merge_conflict','evidence_reopen'].includes(task.kind)||task.revision!==input.expectedRevision||!['open','manual','checking'].includes(task.state))throw new IdentityError(409,'identity task changed');
   if(!await this.db.prepare('SELECT 1 FROM task_candidates tc JOIN intake_candidates c ON c.id=tc.candidate_id WHERE tc.task_id=? AND tc.candidate_id=? AND c.task_id=tc.task_id').bind(taskId,input.candidateId).first())throw new IdentityError(400,'candidate does not belong to task');
   if(input.action==='same'&&!input.entityId)throw new IdentityError(400,'same requires a target entity');
-  return this.resolveCandidate(input.candidateId,'human:'+input.requestId,undefined,{task,actor:input.actor,action:input.action,facts:input.facts,entityId:input.entityId,reason:input.reason});
+  return this.resolveCandidate(input.candidateId,'human:'+input.requestId,undefined,{task,actor:input.actor,action:input.action,facts:input.facts,entityId:input.entityId,reason:input.reason,ownerOverride:input.ownerOverride});
  }
 
  private async rejectClaimTask(task:TaskRow,input:TaskDecisionInput,command:string,hash:string):Promise<{decisionId:string;publicationRevision:number}> {
@@ -450,6 +450,15 @@ export class IdentityService {
     if(platform){entity={id:crypto.randomUUID(),platform_id:productId,canonical_offer_id:null,business_revision:0,publication_revision:0,current_approved_version_id:null};builder.insert('benefit_entities',{id:entity.id,platform_id:productId});material=true;}
    }
    if(!page.complete)receipt.reasonCodes.push('retrieval_incomplete');
+  }
+  // Owner override (spec §6.5.1): an administrator's explicit "same as" an approved, active entity on the
+  // candidate's own platform is authoritative even when an unverified source left no comparable history.
+  // Only for candidates with no known facts: known but conflicting or ambiguous facts keep every existing guard.
+  if(!entity&&control?.action==='same'&&control.ownerOverride&&control.entityId&&!hasKnownTerms(facts)){
+   const target=await this.entity(control.entityId),display=await readDisplay();
+   if(target?.current_approved_version_id&&display?.platformId===target.platform_id){
+    entity=target;comparison={relation:'SAME',entityId:target.id,termsRelation:'EQUIVALENT',matchingVersionId:target.current_approved_version_id,evidenceRefs:[],conflicts:[],reasonCodes:['owner_confirmed_same'],retrievalComplete:true,resolverVersion:RESOLVER_VERSION,rulesVersion:RULES_VERSION};
+   }
   }
   if(entity) {
    if(!material)expected.push({kind:'entity',id:entity.id,revision:entity.business_revision});
