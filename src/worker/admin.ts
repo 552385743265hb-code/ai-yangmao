@@ -1,3 +1,4 @@
+import { parseDiscordChannelLink, registerDiscordPublisher, unmappedDiscordOrigins } from './discord-publishers';
 import { learnWechatAccount } from './wechat-accounts';
 import type {MembershipRequirement} from '../shared/membership';
 import {membershipAdminRoutes,prepareMembershipFields,MembershipError} from './membership';
@@ -104,6 +105,15 @@ admin.post('/offers/:ref/comments', commentMutationGuard, commentBodyLimit, c =>
 admin.post('/comments/:id/delete', commentMutationGuard, commentBodyLimit, c => removeComment(c, c.req.param('id')));
 
 /** 补信源：给已登记平台加一个官方信源，下一轮采集开始抓取；不会打开自动上架。 */
+admin.get('/discord/unmapped', async c => c.json({ origins: await unmappedDiscordOrigins(c.env.DB) }));
+admin.post('/discord/publishers', async c => {
+  const body = z.object({ platformId: z.string().min(1), name: z.string().min(1).max(80), guildId: z.string().optional(), channelId: z.string().optional(), link: z.string().optional() }).safeParse(await c.req.json().catch(() => null));
+  if (!body.success) return c.json({ error: 'Discord 频道资料不正确' }, 400);
+  const ids = body.data.link ? parseDiscordChannelLink(body.data.link) : body.data.guildId && body.data.channelId ? { guildId: body.data.guildId, channelId: body.data.channelId } : null;
+  if (!ids) return c.json({ error: '请粘贴 https://discord.com/channels/服务器/频道 链接' }, 400);
+  const r = await registerDiscordPublisher(c.env.DB, { platformId: body.data.platformId, name: body.data.name, ...ids });
+  return r.status === 200 ? c.json({ ok: true, ...ids }) : c.json({ error: r.error }, r.status);
+});
 admin.post('/sources', async c => {
   const body = z.object({ platformId: z.string().min(1), url: z.url().refine(u => /^https:\/\//.test(u), '只收 https 链接'),
     kind: z.enum(['web_list', 'rss', 'json']), tier: z.enum(['site', 'docs', 'official', 'staff']) }).safeParse(await c.req.json().catch(() => null));
