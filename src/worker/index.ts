@@ -32,6 +32,13 @@ import { z } from 'zod';
 import * as s from '../db/schema';
 import { isoDate, leadIn, offerIn, collectedOfferIn, runIn } from '../shared/ingest';
 import { differentOccurrence, findDuplicate, crossPlatformDuplicate, sameRecurringCreditPlan, sameModelAnnouncement, sameEvidenceBenefit } from '../shared/dedupe';
+import { gateVerdict, matchTitleRule, urlKey } from '../shared/screening/gate0';
+import { SCREENING_PROMPT_VERSION } from '../shared/screening/version';
+import { reasonCodeForCategory, screeningMode } from '../shared/screening/types';
+import type { ScreeningRule } from '../shared/screening/types';
+import { classifyUrgency, systemDueAt } from '../shared/screening/urgency';
+import { ScreeningStore } from './screening/store';
+import { screeningIngestRoutes } from './screening/routes';
 import { activeOnDate, isClaimable, liveStatus, missingEvidence } from '../shared/lifecycle';
 import { admin } from './admin';
 import { feishuAdmin, runScheduled } from './feishu';
@@ -62,6 +69,11 @@ export interface Env {
   GEMINI_MODEL?: string;
   GH_DISPATCH_TOKEN?: string; // 只对本仓库有 Actions 写权限的令牌，用于准点触发采集
   GH_REPO?: string;
+  SCREENING_MODE?: string;
+  SCREENING_MONTHLY_CAP_CNY?: string;
+  OPENROUTER_FREE_DAILY?: string;
+  SCREENING_URGENT_RESERVE?: string;
+  SCREENING_BACKFILL_DAILY?: string;
 }
 
 const app = new Hono<{ Bindings: Env }>();
@@ -220,6 +232,7 @@ ingest.use('*', async (c, next) => {
 });
 
 ingest.route('/', identityIngestRoutes);
+ingest.route('/screening', screeningIngestRoutes);
 ingest.route('/official-reviews', officialReviewRoutes);
 ingest.route('/lead-reviews', leadReviewRoutes);
 
@@ -227,11 +240,55 @@ ingest.post('/leads', async c => {
   const body = z.array(leadIn).max(100).safeParse(await c.req.json().catch(() => null));
   if (!body.success) return c.json({ error: '数据格式不正确', issues: body.error.issues }, 400);
   if (!body.data.length) return c.json({ created: 0 });
-  // D1 单条语句最多 100 个绑定参数，线索每行 4 列，按 20 行一批插入
+  const mode = screeningMode(c.env);
+  const stamped = body.data.map(row => ({ ...row, urlKey: urlKey(row.url) }));
+  const taken = await c.env.DB.prepare(`SELECT url, url_key FROM leads WHERE url IN (SELECT value FROM json_each(?1)) OR (url_key IS NOT NULL AND url_key IN (SELECT value FROM json_each(?2)))`).bind(JSON.stringify(stamped.map(row => row.url)), JSON.stringify(stamped.map(row => row.urlKey))).all<{ url: string; url_key: string | null }>();
+  const seenUrl = new Set(taken.results.map(row => row.url));
+  const seenKey = new Set(taken.results.flatMap(row => row.url_key ? [row.url_key] : []));
+  const duplicates: typeof stamped = [];
+  const fresh = stamped.filter(row => {
+    if (seenUrl.has(row.url) || seenKey.has(row.urlKey)) { duplicates.push(row); return false; }
+    seenUrl.add(row.url); seenKey.add(row.urlKey); return true;
+  });
+  // D1 单条语句最多 100 个绑定参数。线索带 url_key 后仍按 20 行一批插入。
   let created = 0;
-  for (let i = 0; i < body.data.length; i += 20) {
-    const res = await db(c.env).insert(s.leads).values(body.data.slice(i, i + 20)).onConflictDoNothing().returning({ id: s.leads.id });
+  const createdRows: { id: number; url: string }[] = [];
+  for (let i = 0; i < fresh.length; i += 20) {
+    const res = await db(c.env).insert(s.leads).values(fresh.slice(i, i + 20)).onConflictDoNothing().returning({ id: s.leads.id, url: s.leads.url });
     created += res.length;
+    createdRows.push(...res);
+  }
+  if (mode !== 'off' && createdRows.length) {
+    const store = new ScreeningStore(c.env.DB);
+    const ruleRows = await c.env.DB.prepare(`SELECT id, kind, scope_kind, scope_value, category, description, pattern, status FROM screening_rules WHERE status='active' AND kind='title_pattern'`).all<{ id: string; kind: 'title_pattern'; scope_kind: ScreeningRule['scopeKind']; scope_value: string | null; category: ScreeningRule['category']; description: string; pattern: string | null; status: ScreeningRule['status'] }>();
+    const rules: ScreeningRule[] = ruleRows.results.map(row => ({ id: row.id, kind: row.kind, scopeKind: row.scope_kind, scopeValue: row.scope_value, category: row.category, description: row.description, pattern: row.pattern, status: row.status }));
+    const now = new Date();
+    for (const row of createdRows) {
+      const input = fresh.find(item => item.url === row.url)!;
+      const urgency = classifyUrgency({ title: input.title ?? '', text: input.raw ?? '' }, now);
+      await store.upsertItem({ subjectKind: 'lead', subjectId: String(row.id), origin: input.origin, state: 'awaiting_screen', tier: urgency.tier, deadline: urgency.deadline, signals: urgency.signals, urgencyQuote: urgency.quote, tierBy: 'gate0', discoveredAt: now.toISOString(), dueAt: systemDueAt(urgency.tier, now.toISOString()) });
+      const rule = matchTitleRule({ title: input.title ?? '', origin: input.origin, platformId: null, sourceId: null }, rules);
+      if (!rule) continue;
+      const subject = { kind: 'lead' as const, url: input.url, origin: input.origin, platformId: null, title: input.title ?? '', openingText: input.raw ?? '' };
+      const verdict = gateVerdict({ rule }, subject, { generatedAt: now.toISOString(), records: [], rules, profiles: [], calibrations: [] });
+      const decision = await store.recordDecision({ requestId: `gate0:${row.id}:${rule.id}`, itemId: `lead:${row.id}`, verdict: verdict.verdict, matchRef: verdict.matchId, ruleId: verdict.ruleId, reasonCategory: verdict.reasonCategory, occurrenceCheck: verdict.occurrenceCheck, confidence: verdict.confidence, evidenceQuote: verdict.evidenceQuote, explanation: verdict.explanation, urgency: verdict.urgency, model: 'gate0', calibrated: false, promptVersion: SCREENING_PROMPT_VERSION, contextHash: 'gate0', mode: mode === 'auto' ? 'auto' : mode === 'suggest' ? 'suggest' : 'shadow' });
+      if (mode === 'auto') {
+        const lead = await c.env.DB.prepare('SELECT id, url, status, raw, title, resolution, offer_id FROM leads WHERE id=?').bind(row.id).first<{ id: number; url: string; status: string; raw: string | null; title: string | null; resolution: string | null; offer_id: string | null }>();
+        if (lead) {
+          await closeIdentityLead(c.env.DB, { ...lead, offerId: lead.offer_id, resolution: lead.resolution ? JSON.parse(lead.resolution) : null }, { status: 'closed', jobId: `gate0-${row.id}`, attempts: 0, inconclusive: 0, checkedAt: now.toISOString(), nextAttemptAt: null, reason: verdict.explanation, queries: [], candidates: [], offerIds: [] }, input.raw ?? input.title ?? '', { actor: 'pipeline:gate0', reasonCode: reasonCodeForCategory(rule.category) });
+          await store.markApplied(decision.id, 'closed');
+        }
+      }
+    }
+  }
+  for (const row of duplicates) {
+    const existing = await c.env.DB.prepare(`SELECT id, title, raw FROM leads WHERE url=? OR (url_key IS NOT NULL AND url_key=?) LIMIT 1`).bind(row.url, row.urlKey).first<{ id: number; title: string | null; raw: string | null }>();
+    if (!existing) continue;
+    const title = row.title ?? existing.title;
+    const raw = row.raw ?? existing.raw;
+    if ((title ?? '') === (existing.title ?? '') && (raw ?? '') === (existing.raw ?? '')) continue;
+    await db(c.env).update(s.leads).set({ title: title ?? null, raw: raw ?? null }).where(eq(s.leads.id, existing.id));
+    await c.env.DB.prepare(`UPDATE screening_items SET latest_decision_id=NULL, updated_at=? WHERE subject_kind='lead' AND subject_id=?`).bind(new Date().toISOString(), String(existing.id)).run();
   }
   return c.json({ created, skipped: body.data.length - created });
 });
@@ -631,20 +688,38 @@ ingest.get('/offers-index', async c => {
 
 /** 模型预算：今日 token、本月费用。 */
 ingest.post('/model-budget/reserve', async c => {
-  const body = z.object({ provider: z.string().max(40), tokens: z.number().int().positive().max(400000), costCny: z.number().nonnegative().max(1000) })
-    .safeParse(await c.req.json().catch(() => null));
+  const body = z.object({
+    provider: z.string().max(40), tokens: z.number().int().positive().max(400000), costCny: z.number().nonnegative().max(1000),
+    line: z.enum(['extraction', 'screening']).optional(), pool: z.enum(['openrouter-free']).optional(), purpose: z.enum(['urgent', 'normal', 'backfill']).optional(),
+  }).safeParse(await c.req.json().catch(() => null));
   if (!body.success) return c.json({ error: '预算预留参数不正确' }, 400);
-  const tokenCap = Number(c.env.DAILY_TOKEN_CAP ?? 0), costCap = Number(c.env.MONTHLY_COST_CAP_CNY ?? 10);
-  if (!Number.isFinite(tokenCap) || !Number.isFinite(costCap) || tokenCap < 0 || costCap < 0) return c.json({ error: '服务端预算配置不正确' }, 503);
+  const line = body.data.line ?? 'extraction';
+  const tokenCap = Number(c.env.DAILY_TOKEN_CAP ?? 0);
+  const costCap = line === 'screening' ? Number(c.env.SCREENING_MONTHLY_CAP_CNY ?? 72) : Number(c.env.MONTHLY_COST_CAP_CNY ?? 10);
+  const freeDaily = Number(c.env.OPENROUTER_FREE_DAILY ?? 1000);
+  const urgentReserve = Number(c.env.SCREENING_URGENT_RESERVE ?? 200);
+  const backfillDaily = Number(c.env.SCREENING_BACKFILL_DAILY ?? 400);
+  if ([tokenCap, costCap, freeDaily, urgentReserve, backfillDaily].some(value => !Number.isFinite(value) || value < 0)) return c.json({ error: '服务端预算配置不正确' }, 503);
   const nowIso = new Date().toISOString(), today = nowIso.slice(0, 10), month = nowIso.slice(0, 7);
+  const stats = JSON.stringify({ state: 'reserved', provider: body.data.provider, line, pool: body.data.pool ?? null, purpose: body.data.purpose ?? null });
+  const nonUrgentCap = Math.max(0, freeDaily - urgentReserve);
   // 一条 INSERT ... WHERE 同时判定与占用余额，多个并发采集任务也不能越过上限。
   const reserved = await c.env.DB.prepare(`INSERT INTO runs (kind,started_at,finished_at,ok,stats,tokens,cost_cny)
     SELECT 'model', ?1, ?1, 0, ?2, ?3, ?4
     WHERE (?6 = 0 OR (SELECT COALESCE(SUM(tokens),0) FROM runs WHERE substr(started_at,1,10)=?5) + ?3 <= ?6)
-      AND (SELECT COALESCE(SUM(cost_cny),0) FROM runs WHERE substr(started_at,1,7)=?7) + ?4 <= ?8
-    RETURNING id`).bind(nowIso, JSON.stringify({ state: 'reserved', provider: body.data.provider }), body.data.tokens,
-    body.data.costCny, today, tokenCap, month, costCap).first<{ id: number }>();
-  return reserved ? c.json({ id: reserved.id }) : c.json({ error: '模型预算不足，本次调用已推迟' }, 429);
+      AND (SELECT COALESCE(SUM(cost_cny),0) FROM runs WHERE substr(started_at,1,7)=?7 AND (
+        (?9 = 'screening' AND json_extract(stats,'$.line')='screening')
+        OR (?9 <> 'screening' AND (json_extract(stats,'$.line') IS NULL OR json_extract(stats,'$.line')='extraction'))
+      )) + ?4 <= ?8
+      AND (?10 IS NULL OR (
+        (SELECT COUNT(*) FROM runs WHERE substr(started_at,1,10)=?5 AND json_extract(stats,'$.pool')='openrouter-free') + 1 <= ?11
+        AND (?12 = 'urgent' OR (SELECT COUNT(*) FROM runs WHERE substr(started_at,1,10)=?5 AND json_extract(stats,'$.pool')='openrouter-free' AND json_extract(stats,'$.purpose') IN ('normal','backfill')) + 1 <= ?13)
+        AND (?12 <> 'backfill' OR (SELECT COUNT(*) FROM runs WHERE substr(started_at,1,10)=?5 AND json_extract(stats,'$.pool')='openrouter-free' AND json_extract(stats,'$.purpose')='backfill') + 1 <= ?14)
+      ))
+    RETURNING id`).bind(nowIso, stats, body.data.tokens, body.data.costCny, today, tokenCap, month, costCap, line, body.data.pool ?? null, freeDaily, body.data.purpose ?? '', nonUrgentCap, backfillDaily).first<{ id: number }>();
+  if (reserved) return c.json({ id: reserved.id });
+  const poolFull = body.data.pool === 'openrouter-free';
+  return c.json({ error: '模型预算不足，本次调用已推迟', quota: poolFull ? 'pool_exhausted' : 'cost_exhausted' }, 429);
 });
 
 ingest.post('/model-budget/:id/settle', async c => {
@@ -657,8 +732,9 @@ ingest.post('/model-budget/:id/settle', async c => {
   if (!record) return c.json({ error: '没有这次模型调用' }, 404);
   if ((record.stats as { state?: string }).state === 'settled') return c.json({ ok: true, alreadySettled: true });
   if (body.data.tokens > record.tokens || body.data.costCny > record.costCny + 0.000001) return c.json({ error: '实际用量超出预留，请保留预留并人工核对' }, 409);
+  const previous = record.stats ?? {};
   await db(c.env).update(s.runs).set({ tokens: body.data.tokens, costCny: body.data.costCny,
-    stats: { state: 'settled', provider: body.data.provider }, ok: true, finishedAt: new Date().toISOString() }).where(eq(s.runs.id, id));
+    stats: { ...previous, state: 'settled', provider: body.data.provider }, ok: true, finishedAt: new Date().toISOString() }).where(eq(s.runs.id, id));
   return c.json({ ok: true });
 });
 

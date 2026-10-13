@@ -16,6 +16,7 @@ import { Hono } from 'hono';
 import type { Env } from '../index';
 import { candidateBatchInputSchema, observationInputSchema } from '../../shared/identity/types';
 import { IdentityError, IdentityStore } from './store';
+import { ownerRejectInput, recordOwnerLabel } from '../screening/labels';
 
 // Mounted below the existing ingest middleware; never grants admin permissions.
 export const identityIngestRoutes = new Hono<{ Bindings: Env }>();
@@ -124,6 +125,15 @@ identityAdminRoutes.post('/tasks/:id/resolve',async c=>{
  const raw=await c.req.json() as Record<string,unknown>;
  const service=new IdentityService(c.env.DB);
  if(raw.action==='same_claim'){if(c.get('role')!=='admin')return c.json({error:'administrator required'},403);const {action:_action,...input}=raw;return c.json(await service.confirmRejectedClaim(c.req.param('id'),{...input,actor:c.get('who')}));}
+ if(raw.action==='reject'){
+  const ownerLabel=ownerRejectInput(raw);
+  if(!ownerLabel)return c.json({error:'请选择拒绝类别'},400);
+  raw.reasonCode=ownerLabel.code;
+  const result=await service.decideTask(c.req.param('id'),{...raw,actor:c.get('who'),role:c.get('role')} as never);
+  const scope=raw.scope as {candidateId?:string}|undefined;
+  await recordOwnerLabel(c.env.DB,{subjectKind:'candidate',subjectId:scope?.candidateId??c.req.param('id'),category:ownerLabel.category,actor:c.get('who'),justification:typeof raw.reason==='string'?raw.reason:undefined});
+  return c.json(result);
+ }
  const result=raw.action==='same'||raw.action==='new'||raw.action==='distinct'
    ?await service.resolveIdentityTask(c.req.param('id'),{...raw,action:raw.action==='distinct'?'new':raw.action,actor:c.get('who')} as never)
    :await service.decideTask(c.req.param('id'),{...raw,actor:c.get('who'),role:c.get('role')} as never);

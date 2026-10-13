@@ -19,6 +19,8 @@
 
 ## 方案与实施范围
 
+- [线索筛选重设计](superpowers/specs/2026-10-12-lead-screening-redesign-design.md) / [实施计划](superpowers/plans/2026-10-12-lead-screening-redesign.md)：筛选在身份系统之前记录判定与紧急度；里程碑 1 为影子模式，不关闭、不重排、不发布。
+
 - [20:05会员资格上线结果](membership-live-2026-10-11.md)：D1关联索引、0036–0038、目录与保守资格迁移及线上验证已完成。
 
 - [选择式会员资格交付记录](membership-release-2026-10-11.md)：记录当时 D1 配额受阻的快照；之后的上线结果见[20:05会员资格上线结果](membership-live-2026-10-11.md)。

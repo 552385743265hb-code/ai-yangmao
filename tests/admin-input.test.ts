@@ -53,6 +53,8 @@ describe('admin text input lifecycle',()=>{
     const card=document.querySelector('[data-code="first"]')!;
     const reason=card.querySelector('[data-reason]') as HTMLInputElement;
     reason.value='fixture rejection';
+    card.querySelector('[data-act="rejectopen"]')!.dispatchEvent(new window.Event('click'));
+    card.querySelector('[data-rc="other"]')!.dispatchEvent(new window.Event('click'));
     card.querySelector('[data-act="reject"]')!.dispatchEvent(new window.Event('click'));
     await new Promise(resolve=>setTimeout(resolve,0));
     expect(requests).toEqual(['/api/admin/offers/first/reject']);

@@ -30,7 +30,7 @@ const digits = (s: string) => (s.normalize('NFKC').match(/\d[\d,.]*/g) ?? []).ma
 
 export interface DedupeCandidate { id: string; platformId: string; title: string; valueText: string; evidenceUrl: string; eventDay?: string | null; claimStart?: string | null; sameOccurrenceAs?:string; reviewState?:string; type?:string; claimMethod?:string; requirements?:string[]; audience?:string; models?:string[]; modalities?:string[]; evidence?:{tier?:string;pageHash?:string|null;excerpts?:Record<string,string|undefined>}; claimEnd?:string|null }
 type Incoming = Omit<DedupeCandidate,'id'> & {id?:string};
-const titleKey=(s:string)=>s.normalize('NFKC').toLowerCase().replace(/[\s\p{P}\p{S}]/gu,'');
+export const titleKey=(s:string)=>s.normalize('NFKC').toLowerCase().replace(/[\s\p{P}\p{S}]/gu,'');
 // Generic daily-credit descriptions may come from FAQ, pricing, or the account check-in page.
 // Keep product/model, paid-tier, region and task qualifiers: only a scope-free alias is safe.
 function genericDailyCredits(o: Incoming): boolean {

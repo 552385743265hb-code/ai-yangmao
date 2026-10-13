@@ -2,7 +2,7 @@
 
 - 项目：AI 羊毛牧场，Cloudflare Worker / D1，TypeScript + Hono + Drizzle；Node.js 24。
 - 入口：[README.md](README.md)；字段与收录口径以 [数据合同](docs/data-contract.md) 和 [通用规则](pipeline/learned-rules.md) 为准。
-- 平台事实维护到 [平台要点](pipeline/platform-notes.md)，保留核验日期；历史报告不能覆盖现行规则。
+- 现行平台事实在 D1 `platform_profiles`。`pipeline/platform-notes.md` 已冻结为历史快照，不再覆盖现行规则。
 - 审核使用仓库 [.claude/skills/yangmao-review](.claude/skills/yangmao-review/SKILL.md)，不要以外部旧副本替代。
 - 官方发放方证据优先，媒体只提供线索；不收账号池、不透明中转站、付费套餐自带权益。
 - 用户要求预审或补字段时保持待审；审核建议不是通过。平台准入不是条目批准。

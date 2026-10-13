@@ -36,6 +36,10 @@ on:
         description: '本轮最多研判多少条线索'
         type: string
         default: '50'
+      screening_ids:
+        description: '只筛选这些 screening item id（逗号分隔，留空为队列）'
+        type: string
+        default: ''
 
 concurrency:
   group: collect
@@ -79,6 +83,12 @@ jobs:
           REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
           REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
           DAILY_TOKEN_CAP: ${{ vars.DAILY_TOKEN_CAP || '0' }}
+          SCREENING_MODE: ${{ vars.SCREENING_MODE || 'off' }}
+          SCREENING_MODELS: ${{ vars.SCREENING_MODELS }}
+          SCREENING_PAID_MODEL: ${{ vars.SCREENING_PAID_MODEL }}
+          SCREENING_PAID_PRICE_IN: ${{ vars.SCREENING_PAID_PRICE_IN }}
+          SCREENING_PAID_PRICE_OUT: ${{ vars.SCREENING_PAID_PRICE_OUT }}
+          SCREENING_IDS: ${{ inputs.screening_ids }}
           DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
           ONLY_SOURCES: ${{ inputs.only_sources }}
           FORCE: ${{ inputs.force && '1' || '0' }}

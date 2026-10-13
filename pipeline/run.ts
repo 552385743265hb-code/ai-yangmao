@@ -17,6 +17,9 @@ import { api, fetchPage, fetchText, isFreebie, norm, relevantText, sha256 } from
 import { DeferError, extract, llmAvailable, modelAvailable, paidAvailable, type Extracted } from './llm';
 import { BudgetExhaustedError, BudgetLedgerError, modelBudget } from './budget';
 import { offerIn, type LeadIn, type OfferIn } from '../src/shared/ingest';
+import { runScreening, screenCandidateReceipts } from './screening/run';
+import { loadMemory } from './screening/memory';
+import { screeningMode, type PlatformProfile } from '../src/shared/screening/types';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -26,6 +29,14 @@ let costLeft = MONTHLY_COST_CAP;
 const DRY = process.env.DRY_RUN === '1';
 const FAST = process.env.FAST_LEADS === '1';
 const FORCE = process.env.FORCE === '1'; // 忽略上次的哈希，强制重新抽取（提示词改进后补跑）
+let screeningProfileCache: PlatformProfile[] | null = null;
+async function screeningProfiles(): Promise<PlatformProfile[]> {
+  if (!screeningProfileCache) {
+    try { screeningProfileCache = (await loadMemory()).profiles; }
+    catch { screeningProfileCache = []; }
+  }
+  return screeningProfileCache;
+}
 const LEAD_LIMIT = Number(process.env.LEAD_LIMIT ?? 50);
 const onlyList = (process.env.ONLY_SOURCES ?? '').split(',').map(s => s.trim()).filter(Boolean);
 const only = onlyList.length ? onlyList : null; // 留空 = 全部信源
@@ -81,7 +92,7 @@ async function extractAndPostUnlocked(src: Source, url: string, text: string, so
   let r: Awaited<ReturnType<typeof extract>>;
   try {
     const idx = (await offerIndex()).filter(k => k.platformId === src.platformId);
-    r = await extract(src.platform?.name ?? src.platformId ?? '', url, text, log, { allowPaid, deadlineAt: deadline, platformIds: [src.platformId], corrections: await correctionsFor(src.platformId, src.id), existing: formatOfferIndex(idx) || undefined, budget: modelBudget });
+    r = await extract(src.platform?.name ?? src.platformId ?? '', url, text, log, { allowPaid, deadlineAt: deadline, platformIds: [src.platformId], profiles: await screeningProfiles(), corrections: await correctionsFor(src.platformId, src.id), existing: formatOfferIndex(idx) || undefined, budget: modelBudget });
     // 同一个权益沿用已有 id，避免模型换个说法就生成重复条目
     for (const e of r.offers as (Extracted & { sameAs?: string | null; fixedId?: string })[]) { const hit = idx.find(k => k.id === e.sameAs); if (hit) e.fixedId = hit.id; }
   }
@@ -119,6 +130,10 @@ async function extractAndPostUnlocked(src: Source, url: string, text: string, so
   if (!offers.length) return false; // 原文里有候选但全部校验失败，不能把页面标记为已处理
   if (DRY) { offers.forEach(o => log('  羊毛', o.id, o.title, `类型=${o.type} 对象=${o.audience} 门槛=${o.requirements.join(',')} 额度=${o.valueText}`)); stats.offers += offers.length; return true; }
   const res = await postIdentityOffers(offers);
+  if (screeningMode({ SCREENING_MODE: process.env.SCREENING_MODE }) !== 'off') {
+    try { await screenCandidateReceipts(res.results, offers, await loadMemory(), { deadlineAt: deadline, dry: DRY, log }); }
+    catch (error) { stats.errors.push(`candidate screening: ${(error as Error).message}`); }
+  }
   let hasWriteError = false;
   for (const x of res.results) {
     if (x.error) stats.errors.push(`${x.id}: ${x.error}`);
@@ -325,7 +340,7 @@ async function triageLeads(plats: Plat[]) {
     }
     catch { /* 补录失败也研判已有备注为媒体级草稿；不能让失效链接永远占据 new 队首。 */ }
     let r;
-    try { r = await extract('（见平台白名单）', l.url, text, log, { allowPaid, evidenceText, deadlineAt: triageDeadline, platformList: list, platformIds: mentionedPlatforms(`${l.title ?? ''}\n${text}`), existing, corrections: await correctionsFor(null, null), budget: modelBudget }); }
+    try { r = await extract('（见平台白名单）', l.url, text, log, { allowPaid, evidenceText, deadlineAt: triageDeadline, platformList: list, platformIds: mentionedPlatforms(`${l.title ?? ''}\n${text}`), profiles: await screeningProfiles(), existing, corrections: await correctionsFor(null, null), budget: modelBudget }); }
     catch (e) {
       log(`  #${l.id} 抽取失败：${(e as Error).message.slice(0, 80)}`);
       if (budgetFailure(e)) { budgetBlocked = true; stats.deferred++; break; }
@@ -424,6 +439,10 @@ export async function runPipeline() {
   }
   try {
     const { platforms } = await fetch(`${(process.env.API_BASE ?? 'https://ai-yangmao.com').replace(/\/$/, '')}/api/platforms`, { signal: AbortSignal.timeout(30000) }).then(r => r.json()) as { platforms: Plat[] };
+    try {
+      const screening = await runScreening({ ids: (process.env.SCREENING_IDS ?? '').split(',').map(id => id.trim()).filter(Boolean), deadlineAt: deadline, dry: DRY });
+      Object.assign(stats, { screening, memoryRecords: screening.memoryRecords });
+    } catch (e) { stats.errors.push(`筛查：${(e as Error).message}`); stats.coverageDegraded = true; log('筛查出错', (e as Error).message); }
     await triageLeads(platforms);
   } catch (e) { stats.errors.push(`线索研判：${(e as Error).message}`); stats.deferred++; log('线索研判出错', (e as Error).message); }
   try {

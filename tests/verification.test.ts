@@ -335,7 +335,7 @@ describe('official evidence verification', () => {
     await call('ingest/offers',[offer]);await call('admin/offers/vendor-free/approve',{},'admin');
     const next={...offer,valueText:'200 tokens',sourceText:'Free 200 tokens. All users. No published end date.',evidence:{...evidence,excerpts:{...evidence.excerpts,benefit:'Free 200 tokens'}}};
     await call('ingest/offers',[next]);
-    expect((await call('admin/offers/vendor-free/reject',{reason:'不要这次变更'},'admin')).status).toBe(200);
+    expect((await call('admin/offers/vendor-free/reject',{reason:'不要这次变更',reasonCode:'other'},'admin')).status).toBe(200);
     const again=await call('ingest/offers',[{...next,id:'vendor-another-key',evidence:{...next.evidence,capturedAt:new Date().toISOString(),pageHash:'c'.repeat(64),excerpts:{...next.evidence.excerpts,benefit:'Free 200 tokens. All users.'}}}]);
     expect(sqlite.prepare('SELECT count(*) n FROM offers').get()).toEqual({n:1});
     expect(sqlite.prepare('SELECT count(*) n FROM offer_proposals').get()).toEqual({n:0});
@@ -981,14 +981,14 @@ it('rejects stale review cards and does not report competing approvals as both s
   const shown=(q.body.pending as {reviewVersion:string}[])[0].reviewVersion;
   sqlite.prepare("UPDATE offers SET updated_at='2030-01-01T00:00:00Z',value_text='changed' WHERE id='vendor-free'").run();
   expect((await call('admin/offers/vendor-free/approve',{expectedReviewVersion:shown},'admin')).status).toBe(409);
-  const competing=await Promise.all(['approve','reject'].map(action=>call(`admin/offers/vendor-free/${action}`,{},'admin')));
+  const competing=await Promise.all(['approve','reject'].map(action=>call(`admin/offers/vendor-free/${action}`,action==='reject'?{reasonCode:'other'}:{},'admin')));
   expect(competing.map(r=>r.status).sort()).toEqual([200,409]);
 });
 
 it('accepting and rejecting the same proposal cannot both succeed',async()=>{
   await call('ingest/offers',[offer]);await call('admin/offers/vendor-free/approve',{},'admin');
   await call('ingest/offers',[changedOffer('200 credits')]);
-  const actions=await Promise.all(['approve','reject'].map(action=>call(`admin/offers/vendor-free/${action}`,{},'admin')));
+  const actions=await Promise.all(['approve','reject'].map(action=>call(`admin/offers/vendor-free/${action}`,action==='reject'?{reasonCode:'other'}:{},'admin')));
   expect(actions.map(r=>r.status).sort()).toEqual([200,409]);
 });
 
@@ -1111,7 +1111,7 @@ describe('stuck lead rescue lifecycle',()=>{
   });
   it('ignores stale task results after an administrator ends a lead',async()=>{
     seed();const lease=await call('ingest/lead-reviews/1312/claim',{});
-    await call('admin/leads/1312/dismiss',{expectedVersion:((await call('admin/queue',undefined,'admin')).body.leadTasks as any[])[0].reviewVersion,reason:'并非独立发放，管理员核对原文'},'admin');
+    await call('admin/leads/1312/dismiss',{expectedVersion:((await call('admin/queue',undefined,'admin')).body.leadTasks as any[])[0].reviewVersion,reason:'并非独立发放，管理员核对原文',reasonCategory:'other'},'admin');
     const result=await call('ingest/lead-reviews/1312/result',{jobId:lease.body.jobId,outcome:'manual',reason:'旧任务',queries:[],candidates:[]});
     expect(result.status).toBe(409);
     expect((sqlite.prepare('SELECT status FROM leads WHERE id=1312').get() as any).status).toBe('rejected');
@@ -1142,7 +1142,7 @@ it('leased lead extraction cannot publish automatically or overwrite an existing
 it('dismissal during lead processing stops a late new draft insert',async()=>{
   sqlite.prepare("INSERT INTO leads(id,origin,url,title,status) VALUES(1312,'aihot','https://vendor.example/free','Vendor 免费额度','reviewing')").run();
   const lease=await call('ingest/lead-reviews/1312/claim',{});
-  await call('admin/leads/1312/dismiss',{expectedVersion:((await call('admin/queue',undefined,'admin')).body.leadTasks as any[])[0].reviewVersion},'admin');
+  await call('admin/leads/1312/dismiss',{expectedVersion:((await call('admin/queue',undefined,'admin')).body.leadTasks as any[])[0].reviewVersion,reasonCategory:'other'},'admin');
   const result=await call('ingest/offers',[{...offer,leadId:1312,leadReviewJobId:lease.body.jobId}]);
   expect((result.body.results as any[])[0].error).toBeTruthy();
   expect((sqlite.prepare('SELECT count(*) n FROM offers').get() as any).n).toBe(0);
@@ -1350,7 +1350,7 @@ describe('phase1 rejection transaction', () => {
       beforeStatement = undefined;
       sqlite.prepare('UPDATE offers SET updated_at=? WHERE id=?').run('2031-01-01T00:00:00Z', o.id);
     };
-    const result = await call(`admin/offers/${o.id}/reject`, { reason: '不要此更新' }, 'admin');
+    const result = await call(`admin/offers/${o.id}/reject`, { reason: '不要此更新', reasonCode: 'other' }, 'admin');
     expect(result.status).toBe(409);
     expect(phase1Count('offer_proposals')).toBe(1);
     expect(phase1Count('rejected_offer_updates')).toBe(0);
@@ -1364,7 +1364,7 @@ describe('phase1 rejection transaction', () => {
       beforeStatement = undefined;
       sqlite.prepare('UPDATE offer_proposals SET updated_at=? WHERE offer_id=?').run('2031-01-01T00:00:00Z', o.id);
     };
-    expect((await call(`admin/offers/${o.id}/reject`, {}, 'admin')).status).toBe(409);
+    expect((await call(`admin/offers/${o.id}/reject`, { reasonCode: 'other' }, 'admin')).status).toBe(409);
     expect(phase1Count('offer_proposals')).toBe(1);
     expect(phase1Count('rejected_offer_updates')).toBe(0);
   });
@@ -1372,7 +1372,7 @@ describe('phase1 rejection transaction', () => {
   it('rolls back rejection memory and deletion when audit insertion fails', async () => {
     const o = await phase1Proposal();
     sqlite.exec("CREATE TRIGGER phase1_fail_audit BEFORE INSERT ON reviews WHEN NEW.action='reject' BEGIN SELECT RAISE(ABORT, 'phase1 audit unavailable'); END;");
-    expect((await call(`admin/offers/${o.id}/reject`, {}, 'admin')).status).toBe(500);
+    expect((await call(`admin/offers/${o.id}/reject`, { reasonCode: 'other' }, 'admin')).status).toBe(500);
     expect(phase1Count('offer_proposals')).toBe(1);
     expect(phase1Count('rejected_offer_updates')).toBe(0);
   });
@@ -1384,7 +1384,7 @@ describe('phase1 rejection transaction', () => {
     expect(phase1Count('rejected_offer_updates')).toBe(1);
     expect(sqlite.prepare("SELECT COUNT(*) AS n FROM reviews WHERE action='reject'").get()).toMatchObject({ n: 1 });
     expect(sqlite.prepare('SELECT review_state,value_text FROM offers WHERE id=?').get(o.id)).toMatchObject({ review_state: 'approved', value_text: o.valueText });
-    expect((await call(`admin/offers/${o.id}/reject`, {}, 'admin')).status).toBe(409);
+    expect((await call(`admin/offers/${o.id}/reject`, { reasonCode: 'other' }, 'admin')).status).toBe(409);
     expect(phase1Count('rejected_offer_updates')).toBe(1);
   });
 });
