@@ -783,6 +783,7 @@
 
 ## openai
 
+- 2026-10-12（美西事件日）Day 8 是独立于 10 月 10 日 Day 6 的新一轮自动全球额度重置，不是可保存的 banked 重置卡。Tibo 主帖 `https://x.com/thsottiaux/status/2109812216212099456` 于 2026-10-13T01:03:25Z 写“Day 8/ Reset”；34 秒后同线程回复 `https://x.com/thsottiaux/status/2109812360596865224` 写“Global reset landing by EOD PST time. Enjoy”。两帖经 X 第一方嵌入校验 ID、作者与回复关系；按 America/Los_Angeles 归属 10 月 12 日，口语 PST 不提供精确到账时刻。生产线索 `leads.id=7519` 曾错链 10 月 10 日主条，现已纠正到本轮 `identity-2ba4dde3-5114-4ec5-b6eb-dadb8aad2281`（2r48）；不撤销旧轮次。原文未指明具体适用套餐或产品，公开保留资格未明确；一次重置的暂定 $5 仅沿用管理员确认的 ChatGPT Plus 正常月价 $20÷4 比较口径（价格来源 `https://help.openai.com/en/articles/6950777-what-is-chatgpt-plus`），不是官方赠金或保证到账额。
 - 2026-10-09：Dots于2026-09-29发布，官网/帮助页明确上线首月提高深度工作上限；只把首月临时加量作为待审候选，首个dot常规套餐内含不算额外优惠。Pro个人须18岁以上，且暂不覆盖EEA、瑞士、英国；Business Premium按支持地区开放，Enterprise beta需管理员启用但未明确同享首月加量。新增量、涨幅与精确截止未公开，不估美元、不把上线首月写成每个账号领取后一个月，不猜10月29日截止。来源：https://openai.com/index/introducing-dots/ ；https://help.openai.com/en/articles/20001530-getting-started-with-your-dot 。
 - 2026-10-08：Auto-review媒体来源追到Tibo原帖https://x.com/thsottiaux/status/2107368734981517634，明确通过ChatGPT账号登录免费开启、自动审核不消耗计划用量；只覆盖Auto-review，不是主Agent或全部ChatGPT免费。校准发布时间，保留待审，不编固定调用次数。
 - Codex / ChatGPT 重置按官方每次发放的实际语义记录，不按同名/同额度去重。单次自动重置或banked reset卡发放：claimStart与claimEnd为同一事件日；publishedAt保存Tibo（@thsottiaux）官方原公告精确时间，process/传播进度回复不能冒充新发放。明确tomorrow或指定执行日时，事件日按原文，发布时间另存；卡的使用期限不扩成发放窗口。若明确未来24小时重置两次、未来一周每天重置等多次安排，则保留公告覆盖的起止区间，不强制同日；new release、未来改进、next week本身不是持续重置证据。不同时间点的独立发放，即使同一天也可分别记录；同一次发放的预告、确认、延迟解释仍为同一事件，不能只按推文时间不同判成新福利。只有窗口明确才计算日期，不猜未公布的逐次process时刻。（2026-10-08）
