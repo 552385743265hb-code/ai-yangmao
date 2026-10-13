@@ -44,6 +44,7 @@
 
 ## zhipu
 
+- 2026-10-12 管理员确认 `https://mp.weixin.qq.com/s/Zia38bgBIcNlAXkA2I9pxw` 为 ZCode 官方公众号原文；生产已以精确文章 URL 登记为 `zhipu` 的 official 信源 `zhipu-add-mv64fpye`，`auto_publish=0`。公众号共享域名不能整站放行，其他文章仍需逐条核实。此文的旧摘录已支撑通过的 4 张周卡加 4 张 5 小时卡；当前直抓/Jina 的验证码不撤销既有批准。9 月 28 日一次性发放与卡的个人有效期分开记录；旧 `claimEnd=2026-10-28` 不是已证实的领取截止。
 - 2026-10-08：官方https://bigmodel.cn/activity/trial-card/EEGA0AKYV5的JS页面是GLM Coding Plan“7天体验卡”，不是7张，当前显示已领完。不能把朋友分享卡当作仅付费会员福利，卡资格/档位/起止未公布仍留缺口；页面资源Last-Modified或榜单更新日期不是活动时间。
 - 免费模型要逐个列出并写明类型：文本 GLM-4.7-Flash、GLM-4.5-Flash、GLM-4-Flash-250414；视觉 GLM-4.6V-Flash、GLM-4.1V-Thinking-Flash、GLM-4V-Flash；图像生成 CogView-3-Flash；视频生成 CogVideoX-Flash。是常驻免费，不是限时。
 - ZCode 的活动以 ZCode 公众号原文为准，媒体转述常把条件写错（如把“1 个月内回归的老用户”写成“1 个月内有效”）；有效期等细节可能只在公众号图片里。

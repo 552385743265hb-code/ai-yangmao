@@ -180,7 +180,10 @@ export class IdentityService {
   const materialFields=Object.keys(input.fields).filter(key=>stableJson(input.fields[key])!==stableJson((base as Record<string,unknown>)[key])).filter(key=>!['title','steps','publishedAt','sourceTz','usdEstimate','usdMax','valuation'].includes(key));
   const selected=parsed.data.membershipRequirement;
   const priorSelected=(base as OfferIn).membershipRequirement;
-  const membershipChanged=Object.hasOwn(input.fields,'membershipRequirement')&&stableJson(selected?membershipFacts(selected):null)!==stableJson(priorSelected?membershipFacts(priorSelected):null);
+  const memberLabels=(requirements:string[])=>requirements.filter(value=>value.startsWith('member:')).sort();
+  const membershipChanged=Object.hasOwn(input.fields,'membershipRequirement')&&(
+   stableJson(selected?membershipFacts(selected):null)!==stableJson(priorSelected?membershipFacts(priorSelected):null)
+   ||stableJson(memberLabels(parsed.data.requirements))!==stableJson(memberLabels((base as OfferIn).requirements)));
   if(!membershipChanged&&Object.hasOwn(input.fields,'membershipRequirement')) {
    const index=materialFields.indexOf('membershipRequirement');if(index>=0)materialFields.splice(index,1);
    const beforeRequirements=(base as OfferIn).requirements.filter(r=>!r.startsWith('member:'));
@@ -605,6 +608,7 @@ export class IdentityService {
   const restoring=visibility?.closed&&visibility.restorationTaskId===task.id&&visibility.holds.length===0;
   if(input.action==='approve'&&visibility?.closed&&!restoring)throw new IdentityError(409,'publication is paused; a fresh explicit reopen review is required');
   let accepted:OfferIn|null=null,reviewedDisplay:OfferIn|null=null;
+  let preserveExistingMembership=false;
   const manualFields=new Set<string>(proposal?JSON.parse(proposal.manual_fields):[]);
   const moneyEdits=original?await this.db.prepare("SELECT diff FROM offer_revisions WHERE offer_id=? AND author='admin' LIMIT 1001").bind(original.id).all<{diff:string}>():{results:[]};if(moneyEdits.results.length>1000)throw new IdentityError(409,'manual value history requires reconciliation');
   const protectedMoney=original?protectedValuationFields(original,moneyEdits.results.flatMap(r=>JSON.parse(r.diff).map((d:{field:string})=>d.field))):new Set<string>();
@@ -615,13 +619,18 @@ export class IdentityService {
    accepted=offerIn.parse({...reviewedDisplay,id:original.id,platformId:original.platformId,sourceId:original.sourceId??undefined,firstChannel:original.firstChannel??undefined});
    if(!membershipFactConsistent(versionFacts,accepted.membershipRequirement))throw new IdentityError(409,'membership identity facts require confirmation before publication');
    const supplemented=task.kind==='initial'&&original.reviewState==='pending'&&task.suggestion_json&&JSON.parse(task.suggestion_json).kind==='official_evidence';
-   const error=await publicationError({DB:this.db},{...original,...accepted,...(supplemented?{verifyResult:null}:{}),...(restoring?{withdrawnAt:null,withdrawnReason:null}:{})});if(error)throw new IdentityError(400,error);
+   const memberLabels=(requirements:string[])=>requirements.filter(value=>value.startsWith('member:')).sort();
+   preserveExistingMembership=original.reviewState==='approved'
+    && original.membershipRequirement?.status==='needs_review'
+    && stableJson(original.membershipRequirement)===stableJson(accepted.membershipRequirement)
+    && stableJson(memberLabels(original.requirements))===stableJson(memberLabels(accepted.requirements));
+   const error=await publicationError({DB:this.db},{...original,...accepted,...(supplemented?{verifyResult:null}:{}),...(restoring?{withdrawnAt:null,withdrawnReason:null}:{})},{preserveExistingMembership});if(error)throw new IdentityError(400,error);
   }
   const builder=new MutationBuilder(this.db,command,hash),expected:ExpectedRevision[]=[{kind:'task',id:task.id,revision:input.expectedRevision},{kind:'entity',id:entity.id,revision:entity.business_revision}];
   if(input.action==='approve'){
    // Keep catalog validation and publication in one compare-and-swap boundary.
    // Editorial edits do not pass through this approval path.
-   if(accepted?.membershipRequirement)builder.require('EXISTS(SELECT 1 FROM membership_catalog WHERE id=1 AND revision=?)',[accepted.membershipRequirement.catalogRevision]);
+   if(accepted?.membershipRequirement&&!preserveExistingMembership)builder.require('EXISTS(SELECT 1 FROM membership_catalog WHERE id=1 AND revision=?)',[accepted.membershipRequirement.catalogRevision]);
    builder.require(`NOT EXISTS(SELECT 1 FROM review_decisions d WHERE d.entity_id=? AND ${activeVisibilityPredicate})`,[entity.id]);builder.advancePublicGeneration();
   }
   if(proposal&&entity.canonical_offer_id)builder.require('EXISTS(SELECT 1 FROM offer_proposals WHERE offer_id=? AND updated_at=? AND candidate=?)',[entity.canonical_offer_id,proposal.updated_at,proposal.candidate]);

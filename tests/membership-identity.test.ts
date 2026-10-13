@@ -116,6 +116,40 @@ it('grandfathered unresolved membership remains visible through an unrelated tit
   expect(f.sqlite.prepare('SELECT count(*) n FROM identity_events').get()).toEqual({n:1});
  }finally{f.sqlite.close();}
 });
+it('approves a date-only correction to a published legacy member offer without confirming its member mapping',async()=>{
+ const f=await setupIdentity();try {
+  const unresolved={...noMembers,status:'needs_review' as const,legacyText:['Pro']};
+  const initial=await f.intake('grandfathered-date',f.old,{...displayOffer(),claimStart:'2026-10-10',requirements:['member:Pro'],membershipRequirement:unresolved});
+  f.sqlite.prepare("UPDATE offers SET review_state='approved' WHERE id=?").run(initial.canonicalOfferId);
+  f.sqlite.prepare("UPDATE benefit_versions SET state='approved' WHERE id=?").run(initial.versionId);
+  f.sqlite.prepare('UPDATE benefit_entities SET current_approved_version_id=? WHERE id=?').run(initial.versionId,initial.entityId);
+  f.sqlite.prepare("UPDATE review_tasks SET state='resolved' WHERE id=?").run(initial.taskId);
+  const before=f.sqlite.prepare('SELECT updated_at FROM offers').get();
+  const edit=await f.service.editManagedOffer(initial.canonicalOfferId!,{requestId:'correct-grandfathered-date',expectedOfferVersion:String(before?.updated_at),fields:{claimEnd:'2026-10-10',endKind:'date'},actor:'admin'});
+  expect(edit.taskId).toBeTruthy();
+  f.sqlite.prepare('UPDATE membership_catalog SET revision=revision+1 WHERE id=1').run();
+  await f.service.decideTask(edit.taskId!,{requestId:'approve-grandfathered-date',expectedRevision:edit.revision,action:'approve',actor:'admin',role:'admin'});
+  expect(f.sqlite.prepare('SELECT review_state,claim_start,claim_end,end_kind,membership_requirement FROM offers WHERE id=?').get(initial.canonicalOfferId)).toEqual({
+   review_state:'approved',claim_start:'2026-10-10',claim_end:'2026-10-10',end_kind:'date',membership_requirement:JSON.stringify(unresolved),
+  });
+ }finally{f.sqlite.close();}
+});
+it('still blocks approval when a published legacy offer changes its member condition',async()=>{
+ const f=await setupIdentity();try {
+  const unresolved={...noMembers,status:'needs_review' as const,legacyText:['Pro']};
+  const initial=await f.intake('grandfathered-member-change',f.old,{...displayOffer(),requirements:['member:Pro'],membershipRequirement:unresolved});
+  f.sqlite.prepare("UPDATE offers SET review_state='approved' WHERE id=?").run(initial.canonicalOfferId);
+  f.sqlite.prepare("UPDATE benefit_versions SET state='approved' WHERE id=?").run(initial.versionId);
+  f.sqlite.prepare('UPDATE benefit_entities SET current_approved_version_id=? WHERE id=?').run(initial.versionId,initial.entityId);
+  f.sqlite.prepare("UPDATE review_tasks SET state='resolved' WHERE id=?").run(initial.taskId);
+  const before=f.sqlite.prepare('SELECT updated_at FROM offers').get();
+  await f.service.editManagedOffer(initial.canonicalOfferId!,{requestId:'change-grandfathered-member',expectedOfferVersion:String(before?.updated_at),fields:{requirements:['member:Plus']},actor:'admin'});
+  const task=f.sqlite.prepare("SELECT id,revision FROM review_tasks WHERE state IN ('open','manual') LIMIT 1").get();
+  expect(task).toBeTruthy();
+  await expect(f.service.decideTask(String(task?.id),{requestId:'approve-member-change',expectedRevision:Number(task?.revision),action:'approve',actor:'admin',role:'admin'})).rejects.toMatchObject({status:400});
+  expect(f.sqlite.prepare('SELECT review_state,requirements FROM offers WHERE id=?').get(initial.canonicalOfferId)).toEqual({review_state:'approved',requirements:JSON.stringify(['member:Pro'])});
+ }finally{f.sqlite.close();}
+});
 it('V2 hashes ignore generated legacy membership labels',async()=>{
  const a=v2(),b=v2();b.eligibility=known({audience:'all',requirements:['member:改名后的标准套餐']});
  expect(await hashTerms(a)).toBe(await hashTerms(b));
