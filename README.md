@@ -14,7 +14,7 @@
 | [去重第二、三阶段](docs/specs/dedupe-identity-2026-10-10/README.md) | 正式合同、独立 PR、本地验收与尚未通过的现场门槛 |
 | [运维](docs/operations.md) | 命令、调度、通知、预算、发布与回滚 |
 | [仓库审核技能](.claude/skills/yangmao-review/SKILL.md) / [Hermes接入](integrations/hermes/ai-yangmao/SKILL.md) | 实际操作与权限 |
-| [2026-10-12整理凭证](docs/closeout-2026-10-12.md) | 本次代码、远端、运行态及未闭合项 |
+| [2026-10-13整理凭证](docs/closeout-2026-10-13.md) | 本次代码、远端、运行态及未闭合项 |
 
 历史报告的数量、审核状态、版本和活动事实只代表当次快照，使用前重新核对。
 
