@@ -270,9 +270,17 @@ function valuationBlock(o) {
     ${(v.assumptions || []).length ? `<ul class="value-assumptions">${v.assumptions.map(x => `<li>${esc(valuationText(x))}</li>`).join('')}</ul>` : ''}
     ${sources.length ? `<details><summary>价格与权益来源（${sources.length}）</summary>${sources.map(s => `<div class="value-source"><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.priceBasis || '价格依据')} ↗</a><small>核价 ${esc((s.checkedAt || '').slice(0, 10))}</small><blockquote>${esc(s.excerpt || '')}</blockquote></div>`).join('')}</details>` : ''}</div>`;
 }
+function oneTimeEffectiveAt(o) {
+  if (o.ek !== 'date' || o.s == null || o.s !== o.e || o.withdrawnAt) return null;
+  const match = (o.evidence?.excerpts?.claim || '').match(/(\d{1,2})月(\d{1,2})日\s*(\d{1,2}:\d{2})\s*生效/);
+  if (!match) return null;
+  const day = dayAt(o.s);
+  if (+match[1] !== day.getMonth() + 1 || +match[2] !== day.getDate()) return null;
+  return `${+match[1]}月${+match[2]}日 ${match[3]}`;
+}
 function leftText(o) {
   const st = statusOf(o);
-  if (st === 'ended') return actualEnd(o) ? `${md(actualEnd(o))}结束` : '已结束';
+  if (st === 'ended') { const effectiveAt = oneTimeEffectiveAt(o); return effectiveAt ? `${effectiveAt}生效 · 单次发放` : actualEnd(o) ? `${md(actualEnd(o))}结束` : '已结束'; }
   if (st === 'upcoming') return o.s === 1 ? '明天开始' : `${o.s} 天后开始`;
   if (st === 'stale') return `${Math.round(-o.vf)} 天未核验成功`;
   if (st === 'standing') return `常驻 · ${ago(o.vf)}核验`;
@@ -1343,6 +1351,7 @@ function pOffer(id) {
   const o = OMAP[id];
   if (!o) { main().innerHTML=ribbon()+emptySheep('正在查找活动…');resolveOfferHash(id);return; }
   const st = statusOf(o), d = dims(o), sc = score(o), miss = missing(o);
+  const effectiveAt = oneTimeEffectiveAt(o);
   const definiteMissing = miss.filter(item => item !== 'membership_unknown').length;
   const qualificationSummary = miss.includes('membership_unknown')
     ? definiteMissing ? `按你的条件，还差 ${definiteMissing} 项；个人会员资格请按原条件核对` : '活动已通过；个人会员资格请按原条件核对'
@@ -1362,15 +1371,15 @@ function pOffer(id) {
     if (window) timeBlock = `<div class="ring-big">${ringSvg(0.6,92,st === 'stale' ? 'var(--warn)' : 'var(--good)',8)}<div><div class="small muted">距离推算截止</div><div class="cd" data-estimated-end="${window.end.getTime()}"${window.earliest ? ` data-estimated-start="${window.earliest.getTime()}"` : ''}>${estimatedCountdown(window)}</div><div class="small muted">按公告活动周期推算 · 精确截止待确认</div></div></div>`;
   }
   const endLocal = o.ek === 'date' ? endInstant(o) : null;
-  const deadline = o.evidence?.claimEndDerivation ? `${md(dayAt(o.e))}（推算）<small>按公告活动周期推算，官方未公布精确截止时刻</small>` : o.ek === 'date' ? `${md(dayAt(o.e))} 23:59<small>官方按${tzName}${endLocal && o.tz !== viewerTz ? `；你的本地时间 ${md(endLocal)} ${hm(endLocal)}` : ''}</small>` : o.ek === 'unknown' ? '截止未知<small>发放方未公布截止日期</small>' : '长期<small>没有截止日期</small>';
+  const deadline = effectiveAt ? `${esc(effectiveAt)}<small>官方图片标注的${tzName}权益生效时间；不是领取截止或卡片失效时间</small>` : o.evidence?.claimEndDerivation ? `${md(dayAt(o.e))}（推算）<small>按公告活动周期推算，官方未公布精确截止时刻</small>` : o.ek === 'date' ? `${md(dayAt(o.e))} 23:59<small>官方按${tzName}${endLocal && o.tz !== viewerTz ? `；你的本地时间 ${md(endLocal)} ${hm(endLocal)}` : ''}</small>` : o.ek === 'unknown' ? '截止未知<small>发放方未公布截止日期</small>' : '长期<small>没有截止日期</small>';
   const verify = o.verify === 'evidence_missing' ? '此前的抓取未能逐字匹配原文，可能是网页改写；批准记录保留，当前状态按截止日期或明确撤回判定，不要求重新审批。' : `${ago(o.vf)}核验：${o.verify || '官方页面可以打开'}`;
   const officialUrl = (o.evidence && o.evidence.url) || o.plat.site;
   const hist = [];
   hist.push([o.fs, `系统发现（最早出现在：${o.early}）`]);
   if (o.pub != null && o.pub !== o.s) hist.push([o.pub, '官方发布']);
-  if (o.s != null && o.s <= 0) hist.push([o.s, '活动开始（按官方公布时间）']);
+  if (o.s != null && o.s <= 0) hist.push([o.s, effectiveAt ? `权益于${effectiveAt}生效` : '活动开始（按官方公布时间）']);
   (o.rev || []).forEach(rv => hist.push([rv.at, `条款修订：${rv.from} → ${rv.to}`]));
-  if (st === 'ended') hist.push([o.withdrawnAt ? dayIdx(new Date(o.withdrawnAt)) : o.e, o.withdrawnAt ? `确认停止领取${o.why ? `（${o.why}）` : ''}` : '已到官方公布的领取截止时间']);
+  if (st === 'ended' && !effectiveAt) hist.push([o.withdrawnAt ? dayIdx(new Date(o.withdrawnAt)) : o.e, o.withdrawnAt ? `确认停止领取${o.why ? `（${o.why}）` : ''}` : '已到官方公布的领取截止时间']);
   if (o.vfDay != null) hist.push([o.vfDay, '最近一次成功核验']);
   hist.sort((a, b) => b[0] - a[0]);
   const same = OFFERS.filter(x => x.p === o.p && x.id !== o.id);
@@ -1391,7 +1400,7 @@ function pOffer(id) {
       <div class="facts">
         <div class="fact"><div class="l">领取方式</div><div class="v">${CLAIM[o.c]}</div></div>
         <div class="fact"><div class="l">领取开始</div><div class="v">${o.s != null ? md(dayAt(o.s)) : '已开放'}</div></div>
-        <div class="fact"><div class="l">领取截止</div><div class="v">${deadline}</div></div>
+        <div class="fact"><div class="l">${effectiveAt ? '权益生效' : '领取截止'}</div><div class="v">${deadline}</div></div>
         <div class="fact"><div class="l">额度有效期</div><div class="v">${esc(o.val)}<small>领取之后多久失效，和领取截止是两回事</small></div></div>
         <div class="fact"><div class="l">适用对象</div><div class="v">${AUD[o.aud]}</div></div>
         <div class="fact"><div class="l">模态</div><div class="v">${o.m.map(m => MODAL[m]).join('、')}</div></div>
@@ -2330,7 +2339,7 @@ function openCompare() {
   const list = CMP.map(id => OMAP[id]);
   const compareValue = list.every(o => valueNumber(o) != null);
   const compareDims = DIMS.filter((_, i) => i !== 0 || compareValue);
-  const rowsDef = [['额度', o => valLabel(o).replace(/<[^>]+>/g, ' ')], ['薅度分', o => score(o)], ['类型', o => TYPES[o.ty].l], ['门槛', o => o.r.map(reqLabel).join('、')], ['领取截止', o => o.ek === 'date' ? md(dayAt(o.e)) : o.ek === 'unknown' ? '截止未知' : '长期'], ['额度有效期', o => o.val]];
+  const rowsDef = [['额度', o => valLabel(o).replace(/<[^>]+>/g, ' ')], ['薅度分', o => score(o)], ['类型', o => TYPES[o.ty].l], ['门槛', o => o.r.map(reqLabel).join('、')], ['领取截止／权益生效', o => oneTimeEffectiveAt(o) ? `生效 ${oneTimeEffectiveAt(o)}` : o.ek === 'date' ? md(dayAt(o.e)) : o.ek === 'unknown' ? '截止未知' : '长期'], ['额度有效期', o => o.val]];
   openSheet('对比', `<p class="small muted">参考值以一个月为比较窗口，方法见各条标签。${compareValue ? '' : '有活动价值待定或属于申请制，雷达统一省略价值维度，不按零比较。'}</p><div class="chart" id="cCmp" style="height:300px"></div><div class="tbl"><table><thead><tr><th></th>${list.map((o, i) => `<th><span class="row" style="gap:6px;flex-wrap:nowrap"><i class="sw" style="background:var(--s${i + 1})"></i>${esc(o.plat.name)}</span></th>`).join('')}</tr></thead><tbody>${rowsDef.map(([k, f]) => `<tr><td class="muted">${k}</td>${list.map(o => `<td style="white-space:normal;min-width:120px">${esc(f(o))}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`, () => {
     chart('#cCmp', {
       legend: Object.assign(legendCommon(), { bottom: 0, data: list.map(o => o.t.length > 14 ? o.t.slice(0, 13) + '…' : o.t) }),

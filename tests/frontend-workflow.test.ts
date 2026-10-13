@@ -332,6 +332,19 @@ describe('frontend review workflow', () => {
     expect(page.document.querySelector('.grave')!.textContent).toContain(page.run('md(dayAt(-3))'));
     expect(page.run('TREND.ed.reduce((a,b)=>a+b,0)')).toBe(1);
   });
+  it('shows an official single-event effective time without inventing a 23:59 claim deadline',()=>{
+    const page=fixture(()=>({})),day=page.run('dayAt(-1)') as Date;
+    const effective=`${day.getMonth()+1}月${day.getDate()}日10:30 生效`;
+    publicOffer(page.run,{ty:'perk',s:-1,e:-1,ek:'date',tz:'Asia/Shanghai',
+      evidence:{url:'https://vendor.example/announcement',tier:'official',excerpts:{claim:effective}}});
+    page.run("pOffer('public-offer')");
+    const html=page.document.querySelector('#main')!.textContent||'';
+    expect(html).toContain('权益生效');
+    expect(html).toContain('10:30');
+    expect(html).toContain('单次发放');
+    expect(html).not.toContain('官方公布的领取截止时间');
+    expect(html).not.toContain('23:59');
+  });
 });
 
 it('shows automatic official review provenance and lets reviewers requeue without approving',async()=>{
