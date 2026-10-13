@@ -440,8 +440,10 @@ export async function runPipeline() {
   }
   try {
     const { platforms } = await fetch(`${(process.env.API_BASE ?? 'https://ai-yangmao.com').replace(/\/$/, '')}/api/platforms`, { signal: AbortSignal.timeout(30000) }).then(r => r.json()) as { platforms: Plat[] };
-    const screening = await runScreening({ ids: (process.env.SCREENING_IDS ?? '').split(',').map(id => id.trim()).filter(Boolean), deadlineAt: deadline, dry: DRY, log });
-    Object.assign(stats, { screening, memoryRecords: screening.memoryRecords });
+    try {
+      const screening = await runScreening({ ids: (process.env.SCREENING_IDS ?? '').split(',').map(id => id.trim()).filter(Boolean), deadlineAt: deadline, dry: DRY, log });
+      Object.assign(stats, { screening, memoryRecords: screening.memoryRecords });
+    } catch (e) { stats.errors.push(`筛查：${(e as Error).message}`); stats.coverageDegraded = true; log('筛查出错', (e as Error).message); }
     await triageLeads(platforms);
   } catch (e) { stats.errors.push(`线索研判：${(e as Error).message}`); stats.deferred++; log('线索研判出错', (e as Error).message); }
   try {

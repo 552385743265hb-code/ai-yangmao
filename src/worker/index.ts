@@ -244,8 +244,9 @@ ingest.post('/leads', async c => {
   const taken = await c.env.DB.prepare(`SELECT url, url_key FROM leads WHERE url IN (SELECT value FROM json_each(?1)) OR (url_key IS NOT NULL AND url_key IN (SELECT value FROM json_each(?2)))`).bind(JSON.stringify(stamped.map(row => row.url)), JSON.stringify(stamped.map(row => row.urlKey))).all<{ url: string; url_key: string | null }>();
   const seenUrl = new Set(taken.results.map(row => row.url));
   const seenKey = new Set(taken.results.flatMap(row => row.url_key ? [row.url_key] : []));
+  const duplicates: typeof stamped = [];
   const fresh = stamped.filter(row => {
-    if (seenUrl.has(row.url) || seenKey.has(row.urlKey)) return false;
+    if (seenUrl.has(row.url) || seenKey.has(row.urlKey)) { duplicates.push(row); return false; }
     seenUrl.add(row.url); seenKey.add(row.urlKey); return true;
   });
   // D1 单条语句最多 100 个绑定参数。线索带 url_key 后仍按 20 行一批插入。
@@ -278,6 +279,15 @@ ingest.post('/leads', async c => {
         }
       }
     }
+  }
+  for (const row of duplicates) {
+    const existing = await c.env.DB.prepare(`SELECT id, title, raw FROM leads WHERE url=? OR (url_key IS NOT NULL AND url_key=?) LIMIT 1`).bind(row.url, row.urlKey).first<{ id: number; title: string | null; raw: string | null }>();
+    if (!existing) continue;
+    const title = row.title ?? existing.title;
+    const raw = row.raw ?? existing.raw;
+    if ((title ?? '') === (existing.title ?? '') && (raw ?? '') === (existing.raw ?? '')) continue;
+    await db(c.env).update(s.leads).set({ title: title ?? null, raw: raw ?? null }).where(eq(s.leads.id, existing.id));
+    await c.env.DB.prepare(`UPDATE screening_items SET latest_decision_id=NULL, updated_at=? WHERE subject_kind='lead' AND subject_id=?`).bind(new Date().toISOString(), String(existing.id)).run();
   }
   return c.json({ created, skipped: body.data.length - created });
 });
@@ -721,8 +731,9 @@ ingest.post('/model-budget/:id/settle', async c => {
   if (!record) return c.json({ error: '没有这次模型调用' }, 404);
   if ((record.stats as { state?: string }).state === 'settled') return c.json({ ok: true, alreadySettled: true });
   if (body.data.tokens > record.tokens || body.data.costCny > record.costCny + 0.000001) return c.json({ error: '实际用量超出预留，请保留预留并人工核对' }, 409);
+  const previous = record.stats ?? {};
   await db(c.env).update(s.runs).set({ tokens: body.data.tokens, costCny: body.data.costCny,
-    stats: { state: 'settled', provider: body.data.provider }, ok: true, finishedAt: new Date().toISOString() }).where(eq(s.runs.id, id));
+    stats: { ...previous, state: 'settled', provider: body.data.provider }, ok: true, finishedAt: new Date().toISOString() }).where(eq(s.runs.id, id));
   return c.json({ ok: true });
 });
 

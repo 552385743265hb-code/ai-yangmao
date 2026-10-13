@@ -10,7 +10,7 @@ import { screenSubject, SCREENING_PROMPT_VERSION, type ScreeningSubject } from '
 
 export type ScreeningStats = { screened: number; gate0: number; byVerdict: Record<string, number>; urgent: number; deferred: number; memoryRecords: number };
 
-type QueueItem = { itemId: string; tier: 'P0' | 'P1' | 'P2' | 'P3'; discoveredAt: string; subject: { kind: 'lead' | 'task'; id?: string; leadId?: number; taskId?: string; title?: string; url?: string; text?: string; origin?: string | null; platformId?: string | null; platformIds?: string[] } };
+type QueueItem = { itemId: string; tier: 'P0' | 'P1' | 'P2' | 'P3'; discoveredAt: string; subject: { kind: 'lead' | 'task'; id?: string; leadId?: number; taskId?: string; candidateId?: string | null; title?: string; url?: string; text?: string; truncated?: boolean; origin?: string | null; platformId?: string | null; platformIds?: string[] } };
 
 function blank(): ScreeningStats {
   return { screened: 0, gate0: 0, byVerdict: {}, urgent: 0, deferred: 0, memoryRecords: 0 };
@@ -51,7 +51,8 @@ export async function runScreening(o: { ids?: string[]; deadlineAt: number; dry:
       continue;
     }
     const screeningSubject: ScreeningSubject = {
-      itemId: item.itemId, kind: subject.kind, origin: subject.origin, url: subject.url, title: subject.title, text: item.subject.text ?? '', truncated: false,
+      itemId: item.itemId, kind: subject.kind, leadId: item.subject.leadId, taskId: item.subject.taskId, candidateId: item.subject.candidateId ?? undefined,
+      origin: subject.origin, url: subject.url, title: subject.title, text: item.subject.text ?? '', truncated: item.subject.truncated === true,
       platformIds: item.subject.platformIds ?? (subject.platformId ? [subject.platformId] : []), discoveredAt: item.discoveredAt, deterministicUrgency: verdictUrgency(item.tier),
     };
     try {

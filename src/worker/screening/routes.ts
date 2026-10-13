@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
+import { platformMentioned } from '../../shared/lead-scope';
 import { platformProfileSchema, screeningMode, screeningVerdictSchema } from '../../shared/screening/types';
 import { putProfile } from './profiles';
 import { compareQueueOrder, latestUsefulReviewAt, systemDueAt } from '../../shared/screening/urgency';
@@ -68,9 +69,23 @@ screeningIngestRoutes.post('/verdicts', async c => {
 screeningIngestRoutes.get('/queue', async c => {
   const limit = Math.min(50, Math.max(1, Number(c.req.query('limit') ?? 50) || 50));
   const ids = (c.req.query('ids') ?? '').split(',').map(id => id.trim()).filter(Boolean);
-  const rows = await c.env.DB.prepare(`SELECT id, subject_kind, subject_id, tier, discovered_at, deadline FROM screening_items WHERE state='awaiting_screen'`).all<{ id: string; subject_kind: 'lead' | 'task'; subject_id: string; tier: 'P0' | 'P1' | 'P2' | 'P3'; discovered_at: string; deadline: string | null }>();
-  const items = rows.results.filter(row => !ids.length || ids.includes(row.id)).map(row => ({
-    itemId: row.id, subject: { kind: row.subject_kind, id: row.subject_id }, tier: row.tier, discoveredAt: row.discovered_at,
+  const rows = await c.env.DB.prepare(`SELECT i.id, i.subject_kind, i.subject_id, i.tier, i.discovered_at, i.deadline, i.origin, i.platform_id,
+      l.title AS lead_title, l.url AS lead_url, l.raw AS lead_raw, l.origin AS lead_origin,
+      c.id AS candidate_id, c.raw_candidate_json, o.text AS source_text
+    FROM screening_items i
+    LEFT JOIN leads l ON i.subject_kind='lead' AND l.id=CAST(i.subject_id AS INTEGER)
+    LEFT JOIN task_candidates tc ON i.subject_kind='task' AND tc.task_id=i.subject_id
+    LEFT JOIN intake_candidates c ON c.id=tc.candidate_id
+    LEFT JOIN source_observations o ON o.id=c.observation_id
+    WHERE i.state='awaiting_screen' AND i.latest_decision_id IS NULL`).all<QueueRow>();
+  const chosen = new Map<string, QueueRow>();
+  for (const row of rows.results) {
+    const prev = chosen.get(row.id);
+    if (!prev || (row.candidate_id ?? '\uffff') < (prev.candidate_id ?? '\uffff')) chosen.set(row.id, row);
+  }
+  const platforms = (await c.env.DB.prepare(`SELECT id, name FROM platforms WHERE status='approved'`).all<{ id: string; name: string }>()).results;
+  const items = [...chosen.values()].filter(row => !ids.length || ids.includes(row.id)).map(row => ({
+    itemId: row.id, subject: row.subject_kind === 'lead' ? leadSubject(row, platforms) : taskSubject(row), tier: row.tier, discoveredAt: row.discovered_at,
     latestUsefulReviewAt: latestUsefulReviewAt(row.deadline, row.tier),
   })).sort(compareQueueOrder).slice(0, limit).map(({ latestUsefulReviewAt: _review, ...item }) => item);
   return c.json({ items });
@@ -97,6 +112,40 @@ screeningIngestRoutes.post('/items/:id/escalate', async c => {
   });
   return c.json({ ok: true, duplicate: false });
 });
+
+const TEXT_LIMIT = 12000;
+
+type QueueRow = {
+  id: string; subject_kind: 'lead' | 'task'; subject_id: string; tier: 'P0' | 'P1' | 'P2' | 'P3'; discovered_at: string; deadline: string | null;
+  origin: string | null; platform_id: string | null; lead_title: string | null; lead_url: string | null; lead_raw: string | null; lead_origin: string | null;
+  candidate_id: string | null; raw_candidate_json: string | null; source_text: string | null;
+};
+
+function clipText(value: string, stripReview: boolean): { text: string; truncated: boolean } {
+  const body = (stripReview ? value.split('[研判]')[0] : value).trim();
+  return { text: body.slice(0, TEXT_LIMIT), truncated: body.length > TEXT_LIMIT };
+}
+
+function leadSubject(row: QueueRow, platforms: { id: string; name: string }[]) {
+  const clipped = clipText(row.lead_raw ?? '', true);
+  const title = row.lead_title ?? '';
+  const platformIds = platforms.filter(platform => platformMentioned(`${title}\n${clipped.text}`, platform)).map(platform => platform.id);
+  return { kind: 'lead' as const, id: row.subject_id, leadId: Number(row.subject_id), title, url: row.lead_url ?? '', origin: row.lead_origin ?? row.origin, platformIds, ...clipped };
+}
+
+function taskSubject(row: QueueRow) {
+  let title = '', url = '', platformId = row.platform_id;
+  try {
+    const parsed = JSON.parse(row.raw_candidate_json ?? '{}') as { title?: unknown; platformId?: unknown; evidence?: { url?: unknown } };
+    if (typeof parsed.title === 'string') title = parsed.title;
+    if (typeof parsed.evidence?.url === 'string') url = parsed.evidence.url;
+    if (typeof parsed.platformId === 'string') platformId = parsed.platformId;
+  } catch { /* a broken candidate payload still leaves the queue; the screener sees empty fields */ }
+  return {
+    kind: 'task' as const, id: row.subject_id, taskId: row.subject_id, candidateId: row.candidate_id, title, url, platformId,
+    platformIds: platformId ? [platformId] : [], ...clipText(row.source_text ?? '', false),
+  };
+}
 
 export const screeningAdminRoutes = new Hono<{ Bindings: Env; Variables: { role: 'admin' | 'reviewer'; who: string } }>();
 
