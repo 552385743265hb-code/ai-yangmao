@@ -126,3 +126,21 @@ describe('style tokens', () => {
     expect(css).toMatch(/@media \(pointer:\s*coarse\)\{[^}]*\.cmp/);
   });
 });
+
+describe('homepage intro', () => {
+  it('names the site and says plainly what it collects', () => {
+    const f = fixture(() => ({}), '#today');
+    publicOffer(f.run);
+    f.run('pToday()');
+    expect(f.document.querySelector('.ph h1')!.textContent).toBe('AI 羊毛牧场');
+    const subtitle = f.document.querySelector('.ph p')!.textContent!;
+    for (const word of ['大模型 Token', 'API 额度', '会员', '生图生视频', '官方出处']) expect(subtitle).toContain(word);
+    expect(f.run('pageTitle("today")')).toBe('AI 羊毛牧场 · 免费 AI 额度与大模型 Token 福利汇总');
+    expect(f.run('pageTitle("calendar")')).toBe('日历 · AI 羊毛牧场');
+  });
+  it('uses the same descriptor in the browser tab and link previews', () => {
+    expect(css).toContain('<title>AI 羊毛牧场 · 免费 AI 额度与大模型 Token 福利汇总</title>');
+    expect(css).toContain('<meta property="og:title" content="AI 羊毛牧场 · 免费 AI 额度与大模型 Token 福利汇总">');
+    expect(readFileSync('web/build.sh', 'utf8')).toContain('免费大模型 Token、API 额度、会员和生图生视频次数，每天汇总，条条可追官方出处。');
+  });
+});

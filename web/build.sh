@@ -6,7 +6,7 @@ mkdir -p public
 mkdir -p public/vendor
 {
   echo '<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">'
-  echo '<meta name="description" content="汇总全球可以免费薅的 AI 额度和权益，每条都附官方原文。">'
+  echo '<meta name="description" content="免费大模型 Token、API 额度、会员和生图生视频次数，每天汇总，条条可追官方出处。">'
   cat web/src/head.html
   echo '</head><body>'
   cat web/src/body.html

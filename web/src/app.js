@@ -532,6 +532,9 @@ function wxIcon(i) {
  * 页面
  * ============================================================ */
 const main = () => $('#main');
+/** Site descriptor: homepage subtitle, the landing tab title, and (in head.html / build.sh) link previews. */
+const SITE_TAGLINE = '免费大模型 Token、API 额度、会员和生图生视频次数，每天汇总，条条可追官方出处。';
+const pageTitle = name => !name || name === 'today' ? 'AI 羊毛牧场 · 免费 AI 额度与大模型 Token 福利汇总' : `${TITLES[name] || '今天'} · AI 羊毛牧场`;
 const ph = (title, desc = '', extra = '') => `<div class="ph"><div><h1>${title}</h1>${desc ? `<p>${desc}</p>` : ''}</div>${extra}</div>`;
 const secH = (title, hint = '') => `<div class="sec-h"><h2>${title}</h2>${hint ? `<span class="hint">${hint}</span>` : ''}</div>`;
 function ribbon() {
@@ -636,7 +639,8 @@ function pToday() {
   const wx = weatherNow();
   const todayValues = [...act, ...stand];
   const soon = countdownCandidates(view(OFFERS));
-  main().innerHTML = ribbon() + ph('今天', '今天能薅的羊毛都在这片草地上。点一只羊看详情。') + `
+  // The landing page says plainly what the site collects; 羊毛 alone is a metaphor newcomers have to decode.
+  main().innerHTML = ribbon() + ph('AI 羊毛牧场', SITE_TAGLINE) + `
   <div class="hero">
     <div class="hero-over">
       <div class="total"><span class="l">${C.only ? '按你的条件，' : ''}当前可领 · 月度参考价值</span>${summaryHtml(todayValues)}</div>
@@ -2481,7 +2485,7 @@ function render(keepScroll) {
   const y = window.scrollY;
   if (name === 'offer') pOffer(arg); else if (name === 'platform') pPlatform(arg); else if (name === 'admin') pAdmin(arg); else PAGES[name]();
   markNav(name === 'offer' || name === 'platform' ? '' : name);
-  document.title = name === 'offer' && OMAP[arg] ? `${OMAP[arg].t} · AI 羊毛牧场` : name === 'platform' && PMAP[arg] ? `${PMAP[arg].name} · AI 羊毛牧场` : `${TITLES[name] || '今天'} · AI 羊毛牧场`;
+  document.title = name === 'offer' && OMAP[arg] ? `${OMAP[arg].t} · AI 羊毛牧场` : name === 'platform' && PMAP[arg] ? `${PMAP[arg].name} · AI 羊毛牧场` : pageTitle(name);
   drawTray();
   if (keepScroll) window.scrollTo(0, y); else window.scrollTo(0, 0);
 }
