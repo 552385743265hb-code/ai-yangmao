@@ -10,7 +10,7 @@ R01–R09 及独立复核发现的边界问题已修复并本地提交。最终�
 
 正式第一阶段 PR #6 仍 OPEN，head=`64db363b7dd4fd301d4872101d6ec313a0640d3d`。结束前远端 main 从 `7cea69d…` 前进到 `6a381f40d3a8a89c2ea4487416a41f1cd48e7f47`，新增审核规则和平台文档，迁移仍止于0015。修复树与新 main 的 `git merge-tree --write-tree --name-only HEAD origin/main` 无冲突；未实际合并或执行合并树的运行测试。旧 PR #2/#3/#4、旧压缩包均未作为入口。
 
-原工作区 `/Volumes/AI/MyWorkspace/AI_Freebies` 的 `docs/valuation-judgment-2026-10-10.md` 出现用户未提交修改，完整保留。本次修改只在现有隔离工作树完成。
+原主工作区的 `docs/valuation-judgment-2026-10-10.md` 出现用户未提交修改，完整保留。本次修改只在现有隔离工作树完成。
 
 ## 逐项修复及失败到通过
 
@@ -58,7 +58,7 @@ R01–R09 及独立复核发现的边界问题已修复并本地提交。最终�
 可重现命令（必须选择**新的**本地目录；示例路径不能覆盖已有演练数据库）：
 
 ```sh
-export PATH=/Users/travisyip/.local/share/fnm/node-versions/v24.21.0/installation/bin:$PATH
+export PATH="$HOME/.local/share/fnm/node-versions/v24.21.0/installation/bin:$PATH"
 export WRANGLER_SEND_METRICS=false
 npm ci
 VITEST_MAX_WORKERS=1 npm test

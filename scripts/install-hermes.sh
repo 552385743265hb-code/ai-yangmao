@@ -4,8 +4,14 @@
 set -euo pipefail
 DIR="$(cd "$(dirname "$0")/.." && pwd)"
 mkdir -p ~/.hermes/skills/ai-yangmao ~/.hermes/scripts
-cp "$DIR/integrations/hermes/ai-yangmao/SKILL.md" ~/.hermes/skills/ai-yangmao/SKILL.md
-cp "$DIR/integrations/hermes/scripts/"ai-yangmao-*.sh ~/.hermes/scripts/
+# 仓库里的模板用 $AI_YANGMAO_DIR 代表项目根目录；安装时写入本机的实际路径，Hermes 不需要另设环境变量。
+ESCAPED_DIR="$(printf '%s' "$DIR" | sed 's/[&|\\]/\\&/g')"
+sed "s|\$AI_YANGMAO_DIR|$ESCAPED_DIR|g" "$DIR/integrations/hermes/ai-yangmao/SKILL.md" > ~/.hermes/skills/ai-yangmao/SKILL.md
+for script in "$DIR/integrations/hermes/scripts/"ai-yangmao-*.sh; do
+  sed "1a\\
+AI_YANGMAO_DIR=\"\${AI_YANGMAO_DIR:-$ESCAPED_DIR}\"
+" "$script" > ~/.hermes/scripts/"$(basename "$script")"
+done
 chmod +x ~/.hermes/scripts/ai-yangmao-*.sh
 for name in ai-yangmao-digest ai-yangmao-watch; do
   # 历史安装可能留下同名的多个任务；全部清除后只创建一个。
