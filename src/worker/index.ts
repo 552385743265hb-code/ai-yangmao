@@ -251,11 +251,13 @@ ingest.post('/leads', async c => {
     if (seenUrl.has(row.url) || seenKey.has(row.urlKey)) { duplicates.push(row); return false; }
     seenUrl.add(row.url); seenKey.add(row.urlKey); return true;
   });
-  // D1 单条语句最多 100 个绑定参数。线索带 url_key 后仍按 20 行一批插入。
+  // D1 单条语句最多 100 个绑定参数：每行绑定 origin、url、title、raw、status、url_key 共 6 个，一批最多 16 行。
+  // （2026-10-13 加 url_key 后仍按 20 行一批，超过 16 条新线索的整批写入全部失败，linux.do 连续失败。）
   let created = 0;
   const createdRows: { id: number; url: string }[] = [];
-  for (let i = 0; i < fresh.length; i += 20) {
-    const res = await db(c.env).insert(s.leads).values(fresh.slice(i, i + 20)).onConflictDoNothing().returning({ id: s.leads.id, url: s.leads.url });
+  const perBatch = Math.floor(100 / 6);
+  for (let i = 0; i < fresh.length; i += perBatch) {
+    const res = await db(c.env).insert(s.leads).values(fresh.slice(i, i + perBatch)).onConflictDoNothing().returning({ id: s.leads.id, url: s.leads.url });
     created += res.length;
     createdRows.push(...res);
   }

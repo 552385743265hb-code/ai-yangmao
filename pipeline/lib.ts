@@ -6,6 +6,13 @@ import { assertSafeUrl, fetchPublic, UnsafeTargetError } from './safe-fetch';
 import { officialStatusKey } from '../src/shared/dedupe';
 
 export const UA = 'Mozilla/5.0 (compatible; ai-yangmao-bot/0.1; +https://ai-yangmao.com)';
+/**
+ * Leads per POST /leads request. The Worker spends ~3 D1 queries per request plus 3 per new lead (6 when a screening
+ * rule matches) against a fixed 50-query request budget; larger batches fail whole (linux.do, 2026-10-13).
+ * 5 keeps the worst case at ~33 queries.
+ */
+export const LEAD_POST_CHUNK = 5;
+
 export async function api<T = unknown>(path: string, body?: unknown): Promise<T> {
   // 每次调用时再读环境变量：中继脚本会在启动后才加载密钥
   const base = (process.env.API_BASE ?? 'https://ai-yangmao.com').replace(/\/$/, '');
