@@ -100,6 +100,10 @@ npm test
 
 网站只收录能追到官方出处的活动，但**不保证覆盖所有活动**，也不保证活动一直有效；领取前请以官方页面为准。参考价值是按公开价格估算的购买成本，不代表现金或实际节省的费用。
 
+## 反馈
+
+发现漏收的羊毛、过期或写错的条目，或者有改进建议，欢迎写信到 [accesaver@gmail.com](mailto:accesaver@gmail.com)，也可以直接在 GitHub 提 Issue。
+
 ## 致谢
 
 感谢 [AIHOT](https://github.com/KKKKhazix/AIHOT)（[aihot.news](https://aihot.news)）带来的灵感：一个自己找热点、自己写日报的网站，让我们相信 AI 羊毛也可以这样被持续地收集、筛选和整理。AIHOT 的公开动态也是本站的线索来源之一。
