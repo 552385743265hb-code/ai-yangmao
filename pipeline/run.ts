@@ -431,9 +431,9 @@ export async function runPipeline() {
   // config.relay 表示由别的机器负责（例如 Reddit 由常开 Mac 中继），云端跳过
   const list = sources.filter(s => (!only || only.includes(s.id)) && !(s.config as { relay?: string } | undefined)?.relay);
   log(`共 ${list.length} 个信源；今日 token ${Number.isFinite(tokensLeft) ? `剩 ${tokensLeft}` : '不设总上限'}，本月付费兜底剩 ¥${costLeft.toFixed(2)}${DRY ? '；演练模式，不写入权益' : ''}`);
-  // 管理员担保的快速上架最先处理：时效优先，只用免费模型补字段。
+  // 管理员担保的快速上架最先处理：时效优先，先用免费模型补字段，不行再用付费兜底（与其他付费兜底共用月度上限）。
   try {
-    const fastTrack = await runFastTrack({ deadlineAt: Math.min(deadline, Date.now() + 8 * 60_000), dry: DRY, log,
+    const fastTrack = await runFastTrack({ deadlineAt: Math.min(deadline, Date.now() + 8 * 60_000), dry: DRY, log, allowPaid: () => paidAvailable() && costLeft > 0.05,
       account: (tokens, cost) => { tokensLeft -= tokens; costLeft -= cost; stats.tokens += tokens; stats.costCny += cost; } });
     if (fastTrack.claimed) Object.assign(stats, { fastTrack });
   } catch (e) { stats.errors.push(`快速上架：${(e as Error).message}`); log('快速上架出错', (e as Error).message); }
