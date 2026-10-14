@@ -80,8 +80,8 @@ const fmt = (d: Date, tz: string) => {
   return `${p.month}月${p.day}日 ${p.hour}:${p.minute}`;
 };
 function deadline(it: Item): string {
-  if (it.endKind === 'standing') return '长期有效（每 7 天复核一次）';
-  if (it.endKind !== 'date' || !it.claimEnd) return '官方没写截止日期（每天复核，失效会通知）';
+  if (it.endKind === 'standing') return '长期可领';
+  if (it.endKind !== 'date' || !it.claimEnd) return '官方未注明截止日期';
   const end = zonedTime(it.claimEnd, '23:59:59', it.sourceTz);
   const official = `${Number(it.claimEnd.slice(5, 7))}月${Number(it.claimEnd.slice(8, 10))}日 23:59（${TZ[it.sourceTz] ?? it.sourceTz}）`;
   return it.sourceTz === 'Asia/Shanghai' ? official : `${official}，即北京时间 ${fmt(end, 'Asia/Shanghai')}`;
@@ -97,10 +97,10 @@ const md = (content: string) => ({ tag: 'div', text: { tag: 'lark_md', content }
 const safe = (t: string) => t.replace(/[[\]]/g, m => (m === '[' ? '【' : '】')).replace(/\*/g, '＊');
 const zh = (tr: Map<string, string>, t?: string | null) => (t ? (tr.get(t.trim()) ?? t).replace(/\s*\n+\s*/g, ' ').replace(/\s{2,}/g, ' ').trim() : ''); // 原文里的表格换行合并成一行
 
-function itemBlock(it: Item, n: number, tr: Map<string, string>, section: string) {
+function itemBlock(it: Item, n: number, tr: Map<string, string>, section: string, compact = false) {
   const lines: string[] = [];
   lines.push(`**${n}. ${safe(zh(tr, it.title))}**`);
-  lines.push(`<font color='grey'>${it.score != null ? `薅度分 ${it.score} · ` : ''}${safe(it.platform)} · ${it.type}${it.modalities?.length ? ` · ${it.modalities.map(m => MODAL[m] ?? m).join(' / ')}` : ''}</font>`);
+  if (!compact) lines.push(`<font color='grey'>${it.score != null ? `薅度分 ${it.score} · ` : ''}${safe(it.platform)} · ${it.type}${it.modalities?.length ? ` · ${it.modalities.map(m => MODAL[m] ?? m).join(' / ')}` : ''}</font>`);
   if (section === 'changed') lines.push(`🔄 **有变化**：${safe(zh(tr, it.value))}`);
   else {
     const valuation = valuationSummary(it);
@@ -109,23 +109,25 @@ function itemBlock(it: Item, n: number, tr: Map<string, string>, section: string
   const benefit = it.excerpts?.benefit;
   // 管理员实测、媒体转述的摘录不是官方原话，不能标成“官方原文”
   const official = !['media', 'tested'].includes(it.evidenceTier);
-  if (benefit && section !== 'changed') {
+  if (!compact && benefit && section !== 'changed') {
     lines.push(`📄 **${official ? '官方原文' : '原文（媒体 / 社区转述）'}**：“${safe(benefit)}”`);
     if (tr.has(benefit.trim())) lines.push(`　译文：“${safe(zh(tr, benefit))}”`);
   }
-  if (it.adminNote) lines.push(`💬 **牧场心得**：${safe(it.adminNote.replace(/\s*\n+\s*/g, ' '))}`);
-  lines.push(`📥 **怎么领**：${CLAIM[it.claimMethod] ?? it.claimMethod}`);
-  (it.steps ?? []).filter(x => !/^官方出处：/.test(x)).slice(0, 8).forEach((st, i) => lines.push(`　${i + 1}. ${safe(zh(tr, st))}`));
+  if (!compact && it.adminNote) lines.push(`💬 **牧场心得**：${safe(it.adminNote.replace(/\s*\n+\s*/g, ' '))}`);
+  if (!compact) {
+    lines.push(`📥 **怎么领**：${CLAIM[it.claimMethod] ?? it.claimMethod}`);
+    (it.steps ?? []).filter(x => !/^官方出处：/.test(x)).slice(0, 8).forEach((st, i) => lines.push(`　${i + 1}. ${safe(zh(tr, st))}`));
+  }
   const eligibility = it.excerpts?.eligibility;
   lines.push(`✅ **条件**：${it.requirements.map(reqText).join('、')}；适用：${AUD[it.audience] ?? it.audience}`);
-  if (eligibility) {
+  if (!compact && eligibility) {
     lines.push(`　${official ? '官方说明' : '转述说明'}：“${safe(eligibility)}”`);
     if (tr.has(eligibility.trim())) lines.push(`　译文：“${safe(zh(tr, eligibility))}”`);
   }
   lines.push(`⏰ **截止**：${startText(it)}${deadline(it)}`);
   lines.push(`⌛ **额度有效期**：${it.creditValidity ? safe(zh(tr, it.creditValidity)) : '官方未写明'}`);
   lines.push(`🔎 **信源**：${TIER[it.evidenceTier] ?? it.evidenceTier}`);
-  lines.push(`🕒 **核验时间**：${it.lastVerifiedAt??'原通知未保存核验时间，请查当前详情'}`);
+  if (!compact) lines.push(`🕒 **核验时间**：${it.lastVerifiedAt??'原通知未保存核验时间，请查当前详情'}`);
   return [
     md(lines.join('\n')),
     { tag: 'action', actions: [
@@ -149,7 +151,8 @@ export async function buildCards(env: Env, notice: Pick<ClaimedNotice, 'kind' | 
     ? BOARDS.flatMap(([k, label]) => (notice.items[k as keyof typeof notice.items] ?? []).map(it => ({ it, k, label })))
     : SECTIONS.flatMap(([k, label]) => (notice.items[k] ?? []).map(it => ({ it, k, label })));
   if (!all.length) return [];
-  const texts = all.flatMap(({ it }) => [it.title, it.value, it.creditValidity, it.excerpts?.benefit, it.excerpts?.eligibility, ...(it.steps ?? [])]);
+  const compact = notice.kind === 'digest';
+  const texts = all.flatMap(({ it }) => [it.title, it.value, it.creditValidity, ...(!compact ? [it.excerpts?.benefit, it.excerpts?.eligibility, ...(it.steps ?? [])] : [])]);
   const tr = await translateAll(env, texts);
   const day = new Intl.DateTimeFormat('zh-CN', { timeZone: 'Asia/Tokyo', month: 'long', day: 'numeric', weekday: 'short' }).format(now);
   const pages = Math.ceil(all.length / PER_CARD);
@@ -160,12 +163,12 @@ export async function buildCards(env: Env, notice: Pick<ClaimedNotice, 'kind' | 
     if (p === 0) {
       const counts = SECTIONS.map(([k, label]) => [label, (notice.items[k] ?? []).length] as const).filter(([, c]) => c).map(([l, c]) => `${l} ${c} 条`).join('　');
       const more = (notice as { moreCount?: number }).moreCount ?? 0;
-      elements.push(md(`${ranked ? `常驻榜 ${notice.items.standing?.length ?? 0} 条 · 新星榜 ${notice.items.rising?.length ?? 0} 条 · 末班车榜 ${notice.items.lastcall?.length ?? 0} 条${more ? `\n另有 ${more} 条新上架没进榜，在网站上看` : ''}` : counts}\n<font color='grey'>薅度分综合价值、门槛、领取难度、剩余时间、信源和国内能否直领。每条都附官方原文和链接；英文内容已翻译成中文，以官方页面为准。</font>`), { tag: 'hr' });
+      elements.push(md(`${ranked ? `常驻榜 ${notice.items.standing?.length ?? 0} 条 · 新星榜 ${notice.items.rising?.length ?? 0} 条 · 末班车榜 ${notice.items.lastcall?.length ?? 0} 条${more ? `\n另有 ${more} 条新上架没进榜，在网站上看` : ''}` : counts}\n<font color='grey'>${compact ? '完整条款与领取步骤请点击每条的详情链接。' : '英文内容已翻译成中文，以官方页面为准。'}</font>`), { tag: 'hr' });
     }
     let current = '';
     slice.forEach(({ it, k, label }, i) => {
       if (label !== current) { elements.push(md(`**${label}**`)); current = label; }
-      elements.push(...itemBlock(it, p * PER_CARD + i + 1, tr, k));
+      elements.push(...itemBlock(it, p * PER_CARD + i + 1, tr, k, compact));
     });
     if (p === pages - 1) elements.push({ tag: 'action', actions: [{ tag: 'button', text: { tag: 'plain_text', content: '打开 AI 羊毛牧场，看全部可领羊毛' }, type: 'primary', url: SITE }] });
     const title = notice.kind === 'urgent' ? '⚡ 羊毛加急：48 小时内截止' : `🐑 AI 羊毛牧场日报 · ${day}`;
@@ -200,16 +203,16 @@ export async function postCard(env: Env, card: unknown): Promise<{ ok: boolean; 
 }
 
 /** 占位 → 排卡片 → 逐张发送 → 回报结果。飞书明确拒收时释放占位，下次重试；结果不明时留待人工核对。 */
-export async function sendFeishu(env: Env, kind: Kind, editionRetries=1): Promise<{ sent: number; cards: number; skipped?: string; error?: string }> {
-  const daily = kind === 'digest' ? await generateDaily(env) : null;
+export async function sendFeishu(env: Env, kind: Kind, editionRetries=1, now=new Date()): Promise<{ sent: number; cards: number; skipped?: string; error?: string }> {
+  const daily = kind === 'digest' ? await generateDaily(env, now) : null;
   if (!env.FEISHU_WEBHOOK) return { sent: 0, cards: 0, skipped: '未配置 FEISHU_WEBHOOK' };
   if(daily?.sourceDeliveryId)return {sent:0,cards:0,skipped:'没有新内容'};
   if (daily && await env.DB.prepare("SELECT id FROM deliveries WHERE channel='feishu' AND kind='digest' AND status='sent' AND json_extract(payload,'$.digestDay')=? LIMIT 1").bind(daily.public.day).first()) return {sent:0,cards:0,skipped:'没有新内容'};
   const notice = await claimNotice(env, kind, 'feishu', daily?.notice);
-  if(notice.editionChanged)return editionRetries>0?sendFeishu(env,kind,editionRetries-1):{sent:0,cards:0,error:'日报版本正在更新，请稍后重试'};
+  if(notice.editionChanged)return editionRetries>0?sendFeishu(env,kind,editionRetries-1,now):{sent:0,cards:0,error:'日报版本正在更新，请稍后重试'};
   if(notice.staleContent)return {sent:0,cards:0,error:'日报条目版本已变化；管理员可重新准备尚未发送的日报，查询不会自动改写。'};
   if (notice.empty || !notice.deliveryId) return { sent: 0, cards: 0, skipped: notice.alreadyClaimed ? '已有同样内容在发送或待核对' : '没有新内容' };
-  const cards = daily?.cards ?? await buildCards(env, notice);
+  const cards = daily?.cards ?? await buildCards(env, notice, now);
   let sent = 0;
   for (const card of cards) {
     const r = await postCard(env, card);
@@ -252,9 +255,27 @@ export async function scheduledCollect(env: Env, wait = (ms: number) => new Prom
   return r;
 }
 
-export async function runScheduled(cron: string, env: Env) {
-  if (cron === CRON.digest) console.log('飞书日报', JSON.stringify(await sendFeishu(env, 'digest')));
-  if (cron === CRON.urgent) console.log('飞书加急', JSON.stringify(await sendFeishu(env, 'urgent')));
+export async function runScheduled(cron: string, env: Env, now = new Date()) {
+  if (cron === CRON.digest) console.log('飞书日报', JSON.stringify(await sendFeishu(env, 'digest', 1, now)));
+  if (cron === CRON.urgent) {
+    console.log('飞书加急', JSON.stringify(await sendFeishu(env, 'urgent', 1, now)));
+    // 日报可能被只读保护窗口或临时故障跳过；恢复后补跑，沿用送达台账防重。
+    // 东京日期在 UTC 15:00 切换，必须等到 09:00，不能提前生成次日日报。
+    const hour = Number(new Intl.DateTimeFormat('en-US', {timeZone:'Asia/Tokyo',hour:'2-digit',hourCycle:'h23'}).format(now));
+    if (hour >= 9) {
+      try {
+        const daily = await generateDaily(env, now);
+        // 冻结日报拒收后，活动可能已由加急送达；只重建确定未发送的版本。
+        // 常驻榜是每日栏目，不因以前的加急或新上架通知而移除。
+        const ids = [...daily.notice.items.rising, ...daily.notice.items.lastcall].map(it => it.id);
+        if (ids.length && await env.DB.prepare("SELECT offer_id FROM notifications WHERE channel='feishu' AND stage='urgent' AND offer_id IN (SELECT value FROM json_each(?)) LIMIT 1").bind(JSON.stringify(ids)).first()) {
+          await generateDaily(env, now, true);
+        }
+        console.log('飞书日报补跑检查', JSON.stringify(await sendFeishu(env, 'digest', 1, now)));
+      }
+      catch (error) { console.warn('飞书日报补跑失败', String(error)); }
+    }
+  }
   if (cron === CRON.leads) console.log('触发快速线索研判', JSON.stringify(await scheduledCollect(env, undefined, true)));
   if (cron === CRON.collect) console.log('触发采集', JSON.stringify(await scheduledCollect(env)));
 }

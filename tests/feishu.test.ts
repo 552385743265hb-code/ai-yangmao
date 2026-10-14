@@ -2,7 +2,7 @@ import { createHmac } from 'node:crypto';
 import { readFileSync, readdirSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { buildCards, dispatchCollect, scheduledCollect, sendFeishu } from '../src/worker/feishu';
+import { buildCards, dispatchCollect, scheduledCollect, sendFeishu, runScheduled, CRON } from '../src/worker/feishu';
 import { buildNotice } from '../src/worker/admin';
 import worker from '../src/worker/index';
 import type { Env } from '../src/worker/index';
@@ -85,7 +85,7 @@ describe('飞书群日报', () => {
     expect(await sendFeishu(env, 'digest')).toMatchObject({ sent: 1 });
   });
 
-  it('卡片写全福利、领取方式、条件、截止（换算北京时间）、有效期和可点击的链接，英文翻译成中文并缓存', async () => {
+  it('日报只保留福利摘要、条件、截止、有效期和信源链接，不带原文或领取教程', async () => {
     const calls = stubFetch(() => ({ code: 0 }));
     sqlite.prepare("UPDATE offers SET admin_note='升级后才到账，\n注意先绑卡' WHERE id='kiro-bonus'").run();
     sqlite.prepare("UPDATE offers SET usd_max=40 WHERE id='kiro-bonus'").run();
@@ -93,9 +93,11 @@ describe('飞书群日报', () => {
     const [card] = await buildCards(env, notice) as { elements: { tag: string; text?: { content: string }; actions?: { url: string }[] }[] }[];
     const text = card.elements.filter(e => e.tag === 'div').map(e => e.text!.content).join('\n');
     expect(text).toContain('🎁 **福利**：【译】$20 credited toward your subscription（旧参考值 $20–$40 · 待按已审核估值口径重估）');
-    expect(text).toContain('📥 **怎么领**：充值后赠送');
-    expect(text).toContain('💬 **牧场心得**：升级后才到账， 注意先绑卡');
-    expect(text).toContain('　1. 【译】Sign in with social login or AWS Builder ID');
+    expect(text).not.toMatch(/怎么领|牧场心得|官方原文|官方说明|译文|核验时间/);
+    expect(text).not.toContain('Sign in with social login');
+    expect(text).not.toContain(evidence.excerpts.benefit);
+    expect(text).not.toContain(evidence.excerpts.eligibility);
+    expect(text).toContain('🔎 **信源**：官网');
     expect(text).toContain('✅ **条件**：需充值（首次升级付费套餐）、需海外信用卡 / PayPal；适用：所有用户');
     expect(text).toMatch(/⏰ \*\*截止\*\*：\d+月\d+日 23:59（美西时间），即北京时间 \d+月\d+日 1[45]:59/);
     expect(text).toContain('⌛ **额度有效期**：【译】Valid for 30 days');
@@ -105,6 +107,79 @@ describe('飞书群日报', () => {
     const before = calls.filter(c => c.url.includes('generativelanguage')).length;
     await buildCards(env, notice);
     expect(calls.filter(c => c.url.includes('generativelanguage')).length).toBe(before);
+  });
+
+  it('恢复后的小时检查补上漏掉的日报，后续检查不重复发送', async () => {
+    const calls = stubFetch(() => ({ code: 0 }));
+    const now = new Date();
+    // 东京 10:07，已过本日 09:00；使用固定 UTC 时刻防止主机时区影响。
+    const day = now.toISOString().slice(0, 10);
+    const check = new Date(`${day}T01:07:00Z`);
+    sqlite.prepare("UPDATE offers SET type='standing',end_kind='standing',claim_end=NULL,last_verified_at=?").run(check.toISOString());
+    await runScheduled(CRON.urgent, env, check);
+    expect(sqlite.prepare("SELECT kind,status FROM deliveries WHERE kind='digest'").all()).toEqual([{kind:'digest',status:'sent'}]);
+    const count = calls.filter(c => c.url.includes('open.feishu.cn')).length;
+    expect(count).toBe(1);
+    await runScheduled(CRON.urgent, env, check);
+    expect(calls.filter(c => c.url.includes('open.feishu.cn'))).toHaveLength(count);
+  });
+
+  it('日报补跑请求挂起时，加急仍然先完成送达', async () => {
+    stubFetch(() => ({ code: 0 }));
+    let reached!:()=>void,release!:()=>void;
+    const reading=new Promise<void>(resolve=>{reached=resolve;}),resume=new Promise<void>(resolve=>{release=resolve;});
+    const database=new Proxy(env.DB,{get(target,key){
+      if(key==='prepare')return(sql:string)=>{
+        const statement=target.prepare(sql);
+        if(sql==='SELECT payload FROM daily_digest WHERE id=1'){
+          const first=statement.first.bind(statement);
+          statement.first=async(...args:[])=>{reached();await resume;return first(...args);};
+        }
+        return statement;
+      };
+      return Reflect.get(target,key);
+    }});
+    const tokyoDay=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Tokyo'}).format(new Date());
+    const sending=runScheduled(CRON.urgent,{...env,DB:database},new Date(`${tokyoDay}T01:07:00Z`));
+    await reading;
+    try{expect(sqlite.prepare("SELECT kind,status FROM deliveries WHERE kind='urgent'").all()).toEqual([{kind:'urgent',status:'sent'}]);}
+    finally{release();await sending;}
+  });
+
+  it('旧日报拒收后，加急已送达的活动不会再次出现在补跑日报', async () => {
+    stubFetch(() => ({ code: 429, msg: 'retry' }));
+    expect((await sendFeishu(env,'digest')).sent).toBe(0);
+    const calls=stubFetch(() => ({ code: 0 }));
+    const tokyoDay=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Tokyo'}).format(new Date());
+    await runScheduled(CRON.urgent,env,new Date(`${tokyoDay}T01:07:00Z`));
+    expect(calls.filter(c=>c.url.includes('open.feishu.cn'))).toHaveLength(1);
+    expect(sqlite.prepare("SELECT kind,status FROM deliveries ORDER BY created_at").all()).toEqual([{kind:'digest',status:'released'},{kind:'urgent',status:'sent'}]);
+    const payload=JSON.parse(String(sqlite.prepare('SELECT payload FROM daily_digest').get()?.payload));
+    expect(payload.public.revision).toBe(2);
+    expect(payload.public.boards.rising).toEqual([]);
+  });
+
+  it('东京 09:00 前不会提前生成或推送下一期日报', async () => {
+    stubFetch(() => ({ code: 0 }));
+    const check = new Date(`${new Date().toISOString().slice(0,10)}T23:07:00Z`);
+    sqlite.prepare("UPDATE offers SET type='standing',end_kind='standing',claim_end=NULL,last_verified_at=?").run(check.toISOString());
+    await runScheduled(CRON.urgent, env, check);
+    expect(sqlite.prepare('SELECT count(*) n FROM daily_digest').get()?.n).toBe(0);
+    expect(sqlite.prepare("SELECT count(*) n FROM deliveries WHERE kind='digest'").get()?.n).toBe(0);
+  });
+
+  it('小时补跑保留结果不明的日报占位，不能盲目重发', async () => {
+    sqlite.prepare("UPDATE offers SET type='standing',end_kind='standing',claim_end=NULL").run();
+    vi.stubGlobal('fetch', vi.fn(async () => { throw Error('delivery unknown'); }));
+    expect((await sendFeishu(env,'digest')).sent).toBe(0);
+    const unknown = sqlite.prepare("SELECT id,status FROM deliveries WHERE kind='digest'").get();
+    expect(unknown?.status).toBe('unknown');
+    const calls = stubFetch(() => ({ code: 0 }));
+    const tokyoDay = new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Tokyo'}).format(new Date());
+    const check = new Date(`${tokyoDay}T01:07:00Z`);
+    await runScheduled(CRON.urgent, env, check);
+    expect(sqlite.prepare("SELECT id,status FROM deliveries WHERE kind='digest'").all()).toEqual([unknown]);
+    expect(calls.filter(c=>c.url.includes('open.feishu.cn'))).toHaveLength(0);
   });
 
   it('shows V1 first30 membership value, unpriced beta and application ceiling without sending a message', async () => {

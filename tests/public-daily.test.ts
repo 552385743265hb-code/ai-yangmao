@@ -27,7 +27,7 @@ describe('latest shared daily digest',()=>{
     const report=await readLatestDaily(env);
     expect(report?.boards.standing[0].title).toBe('Daily free credits');
     expect(report?.boards.standing[0].lastVerifiedAt).toBeTruthy();
-    expect(report?.markdown).toContain('核验时间');
+    expect(report?.markdown).not.toContain('核验时间');
     expect(report?.markdown).toContain('Free 10 credits');
     expect(JSON.stringify(report)).not.toMatch(/reviewMemo|PRIVATE|reviewVersion|pendingCount|identityGuards|marks|preparation/);
     expect(f.sqlite.prepare('SELECT count(*) n FROM daily_digest').get()?.n).toBe(1);
@@ -38,15 +38,15 @@ describe('latest shared daily digest',()=>{
     expect((await readLatestDaily(env))?.boards.standing).toHaveLength(1);
     expect(f.sqlite.prepare('SELECT count(*) n FROM deliveries').get()?.n).toBe(0);
   });
-  it('keeps original quotations in the shared Markdown when a translation exists',async()=>{
+  it('keeps detailed quotations in the linked data while the shared digest stays concise',async()=>{
     const {f,env}=fixture();
     for(const [source,translation] of [['Free 10 credits','免费 10 积分'],['Everyone','所有人']])
       f.sqlite.prepare('INSERT INTO translations(hash,source,zh) VALUES(?,?,?)').run(createHash('sha256').update(source).digest('hex'),source,translation);
     const report=(await generateDaily(env)).public;
-    expect(report.markdown).toContain('Free 10 credits');
+    expect(report.boards.standing[0].originalExcerpts.benefit).toBe('Free 10 credits');
     expect(report.markdown).toContain('免费 10 积分');
-    expect(report.markdown).toContain('Everyone');
-    expect(report.markdown).toContain('译文');
+    expect(report.markdown).not.toContain('Everyone');
+    expect(report.markdown).not.toMatch(/官方原文|译文|怎么领/);
   });
   it('concurrent generation returns the same winner and keeps only one latest report',async()=>{
     const {f,env}=fixture();const [a,b]=await Promise.all([generateDaily(env),generateDaily(env)]);
