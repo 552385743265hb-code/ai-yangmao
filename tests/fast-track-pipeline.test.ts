@@ -40,6 +40,8 @@ it('claims a job, reads the official page with a free model and reports the list
   expect(result.fields).toMatchObject({ title: 'Odyssey-3 公开研究预览', type: 'free', modalities: ['video'], requirements: ['none'], endKind: 'unknown' });
   expect(result.sourceText).toContain('public research preview');
   expect(run.account).toHaveBeenCalled();
+  const modelRequest = vi.mocked(fetch).mock.calls.find(([url]) => String(url).includes('generativelanguage'))!;
+  expect(String((modelRequest[1] as RequestInit).body)).toContain('管理员已经确认');
 });
 
 it('drives a multi-request publish to completion', async () => {

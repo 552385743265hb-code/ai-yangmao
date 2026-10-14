@@ -1,6 +1,5 @@
 import { api, fetchPage } from './lib';
-import { extract, modelAvailable, type Extracted } from './llm';
-import { modelBudget } from './budget';
+import { completeFreePrompt, modelAvailable, parseModelJson, type Extracted } from './llm';
 
 /**
  * ⚡ 快速上架：管理员已担保链接与主要权益，这里只用免费模型从链接正文补齐其余字段。
@@ -8,6 +7,11 @@ import { modelBudget } from './budget';
  */
 interface Job { id: string; platformId: string; platformName: string; url: string; benefit: string; note: string | null }
 export interface FastTrackOptions { deadlineAt: number; dry: boolean; account: (tokens: number, cost: number) => void; log: (...args: unknown[]) => void }
+
+const PROMPT = `你是"AI 羊毛牧场"的字段整理助手。管理员已经确认下面这条权益真实有效并决定上架，你不判断是否收录，只根据管理员描述和官方页面正文填写上架字段。
+只输出一个 JSON 对象：{"offers":[{"title":"中文标题，不超过 40 字","type":"new|trial|free|perk|topup|gift|standing|apply","modalities":["text|image|video|audio" 至少一个],"models":["官方写法的模型名"],"tags":["reset|referral|discount|daily" 可空],"claimMethod":"auto|signup|app|form|topup|member|code","requirements":["none|pay|member|phone|card|net|realname|biz|student|invite|targeted"],"audience":"new|old|all|unclear","valueText":"一句中文额度描述","claimStart":"YYYY-MM-DD 或 null","claimEnd":"YYYY-MM-DD 或 null","endKind":"date|unknown|standing","creditValidity":"额度有效期或 null","sourceTz":"IANA 时区，未写明填 UTC","steps":["中文领取步骤，最多 4 步"],"excerpts":{"benefit":"正文中支持该权益的连续原文","eligibility":"…或省略","claim":"…或省略","validity":"…或省略"}}]}
+类型含义：new 注册新人礼；trial 应用尝鲜/免费试用；free 限时免费开放（公开预览、免费 Demo 等）；perk 会员福利；topup 充值赠送；gift 会员免费送；standing 常驻免费额度；apply 申请制。standing 与 apply 的 endKind 必须是 standing，其他类型不能是 standing；有截止日期才用 date。
+门槛只写原文或常识能确定的；完全无门槛填 ["none"]，确实拿不准填 ["unknown"]。原文摘录必须逐字取自正文，保留原语言。只输出 JSON。`;
 
 const FIELD_KEYS = ['title', 'type', 'modalities', 'models', 'tags', 'claimMethod', 'requirements', 'audience', 'valueText', 'claimStart', 'claimEnd', 'endKind', 'creditValidity', 'sourceTz', 'steps', 'excerpts'] as const;
 
@@ -58,13 +62,12 @@ export async function runFastTrack(options: FastTrackOptions) {
       try { pageText = (await fetchPage(job.url, { timeoutMs: 15000, tries: 2, minimumTextLength: 50 })).text; }
       catch (error) { options.log('快速上架：正文不可读，只按管理员描述抽取', job.url, (error as Error).message); }
       const text = [ownerText, pageText].filter(Boolean).join('\n');
-      const extracted = await extract(job.platformName, job.url, text.slice(0, 22000), options.log, {
-        allowPaid: false, budget: modelBudget, evidenceText: text, platformIds: [job.platformId], deadlineAt: Math.min(options.deadlineAt, Date.now() + 3 * 60_000),
-        leadTarget: JSON.stringify({ title: job.benefit, originUrl: job.url, summary: `管理员已确认该权益真实有效，只补齐这条权益的字段。${job.note ?? ''}`.slice(0, 2500) }),
-      });
-      options.account(extracted.tokens, extracted.costCny);
-      const fields = fastTrackFields(extracted.offers, job.benefit);
-      result = fields ? { fields, sourceText: pageText, model: extracted.provider } : { error: '模型没有抽出这条权益', model: extracted.provider };
+      const reply = await completeFreePrompt(PROMPT, `厂商：${job.platformName}\n官方链接：${job.url}\n${text.slice(0, 22000)}`, Math.min(options.deadlineAt, Date.now() + 3 * 60_000));
+      options.account(reply.tokens, 0);
+      const parsed = parseModelJson(reply.text) as { offers?: Extracted[] } | Extracted[] | null;
+      const offers = Array.isArray(parsed) ? parsed : Array.isArray(parsed?.offers) ? parsed.offers : parsed && typeof parsed === 'object' && 'title' in parsed ? [parsed as Extracted] : [];
+      const fields = fastTrackFields(offers, job.benefit);
+      result = fields ? { fields, sourceText: pageText, model: reply.provider } : { error: '模型没有返回可用字段', model: reply.provider };
     } catch (error) { result = { error: (error as Error).message.slice(0, 500) }; }
     const receipt = await api<{ state: string }>(`/fast-track/${job.id}/result`, result);
     options.log('快速上架', job.id, job.platformId, await finish(job.id, receipt.state), result.error ?? '');
