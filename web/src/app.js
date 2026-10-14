@@ -640,7 +640,7 @@ function pToday() {
   const todayValues = [...act, ...stand];
   const soon = countdownCandidates(view(OFFERS));
   // The landing page says plainly what the site collects; 羊毛 alone is a metaphor newcomers have to decode.
-  main().innerHTML = ribbon() + ph('AI 羊毛牧场', SITE_TAGLINE) + `
+  main().innerHTML = ribbon() + ph('AI 羊毛牧场', SITE_TAGLINE.replace(/^(.+?，)(每天.+)$/, '<span class="clause">$1</span><span class="clause">$2</span>')) + `
   <div class="hero">
     <div class="hero-over">
       <div class="total"><span class="l">${C.only ? '按你的条件，' : ''}当前可领 · 月度参考价值</span>${summaryHtml(todayValues)}</div>
