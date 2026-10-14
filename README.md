@@ -15,6 +15,10 @@
   <a href="https://ai-yangmao.com/rss.xml">RSS</a>
 </p>
 
+<p align="center">
+  <b>简体中文</b> · <a href="README.en.md">English</a>
+</p>
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshot-dark.png">
   <img src="docs/assets/screenshot-light.png" alt="AI 羊毛牧场首页：每只羊是一条可领的羊毛，体型代表参考价值，羊毛厚度代表剩余时间">
