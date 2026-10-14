@@ -4,7 +4,7 @@
 
 ## 基线与交付
 
-原工作区 `/Volumes/AI/MyWorkspace/AI_Freebies` 保留，未修改或切换。独立工作区为 `dedupe-phase2-3/AI_Freebies`。开始及收尾实时核对：main 为 `7cea69d95d2c27e2c1ebd7641a94bab2a696901d`，PR #6 OPEN、未合并，head 精确为 `64db363b7dd4fd301d4872101d6ec313a0640d3d`，CI SUCCESS。第一阶段三个修复只做集成回归，未重打补丁；未用旧 PR 或压缩包实施。
+原主工作区保留，未修改或切换。独立工作区为 `dedupe-phase2-3/AI_Freebies`。开始及收尾实时核对：main 为 `7cea69d95d2c27e2c1ebd7641a94bab2a696901d`，PR #6 OPEN、未合并，head 精确为 `64db363b7dd4fd301d4872101d6ec313a0640d3d`，CI SUCCESS。第一阶段三个修复只做集成回归，未重打补丁；未用旧 PR 或压缩包实施。
 
 | 增量 / 任务 | 独立 PR | 验证后的提交 |
 |---|---|---|

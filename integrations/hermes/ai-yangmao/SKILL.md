@@ -13,12 +13,12 @@ description: >
 所有操作都通过项目自带的命令行工具完成，**不要自己拼 HTTP 请求，也不要读取或显示任何密钥**：
 
 ```bash
-cd /Volumes/AI/MyWorkspace/AI_Freebies && ./node_modules/.bin/tsx scripts/ym.ts <命令>
+cd "$AI_YANGMAO_DIR" && ./node_modules/.bin/tsx scripts/ym.ts <命令>
 ```
 
-下文用 `ym` 代指上面这一整行。
+下文用 `ym` 代指上面这一整行。`$AI_YANGMAO_DIR` 是本机项目克隆的根目录，`scripts/install-hermes.sh` 安装时会替换成实际路径。
 
-文档路径以项目根目录 `/Volumes/AI/MyWorkspace/AI_Freebies` 为基准，安装到 Hermes 后也不能按技能安装目录解析：`docs/data-contract.md`、`pipeline/learned-rules.md`、`pipeline/platform-notes.md`；命令与权限见 `docs/operations.md`，完整索引 `docs/README.md`。当前口径覆盖历史设计决定。
+文档路径以项目根目录 `$AI_YANGMAO_DIR` 为基准，安装到 Hermes 后也不能按技能安装目录解析：`docs/data-contract.md`、`pipeline/learned-rules.md`、`pipeline/platform-notes.md`；命令与权限见 `docs/operations.md`，完整索引 `docs/README.md`。当前口径覆盖历史设计决定。
 
 ## 命令
 
