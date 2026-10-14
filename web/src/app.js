@@ -234,8 +234,10 @@ const valueAssumption = o => { const v = valuationOf(o); return valuationText((v
 function valLabel(o) {
   const v = valuationOf(o), amount = o.ty === 'apply' ? (isApplyBenchmark(o) ? applyScenarioReference(o) : applyMaximum(o)) : valueNumber(o), old = validAmount(o.usd);
   if (amount == null) {
+    // One label per state: the status already says why there is no amount, so no method chip repeats it.
+    // A legacy amount keeps its chip: it explains why the old value is not counted.
     const label = v ? VALUE_STATUS[v.status] || '价值待定' : old != null ? `旧参考值 ${money(old)}` : '价值待定';
-    return `<span class="value-unknown">${esc(label)}</span>${valueTag(o)}`;
+    return `<span class="value-unknown">${esc(label)}</span>${!v && old != null ? valueTag(o) : ''}`;
   }
   const approx = v.method === 'scenario' || v.status === 'provisional' ? '≈ ' : '';
   const value = o.ty === 'apply' && !isApplyBenchmark(o) ? `最高 ${approx}${money(amount)}` : `${approx}${money(amount)}`;
@@ -259,7 +261,7 @@ function valuationBlock(o) {
   const text = x => valuationText(typeof x === 'object' && x !== null ? JSON.stringify(x) : String(x ?? '未公布'));
   const labels = { scenario: '场景', usageVersion: '用量基准版本', inputTokens: '输入 Token', outputTokens: '输出 Token', inputPrice: '输入单价', outputPrice: '输出单价', unitPrice: '单位价格', quantity: '数量', unit: '单位', currency: '币种', coverageDays: '覆盖天数', packagePrice: '套餐价格', packageUnits: '套餐额度', officialMonthlyPrice: '官方月价', first30Max: '月度参考上限', fullApplyMax: '完整申请权益上限', benchmarkType: '参考类型', referencePlan: '参考套餐', referenceModel: '参考模型', ruleIds: '计算规则', usageMultiplier: '用量倍数', pricingBasis: '定价依据', calculationBasis: '计算依据', model: '模型', specification: '规格', resolution: '分辨率', quality: '质量', mode: '模式', priceUnit: '计费单位', priceApplicableAt: '价格适用时间', recipientCount: '领取人数', sharedPool: '共享额度', limits: '适用限制' };
   const benchmarks = { entry_plan: '入门套餐参考', lowest_plan: '最低套餐参考', middle_plan: '中档套餐参考', substitute_model: '替代模型用量参考', accepted_reference: '套餐价格参考', package_ratio: '套餐额度比例参考', modality_sum: '多模态用量参考', discount_reference: '优惠价格参考', reset_reference: '额度重置参考' };
-  return `<div class="card" data-valuation><h3>估值说明</h3><p class="sub">${valueTag(o)} ${esc(valuePeriod(o))}${v.reviewedAt ? ` · 核价 ${esc(v.reviewedAt.slice(0, 10))}` : ''}<br>参考购买成本，不代表现金或已实际节省的费用。</p>
+  return `<div class="card" data-valuation><h3>估值说明</h3><p class="sub">${hasDisplayValue(o) ? `${valueTag(o)} ${esc(valuePeriod(o))}${v.reviewedAt ? ` · 核价 ${esc(v.reviewedAt.slice(0, 10))}` : ''}<br>参考购买成本，不代表现金或已实际节省的费用。` : `暂未计入金额${v.reviewedAt ? ` · 核价 ${esc(v.reviewedAt.slice(0, 10))}` : ''}`}</p>
     ${o.ty === 'apply' ? `<div class="valuation-summary" data-apply-values>${isApplyBenchmark(o) ? `<span>月度使用方案参考 <b>${applyScenarioReference(o) == null ? '价值待定' : `≈ ${money(applyScenarioReference(o))}`}</b></span><small>按参考价格与固定用量计算的购买成本，不代表申请额度或保证获批；没有保证可得的下限。</small>` : `<span>月度参考上限 <b>${applyFirst30Maximum(o) == null ? '价值待定' : `${v.method === 'scenario' ? '≈ ' : ''}${money(applyFirst30Maximum(o))}`}</b></span>`}<span>完整申请权益上限 <b>${applyMaximum(o) == null ? '价值待定' : money(applyMaximum(o))}</b></span><small>权益期限：${esc(o.val || '以官方计划为准')}。完整上限覆盖整个计划，各计划期限不同；最高可申请不代表保证获批${v.usdEstimate == null ? '，没有保证可得的下限' : ''}。</small></div>` : ''}
     ${v.baselineModel ? `<p class="small">基准模型：<b>${esc(v.baselineModel)}</b></p>` : ''}
     ${alternatives.length ? `<label class="field" for="valueModel">选择模型使用方案<select id="valueModel"><option value="default" selected>${esc(v.baselineModel || '默认估值')} · 默认基准</option>${alternatives.map((x, i) => x.model === v.baselineModel ? '' : `<option value="${i}">${esc(x.model)} · ≈ ${money(x.amount)}</option>`).join('')}</select></label><p class="small muted" data-model-note role="status">当前为默认基准。其他模型是另一个使用方案；金额已按此活动的覆盖期与配额计算。全站排序、汇总和领取记录使用默认估值。</p>` : ''}
@@ -304,7 +306,8 @@ function barOf(o) {
   if (st === 'open') return [1, 'var(--s7)'];
   if (st === 'upcoming') return [1, 'var(--line-2)'];
   if (st === 'ended') return [0, 'var(--line-2)'];
-  if (o.ek === 'unknown') return [0.6, 'var(--muted)'];
+  // No official deadline: an empty dashed track, never a fill that reads as time remaining.
+  if (o.ek === 'unknown') return [null, null];
   const frac = clamp((o.e + 0.5) / Math.max(1, o.e - (o.s ?? o.e - 30)), 0.03, 1);
   return [frac, o.e === 0 ? 'var(--critical)' : st === 'ending' ? 'var(--serious)' : 'var(--good)'];
 }
@@ -332,6 +335,11 @@ function spark(vals) {
   const x = i => p + i * (w - 2 * p) / (vals.length - 1), y = v => h - p - (v - mn) / ((mx - mn) || 1) * (h - 2 * p);
   const line = vals.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join('');
   return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true"><path d="${line}L${x(vals.length - 1)},${h}L${x(0)},${h}Z" style="fill:currentColor;opacity:.13"/><path d="${line}" style="fill:none;stroke:currentColor;stroke-width:2;vector-effect:non-scaling-stroke;stroke-linejoin:round"/></svg>`;
+}
+/** Dashed empty ring: the deadline is unknown, so nothing is filled. */
+function ringUnknown(size, stroke = 6) {
+  const r = (size - stroke) / 2, m = size / 2;
+  return `<svg viewBox="0 0 ${size} ${size}" aria-hidden="true" data-deadline-unknown><circle cx="${m}" cy="${m}" r="${r}" style="fill:none;stroke:var(--line-2);stroke-width:${stroke / 2};stroke-dasharray:3 6"/></svg>`;
 }
 function ringSvg(frac, size, col, stroke = 6) {
   const r = (size - stroke) / 2, c = 2 * Math.PI * r, m = size / 2;
@@ -394,11 +402,13 @@ function showTip(html, x, y) {
   t.style.left = Math.max(8, left) + 'px'; t.style.top = Math.max(8, top) + 'px';
 }
 const hideTip = () => { tip().hidden = true; };
+/** Long messages (errors that say what to fix) need time to read: ~10 Chinese characters a second, 2.2–8 s. */
+const toastMs = msg => Math.min(8000, Math.max(2200, String(msg).length * 100));
 function toast(msg) {
   let t = $('#toast');
   if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'tray'; t.setAttribute('role', 'status'); document.body.appendChild(t); }
   t.textContent = msg; t.hidden = false; t.style.zIndex = 90;
-  clearTimeout(toast.h); toast.h = setTimeout(() => { t.hidden = true; }, 2200);
+  clearTimeout(toast.h); toast.h = setTimeout(() => { t.hidden = true; }, toastMs(msg));
 }
 
 /* ============================================================
@@ -444,7 +454,8 @@ function meadowBg(W, H, wx) {
     return `<path d="${d} L${W},${H} Z" style="fill:var(${v})"/>`;
   };
   const r = rng(99);
-  const sunX = W - Math.min(110, W * 0.2), sunY = H * 0.17;
+  // Above 640px the weather card overlays the top-right sky (.hero-over), so the sun moves between the clouds.
+  const sunX = W > 640 ? W * 0.5 : W - Math.min(110, W * 0.2), sunY = H * 0.17;
   let sky = '';
   if (wx.i >= 60) sky += `<g style="stroke:var(--sun);stroke-width:3;stroke-linecap:round">${[...Array(10)].map((_, i) => { const a = i / 10 * 6.283; return `<path d="M${(sunX + Math.cos(a) * 30).toFixed(1)},${(sunY + Math.sin(a) * 30).toFixed(1)} L${(sunX + Math.cos(a) * 38).toFixed(1)},${(sunY + Math.sin(a) * 38).toFixed(1)}"/>`; }).join('')}</g><circle cx="${sunX}" cy="${sunY}" r="22" style="fill:var(--sun)"/>`;
   const cloud = (cx, cy, s) => `<g transform="translate(${cx},${cy}) scale(${s})" style="fill:var(--cloud);opacity:.92"><ellipse cx="0" cy="0" rx="26" ry="12"/><circle cx="-10" cy="-8" r="11"/><circle cx="8" cy="-11" r="14"/><circle cx="22" cy="-3" r="9"/></g>`;
@@ -528,21 +539,40 @@ function ribbon() {
   const ago2 = LAST_OK ? Math.max(0, Math.round((NOW - LAST_OK) / 3600000)) : null;
   return `<div class="ribbon"><span class="live"><i></i>最近一次抓取：<b>${LAST_OK ? `${ago2 < 1 ? '1 小时内' : ago2 + ' 小时前'}（${hm(LAST_OK)}）` : '—'}</b></span><span>${META.coverageDegraded ? '部分抓取或核验尚未完成' : '只收能追到官方出处的羊毛，每条都附官方原文'}</span></div>`;
 }
-function ocard(o) {
-  const [frac, col] = barOf(o);
-  return `<article class="ocard">
+function ocard(o, hidden = false) {
+  const [frac, col] = barOf(o), track = frac == null ? '<div class="bar unknown" aria-hidden="true"></div>' : `<div class="bar" aria-hidden="true"><i style="width:${(frac * 100).toFixed(0)}%;background:${col}"></i></div>`;
+  return `<article class="ocard"${hidden ? ' hidden' : ''}>
     <a class="stretch" href="#offer-${o.id}" aria-label="${esc(o.t)}"></a>
     <div class="oc-top">${etag(o.ty)}${stChip(o)}</div>
-    <div style="min-width:0"><p class="oc-title">${esc(o.t)}</p><div class="oc-plat">${esc(o.plat.name)} · ${CLAIM[o.c]}</div><div class="oc-val">${valLabel(o)}</div>${valueAssumption(o) ? `<div class="small muted value-assumption">${esc(valueAssumption(o))}</div>` : ''}</div>
+    <div style="min-width:0"><p class="oc-title">${esc(o.t)}</p><div class="oc-plat">${esc(o.plat.name)} · ${CLAIM[o.c]}</div><div class="oc-val">${valLabel(o)}</div>${hasDisplayValue(o) && valueAssumption(o) ? `<div class="small muted value-assumption">${esc(valueAssumption(o))}</div>` : ''}</div>
     ${miniRadar(o)}
     <div class="oc-foot">
-      <div class="bar" aria-hidden="true"><i style="width:${(frac * 100).toFixed(0)}%;background:${col}"></i></div>
+      ${track}
       <div class="oc-meta"><span>${leftText(o)}</span><span class="row" style="gap:6px"><span class="score" title="${valueNumber(o) == null ? '价值未计入，按其余五项计算' : '六项薅度分'}">${score(o)}<small>薅度${valueNumber(o) == null ? ' · 5项' : ''}</small></span><button class="cmp" type="button" data-cmp="${o.id}" aria-pressed="${CMP.includes(o.id)}">对比</button></span></div>
       ${reqChips(o)}
     </div>
   </article>`;
 }
-const ocards = list => list.length ? `<div class="ocards">${list.map(ocard).join('')}</div>` : emptySheep('这里暂时没有羊毛。');
+/**
+ * Long card walls show a page at a time. All cards are rendered (filters, compare state and links keep working)
+ * and the rest are revealed in steps; the opened count is kept per page so the 5-minute refresh does not collapse it.
+ */
+const CARD_PAGE = 24, CARD_SHOWN = new Map();
+let CARD_WALL_SEQ = 0;
+const moreCardsLabel = (next, left) => `再显示 ${next} 条（还有 ${left} 条）`;
+function ocards(list, page = CARD_PAGE) {
+  if (!list.length) return emptySheep('这里暂时没有羊毛。');
+  const key = `${location.hash}|${CARD_WALL_SEQ++}`, shown = Math.max(page, CARD_SHOWN.get(key) || 0), left = list.length - shown;
+  return `<div class="ocards">${list.map((o, i) => ocard(o, i >= shown)).join('')}</div>${left > 0 ? `<button class="btn more-cards" type="button" data-more-cards="${esc(key)}" data-page="${page}">${moreCardsLabel(Math.min(page, left), left)}</button>` : ''}`;
+}
+function showMoreCards(button) {
+  const wall = button.previousElementSibling, page = +button.dataset.page;
+  const hidden = [...wall.children].filter(card => card.hasAttribute('hidden'));
+  hidden.slice(0, page).forEach(card => card.removeAttribute('hidden'));
+  CARD_SHOWN.set(button.dataset.moreCards, wall.children.length - Math.max(0, hidden.length - page));
+  const left = hidden.length - page;
+  if (left > 0) button.textContent = moreCardsLabel(Math.min(page, left), left); else button.remove();
+}
 function orow(o, when) {
   return `<a class="orow" href="#offer-${o.id}"><span class="when">${when}</span><span class="t">${esc(o.t)}<small>${esc(o.plat.name)} · ${TYPES[o.ty].l} · ${valLabel(o).replace(/<[^>]+>/g, ' ')}</small></span>${stChip(o)}</a>`;
 }
@@ -627,8 +657,8 @@ function pToday() {
       const end = window.end, total = Math.max(DAY, end - startInstant(o)), frac = clamp((end - NOW) / total, 0, 1);
       const col = end - NOW <= DAY ? 'var(--critical)' : end - NOW <= 3 * DAY ? 'var(--serious)' : 'var(--good)';
       const timer = window.estimated ? `<div class="cd" data-estimated-end="${end.getTime()}"${window.earliest ? ` data-estimated-start="${window.earliest.getTime()}"` : ''}>${estimatedCountdown(window)}</div>` : `<div class="cd" data-end="${end.getTime()}">${cdText(end - NOW)}</div>`;
-      const note = window.estimated ? '截止估算 · 官方未公布精确时刻' : '';
-      return `<a class="clock" href="#offer-${o.id}">${ringSvg(frac, 54, col)}<div style="min-width:0">${timer}<div class="ttl">${esc(o.t)}</div>${note ? `<div class="small muted">${esc(note)}</div>` : ''}</div></a>`;
+      // The section hint explains “约”; the full note stays available on hover instead of on every card.
+      return `<a class="clock" href="#offer-${o.id}"${window.estimated ? ' title="截止为估算：官方未公布精确时刻"' : ''}>${ringSvg(frac, 54, col)}<div style="min-width:0">${timer}<div class="ttl">${esc(o.t)}</div></div></a>`;
     }).join('') || emptySheep('没有即将结束的活动。')}</div>
   </section>
   <section class="grid g2">
@@ -638,7 +668,7 @@ function pToday() {
   <section>${secH('即将开始', '官方已公布、还没开始的活动')}
     <div class="rows">${upcoming.map(o => orow(o, `${md(dayAt(o.s))}开始`)).join('') || emptySheep('暂时没有已公布的新活动。')}</div>
   </section>
-  <section>${secH('进行中的羊毛', '按薅度分排序')}${ocards(act.slice().sort((a, b) => score(b) - score(a)))}</section>`;
+  <section>${secH('进行中的羊毛', '按薅度分排序')}${ocards(act.slice().sort((a, b) => score(b) - score(a)), 12)}</section>`;
 
   buildFlock($('#flock'), act, wx);
   const types = Object.keys(TYPES).filter(isTypeLimited).map(t => ({ t, n: act.filter(o => o.ty === t).length })).filter(x => x.n);
@@ -823,9 +853,8 @@ function pAll() {
     ${sel('f-p', '平台', [['', '全部平台'], ...PLATFORMS.filter(p => OFFERS.some(o => o.p === p.id)).map(p => [p.id, p.name])])}
     ${sel('f-st', '状态', [['claimable', '现在或即将可领'], ['', '全部状态'], ['active', '进行中'], ['ending', '即将结束'], ['upcoming', '未开始'], ['standing', '常驻'], ['ended', '已结束']])}
     ${sel('f-value', '估值方法', [['', '全部方法'], ['official', '仅看官方价值'], ['scenario', '用量估算'], ['unknown', '价值待定']])}
-    ${sel('f-sort', '排序', [['score', '薅度分高'], ['new', '新上架'], ['end', '快截止'], ['value', '月度参考价值高']])}
   </div>
-  <div class="row small muted" style="justify-content:space-between;margin-bottom:10px"><span id="allCount"></span><button class="btn sm" type="button" id="resetF">清空筛选</button></div>
+  <div class="row small muted" data-results-bar style="justify-content:space-between;margin-bottom:10px"><span id="allCount"></span><span class="row" style="gap:8px"><label class="row" for="f-sort" style="gap:6px">排序<select id="f-sort" data-f="sort" style="width:auto">${[['score', '薅度分高'], ['new', '新上架'], ['end', '快截止'], ['value', '月度参考价值高']].map(([v, l]) => `<option value="${v}" ${ALLF.sort === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label><button class="btn sm" type="button" id="resetF">清空筛选</button></span></div>
   <div id="allList"></div>`;
   const draw = () => { const l = filtered(); $('#allCount').textContent = `共 ${l.length} 条${C.only ? '（已按你的条件过滤）' : ''}`; $('#allList').innerHTML = ocards(l); };
   $$('[data-f]').forEach(s => s.addEventListener('change', () => { ALLF[s.dataset.f] = s.value; draw(); }));
@@ -953,7 +982,7 @@ function pModels() {
   main().innerHTML = ribbon() + ph('按模型找', '同一个模型，在哪些平台能免费用？限时免费会标出截止时间。') + `
     <div class="row" style="margin-bottom:12px;gap:10px;flex-wrap:wrap"><input type="search" id="modelQ" value="${esc(MODEL_Q)}" placeholder="搜模型，如 GLM、Gemini、DeepSeek" style="flex:1;min-width:200px;padding:8px 12px"><span class="small muted">${all.length} 个模型 · ${uniq(all.flatMap(m => m.offers.map(o => o.p))).length} 个平台</span></div>
     ${list.length ? `<div class="grid g2">${list.map(m => `<div class="card"><div class="row" style="justify-content:space-between;align-items:baseline;gap:8px"><h3 style="margin:0">${esc(m.name)}</h3><span class="small muted">${m.plats} 个平台${m.offers.some(limited) ? ' · 含限时' : ''}</span></div>
-      <div class="rows" style="margin-top:8px">${m.offers.map(row).join('')}</div></div>`).join('')}</div>`
+      <div class="rows" style="margin-top:8px">${m.offers.slice(0, 4).map(row).join('')}</div>${m.offers.length > 4 ? `<details><summary class="small muted" style="cursor:pointer;padding:8px 4px 0">还有 ${m.offers.length - 4} 个平台</summary><div class="rows">${m.offers.slice(4).map(row).join('')}</div></details>` : ''}</div>`).join('')}</div>`
       : `<div class="card">${emptySheep(all.length ? '没有找到这个模型。' : '还没有记录到具体的免费模型。')}</div>`}`;
   const inp = $('#modelQ');
   inp.addEventListener('input', () => { MODEL_Q = inp.value; const pos = inp.selectionStart; pModels(); const n = $('#modelQ'); n.focus(); n.setSelectionRange(pos, pos); });
@@ -1271,7 +1300,7 @@ function setupComments(o) {
     if (more && (!state.nextCursor || state.loading)) return;
     const version = ++state.version, cursor = more ? state.nextCursor : null;
     state.loading = true;
-    const live = currentBox(); if (live) { paintComments(live, state); $('[data-comment-loadmsg]', live).textContent = '加载中…'; }
+    const live = currentBox(); if (live) { paintComments(live, state); if (more) $('[data-comment-loadmsg]', live).textContent = '加载中…'; }
     try {
       const result = await commentRequest(`/api/offers/${encodeURIComponent(o.id)}/comments${cursor ? '?before=' + encodeURIComponent(cursor) : ''}`);
       if (!Array.isArray(result.comments)) throw new Error('留言暂时不可用');
@@ -1364,7 +1393,7 @@ function pOffer(id) {
     const col = o.e === 0 ? 'var(--critical)' : st === 'ending' ? 'var(--serious)' : st === 'upcoming' ? 'var(--s1)' : 'var(--good)';
     timeBlock = `<div class="ring-big">${ringSvg(frac, 92, col, 8)}<div><div class="small muted">${st === 'upcoming' ? '距离开始' : '距离领取截止'}</div><div class="cd" data-end="${target.getTime()}">${cdText(target - NOW)}</div><div class="small muted">按官方${tzName}换算成你的本地时间</div></div></div>`;
   } else if (st === 'ended') timeBlock = `<div class="ring-big">${ringSvg(0, 92, 'var(--muted)', 8)}<div><div class="cd">已结束</div><div class="small muted">${leftText(o)}${o.why ? ` · ${esc(o.why)}` : ''}</div></div></div>`;
-  else if (o.ek === 'unknown') timeBlock = `<div class="ring-big">${ringSvg(0.6, 92, 'var(--muted)', 8)}<div><div class="cd">截止未知</div><div class="small muted">发放方未公布截止日；明确撤回或条件变化时更新</div></div></div>`;
+  else if (o.ek === 'unknown') timeBlock = `<div class="ring-big">${ringUnknown(92, 8)}<div><div class="cd">截止未知</div><div class="small muted">发放方未公布截止日；明确撤回或条件变化时更新</div></div></div>`;
   else timeBlock = `<div class="ring-big">${ringSvg(1, 92, o.ty === 'apply' ? 'var(--s7)' : 'var(--s6)', 8)}<div><div class="cd">${o.ty === 'apply' ? '长期开放' : '常驻'}</div><div class="small muted">沿用已批准条款 · 证据核验于${ago(o.vf)}</div></div></div>`;
   if (o.evidence?.claimEndDerivation && st !== 'ended' && st !== 'upcoming') {
     const window = countdownWindow(o);
@@ -1395,7 +1424,7 @@ function pOffer(id) {
   </div>
   <div class="dt-grid">
     <div style="display:flex;flex-direction:column;gap:14px;min-width:0">
-      <div class="card"><div class="row" style="justify-content:space-between;align-items:flex-start;gap:16px"><div><div class="small muted">赠送内容</div><div class="bigval" data-detail-value>${valLabel(o)}</div><div style="margin-top:4px">${esc(o.v)}</div></div>${timeBlock}</div></div>
+      <div class="card"><div class="row" style="justify-content:space-between;align-items:flex-start;gap:16px"><div><div class="small muted">赠送内容</div>${hasDisplayValue(o) ? `<div class="bigval" data-detail-value>${valLabel(o)}</div><div style="margin-top:4px">${esc(o.v)}</div>` : `<div class="dt-benefit" data-detail-benefit>${esc(o.v)}</div><div class="small muted" data-detail-value>${valLabel(o)}</div>`}</div>${timeBlock}</div></div>
       ${valuationBlock(o)}
       <div class="facts">
         <div class="fact"><div class="l">领取方式</div><div class="v">${CLAIM[o.c]}</div></div>
@@ -1712,7 +1741,7 @@ function sugBlock(o, live = false) {
   const label = g.verdict === 'reject' ? (live ? '建议下架' : o.pendingUpdate ? '建议拒绝本次更新' : '建议拒绝收录')
     : o.pendingUpdate && g.verdict === 'approve' ? '建议接受更新' : defaultLabel;
   const rejectLabel = live ? '下架此条目' : o.pendingUpdate ? '拒绝更新，保留已上架内容' : '拒绝收录';
-  const color = tone === 'bad' ? 'var(--critical-ink)' : tone === 'warn' ? 'var(--warning-ink, #b26a00)' : 'var(--good-ink, #2e7d32)';
+  const color = tone === 'bad' ? 'var(--critical-ink)' : tone === 'warn' ? 'var(--warn-ink)' : 'var(--good-ink)';
   return `<div class="card" style="padding:8px 10px;border-left:4px solid ${color};margin:0"><div class="row" style="gap:8px;flex-wrap:wrap"><b style="color:${color}">${icon} ${label}</b>${g.code ? `<span class="chip">${esc(RCL_ALL[g.code] || g.code)}</span>` : ''}<span class="small muted">${esc(g.by || '')}${g.at ? ' · ' + esc(g.at.slice(0, 10)) : ''}</span></div><div class="small warn-note" style="margin-top:4px;color:var(--ink)">${esc(g.reason || '')}</div>${g.verdict === 'reject' ? `<p class="small" style="margin:6px 0 0">同意此建议：点击下方“${rejectLabel}”，再确认。${o.pendingUpdate && !live ? '已上架内容继续公开。' : ''}</p>` : ''}</div>`;
 }
 function reviewActions(o, live) {
@@ -2439,7 +2468,11 @@ function route() {
   if (h.startsWith('platform-')) return ['platform', h.slice(9)];
   return [PAGES[h] ? h : 'today', null];
 }
+/** True while boot's first data load runs: a tab change must not draw a page from empty data. */
+let DATA_LOADING = false;
 function render(keepScroll) {
+  if (DATA_LOADING) { markNav(route()[0]); return; }
+  CARD_WALL_SEQ = 0;
   NOW = new Date();
   TK = tk();
   const [name, arg] = route();
@@ -2455,6 +2488,8 @@ function render(keepScroll) {
 
 /* ---------- 全局事件 ---------- */
 document.addEventListener('click', e => {
+  const moreCards = e.target.closest('[data-more-cards]');
+  if (moreCards) { showMoreCards(moreCards); return; }
   const t = e.target.closest('[data-open-cond],[data-more],[data-close],[data-cmp],[data-cmp-open],[data-cmp-clear],[data-want],[data-got],[data-remove-legacy],[data-mem],tr[data-href]');
   if (!t) return;
   if (t.matches('[data-open-cond]')) { e.preventDefault(); openCond(); return; }
@@ -2564,9 +2599,10 @@ new MutationObserver(reTheme).observe(document.documentElement, { attributes: tr
   drawShell();
   const agentLanding = route()[0] === 'agent';
   if (agentLanding) render(false);
-  else main().innerHTML = emptySheep('正在把羊赶进草地…');
+  else { main().innerHTML = emptySheep('正在把羊赶进草地…'); DATA_LOADING = true; }
   try { await Promise.all([loadData(), restoreAdminRole()]); }
-  catch (e) { if (route()[0] !== 'agent') main().innerHTML = emptySheep('数据没有加载成功，请稍后刷新。'); return; }
+  catch (e) { DATA_LOADING = false; if (route()[0] !== 'agent') main().innerHTML = emptySheep('数据没有加载成功，请稍后刷新。'); return; }
+  DATA_LOADING = false;
   prepare();
   drawShell();
   if (window.echarts) render(false);

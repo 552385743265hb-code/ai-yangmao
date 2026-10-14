@@ -1,36 +1,9 @@
-import * as YMMembership from '../src/shared/membership';
-import { readFileSync } from 'node:fs';
-import { createContext, runInContext } from 'node:vm';
-import { parseHTML } from 'linkedom';
+import { fixture, publicOffer } from './fixtures/frontend';
 import { describe, expect, it } from 'vitest';
 
 const pause = () => new Promise(resolve => setTimeout(resolve, 0));
 const offer = (id: string, extra: Record<string, unknown> = {}) => ({ id, code: id, platformId: 'vendor', platform: 'Vendor', title: '免费额度', type: '限时免费开放', value: '免费 10 积分', end: '截止未知', status: 'active', reviewState: 'pending', requirements: ['none'], audience: 'all', claimMethod: 'auto', sourceTz: 'UTC', evidenceUrl: 'https://vendor.example', evidenceTier: 'docs', excerpts: {}, models: [], tags: [], modalities: ['text'], checks: [], steps: [], ...extra });
 const queue = (pending: ReturnType<typeof offer>[]) => ({ pending, incomplete: [], newLeads: 0, needsVerification: [], pendingPlatforms: [], suggestAutoPublish: [] });
-
-function fixture(handle: (url: string, init?: RequestInit) => unknown | Promise<unknown>) {
-  const { window, document } = parseHTML(`<html><body>${readFileSync('web/src/body.html', 'utf8')}</body></html>`);
-  document.querySelector('#main')!.innerHTML = '<div id="admBody"></div>';
-  window.scrollTo = () => {};
-  const charts = new Map<string, any>();
-  const storage = { getItem: () => null, setItem() {}, removeItem() {} };
-  const context = createContext({YMMembership, structuredClone, crypto, window, document, console, Intl, Date, Map, Set, URL, URLSearchParams, Response, FormData,
-    location: { hash: '#admin' }, navigator: {}, getComputedStyle: () => ({ getPropertyValue: () => '#123456' }),
-    matchMedia: () => ({ matches: false, addEventListener() {} }), MutationObserver: class { observe() {} },
-    localStorage: storage, sessionStorage: storage, setTimeout, clearTimeout, setInterval() {},
-    echarts: { getInstanceByDom: () => null, init: (element: HTMLElement) => ({ setOption: (options: any) => charts.set(element.id, options), on() {}, dispose() {}, isDisposed: () => false }) },
-    fetch: async (url: string, init?: RequestInit) => new Response(JSON.stringify(url.endsWith('/memberships') ? {revision:0,products:[],plans:[]} : await handle(url, init))),
-  });
-  const app = readFileSync('web/src/app.js', 'utf8');
-  runInContext(readFileSync('web/src/data.js', 'utf8') + '\n' + readFileSync('web/src/membership.js', 'utf8') + '\n' + app.slice(0, app.indexOf('(async function boot()')), context);
-  const run = (code: string) => runInContext(code, context);
-  run("PLATFORMS=[{id:'vendor',name:'Vendor',type:'lab'}];ADM.token='fixture';ADM.role='admin';");
-  return { document, window, context, run, charts };
-}
-
-function publicOffer(run: (code: string) => any, extra: Record<string, unknown> = {}) {
-  run(`OFFERS=[{id:'public-offer',p:'vendor',t:'常驻免费额度',ty:'standing',m:['text'],c:'auto',r:['none'],v:'每月 10 美元',usd:10,noUsd:false,s:null,e:null,ek:'standing',vf:0,vfDay:0,fs:-10,since:-10,discoveredAt:new Date(Date.now()-10*DAY).toISOString(),verifiedAt:new Date().toISOString(),withdrawnAt:null,st:'docs',tz:'UTC',val:'每月',aud:'all',cn:true,early:'官方页面',why:'',steps:[],models:[],tags:[],evidence:{url:'https://vendor.example',excerpts:{}},note:'原文',verify:'ok',...${JSON.stringify(extra)}}];prepare();location.hash='#offer-public-offer';`);
-}
 
 describe('frontend review workflow', () => {
   it('shows approved legacy offers as passed while leaving personal membership matching unknown', () => {
