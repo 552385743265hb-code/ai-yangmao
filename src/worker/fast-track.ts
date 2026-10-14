@@ -9,6 +9,7 @@ import { IdentityError } from './identity/store';
 import { IdentityQueryBudgetError, withIdentityQueryBudget } from './identity/budget';
 import { learnWechatAccount } from './wechat-accounts';
 import { dispatchCollect } from './feishu';
+import { mergeFastTrackFields, missingBasicFields, type FastTrackFields } from '../shared/fast-track-fields';
 
 /**
  * Administrator fast-track. The owner vouches for an official URL (or an in-app test) and a one-line benefit;
@@ -134,32 +135,7 @@ export async function claimFastTrack(db: D1Database, id: string, now = new Date(
   return { id: job.id, platformId: job.platform_id, platformName: platform?.name ?? job.platform_id, url: job.url, benefit: job.benefit, note: job.note };
 }
 
-const BASIC_FIELDS = ['title', 'type', 'claimMethod', 'valueText', 'modalities', 'requirements', 'endKind'] as const;
-export type FastTrackFields = Record<string, unknown>;
-
-/** Owner-entered values win; the owner's benefit line is the listing's benefit text; the model fills the rest. */
-export function mergeFastTrackFields(extracted: FastTrackFields, owner: FastTrackFields, benefit: string): FastTrackFields {
-  const fields: FastTrackFields = { ...extracted };
-  for (const [key, value] of Object.entries(owner)) if (value !== undefined && value !== null && value !== '' && !(Array.isArray(value) && !value.length)) fields[key] = value;
-  fields.valueText = typeof owner.valueText === 'string' && owner.valueText.trim() ? owner.valueText : benefit;
-  if (owner.claimEnd) fields.endKind = 'date';
-  // Models often call an open-ended preview “standing”; only standing/apply offers may be (owner choices are kept).
-  const recurring = fields.type === 'standing' || fields.type === 'apply';
-  if (!owner.endKind && !owner.claimEnd && recurring !== (fields.endKind === 'standing')) fields.endKind = recurring ? 'standing' : 'unknown';
-  if (!fields.sourceTz) fields.sourceTz = owner.claimEnd || owner.claimStart ? 'Asia/Shanghai' : 'UTC';
-  return fields;
-}
-
-export function missingBasicFields(fields: FastTrackFields): string[] {
-  const missing: string[] = BASIC_FIELDS.filter(key => {
-    const value = fields[key];
-    if (key === 'requirements') return !Array.isArray(value) || !value.length || value.includes('unknown');
-    if (key === 'modalities') return !Array.isArray(value) || !value.length;
-    return typeof value !== 'string' || value.trim().length < (key === 'title' ? 2 : 1);
-  });
-  if (fields.endKind === 'date' && !fields.claimEnd) missing.push('claimEnd');
-  return missing;
-}
+export { mergeFastTrackFields, missingBasicFields, type FastTrackFields } from '../shared/fast-track-fields';
 
 function terms(platformId: string, type: string): CanonicalTermsV1 {
   const unknown = { state: 'unknown' } as const;

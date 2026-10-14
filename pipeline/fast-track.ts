@@ -1,12 +1,20 @@
 import { api, fetchPage } from './lib';
-import { completeFreePrompt, modelAvailable, parseModelJson, type Extracted } from './llm';
+import { completeTierPrompt, modelAvailable, parseModelJson, type Extracted } from './llm';
+import { mergeFastTrackFields, missingBasicFields } from '../src/shared/fast-track-fields';
 
 /**
  * ⚡ 快速上架：管理员已担保链接与主要权益，这里只用免费模型从链接正文补齐其余字段。
- * 抽取失败或正文不可读时把原因交回 Worker：自动重试，三次后转给管理员手填。
+ * 先用免费模型，失败或缺基础字段再用付费兜底（DeepSeek）；仍失败就在本轮内隔一会儿重试，三次后转给管理员手填。
  */
 interface Job { id: string; platformId: string; platformName: string; url: string; benefit: string; note: string | null }
-export interface FastTrackOptions { deadlineAt: number; dry: boolean; account: (tokens: number, cost: number) => void; log: (...args: unknown[]) => void }
+export interface FastTrackOptions {
+  deadlineAt: number; dry: boolean; account: (tokens: number, cost: number) => void; log: (...args: unknown[]) => void;
+  /** Whether the paid fallback may run now (provider configured and monthly cap left). */
+  allowPaid?: () => boolean;
+  /** Pause between in-run retry rounds; a new run would queue behind this one (collect concurrency). */
+  retryDelayMs?: number;
+}
+type Result = { fields?: Record<string, unknown>; sourceText?: string; error?: string; model?: string };
 
 const PROMPT = `你是"AI 羊毛牧场"的字段整理助手。管理员已经确认下面这条权益真实有效并决定上架，你不判断是否收录，只根据管理员描述和官方页面正文填写上架字段。
 只输出一个 JSON 对象：{"offers":[{"title":"中文标题，不超过 40 字","type":"new|trial|free|perk|topup|gift|standing|apply","modalities":["text|image|video|audio" 至少一个],"models":["官方写法的模型名"],"tags":["reset|referral|discount|daily" 可空],"claimMethod":"auto|signup|app|form|topup|member|code","requirements":["none|pay|member|phone|card|net|realname|biz|student|invite|targeted"],"audience":"new|old|all|unclear","valueText":"一句中文额度描述","claimStart":"YYYY-MM-DD 或 null","claimEnd":"YYYY-MM-DD 或 null","endKind":"date|unknown|standing","creditValidity":"额度有效期或 null","sourceTz":"IANA 时区，未写明填 UTC","steps":["中文领取步骤，最多 4 步"],"excerpts":{"benefit":"正文中支持该权益的连续原文","eligibility":"…或省略","claim":"…或省略","validity":"…或省略"}}]}
@@ -36,41 +44,63 @@ export function fastTrackFields(offers: Extracted[], benefit: string): Record<st
   return fields;
 }
 
+/** Free tier first; the paid tier only when the free reply failed or lacks basic fields. */
+async function fillFields(job: Job, options: FastTrackOptions): Promise<Result> {
+  const ownerText = [`管理员提供的主要权益：${job.benefit}`, job.note ? `管理员备注：${job.note}` : ''].filter(Boolean).join('\n');
+  let pageText = '';
+  try { pageText = (await fetchPage(job.url, { timeoutMs: 15000, tries: 2, minimumTextLength: 50 })).text; }
+  catch (error) { options.log('快速上架：正文不可读，只按管理员描述抽取', job.url, (error as Error).message); }
+  const text = [ownerText, pageText].filter(Boolean).join('\n'), user = `厂商：${job.platformName}\n官方链接：${job.url}\n${text.slice(0, 22000)}`;
+  let best: { fields: Record<string, unknown>; missing: string[]; model: string } | null = null, lastError = '';
+  for (const tier of ['free', 'paid'] as const) {
+    if (tier === 'free' && !modelAvailable(false)) { lastError = '免费模型暂不可用'; continue; }
+    if (tier === 'paid' && !options.allowPaid?.()) break;
+    try {
+      const reply = await completeTierPrompt(PROMPT, user, Math.min(options.deadlineAt, Date.now() + 3 * 60_000), tier);
+      options.account(reply.tokens, reply.costCny);
+      if (tier === 'paid') options.log(`快速上架：免费模型未补齐，动用付费兜底 ${reply.provider}，花费 ¥${reply.costCny.toFixed(4)}`);
+      let parsed: unknown = null;
+      try { parsed = parseModelJson(reply.text); } catch { /* 当作没有字段 */ }
+      const p = parsed as { offers?: Extracted[] } | Extracted[] | null;
+      const offers = Array.isArray(p) ? p : Array.isArray(p?.offers) ? p.offers : p && typeof p === 'object' && 'title' in p ? [p as Extracted] : [];
+      const fields = fastTrackFields(offers, job.benefit);
+      if (!fields) { lastError = `${reply.provider} 没有返回可用字段`; continue; }
+      const missing = missingBasicFields(mergeFastTrackFields(fields, {}, job.benefit));
+      if (!best || missing.length < best.missing.length) best = { fields, missing, model: reply.provider };
+      if (!missing.length) break;
+      lastError = `${reply.provider} 缺少字段：${missing.join('、')}`;
+    } catch (error) { lastError = (error as Error).message.slice(0, 400); }
+  }
+  // Partial fields still go to the Worker: the owner then fills only what is missing.
+  return best ? { fields: best.fields, sourceText: pageText, model: best.model } : { error: lastError || '模型没有返回可用字段' };
+}
+
 export async function runFastTrack(options: FastTrackOptions) {
   const stats = { claimed: 0, published: 0, needsOwner: 0, requeued: 0 };
   if (options.dry) return stats;
+  const base = (process.env.API_BASE ?? 'https://ai-yangmao.com').replace(/\/$/, '');
   const { jobs } = await api<{ jobs: { id: string; publishing: boolean }[] }>('/fast-track/queue');
-  const finish = async (id: string, state: string) => {
+  const advance = async (id: string, state: string) => {
     // Each Worker request has a fixed D1 query budget; publishing resumes step by step.
     for (let i = 0; state === 'publishing' && i < 8; i++) state = (await api<{ state: string }>(`/fast-track/${id}/advance`, {})).state;
-    if (state === 'published') stats.published++; else if (state === 'queued') stats.requeued++; else if (state !== 'publishing') stats.needsOwner++;
     return state;
   };
   for (const queued of jobs) {
     if (Date.now() >= options.deadlineAt) break;
-    if (queued.publishing) { options.log('快速上架续传', queued.id, await finish(queued.id, 'publishing')); continue; }
-    const claim = await fetch(`${(process.env.API_BASE ?? 'https://ai-yangmao.com').replace(/\/$/, '')}/api/ingest/fast-track/${queued.id}/claim`, { method: 'POST', headers: { Authorization: `Bearer ${process.env.INGEST_TOKEN ?? ''}` }, signal: AbortSignal.timeout(30000) });
-    if (claim.status === 409) continue;
-    if (!claim.ok) throw new Error(`快速上架领取返回 ${claim.status}`);
-    const { job } = await claim.json() as { job: Job };
-    stats.claimed++;
-    const ownerText = [`管理员提供的主要权益：${job.benefit}`, job.note ? `管理员备注：${job.note}` : ''].filter(Boolean).join('\n');
-    let result: { fields?: Record<string, unknown>; sourceText?: string; error?: string; model?: string };
-    try {
-      if (!modelAvailable(false)) throw new Error('免费模型暂不可用');
-      let pageText = '';
-      try { pageText = (await fetchPage(job.url, { timeoutMs: 15000, tries: 2, minimumTextLength: 50 })).text; }
-      catch (error) { options.log('快速上架：正文不可读，只按管理员描述抽取', job.url, (error as Error).message); }
-      const text = [ownerText, pageText].filter(Boolean).join('\n');
-      const reply = await completeFreePrompt(PROMPT, `厂商：${job.platformName}\n官方链接：${job.url}\n${text.slice(0, 22000)}`, Math.min(options.deadlineAt, Date.now() + 3 * 60_000));
-      options.account(reply.tokens, 0);
-      const parsed = parseModelJson(reply.text) as { offers?: Extracted[] } | Extracted[] | null;
-      const offers = Array.isArray(parsed) ? parsed : Array.isArray(parsed?.offers) ? parsed.offers : parsed && typeof parsed === 'object' && 'title' in parsed ? [parsed as Extracted] : [];
-      const fields = fastTrackFields(offers, job.benefit);
-      result = fields ? { fields, sourceText: pageText, model: reply.provider } : { error: '模型没有返回可用字段', model: reply.provider };
-    } catch (error) { result = { error: (error as Error).message.slice(0, 500) }; }
-    const receipt = await api<{ state: string }>(`/fast-track/${job.id}/result`, result);
-    options.log('快速上架', job.id, job.platformId, await finish(job.id, receipt.state), result.error ?? '');
+    let state = queued.publishing ? await advance(queued.id, 'publishing') : 'queued';
+    // Retry within this run: a dispatched run would wait behind this one for up to 45 minutes.
+    for (let round = 0; state === 'queued' && round < 3 && Date.now() < options.deadlineAt; round++) {
+      if (round) await new Promise(r => setTimeout(r, options.retryDelayMs ?? 30_000));
+      const claim = await fetch(`${base}/api/ingest/fast-track/${queued.id}/claim`, { method: 'POST', headers: { Authorization: `Bearer ${process.env.INGEST_TOKEN ?? ''}` }, signal: AbortSignal.timeout(30000) });
+      if (claim.status === 409) { state = 'claimed-elsewhere'; break; }
+      if (!claim.ok) throw new Error(`快速上架领取返回 ${claim.status}`);
+      const { job } = await claim.json() as { job: Job };
+      if (!round) stats.claimed++;
+      const result = await fillFields(job, options);
+      state = await advance(job.id, (await api<{ state: string }>(`/fast-track/${job.id}/result`, result)).state);
+      options.log('快速上架', job.id, job.platformId, state, result.model ?? '', result.error ?? '');
+    }
+    if (state === 'published') stats.published++; else if (state === 'queued') stats.requeued++; else if (state === 'needs_owner') stats.needsOwner++;
   }
   return stats;
 }

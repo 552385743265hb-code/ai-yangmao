@@ -481,18 +481,19 @@ export async function extract(platformName: string, url: string, text: string, l
 }
 
 /** Bounded identity assistance shares the existing provider catalog, pacing and budget ledger. */
-/** Free providers only, in order, through the budget ledger; for prompts that must never fall back to paid models. */
-export async function completeFreePrompt(system: string, user: string, deadlineAt: number): Promise<{ text: string; tokens: number; provider: string }> {
+/** One tier of providers, in order, through the budget ledger: free never falls through to paid. */
+export async function completeTierPrompt(system: string, user: string, deadlineAt: number, tier: 'free' | 'paid'): Promise<{ text: string; tokens: number; costCny: number; provider: string }> {
   const { modelBudget } = await import('./budget');
-  let last: unknown = new DeferError('no free model available');
-  for (const provider of providers().filter(p => !p.paid && !unavailableProviders.has(p.name))) {
-    if (Date.now() >= deadlineAt) throw new DeferError('free model deadline reached');
+  let last: unknown = new DeferError(`no ${tier} model available`);
+  for (const provider of providers().filter(p => !!p.paid === (tier === 'paid') && !unavailableProviders.has(p.name))) {
+    if (Date.now() >= deadlineAt) throw new DeferError('model deadline reached');
     const reservation = await modelBudget.reserve(provider.name, system, user, provider.price);
     try {
       await pace();
       const result = await provider.call(system, user, Math.min(deadlineAt - Date.now(), 90000));
-      if (result.usageKnown) await modelBudget.settle(reservation, provider.name, result.tokens, 0);
-      return { text: result.text, tokens: result.tokens, provider: provider.name };
+      // Unknown billing keeps the reservation occupied; never refund an ambiguous call.
+      if (result.usageKnown) await modelBudget.settle(reservation, provider.name, result.tokens, result.costCny ?? 0);
+      return { text: result.text, tokens: result.tokens, costCny: result.costCny ?? 0, provider: provider.name };
     } catch (error) {
       if ((error as { httpStatus?: number }).httpStatus) await modelBudget.settle(reservation, provider.name, 0, 0);
       last = error;
