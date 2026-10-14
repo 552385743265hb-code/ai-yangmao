@@ -534,6 +534,9 @@ function wxIcon(i) {
 const main = () => $('#main');
 /** Site descriptor: homepage subtitle, the landing tab title, and (in head.html / build.sh) link previews. */
 const SITE_TAGLINE = '免费大模型 Token、API 额度、会员和生图生视频次数，每天汇总，条条可追官方出处。';
+/** Break only at 、/， pauses: keep 大模型 Token and API 额度 together, and each clause on its own line when it fits. */
+const taglineHtml = () => SITE_TAGLINE.replace(/ /g, '\u00a0').replace(/([、，])/g, '$1<wbr>')
+  .replace(/^(.+?，<wbr>)(每天.+)$/, '<span class="clause">$1</span><span class="clause">$2</span>');
 const pageTitle = name => !name || name === 'today' ? 'AI 羊毛牧场 · 免费 AI 额度与大模型 Token 福利汇总' : `${TITLES[name] || '今天'} · AI 羊毛牧场`;
 const ph = (title, desc = '', extra = '') => `<div class="ph"><div><h1>${title}</h1>${desc ? `<p>${desc}</p>` : ''}</div>${extra}</div>`;
 const secH = (title, hint = '') => `<div class="sec-h"><h2>${title}</h2>${hint ? `<span class="hint">${hint}</span>` : ''}</div>`;
@@ -640,7 +643,7 @@ function pToday() {
   const todayValues = [...act, ...stand];
   const soon = countdownCandidates(view(OFFERS));
   // The landing page says plainly what the site collects; 羊毛 alone is a metaphor newcomers have to decode.
-  main().innerHTML = ribbon() + ph('AI 羊毛牧场', SITE_TAGLINE.replace(/^(.+?，)(每天.+)$/, '<span class="clause">$1</span><span class="clause">$2</span>')) + `
+  main().innerHTML = ribbon() + ph('AI 羊毛牧场', taglineHtml()) + `
   <div class="hero">
     <div class="hero-over">
       <div class="total"><span class="l">${C.only ? '按你的条件，' : ''}当前可领 · 月度参考价值</span>${summaryHtml(todayValues)}</div>
