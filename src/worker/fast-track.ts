@@ -143,6 +143,9 @@ export function mergeFastTrackFields(extracted: FastTrackFields, owner: FastTrac
   for (const [key, value] of Object.entries(owner)) if (value !== undefined && value !== null && value !== '' && !(Array.isArray(value) && !value.length)) fields[key] = value;
   fields.valueText = typeof owner.valueText === 'string' && owner.valueText.trim() ? owner.valueText : benefit;
   if (owner.claimEnd) fields.endKind = 'date';
+  // Models often call an open-ended preview “standing”; only standing/apply offers may be (owner choices are kept).
+  const recurring = fields.type === 'standing' || fields.type === 'apply';
+  if (!owner.endKind && !owner.claimEnd && recurring !== (fields.endKind === 'standing')) fields.endKind = recurring ? 'standing' : 'unknown';
   if (!fields.sourceTz) fields.sourceTz = owner.claimEnd || owner.claimStart ? 'Asia/Shanghai' : 'UTC';
   return fields;
 }
