@@ -1776,11 +1776,13 @@ function leadTaskCard(l) {
     ${r?.evidenceUrl?`<p class="small"><a href="${esc(r.evidenceUrl)}" target="_blank" rel="noopener">处理依据 ↗</a> ${esc(r.quote||'')}</p>`:''}
     <details style="margin-top:8px"><summary>处理这条线索</summary><label class="field">处理依据<input data-lead-reason placeholder="例如：同一次发放的进度说明"></label>
     <label class="field">关联活动ID<input data-lead-offer placeholder="已核对的完整活动 ID"></label>
-    <div class="row"><button class="btn sm" data-lead-resolve="retry">重新官方核验</button><button class="btn sm" data-lead-resolve="linked">关联已有活动</button><button class="btn sm" data-lead-resolve="closed">结束线索</button></div><p class="small" role="status" data-lead-feedback></p></details></div>`;
+    <div class="row"><button class="btn sm" data-lead-resolve="retry">重新官方核验</button><button class="btn sm" data-lead-resolve="linked">关联已有活动</button><button class="btn sm" data-lead-resolve="closed">结束线索</button></div><p class="small" role="status" data-lead-feedback></p></details>
+    ${ADM.role==='admin'?`<details style="margin-top:8px"><summary>⚡ 快速上架（我已确认官方或亲测）</summary>${fastTrackFormHtml({inline:true,benefit:l.title||''})}</details>`:''}</div>`;
 }
 function bindLeadTasks(box,tasks){
   box.querySelectorAll('[data-lead-task]').forEach(card=>{
     const l=tasks.find(x=>String(x.id)===card.dataset.leadTask);if(!l)return;
+    const fast=card.querySelector('[data-fast-track]');if(fast)bindFastTrackForm(fast,l.id,()=>{card.dataset.resolved='1';});
     card.querySelectorAll('[data-lead-resolve]').forEach(button=>button.addEventListener('click',async()=>{
       const outcome=button.dataset.leadResolve,reason=card.querySelector('[data-lead-reason]').value.trim(),offerId=card.querySelector('[data-lead-offer]').value.trim(),message=card.querySelector('[data-lead-feedback]');
       if(outcome!=='retry'&&reason.length<2){message.textContent='请先填写处理依据';return;}
@@ -2224,6 +2226,71 @@ async function admLeads() {
   more.addEventListener('click', () => load(retryReset));
   await load(true);
 }
+/* ⚡ 快速上架：管理员担保的官方链接 + 主要权益，免费模型补其余字段，补齐即上架。 */
+const FT_STATE = { queued: '排队等模型读取', extracting: '模型读取中', publishing: '正在上架', needs_owner: '需要你补充', published: '已上架' };
+function fastTrackFormHtml(p = {}) {
+  return `<form data-fast-track class="card" style="display:flex;flex-direction:column;gap:10px;max-width:640px${p.inline ? ';margin-top:8px' : ''}">
+    <p class="sub" style="margin:0"><b>⚡ 快速上架</b>：你确认是官方发布或亲测可领的权益，跳过筛查和审核直接上架。链接会登记为该厂商的官方地址；其余字段由免费模型从链接读取，读不出的再请你补。不发即时推送，次日飞书日报带上。</p>
+    <label class="field">厂商<select name="platformId"><option value="">＋ 新厂商（在下面填写）</option>${adminPlatformOptions(p.platformId)}</select></label>
+    <div class="row" data-ft-new style="gap:8px;flex-wrap:wrap"><input name="newName" placeholder="新厂商名称"><input name="newId" placeholder="厂商 ID（中文名必填，如 odyssey）" pattern="[a-z0-9][a-z0-9\-]{1,60}"><select name="newType">${Object.entries(PTYPE).map(([k, v]) => `<option value="${k}" ${k === 'new' ? 'selected' : ''}>${v.l}</option>`).join('')}</select></div>
+    <label class="field">官方链接<input type="url" name="url" required placeholder="https://（官网、公众号文章、厂商 X 推文）" value="${esc(p.url || '')}"></label>
+    <label class="field">主要权益<input name="benefit" required minlength="2" maxlength="500" placeholder="比如：Odyssey-3 公开研究预览，可免费试用" value="${esc(p.benefit || '')}"></label>
+    <label class="field">依据<select name="basis"><option value="official">官方发布</option><option value="tested">我亲测可领</option></select></label>
+    <details><summary class="small">可选：标题、日期、备注</summary><label class="field">标题<input name="title" maxlength="120"></label><div class="row" style="gap:8px"><label class="field">开始<input type="date" name="claimStart"></label><label class="field">截止<input type="date" name="claimEnd"></label></div><label class="field">备注（给模型的提示）<input name="note" maxlength="1000"></label></details>
+    <button class="btn pri" type="submit">⚡ 快速上架</button><p class="small" role="status" data-ft-msg></p></form>`;
+}
+function bindFastTrackForm(form, leadId, onDone) {
+  const select = form.querySelector('[name="platformId"]'), extra = form.querySelector('[data-ft-new]'), msg = form.querySelector('[data-ft-msg]');
+  const sync = () => { extra.hidden = !!select.value; };
+  select.addEventListener('change', sync); sync();
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    const fd = Object.fromEntries(new FormData(form)), button = form.querySelector('button[type="submit"]');
+    if (!fd.platformId && !fd.newName.trim()) { msg.textContent = '请选择厂商，或填写新厂商名称'; return; }
+    const body = { url: fd.url, benefit: fd.benefit.trim(), basis: fd.basis, ...(fd.platformId ? { platformId: fd.platformId } : { newPlatform: { name: fd.newName.trim(), ...(fd.newId.trim() ? { id: fd.newId.trim() } : {}), type: fd.newType } }),
+      ...Object.fromEntries(['title', 'claimStart', 'claimEnd', 'note'].filter(k => fd[k]?.trim()).map(k => [k, fd[k].trim()])), ...(leadId ? { leadId } : {}) };
+    button.disabled = true;
+    try {
+      const r = await adm('/fast-track', body);
+      msg.textContent = `官方地址${r.registered.kind === 'existing' ? '已在白名单' : '已登记'}；${r.dispatched ? '已触发采集，模型读取后自动上架' : '下一轮采集读取后自动上架'}。进度见“补录”页的快速上架列表。`;
+      form.reset(); sync(); onDone?.();
+    } catch (err) { msg.textContent = err.message; } finally { button.disabled = false; }
+  });
+}
+async function settleFastTrack(id, r) { for (let i = 0; r.state === 'publishing' && i < 8; i++) r = await adm(`/fast-track/${id}/advance`, {}); return r; }
+function fastTrackCompleteHtml(j) {
+  const all = ['title', 'type', 'claimMethod', 'modalities', 'requirements', 'endKind', 'claimEnd'], need = new Set(j.missing.length ? [...j.missing, ...(j.missing.includes('endKind') ? ['claimEnd'] : [])] : all);
+  const field = {
+    title: '<label class="field">标题<input name="title" maxlength="120"></label>',
+    type: `<label class="field">类型<select name="type">${Object.entries(TYPES).map(([k, v]) => `<option value="${k}">${v.l}</option>`).join('')}</select></label>`,
+    claimMethod: `<label class="field">领取方式<select name="claimMethod">${Object.entries(CLAIM).map(([k, l]) => `<option value="${k}">${l}</option>`).join('')}</select></label>`,
+    modalities: `<div class="field">模态<div class="chips">${Object.entries(MODAL).map(([k, l]) => `<label class="chip"><input type="checkbox" name="modalities" value="${k}"> ${l}</label>`).join('')}</div></div>`,
+    requirements: `<div class="field">门槛<div class="chips">${Object.entries(REQ).filter(([k]) => k !== 'unknown').map(([k, l]) => `<label class="chip"><input type="checkbox" name="requirements" value="${k}"> ${l}</label>`).join('')}</div></div>`,
+    endKind: `<label class="field">截止方式<select name="endKind"><option value="unknown">截止未知</option><option value="date">有截止日期</option><option value="standing">常驻 / 申请制</option></select></label>`,
+    claimEnd: '<label class="field">截止日期<input type="date" name="claimEnd"></label>',
+  };
+  return `<form data-ft-complete style="display:flex;flex-direction:column;gap:8px;margin-top:6px"><p class="small">${j.missing.length ? '模型没读出这些字段，补上后立即上架：' + j.missing.map(k => esc(FIELD_L[k] || k)).join('、') : '可以修正字段后再上架，或让模型重新读取。'}</p>
+    ${all.filter(k => need.has(k)).map(k => field[k]).join('')}<div class="row" style="gap:8px"><button class="btn sm pri" type="submit">补齐并上架</button><button class="btn sm" type="button" data-ft-retry>让模型重新读取</button></div></form>`;
+}
+async function loadFastTrackJobs(box) {
+  try {
+    const { jobs } = await adm('/fast-track');
+    box.innerHTML = jobs.length ? jobs.map(j => `<div class="card" data-ft-job="${esc(j.id)}" style="margin:6px 0"><b>${esc(j.platformName)}</b> · ${esc(j.benefit)}
+      <p class="small">${esc(FT_STATE[j.state] || j.state)}${j.offerId ? ` · <a href="/#offer-${esc(j.offerId)}" target="_blank" rel="noopener">查看条目</a>` : ''}${j.leadId ? ` · 线索 #${j.leadId}` : ''} · <a href="${esc(j.url)}" target="_blank" rel="noopener">官方链接 ↗</a>${j.error ? ` · ${esc(j.error)}` : ''}</p>
+      ${j.state === 'needs_owner' ? fastTrackCompleteHtml(j) : ''}${j.state === 'publishing' ? '<button class="btn sm" type="button" data-ft-advance>继续上架</button>' : ''}</div>`).join('') : '<p class="small muted">还没有快速上架任务。</p>';
+    box.querySelectorAll('[data-ft-job]').forEach(card => {
+      const id = card.dataset.ftJob, done = r => { toast(r.state === 'published' ? '已上架' : r.state === 'needs_owner' ? (r.error || '还缺字段：' + (r.missing || []).map(k => FIELD_L[k] || k).join('、')) : '已提交'); loadFastTrackJobs(box); };
+      card.querySelector('[data-ft-complete]')?.addEventListener('submit', async e => {
+        e.preventDefault(); const form = e.currentTarget, fd = new FormData(form), fields = {};
+        for (const key of ['title', 'type', 'claimMethod', 'endKind', 'claimEnd']) if (fd.get(key)) fields[key] = String(fd.get(key)).trim();
+        for (const key of ['modalities', 'requirements']) if (form.querySelector(`[name="${key}"]`)) fields[key] = fd.getAll(key);
+        try { done(await settleFastTrack(id, await adm(`/fast-track/${id}/complete`, { fields }))); } catch (err) { toast(err.message); }
+      });
+      card.querySelector('[data-ft-retry]')?.addEventListener('click', async () => { try { await adm(`/fast-track/${id}/retry`, {}); done({ state: 'queued' }); } catch (err) { toast(err.message); } });
+      card.querySelector('[data-ft-advance]')?.addEventListener('click', async () => { try { done(await settleFastTrack(id, { state: 'publishing' })); } catch (err) { toast(err.message); } });
+    });
+  } catch (err) { box.textContent = err.message; }
+}
 async function admManual() {
   await refreshAdminPlatforms();
   $('#admBody').innerHTML = `<form id="admAdd" class="card" style="display:flex;flex-direction:column;gap:10px;max-width:640px"><p class="sub" style="margin:0">粘贴官网公告、公众号文章、推文或新闻链接。下一轮采集（最多 6 小时，也可以在 GitHub 手动触发）会抓取并研判，结果进待审。</p>
@@ -2233,6 +2300,12 @@ async function admManual() {
     <label class="field">类型<select name="kind"><option value="web_list">网页</option><option value="rss">RSS</option><option value="json">官方接口</option></select></label>
     <label class="field">级别<select name="tier"><option value="site">官网页面</option><option value="docs">官方文档</option><option value="official">官方账号（博客、公众号、X）</option><option value="staff">员工账号</option></select></label><button class="btn pri" type="submit">加入信源</button></form>`;
   $('#admSrc select[name="platformId"]').addEventListener('focus', refreshAdminPlatforms);
+  if (ADM.role === 'admin') {
+    $('#admAdd').insertAdjacentHTML('beforebegin', fastTrackFormHtml() + '<section id="admFastJobs" class="card" style="max-width:640px;margin:12px 0"><b>快速上架进度</b><div data-ft-jobs class="small muted">正在读取…</div></section>');
+    const jobsBox = $('#admFastJobs [data-ft-jobs]');
+    bindFastTrackForm($('#admBody [data-fast-track]'), null, () => loadFastTrackJobs(jobsBox));
+    loadFastTrackJobs(jobsBox);
+  }
   $('#admSrc').insertAdjacentHTML('afterend', `<section id="admDiscord" class="card" style="display:flex;flex-direction:column;gap:10px;max-width:640px;margin-top:12px"><p class="sub" style="margin:0">Discord 频道：你在自己的服务器关注了厂商公告频道后，在这里把它登记到对应平台，之后它的公告才会成为线索。未登记的频道会被跳过并列在下面。</p><div data-discord-unmapped class="small muted">正在读取未登记频道…</div>
     <form data-discord-manual style="display:flex;flex-direction:column;gap:8px"><label class="field">平台<select name="platformId" required>${adminPlatformOptions()}</select></label><label class="field">频道链接<input name="link" required placeholder="https://discord.com/channels/服务器编号/频道编号"></label><label class="field">名称<input name="name" required placeholder="比如：Higgsfield AI #announcements"></label><button class="btn pri" type="submit">登记 Discord 频道</button></form></section>`);
   const discordBox = $('#admDiscord [data-discord-unmapped]');

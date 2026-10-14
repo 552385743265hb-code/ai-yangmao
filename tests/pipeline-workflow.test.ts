@@ -55,6 +55,7 @@ function harness(options: HarnessOptions = {}) {
     if (url.endsWith('/candidates')) return json({receipts:body.candidates.map((c:any)=>({inputId:c.inputId,candidateId:'c-'+c.inputId,canonicalOfferId:null,entityId:null,versionId:null,decisionId:null,taskId:null,outcome:'deferred',retryable:true,reasonCodes:['shadow_pending_resolution']}))});
     if (url.endsWith('/snapshots')) return json({ changed: false });
     if (url.endsWith('/api/platforms')) return json({ platforms: [{ id: 'vendor', name: 'Vendor', site: 'https://vendor.example', xHandles: [], staffHandles: [] }] });
+    if(url.includes('/fast-track/queue'))return json({jobs:[]});
     if(url.includes('/lead-reviews/queue'))return json({jobs:options.rescueJob?[{id:1312}]:[]});
     if(url.endsWith('/lead-reviews/1312/claim'))return json({claimed:true,jobId:'12345678-1234-4234-8234-123456789012',previousCandidates:options.previousCandidates,lead:{...lead,...options.leads?.[0],id:1312,status:'reviewing'},platforms:options.rescuePlatforms??[{id:'vendor',name:'Vendor',site:'https://vendor.example',xHandles:[],staffHandles:[]}],sources:[],existing:options.known??[]});
     if(url.endsWith('/lead-reviews/1312/result'))return json({status:body.outcome,nextAttemptAt:body.outcome==='retry'?'2030-01-01T00:00:00Z':null});

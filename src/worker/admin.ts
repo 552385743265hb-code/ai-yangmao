@@ -24,7 +24,7 @@ import { createComment, removeComment, legacyNoteStatement, commentMutationGuard
 // 调用方：Hermes Agent 的"AI 羊毛牧场"技能（scripts/ym.ts），以后还有网页后台。
 import { and, desc, eq, gte, inArray, lt, sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
-import { Hono } from 'hono';
+import { Hono, type Context } from 'hono';
 import { z } from 'zod';
 import * as s from '../db/schema';
 import { claimEndAt, isClaimable, liveStatus, missingEvidence } from '../shared/lifecycle';
@@ -35,6 +35,7 @@ import { officialTier, officialReviewDue } from '../shared/official-review';
 import { sameBenefit } from '../shared/dedupe';
 import { parseValuation } from '../shared/valuation';
 import type { Env } from './index';
+import { advanceFastTrack, completeFastTrack, createFastTrack, FastTrackError, fastTrackHeld, listFastTrack, retryFastTrack } from './fast-track';
 
 type OfferRow = typeof s.offers.$inferSelect;
 const db = (env: Env) => drizzle(env.DB, { schema: s });
@@ -113,6 +114,27 @@ admin.post('/discord/publishers', async c => {
   if (!ids) return c.json({ error: '请粘贴 https://discord.com/channels/服务器/频道 链接' }, 400);
   const r = await registerDiscordPublisher(c.env.DB, { platformId: body.data.platformId, name: body.data.name, ...ids });
   return r.status === 200 ? c.json({ ok: true, ...ids }) : c.json({ error: r.error }, r.status);
+});
+/** ⚡ 快速上架：管理员担保的官方链接或实测权益，跳过筛查与审核闸门；仅管理员。 */
+const fastTrackError = (c: Context<{ Bindings: Env; Variables: { role: 'admin' | 'reviewer'; who: string } }>, error: unknown) => {
+  if (error instanceof FastTrackError) return c.json({ error: error.message }, error.status);
+  if (error instanceof z.ZodError) return c.json({ error: '快速上架资料不正确', issues: error.issues }, 400);
+  throw error;
+};
+admin.use('/fast-track/*', async (c, next) => c.get('role') === 'admin' ? next() : c.json({ error: '只有管理员可以快速上架' }, 403));
+admin.use('/fast-track', async (c, next) => c.get('role') === 'admin' ? next() : c.json({ error: '只有管理员可以快速上架' }, 403));
+admin.get('/fast-track', async c => c.json({ jobs: await listFastTrack(c.env.DB) }));
+admin.post('/fast-track', async c => {
+  try { return c.json(await createFastTrack(c.env, await c.req.json().catch(() => null), c.get('who') || 'admin')); } catch (error) { return fastTrackError(c, error); }
+});
+admin.post('/fast-track/:id/complete', async c => {
+  try { return c.json(await completeFastTrack(c.env, c.req.param('id'), await c.req.json().catch(() => null))); } catch (error) { return fastTrackError(c, error); }
+});
+admin.post('/fast-track/:id/advance', async c => {
+  try { return c.json(await advanceFastTrack(c.env, c.req.param('id'))); } catch (error) { return fastTrackError(c, error); }
+});
+admin.post('/fast-track/:id/retry', async c => {
+  try { return c.json(await retryFastTrack(c.env, c.req.param('id'))); } catch (error) { return fastTrackError(c, error); }
 });
 admin.post('/sources', async c => {
   const body = z.object({ platformId: z.string().min(1), url: z.url().refine(u => /^https:\/\//.test(u), '只收 https 链接'),
@@ -624,7 +646,8 @@ export async function buildNotice(env: Env, kind: NoticeKind, channel: NoticeCha
   for (const o of approved) {
     const st = liveStatus(o, now), v = view(o, names[o.platformId] ?? o.platformId, now), end = claimEndAt(o);
     if (kind === 'urgent') {
-      if (st === 'ending' && end && end > now && end.getTime() - now.getTime() <= 48 * 3600_000 && !has(o.id, 'urgent') && !has(o.id, 'new')) { out.urgent.push(v); marks.push({ offerId: o.id, stage: 'urgent' }); }
+      // 快速上架的权益等次日飞书日报，不走即时推送
+      if (st === 'ending' && end && end > now && end.getTime() - now.getTime() <= 48 * 3600_000 && !has(o.id, 'urgent') && !has(o.id, 'new') && !fastTrackHeld(o.fastTrackedAt, now)) { out.urgent.push(v); marks.push({ offerId: o.id, stage: 'urgent' }); }
       continue;
     }
     if(identities.has(o.id)&&channel==='telegram'){
