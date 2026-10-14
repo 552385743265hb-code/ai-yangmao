@@ -58,3 +58,15 @@
   window.YMTheme = { choose, control, syncControls };
   apply();
 })();
+
+/* Display fonts load without blocking first paint or the data requests: Google Fonts is slow or blocked
+ * for many visitors in mainland China, and a parser-inserted stylesheet would hold the whole page until it
+ * times out. The system font stack in head.html shows meanwhile. (CSP forbids an inline onload handler.) */
+(() => {
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = 'https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Rubik:wght@400;500;600;700&display=swap';
+  link.media = 'print';
+  link.addEventListener('load', () => { link.media = 'all'; });
+  document.head.appendChild(link);
+})();

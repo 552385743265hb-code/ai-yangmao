@@ -4,7 +4,7 @@
 <script src="/theme.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Rubik:wght@400;500;600;700&display=swap">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Rubik:wght@400;500;600;700&display=swap"></noscript>
 <style>
 /* Layout: app shell. Desktop = sticky sidebar + one content column (max 1180px); phone = top bar + bottom tab bar. */
 :root{
@@ -163,6 +163,7 @@ section{margin-block:28px}
 .oc-val .value-tag,.bigval .value-tag{display:table;margin-top:5px}
 .bigval small{font-size:13px;color:var(--muted);font-weight:500;font-family:var(--f-body);margin-left:6px}
 .value-unknown{font-size:.65em;font-family:var(--f-body);line-height:1.5}
+.small .value-unknown{font-size:inherit}
 .value-assumption{margin-top:5px;overflow-wrap:anywhere}
 .valuation-summary{display:flex;flex-wrap:wrap;gap:5px 18px;margin:10px 0 14px;line-height:1.5}
 .valuation-summary>span{font-size:13px}
@@ -215,7 +216,8 @@ section{margin-block:28px}
 .seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);font-weight:600;box-shadow:var(--shadow)}
 .filters{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,150px),1fr));gap:8px;margin-bottom:14px}
 .field{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted);min-width:0}
-select,input[type="date"],input[type="url"],input[type="text"]{width:100%;min-width:0;padding:8px 10px;border-radius:10px;border:1px solid var(--line-2);background:var(--surface);font-size:14px;color:var(--ink)}
+select,textarea,input:not([type]),input[type="date"],input[type="url"],input[type="text"],input[type="search"],input[type="number"],input[type="password"],input[type="email"]{width:100%;min-width:0;padding:8px 10px;border-radius:10px;border:1px solid var(--line-2);background:var(--surface);font-size:14px;color:var(--ink)}
+textarea{line-height:1.6;resize:vertical}
 .tog{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 2px;border-bottom:1px solid var(--line);cursor:pointer}
 .tog span small{display:block;color:var(--muted);font-size:12px}
 .tog input{appearance:none;-webkit-appearance:none;width:42px;height:24px;border-radius:12px;background:var(--line-2);position:relative;cursor:pointer;flex:none;transition:background .15s}
@@ -267,8 +269,8 @@ select,input[type="date"],input[type="url"],input[type="text"]{width:100%;min-wi
 
 /* ---------- offer cards ---------- */
 .ocards{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr))}
-.ocard{position:relative;display:grid;grid-template-columns:minmax(0,1fr) 66px;gap:8px 12px;padding:14px;border-radius:16px;background:var(--surface);border:1px solid var(--line);transition:border-color .15s,transform .15s}
-.ocard:hover{border-color:var(--line-2);transform:translateY(-1px)}
+.ocard{position:relative;display:grid;grid-template-columns:minmax(0,1fr) 66px;gap:8px 12px;padding:14px;border-radius:16px;background:var(--surface);border:1px solid var(--line);transition:border-color .15s}
+.ocard:hover{border-color:var(--ink-2)}
 .ocard .stretch{position:absolute;inset:0;border-radius:16px;z-index:1}
 .oc-top{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;gap:8px}
 .oc-title{font-weight:600;font-size:15.5px;line-height:1.38;margin:0}
@@ -279,9 +281,14 @@ select,input[type="date"],input[type="url"],input[type="text"]{width:100%;min-wi
 .oc-foot{grid-column:1/-1;display:flex;flex-direction:column;gap:7px}
 .bar{height:6px;border-radius:99px;background:var(--surface-2);overflow:hidden}
 .bar i{display:block;height:100%;border-radius:99px}
+/* Unknown deadline: an empty dashed track, so nothing reads as time remaining. */
+.bar.unknown{height:2px;margin-block:2px;border-radius:0;background:repeating-linear-gradient(90deg,var(--line-2) 0 4px,transparent 4px 9px)}
+.more-cards{display:flex;margin:14px auto 0}
 .oc-meta{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;color:var(--ink-2)}
 .cmp{position:relative;z-index:2;border:1px solid var(--line-2);background:var(--surface);border-radius:999px;font-size:11.5px;padding:2px 8px;cursor:pointer;color:var(--ink-2)}
 .cmp[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+/* Touch screens: small controls keep their look but get a finger-sized target. */
+@media (pointer:coarse){.cmp{min-height:32px;padding:6px 12px}a.chip{min-height:32px;padding-block:7px}}
 .rows{display:flex;flex-direction:column}
 .orow{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 12px;align-items:center;padding:10px 4px;border-bottom:1px solid var(--line)}
 .orow:hover{background:var(--surface-2)}
@@ -309,6 +316,8 @@ select,input[type="date"],input[type="url"],input[type="text"]{width:100%;min-wi
 .fact .v{font-weight:600;line-height:1.4}
 .fact .v small{display:block;font-weight:400;color:var(--ink-2);font-size:12px}
 .bigval{font-family:var(--f-num);font-weight:700;font-size:clamp(30px,5vw,42px);line-height:1.05}
+/* Without an amount, the benefit itself is the headline. */
+.dt-benefit{font-weight:700;font-size:clamp(19px,2.4vw,23px);line-height:1.45;margin:2px 0 4px;max-width:36em;text-wrap:pretty}
 .steps{margin:0;padding-left:1.4em;display:flex;flex-direction:column;gap:6px}
 .quote{position:relative;padding:12px 14px 12px 40px;background:var(--surface-2);border-radius:12px;font-size:14px;color:var(--ink-2);margin:0}
 .quote::before{content:"“";position:absolute;left:12px;top:0;font-family:var(--f-display);font-size:42px;color:var(--tag);line-height:1.1}
