@@ -4,6 +4,7 @@
 - 入口：[README.md](README.md)；字段与收录口径以 [数据合同](docs/data-contract.md) 和 [通用规则](pipeline/learned-rules.md) 为准。
 - 公众号文章只在其 `__biz` 已登记于平台 `wechat` 时算官方证据；无 `__biz` 的短链不算。
 - 管理员可直接确认无已知事实的身份候选“与已上架 X 相同”（同平台、已批准）；这不放宽有事实冲突的守卫。
+- 管理员「⚡ 快速上架」：担保的链接即登记为厂商官方地址，免费模型补字段，基础字段齐即上架，跳过筛查与审核闸门（仅管理员；详见 operations.md）。
 - 现行平台事实在 D1 `platform_profiles`。`pipeline/platform-notes.md` 已冻结为历史快照，不再覆盖现行规则。
 - 审核使用仓库 [.claude/skills/yangmao-review](.claude/skills/yangmao-review/SKILL.md)，不要以外部旧副本替代。
 - 官方发放方证据优先，媒体只提供线索；不收账号池、不透明中转站、付费套餐自带权益。

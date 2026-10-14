@@ -27,7 +27,7 @@ import { isReviewField, reviewChanges } from '../shared/spec';
 // Cloudflare Worker 入口：/api/* 走这里，其余由静态资源（网站页面）处理。
 import { and, desc, eq, gte, inArray, sql, getTableColumns } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/d1';
-import { Hono } from 'hono';
+import { Hono, type Context } from 'hono';
 import { z } from 'zod';
 import * as s from '../db/schema';
 import { isoDate, leadIn, offerIn, collectedOfferIn, runIn } from '../shared/ingest';
@@ -42,6 +42,7 @@ import { screeningIngestRoutes } from './screening/routes';
 import { activeOnDate, isClaimable, liveStatus, missingEvidence } from '../shared/lifecycle';
 import { admin } from './admin';
 import { feishuAdmin, runScheduled } from './feishu';
+import { advanceFastTrack, claimFastTrack, FastTrackError, fastTrackQueue, submitFastTrackResult } from './fast-track';
 
 export interface Env {
   DB: D1Database;
@@ -751,6 +752,24 @@ ingest.post('/runs', async c => {
   if (!body.success) return c.json({ error: '数据格式不正确', issues: body.error.issues }, 400);
   const [r] = await db(c.env).insert(s.runs).values(body.data).returning({ id: s.runs.id });
   return c.json({ id: r.id });
+});
+
+/** 快速上架读取队列：流水线领取任务、用免费模型补字段、交回结果，再分步完成上架。 */
+const fastTrackFailure = (c: Context<{ Bindings: Env }>, error: unknown) => {
+  if (error instanceof FastTrackError) return c.json({ error: error.message }, error.status);
+  if (error instanceof z.ZodError) return c.json({ error: '数据格式不正确', issues: error.issues }, 400);
+  throw error;
+};
+ingest.get('/fast-track/queue', async c => c.json({ jobs: await fastTrackQueue(c.env.DB) }));
+ingest.post('/fast-track/:id/claim', async c => {
+  const job = await claimFastTrack(c.env.DB, c.req.param('id'));
+  return job ? c.json({ job }) : c.json({ error: '任务已被领取或已结束' }, 409);
+});
+ingest.post('/fast-track/:id/result', async c => {
+  try { return c.json(await submitFastTrackResult(c.env, c.req.param('id'), await c.req.json().catch(() => null))); } catch (error) { return fastTrackFailure(c, error); }
+});
+ingest.post('/fast-track/:id/advance', async c => {
+  try { return c.json(await advanceFastTrack(c.env, c.req.param('id'))); } catch (error) { return fastTrackFailure(c, error); }
 });
 
 app.route('/api/ingest', ingest);

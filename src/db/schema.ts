@@ -85,6 +85,8 @@ export const offers = sqliteTable('offers', {
   sourceId: text('source_id').references(() => sources.id),
   createdAt: text('created_at').notNull().default(now),
   updatedAt: text('updated_at').notNull().default(now),
+  /** Set when an administrator fast-tracked the offer live (migration 0042); holds it out of the urgent push for 24 h. */
+  fastTrackedAt: text('fast_tracked_at'),
 }, t => [index('offers_review_idx').on(t.reviewState), index('offers_platform_idx').on(t.platformId)]);
 
 export interface Evidence {

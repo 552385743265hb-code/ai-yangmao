@@ -6,6 +6,7 @@ import { postIdentityOffers } from './identity-client';
 import { captureIdentityShadow } from './identity-shadow';
 import {platformMentioned,leadScopeMismatch} from '../src/shared/lead-scope';
 import {runLeadReviews} from './lead-review';
+import {runFastTrack} from './fast-track';
 import { toOffer } from './offer-draft';
 import { runOfficialReviews } from './official-review';
 import { leadPriority } from '../src/shared/leads';
@@ -430,6 +431,12 @@ export async function runPipeline() {
   // config.relay 表示由别的机器负责（例如 Reddit 由常开 Mac 中继），云端跳过
   const list = sources.filter(s => (!only || only.includes(s.id)) && !(s.config as { relay?: string } | undefined)?.relay);
   log(`共 ${list.length} 个信源；今日 token ${Number.isFinite(tokensLeft) ? `剩 ${tokensLeft}` : '不设总上限'}，本月付费兜底剩 ¥${costLeft.toFixed(2)}${DRY ? '；演练模式，不写入权益' : ''}`);
+  // 管理员担保的快速上架最先处理：时效优先，只用免费模型补字段。
+  try {
+    const fastTrack = await runFastTrack({ deadlineAt: Math.min(deadline, Date.now() + 8 * 60_000), dry: DRY, log,
+      account: (tokens, cost) => { tokensLeft -= tokens; costLeft -= cost; stats.tokens += tokens; stats.costCny += cost; } });
+    if (fastTrack.claimed) Object.assign(stats, { fastTrack });
+  } catch (e) { stats.errors.push(`快速上架：${(e as Error).message}`); log('快速上架出错', (e as Error).message); }
   // 先采集线索，再研判；全站官方页面抽取与复核不能抢走重要线索的模型预算。
   const leadSources = list.filter(s => s.kind === 'aihot' || s.tier === 'lead');
   const selected = FAST ? leadSources.filter(s => s.kind === 'aihot' || s.kind === 'feed' || s.kind === 'discord') : leadSources;
