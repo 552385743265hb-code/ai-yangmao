@@ -5,7 +5,7 @@
 <h1 align="center">AI 羊毛牧场 · AI Yangmao Pasture</h1>
 
 <p align="center">
-  Free AI credits and perks from across the web, gathered in one meadow.<br>
+  Free LLM tokens, API credits, memberships and image/video generations, collected daily.<br>
   Every offer is traced to its official source, with the original text, deadline and eligibility.
 </p>
 
