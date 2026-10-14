@@ -102,6 +102,12 @@ it('owner values win, the benefit line is the listing benefit, and basics are ch
   expect(fastTrackHeld(new Date(Date.now() - 25 * 3600_000).toISOString(), new Date())).toBe(false);
 });
 
+it('a model-supplied end kind that contradicts the type is normalised; the owner value is kept', () => {
+  expect(mergeFastTrackFields({ type: 'free', endKind: 'standing' }, {}, 'x').endKind).toBe('unknown');
+  expect(mergeFastTrackFields({ type: 'apply', endKind: 'unknown' }, {}, 'x').endKind).toBe('standing');
+  expect(mergeFastTrackFields({ type: 'free', endKind: 'unknown' }, { endKind: 'standing' }, 'x').endKind).toBe('standing');
+});
+
 it('the pipeline picks the extracted candidate closest to the owner benefit', () => {
   expect(similarity('Odyssey-3 免费试用', 'Odyssey-3 公开预览免费试用')).toBeGreaterThan(0.5);
   const fields = fastTrackFields([{ ...extracted, title: '邀请好友得积分', valueText: '邀请奖励' }, extracted] as any, 'Odyssey-3 公开研究预览，可免费试用');
