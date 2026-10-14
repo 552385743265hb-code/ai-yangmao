@@ -14,7 +14,7 @@ import { officialTier } from '../src/shared/official-review';
 // 采集管线入口：GitHub Actions 每 6 小时运行一次，也可以手动触发补跑。
 // 流程：取信源 → 抓取 → 只保留和羊毛相关的句子 → 与上次比对 → 有变化才调用模型抽取 → 写入网站（默认进待审）。
 import { aihot, feed, hn, parseFeed, reddit, type Source } from './collectors';
-import { api, fetchPage, fetchText, isFreebie, norm, relevantText, sha256 } from './lib';
+import { api, fetchPage, fetchText, isFreebie, LEAD_POST_CHUNK, norm, relevantText, sha256 } from './lib';
 import { DeferError, extract, llmAvailable, modelAvailable, paidAvailable, type Extracted } from './llm';
 import { BudgetExhaustedError, BudgetLedgerError, modelBudget } from './budget';
 import { offerIn, type LeadIn, type OfferIn } from '../src/shared/ingest';
@@ -61,8 +61,8 @@ async function report(src: Source, ok: boolean, extra: { hash?: string; text?: s
 async function postLeads(leads: LeadIn[]) {
   if (!leads.length) return;
   if (DRY) { stats.leads += leads.length; leads.slice(0, 5).forEach(l => log('  线索', l.title)); return; }
-  for (let i = 0; i < leads.length; i += 100) {
-    const r = await api<{ created: number }>('/leads', leads.slice(i, i + 100));
+  for (let i = 0; i < leads.length; i += LEAD_POST_CHUNK) {
+    const r = await api<{ created: number }>('/leads', leads.slice(i, i + LEAD_POST_CHUNK));
     stats.leads += r.created;
   }
 }

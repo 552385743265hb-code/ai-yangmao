@@ -8,7 +8,7 @@ for (const line of readFileSync(new URL('../.prod.secrets', import.meta.url), 'u
   const m = line.match(/^([A-Z_]+)=(.*)$/);
   if (m && !process.env[m[1]]) process.env[m[1]] = m[2].replace(/#.*$/, '').trim();
 }
-const { api } = await import('./lib');
+const { api, LEAD_POST_CHUNK } = await import('./lib');
 const { sources } = await api<{ sources: Source[] }>('/sources');
 const mine = sources.filter(s => (s.config as { relay?: string } | undefined)?.relay === 'mac');
 let created = 0, failed = 0;
@@ -24,7 +24,7 @@ for (const src of mine) {
         await new Promise(r => setTimeout(r, 60_000));
       }
     }
-    for (let i = 0; i < leads.length; i += 100) created += (await api<{ created: number }>('/leads', leads.slice(i, i + 100))).created;
+    for (let i = 0; i < leads.length; i += LEAD_POST_CHUNK) created += (await api<{ created: number }>('/leads', leads.slice(i, i + LEAD_POST_CHUNK))).created;
     await api('/snapshots', { sourceId: src.id, url: src.url, ok: true });
     console.log(new Date().toISOString(), src.id, `线索 ${leads.length} 条`);
   } catch (e) {
