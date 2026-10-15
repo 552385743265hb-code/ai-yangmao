@@ -58,9 +58,30 @@ export async function searchOfficial(query:string,deadlineAt:number):Promise<str
     try{return await searchViaOpenRouter(query,deadlineAt);}catch{throw error;}
   }
 }
+const EXA_OBJECTIVE='Find the issuer’s own official announcement, documentation or official X post for this exact AI benefit. Prefer primary sources. Exclude community reposts and reseller promotions.';
+/**
+ * Exa /search 请求（build-with-exa 规范：query + type auto；只要结果 URL，正文由管线自己抓取核验，所以不带 contents）。
+ * 调用方用 `site:` 写的限定来自后台登记的官方站点与官方 X 账号，是已批准的硬性白名单，按 Exa 文档改成 includeDomains
+ *（支持路径前缀，如 x.com/thsottiaux），不留在查询文字里。
+ */
+export function exaSearchRequest(query:string):{query:string;type:'auto';objective:string;includeDomains?:string[]} {
+  const domains:string[]=[];
+  const text=query.replace(/(?:\bOR\s+)?\bsite:(\S+)/gi,(_match,target:string)=>{domains.push(target.replace(/\/status\/?$/i,'').replace(/\/+$/,''));return ' ';}).replace(/\s+/g,' ').trim();
+  return {query:text||query,type:'auto',objective:EXA_OBJECTIVE,...(domains.length?{includeDomains:[...new Set(domains)]}:{})};
+}
+async function searchExaApi(query:string,deadlineAt:number,key:string):Promise<string[]> {
+  const response=await fetch('https://api.exa.ai/search',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key},body:JSON.stringify(exaSearchRequest(query)),
+    signal:AbortSignal.timeout(Math.max(1,Math.min(20000,deadlineAt-Date.now())))});
+  if(!response.ok)throw new Error(`搜索服务 HTTP ${response.status}`);
+  const payload=await response.json() as {results?:{url?:unknown}[]};
+  if(!Array.isArray(payload.results))throw new Error('搜索服务返回错误，不能视为没有官方公告');
+  return [...new Set(payload.results.map(r=>r.url).filter((u):u is string=>typeof u==='string'&&/^https?:\/\//.test(u)))];
+}
 async function searchExa(query:string,deadlineAt:number):Promise<string[]> {
-  const response=await fetch(SEARCH_URL,{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json, text/event-stream',...(process.env.EXA_API_KEY?{'x-api-key':process.env.EXA_API_KEY}:{})},
-    body:JSON.stringify({jsonrpc:'2.0',id:1,method:'tools/call',params:{name:'web_search_exa',arguments:{query,numResults:5,objective:'Find the issuer’s own official announcement, documentation or official X post for this exact AI benefit. Prefer primary sources. Return source URLs; exclude community reposts and reseller promotions.'}}}),
+  if(process.env.EXA_API_KEY)return searchExaApi(query,deadlineAt,process.env.EXA_API_KEY);
+  // 没有密钥时用匿名 MCP 端点（很快限流，限流后由 OpenRouter 联网搜索兜底）。
+  const response=await fetch(SEARCH_URL,{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json, text/event-stream'},
+    body:JSON.stringify({jsonrpc:'2.0',id:1,method:'tools/call',params:{name:'web_search_exa',arguments:{query,numResults:5,objective:EXA_OBJECTIVE}}}),
     signal:AbortSignal.timeout(Math.max(1,Math.min(20000,deadlineAt-Date.now())))});
   if(!response.ok)throw new Error(`搜索服务 HTTP ${response.status}`);
   const body=await response.text();if(body.length>250000)throw new Error('搜索结果过大');
