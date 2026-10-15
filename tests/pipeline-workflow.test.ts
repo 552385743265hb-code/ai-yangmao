@@ -139,6 +139,17 @@ describe('lead evidence and value delivery', () => {
     expect(instruction).toContain('2026-07-13T18:00:00Z');
     expect(instruction).toContain(evidenceUrl);
   });
+  // 2026-10-15：整份索引（400+ 条）随每条线索发送，提示词 6–8 万 token，免费档 429、付费兜底昂贵。
+  it('sends triage only the existing offers of platforms the lead mentions', async () => {
+    const h = harness({ leads: [lead], known: [
+      { id: 'vendor-signup', platformId: 'vendor', title: 'Vendor 注册赠额', valueText: '10 美元' },
+      { id: 'elsewhere-promo', platformId: 'elsewhere', title: 'Elsewhere 无关活动', valueText: '无关' }] });
+    const { runPipeline } = await import('../pipeline/run');
+    await runPipeline();
+    const instruction = h.writes.find(write => write.url.includes('googleapis'))!.body.systemInstruction.parts[0].text;
+    expect(instruction).toContain('vendor-signup');
+    expect(instruction).not.toContain('elsewhere-promo');
+  });
 });
 
 describe('official RSS progress', () => {

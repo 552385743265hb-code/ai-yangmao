@@ -326,7 +326,6 @@ async function triageLeads(plats: Plat[]) {
   };
   const known = [...await offerIndex()];
   const knownIds = new Set(known.map(k => k.id));
-  let existing = formatOfferIndex(known);
   const pmap = new Map(plats.map(p => [p.id, p]));
   log(`研判线索 ${leads.length} 条`);
   // 每轮给官方补证保留执行时间，初抽不能独占整个40分钟工作窗口。
@@ -349,7 +348,11 @@ async function triageLeads(plats: Plat[]) {
     }
     catch { /* 补录失败也研判已有备注为媒体级草稿；不能让失效链接永远占据 new 队首。 */ }
     let r;
-    try { r = await extract('（见平台白名单）', l.url, text, log, { allowPaid, evidenceText, deadlineAt: triageDeadline, platformList: list, platformIds: mentionedPlatforms(`${l.title ?? ''}\n${text}`), profiles: await screeningProfiles(), existing, corrections: await correctionsFor(null, null), budget: modelBudget }); }
+    // 只附线索提到的平台的已有条目：整份索引（400+ 条、约 5 万字）每次都发，单次提示词 6–8 万 token，
+    // Gemini 免费档两次就 429，DeepSeek 每次约 ¥0.2（2026-10-15）。跨平台重复仍由服务端身份去重兜底。
+    const mentioned = mentionedPlatforms(`${l.title ?? ''}\n${text}`);
+    const scopedExisting = formatOfferIndex(known.filter(k => mentioned.includes(k.platformId))) || undefined;
+    try { r = await extract('（见平台白名单）', l.url, text, log, { allowPaid, evidenceText, deadlineAt: triageDeadline, platformList: list, platformIds: mentioned, profiles: await screeningProfiles(), existing: scopedExisting, corrections: await correctionsFor(null, null), budget: modelBudget }); }
     catch (e) {
       log(`  #${l.id} 抽取失败：${(e as Error).message.slice(0, 80)}`);
       if (budgetFailure(e)) { budgetBlocked = true; stats.deferred++; break; }
@@ -409,7 +412,6 @@ async function triageLeads(plats: Plat[]) {
           if (cached < 0) idxCache.push(entry); else idxCache[cached] = entry;
         }
       }
-      existing = formatOfferIndex(known);
       log(`  #${l.id} → ${valid.map(v => v.title).join('、')}`);
       // A known duplicate is a resolved candidate, not a failed write. Keep unknown skips/errors retryable.
       const saved = res.results.flatMap(x => {
