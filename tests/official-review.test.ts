@@ -37,6 +37,30 @@ describe('official source discovery',()=>{
     expect(url).toBe('https://mcp.exa.ai/mcp');
     const request=JSON.parse(String(init.body));expect(request.params.name).toBe('web_search_exa');expect(request.params.arguments.objective).toContain('official');
   });
+  // 2026-10-15：Exa 匿名端点限流后整轮暂停搜索，社区线索全部转重试。
+  it('falls back to OpenRouter web search when Exa is rate limited, charging the shared budget',async()=>{
+    process.env.OPENROUTER_API_KEY='test-key';
+    const calls:string[]=[];
+    vi.stubGlobal('fetch',vi.fn(async(input:string,init?:RequestInit)=>{
+      const url=String(input);calls.push(url);
+      if(url==='https://mcp.exa.ai/mcp')return new Response(JSON.stringify({result:{isError:true,content:[{type:'text',text:'rate limit'}]}}));
+      if(url.endsWith('/model-budget/reserve'))return Response.json({id:7});
+      if(url.endsWith('/model-budget/7/settle'))return Response.json({ok:true});
+      if(url.startsWith('https://openrouter.ai/')){
+        expect(JSON.parse(String(init?.body)).plugins).toEqual([{id:'web',max_results:5}]);
+        return Response.json({choices:[{message:{content:'urls',annotations:[{type:'url_citation',url_citation:{url:'https://vendor.example/notice'}},{type:'url_citation',url_citation:{url:'https://vendor.example/notice'}}]}}],usage:{cost:0.007}});
+      }
+      throw new Error('unexpected '+url);
+    }));
+    expect(await searchOfficial('Vendor outage compensation',Date.now()+30000)).toEqual(['https://vendor.example/notice']);
+    expect(calls.filter(u=>u.includes('/model-budget/'))).toHaveLength(2);
+    delete process.env.OPENROUTER_API_KEY;
+  });
+  it('keeps the original search error when the fallback is unavailable',async()=>{
+    delete process.env.OPENROUTER_API_KEY;
+    vi.stubGlobal('fetch',vi.fn(async()=>new Response(JSON.stringify({result:{isError:true,content:[{type:'text',text:'rate limit'}]}}))));
+    await expect(searchOfficial('Vendor',Date.now()+30000)).rejects.toThrow();
+  });
 });
 
 it('keeps room for a fresh automatic benefit amid an unreachable manual backlog',async()=>{
