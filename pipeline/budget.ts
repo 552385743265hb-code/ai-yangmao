@@ -1,6 +1,7 @@
 import { api } from './lib';
 
-export const MODEL_OUTPUT_LIMIT = 4096;
+// 推理型模型（DeepSeek Flash、openrouter/free 路由到的思考模型）先消耗输出额度思考；4096 时常见 finish=length 且正文为空（2026-10-15）。
+export const MODEL_OUTPUT_LIMIT = 8192;
 export class BudgetExhaustedError extends Error {}
 export class BudgetLedgerError extends Error {}
 
