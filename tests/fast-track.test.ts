@@ -79,6 +79,13 @@ it('model failures retry, then hand the job to the owner after three attempts', 
   expect((await call(`admin/fast-track/${created.body.jobId}/retry`, {})).body.state).toBe('queued');
 });
 
+it('a registered staff X account stays staff and its post publishes at staff tier', async () => {
+  f.sqlite.exec("INSERT INTO platforms(id,name,type,status,x_handles,staff_handles) VALUES('codexco','CodexCo','lab','approved','[\"@codexco\"]','[\"@tibo\"]')");
+  const created = await call('admin/fast-track', { platformId: 'codexco', url: 'https://x.com/Tibo/status/2110595484180214059', benefit: 'Day 10 全局重置' });
+  expect(created.body.registered).toEqual({ kind: 'existing', value: '@tibo' });
+  expect(f.sqlite.prepare("SELECT x_handles,staff_handles FROM platforms WHERE id='codexco'").get()).toEqual({ x_handles: '["@codexco"]', staff_handles: '["@tibo"]' });
+});
+
 it('any URL the owner gives is registered as the vendor official address', async () => {
   f.sqlite.exec("INSERT INTO platforms(id,name,type,status) VALUES('odyssey','Odyssey','lab','pending')");
   await call('admin/fast-track', { platformId: 'odyssey', url: 'https://x.com/odysseyml/status/123', benefit: '公开预览免费试用' });
