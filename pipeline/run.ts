@@ -41,7 +41,7 @@ async function screeningProfiles(): Promise<PlatformProfile[]> {
 const LEAD_LIMIT = Number(process.env.LEAD_LIMIT ?? 50);
 const onlyList = (process.env.ONLY_SOURCES ?? '').split(',').map(s => s.trim()).filter(Boolean);
 const only = onlyList.length ? onlyList : null; // 留空 = 全部信源
-const stats = { leadsTriaged: 0, leadOffers: 0, costCny: 0, deferred: 0, sources: 0, fetchedSources: 0, ok: 0, failed: 0, changed: 0, leads: 0, offers: 0, pending: 0, extractSkipped: 0, verificationChecked: 0, verificationFailed: 0, verificationDeferred: 0, tokens: 0, coverageDegraded: false, errors: [] as string[] };
+const stats = { leadsTriaged: 0, leadOffers: 0, costCny: 0, deferred: 0, backlogDeferred: 0, sources: 0, fetchedSources: 0, ok: 0, failed: 0, changed: 0, leads: 0, offers: 0, pending: 0, extractSkipped: 0, verificationChecked: 0, verificationFailed: 0, verificationDeferred: 0, tokens: 0, coverageDegraded: false, errors: [] as string[] };
 const fetchedSourceIds=new Set<string>();
 function noteSourceFetched(src:Source){fetchedSourceIds.add(src.id);stats.fetchedSources=fetchedSourceIds.size;}
 let tokensLeft = DAILY_TOKEN_CAP > 0 ? DAILY_TOKEN_CAP : Infinity;
@@ -458,14 +458,16 @@ export async function runPipeline() {
     const leadReview=await runLeadReviews({limit:Number(process.env.LEAD_REVIEW_LIMIT??4),ids:(process.env.LEAD_REVIEW_IDS??'').split(',').filter(Boolean).map(Number),deadlineAt:Math.min(deadline,Date.now()+12*60_000),dry:DRY,
       allowPaid:paidAvailable()&&costLeft>0.05,canContinue:()=>!needsWrapUp()&&tokensLeft>=8000,
       account:(tokens,cost)=>{tokensLeft-=tokens;costLeft-=cost;stats.tokens+=tokens;stats.costCny+=cost;},log});
-    Object.assign(stats,{leadReview});if(leadReview.retry||leadReview.deferred)stats.deferred++;
+    // 复核队列本轮没排到或等待重试是积压，不是采集覆盖失败：计入 backlogDeferred，否则每轮都“不完整”，健康告警失去意义（2026-10-15）。
+    Object.assign(stats,{leadReview});stats.backlogDeferred+=leadReview.retry+leadReview.deferred;
   }catch(e){stats.deferred++;stats.errors.push('受阻线索复核：'+(e as Error).message);}
   try {
   const officialReview = await runOfficialReviews({limit:Number(process.env.OFFICIAL_REVIEW_LIMIT ?? 8),deadlineAt:deadline,dry:DRY,
     allowPaid:paidAvailable()&&costLeft>0.05,canContinue:()=>!needsWrapUp()&&tokensLeft>=8000,
     account:(tokens,cost)=>{tokensLeft-=tokens;costLeft-=cost;stats.tokens+=tokens;stats.costCny+=cost;},log});
   Object.assign(stats,{officialReview});
-  if(officialReview.failed||officialReview.deferred)stats.deferred++;
+  if(officialReview.failed)stats.deferred++;
+  stats.backlogDeferred+=officialReview.deferred;
   } catch(error) { stats.deferred++; stats.errors.push(`官方复核：${(error as Error).message}`); }
   if (!FAST) {
     const queue = list.filter(s => !leadSources.includes(s));
@@ -479,7 +481,7 @@ export async function runPipeline() {
       stats.errors.push(`读取复核队列失败：${(error as Error).message}`);
     }
   }
-  try {const identity=await resumeIdentityIntake(Math.min(deadline,Date.now()+90000));Object.assign(stats,{identity});stats.deferred+=identity.deferred;if(identity.status==='not_evaluated')stats.errors.push('身份维护未评估：'+identity.reason);}catch{stats.deferred++;stats.errors.push('身份候选重试暂不可用');}
+  try {const identity=await resumeIdentityIntake(Math.min(deadline,Date.now()+90000));Object.assign(stats,{identity});stats.backlogDeferred+=identity.deferred;if(identity.status==='not_evaluated')stats.errors.push('身份维护未评估：'+identity.reason);}catch{stats.deferred++;stats.errors.push('身份候选重试暂不可用');}
   stats.coverageDegraded = stats.deferred > 0 || stats.extractSkipped > 0 || stats.failed > 0 || stats.verificationFailed > 0
     || stats.verificationDeferred > 0 || stats.errors.length > 0 || list.some(source => source.deferThisRun);
   const ok = (FAST || !only) && stats.sources > 0 && stats.ok === stats.sources && !stats.coverageDegraded;

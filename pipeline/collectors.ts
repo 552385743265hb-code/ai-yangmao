@@ -1,6 +1,6 @@
 // 各类信源的采集器。线索类（AIHOT / HN / Reddit）只产出线索，官方页面才会交给模型抽取成羊毛。
 import { XMLParser } from 'fast-xml-parser';
-import { BROWSER_UA, UA, fetchRetry, fetchText, isLead, sleep } from './lib';
+import { BROWSER_UA, UA, fetchRetry, fetchText, isAiFreebieTopic, isLead, sleep } from './lib';
 import type { LeadIn } from '../src/shared/ingest';
 import { xPostTime } from '../src/shared/lead-scope';
 
@@ -118,7 +118,7 @@ async function redditOnce(src: Source): Promise<LeadIn[]> {
   return items.filter(i => i.link && isLead(i.title)).map(i => ({ origin: 'reddit' as const, url: i.link, title: i.title.slice(0, 300), raw: i.summary.slice(0, 4000) }));
 }
 
-/** 第三方 RSS 线索（LINUX DO 福利羊毛、IT之家 等）。config.filter = "all" 时整版都算线索（版块本身就是羊毛区）。 */
+/** 第三方 RSS 线索（LINUX DO 福利羊毛、IT之家 等）。config.filter = "all" 整版都算线索；"ai" 只收 AI 相关且非中转站推广的帖子（综合福利版块用）；默认按线索关键词。 */
 /**
  * 本地中继（Mac）用 curl 抓社区 RSS：LINUX DO 前面的 Cloudflare 会按 Node 请求特征和频率间歇性发人机验证（403），
  * 换 UA 也不稳定，curl 在同一台机器上稳定返回 200（2026-10-01 排查）。
@@ -133,9 +133,10 @@ async function curlText(url: string): Promise<string> {
 }
 
 export async function feed(src: Source): Promise<LeadIn[]> {
-  const cfg = (src.config ?? {}) as { origin?: LeadIn['origin']; filter?: 'all' | 'lead'; relay?: string };
+  const cfg = (src.config ?? {}) as { origin?: LeadIn['origin']; filter?: 'all' | 'ai' | 'lead'; relay?: string };
   const items = parseFeed(cfg.relay === 'mac' ? await curlText(src.url) : await fetchText(src.url, { accept: 'application/rss+xml' }));
+  const keep = (i: FeedItem) => cfg.filter === 'all' ? true : cfg.filter === 'ai' ? isAiFreebieTopic(i.title) : isLead(`${i.title} ${i.summary.slice(0, 300)}`);
   return items
-    .filter(i => i.link && (cfg.filter === 'all' || isLead(`${i.title} ${i.summary.slice(0, 300)}`)))
+    .filter(i => i.link && keep(i))
     .map(i => ({ origin: cfg.origin ?? 'media', url: i.link, title: i.title.slice(0, 300), raw: i.summary.slice(0, 4000) }));
 }
