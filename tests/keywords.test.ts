@@ -70,11 +70,26 @@ import { isAiFreebieTopic } from '../pipeline/lib';
 describe('综合福利版块的 AI 主题筛选', () => {
   it('保留 AI 产品与模型福利', () => {
     for (const t of ['DeepSeek 要发钱了，过去七天内的花费都会返还', 'U2 flash 官网免费用，免费到10.30号', 'qoder领18元奶茶免单卡', 'claude重置卡别忘了用',
-      '国际版workbuddy的deepseek免费时间又延长了（到10月31号）', 'gmi cloud 免费一周qwen 3.8max ,flash ,wan 3.0', 'Gemini Plus免费一年订阅 国内学生也可以领']) expect(isAiFreebieTopic(t), t).toBe(true);
+      '国际版workbuddy的deepseek免费时间又延长了（到10月31号）', 'gmi cloud 免费一周qwen 3.8max ,flash ,wan 3.0', 'Gemini Plus免费一年订阅 国内学生也可以领', '领 ZCode 3 亿臭鸡蛋啦！', 'Step滞销，帮帮我们', '【已无】SenseAudio速蹬，16号到期']) expect(isAiFreebieTopic(t), t).toBe(true);
   });
   it('排除非 AI 福利和中转站、号池推广', () => {
     for (const t of ['霸王茶姬后续，再赠送买一送一', '（已领完）美团单车7天66次卡，需要的速领吧', '20261015移动领1-9元话费', '[已蹬完]🪜订阅快到期了，留给有缘人',
       '【富可敌国｜NodeAI API 中转站】给佬友送 $10 体验额度｜GPT、Claude、国模，一把 Key 接入', '国模福利(kimi-k3 glm-5.3 glm-5.3-flashx)hub站免费调用，随时拉闸',
       '【富可敌国】海外企业团队支持｜GPT Plus 0.1x、Kiro 0.125x', '想转让一个gpt pro25x的号']) expect(isAiFreebieTopic(t), t).toBe(false);
+  });
+});
+
+import { approvedTermsStillPresent } from '../pipeline/lib';
+// 2026-10-15：已批准价格页每轮被免费模型改写措辞重新提交，生成人工身份任务。
+describe('已批准条款原文仍在页面上', () => {
+  const excerpts = { benefit: 'Free plan includes 10,000 credits per month.', eligibility: 'Available to all new accounts.' };
+  it('全部摘录逐字仍在（忽略空白和大小写）时视为未变化', () => {
+    expect(approvedTermsStillPresent(excerpts, 'Pricing\nFREE plan includes 10,000   credits per month.\nAvailable to all new accounts.\nFAQ')).toBe(true);
+  });
+  it('任一摘录消失、数值变化或只有过短摘录时照常提交', () => {
+    expect(approvedTermsStillPresent(excerpts, 'Free plan includes 5,000 credits per month. Available to all new accounts.')).toBe(false);
+    expect(approvedTermsStillPresent(excerpts, 'Free plan includes 10,000 credits per month.')).toBe(false);
+    expect(approvedTermsStillPresent({ benefit: 'Free' }, 'Free')).toBe(false);
+    expect(approvedTermsStillPresent(null, 'anything')).toBe(false);
   });
 });

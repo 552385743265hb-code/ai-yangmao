@@ -14,7 +14,7 @@ import { officialTier } from '../src/shared/official-review';
 // 采集管线入口：GitHub Actions 每 6 小时运行一次，也可以手动触发补跑。
 // 流程：取信源 → 抓取 → 只保留和羊毛相关的句子 → 与上次比对 → 有变化才调用模型抽取 → 写入网站（默认进待审）。
 import { aihot, feed, hn, parseFeed, reddit, type Source } from './collectors';
-import { api, fetchPage, fetchText, isFreebie, LEAD_POST_CHUNK, norm, relevantText, sha256 } from './lib';
+import { api, approvedTermsStillPresent, fetchPage, fetchText, isFreebie, LEAD_POST_CHUNK, norm, relevantText, sha256 } from './lib';
 import { DeferError, extract, llmAvailable, modelAvailable, paidAvailable, type Extracted } from './llm';
 import { BudgetExhaustedError, BudgetLedgerError, modelBudget } from './budget';
 import { offerIn, type LeadIn, type OfferIn } from '../src/shared/ingest';
@@ -41,7 +41,7 @@ async function screeningProfiles(): Promise<PlatformProfile[]> {
 const LEAD_LIMIT = Number(process.env.LEAD_LIMIT ?? 50);
 const onlyList = (process.env.ONLY_SOURCES ?? '').split(',').map(s => s.trim()).filter(Boolean);
 const only = onlyList.length ? onlyList : null; // 留空 = 全部信源
-const stats = { leadsTriaged: 0, leadOffers: 0, costCny: 0, deferred: 0, backlogDeferred: 0, sources: 0, fetchedSources: 0, ok: 0, failed: 0, changed: 0, leads: 0, offers: 0, pending: 0, extractSkipped: 0, verificationChecked: 0, verificationFailed: 0, verificationDeferred: 0, tokens: 0, coverageDegraded: false, errors: [] as string[] };
+const stats = { leadsTriaged: 0, leadOffers: 0, costCny: 0, deferred: 0, backlogDeferred: 0, rereadUnchanged: 0, sources: 0, fetchedSources: 0, ok: 0, failed: 0, changed: 0, leads: 0, offers: 0, pending: 0, extractSkipped: 0, verificationChecked: 0, verificationFailed: 0, verificationDeferred: 0, tokens: 0, coverageDegraded: false, errors: [] as string[] };
 const fetchedSourceIds=new Set<string>();
 function noteSourceFetched(src:Source){fetchedSourceIds.add(src.id);stats.fetchedSources=fetchedSourceIds.size;}
 let tokensLeft = DAILY_TOKEN_CAP > 0 ? DAILY_TOKEN_CAP : Infinity;
@@ -129,6 +129,14 @@ async function extractAndPostUnlocked(src: Source, url: string, text: string, so
     else { invalidCount++; const why = v.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('；'); stats.errors.push(`${src.id}/${e.key}: ${why}`); log(`  丢弃「${e.title}」：${why}`); }
   }
   if (!offers.length) return false; // 原文里有候选但全部校验失败，不能把页面标记为已处理
+  // 已批准条目的原文摘录仍全部在页面上：官方条款未变，只是模型重读换了说法，不提交（否则每轮生成人工身份任务）。
+  const pageText = fetchedPage?.text ?? sourceText ?? text;
+  const approvedIdx = (await offerIndex()).filter(k => k.platformId === src.platformId && k.reviewState === 'approved');
+  for (let i = offers.length - 1; i >= 0; i--) {
+    const approved = approvedIdx.find(k => k.id === offers[i].id);
+    if (approved && approvedTermsStillPresent(approved.excerpts, pageText)) { log(`  ${offers[i].id} 已批准条款原文仍在页面上，跳过重复提交`); stats.rereadUnchanged++; offers.splice(i, 1); }
+  }
+  if (!offers.length) return true;
   if (DRY) { offers.forEach(o => log('  羊毛', o.id, o.title, `类型=${o.type} 对象=${o.audience} 门槛=${o.requirements.join(',')} 额度=${o.valueText}`)); stats.offers += offers.length; return true; }
   const res = await postIdentityOffers(offers);
   if (screeningMode({ SCREENING_MODE: process.env.SCREENING_MODE }) !== 'off') {
@@ -265,7 +273,7 @@ async function verifyExistingOffers(sources: Source[]) {
   }
 }
 
-interface IndexedOffer { reviewState?:string; rejectionScope?:unknown; id: string; platformId: string; title: string; valueText: string; claimStart?: string | null; claimEnd?: string | null; sourceTz?: string | null; publishedAt?: string | null; tags?: string[]; evidenceUrl?: string }
+interface IndexedOffer { reviewState?:string; rejectionScope?:unknown; excerpts?: Record<string, string | null> | null; id: string; platformId: string; title: string; valueText: string; claimStart?: string | null; claimEnd?: string | null; sourceTz?: string | null; publishedAt?: string | null; tags?: string[]; evidenceUrl?: string }
 const indexEntry = (offer: OfferIn): IndexedOffer => ({ id: offer.id, platformId: offer.platformId, title: offer.title, valueText: offer.valueText,
   claimStart: offer.claimStart, claimEnd: offer.claimEnd, sourceTz: offer.sourceTz, publishedAt: offer.publishedAt, tags: offer.tags, evidenceUrl: offer.evidence.url });
 const formatOfferIndex = (offers: IndexedOffer[]) => offers.map(offer => `${offer.id}｜${offer.title}｜${offer.valueText.slice(0, 40)}｜审核:${offer.reviewState??'unknown'}${offer.rejectionScope?'｜拒绝范围:'+JSON.stringify(offer.rejectionScope):''}｜开始:${offer.claimStart ?? '未知'}${offer.tags?.includes('reset') ? `｜发布:${offer.publishedAt ?? '未知'}｜证据:${offer.evidenceUrl ?? '未知'}` : ''}`).join('\n');

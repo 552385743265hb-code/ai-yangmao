@@ -2,6 +2,7 @@ import {offerIn,type OfferIn} from '../../shared/ingest';
 import {stableJson,normalizeDocumentUrl} from '../../shared/identity/normalize';
 import {factSlots} from '../../shared/identity/compare';
 import {canonicalTermsSchema,type CanonicalTermsV1} from '../../shared/identity/types';
+import {officialTier} from '../../shared/official-review';
 export function hasKnownTerms(facts:CanonicalTermsV1){return facts.benefitPools.length>0||[...factSlots(facts).values()].some(f=>f.state!=='unknown');}
 /** Exact reviewed assertion only. This is not a semantic entity classifier. */
 function fingerprint(value:OfferIn){
@@ -9,7 +10,7 @@ function fingerprint(value:OfferIn){
  const normalize=(v:unknown):unknown=>Array.isArray(v)?v.map(normalize).sort((a,b)=>stableJson(a).localeCompare(stableJson(b))):typeof v==='string'?v.normalize('NFKC').replace(/\s+/g,' ').trim():v??null;
  return stableJson({fields:Object.fromEntries(fields.map(k=>[k,normalize(value[k])])),url:normalizeDocumentUrl(value.evidence.url),excerpts:Object.fromEntries(Object.entries(value.evidence.excerpts).map(([k,v])=>[k,normalize(v)]))});
 }
-export interface ReviewedLegacyMatch {entityId:string;versionId:string;decisionId:string;offerId:string;action:'approve'|'reject';revision:number;updatedAt:string;display:string;relatedRevisions:{id:string;revision:number}[]}
+export interface ReviewedLegacyMatch {entityId:string;versionId:string;decisionId:string;offerId:string;action:'approve'|'reject';revision:number;updatedAt:string;display:string;relatedRevisions:{id:string;revision:number}[];reason?:'same_source_reread'}
 /** Old rows without canonical facts can remember the same reviewed assertion.
  * New canonical scope, changed raw conditions or ambiguous matches never use this path. */
 export async function findReviewedLegacy(db:D1Database,raw:string,facts:CanonicalTermsV1):Promise<ReviewedLegacyMatch|null>{
@@ -36,4 +37,43 @@ export async function findReviewedLegacy(db:D1Database,raw:string,facts:Canonica
   if(await db.prepare("SELECT 1 FROM identity_constraints WHERE relation='different' AND entity_a IN (SELECT value FROM json_each(?1)) AND entity_b IN (SELECT value FROM json_each(?1)) LIMIT 1").bind(JSON.stringify(matches.map(m=>m.entity_id))).first())return null;
  }
 return {entityId:row.entity_id,versionId:row.version_id,decisionId:row.decision_id,offerId:row.canonical_offer_id,action:row.action,revision:row.business_revision,updatedAt:row.updated_at,display:row.display_candidate_json,relatedRevisions:matches.map(m=>({id:m.entity_id,revision:m.business_revision}))};
+}
+
+/**
+ * Same-source re-read of an approved activity (2026-10-15). Free models omit canonical facts and reword the display
+ * text on every 6-hour collect, so the exact fingerprint above never matched and each re-read of an approved pricing
+ * or docs page became a manual identity task (61 of 150 open tasks; 38 offers re-queued repeatedly).
+ *
+ * Identity is accepted only when every condition holds: no known canonical facts; the same legacy offer ID, platform
+ * and normalized official URL as the active approved activity; a verified, untruncated fetch of that page for that
+ * platform; and the approved benefit excerpt still present verbatim in the fresh page text. The approved version stays
+ * the public baseline (policy: re-confirmed old terms are kept). A page that no longer carries the approved wording
+ * still goes to review, so real term changes are never auto-absorbed.
+ */
+export async function findSameSourceReread(db:D1Database,raw:string,facts:CanonicalTermsV1,observationId:string,sourceFetchId:string|null):Promise<ReviewedLegacyMatch|null>{
+ if(hasKnownTerms(facts))return null;
+ const parsed=offerIn.safeParse(JSON.parse(raw).candidate);if(!parsed.success)return null;
+ const offer=parsed.data;
+ const row=await db.prepare(`SELECT e.id entity_id,e.business_revision,e.canonical_offer_id,o.updated_at,o.evidence offer_evidence,v.id version_id,v.display_candidate_json,d.id decision_id,p.site,p.x_handles,p.staff_handles,p.wechat
+  FROM benefit_entities e JOIN offers o ON o.id=e.canonical_offer_id JOIN platforms p ON p.id=e.platform_id
+  JOIN benefit_versions v ON v.id=e.current_approved_version_id AND v.entity_id=e.id
+  JOIN review_decisions d ON d.entity_id=e.id AND d.version_id=v.id AND d.action='approve' AND NOT EXISTS(SELECT 1 FROM review_decisions n WHERE n.supersedes_id=d.id)
+  WHERE o.id=? AND e.platform_id=? AND e.state='active' AND o.review_state='approved' AND o.withdrawn_at IS NULL
+  AND NOT EXISTS(SELECT 1 FROM review_decisions other WHERE other.entity_id=e.id AND other.action='reject' AND (other.version_id=v.id OR json_extract(other.scope_json,'$.kind')='entity_alias') AND NOT EXISTS(SELECT 1 FROM review_decisions n WHERE n.supersedes_id=other.id))
+  ORDER BY d.created_at DESC LIMIT 1`).bind(offer.id,offer.platformId).first<{entity_id:string;business_revision:number;canonical_offer_id:string;updated_at:string;offer_evidence:string;version_id:string;display_candidate_json:string;decision_id:string;site:string|null;x_handles:string;staff_handles:string;wechat:string|null}>();
+ if(!row)return null;
+ const approvedEvidence=JSON.parse(row.offer_evidence) as {url?:string;excerpts?:{benefit?:string}};
+ const approvedDisplay=offerIn.safeParse(JSON.parse(row.display_candidate_json));
+ const benefit=(approvedDisplay.success?approvedDisplay.data.evidence.excerpts.benefit:undefined)??approvedEvidence.excerpts?.benefit;
+ if(!approvedEvidence.url||!benefit?.trim()||normalizeDocumentUrl(approvedEvidence.url)!==normalizeDocumentUrl(offer.evidence.url))return null;
+ const sources=(await db.prepare('SELECT url,tier FROM sources WHERE platform_id=?').bind(offer.platformId).all<{url:string;tier:string}>()).results;
+ const platform={id:offer.platformId,name:offer.platformId,site:row.site,xHandles:JSON.parse(row.x_handles||'[]'),staffHandles:JSON.parse(row.staff_handles||'[]'),wechat:row.wechat};
+ if(!['site','docs','official'].includes(officialTier(offer.evidence.url,platform,sources)??''))return null;
+ const obs=await db.prepare("SELECT o.text,coalesce(json_extract(f.provenance_json,'$.truncated'),o.text_truncated) truncated,coalesce(f.provenance_json,o.trust_json) trust_json FROM source_observations o LEFT JOIN source_observation_fetches f ON f.id=? AND f.observation_id=o.id WHERE o.id=?").bind(sourceFetchId,observationId).first<{text:string;truncated:number|null;trust_json:string}>();
+ if(!obs||obs.truncated)return null;
+ const trust=JSON.parse(obs.trust_json) as {sourceVerified?:boolean;productId?:string|null};
+ if(trust.sourceVerified!==true||trust.productId!==offer.platformId)return null;
+ const flat=(s:string)=>s.normalize('NFKC').replace(/\s+/g,' ').trim().toLowerCase();
+ if(!flat(obs.text).includes(flat(benefit)))return null;
+ return {entityId:row.entity_id,versionId:row.version_id,decisionId:row.decision_id,offerId:row.canonical_offer_id,action:'approve',revision:row.business_revision,updatedAt:row.updated_at,display:row.display_candidate_json,relatedRevisions:[{id:row.entity_id,revision:row.business_revision}],reason:'same_source_reread'};
 }
