@@ -63,6 +63,9 @@ export async function registerOfficialAddress(db: D1Database, platformId: string
   if (host === 'x.com' || host === 'twitter.com') {
     const handle = new URL(url).pathname.split('/').filter(Boolean)[0]?.toLowerCase();
     if (!handle || ['i', 'home', 'search', 'intent', 'explore'].includes(handle)) throw new FastTrackError(400, 'X 链接需要是厂商账号或其推文');
+    // 已登记的员工账号保持员工级别：不能因快速上架升级成官方账号（2026-10-15 Tibo 帖子曾被加入 x_handles）。
+    const staff: string[] = JSON.parse(platform.staff_handles || '[]');
+    if (staff.some(h => h.toLowerCase() === '@' + handle)) return { kind: 'existing', value: '@' + handle };
     const handles: string[] = JSON.parse(platform.x_handles || '[]');
     if (!handles.some(h => h.toLowerCase() === '@' + handle)) await db.prepare('UPDATE platforms SET x_handles=?, updated_at=? WHERE id=?').bind(JSON.stringify([...handles, '@' + handle]), new Date().toISOString(), platformId).run();
     return { kind: 'x', value: '@' + handle };
