@@ -67,7 +67,7 @@ gh workflow run collect.yml --ref main -f fast_leads=true -f lead_limit=50
 
 `pipeline/llm.ts`加载通用规则、D1 平台画像及管理员纠正。现行平台事实在 `platform_profiles`；`pipeline/platform-notes.md` 已冻结为历史快照，只在没有画像时回退。抽取优先使用画像里的 pitfalls 与 patterns。GitHub 采集读取远端代码；修改规则后只部署 Worker 不会更新管线，需推送。画像变更写 D1，不靠改这份历史文件。
 
-模型链为Gemini免费层、OpenRouter、可选GLM、预算内DeepSeek付费兜底。免费供应商受限会本轮冷却；重要或积压超过2小时的线索可使用既有付费预算。默认`DAILY_TOKEN_CAP=0`、`MONTHLY_COST_CAP_CNY=10`，实际覆盖以部署变量和Actions配置为准。预算先原子预留再结算，用量不明保留预留；RSS单篇失败不阻断后续，FORCE可以重抽。
+模型链为Gemini免费层、OpenRouter、可选GLM、预算内DeepSeek付费兜底。免费供应商受限会本轮冷却；重要或积压超过2小时的线索可使用既有付费预算。默认`DAILY_TOKEN_CAP=0`、`MONTHLY_COST_CAP_CNY=72`（2026-10-15 管理员定为每月约 $10），实际覆盖以部署变量和Actions配置为准。预算先原子预留再结算，用量不明保留预留；RSS单篇失败不阻断后续，FORCE可以重抽。
 
 工作流`extraction-lessons.yml`用合成文本驱动真实模型，`only_cases`以[scripts/eval-extraction-lessons.ts](../scripts/eval-extraction-lessons.ts)的cases为准，留空全部；涵盖套餐/免费额度、账单模式、日期、重置、身份认证、资助与比赛及官方活动错配。禁止付费兜底，不写条目/线索，模型仍记预算，输出保留artifact。通过不等于官网事实全部核验；失败需查具体结果，不能降低验收标准。
 
@@ -161,6 +161,12 @@ OpenRouter默认备用为`openrouter/free`；404须检查模型可用性，不�
 ## 线索写入批量
 
 `POST /api/ingest/leads` 在 enforce 模式下受每请求 50 次 D1 查询预算约束（约 3 次 + 每条新线索 3 次，命中筛选规则时约 6 次）。中继与流水线按 `LEAD_POST_CHUNK = 5` 分批发送；Worker 每条 INSERT 最多 16 行（6 个绑定列，D1 单语句上限 100 个参数）。2026-10-13 起 linux.do 连续失败即因批量过大（PR #41）。
+
+## 线索关键词与综合福利版块
+
+线索关键词（`pipeline/lib.ts` 的 LEAD）覆盖服务故障补偿/消耗返还和只写“全局重置/Day N Reset”的员工公告；AIHOT 动态按标题与摘要一起判断，重置接口每个事件只出一条线索，用最早的主公告并附全部回帖与事件时间（2026-10-15 漏抓修复）。社区 feed 的 `config.filter`：`all` 整版收录，`ai` 只收标题涉及 AI 产品/模型且不是中转站、号池、倍率推广的帖子（综合福利版块用），缺省按 LEAD。中继信源的代码由 Mac 主检出运行，合并并拉取后再切换配置。
+
+线索关联已有重置条目时按事件日期硬性校验（流水线三条路径及 Worker 复核结果），不同轮次降为人工处理。运行统计中复核/身份队列的等待与重试记入 `backlogDeferred`，不再使整轮 `coverageDegraded`；信源未抓、研判未执行、异常和核验失败仍算覆盖不完整。
 
 ## Discord 官方公告采集
 

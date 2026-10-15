@@ -1116,6 +1116,19 @@ describe('stuck lead rescue lifecycle',()=>{
     expect(result.status).toBe(409);
     expect((sqlite.prepare('SELECT status FROM leads WHERE id=1312').get() as any).status).toBe('rejected');
   });
+  // 2026-10-15：Day 10 重置的回复被自动复核关联到 10 月 12 日 Day 8 条目。
+  it('does not link a later reset round to an earlier reset offer; the lead stays open for review',async()=>{
+    await call('ingest/offers',[offer]);
+    sqlite.prepare("UPDATE offers SET title='Tibo Day 8 全局使用额度重置',tags='[\"reset\"]',claim_start='2026-10-12',claim_end='2026-10-12',end_kind='date',source_tz='America/Los_Angeles',published_at='2026-10-13T01:03:25.000Z',created_at='2026-10-13T03:10:28.055Z'").run();
+    sqlite.prepare("INSERT INTO leads(id,origin,url,title,status,raw,created_at) VALUES(1312,'aihot','https://x.com/thsottiaux/status/2110595554036400151','Codex 重置：Tibo 确认重置','reviewing','Landing within the next 2 hours','2026-10-15T05:28:23.038Z')").run();
+    const lease=await call('ingest/lead-reviews/1312/claim',{});
+    expect((lease.body.existing as any[])[0]).toMatchObject({claimEnd:'2026-10-12',sourceTz:'America/Los_Angeles',tags:['reset']});
+    const result=await call('ingest/lead-reviews/1312/result',{jobId:lease.body.jobId,outcome:'linked',offerIds:[offer.id],reason:'同一次发放已收录',queries:[],candidates:[]});
+    expect(result.status).toBe(200);expect(result.body.status).not.toBe('linked');
+    const lead=sqlite.prepare('SELECT status,offer_id,resolution FROM leads WHERE id=1312').get() as any;
+    expect(lead).toMatchObject({status:'reviewing',offer_id:null});
+    expect(JSON.parse(lead.resolution).reason).toContain('不同日期的重置');
+  });
   it('offers a versioned link-to-existing action and records an explicit final resolution',async()=>{
     seed();await call('ingest/offers',[offer]);
     const q=await call('admin/queue',undefined,'admin');const task=(q.body.leadTasks as any[])[0];

@@ -682,7 +682,7 @@ ingest.get('/offers-index', async c => {
   const input=z.object({cursor:z.string().max(200).optional(),product:z.string().max(200).optional()}).safeParse(c.req.query());
   if(!input.success)return c.json({error:'invalid index cursor'},400);
   const {cursor,product}=input.data;
-  const rows=await c.env.DB.prepare(`SELECT o.id,o.platform_id AS platformId,o.title,o.value_text AS valueText,o.claim_start AS claimStart,o.published_at AS publishedAt,o.tags,o.review_state AS reviewState,json_extract(o.evidence,'$.url') AS evidenceUrl,
+  const rows=await c.env.DB.prepare(`SELECT o.id,o.platform_id AS platformId,o.title,o.value_text AS valueText,o.claim_start AS claimStart,o.claim_end AS claimEnd,o.source_tz AS sourceTz,o.published_at AS publishedAt,o.tags,o.review_state AS reviewState,json_extract(o.evidence,'$.url') AS evidenceUrl,
     (SELECT d.scope_json FROM benefit_entities e JOIN review_decisions d ON d.entity_id=e.id WHERE e.canonical_offer_id=o.id AND d.action='reject' ORDER BY d.created_at DESC LIMIT 1) AS rejectionScope
     FROM offers o WHERE o.id>? AND (? IS NULL OR o.platform_id=?) ORDER BY o.id LIMIT 251`).bind(cursor??'',product??null,product??null).all<Record<string,unknown>>();
   const visible=rows.results.slice(0,250);
@@ -698,7 +698,7 @@ ingest.post('/model-budget/reserve', async c => {
   if (!body.success) return c.json({ error: '预算预留参数不正确' }, 400);
   const line = body.data.line ?? 'extraction';
   const tokenCap = Number(c.env.DAILY_TOKEN_CAP ?? 0);
-  const costCap = line === 'screening' ? Number(c.env.SCREENING_MONTHLY_CAP_CNY ?? 72) : Number(c.env.MONTHLY_COST_CAP_CNY ?? 10);
+  const costCap = line === 'screening' ? Number(c.env.SCREENING_MONTHLY_CAP_CNY ?? 72) : Number(c.env.MONTHLY_COST_CAP_CNY ?? 72);
   const freeDaily = Number(c.env.OPENROUTER_FREE_DAILY ?? 1000);
   const urgentReserve = Number(c.env.SCREENING_URGENT_RESERVE ?? 200);
   const backfillDaily = Number(c.env.SCREENING_BACKFILL_DAILY ?? 400);

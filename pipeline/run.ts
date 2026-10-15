@@ -4,7 +4,7 @@ import type {FetchedPage} from './lib';
 import { resumeIdentityIntake } from './identity-workflow';
 import { postIdentityOffers } from './identity-client';
 import { captureIdentityShadow } from './identity-shadow';
-import {platformMentioned,leadScopeMismatch} from '../src/shared/lead-scope';
+import {platformMentioned,leadScopeMismatch,leadOccurrenceMismatch} from '../src/shared/lead-scope';
 import {runLeadReviews} from './lead-review';
 import {runFastTrack} from './fast-track';
 import { toOffer } from './offer-draft';
@@ -25,7 +25,7 @@ import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 const DAILY_TOKEN_CAP = Number(process.env.DAILY_TOKEN_CAP ?? 0); // 0 = 调试阶段不设每日 token 总上限
-const MONTHLY_COST_CAP = Number(process.env.MONTHLY_COST_CAP_CNY ?? 10);
+const MONTHLY_COST_CAP = Number(process.env.MONTHLY_COST_CAP_CNY ?? 72);
 let costLeft = MONTHLY_COST_CAP;
 const DRY = process.env.DRY_RUN === '1';
 const FAST = process.env.FAST_LEADS === '1';
@@ -41,7 +41,7 @@ async function screeningProfiles(): Promise<PlatformProfile[]> {
 const LEAD_LIMIT = Number(process.env.LEAD_LIMIT ?? 50);
 const onlyList = (process.env.ONLY_SOURCES ?? '').split(',').map(s => s.trim()).filter(Boolean);
 const only = onlyList.length ? onlyList : null; // 留空 = 全部信源
-const stats = { leadsTriaged: 0, leadOffers: 0, costCny: 0, deferred: 0, sources: 0, fetchedSources: 0, ok: 0, failed: 0, changed: 0, leads: 0, offers: 0, pending: 0, extractSkipped: 0, verificationChecked: 0, verificationFailed: 0, verificationDeferred: 0, tokens: 0, coverageDegraded: false, errors: [] as string[] };
+const stats = { leadsTriaged: 0, leadOffers: 0, costCny: 0, deferred: 0, backlogDeferred: 0, sources: 0, fetchedSources: 0, ok: 0, failed: 0, changed: 0, leads: 0, offers: 0, pending: 0, extractSkipped: 0, verificationChecked: 0, verificationFailed: 0, verificationDeferred: 0, tokens: 0, coverageDegraded: false, errors: [] as string[] };
 const fetchedSourceIds=new Set<string>();
 function noteSourceFetched(src:Source){fetchedSourceIds.add(src.id);stats.fetchedSources=fetchedSourceIds.size;}
 let tokensLeft = DAILY_TOKEN_CAP > 0 ? DAILY_TOKEN_CAP : Infinity;
@@ -265,9 +265,9 @@ async function verifyExistingOffers(sources: Source[]) {
   }
 }
 
-interface IndexedOffer { reviewState?:string; rejectionScope?:unknown; id: string; platformId: string; title: string; valueText: string; claimStart?: string | null; publishedAt?: string | null; tags?: string[]; evidenceUrl?: string }
+interface IndexedOffer { reviewState?:string; rejectionScope?:unknown; id: string; platformId: string; title: string; valueText: string; claimStart?: string | null; claimEnd?: string | null; sourceTz?: string | null; publishedAt?: string | null; tags?: string[]; evidenceUrl?: string }
 const indexEntry = (offer: OfferIn): IndexedOffer => ({ id: offer.id, platformId: offer.platformId, title: offer.title, valueText: offer.valueText,
-  claimStart: offer.claimStart, publishedAt: offer.publishedAt, tags: offer.tags, evidenceUrl: offer.evidence.url });
+  claimStart: offer.claimStart, claimEnd: offer.claimEnd, sourceTz: offer.sourceTz, publishedAt: offer.publishedAt, tags: offer.tags, evidenceUrl: offer.evidence.url });
 const formatOfferIndex = (offers: IndexedOffer[]) => offers.map(offer => `${offer.id}｜${offer.title}｜${offer.valueText.slice(0, 40)}｜审核:${offer.reviewState??'unknown'}${offer.rejectionScope?'｜拒绝范围:'+JSON.stringify(offer.rejectionScope):''}｜开始:${offer.claimStart ?? '未知'}${offer.tags?.includes('reset') ? `｜发布:${offer.publishedAt ?? '未知'}｜证据:${offer.evidenceUrl ?? '未知'}` : ''}`).join('\n');
 let idxCache: IndexedOffer[] | null = null;
 async function offerIndex() {
@@ -369,7 +369,9 @@ async function triageLeads(plats: Plat[]) {
       // 同一个活动：沿用已有条目的 id（写入接口会按修订处理，不会新开一条）
       if (e.sameAs && knownIds.has(e.sameAs)) {
         const prev = known.find(k => k.id === e.sameAs)!;
-        if (prev.platformId === p.id) { o.id = prev.id; o.sameOccurrenceAs=prev.id; log(`  #${l.id} 与已有条目 ${prev.id} 是同一活动，合并`); }
+        const staleRound = leadOccurrenceMismatch(l, prev);
+        if (staleRound) log(`  #${l.id} 模型认为同 ${prev.id}，但${staleRound}`);
+        else if (prev.platformId === p.id) { o.id = prev.id; o.sameOccurrenceAs=prev.id; log(`  #${l.id} 与已有条目 ${prev.id} 是同一活动，合并`); }
       }
       if (e.officialUrl && tier === 'media') o.steps = [...(o.steps ?? []), `官方出处：${e.officialUrl}`].slice(0, 6);
       const scopeError=p&&leadScopeMismatch(l,{...p,staffHandles:[]},[],o);
@@ -456,14 +458,16 @@ export async function runPipeline() {
     const leadReview=await runLeadReviews({limit:Number(process.env.LEAD_REVIEW_LIMIT??4),ids:(process.env.LEAD_REVIEW_IDS??'').split(',').filter(Boolean).map(Number),deadlineAt:Math.min(deadline,Date.now()+12*60_000),dry:DRY,
       allowPaid:paidAvailable()&&costLeft>0.05,canContinue:()=>!needsWrapUp()&&tokensLeft>=8000,
       account:(tokens,cost)=>{tokensLeft-=tokens;costLeft-=cost;stats.tokens+=tokens;stats.costCny+=cost;},log});
-    Object.assign(stats,{leadReview});if(leadReview.retry||leadReview.deferred)stats.deferred++;
+    // 复核队列本轮没排到或等待重试是积压，不是采集覆盖失败：计入 backlogDeferred，否则每轮都“不完整”，健康告警失去意义（2026-10-15）。
+    Object.assign(stats,{leadReview});stats.backlogDeferred+=leadReview.retry+leadReview.deferred;
   }catch(e){stats.deferred++;stats.errors.push('受阻线索复核：'+(e as Error).message);}
   try {
   const officialReview = await runOfficialReviews({limit:Number(process.env.OFFICIAL_REVIEW_LIMIT ?? 8),deadlineAt:deadline,dry:DRY,
     allowPaid:paidAvailable()&&costLeft>0.05,canContinue:()=>!needsWrapUp()&&tokensLeft>=8000,
     account:(tokens,cost)=>{tokensLeft-=tokens;costLeft-=cost;stats.tokens+=tokens;stats.costCny+=cost;},log});
   Object.assign(stats,{officialReview});
-  if(officialReview.failed||officialReview.deferred)stats.deferred++;
+  if(officialReview.failed)stats.deferred++;
+  stats.backlogDeferred+=officialReview.deferred;
   } catch(error) { stats.deferred++; stats.errors.push(`官方复核：${(error as Error).message}`); }
   if (!FAST) {
     const queue = list.filter(s => !leadSources.includes(s));
@@ -477,7 +481,7 @@ export async function runPipeline() {
       stats.errors.push(`读取复核队列失败：${(error as Error).message}`);
     }
   }
-  try {const identity=await resumeIdentityIntake(Math.min(deadline,Date.now()+90000));Object.assign(stats,{identity});stats.deferred+=identity.deferred;if(identity.status==='not_evaluated')stats.errors.push('身份维护未评估：'+identity.reason);}catch{stats.deferred++;stats.errors.push('身份候选重试暂不可用');}
+  try {const identity=await resumeIdentityIntake(Math.min(deadline,Date.now()+90000));Object.assign(stats,{identity});stats.backlogDeferred+=identity.deferred;if(identity.status==='not_evaluated')stats.errors.push('身份维护未评估：'+identity.reason);}catch{stats.deferred++;stats.errors.push('身份候选重试暂不可用');}
   stats.coverageDegraded = stats.deferred > 0 || stats.extractSkipped > 0 || stats.failed > 0 || stats.verificationFailed > 0
     || stats.verificationDeferred > 0 || stats.errors.length > 0 || list.some(source => source.deferThisRun);
   const ok = (FAST || !only) && stats.sources > 0 && stats.ok === stats.sources && !stats.coverageDegraded;

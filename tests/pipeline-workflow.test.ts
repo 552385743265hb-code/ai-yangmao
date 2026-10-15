@@ -360,7 +360,9 @@ it('records a technical retry when a stuck lead has no readable primary source',
   const h=harness({rescueJob:true,officialSearchStatus:429,pages:{[lead.url]:403}});
   const {runPipeline}=await import('../pipeline/run');const result=await runPipeline();
   expect(h.payloads('/lead-reviews/1312/result')[0]).toMatchObject({outcome:'retry'});
-  expect(result.stats.coverageDegraded).toBe(true);
+  // 单条复核等待重试是积压，不再把整轮采集记为覆盖不完整（2026-10-15）；仍在 backlogDeferred 和 leadReview 中可见。
+  expect((result.stats as any).backlogDeferred).toBeGreaterThan(0);
+  expect((result.stats as any).leadReview).toMatchObject({retry:1});
 });
 
 it('does not silently truncate six recovered benefits and mark the lead complete',async()=>{
