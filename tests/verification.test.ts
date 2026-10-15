@@ -1134,6 +1134,22 @@ describe('stuck lead rescue lifecycle',()=>{
     expect(lead).toMatchObject({status:'reviewing',offer_id:null});
     expect(JSON.parse(lead.resolution).reason).toContain('不同日期的重置');
   });
+  it('links a lead when the administrator pastes the offer page URL or short code',async()=>{
+    seed();await call('ingest/offers',[offer]);
+    const task=()=>call('admin/queue',undefined,'admin').then(q=>(q.body.leadTasks as any[])[0]);
+    const bad=await call('admin/leads/1312/resolve',{expectedVersion:(await task()).reviewVersion,outcome:'linked',offerId:'https://example.com/nothing',reason:'重复了'},'admin');
+    expect(bad.status).toBe(400);expect(bad.body.error).toContain('网址');
+    const linked=await call('admin/leads/1312/resolve',{expectedVersion:(await task()).reviewVersion,outcome:'linked',offerId:'https://ai-yangmao.com/#offer-'+offer.id,reason:'重复了'},'admin');
+    expect(linked.status).toBe(200);expect(linked.body.offer).toMatchObject({id:offer.id,title:offer.title});
+    expect(sqlite.prepare('SELECT status,offer_id FROM leads WHERE id=1312').get()).toMatchObject({status:'linked',offer_id:offer.id});
+  });
+  it('links a lead by the four-character short code shown in the admin',async()=>{
+    seed();await call('ingest/offers',[offer]);
+    const {shortCode}=await import('../src/worker/admin');
+    const task=(await call('admin/queue',undefined,'admin')).body.leadTasks[0];
+    const linked=await call('admin/leads/1312/resolve',{expectedVersion:task.reviewVersion,outcome:'linked',offerId:`[${shortCode(offer.id)}]`,reason:'重复了'},'admin');
+    expect(linked.status).toBe(200);expect(linked.body.offer.code).toBe(shortCode(offer.id));
+  });
   it('offers a versioned link-to-existing action and records an explicit final resolution',async()=>{
     seed();await call('ingest/offers',[offer]);
     const q=await call('admin/queue',undefined,'admin');const task=(q.body.leadTasks as any[])[0];

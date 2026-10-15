@@ -1811,7 +1811,7 @@ function leadTaskCard(l) {
     <p class="small">${esc(l.note||'将读取原文、核对官方出处及已有活动')}</p><a href="${esc(l.url)}" target="_blank" rel="noopener">查看原始线索 ↗</a>
     ${r?.evidenceUrl?`<p class="small"><a href="${esc(r.evidenceUrl)}" target="_blank" rel="noopener">处理依据 ↗</a> ${esc(r.quote||'')}</p>`:''}
     <details style="margin-top:8px"><summary>处理这条线索</summary><label class="field">处理依据<input data-lead-reason placeholder="例如：同一次发放的进度说明"></label>
-    <label class="field">关联活动ID<input data-lead-offer placeholder="已核对的完整活动 ID"></label>
+    <label class="field">关联已有条目<input data-lead-offer placeholder="粘贴条目网址、4 位短码（如 2r48）或完整 ID"></label>
     <div class="row"><button class="btn sm" data-lead-resolve="retry">重新官方核验</button><button class="btn sm" data-lead-resolve="linked">关联已有活动</button><button class="btn sm" data-lead-resolve="closed">结束线索</button></div><p class="small" role="status" data-lead-feedback></p></details>
     ${ADM.role==='admin'?`<details style="margin-top:8px"><summary>⚡ 快速上架（我已确认官方或亲测）</summary>${fastTrackFormHtml({inline:true,benefit:l.title||''})}</details>`:''}</div>`;
 }
@@ -1822,10 +1822,10 @@ function bindLeadTasks(box,tasks){
     card.querySelectorAll('[data-lead-resolve]').forEach(button=>button.addEventListener('click',async()=>{
       const outcome=button.dataset.leadResolve,reason=card.querySelector('[data-lead-reason]').value.trim(),offerId=card.querySelector('[data-lead-offer]').value.trim(),message=card.querySelector('[data-lead-feedback]');
       if(outcome!=='retry'&&reason.length<2){message.textContent='请先填写处理依据';return;}
-      if(outcome==='linked'&&!offerId){message.textContent='请填写已核对的活动ID';return;}
+      if(outcome==='linked'&&!offerId){message.textContent='请填写要关联的条目：网址、短码或 ID';return;}
       const buttons=card.querySelectorAll('[data-lead-resolve]');buttons.forEach(b=>b.disabled=true);
-      try{await adm(`/leads/${l.id}/resolve`,{expectedVersion:l.reviewVersion,outcome,reason:reason||'管理员要求重新官方核验',...(offerId?{offerId}:{})});
-        message.textContent=outcome==='retry'?'已排入自动官方复核，下轮处理':outcome==='linked'?'已关联，处理结果已保存':'已结束，处理依据已保存';
+      try{const done=await adm(`/leads/${l.id}/resolve`,{expectedVersion:l.reviewVersion,outcome,reason:reason||'管理员要求重新官方核验',...(offerId?{offerId}:{})});
+        message.textContent=outcome==='retry'?'已排入自动官方复核，下轮处理':outcome==='linked'?`已关联到 [${done?.offer?.code??''}] ${done?.offer?.title??''}`:'已结束，处理依据已保存';
         card.dataset.resolved='1';
       }catch(e){message.textContent=e.message;buttons.forEach(b=>b.disabled=false);}
     }));
