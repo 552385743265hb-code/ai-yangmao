@@ -50,3 +50,13 @@ it('does not judge non-reset offers or offers without dates',()=>{
  expect(leadOccurrenceMismatch(day10Reply,{title:'Mistral 学生价',valueText:'5.99美元',claimStart:'2026-01-01'})).toBeNull();
  expect(leadOccurrenceMismatch(day10Reply,{title:'Codex 重置',valueText:'',tags:['reset']})).toBeNull();
 });
+
+import {leadReviewStale,LEAD_REVIEW_MAX_AGE_MS} from '../src/shared/lead-review';
+it('stops automatic review of leads older than three days, except manual submissions and admin retries',()=>{
+ const now=Date.parse('2026-10-15T12:00:00Z'),old=new Date(now-LEAD_REVIEW_MAX_AGE_MS-1).toISOString(),fresh=new Date(now-3600_000).toISOString();
+ const retry={status:'retry' as const,jobId:'j',attempts:2,inconclusive:0,checkedAt:old,nextAttemptAt:old,reason:'搜索服务本轮冷却',queries:[],candidates:[]};
+ expect(leadReviewStale({origin:'linuxdo',createdAt:old,resolution:retry},now)).toBe(true);
+ expect(leadReviewStale({origin:'linuxdo',createdAt:fresh,resolution:retry},now)).toBe(false);
+ expect(leadReviewStale({origin:'manual',createdAt:old,resolution:retry},now)).toBe(false);
+ expect(leadReviewStale({origin:'linuxdo',createdAt:old,resolution:{...retry,attempts:0,reason:'管理员自定义理由'}},now)).toBe(false);
+});

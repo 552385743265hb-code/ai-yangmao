@@ -1101,6 +1101,11 @@ describe('stuck lead rescue lifecycle',()=>{
     const jobs=await Promise.all([1,2].map(()=>call('ingest/lead-reviews/1312/claim',{})));
     expect(jobs.filter(r=>r.body.claimed)).toHaveLength(1);
   });
+  it('does not automatically re-review leads older than three days',async()=>{
+    sqlite.prepare("INSERT INTO leads(id,origin,url,title,status,raw,created_at) VALUES(1312,'linuxdo','https://vendor.example/old','旧线索','reviewing','原始线索','2026-01-01T00:00:00.000Z')").run();
+    expect((await call('ingest/lead-reviews/queue?limit=4')).body.jobs).toEqual([]);
+    expect((await call('ingest/lead-reviews/queue?limit=4&ids=1312')).body.jobs).toMatchObject([{id:1312}]);
+  });
   it('records a timed retry then exposes an actionable manual task instead of losing the lead',async()=>{
     seed();const lease=await call('ingest/lead-reviews/1312/claim',{});
     const result=await call('ingest/lead-reviews/1312/result',{jobId:lease.body.jobId,outcome:'retry',reason:'官方页面暂时不可达',candidates:[],queries:[]});

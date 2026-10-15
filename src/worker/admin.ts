@@ -16,7 +16,7 @@ import { IdentityService } from './identity/service';
 import { IdentityError } from './identity/store';
 import { sha256,stableJson } from '../shared/identity/normalize';
 import { publicationError, validateStoredOffer } from './publication';
-import {leadTask,leadReviewVersion,leadReviewDue,type LeadResolution} from '../shared/lead-review';
+import {ADMIN_RETRY_REASON,leadTask,leadReviewVersion,leadReviewDue,type LeadResolution} from '../shared/lead-review';
 import { leadPriority } from '../shared/leads';
 import { isReviewField } from '../shared/spec';
 import { createComment, removeComment, legacyNoteStatement, commentMutationGuard, commentBodyLimit } from './comments';
@@ -570,7 +570,7 @@ admin.post('/leads/:id/:action{dismiss|reviewing|retry}', async c => {
   const body=await c.req.json().catch(()=>({}));
   if(!['new','reviewing'].includes(l.status)||body.expectedVersion!==leadReviewVersion(l))return c.json({error:'线索版本已变化或缺少版本，请刷新后处理'},409);
   if(l.resolution?.identityTaskIds?.length)return c.json({error:'请使用身份任务或拒绝决定的显式重开接口'},409);
-  const resolution:LeadResolution={status:action==='dismiss'?'closed':'retry',jobId:crypto.randomUUID(),attempts:0,inconclusive:0,checkedAt:new Date().toISOString(),nextAttemptAt:action==='dismiss'?null:new Date().toISOString(),reason:String(body.reason??(action==='dismiss'?'管理员忽略线索':'管理员要求重新官方核验')).slice(0,1000),queries:[],candidates:[]};
+  const resolution:LeadResolution={status:action==='dismiss'?'closed':'retry',jobId:crypto.randomUUID(),attempts:0,inconclusive:0,checkedAt:new Date().toISOString(),nextAttemptAt:action==='dismiss'?null:new Date().toISOString(),reason:String(body.reason??(action==='dismiss'?'管理员忽略线索':ADMIN_RETRY_REASON)).slice(0,1000),queries:[],candidates:[]};
   if(action==='dismiss'){
     const ownerLabel=ownerRejectInput(body as {reasonCategory?:unknown;reasonCode?:unknown});
     if(!ownerLabel)return c.json({error:'请选择拒绝类别'},400);
