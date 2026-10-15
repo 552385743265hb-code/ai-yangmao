@@ -29,4 +29,14 @@ export async function settleModel(reservation: ModelReservation, provider: strin
   }
 }
 
+/** 按固定费用预留（如联网搜索插件按次计费），与模型调用共用月度付费上限。 */
+export async function reserveFixed(provider: string, costCny: number): Promise<ModelReservation> {
+  try {
+    const result = await api<{ id: number }>('/model-budget/reserve', { provider, tokens: 0, costCny });
+    return { id: result.id, tokens: 0, costCny };
+  } catch (error) {
+    throw new BudgetExhaustedError(`搜索预算无法预留：${(error as Error).message}`);
+  }
+}
+
 export const modelBudget = { reserve: reserveModel, settle: settleModel };

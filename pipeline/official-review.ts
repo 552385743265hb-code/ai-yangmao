@@ -3,7 +3,7 @@ import { toOffer } from './offer-draft';
 import type { Source } from './collectors';
 import { fetchPage, relevantText, api } from './lib';
 import { extract, modelAvailable, DeferError } from './llm';
-import { modelBudget, BudgetExhaustedError, BudgetLedgerError } from './budget';
+import { modelBudget, BudgetExhaustedError, BudgetLedgerError, reserveFixed, settleModel } from './budget';
 import { officialTier, officialActivityMismatch, type OfficialPlatform, type OfficialSource } from '../src/shared/official-review';
 import { offerIn, type OfferIn } from '../src/shared/ingest';
 import { normUrl } from '../src/shared/dedupe';
@@ -24,8 +24,41 @@ export function parseSearchResults(body:string):string[] {
   if(/rate limit|quota exceeded|API key required/i.test(text))throw new Error('搜索服务额度或访问受限');
   return [...new Set([...text.matchAll(/^URL:\s*(https?:\/\/\S+)/gm)].map(m=>m[1]))].slice(0,10);
 }
+// Exa 匿名端点很快限流，之后整轮暂停搜索，社区/媒体线索全部转重试（2026-10-15）。限流或出错时改用 OpenRouter 联网搜索插件：
+// 免费模型 + web 插件约 $0.007/次，按次预留并入账到同一个月度付费上限，每轮最多 OPENROUTER_SEARCH_PER_RUN 次。
+const USD_CNY=7.2;
+let openRouterSearchesLeft=Number(process.env.OPENROUTER_SEARCH_PER_RUN??6);
+export function openRouterCitations(payload:unknown):string[]{
+  const message=(payload as {choices?:{message?:{annotations?:{type?:string;url_citation?:{url?:unknown}}[]}}[]})?.choices?.[0]?.message;
+  return [...new Set((message?.annotations??[]).map(a=>a.url_citation?.url).filter((u):u is string=>typeof u==='string'&&/^https?:\/\//.test(u)))];
+}
+async function searchViaOpenRouter(query:string,deadlineAt:number):Promise<string[]>{
+  const key=process.env.OPENROUTER_API_KEY;
+  if(!key||openRouterSearchesLeft<=0)throw new Error('搜索服务额度或访问受限');
+  openRouterSearchesLeft--;
+  const reservation=await reserveFixed('openrouter-web',Number(process.env.OPENROUTER_SEARCH_CNY??0.06));
+  let cost=0;
+  try{
+    const response=await fetch('https://openrouter.ai/api/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${key}`},
+      body:JSON.stringify({model:process.env.OPENROUTER_SEARCH_MODEL??'openrouter/free',plugins:[{id:'web',max_results:5}],max_tokens:300,
+        messages:[{role:'user',content:`Find the issuer's own official announcement, documentation or official X post for this exact AI benefit. Reply with URLs only.\n${query}`}]}),
+      signal:AbortSignal.timeout(Math.max(1,Math.min(30000,deadlineAt-Date.now())))});
+    if(!response.ok)throw new Error(`联网搜索 HTTP ${response.status}`);
+    const payload=await response.json() as {usage?:{cost?:number}};
+    cost=Number(payload.usage?.cost??0)*USD_CNY;
+    return openRouterCitations(payload);
+  }finally{await settleModel(reservation,'openrouter-web',0,Number.isFinite(cost)?cost:reservation.costCny);}
+}
 export async function searchOfficial(query:string,deadlineAt:number):Promise<string[]> {
   if(Date.now()>=deadlineAt)throw new DeferError('本轮官方搜索时间不足');
+  try{return await searchExa(query,deadlineAt);}
+  catch(error){
+    if(error instanceof DeferError)throw error;
+    // 备用搜索也失败（含预算用尽）时保留原错误：调用方据此暂停本轮搜索并转重试，不当作“没有官方公告”。
+    try{return await searchViaOpenRouter(query,deadlineAt);}catch{throw error;}
+  }
+}
+async function searchExa(query:string,deadlineAt:number):Promise<string[]> {
   const response=await fetch(SEARCH_URL,{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json, text/event-stream',...(process.env.EXA_API_KEY?{'x-api-key':process.env.EXA_API_KEY}:{})},
     body:JSON.stringify({jsonrpc:'2.0',id:1,method:'tools/call',params:{name:'web_search_exa',arguments:{query,numResults:5,objective:'Find the issuer’s own official announcement, documentation or official X post for this exact AI benefit. Prefer primary sources. Return source URLs; exclude community reposts and reseller promotions.'}}}),
     signal:AbortSignal.timeout(Math.max(1,Math.min(20000,deadlineAt-Date.now())))});
