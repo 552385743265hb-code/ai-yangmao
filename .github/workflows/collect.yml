@@ -77,7 +77,7 @@ jobs:
           DEEPSEEK_MODEL: ${{ vars.DEEPSEEK_MODEL || 'deepseek-flash' }}
           DEEPSEEK_PRICE_IN: ${{ vars.DEEPSEEK_PRICE_IN || '3' }}
           DEEPSEEK_PRICE_OUT: ${{ vars.DEEPSEEK_PRICE_OUT || '10' }}
-          MONTHLY_COST_CAP_CNY: ${{ vars.MONTHLY_COST_CAP_CNY || '10' }}
+          MONTHLY_COST_CAP_CNY: ${{ vars.MONTHLY_COST_CAP_CNY || '72' }}
           EXA_API_KEY: ${{ secrets.EXA_API_KEY }}
           JINA_API_KEY: ${{ secrets.JINA_API_KEY }}
           REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}

@@ -67,7 +67,7 @@ gh workflow run collect.yml --ref main -f fast_leads=true -f lead_limit=50
 
 `pipeline/llm.ts`加载通用规则、D1 平台画像及管理员纠正。现行平台事实在 `platform_profiles`；`pipeline/platform-notes.md` 已冻结为历史快照，只在没有画像时回退。抽取优先使用画像里的 pitfalls 与 patterns。GitHub 采集读取远端代码；修改规则后只部署 Worker 不会更新管线，需推送。画像变更写 D1，不靠改这份历史文件。
 
-模型链为Gemini免费层、OpenRouter、可选GLM、预算内DeepSeek付费兜底。免费供应商受限会本轮冷却；重要或积压超过2小时的线索可使用既有付费预算。默认`DAILY_TOKEN_CAP=0`、`MONTHLY_COST_CAP_CNY=10`，实际覆盖以部署变量和Actions配置为准。预算先原子预留再结算，用量不明保留预留；RSS单篇失败不阻断后续，FORCE可以重抽。
+模型链为Gemini免费层、OpenRouter、可选GLM、预算内DeepSeek付费兜底。免费供应商受限会本轮冷却；重要或积压超过2小时的线索可使用既有付费预算。默认`DAILY_TOKEN_CAP=0`、`MONTHLY_COST_CAP_CNY=72`（2026-10-15 管理员定为每月约 $10），实际覆盖以部署变量和Actions配置为准。预算先原子预留再结算，用量不明保留预留；RSS单篇失败不阻断后续，FORCE可以重抽。
 
 工作流`extraction-lessons.yml`用合成文本驱动真实模型，`only_cases`以[scripts/eval-extraction-lessons.ts](../scripts/eval-extraction-lessons.ts)的cases为准，留空全部；涵盖套餐/免费额度、账单模式、日期、重置、身份认证、资助与比赛及官方活动错配。禁止付费兜底，不写条目/线索，模型仍记预算，输出保留artifact。通过不等于官网事实全部核验；失败需查具体结果，不能降低验收标准。
 

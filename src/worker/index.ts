@@ -698,7 +698,7 @@ ingest.post('/model-budget/reserve', async c => {
   if (!body.success) return c.json({ error: '预算预留参数不正确' }, 400);
   const line = body.data.line ?? 'extraction';
   const tokenCap = Number(c.env.DAILY_TOKEN_CAP ?? 0);
-  const costCap = line === 'screening' ? Number(c.env.SCREENING_MONTHLY_CAP_CNY ?? 72) : Number(c.env.MONTHLY_COST_CAP_CNY ?? 10);
+  const costCap = line === 'screening' ? Number(c.env.SCREENING_MONTHLY_CAP_CNY ?? 72) : Number(c.env.MONTHLY_COST_CAP_CNY ?? 72);
   const freeDaily = Number(c.env.OPENROUTER_FREE_DAILY ?? 1000);
   const urgentReserve = Number(c.env.SCREENING_URGENT_RESERVE ?? 200);
   const backfillDaily = Number(c.env.SCREENING_BACKFILL_DAILY ?? 400);
