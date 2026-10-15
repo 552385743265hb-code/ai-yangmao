@@ -27,3 +27,26 @@ it('keeps actual changed official policies eligible for review at their original
  const lead={url:c.evidence.url,title:'Mistral学生计划调整',raw:''};
  expect(leadScopeMismatch(lead,p,[],{...c,valueText:'学生改为每月4.99美元'})).toBeNull();
 });
+
+import {leadOccurrenceMismatch,xPostTime} from '../src/shared/lead-scope';
+// 2026-10-15：Day 10 重置的回复被模型判为“已收录”，并入 10 月 12 日 Day 8 和 10 月 10 日条目。
+const day8={title:'Tibo Day 8 全局使用额度重置',valueText:'全局使用额度重置',tags:['reset'],claimStart:'2026-10-12',claimEnd:'2026-10-12',sourceTz:'America/Los_Angeles',publishedAt:'2026-10-13T01:03:25.000Z'};
+const day10Reply={url:'https://x.com/thsottiaux/status/2110595554036400151',createdAt:'2026-10-15T05:28:23.038Z'};
+it('reads the post time from an X status id',()=>{
+ expect(new Date(xPostTime('https://x.com/thsottiaux/status/2110595484180214059')!).toISOString()).toBe('2026-10-15T04:55:51.053Z');
+ expect(xPostTime('https://linux.do/t/topic/1')).toBeNull();
+});
+it('refuses to fold a later reset round into an earlier reset offer',()=>{
+ expect(leadOccurrenceMismatch(day10Reply,day8)).toMatch(/不同日期的重置/);
+ // 去重索引只有开始日和发布时间、没有时区时同样拦截
+ expect(leadOccurrenceMismatch(day10Reply,{title:day8.title,valueText:day8.valueText,tags:['reset'],claimStart:'2026-10-12',publishedAt:day8.publishedAt})).toBeTruthy();
+ expect(leadOccurrenceMismatch({url:'https://x.com/thsottiaux/status/2110618732666257557'},{title:'Codex 额度全球重置',valueText:'',claimStart:'2026-10-10',claimEnd:'2026-10-10',sourceTz:'America/Los_Angeles',publishedAt:'2026-10-10T22:16:20.000Z'})).toBeTruthy();
+});
+it('keeps confirmations and previews of the same round linkable',()=>{
+ expect(leadOccurrenceMismatch({url:'https://x.com/thsottiaux/status/2109873287853707513'},day8)).toBeNull(); // “It's done.” 同一轮到账确认
+ expect(leadOccurrenceMismatch({url:'https://community.example/p',createdAt:'2026-10-12T02:00:00Z'},day8)).toBeNull(); // 当天预告/转述
+});
+it('does not judge non-reset offers or offers without dates',()=>{
+ expect(leadOccurrenceMismatch(day10Reply,{title:'Mistral 学生价',valueText:'5.99美元',claimStart:'2026-01-01'})).toBeNull();
+ expect(leadOccurrenceMismatch(day10Reply,{title:'Codex 重置',valueText:'',tags:['reset']})).toBeNull();
+});

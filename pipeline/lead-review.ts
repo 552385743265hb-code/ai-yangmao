@@ -4,13 +4,15 @@ import {extract,modelAvailable,DeferError} from './llm';
 import {modelBudget,BudgetExhaustedError,BudgetLedgerError} from './budget';
 import {searchOfficial} from './official-review';
 import {officialTier,officialActivityMismatch,type OfficialPlatform,type OfficialSource} from '../src/shared/official-review';
-import {platformMentioned,leadScopeMismatch} from '../src/shared/lead-scope';
+import {platformMentioned,leadScopeMismatch,leadOccurrenceMismatch} from '../src/shared/lead-scope';
 import {normUrl} from '../src/shared/dedupe';
 import {offerIn} from '../src/shared/ingest';
 import {toOffer} from './offer-draft';
 import type {Source} from './collectors';
-interface Existing {id:string;platformId:string;title:string;valueText:string;claimStart:string|null;publishedAt:string|null;evidenceUrl:string;reviewState:string}
-interface Job {claimed:boolean;jobId:string;lead:{id:number;title:string|null;url:string;raw:string|null;origin:string};platforms:OfficialPlatform[];sources:OfficialSource[];existing:Existing[];previousCandidates?:string[]}
+interface Existing {id:string;platformId:string;title:string;valueText:string;claimStart:string|null;claimEnd?:string|null;sourceTz?:string|null;tags?:string[]|null;publishedAt:string|null;evidenceUrl:string;reviewState:string}
+// 已有条目索引必须带日期：只给标题时，模型分不清第 8 天和第 10 天的“Codex 额度重置”（2026-10-15）。
+const existingLine=(o:Existing)=>`${o.id}｜${o.title}｜${o.valueText}｜开始:${o.claimStart??'未知'}｜结束:${o.claimEnd??'未知'}｜发布:${o.publishedAt??'未知'}｜证据:${o.evidenceUrl}`;
+interface Job {claimed:boolean;jobId:string;lead:{id:number;title:string|null;url:string;raw:string|null;origin:string;createdAt?:string|null};platforms:OfficialPlatform[];sources:OfficialSource[];existing:Existing[];previousCandidates?:string[]}
 export interface LeadReviewOptions {limit:number;ids?:number[];deadlineAt:number;dry:boolean;allowPaid:boolean;canContinue:()=>boolean;account:(tokens:number,cost:number)=>void;log:(...args:unknown[])=>void}
 export async function runLeadReviews(options:LeadReviewOptions){
   const stats={checked:0,linked:0,closed:0,retry:0,manual:0,deferred:0};
@@ -66,7 +68,7 @@ export async function runLeadReviews(options:LeadReviewOptions){
           if(!owner||(page.via==='jina'&&!page.sourceVerified)){technical=true;reasons.push('正文来源无法确认：'+url);continue;}
           readable++;
           const result=await extract(owner.name,page.finalUrl,page.text.slice(0,22000),options.log,{allowPaid:options.allowPaid,deadlineAt,budget:modelBudget,
-            evidenceText:page.text,platformIds:[owner.id],platformList:platforms.map(p=>p.id+'='+p.name).join('；'),existing:job.existing.filter(o=>o.platformId===owner.id).map(o=>`${o.id}｜${o.title}｜${o.valueText}｜证据:${o.evidenceUrl}`).join('\n'),corrections,leadTarget:JSON.stringify({title:lead.title,originUrl:lead.url,summary:targetText.slice(0,2500)})});
+            evidenceText:page.text,platformIds:[owner.id],platformList:platforms.map(p=>p.id+'='+p.name).join('；'),existing:job.existing.filter(o=>o.platformId===owner.id).map(existingLine).join('\n'),corrections,leadTarget:JSON.stringify({title:lead.title,originUrl:lead.url,summary:targetText.slice(0,2500)})});
           options.account(result.tokens,result.costCny);
           if(result.offers.length){
             if(result.offers.length>50){hadInvalid=true;reasons.push('候选超过单轮上限，需人工拆分核对');continue;}
@@ -83,7 +85,10 @@ export async function runLeadReviews(options:LeadReviewOptions){
               if(mismatch){hadInvalid=true;reasons.push(mismatch);continue;}
               const tier=officialTier(page.finalUrl,issuer,sources.filter(s=>s.platformId===issuer.id));
               if(!tier||!next.excerpts.benefit?.trim()){hadInvalid=true;reasons.push('未获得发放方权益原文');continue;}
-              const prior=next.sameAs?job.existing.find(o=>o.id===next.sameAs&&o.platformId===issuer.id):undefined;
+              const sameAs=next.sameAs?job.existing.find(o=>o.id===next.sameAs&&o.platformId===issuer.id):undefined;
+              const staleRound=sameAs?leadOccurrenceMismatch(lead,sameAs):null;
+              if(staleRound)reasons.push(staleRound);
+              const prior=staleRound?undefined:sameAs;
               const draft=offerIn.safeParse({...toOffer({id:'',kind:lead.origin,platformId:issuer.id,tier} as Source,{...next,...(prior?{fixedId:prior.id}:{})},page.finalUrl,relevantText(page.text),page),leadId:lead.id,leadReviewJobId:job.jobId});
               if(!draft.success){hadInvalid=true;reasons.push('抽取字段不完整，需补字段');continue;}
               const saved=await postIdentityOffers([draft.data]);
@@ -96,8 +101,11 @@ export async function runLeadReviews(options:LeadReviewOptions){
           }else if(result.leadAssessment){
             const a=result.leadAssessment;
             const matched=job.existing.find(o=>o.id===a.offerId&&o.platformId===owner.id);
-            const mismatch=matched?leadScopeMismatch(lead,owner,sources.filter(s=>s.platformId===owner.id),{...matched,type:'',evidence:{url:matched.evidenceUrl}}):null;
+            const mismatch=matched?leadScopeMismatch(lead,owner,sources.filter(s=>s.platformId===owner.id),{...matched,type:'',evidence:{url:matched.evidenceUrl}})??leadOccurrenceMismatch(lead,matched):null;
             if(mismatch){hadInvalid=true;reasons.push(mismatch);continue;}
+            // “已收录”须由原线索页或已有条目的证据页本身证明；搜索到的新闻列表没提到不能说明是同一次发放（7615 用了 OpenAI RSS）。
+            const provenOn=[lead.url,matched?.evidenceUrl].filter((u):u is string=>!!u).map(normUrl);
+            if(a.outcome==='existing'&&matched&&!provenOn.includes(normUrl(page.finalUrl))){reasons.push('关联判断来自无关页面，需在原线索或已有条目证据页核对');continue;}
             if(!hadInvalid&&a.outcome==='existing'&&matched){
               offerIds.push(a.offerId!);outcome='linked';reason=a.reason;evidenceUrl=page.finalUrl;quote=a.quote;sourceText=page.text;break;
             }

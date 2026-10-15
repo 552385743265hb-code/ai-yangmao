@@ -682,7 +682,7 @@ ingest.get('/offers-index', async c => {
   const input=z.object({cursor:z.string().max(200).optional(),product:z.string().max(200).optional()}).safeParse(c.req.query());
   if(!input.success)return c.json({error:'invalid index cursor'},400);
   const {cursor,product}=input.data;
-  const rows=await c.env.DB.prepare(`SELECT o.id,o.platform_id AS platformId,o.title,o.value_text AS valueText,o.claim_start AS claimStart,o.published_at AS publishedAt,o.tags,o.review_state AS reviewState,json_extract(o.evidence,'$.url') AS evidenceUrl,
+  const rows=await c.env.DB.prepare(`SELECT o.id,o.platform_id AS platformId,o.title,o.value_text AS valueText,o.claim_start AS claimStart,o.claim_end AS claimEnd,o.source_tz AS sourceTz,o.published_at AS publishedAt,o.tags,o.review_state AS reviewState,json_extract(o.evidence,'$.url') AS evidenceUrl,
     (SELECT d.scope_json FROM benefit_entities e JOIN review_decisions d ON d.entity_id=e.id WHERE e.canonical_offer_id=o.id AND d.action='reject' ORDER BY d.created_at DESC LIMIT 1) AS rejectionScope
     FROM offers o WHERE o.id>? AND (? IS NULL OR o.platform_id=?) ORDER BY o.id LIMIT 251`).bind(cursor??'',product??null,product??null).all<Record<string,unknown>>();
   const visible=rows.results.slice(0,250);

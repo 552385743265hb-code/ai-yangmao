@@ -2,6 +2,7 @@
 import { XMLParser } from 'fast-xml-parser';
 import { BROWSER_UA, UA, fetchRetry, fetchText, isLead, sleep } from './lib';
 import type { LeadIn } from '../src/shared/ingest';
+import { xPostTime } from '../src/shared/lead-scope';
 
 export interface Source { id: string; kind: string; url: string; tier: string; platformId: string | null; lastHash: string | null; lastText?: string | null; lastOkAt?: string | null; config?: Record<string, unknown>; deferThisRun?: boolean; platform: { id: string; name: string; status: string } | null; autoPublish: boolean }
 
@@ -13,18 +14,29 @@ export async function aihot(src: Source): Promise<LeadIn[]> {
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const j = await res.json() as Record<string, unknown>;
   if (Array.isArray(j.events)) {
-    // 只收最近 7 天的重置；同一次重置只取最新的一条原帖，避免重复
+    // 只收最近 7 天的重置。每个事件一条线索，用最早的那条原帖（主公告）作地址：AIHOT 按新到旧排列，
+    // 取第一条会拿到“2 小时内到账”“搞定收工”这类没有上下文的回复（2026-10-15 Day 10 重置因此被误判为旧轮次）。
     const since = Date.now() - 7 * 86400_000;
-    return (j.events as { title?: string; displayLabel?: string; occurredOn?: string; createdAt?: string; posts?: { url?: string; text?: string; originalText?: string }[] }[])
+    type Post = { url?: string; text?: string; originalText?: string };
+    return (j.events as { title?: string; displayLabel?: string; occurredOn?: string; createdAt?: string; posts?: Post[] }[])
       .filter(e => Date.parse(e.occurredOn ?? e.createdAt ?? '') >= since)
-      .flatMap(e => (e.posts ?? []).filter(p => p.url).slice(0, 1).map(p => ({
-        origin: 'aihot' as const, url: p.url!, title: `Codex ${e.displayLabel ?? ''}：${e.title ?? ''}${e.occurredOn ? `（${e.occurredOn}）` : ''}`.slice(0, 300),
-        raw: [p.text, p.originalText].filter(Boolean).join('\n').slice(0, 4000),
-      })));
+      .flatMap(e => {
+        const posts = (e.posts ?? []).filter(p => p.url).map(p => ({ ...p, at: xPostTime(p.url!) }))
+          .sort((a, b) => (a.at ?? Infinity) - (b.at ?? Infinity));
+        const main = posts[0];
+        if (!main) return [];
+        const when = main.at != null ? new Date(main.at).toISOString().slice(0, 16) + 'Z' : (e.occurredOn ?? e.createdAt ?? '');
+        return [{
+          origin: 'aihot' as const, url: main.url!,
+          title: `Codex ${e.displayLabel ?? ''}：${e.title ?? ''}（${e.occurredOn ?? when}）`.slice(0, 300),
+          raw: [`事件时间：${when}`, ...posts.map(p => `${p.at != null ? new Date(p.at).toISOString() : ''} ${p.url}\n${[p.originalText, p.text].filter(Boolean).join('\n')}`)].join('\n').slice(0, 4000),
+        }];
+      });
   }
   const items = (j.items ?? []) as { title?: string; summary?: string | null; links?: { original?: string }; source?: { name?: string } }[];
   return items
-    .filter(i => i.links?.original && isLead(i.title ?? ''))
+    // AIHOT 摘要是一句话中文概述，标题常只写事件（“官方补偿……”），一起判断。
+    .filter(i => i.links?.original && isLead(`${i.title ?? ''} ${i.summary ?? ''}`))
     .map(i => ({ origin: 'aihot' as const, url: i.links!.original!, title: (i.title ?? '').slice(0, 300), raw: `${i.source?.name ?? ''}\n${i.summary ?? ''}`.slice(0, 4000) }));
 }
 
@@ -59,14 +71,17 @@ export function parseFeed(body: string): FeedItem[] {
   const d = xml.parse(body);
   const arr = <T>(x: T | T[] | undefined): T[] => (x == null ? [] : Array.isArray(x) ? x : [x]);
   const text = (x: unknown): string => (typeof x === 'string' ? x : x && typeof x === 'object' && '#text' in x ? String((x as { '#text': unknown })['#text']) : '');
+  // IT之家等把正文 HTML 转义后放进 description（&lt;p&gt;…），先还原再去标签，否则前 300 字全是标记。
+  const plain = (x: string) => x.replace(/<!\[CDATA\[|\]\]>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#0?39;|&apos;/g, "'")
+    .replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
   if (d.feed) {
     return arr(d.feed.entry).map((e: Record<string, unknown>) => {
       const links = arr(e.link as { href?: string; rel?: string } | { href?: string; rel?: string }[]);
       const link = links.find(l => !l.rel || l.rel === 'alternate')?.href ?? links[0]?.href ?? '';
-      return { title: text(e.title), link, summary: text(e.content ?? e.summary).replace(/<[^>]+>/g, ' ').slice(0, 3000) };
+      return { title: text(e.title), link, summary: plain(text(e.content ?? e.summary)).slice(0, 3000) };
     });
   }
-  return arr(d.rss?.channel?.item).map((i: Record<string, unknown>) => ({ title: text(i.title), link: text(i.link), summary: text(i.description).replace(/<[^>]+>/g, ' ').slice(0, 3000) }));
+  return arr(d.rss?.channel?.item).map((i: Record<string, unknown>) => ({ title: text(i.title), link: text(i.link), summary: plain(text(i.description)).slice(0, 3000) }));
 }
 
 /** Reddit：子版块 RSS，标题命中羊毛关键词的帖子作为线索。 */

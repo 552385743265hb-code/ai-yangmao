@@ -12,6 +12,13 @@ describe('羊毛关键词', () => {
   it('社区线索里的同类说法能被识别', () => {
     for (const s of ['即梦每日登录送66积分', '硅基流动实名认证送16元代金券', 'Dreamina 90% off first month', '邀请好友双方各得250积分']) expect(isLead(s), s).toBe(true);
   });
+  // 2026-10-15 漏抓：故障补偿和只写“重置”的员工公告
+  it('故障补偿、消耗返还和全局重置能被识别', () => {
+    for (const s of ['DeepSeek 服务故障近 5 小时，官方补偿所有 API 用户 7 天内消耗金额', 'DeepSeek 就 10 月 15 日 API 故障致歉并全额补偿 7 日消耗金额',
+      'DeepSeek 要发钱了，过去七天内的花费都会返还', 'DeepSeek API outage: full refund of 7 days of spend as credits', 'Vendor will compensate affected users with API credits',
+      'The reports of my reset button being lost are greatly exaggerated\n\nDay 10/ Reset', 'OpenAI 重置按钮回归', 'Codex 全局重置已完成', 'Global reset landing by EOD PST time']) expect(isLead(s), s).toBe(true);
+    for (const s of ['京东 7999 元苹果 iPhone Duo 早鸟权益包下架，部分消费者投诉无法退款', 'Grok Bot 订票出错 SpaceX 全额赔付', '性能最高提升 35%：非官方英伟达 DLSS 预设 C 登场']) expect(isLead(s), s).toBe(false);
+  });
 });
 
 import { parseModelJson } from '../pipeline/llm';

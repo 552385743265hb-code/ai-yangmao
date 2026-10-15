@@ -1,6 +1,6 @@
 import {closeIdentityLead} from './identity/lead-closure';
 import { aggregateIdentityLead } from './identity/leads';
-import {leadScopeMismatch} from '../shared/lead-scope';
+import {leadScopeMismatch,leadOccurrenceMismatch} from '../shared/lead-scope';
 import {normUrl} from '../shared/dedupe';
 import {Hono} from 'hono';
 import {drizzle} from 'drizzle-orm/d1';
@@ -33,7 +33,7 @@ leadReviewRoutes.post('/:id/claim',async c=>{
   if(!changed.length)return c.json({claimed:false});
   const platforms=await d.select().from(s.platforms).where(eq(s.platforms.status,'approved'));
   const sources=await d.select({platformId:s.sources.platformId,url:s.sources.url,tier:s.sources.tier}).from(s.sources);
-  const existing=await d.select({id:s.offers.id,platformId:s.offers.platformId,title:s.offers.title,valueText:s.offers.valueText,claimStart:s.offers.claimStart,publishedAt:s.offers.publishedAt,reviewState:s.offers.reviewState,evidenceUrl:sql<string>`json_extract(${s.offers.evidence},'$.url')`}).from(s.offers);
+  const existing=await d.select({id:s.offers.id,platformId:s.offers.platformId,title:s.offers.title,valueText:s.offers.valueText,claimStart:s.offers.claimStart,claimEnd:s.offers.claimEnd,sourceTz:s.offers.sourceTz,tags:s.offers.tags,publishedAt:s.offers.publishedAt,reviewState:s.offers.reviewState,evidenceUrl:sql<string>`json_extract(${s.offers.evidence},'$.url')`}).from(s.offers);
   return c.json({claimed:true,jobId:resolution.jobId,lead:l,platforms,sources,existing,previousCandidates:l.resolution?.candidates??[]});
 });
 leadReviewRoutes.post('/:id/result',async c=>{
@@ -44,14 +44,19 @@ leadReviewRoutes.post('/:id/result',async c=>{
   const b=body.data,d=db(c.env),[l]=await d.select().from(s.leads).where(eq(s.leads.id,Number(c.req.param('id'))));
   if(!l||l.resolution?.jobId!==b.jobId||l.status!=='reviewing')return c.json({error:'线索已由其他操作处理，请刷新'},409);
   if(l.resolution.status!=='checking')return c.json({ok:true,status:l.resolution.status,nextAttemptAt:l.resolution.nextAttemptAt});
-  for(const id of b.offerIds){
+  // 关联到线索之前就存在的重置条目时，线索必须属于同一轮次；否则降为人工处理，不能把新一轮重置并入旧条目（2026-10-15）。
+  const staleRounds:string[]=[];
+  for(const id of [...b.offerIds]){
     const [offer]=await d.select().from(s.offers).where(eq(s.offers.id,id));
     if(!offer)return c.json({error:'关联条目尚未入库'},400);
+    const stale=offer.createdAt<l.createdAt?leadOccurrenceMismatch(l,offer):null;
+    if(stale){staleRounds.push(stale);b.offerIds=b.offerIds.filter(x=>x!==id);continue;}
     const [platform]=await d.select().from(s.platforms).where(eq(s.platforms.id,offer.platformId));
     const sources=await d.select().from(s.sources).where(eq(s.sources.platformId,offer.platformId));
     const mismatch=platform?leadScopeMismatch(l,platform,sources,offer):'发放平台不存在';
     if(mismatch)return c.json({error:mismatch},400);
   }
+  if(staleRounds.length&&b.outcome==='linked'&&!b.offerIds.length){b.outcome='manual';b.reason=`${staleRounds[0]}；${b.reason}`.slice(0,1000);}
   if(b.outcome==='linked'&&!b.offerIds.length)return c.json({error:'缺少关联条目'},400);
   if(b.outcome==='closed'){
     const platforms=await d.select().from(s.platforms).where(eq(s.platforms.status,'approved'));

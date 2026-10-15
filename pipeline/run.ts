@@ -4,7 +4,7 @@ import type {FetchedPage} from './lib';
 import { resumeIdentityIntake } from './identity-workflow';
 import { postIdentityOffers } from './identity-client';
 import { captureIdentityShadow } from './identity-shadow';
-import {platformMentioned,leadScopeMismatch} from '../src/shared/lead-scope';
+import {platformMentioned,leadScopeMismatch,leadOccurrenceMismatch} from '../src/shared/lead-scope';
 import {runLeadReviews} from './lead-review';
 import {runFastTrack} from './fast-track';
 import { toOffer } from './offer-draft';
@@ -265,9 +265,9 @@ async function verifyExistingOffers(sources: Source[]) {
   }
 }
 
-interface IndexedOffer { reviewState?:string; rejectionScope?:unknown; id: string; platformId: string; title: string; valueText: string; claimStart?: string | null; publishedAt?: string | null; tags?: string[]; evidenceUrl?: string }
+interface IndexedOffer { reviewState?:string; rejectionScope?:unknown; id: string; platformId: string; title: string; valueText: string; claimStart?: string | null; claimEnd?: string | null; sourceTz?: string | null; publishedAt?: string | null; tags?: string[]; evidenceUrl?: string }
 const indexEntry = (offer: OfferIn): IndexedOffer => ({ id: offer.id, platformId: offer.platformId, title: offer.title, valueText: offer.valueText,
-  claimStart: offer.claimStart, publishedAt: offer.publishedAt, tags: offer.tags, evidenceUrl: offer.evidence.url });
+  claimStart: offer.claimStart, claimEnd: offer.claimEnd, sourceTz: offer.sourceTz, publishedAt: offer.publishedAt, tags: offer.tags, evidenceUrl: offer.evidence.url });
 const formatOfferIndex = (offers: IndexedOffer[]) => offers.map(offer => `${offer.id}｜${offer.title}｜${offer.valueText.slice(0, 40)}｜审核:${offer.reviewState??'unknown'}${offer.rejectionScope?'｜拒绝范围:'+JSON.stringify(offer.rejectionScope):''}｜开始:${offer.claimStart ?? '未知'}${offer.tags?.includes('reset') ? `｜发布:${offer.publishedAt ?? '未知'}｜证据:${offer.evidenceUrl ?? '未知'}` : ''}`).join('\n');
 let idxCache: IndexedOffer[] | null = null;
 async function offerIndex() {
@@ -369,7 +369,9 @@ async function triageLeads(plats: Plat[]) {
       // 同一个活动：沿用已有条目的 id（写入接口会按修订处理，不会新开一条）
       if (e.sameAs && knownIds.has(e.sameAs)) {
         const prev = known.find(k => k.id === e.sameAs)!;
-        if (prev.platformId === p.id) { o.id = prev.id; o.sameOccurrenceAs=prev.id; log(`  #${l.id} 与已有条目 ${prev.id} 是同一活动，合并`); }
+        const staleRound = leadOccurrenceMismatch(l, prev);
+        if (staleRound) log(`  #${l.id} 模型认为同 ${prev.id}，但${staleRound}`);
+        else if (prev.platformId === p.id) { o.id = prev.id; o.sameOccurrenceAs=prev.id; log(`  #${l.id} 与已有条目 ${prev.id} 是同一活动，合并`); }
       }
       if (e.officialUrl && tier === 'media') o.steps = [...(o.steps ?? []), `官方出处：${e.officialUrl}`].slice(0, 6);
       const scopeError=p&&leadScopeMismatch(l,{...p,staffHandles:[]},[],o);
