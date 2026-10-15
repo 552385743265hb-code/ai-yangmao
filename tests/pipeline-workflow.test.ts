@@ -496,3 +496,34 @@ describe('Discord pipeline checkpoint ordering',()=>{
     expect(h.writes.filter(x=>x.url.includes('googleapis'))).toHaveLength(0);
   });
 });
+
+// 2026-10-15：只追最新福利，已收录的内容不再反复交给模型。
+describe('already-listed content is not re-processed', () => {
+  it('links a lead that is the evidence of an approved offer without calling a model', async () => {
+    const h = harness({ leads: [lead], known: [{ id: 'vendor-listed', platformId: 'vendor', title: 'Vendor 免费额度', valueText: '100 美元', reviewState: 'approved', evidenceUrl: lead.url }] });
+    const { runPipeline } = await import('../pipeline/run');
+    const result = await runPipeline();
+    expect(h.reads.some(url => url.includes('googleapis') || url.includes('deepseek') || url.includes('openrouter'))).toBe(false);
+    expect(h.payloads('/status')[0]).toMatchObject({ status: 'linked', offerId: 'vendor-listed' });
+    expect((result.stats as any).leadsLinkedByUrl).toBe(1);
+  });
+  it('does not re-extract an official page when sentences were only removed', async () => {
+    vi.stubEnv('FAST_LEADS', '0');
+    const filler = '<p>Company history, customer stories and product overview without any offer.</p>'.repeat(30);
+    const page = (offers: string[]) => `<html><body><article><h1>Pricing</h1>${offers.map(o => `<p>${o}</p>`).join(filler)}${filler}</article></body></html>`;
+    const offers = ['Free plan includes 100 credits per month.', 'Students get a free trial for 30 days.'];
+    const source = { id: 'pricing', kind: 'web_list', tier: 'site', platformId: 'vendor', platform: { id: 'vendor', name: 'Vendor', status: 'approved' }, url: 'https://vendor.example/pricing', config: {}, lastHash: null, lastText: null };
+    let h = harness({ sources: [source], pages: { [source.url]: page(offers) } });
+    let { runPipeline } = await import('../pipeline/run');
+    await runPipeline();
+    const baseline = h.payloads('/snapshots').find(snapshot => snapshot.hash);
+    expect(baseline?.text).toContain(offers[1]);
+    vi.resetModules();
+    h = harness({ sources: [{ ...source, lastHash: baseline.hash, lastText: baseline.text }], pages: { [source.url]: page(offers.slice(0, 1)) } });
+    ({ runPipeline } = await import('../pipeline/run'));
+    const result = await runPipeline();
+    expect(h.reads.some(url => url.includes('googleapis'))).toBe(false);
+    expect((result.stats as any).unchangedPages).toBe(1);
+    expect(h.payloads('/snapshots').find(snapshot => snapshot.hash)?.hash).not.toBe(baseline.hash);
+  });
+});

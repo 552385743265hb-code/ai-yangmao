@@ -5,6 +5,7 @@ import { resumeIdentityIntake } from './identity-workflow';
 import { postIdentityOffers } from './identity-client';
 import { captureIdentityShadow } from './identity-shadow';
 import {platformMentioned,leadScopeMismatch,leadOccurrenceMismatch} from '../src/shared/lead-scope';
+import { normUrl, officialStatusKey } from '../src/shared/dedupe';
 import {runLeadReviews} from './lead-review';
 import {runFastTrack} from './fast-track';
 import { toOffer } from './offer-draft';
@@ -14,7 +15,7 @@ import { officialTier } from '../src/shared/official-review';
 // 采集管线入口：GitHub Actions 每 6 小时运行一次，也可以手动触发补跑。
 // 流程：取信源 → 抓取 → 只保留和羊毛相关的句子 → 与上次比对 → 有变化才调用模型抽取 → 写入网站（默认进待审）。
 import { aihot, feed, hn, parseFeed, reddit, type Source } from './collectors';
-import { api, approvedTermsStillPresent, fetchPage, fetchText, isFreebie, LEAD_POST_CHUNK, norm, relevantText, sha256 } from './lib';
+import { api, approvedTermsStillPresent, fetchPage, fetchText, isFreebie, LEAD_POST_CHUNK, newRelevantLines, norm, relevantText, sha256 } from './lib';
 import { DeferError, extract, llmAvailable, modelAvailable, paidAvailable, type Extracted } from './llm';
 import { BudgetExhaustedError, BudgetLedgerError, modelBudget } from './budget';
 import { offerIn, type LeadIn, type OfferIn } from '../src/shared/ingest';
@@ -41,7 +42,7 @@ async function screeningProfiles(): Promise<PlatformProfile[]> {
 const LEAD_LIMIT = Number(process.env.LEAD_LIMIT ?? 50);
 const onlyList = (process.env.ONLY_SOURCES ?? '').split(',').map(s => s.trim()).filter(Boolean);
 const only = onlyList.length ? onlyList : null; // 留空 = 全部信源
-const stats = { leadsTriaged: 0, leadOffers: 0, costCny: 0, deferred: 0, backlogDeferred: 0, rereadUnchanged: 0, sources: 0, fetchedSources: 0, ok: 0, failed: 0, changed: 0, leads: 0, offers: 0, pending: 0, extractSkipped: 0, verificationChecked: 0, verificationFailed: 0, verificationDeferred: 0, tokens: 0, coverageDegraded: false, errors: [] as string[] };
+const stats = { leadsTriaged: 0, leadOffers: 0, costCny: 0, deferred: 0, backlogDeferred: 0, rereadUnchanged: 0, unchangedPages: 0, leadsLinkedByUrl: 0, sources: 0, fetchedSources: 0, ok: 0, failed: 0, changed: 0, leads: 0, offers: 0, pending: 0, extractSkipped: 0, verificationChecked: 0, verificationFailed: 0, verificationDeferred: 0, tokens: 0, coverageDegraded: false, errors: [] as string[] };
 const fetchedSourceIds=new Set<string>();
 function noteSourceFetched(src:Source){fetchedSourceIds.add(src.id);stats.fetchedSources=fetchedSourceIds.size;}
 let tokensLeft = DAILY_TOKEN_CAP > 0 ? DAILY_TOKEN_CAP : Infinity;
@@ -167,6 +168,8 @@ async function officialPage(src: Source) {
   const rel = relevantText(text);
   const hash = sha256(rel);
   if (hash === src.lastHash && !FORCE) { await report(src, true); log(`  无变化（${via}）`); return; }
+  // 只有出现新的羊毛相关句子才重新抽取：删句、换顺序不会带来新福利，却让已收录条目每 6 小时被模型重读一遍（2026-10-15）。
+  if (!FORCE && src.lastText != null && !newRelevantLines(src.lastText, rel).length) { await report(src, true, { hash, text: rel }); stats.unchangedPages++; log(`  只有删减或顺序变化，没有新内容（${via}）`); return; }
   stats.changed++;
   log(`  有变化（${via}，相关文本 ${rel.length} 字）`);
   const extractionSource = via === 'jina' ? { ...src, tier: 'media', autoPublish: false } : src;
@@ -332,6 +335,14 @@ async function triageLeads(plats: Plat[]) {
   const triageDeadline=Math.min(deadline-10*60_000,Date.now()+15*60_000);
   for (const l of leads) {
     if (needsWrapUp() || Date.now()>=triageDeadline || tokensLeft < 8000) { stats.deferred++; log('  预算不足或初抽时间已用完，剩余线索留到下次，继续官方补证'); break; }
+    // 线索本身就是某条已上架活动的证据原文（同一网址或同一条 X 帖子）：已收录，不再调用模型（2026-10-15）。
+    // 只看线索自己的地址，不看正文里的链接：同一价格页上出现的新活动仍要抽取。重置活动另按轮次校验。
+    const sameDoc = (a: string, b: string) => { const x = officialStatusKey(a), y = officialStatusKey(b); return x && y ? x === y : normUrl(a) === normUrl(b); };
+    const listed = known.filter(k => k.reviewState === 'approved' && k.evidenceUrl && sameDoc(l.url, k.evidenceUrl) && !leadOccurrenceMismatch(l, k));
+    if (listed.length === 1) {
+      if (!DRY) await api(`/leads/${l.id}/status`, { status: 'linked', offerId: listed[0].id });
+      stats.leadsLinkedByUrl++; log(`  #${l.id} 是已上架条目 ${listed[0].id} 的证据原文，直接关联`); continue;
+    }
     const aged = !!l.createdAt && Date.now() - Date.parse(l.createdAt) >= 2 * 3600_000;
     const allowPaid = paidAvailable() && costLeft > 0.05 && (aged || leadPriority(l) <= 1);
     if (!modelAvailable(allowPaid)) { stats.deferred++; continue; }

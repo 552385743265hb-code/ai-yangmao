@@ -570,7 +570,7 @@ ingest.get('/sources', async c => {
   ).all<{ source_id: string; hash: string; text: string | null }>();
   const snap = Object.fromEntries(last.results.map(r => [r.source_id, r]));
   const plats = await d.select({ id: s.platforms.id, name: s.platforms.name, status: s.platforms.status }).from(s.platforms);
-  return c.json({ sources: rows.map(r => ({ ...r, lastHash: snap[r.id]?.hash ?? null, lastText: r.kind === 'rss' ? snap[r.id]?.text ?? null : null, platform: plats.find(p => p.id === r.platformId) ?? null })) });
+  return c.json({ sources: rows.map(r => ({ ...r, lastHash: snap[r.id]?.hash ?? null, lastText: ['rss', 'web_list', 'json'].includes(r.kind) ? snap[r.id]?.text ?? null : null, platform: plats.find(p => p.id === r.platformId) ?? null })) });
 });
 
 /** 兼容旧采集器：已批准条款不再进入定期证据复抓队列。 */

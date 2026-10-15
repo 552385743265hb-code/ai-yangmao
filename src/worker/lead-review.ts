@@ -8,7 +8,7 @@ import {and,eq,sql} from 'drizzle-orm';
 import {z} from 'zod';
 import * as s from '../db/schema';
 import {leadPriority} from '../shared/leads';
-import {leadReviewDue,type LeadResolution} from '../shared/lead-review';
+import {leadReviewDue,leadReviewStale,type LeadResolution} from '../shared/lead-review';
 import {officialTier} from '../shared/official-review';
 import type {Env} from './index';
 const db=(env:Env)=>drizzle(env.DB,{schema:s});
@@ -17,7 +17,7 @@ leadReviewRoutes.get('/queue',async c=>{
   const limit=Math.max(1,Math.min(10,Number(c.req.query('limit'))||4));
   const ids=(c.req.query('ids')??'').split(',').filter(Boolean).map(Number);
   const rows=(await db(c.env).select().from(s.leads).where(eq(s.leads.status,'reviewing')))
-    .filter(l=>(!ids.length||ids.includes(l.id))&&leadReviewDue(l))
+    .filter(l=>(!ids.length||ids.includes(l.id))&&leadReviewDue(l)&&(ids.length>0||!leadReviewStale(l)))
     .sort((a,b)=>leadPriority(a)-leadPriority(b)||(a.resolution?.attempts??0)-(b.resolution?.attempts??0)||a.id-b.id);
   const selected=rows.slice(0,limit);
   if(limit>=4&&rows.length>limit){const oldest=[...rows].sort((a,b)=>a.id-b.id)[0];if(!selected.includes(oldest))selected[limit-1]=oldest;}

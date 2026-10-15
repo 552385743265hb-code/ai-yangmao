@@ -158,6 +158,13 @@ export function relevantText(text: string, max = 12000): string {
   return [...keep].sort((a, b) => a - b).map(i => lines[i]).join('\n').slice(0, max);
 }
 
+/** 本次相关文本里上次没有的句子（按空白规整后逐行比较）。 */
+export function newRelevantLines(previous: string, current: string): string[] {
+  const key = (l: string) => l.normalize('NFKC').replace(/\s+/g, ' ').trim();
+  const seen = new Set(previous.split('\n').map(key).filter(Boolean));
+  return current.split('\n').map(key).filter(l => l && !seen.has(l));
+}
+
 export const sha256 = (s: string) => createHash('sha256').update(s).digest('hex');
 export const norm = (s: string) => s.replace(/\s+/g, ' ').trim().toLowerCase();
 

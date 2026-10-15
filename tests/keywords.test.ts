@@ -93,3 +93,14 @@ describe('已批准条款原文仍在页面上', () => {
     expect(approvedTermsStillPresent(null, 'anything')).toBe(false);
   });
 });
+
+import { newRelevantLines } from '../pipeline/lib';
+// 2026-10-15：已收录的官方页面每 6 小时因删句、换序或空白变化被判“有变化”，整页重新交给模型抽取。
+describe('官方页面的新增句子', () => {
+  it('只有删减、换序或空白变化时没有新增', () => {
+    expect(newRelevantLines('免费 100 积分\n每日登录送 10 积分\n限时活动', '每日登录送  10 积分\n免费 100 积分')).toEqual([]);
+  });
+  it('出现新句子或数值变化时返回新增的句子', () => {
+    expect(newRelevantLines('免费 100 积分', '免费 200 积分\n新用户送 5 美元')).toEqual(['免费 200 积分', '新用户送 5 美元']);
+  });
+});
