@@ -1,6 +1,6 @@
 import { describe,it,expect,vi,afterEach } from 'vitest';
 import { officialTier,officialActivityMismatch } from '../src/shared/official-review';
-import { parseSearchResults,searchOfficial } from '../pipeline/official-review';
+import { parseSearchResults,searchOfficial,exaSearchRequest } from '../pipeline/official-review';
 const platform={id:'vendor',name:'Vendor',site:'https://vendor.example',xHandles:['@vendor'],staffHandles:['@staff']};
 afterEach(()=>vi.unstubAllGlobals());
 describe('official source discovery',()=>{
@@ -30,12 +30,32 @@ describe('official source discovery',()=>{
     expect(()=>parseSearchResults(JSON.stringify({result:{isError:true,content:[{type:'text',text:'rate limit'}]}}))).toThrow();
   });
   it('uses the cloud-callable search endpoint with no local browser or credentials',async()=>{
+    delete process.env.EXA_API_KEY;
     const fetcher=vi.fn(async()=>new Response(JSON.stringify({result:{content:[{type:'text',text:'URL: https://vendor.example/free'}]}})));
     vi.stubGlobal('fetch',fetcher);
     expect(await searchOfficial('Vendor free credits official',Date.now()+30000)).toEqual(['https://vendor.example/free']);
     const [url,init]=fetcher.mock.calls[0] as unknown as [string,RequestInit];
     expect(url).toBe('https://mcp.exa.ai/mcp');
     const request=JSON.parse(String(init.body));expect(request.params.name).toBe('web_search_exa');expect(request.params.arguments.objective).toContain('official');
+  });
+  // build-with-exa：有密钥时走 REST /search，query + type auto + objective；官方站点/X 账号白名单用 includeDomains，不写进查询文字。
+  it('turns registered official site restrictions into Exa includeDomains',()=>{
+    expect(exaSearchRequest('Codex 重置 官方 原文 site:openai.com OR site:help.openai.com')).toMatchObject({query:'Codex 重置 官方 原文',type:'auto',includeDomains:['openai.com','help.openai.com']});
+    expect(exaSearchRequest('Codex 重置 site:x.com/thsottiaux/status OR site:x.com/OpenAI/status').includeDomains).toEqual(['x.com/thsottiaux','x.com/OpenAI']);
+    const plain=exaSearchRequest('DeepSeek 故障补偿');
+    expect(plain).toEqual({query:'DeepSeek 故障补偿',type:'auto',objective:expect.any(String)});
+    expect(plain).not.toHaveProperty('contents');expect(plain).not.toHaveProperty('numResults');
+  });
+  it('uses the Exa REST search endpoint with the API key when configured',async()=>{
+    process.env.EXA_API_KEY='exa-test';
+    const fetcher=vi.fn(async()=>Response.json({results:[{url:'https://openai.com/news/a'},{url:'https://openai.com/news/a'},{url:'https://help.openai.com/b'}]}));
+    vi.stubGlobal('fetch',fetcher);
+    expect(await searchOfficial('Codex 重置 site:openai.com OR site:help.openai.com',Date.now()+30000)).toEqual(['https://openai.com/news/a','https://help.openai.com/b']);
+    const [url,init]=fetcher.mock.calls[0] as unknown as [string,RequestInit];
+    expect(url).toBe('https://api.exa.ai/search');
+    expect((init.headers as Record<string,string>)['x-api-key']).toBe('exa-test');
+    expect(JSON.parse(String(init.body))).toMatchObject({query:'Codex 重置',type:'auto',includeDomains:['openai.com','help.openai.com']});
+    delete process.env.EXA_API_KEY;
   });
   // 2026-10-15：Exa 匿名端点限流后整轮暂停搜索，社区线索全部转重试。
   it('falls back to OpenRouter web search when Exa is rate limited, charging the shared budget',async()=>{
