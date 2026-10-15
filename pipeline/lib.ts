@@ -131,9 +131,21 @@ export const LEAD = /((故障|宕机|中断|异常|事故|outage|downtime|incide
 // 综合福利版块（LINUX DO 福利羊毛）整版收录时，奶茶、单车、话费等非 AI 福利占七成，且中转站/号池推广属于明确不收的范围，
 // 却会进入研判、复核和身份任务，挤占模型额度与人工审核（2026-10-15 排查：7 天 334 条，仅 18 条形成条目）。
 // config.filter = "ai"：标题须涉及 AI 产品或模型，且不是中转站/号池/倍率类推广。
-export const AI_TOPIC = /\bai\b|人工智能|大模型|模型|\bllm|\bapi\b|token|gpt|claude|gemini|codex|cursor|copilot|kiro|windsurf|trae|qoder|workbuddy|codebuddy|opencode|agent|智能体|生图|绘图|文生|视频生成|coding|编程|编码|deepseek|\bdp\s*\d|qwen|通义|千问|豆包|doubao|kimi|moonshot|glm|智谱|混元|文心|minimax|海螺|grok|openai|anthropic|chatgpt|midjourney|sora|veo|可灵|即梦|vidu|火山|方舟|硅基|算力|gpu|推理|重置|flash|opus|sonnet|haiku|nano\s*banana|\bmimo\b|stepfun|step-\d|阶跃|讯飞|星火|百川|腾讯云|阿里云|百炼|huggingface|openrouter|groq|mistral|perplexity|suno|elevenlabs|runway|pika|higgsfield|tripo|meshy|krea|genspark|manus|lovable|bolt|\bv0\b|replit|vercel|notion\s*ai|\bima\b/i;
+export const AI_TOPIC = /\bai\b|人工智能|大模型|模型|\bllm|\bapi\b|token|gpt|claude|gemini|codex|cursor|copilot|kiro|windsurf|trae|qoder|workbuddy|codebuddy|opencode|agent|智能体|生图|绘图|文生|视频生成|coding|编程|编码|deepseek|\bdp\s*\d|qwen|通义|千问|豆包|doubao|kimi|moonshot|glm|智谱|混元|文心|minimax|海螺|grok|openai|anthropic|chatgpt|midjourney|sora|veo|可灵|即梦|vidu|火山|方舟|硅基|算力|gpu|推理|重置|flash|opus|sonnet|haiku|nano\s*banana|\bmimo\b|stepfun|step-\d|阶跃|讯飞|星火|百川|腾讯云|阿里云|百炼|huggingface|openrouter|groq|mistral|perplexity|suno|elevenlabs|runway|pika|higgsfield|tripo|meshy|krea|genspark|manus|lovable|bolt|\bv0\b|replit|vercel|notion\s*ai|\bima\b|zcode|z\.ai|\bstep\b|step滞销|senseaudio/i;
 export const RELAY_PROMO = /富可敌国|中转|公益站|hub\s*站|号池|倍率|转让|出售|代充|\d+(\.\d+)?x\b|共享.{0,6}key|官key|分组/i;
 export const isAiFreebieTopic = (title: string) => AI_TOPIC.test(title) && !RELAY_PROMO.test(title);
+/**
+ * 已批准条目的全部原文摘录仍逐字出现在本次抓到的页面里：说明官方页面仍支持已批准的条款，模型换说法不构成变化，
+ * 不再提交成身份候选（2026-10-15：免费模型每 6 小时重读价格页、改写措辞，产生大量人工身份任务）。
+ * 至少要有一段 12 字以上的摘录；任何一段摘录消失都按可能有变化处理，照常提交。
+ */
+export function approvedTermsStillPresent(excerpts: Record<string, string | null | undefined> | null | undefined, page: string): boolean {
+  const flat = (s: string) => s.normalize('NFKC').replace(/\s+/g, ' ').trim().toLowerCase();
+  const quotes = Object.values(excerpts ?? {}).filter((q): q is string => typeof q === 'string' && !!q.trim()).map(flat);
+  if (!quotes.some(q => q.length >= 12)) return false;
+  const text = flat(page);
+  return quotes.every(q => text.includes(q));
+}
 export const isFreebie = (s: string) => FREEBIE.test(s);
 export const isLead = (s: string) => LEAD.test(s);
 export const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
