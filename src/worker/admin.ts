@@ -34,6 +34,7 @@ import { haoScore } from '../shared/score';
 import { officialTier, officialReviewDue } from '../shared/official-review';
 import { sameBenefit } from '../shared/dedupe';
 import { parseValuation } from '../shared/valuation';
+import { offerRefFromInput } from '../shared/offer-ref';
 import type { Env } from './index';
 import { advanceFastTrack, completeFastTrack, createFastTrack, FastTrackError, fastTrackHeld, listFastTrack, retryFastTrack } from './fast-track';
 
@@ -555,14 +556,23 @@ admin.post('/leads/:id/resolve',async c=>{
   if(!l||!['new','reviewing'].includes(l.status)||leadReviewVersion(l)!==body.data.expectedVersion)return c.json({error:'线索状态已更新，请刷新'},409);
   if(l.resolution?.identityTaskIds?.length)return c.json({error:'请逐项处理身份审核任务，不能用整条线索覆盖候选决定'},409);
   const b=body.data;
+  // 关联目标可以粘贴条目网址、4 位短码或完整 ID（2026-10-15 管理员粘贴条目链接被拒）。
+  if(b.offerId){
+    const ref=offerRefFromInput(b.offerId),[exact]=await d.select({id:s.offers.id}).from(s.offers).where(eq(s.offers.id,ref));
+    let id=exact?.id;
+    if(!id){const matches=(await d.select({id:s.offers.id}).from(s.offers)).filter(o=>shortCode(o.id)===ref.toLowerCase());if(matches.length>1)throw new AmbiguousShortCode(matches.map(o=>o.id));id=matches[0]?.id;}
+    if(!id)return c.json({error:'找不到这个条目：请粘贴条目网址、4 位短码或完整 ID'},400);
+    b.offerId=id;
+  }
   const originOfferId=b.offerId;
   if(b.offerId)b.offerId=(await resolveCanonicalOffer(c.env.DB,b.offerId)).offerId;
-  if(b.outcome==='linked'&&(!b.offerId||!(await d.select().from(s.offers).where(eq(s.offers.id,b.offerId))).length))return c.json({error:'请填写已存在的完整活动ID'},400);
+  if(b.outcome==='linked'&&(!b.offerId||!(await d.select().from(s.offers).where(eq(s.offers.id,b.offerId))).length))return c.json({error:'请填写要关联的条目：网址、4 位短码或完整 ID'},400);
   const resolution:LeadResolution={status:b.outcome==='retry'?'retry':b.outcome,jobId:crypto.randomUUID(),attempts:0,inconclusive:0,checkedAt:new Date().toISOString(),nextAttemptAt:b.outcome==='retry'?new Date().toISOString():null,reason:b.reason,queries:l.resolution?.queries??[],candidates:l.resolution?.candidates??[],evidenceUrl:l.resolution?.evidenceUrl,quote:l.resolution?.quote,offerIds:b.offerId?[b.offerId]:(l.resolution?.offerIds??[]),originOfferIds:originOfferId?[originOfferId]:(l.resolution?.originOfferIds??l.resolution?.offerIds??[])};
   if(c.env.IDENTITY_MODE==='enforce'&&b.outcome==='closed'){await closeIdentityLead(c.env.DB,l,resolution,l.raw??l.title??resolution.reason??'管理员关闭线索',{actor:c.get('who')});return c.json({ok:true,identityHandled:true});}
   const changed=await d.update(s.leads).set({status:b.outcome==='linked'?'linked':b.outcome==='closed'?'rejected':'reviewing',resolution,offerId:b.offerId??l.offerId})
     .where(and(eq(s.leads.id,l.id),eq(s.leads.status,l.status),sql`COALESCE(${s.leads.resolution},'')=COALESCE(${l.resolution?JSON.stringify(l.resolution):null},'')`)).returning({id:s.leads.id});
-  return changed.length?c.json({ok:true}):c.json({error:'线索已更新，请刷新'},409);
+  const linked=b.outcome==='linked'&&b.offerId?(await d.select({id:s.offers.id,title:s.offers.title}).from(s.offers).where(eq(s.offers.id,b.offerId)))[0]:undefined;
+  return changed.length?c.json({ok:true,...(linked?{offer:{id:linked.id,code:shortCode(linked.id),title:linked.title}}:{})}):c.json({error:'线索已更新，请刷新'},409);
 });
 admin.post('/leads/:id/:action{dismiss|reviewing|retry}', async c => {
   const action=c.req.param('action'),d=db(c.env),[l]=await d.select().from(s.leads).where(eq(s.leads.id,Number(c.req.param('id'))));
