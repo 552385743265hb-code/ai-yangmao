@@ -42,7 +42,9 @@ async function screeningProfiles(): Promise<PlatformProfile[]> {
 const LEAD_LIMIT = Number(process.env.LEAD_LIMIT ?? 50);
 const onlyList = (process.env.ONLY_SOURCES ?? '').split(',').map(s => s.trim()).filter(Boolean);
 const only = onlyList.length ? onlyList : null; // 留空 = 全部信源
-const stats = { leadsTriaged: 0, leadOffers: 0, costCny: 0, deferred: 0, backlogDeferred: 0, rereadUnchanged: 0, unchangedPages: 0, leadsLinkedByUrl: 0, sources: 0, fetchedSources: 0, ok: 0, failed: 0, changed: 0, leads: 0, offers: 0, pending: 0, extractSkipped: 0, verificationChecked: 0, verificationFailed: 0, verificationDeferred: 0, tokens: 0, coverageDegraded: false, errors: [] as string[] };
+const stats = { leadsTriaged: 0, leadOffers: 0, costCny: 0, deferred: 0, backlogDeferred: 0, rereadUnchanged: 0, unchangedPages: 0, leadsLinkedByUrl: 0, systemicErrors: 0, sources: 0, fetchedSources: 0, ok: 0, failed: 0, changed: 0, leads: 0, offers: 0, pending: 0, extractSkipped: 0, verificationChecked: 0, verificationFailed: 0, verificationDeferred: 0, tokens: 0, coverageDegraded: false, errors: [] as string[] };
+/** 本轮系统性错误（某个环节整体失败），区别于单个信源、条目或线索的错误；后者在健康页逐条列出。 */
+const systemic = (message: string) => { stats.errors.push(message); stats.systemicErrors++; };
 const fetchedSourceIds=new Set<string>();
 function noteSourceFetched(src:Source){fetchedSourceIds.add(src.id);stats.fetchedSources=fetchedSourceIds.size;}
 let tokensLeft = DAILY_TOKEN_CAP > 0 ? DAILY_TOKEN_CAP : Infinity;
@@ -142,7 +144,7 @@ async function extractAndPostUnlocked(src: Source, url: string, text: string, so
   const res = await postIdentityOffers(offers);
   if (screeningMode({ SCREENING_MODE: process.env.SCREENING_MODE }) !== 'off') {
     try { await screenCandidateReceipts(res.results, offers, await loadMemory(), { deadlineAt: deadline, dry: DRY, log }); }
-    catch (error) { stats.errors.push(`candidate screening: ${(error as Error).message}`); }
+    catch (error) { systemic(`candidate screening: ${(error as Error).message}`); }
   }
   let hasWriteError = false;
   for (const x of res.results) {
@@ -318,7 +320,7 @@ function tierOf(url: string, p: Plat | undefined): OfferIn['evidence']['tier'] {
 }
 async function triageLeads(plats: Plat[]) {
   if (LEAD_LIMIT <= 0) return;
-  if (!llmAvailable()) { stats.deferred++; stats.errors.push('线索研判：没有可用模型'); return; }
+  if (!llmAvailable()) { stats.deferred++; systemic('线索研判：没有可用模型'); return; }
   const { leads } = await api<{ leads: Lead[] }>(`/leads?limit=${LEAD_LIMIT}`);
   if (!leads.length) return;
   const list = plats.map(p => `${p.id}=${p.name}`).join('；');
@@ -459,7 +461,7 @@ export async function runPipeline() {
     const fastTrack = await runFastTrack({ deadlineAt: Math.min(deadline, Date.now() + 8 * 60_000), dry: DRY, log, allowPaid: () => paidAvailable() && costLeft > 0.05,
       account: (tokens, cost) => { tokensLeft -= tokens; costLeft -= cost; stats.tokens += tokens; stats.costCny += cost; } });
     if (fastTrack.claimed) Object.assign(stats, { fastTrack });
-  } catch (e) { stats.errors.push(`快速上架：${(e as Error).message}`); log('快速上架出错', (e as Error).message); }
+  } catch (e) { systemic(`快速上架：${(e as Error).message}`); log('快速上架出错', (e as Error).message); }
   // 先采集线索，再研判；全站官方页面抽取与复核不能抢走重要线索的模型预算。
   const leadSources = list.filter(s => s.kind === 'aihot' || s.tier === 'lead');
   const selected = FAST ? leadSources.filter(s => s.kind === 'aihot' || s.kind === 'feed' || s.kind === 'discord') : leadSources;
@@ -472,16 +474,16 @@ export async function runPipeline() {
     try {
       const screening = await runScreening({ ids: (process.env.SCREENING_IDS ?? '').split(',').map(id => id.trim()).filter(Boolean), deadlineAt: deadline, dry: DRY });
       Object.assign(stats, { screening, memoryRecords: screening.memoryRecords });
-    } catch (e) { stats.errors.push(`筛查：${(e as Error).message}`); stats.coverageDegraded = true; log('筛查出错', (e as Error).message); }
+    } catch (e) { systemic(`筛查：${(e as Error).message}`); log('筛查出错', (e as Error).message); }
     await triageLeads(platforms);
-  } catch (e) { stats.errors.push(`线索研判：${(e as Error).message}`); stats.deferred++; log('线索研判出错', (e as Error).message); }
+  } catch (e) { systemic(`线索研判：${(e as Error).message}`); stats.deferred++; log('线索研判出错', (e as Error).message); }
   try {
     const leadReview=await runLeadReviews({limit:Number(process.env.LEAD_REVIEW_LIMIT??4),ids:(process.env.LEAD_REVIEW_IDS??'').split(',').filter(Boolean).map(Number),deadlineAt:Math.min(deadline,Date.now()+12*60_000),dry:DRY,
       allowPaid:paidAvailable()&&costLeft>0.05,canContinue:()=>!needsWrapUp()&&tokensLeft>=8000,
       account:(tokens,cost)=>{tokensLeft-=tokens;costLeft-=cost;stats.tokens+=tokens;stats.costCny+=cost;},log});
     // 复核队列本轮没排到或等待重试是积压，不是采集覆盖失败：计入 backlogDeferred，否则每轮都“不完整”，健康告警失去意义（2026-10-15）。
     Object.assign(stats,{leadReview});stats.backlogDeferred+=leadReview.retry+leadReview.deferred;
-  }catch(e){stats.deferred++;stats.errors.push('受阻线索复核：'+(e as Error).message);}
+  }catch(e){stats.deferred++;systemic('受阻线索复核：'+(e as Error).message);}
   try {
   const officialReview = await runOfficialReviews({limit:Number(process.env.OFFICIAL_REVIEW_LIMIT ?? 8),deadlineAt:deadline,dry:DRY,
     allowPaid:paidAvailable()&&costLeft>0.05,canContinue:()=>!needsWrapUp()&&tokensLeft>=8000,
@@ -489,7 +491,7 @@ export async function runPipeline() {
   Object.assign(stats,{officialReview});
   if(officialReview.failed)stats.deferred++;
   stats.backlogDeferred+=officialReview.deferred;
-  } catch(error) { stats.deferred++; stats.errors.push(`官方复核：${(error as Error).message}`); }
+  } catch(error) { stats.deferred++; systemic(`官方复核：${(error as Error).message}`); }
   if (!FAST) {
     const queue = list.filter(s => !leadSources.includes(s));
     await Promise.all(Array.from({ length: 4 }, async () => {
@@ -499,13 +501,16 @@ export async function runPipeline() {
     try { await verifyExistingOffers(sources); }
     catch (error) {
       stats.verificationFailed++;
-      stats.errors.push(`读取复核队列失败：${(error as Error).message}`);
+      systemic(`读取复核队列失败：${(error as Error).message}`);
     }
   }
-  try {const identity=await resumeIdentityIntake(Math.min(deadline,Date.now()+90000));Object.assign(stats,{identity});stats.backlogDeferred+=identity.deferred;if(identity.status==='not_evaluated')stats.errors.push('身份维护未评估：'+identity.reason);}catch{stats.deferred++;stats.errors.push('身份候选重试暂不可用');}
-  stats.coverageDegraded = stats.deferred > 0 || stats.extractSkipped > 0 || stats.failed > 0 || stats.verificationFailed > 0
-    || stats.verificationDeferred > 0 || stats.errors.length > 0 || list.some(source => source.deferThisRun);
-  const ok = (FAST || !only) && stats.sources > 0 && stats.ok === stats.sources && !stats.coverageDegraded;
+  try {const identity=await resumeIdentityIntake(Math.min(deadline,Date.now()+90000));Object.assign(stats,{identity});stats.backlogDeferred+=identity.deferred;if(identity.status==='not_evaluated')systemic('身份维护未评估：'+identity.reason);}catch{stats.deferred++;systemic('身份候选重试暂不可用');}
+  // 个别信源失败在健康页逐条列出；只有系统性错误、未完成的工作或失败超过 5% 才算本轮覆盖不完整。
+  // 2026-10-16：几个长期打不开的页面让“最近一次完整成功采集”8 天没有更新，告警一直亮着而失去意义。
+  const failureTolerance = Math.floor(stats.sources * 0.05);
+  stats.coverageDegraded = stats.deferred > 0 || stats.extractSkipped > 0 || stats.failed > failureTolerance || stats.verificationFailed > 0
+    || stats.verificationDeferred > 0 || stats.systemicErrors > 0 || list.some(source => source.deferThisRun);
+  const ok = (FAST || !only) && stats.sources > 0 && stats.sources - stats.ok <= failureTolerance && !stats.coverageDegraded;
   log('完成', JSON.stringify(stats));
   // 模型调用逐次在 runs(kind=model) 预留并结算；汇总行不能再次计费。
   if (!DRY) await api('/runs', { kind: FAST ? 'sweep' : 'collect', startedAt, finishedAt: new Date().toISOString(), ok, stats, tokens: 0, costCny: 0 });

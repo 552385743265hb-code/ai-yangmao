@@ -6,6 +6,7 @@ import {searchOfficial} from './official-review';
 import {officialTier,officialActivityMismatch,type OfficialPlatform,type OfficialSource} from '../src/shared/official-review';
 import {platformMentioned,leadScopeMismatch,leadOccurrenceMismatch} from '../src/shared/lead-scope';
 import {normUrl} from '../src/shared/dedupe';
+import {WECHAT_FAST_TRACK_REASON} from '../src/shared/lead-review';
 import {offerIn} from '../src/shared/ingest';
 import {toOffer} from './offer-draft';
 import type {Source} from './collectors';
@@ -124,7 +125,11 @@ export async function runLeadReviews(options:LeadReviewOptions){
         outcome=technical?'retry':'manual';
         reason=(reasons.join('；')||(!identified.length?'未能确认发放平台，请补充官方出处或平台准入':'尚未找到支持独立福利的官方证据')).slice(0,1000);
         if(!readable&&candidates.length)outcome='retry';
-        if(wechatOnly){outcome='manual';reason=('原文是微信公众号文章：分享链接不含账号 __biz、云端读取会遇到微信验证页，无法自动核验。确认是厂商官方号后，请在这条线索里用「⚡ 快速上架」一键上架。'+(reasons.length?'（'+reasons.join('；')+'）':'')).slice(0,1000);}
+        if(wechatOnly){
+          // 通过 Exa 读出的正文附在结论里，管理员在后台和 Telegram 提醒中直接看到权益内容再一键上架。
+          let article='';try{const page=await fetchPage(lead.url,{timeoutMs:20000,tries:1,minimumTextLength:100});if(page.fetchMethod==='exa')article=page.text.replace(/\s+/g,' ').slice(0,600);}catch{/* 读不到就只给链接 */}
+          outcome='manual';reason=(WECHAT_FAST_TRACK_REASON+'：分享链接不含账号 __biz，无法自动核验为官方原文。确认是厂商官方号后，请在这条线索里用「⚡ 快速上架」一键上架。'+(article?'原文：'+article:'（云端读取遇到微信验证页）')).slice(0,1000);
+        }
       }
     }catch(e){outcome='retry';reason='复核受阻：'+(e as Error).message.slice(0,800);stop=e instanceof BudgetExhaustedError||e instanceof BudgetLedgerError||e instanceof DeferError;}
     const receipt=await api<{status:keyof typeof stats}>(`/lead-reviews/${q.id}/result`,{jobId:job.jobId,outcome,...(wechatOnly&&outcome==='manual'?{manualNow:true}:{}),reason,offerIds:[...new Set(offerIds)],queries,candidates:[...new Set([...(job.previousCandidates??[]),...candidates])].slice(-12),evidenceUrl,quote,sourceText});

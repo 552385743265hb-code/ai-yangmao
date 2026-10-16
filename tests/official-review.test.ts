@@ -113,3 +113,37 @@ it('validates the identity of a first-party status embed and preserves reader pr
  const result=await fetchPage(url,{tries:1});
  expect(result).toMatchObject({via:'direct',sourceVerified:true,finalUrl:url});expect(result.fetchedUrl).toContain('cdn.syndication.twimg.com/tweet-result');expect(result.text).toContain(post.text);
 });
+
+import { fetchPage } from '../pipeline/lib';
+// 2026-10-16：公众号文章云端直读与 Jina 都是验证页，改用 Exa 读取正文；结果按第三方阅读器（间接来源）处理。
+describe('WeChat article reading', () => {
+  const article = 'https://mp.weixin.qq.com/s/Z-t4CsaER-erJLsqRnT1eA';
+  const captcha = '<html><body><h2>环境异常</h2><p>当前环境异常，完成验证后即可继续访问。</p><a>去验证</a></body></html>';
+  it('reads a CAPTCHA-blocked WeChat article through Exa contents', async () => {
+    process.env.EXA_API_KEY = 'exa-test';
+    const calls: string[] = [];
+    vi.stubGlobal('fetch', vi.fn(async (input: string, init?: RequestInit) => {
+      const url = String(input); calls.push(url);
+      if (url === 'https://api.exa.ai/contents') {
+        expect(JSON.parse(String(init?.body))).toEqual({ urls: [article], text: true });
+        return Response.json({ results: [{ url: article, title: 'CodeBuddy 补偿公告', author: '腾讯云代码助手', text: '面向 CodeBuddy 国内版全量用户额外赠送 500 积分，10 月 22 日 24 点前在“用量管理”页面手动领取。' }] });
+      }
+      return new Response(captcha, { headers: { 'content-type': 'text/html' } });
+    }));
+    const page = await fetchPage(article, { timeoutMs: 5000, tries: 1, minimumTextLength: 50 });
+    expect(page).toMatchObject({ via: 'jina', fetchMethod: 'exa', sourceVerified: true });
+    expect(page.text).toContain('500 积分');
+    expect(page.text).toContain('公众号：腾讯云代码助手');
+    expect(calls.some(u => u.startsWith('https://r.jina.ai/'))).toBe(false);
+    delete process.env.EXA_API_KEY;
+  });
+  it('does not treat an Exa CAPTCHA copy as the article', async () => {
+    process.env.EXA_API_KEY = 'exa-test';
+    vi.stubGlobal('fetch', vi.fn(async (input: string) => String(input) === 'https://api.exa.ai/contents'
+      ? Response.json({ results: [{ url: article, text: '环境异常 当前环境异常，完成验证后即可继续访问。 去验证 '.repeat(5) }] })
+      : String(input).startsWith('https://r.jina.ai/') ? new Response('Title: 环境异常\nMarkdown Content:\n' + '环境异常 去验证 '.repeat(40)) : new Response(captcha)));
+    const page = await fetchPage(article, { timeoutMs: 5000, tries: 1, minimumTextLength: 50 }).catch(() => null);
+    expect(page?.fetchMethod).not.toBe('exa');
+    delete process.env.EXA_API_KEY;
+  });
+});
