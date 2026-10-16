@@ -152,6 +152,10 @@ OpenRouter默认备用为`openrouter/free`；404须检查模型可用性，不�
 - 创建前校验：规则命中任何已批准条目或已关联线索的标题即拒绝（409，列出冲突标题）；可勾选“同时关闭现有未处理的同类线索”。“不再建议”记为 `declined`。停用后立即不再拦截；`hits` 记录拦截数。
 - 接口（仅管理员）：`GET /api/admin/screening/rules`（规则与建议）、`POST /api/admin/screening/rules`、`POST /api/admin/screening/rules/:id/retire`。
 
+### 自动关闭抽查（2026-10-16）
+
+后台「活动待审」顶部「🔍 自动关闭抽查」列出最近 7 天系统自己关闭（自动研判或入口规则）、管理员尚未看过的线索，建议每周看一次。标题提到已知厂商或含“免费、额度、赠送、credits”等词的排在“可能误关”组。每条可：选类别后「✅ 本组其余都关得对」（写 owner 标签，即里程碑 2 的校准样本；每次最多 15 条）、「✗ 误关」（`resolution.spotCheck.verdict=wrong`；入口规则的 `overrides+1`，命中 ≥10 且误关率 >10% 自动停用）、「⚡ 上架」（快速上架并把该线索改为 linked）。接口（仅管理员）：`GET /api/admin/screening/spot-check?days=7`、`POST .../spot-check/confirm`、`POST .../spot-check/:id/wrong`。
+
 线索阶段的内容类拒绝（同上类别及 `paid_bundle`、`model_news_only`）同时进入 `/api/ingest/corrections`，研判与抽取提示词即时可见；每周 distill 把它们归纳成“研判时直接不收”的规则。
 
 身份任务：管理员对“没有已知事实”的候选确认“与已上架 X 相同”时，只要 X 已批准且同平台即可关联（`owner_confirmed_same`）；有已知事实冲突的候选仍走原有守卫。

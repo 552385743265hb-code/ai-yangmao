@@ -271,7 +271,8 @@ export async function publishFastTrack(env: Env, job: JobRow, fields: FastTrackF
 
 async function linkLead(db: D1Database, leadId: number, offerId: string) {
   const resolution = { status: 'linked', jobId: 'fast-track-' + crypto.randomUUID(), attempts: 0, inconclusive: 0, checkedAt: new Date().toISOString(), nextAttemptAt: null, reason: '管理员快速上架', queries: [], candidates: [], offerIds: [offerId] };
-  await db.prepare("UPDATE leads SET status='linked', offer_id=?, resolution=? WHERE id=? AND status IN ('new','reviewing')").bind(offerId, JSON.stringify(resolution), leadId).run();
+  // A wrongly auto-closed lead fast-tracked from the spot-check list links too (2026-10-16).
+  await db.prepare("UPDATE leads SET status='linked', offer_id=?, resolution=? WHERE id=? AND status IN ('new','reviewing','rejected')").bind(offerId, JSON.stringify(resolution), leadId).run();
 }
 
 /**

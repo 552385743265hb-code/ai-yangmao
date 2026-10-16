@@ -2059,7 +2059,7 @@ async function admQueue() {
   const sugCount = k => q.pending.filter(o => (o.suggestion?.verdict || 'none') === k).length;
   const sugTabs = [['all', '全部', q.pending.length], ['approve', '建议通过', sugCount('approve')], ['history', '建议作为历史', sugCount('history')], ['reject', '建议拒绝', sugCount('reject')], ['judge', '需要你判断', sugCount('judge')], ['none', '未标注', sugCount('none')]].filter(([k, , n]) => k === 'all' || n);
   box.innerHTML = `<section class="card" data-review-summary><b>活动待审 <span data-activity-count>${counts.activities}</span> 项</b> · 线索复核 ${counts.leadReview} 条 · 暂停发布 ${counts.paused} 项<p class="small muted">活动待审包含系统补证和等待你决定；线索尚未形成活动，暂停发布不计入待审。新线索 ${counts.newLeads??q.newLeads} 条。</p></section>
-    ${ADM.role==='admin'?'<details data-intake-rules><summary>🚫 入口过滤规则（与 AI 无关、优惠券/购物券、中转站等线索一进来就关闭）</summary><div data-intake-body class="small muted">展开后读取…</div></details>':''}
+    ${ADM.role==='admin'?'<details data-intake-rules><summary>🚫 入口过滤规则（与 AI 无关、优惠券/购物券、中转站等线索一进来就关闭）</summary><div data-intake-body class="small muted">展开后读取…</div></details><details data-spot-check><summary>🔍 自动关闭抽查（最近 7 天，建议每周看一次）</summary><div data-spot-body class="small muted">展开后读取…</div></details>':''}
     ${q.leadTasks?.length?`<details data-lead-section><summary>线索复核 · ${counts.leadReview} 条</summary><p class="small muted">尚未形成条目的线索会自动读取原文、搜索官方出处并查重。暂时受阻会按时重试；需要判断的可在这里关联已有活动、结束线索或重新核验。</p>${q.leadTasks.slice(0,10).map(leadTaskCard).join('')}${q.leadTasks.length>10?`<details><summary>其余 ${q.leadTasks.length-10} 条线索复核</summary>${q.leadTasks.slice(10).map(leadTaskCard).join('')}</details>`:''}</details>`:''}
     ${q.priorityLeads?.filter(l=>l.status==='new').length?`<section><h3>重要新线索 · 等待研判</h3>${q.priorityLeads.filter(l=>l.status==='new').map(l=>`<div data-priority-lead="${l.id}"><p>#${l.id} ${esc(l.title||'')} · 将在下一轮研判</p>${ADM.role==='admin'?`<details style="margin:0 0 8px"><summary class="small">⚡ 快速上架（我已确认官方或亲测）</summary>${fastTrackFormHtml({inline:true,benefit:String(l.title||'').slice(0,500),url:l.url||''})}</details>`:''}</div>`).join('')}</section>`:''}
     ${sugTabs.length > 2 ? `<div class="seg" role="tablist" style="margin-bottom:12px;flex-wrap:wrap">${sugTabs.map(([k, l, n]) => `<button type="button" data-sugtab="${k}" aria-pressed="${(ADM.sug || 'all') === k}">${l} ${n}</button>`).join('')}</div>` : ''}
@@ -2071,6 +2071,7 @@ async function admQueue() {
   const identityBox=box.querySelector('[data-identity-slot]');identityBox.dataset.identityReview='';const remainingTasks=(identity.tasks||[]).filter(t=>!managedIds.has(t.id));if(remainingTasks.length||identity.error||identity.nextCursor)renderIdentityTasks(identityBox,{...identity,tasks:remainingTasks},false,managedIds);
   const pausedSection=document.createElement('details');pausedSection.dataset.pausedSection='';pausedSection.innerHTML=`<summary>暂停发布 · ${counts.paused} 项（无需日常处理）</summary>`;const holdsBox=document.createElement('section');pausedSection.append(holdsBox);box.append(pausedSection);renderVisibilityHolds(holdsBox,holds);if(holds.error)holdsBox.textContent='暂停活动读取失败：'+holds.error;
   bindLeadTasks(box,q.leadTasks||[]);
+  {const spot=box.querySelector('[data-spot-check]');if(spot)spot.addEventListener('toggle',()=>{if(spot.open&&!spot.dataset.loaded){spot.dataset.loaded='1';loadSpotCheck(spot.querySelector('[data-spot-body]'));}});}
   {const panel=box.querySelector('[data-intake-rules]');if(panel)panel.addEventListener('toggle',()=>{if(panel.open&&!panel.dataset.loaded){panel.dataset.loaded='1';loadIntakeRules(panel.querySelector('[data-intake-body]'));}});}
   box.querySelectorAll('[data-priority-lead]').forEach(el=>{const fast=el.querySelector('[data-fast-track]');if(fast)bindFastTrackForm(fast,Number(el.dataset.priorityLead),()=>{el.dataset.resolved='1';});});
   const applySug = () => $$('[data-sug]', box).forEach(el => { if (el.closest('details')) return; el.style.display = !ADM.sug || ADM.sug === 'all' || el.dataset.sug === ADM.sug ? '' : 'none'; });
@@ -2292,6 +2293,42 @@ async function admLeads() {
 }
 /* ⚡ 快速上架：管理员担保的官方链接 + 主要权益，免费模型补其余字段，补齐即上架。 */
 const FT_STATE = { queued: '排队等模型读取', extracting: '模型读取中', publishing: '正在上架', needs_owner: '需要你补充', published: '已上架' };
+const SPOT_CATS = ['non_ai', 'relay_station', 'account_pool', 'personal_giveaway', 'ordinary_discount', 'paid_bundle', 'model_news_only', 'duplicate', 'expired'];
+async function loadSpotCheck(body) {
+  body.textContent = '正在读取…';
+  let data; try { data = await adm('/screening/spot-check?days=7'); } catch (e) { body.textContent = '读取失败：' + e.message; return; }
+  body.className = 'small';
+  const row = it => `<div data-spot="${it.id}" class="row" style="gap:6px;flex-wrap:wrap;align-items:center;padding:4px 0;border-bottom:1px solid var(--line,#333)"><a href="${esc(it.url)}" target="_blank" rel="noopener" style="flex:1;min-width:220px">${esc(it.title)}</a><span class="muted">${esc(it.origin)} · ${it.closedBy === 'rule' ? '入口规则' : '自动研判'}：${esc(it.reason.slice(0, 40))}</span><select data-spot-cat>${SPOT_CATS.map(k => `<option value="${k}" ${k === it.category ? 'selected' : ''}>${esc(REASON_LABEL[k] || k)}</option>`).join('')}</select><button class="btn sm" data-spot-wrong>✗ 误关</button><button class="btn sm" data-spot-fast>⚡ 上架</button></div>`;
+  const likely = data.items.filter(i => i.likely), rest = data.items.filter(i => !i.likely);
+  const group = (key, label, list, open) => list.length ? `<details ${open ? 'open' : ''} data-spot-group="${key}"><summary>${label} · ${list.length} 条</summary><p><button class="btn sm pri" data-spot-confirm>✅ 本组其余都关得对</button> <span role="status" data-spot-msg></span></p>${list.map(row).join('')}</details>` : '';
+  body.innerHTML = `<p class="muted">系统自己关闭、你还没看过的线索。先看“可能误关”（标题提到已知厂商或免费、额度、赠送等词）。确认关得对的会成为里程碑 2 的校准样本，类别请按实际选；误关的点 ⚡ 直接上架，或标“误关”。入口规则误关超过 10%（至少 10 次命中）会自动停用。</p>
+    ${group('likely', '⚠️ 可能误关', likely, true)}${group('rest', '其余自动关闭', rest, false)}${data.items.length ? '' : '<p class="muted">最近 7 天没有待抽查的自动关闭线索。</p>'}`;
+  const done = (el, text) => { el.style.opacity = .45; el.querySelectorAll('button,select').forEach(x => { x.disabled = true; }); if (text) el.insertAdjacentHTML('beforeend', `<span class="small">${esc(text)}</span>`); };
+  body.querySelectorAll('[data-spot]').forEach(el => {
+    const id = Number(el.dataset.spot), it = data.items.find(x => x.id === id);
+    el.querySelector('[data-spot-wrong]').addEventListener('click', async () => {
+      try { const r = await adm(`/screening/spot-check/${id}/wrong`, {}); el.dataset.handled = '1'; done(el, r.ruleRetired ? '已记为误关，该规则误关过多已自动停用' : '已记为误关'); } catch (e) { toast(e.message); }
+    });
+    el.querySelector('[data-spot-fast]').addEventListener('click', () => {
+      if (el.querySelector('[data-fast-track]')) return;
+      el.insertAdjacentHTML('beforeend', `<div style="flex-basis:100%">${fastTrackFormHtml({ inline: true, benefit: it.title.slice(0, 500), url: it.url })}</div>`);
+      bindFastTrackForm(el.querySelector('[data-fast-track]'), id, async () => { el.dataset.handled = '1'; await adm(`/screening/spot-check/${id}/wrong`, {}).catch(() => {}); });
+    });
+  });
+  body.querySelectorAll('[data-spot-confirm]').forEach(button => button.addEventListener('click', async () => {
+    const groupEl = button.closest('[data-spot-group]'), msg = groupEl.querySelector('[data-spot-msg]');
+    const rows = [...groupEl.querySelectorAll('[data-spot]')].filter(el => !el.dataset.handled);
+    button.disabled = true; let confirmed = 0;
+    try {
+      for (let i = 0; i < rows.length; i += 15) {
+        const chunk = rows.slice(i, i + 15);
+        const r = await adm('/screening/spot-check/confirm', { items: chunk.map(el => ({ id: Number(el.dataset.spot), category: el.querySelector('[data-spot-cat]').value })) });
+        confirmed += r.confirmed; chunk.forEach(el => { el.dataset.handled = '1'; done(el); }); msg.textContent = `已确认 ${confirmed} 条…`;
+      }
+      msg.textContent = `已确认 ${confirmed} 条关得对`;
+    } catch (e) { msg.textContent = e.message; button.disabled = false; }
+  }));
+}
 const INTAKE_CATS = ['non_ai', 'ordinary_discount', 'relay_station', 'account_pool', 'personal_giveaway'];
 async function loadIntakeRules(body) {
   body.textContent = '正在读取…';
