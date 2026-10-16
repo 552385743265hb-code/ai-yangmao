@@ -4,6 +4,7 @@ import { collectedOfferIn } from '../shared/ingest';
 import { officialTier, wechatBiz, type OfficialPlatform } from '../shared/official-review';
 import { canonicalTermsSchema, type CanonicalTermsV1, type IntakeReceipt } from '../shared/identity/types';
 import { adaptLegacyOffer } from './identity/adapters';
+import { entityOfferVersion } from './identity/canonical';
 import { IdentityService } from './identity/service';
 import { IdentityError } from './identity/store';
 import { IdentityQueryBudgetError, withIdentityQueryBudget } from './identity/budget';
@@ -145,7 +146,7 @@ function terms(platformId: string, type: string): CanonicalTermsV1 {
   return canonicalTermsSchema.parse({ schemaVersion: 'terms-v1', issuerProductId: { state: 'known', value: platformId, evidenceRefs: ['benefit'] }, mechanism: { state: 'known', value: MECHANISM[type] ?? 'other', evidenceRefs: ['benefit'] }, benefitPools: [], eligibility: unknown, geography: unknown, claimChannels: unknown, costs: unknown, claimWindow: unknown, occurrenceAnchor: unknown });
 }
 
-interface Progress { pending?: { candidateId: string; requestId: string }; receipt?: IntakeReceipt; entityId?: string; offerId?: string; approved?: boolean }
+interface Progress { pending?: { candidateId: string; requestId: string }; receipt?: IntakeReceipt; entityId?: string; offerId?: string; approved?: boolean; testedTask?: { id: string; revision: number } | null; testedTier?: boolean }
 /** Identity work gets its own slice of the 50-query request budget; the rest is left for job bookkeeping. */
 const IDENTITY_SLICE = 38;
 class StepDeferred extends Error {}
@@ -215,6 +216,26 @@ export async function publishFastTrack(env: Env, job: JobRow, fields: FastTrackF
     if (initial) await step(() => service.decideTask(initial.id, { requestId: `fast-track-approve:${job.id}`, expectedRevision: initial.revision, action: 'approve', actor: job.actor, role: 'admin', reason: `管理员快速上架（${job.basis === 'tested' ? '管理员实测' : '官方来源'}）` }));
     else if ((await db.prepare('SELECT review_state FROM offers WHERE id=?').bind(progress.offerId).first<{ review_state: string }>())?.review_state !== 'approved') throw new FastTrackError(409, '没有可通过的审核任务');
     progress.approved = true;
+    await save();
+  }
+  // 管理员担保“我亲测可领”：身份入库不接受 tested 证据，先按链接级别上架，再像后台编辑一样把证据级别改为 tested 并批准，
+  // 不让条目显示成链接页面的原文（2026-10-16 ZCode Weekend Build 曾被标成官网原文）。
+  if (job.basis === 'tested' && !progress.testedTier) {
+    // 两步分别保存进度：编辑出草稿、再批准草稿；单个请求的查询预算不够时下个请求接着做。
+    if (progress.testedTask === undefined) {
+      const row = await db.prepare("SELECT o.evidence,o.updated_at,e.id,e.business_revision FROM offers o JOIN benefit_entities e ON e.canonical_offer_id=o.id AND e.state='active' WHERE o.id=?").bind(progress.offerId)
+        .first<{ evidence: string; updated_at: string; id: string; business_revision: number }>();
+      const evidence = row ? JSON.parse(row.evidence) as Record<string, unknown> : null;
+      if (!row || !evidence || evidence.tier === 'tested') progress.testedTask = null;
+      else {
+        const edit = await step(() => service.editManagedOffer(progress.offerId!, { requestId: `fast-track-tested:${job.id}`, expectedOfferVersion: entityOfferVersion(row, row.updated_at), fields: { evidence: { ...evidence, tier: 'tested' } }, actor: job.actor }));
+        progress.testedTask = edit.taskId ? { id: edit.taskId, revision: edit.revision } : null;
+      }
+      await save();
+    }
+    const task = progress.testedTask;
+    if (task) await step(() => service.decideTask(task.id, { requestId: `fast-track-tested-approve:${job.id}`, expectedRevision: task.revision, action: 'approve', actor: job.actor, role: 'admin', reason: '管理员快速上架（亲测）：证据级别为管理员实测' }));
+    progress.testedTier = true;
     await save();
   }
   await db.prepare('UPDATE offers SET fast_tracked_at=? WHERE id=?').bind(now, progress.offerId).run();

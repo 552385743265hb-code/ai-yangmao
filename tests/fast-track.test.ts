@@ -86,6 +86,15 @@ it('a registered staff X account stays staff and its post publishes at staff tie
   expect(f.sqlite.prepare("SELECT x_handles,staff_handles FROM platforms WHERE id='codexco'").get()).toEqual({ x_handles: '["@codexco"]', staff_handles: '["@tibo"]' });
 });
 
+it('an administrator-tested fast-track publishes at tested tier, not as the linked page', async () => {
+  f.sqlite.exec("INSERT INTO platforms(id,name,type,status,site) VALUES('odyssey','Odyssey','lab','approved','https://odyssey.world')");
+  const created = await call('admin/fast-track', { platformId: 'odyssey', url: 'https://odyssey.world/', benefit: 'Odyssey-3 公开研究预览，可免费试用', basis: 'tested' });
+  await ingest(`fast-track/${created.body.jobId}/claim`, {});
+  const result = await settle(created.body.jobId, await ingest(`fast-track/${created.body.jobId}/result`, { fields: extracted, sourceText: page, model: 'free' }));
+  expect(result.body).toMatchObject({ state: 'published' });
+  expect(JSON.parse((f.sqlite.prepare('SELECT evidence FROM offers WHERE id=?').get(result.body.offerId) as any).evidence).tier).toBe('tested');
+});
+
 it('any URL the owner gives is registered as the vendor official address', async () => {
   f.sqlite.exec("INSERT INTO platforms(id,name,type,status) VALUES('odyssey','Odyssey','lab','pending')");
   await call('admin/fast-track', { platformId: 'odyssey', url: 'https://x.com/odysseyml/status/123', benefit: '公开预览免费试用' });
