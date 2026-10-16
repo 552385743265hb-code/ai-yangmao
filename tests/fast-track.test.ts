@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, expect, it } from 'vitest';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import worker from '../src/worker/index';
 import { identityDb } from './fixtures/identity/db';
 import { mergeFastTrackFields, missingBasicFields, fastTrackHeld } from '../src/worker/fast-track';
@@ -102,7 +102,25 @@ it('any URL the owner gives is registered as the vendor official address', async
   const docs = await call('admin/fast-track', { platformId: 'vendor', url: 'https://docs.vendor-cdn.example/free', benefit: '新文档页的免费额度' });
   expect(docs.body.registered).toEqual({ kind: 'source', value: 'https://docs.vendor-cdn.example/free' });
   expect(f.sqlite.prepare("SELECT tier,auto_publish FROM sources WHERE url='https://docs.vendor-cdn.example/free'").get()).toEqual({ tier: 'site', auto_publish: 0 });
-  expect((await call('admin/fast-track', { platformId: 'vendor', url: 'https://mp.weixin.qq.com/s/abc', benefit: '公众号权益' })).status).toBe(400);
+});
+
+// 2026-10-16：管理员粘贴的公众号分享短链（不带 __biz）曾被拒绝；担保的链接一律接受。
+it('accepts a WeChat short link: registers the account when the page reveals __biz, otherwise only that article', async () => {
+  vi.stubGlobal('fetch', vi.fn(async (input: string) => String(input).endsWith('/s/withbiz')
+    ? new Response('<script>var biz = "MzkxMjM0NTY3OA==";</script>') : new Response('<h2>环境异常</h2><a>去验证</a>')));
+  try {
+    const known = await call('admin/fast-track', { platformId: 'vendor', url: 'https://mp.weixin.qq.com/s/withbiz', benefit: '公众号权益' });
+    expect(known.status).toBe(200); expect(known.body.registered).toEqual({ kind: 'wechat', value: 'MzkxMjM0NTY3OA==' });
+    expect((f.sqlite.prepare("SELECT wechat FROM platforms WHERE id='vendor'").get() as any).wechat).toContain('MzkxMjM0NTY3OA==');
+    const captcha = await call('admin/fast-track', { platformId: 'vendor', url: 'https://mp.weixin.qq.com/s/dGd6Nz03MF4', benefit: 'DeepSeek 故障补偿：全员领 500 积分' });
+    expect(captcha.status).toBe(200); expect(captcha.body.registered).toEqual({ kind: 'source', value: 'https://mp.weixin.qq.com/s/dGd6Nz03MF4' });
+    expect(f.sqlite.prepare("SELECT tier,enabled FROM sources WHERE url='https://mp.weixin.qq.com/s/dGd6Nz03MF4'").get()).toEqual({ tier: 'official', enabled: 0 });
+    const { officialTier } = await import('../src/shared/official-review');
+    const sources = f.sqlite.prepare("SELECT url,tier FROM sources WHERE platform_id='vendor'").all() as { url: string; tier: string }[];
+    const platform = { id: 'vendor', name: 'Vendor', site: null, xHandles: [], staffHandles: [], wechat: null };
+    expect(officialTier('https://mp.weixin.qq.com/s/dGd6Nz03MF4', platform, sources)).toBe('site'); // 已登记的单篇文章按官网级别认定
+    expect(officialTier('https://mp.weixin.qq.com/s/someOtherArticle', platform, sources)).toBeNull();
+  } finally { vi.unstubAllGlobals(); }
 });
 
 it('fast-track is administrator only', async () => {
