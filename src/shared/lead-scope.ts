@@ -4,9 +4,10 @@ import {zonedTime} from './lifecycle';
 
 // Product nouns are not brands. Latin aliases need token boundaries (e.g. xAI != AI).
 const generic=new Set(['ai','api','app','code','cloud','studio','portal','pro','free','model','models','cn','international','中国','国内','国际版']);
-export function platformMentioned(text:string,platform:Pick<OfficialPlatform,'id'|'name'>):boolean {
+// Product aliases (platforms.aliases) count too: a lead that only says “ZCode” or “海螺AI” names its platform (2026-10-15).
+export function platformMentioned(text:string,platform:Pick<OfficialPlatform,'id'|'name'|'aliases'>):boolean {
  text=text.replace(/https?:\/\/[^\s<>"）)]+/gi,' ');
- const aliases=[platform.id,platform.name,...platform.name.split(/[（）()\/·、\s]+/)];
+ const aliases=[platform.id,platform.name,...platform.name.split(/[（）()\/·、\s]+/),...(platform.aliases??[])];
  return aliases.some(raw=>{
   const name=raw.normalize('NFKC').trim().toLowerCase();
   if(name.length<2||generic.has(name))return false;

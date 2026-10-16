@@ -84,7 +84,8 @@ screeningIngestRoutes.get('/queue', async c => {
     const prev = chosen.get(row.id);
     if (!prev || (row.candidate_id ?? '\uffff') < (prev.candidate_id ?? '\uffff')) chosen.set(row.id, row);
   }
-  const platforms = (await c.env.DB.prepare(`SELECT id, name FROM platforms WHERE status='approved'`).all<{ id: string; name: string }>()).results;
+  const platforms = (await c.env.DB.prepare(`SELECT id, name, aliases FROM platforms WHERE status='approved'`).all<{ id: string; name: string; aliases: string }>()).results
+    .map(p => ({ id: p.id, name: p.name, aliases: JSON.parse(p.aliases || '[]') as string[] }));
   const items = [...chosen.values()].filter(row => !ids.length || ids.includes(row.id)).map(row => ({
     itemId: row.id, subject: row.subject_kind === 'lead' ? leadSubject(row, platforms) : taskSubject(row), tier: row.tier, discoveredAt: row.discovered_at,
     latestUsefulReviewAt: latestUsefulReviewAt(row.deadline, row.tier),
@@ -127,7 +128,7 @@ function clipText(value: string, stripReview: boolean): { text: string; truncate
   return { text: body.slice(0, TEXT_LIMIT), truncated: body.length > TEXT_LIMIT };
 }
 
-function leadSubject(row: QueueRow, platforms: { id: string; name: string }[]) {
+function leadSubject(row: QueueRow, platforms: { id: string; name: string; aliases?: string[] }[]) {
   const clipped = clipText(row.lead_raw ?? '', true);
   const title = row.lead_title ?? '';
   const platformIds = platforms.filter(platform => platformMentioned(`${title}\n${clipped.text}`, platform)).map(platform => platform.id);

@@ -62,6 +62,22 @@ const typeColor = ty => TK.s[TYPES[ty].slot - 1];
 const ptypeColor = pt => TK.s[PTYPE[pt].slot - 1];
 const typeVar = ty => `var(--s${TYPES[ty].slot})`;
 
+/** 按公司分组的平台（0043）：同一公司的多个产品合成一组；只列出有条目的平台。 */
+function platformGroups(selected = '') {
+  const has = new Set(OFFERS.map(o => o.p)), groups = new Map(), rows = [];
+  for (const p of PLATFORMS.filter(p => has.has(p.id) || p.id === selected)) {
+    if (p.company) { if (!groups.has(p.company)) groups.set(p.company, []); groups.get(p.company).push(p); } else rows.push({ name: p.name, items: [p] });
+  }
+  for (const [company, items] of groups) rows.push(items.length > 1 ? { name: company, company, items } : { name: items[0].name, items });
+  return rows.sort((a, b) => a.name.localeCompare(b.name, 'zh'));
+}
+function platformOptionsHtml(selected = '') {
+  const opt = (value, label) => `<option value="${esc(value)}" ${selected === value ? 'selected' : ''}>${esc(label)}</option>`;
+  return opt('', '全部平台') + platformGroups(selected).map(g => g.company
+    ? `<optgroup label="${esc(g.company)}">${opt('co:' + g.company, `${g.company}（全部）`)}${g.items.map(p => opt(p.id, p.name)).join('')}</optgroup>`
+    : opt(g.items[0].id, g.items[0].name)).join('');
+}
+
 /* ---------- 数据准备 ---------- */
 let PMAP = {}, OMAP = {}, LAST_OK = null;
 /** 数据加载后调用：建立索引，计算依赖数据的统计。 */
@@ -834,7 +850,7 @@ function filtered() {
   if (f.ty) list = list.filter(o => o.ty === f.ty);
   if (f.m) list = list.filter(o => o.m.includes(f.m));
   if (f.c) list = list.filter(o => o.c === f.c);
-  if (f.p) list = list.filter(o => o.p === f.p);
+  if (f.p) list = list.filter(o => f.p.startsWith('co:') ? o.plat?.company === f.p.slice(3) : o.p === f.p);
   if (f.value === 'official') list = list.filter(o => valueGroup(o) === 'official' && hasDisplayValue(o));
   if (f.value === 'scenario') list = list.filter(o => valueGroup(o) === 'scenario' && hasDisplayValue(o));
   if (f.value === 'unknown') list = list.filter(o => !hasDisplayValue(o));
@@ -857,7 +873,7 @@ function pAll() {
     ${sel('f-m', '模态', [['', '全部模态'], ...Object.entries(MODAL)])}
     ${sel('f-req', '门槛', [['', '不限'], ['zero', '零门槛'], ['nooversea', '不需要海外条件'], ['nopay', '不用花钱'], ['special', '学生 / 企业 / 邀请 / 定向']])}
     ${sel('f-c', '领取方式', [['', '全部方式'], ...Object.entries(CLAIM)])}
-    ${sel('f-p', '平台', [['', '全部平台'], ...PLATFORMS.filter(p => OFFERS.some(o => o.p === p.id)).map(p => [p.id, p.name])])}
+    <label class="field" for="f-p">平台<select id="f-p" data-f="p">${platformOptionsHtml(ALLF.p)}</select></label>
     ${sel('f-st', '状态', [['claimable', '现在或即将可领'], ['', '全部状态'], ['active', '进行中'], ['ending', '即将结束'], ['upcoming', '未开始'], ['standing', '常驻'], ['ended', '已结束']])}
     ${sel('f-value', '估值方法', [['', '全部方法'], ['official', '仅看官方价值'], ['scenario', '用量估算'], ['unknown', '价值待定']])}
   </div>
@@ -876,9 +892,7 @@ function pAll() {
       await loadData({ fresh: true });
       prepare();
       if (!platform.isConnected || route()[0] !== 'all') return;
-      const choices = PLATFORMS.filter(p => OFFERS.some(o => o.p === p.id) || p.id === ALLF.p);
-      platform.innerHTML = `<option value="" ${!ALLF.p ? 'selected' : ''}>全部平台</option>` + choices.map(p =>
-        `<option value="${esc(p.id)}" ${ALLF.p === p.id ? 'selected' : ''}>${esc(p.name)}</option>`).join('');
+      platform.innerHTML = platformOptionsHtml(ALLF.p);
       draw();
     } catch (_) {
       ({ OFFERS, PLATFORMS, META, COVERAGE } = previous);
@@ -1618,7 +1632,9 @@ function pCoverage() {
   <section>${secH('正在监控')}<div class="card tbl" style="padding:4px 8px"><table><thead><tr><th>渠道</th><th>方式</th><th>规模</th><th>状态</th></tr></thead><tbody>${rows.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}</td></tr>`).join('')}</tbody></table></div></section>
   <section>${secH('官方页面监控', `${plist.length} 个平台`)}<div class="chips">${plist.map(id => PMAP[id] ? `<a class="chip" href="#platform-${id}">${esc(PMAP[id].name)}</a>` : '').join('')}</div></section>
   <section>${secH('已知缺口')}<div class="rows">${gaps.map(g => `<div class="orow" style="grid-template-columns:auto minmax(0,1fr)">${stBadge(g[2], g[2] === 'critical' ? '✕' : '!', g[2] === 'critical' ? '暂不覆盖' : '部分覆盖')}<span class="t">${g[0]}<small>${g[1]}</small></span></div>`).join('')}</div></section>
-  <section>${secH('平台白名单', `${PLATFORMS.length} 个`)}<div class="chips">${PLATFORMS.map(p => `<a class="chip" href="#platform-${p.id}">${etagSvg(ptypeColor(p.type)).replace('<svg ', '<svg style="width:10px;height:12px" ')}${esc(p.name)}</a>`).join('')}</div></section>`;
+  <section>${secH('平台白名单', `${platformGroups().length} 家（只列有条目的平台）`)}<div class="chips">${platformGroups().map(g => g.company
+    ? `<span class="chip"><b>${esc(g.company)}</b>&nbsp;${g.items.map(p => `<a href="#platform-${p.id}">${esc(p.name)}</a>`).join(' · ')}</span>`
+    : `<a class="chip" href="#platform-${g.items[0].id}">${etagSvg(ptypeColor(g.items[0].type)).replace('<svg ', '<svg style="width:10px;height:12px" ')}${esc(g.items[0].name)}</a>`).join('')}</div></section>`;
 }
 
 /* ---------- 后台 ---------- */
@@ -1847,7 +1863,7 @@ async function refreshAdminPlatforms() {
       if (!response.ok) throw new Error(`平台列表 ${response.status}`);
       const data = await response.json();
       if (!Array.isArray(data.platforms)) throw new Error('平台列表格式不正确');
-      PLATFORMS = data.platforms.map(p => ({ id: p.id, name: p.name, type: p.type, site: p.site || '', x: (p.xHandles || []).join(' · ') }));
+      PLATFORMS = data.platforms.map(p => ({ id: p.id, name: p.name, type: p.type, site: p.site || '', x: (p.xHandles || []).join(' · '), company: p.company || '', aliases: p.aliases || [] }));
       PMAP = Object.fromEntries(PLATFORMS.map(p => [p.id, p]));
       $$('#admBody select[name="platformId"]').forEach(select => {
         const id = select.value, name = select.selectedOptions?.[0]?.textContent || id;
