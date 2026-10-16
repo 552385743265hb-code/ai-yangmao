@@ -21,6 +21,8 @@ export const LEAD_LEASE_MS=20*60_000;
  * 管理员补录和管理员手动“重新核验”的线索不受限；过期线索仍留在后台列表，不删除。 */
 export const LEAD_REVIEW_MAX_AGE_MS=3*86400_000;
 export const ADMIN_RETRY_REASON='管理员要求重新官方核验';
+/** 公众号文章无法自动核验、交管理员一键快速上架的线索复核结论前缀（后台与 Telegram 提醒据此置顶）。 */
+export const WECHAT_FAST_TRACK_REASON='原文是微信公众号文章';
 export function leadReviewStale(l:{origin?:string;createdAt:string;resolution:LeadResolution|null},now=Date.now()):boolean {
   // 管理员“重新核验/重试”会把 attempts 归零；自动重试至少为 1。
   if(l.origin==='manual'||(l.resolution?.status==='retry'&&l.resolution.attempts===0)||l.resolution?.reason?.startsWith(ADMIN_RETRY_REASON))return false;

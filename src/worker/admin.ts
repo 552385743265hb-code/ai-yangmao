@@ -16,7 +16,7 @@ import { IdentityService } from './identity/service';
 import { IdentityError } from './identity/store';
 import { sha256,stableJson } from '../shared/identity/normalize';
 import { publicationError, validateStoredOffer } from './publication';
-import {ADMIN_RETRY_REASON,leadTask,leadReviewVersion,leadReviewDue,type LeadResolution} from '../shared/lead-review';
+import {ADMIN_RETRY_REASON,WECHAT_FAST_TRACK_REASON,leadTask,leadReviewVersion,leadReviewDue,type LeadResolution} from '../shared/lead-review';
 import { leadPriority } from '../shared/leads';
 import { isReviewField } from '../shared/spec';
 import { createComment, removeComment, legacyNoteStatement, commentMutationGuard, commentBodyLimit } from './comments';
@@ -767,7 +767,7 @@ export async function buildNotice(env: Env, kind: NoticeKind, channel: NoticeCha
       ...await identityReviewAlerts(env.DB,[...announced,...inherited.announcedReviewKeys]),
       ...awaiting.map(o=>({ key: o.officialReview && (o.officialReview.status === 'matched' || (o.officialReview.status!=='checking'&&!o.officialReview.nextAttemptAt)) ? `offer:${o.id}:official:${o.officialReview.jobId}` : `offer:${o.id}`, priority: reviewRank(o), title: `[${shortCode(o.id)}] ${o.title}`, state: o.officialReview?.status==='unresolved'&&!o.officialReview.nextAttemptAt?'官方复核待人工核对':'待审', url: `https://ai-yangmao.com/#admin-offer-${encodeURIComponent(o.id)}` })),
       ...proposals.filter(p=>p.diff.some(x=>isReviewField(x.field))).map(p=>({ key: `proposal:${p.offerId}:${JSON.stringify(p.diff)}`, priority: 2, title: String(p.candidate.title ?? p.offerId), state: '条款更新待审', url: `https://ai-yangmao.com/#admin-offer-${encodeURIComponent(p.offerId)}` })),
-      ...unresolved.filter(l=>!l.resolution?.identityTaskIds?.length&&(leadPriority(l)<=1||l.resolution?.status==='manual')).sort((a,b)=>leadPriority(a)-leadPriority(b)||b.id-a.id).map(l=>({ key: `lead:${l.id}:${l.resolution?.status==='manual'?'manual:'+l.resolution.jobId:l.status}`, priority: 1, title: `#${l.id} ${l.title ?? ''}`, state: l.status==='reviewing' ? (l.resolution?.status==='manual'?'线索待你判断':'线索正在自动复核') : '重要线索，尚未研判', url: 'https://ai-yangmao.com/#admin' })),
+      ...unresolved.filter(l=>!l.resolution?.identityTaskIds?.length&&(leadPriority(l)<=1||l.resolution?.status==='manual')).sort((a,b)=>leadPriority(a)-leadPriority(b)||b.id-a.id).map(l=>({ key: `lead:${l.id}:${l.resolution?.status==='manual'?'manual:'+l.resolution.jobId:l.status}`, priority: wechatHandoff(l) ? 0 : 1, title: `#${l.id} ${l.title ?? ''}`, state: wechatHandoff(l) ? '⚡ 公众号福利：点开一键快速上架' : l.status==='reviewing' ? (l.resolution?.status==='manual'?'线索待你判断':'线索正在自动复核') : '重要线索，尚未研判', url: 'https://ai-yangmao.com/#admin' })),
     ].filter(a=>!announced.has(a.key));
     // 重要线索先提醒，余下待审分批发完；单条失败不堵住其他审核提醒。
     reviewAlerts.sort((a,b)=>(a.priority ?? 2)-(b.priority ?? 2));
@@ -785,6 +785,7 @@ export async function buildNotice(env: Env, kind: NoticeKind, channel: NoticeCha
   return { kind, channel, identityGuards, items: out, marks, moreCount, d1Alert, pendingCount, reviewAlerts, leadBacklog, suggestAutoPublish, needsVerificationCount, coverageDegraded, empty, blockedCount: blocked.size+inherited.blocked.size,identityDeliveryConflicts:inherited.conflicts };
 }
 
+const wechatHandoff=(l:{resolution?:{status?:string;reason?:string}|null})=>l.resolution?.status==='manual'&&!!l.resolution.reason?.startsWith(WECHAT_FAST_TRACK_REASON);
 /** 预览是纯读取，不能仅凭获取消息就把内容记为已发送。 */
 admin.get('/notify', async c => {
   const channel = c.req.query('channel') === 'feishu' ? 'feishu' : 'telegram';

@@ -1836,7 +1836,7 @@ function leadTaskCard(l) {
     <details style="margin-top:8px"><summary>处理这条线索</summary><label class="field">处理依据<input data-lead-reason placeholder="例如：同一次发放的进度说明"></label>
     <label class="field">关联已有条目<input data-lead-offer placeholder="粘贴条目网址、4 位短码（如 2r48）或完整 ID"></label>
     <div class="row"><button class="btn sm" data-lead-resolve="retry">重新官方核验</button><button class="btn sm" data-lead-resolve="linked">关联已有活动</button><button class="btn sm" data-lead-resolve="closed">结束线索</button></div><p class="small" role="status" data-lead-feedback></p></details>
-    ${ADM.role==='admin'?`<details style="margin-top:8px"><summary>⚡ 快速上架（我已确认官方或亲测）</summary>${fastTrackFormHtml({inline:true,benefit:l.title||''})}</details>`:''}</div>`;
+    ${ADM.role==='admin'?`<details style="margin-top:8px"><summary>⚡ 快速上架（我已确认官方或亲测）</summary>${fastTrackFormHtml({inline:true,benefit:l.title||'',url:l.url||'',note:(l.note||'').slice(0,1000)})}</details>`:''}</div>`;
 }
 function bindLeadTasks(box,tasks){
   box.querySelectorAll('[data-lead-task]').forEach(card=>{
@@ -2295,7 +2295,7 @@ function fastTrackFormHtml(p = {}) {
     <label class="field">官方链接<input type="url" name="url" required placeholder="https://（官网、公众号文章、厂商 X 推文）" value="${esc(p.url || '')}"></label>
     <label class="field">主要权益<input name="benefit" required minlength="2" maxlength="500" placeholder="比如：Odyssey-3 公开研究预览，可免费试用" value="${esc(p.benefit || '')}"></label>
     <label class="field">依据<select name="basis"><option value="official">官方发布</option><option value="tested">我亲测可领</option></select></label>
-    <details><summary class="small">可选：标题、日期、备注</summary><label class="field">标题<input name="title" maxlength="120"></label><div class="row" style="gap:8px"><label class="field">开始<input type="date" name="claimStart"></label><label class="field">截止<input type="date" name="claimEnd"></label></div><label class="field">备注（给模型的提示）<input name="note" maxlength="1000"></label></details>
+    <details><summary class="small">可选：标题、日期、备注</summary><label class="field">标题<input name="title" maxlength="120"></label><div class="row" style="gap:8px"><label class="field">开始<input type="date" name="claimStart"></label><label class="field">截止<input type="date" name="claimEnd"></label></div><label class="field">备注（给模型的提示）<input name="note" maxlength="1000" value="${esc(p.note || '')}"></label></details>
     <button class="btn pri" type="submit">⚡ 快速上架</button><p class="small" role="status" data-ft-msg></p></form>`;
 }
 function bindFastTrackForm(form, leadId, onDone) {

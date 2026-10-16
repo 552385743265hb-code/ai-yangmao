@@ -86,7 +86,26 @@ export function syndicatedPostText(url:string,payload:unknown):string|null {
  * 1. 直接抓取，Readability 正文和整页纯文本里，取羊毛相关内容更多的那个（Readability 有时会丢掉定价说明）；
  * 2. 字数仍然太少（多半是脚本渲染的页面），改用 Jina Reader，要 Markdown 格式以保留表格结构。
  */
-export interface FetchedPage {sourceVerified?:boolean;text:string;via:'readability'|'direct'|'jina';originalUrl?:string;finalUrl:string;fetchedUrl?:string;fetchMethod?:'direct'|'readability'|'jina'|'first_party_embed';truncated?:boolean}
+/** via 表示读取方式类别：jina 指第三方阅读器（含 Exa），一律按间接来源处理；fetchMethod 记录实际读取方。 */
+export interface FetchedPage {sourceVerified?:boolean;text:string;via:'readability'|'direct'|'jina';originalUrl?:string;finalUrl:string;fetchedUrl?:string;fetchMethod?:'direct'|'readability'|'jina'|'exa'|'first_party_embed';truncated?:boolean}
+const WECHAT_CAPTCHA = /环境异常|完成验证后即可继续访问|去验证/;
+const isWechat = (url: string) => { try { return new URL(url).hostname === 'mp.weixin.qq.com'; } catch { return false; } };
+/** Exa /contents（build-with-exa：contents 端点的 text 是顶层字段）。返回第三方阅读器结果，按间接来源处理；读不到或仍是验证页时返回 null。 */
+export async function exaContents(url: string, timeoutMs = 30000): Promise<FetchedPage | null> {
+  const key = process.env.EXA_API_KEY;
+  if (!key) return null;
+  try {
+    const r = await fetch('https://api.exa.ai/contents', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': key }, body: JSON.stringify({ urls: [url], text: true }), signal: AbortSignal.timeout(timeoutMs) });
+    if (!r.ok) return null;
+    const j = await r.json() as { results?: { url?: string; title?: string; author?: string; text?: string }[] };
+    const hit = j.results?.[0];
+    const body = hit?.text?.trim() ?? '';
+    if (!hit || body.length < 50 || WECHAT_CAPTCHA.test(body.slice(0, 200))) return null;
+    const text = [hit.title, hit.author ? `公众号：${hit.author}` : '', body].filter(Boolean).join('\n');
+    return { text, via: 'jina', originalUrl: url, finalUrl: url, fetchedUrl: 'https://api.exa.ai/contents', fetchMethod: 'exa', truncated: false, sourceVerified: hit.url === url };
+  } catch { return null; }
+}
+
 export async function fetchPage(url: string, opts: { timeoutMs?: number; tries?: number; minimumTextLength?: number } = {}): Promise<FetchedPage> {
   assertSafeUrl(url);
   const status=officialStatusKey(url);
@@ -109,7 +128,9 @@ export async function fetchPage(url: string, opts: { timeoutMs?: number; tries?:
     // 哪个版本保留的羊毛相关内容多就用哪个；一样多时用更干净的 Readability
     if (read.length >= 800 && relevantText(read).length >= relevantText(full).length) { text = read; via = 'readability'; } else text = full;
   } catch { /* 直接抓失败就走 Jina */ }
-  if (text.length >= (opts.minimumTextLength ?? 800)) return { text, via, originalUrl:url,finalUrl,fetchedUrl:finalUrl,fetchMethod:via,truncated:false,sourceVerified:true };
+  if (text.length >= (opts.minimumTextLength ?? 800) && !(isWechat(url) && WECHAT_CAPTCHA.test(text))) return { text, via, originalUrl:url,finalUrl,fetchedUrl:finalUrl,fetchMethod:via,truncated:false,sourceVerified:true };
+  // 微信公众号文章：云端直读与 Jina 都会遇到验证页（“环境异常”），改用 Exa 从其服务器读取正文（2026-10-16）。
+  if (isWechat(url)) { const exa = await exaContents(url, opts.timeoutMs ?? 30000); if (exa) return exa; }
   const headers: Record<string, string> = { 'User-Agent': UA, 'X-Return-Format': 'markdown', Accept: 'text/plain', 'X-Locale': 'en-US' };
   if (process.env.JINA_API_KEY) headers.Authorization = `Bearer ${process.env.JINA_API_KEY}`;
   const res = await fetch(`https://r.jina.ai/${url}`, { headers, signal: AbortSignal.timeout(opts.timeoutMs ?? 60000) });
