@@ -19,6 +19,9 @@ import { mergeFastTrackFields, missingBasicFields, type FastTrackFields } from '
  */
 export class FastTrackError extends Error { constructor(public status: 400 | 403 | 404 | 409, message: string) { super(message); } }
 
+/** Vendor IDs are lowercase slugs; an admin typing "Replicas" or "My Vendor" means replicas / my-vendor. */
+const slugId = (value: string) => value.normalize('NFKC').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+
 export const FAST_TRACK_LEASE_MS = 15 * 60_000;
 export const FAST_TRACK_MAX_ATTEMPTS = 3;
 export const FAST_TRACK_PUSH_HOLD_MS = 24 * 3600_000;
@@ -30,7 +33,7 @@ const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
 export const fastTrackInput = z.object({
   platformId: z.string().min(1).optional(),
-  newPlatform: z.object({ name: z.string().trim().min(2).max(100), id: z.string().regex(/^[a-z0-9][a-z0-9-]{1,60}$/).optional(), type: z.enum(['lab', 'cloud', 'infra', 'tool', 'new']).default('new') }).optional(),
+  newPlatform: z.object({ name: z.string().trim().min(2).max(100), id: z.string().transform(slugId).pipe(z.string().regex(/^[a-z0-9][a-z0-9-]{1,60}$/, '厂商 ID 只能用英文字母、数字和 -，如 replicas；不确定可留空')).optional(), type: z.enum(['lab', 'cloud', 'infra', 'tool', 'new']).default('new') }).optional(),
   url: z.url().refine(url => /^https:\/\//.test(url), '只收 https 链接'),
   benefit: z.string().trim().min(2).max(500),
   basis: z.enum(['official', 'tested']).default('official'),
@@ -101,12 +104,17 @@ export async function registerOfficialAddress(db: D1Database, platformId: string
 }
 
 function newPlatformId(name: string, url: string): string | null {
-  const ascii = name.normalize('NFKC').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  const ascii = slugId(name);
   if (/^[a-z0-9][a-z0-9-]{1,60}$/.test(ascii)) return ascii;
   const host = hostOf(url);
   if (SHARED_HOSTS.has(host)) return null;
   const label = host.split('.').slice(-2, -1)[0] ?? '';
   return /^[a-z0-9][a-z0-9-]{1,60}$/.test(label) ? label : null;
+}
+
+async function hashedPlatformId(name: string): Promise<string> {
+  const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(name.normalize('NFKC'))));
+  return 'v-' + [...digest.slice(0, 4)].map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 /** Owner submission: admit/create the vendor, register the URL as official, queue extraction, start a run. */
@@ -116,8 +124,8 @@ export async function createFastTrack(env: Env, raw: unknown, actor: string): Pr
   const input = parsed.data, db = env.DB, now = new Date().toISOString();
   let platformId: string;
   if (input.newPlatform) {
-    const id = input.newPlatform.id ?? newPlatformId(input.newPlatform.name, input.url);
-    if (!id) throw new FastTrackError(400, '新厂商名称无法生成 ID，请填写厂商 ID（小写字母、数字、短横线）');
+    // The ID is internal: a Chinese-only name on a shared host (X, WeChat) gets a stable hash ID instead of asking the owner.
+    const id = input.newPlatform.id ?? newPlatformId(input.newPlatform.name, input.url) ?? await hashedPlatformId(input.newPlatform.name);
     const site = SHARED_HOSTS.has(hostOf(input.url)) ? null : new URL(input.url).origin;
     await db.prepare("INSERT INTO platforms(id,name,type,status,site) VALUES(?,?,?,'approved',?) ON CONFLICT(id) DO UPDATE SET status='approved', updated_at=?")
       .bind(id, input.newPlatform.name, input.newPlatform.type, site, now).run();
