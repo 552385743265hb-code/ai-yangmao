@@ -1918,8 +1918,10 @@ function renderIdentityTasks(box,data,append=false,managedIds=new Set()){
  ${needsIdentity&&!canDecide&&!t.visibilityBlocked?'<details data-identity-early-hint><summary>我已核对：标记疑似重复或曾被拒绝</summary><p class="small">请先在“决定说明”写清依据。这里只保存人工线索，系统继续核对；不会自动合并、拒绝或上架。</p><button type="button" class="btn sm" data-identity-hint="suspected_duplicate">标记疑似重复</button><button type="button" class="btn sm" data-identity-hint="previously_rejected">标记疑似曾被拒绝</button></details>':''}
  ${earlyReject?'<details data-identity-early-review><summary>我已核实：提前拒绝此单个候选</summary><p class="small">仅当你已核对它与旧权益或原拒绝主张确实重复时使用。请写明依据；此操作记录新的人工拒绝，不会合并旧活动或自动上架。</p><button type="button" class="btn sm" data-identity-action="reject">预览拒绝此候选</button></details>':''}
  <div class="row review-actions">${(t.visibilityBlocked||!canDecide?[]:!needsIdentity?[['approve','预览通过'],['reject','预览拒绝']]:[...(t.historyOptions&&!historyOptions.length?[]:[['same','关联同一活动']]),['new','建立独立待审活动'],...(t.historyOptions&&!historyOptions.length?[]:[['distinct','确认与所选旧活动不同']]),...(ADM.role!=='reviewer'?[['same_claim','关联原拒绝主张']]:[]),['reject','预览拒绝']]).map(([a,l])=>`<button type="button" class="btn sm" data-identity-action="${a}">${l}</button>`).join('')}</div>
- <div data-identity-preview hidden></div><p role="status" data-identity-feedback></p>`;
+ <div data-identity-preview hidden></div><p role="status" data-identity-feedback></p>
+ ${ADM.role==='admin'?`<details style="margin-top:8px" data-identity-fast-track><summary>⚡ 快速上架（我已确认官方或亲测）</summary><p class="small muted">上架后本查重任务按“与新条目重复”自动结案。</p>${fastTrackFormHtml({inline:true,platformId:t.candidateDisplay?.platformId||t.display?.platformId||'',url:t.candidateDisplay?.evidenceUrl||t.sources?.[0]?.final_url||t.display?.evidence?.url||'',benefit:String(t.candidateDisplay?.valueText||t.display?.valueText||t.candidateDisplay?.title||'').slice(0,500),title:String(t.candidateDisplay?.title||t.display?.title||'').slice(0,120)})}</details>`:''}`;
  box.append(card);
+ {const fast=card.querySelector('[data-identity-fast-track] [data-fast-track]');if(fast)bindFastTrackForm(fast,null,()=>{card.dataset.resolved='1';},{identityTaskId:t.id});}
  card.querySelectorAll('[data-identity-hint]').forEach(button=>button.addEventListener('click',async()=>{
   const reason=card.querySelector('[data-identity-reason]').value.trim(),feedback=card.querySelector('[data-identity-feedback]');
   if(reason.length<8){feedback.textContent='请至少写 8 字说明疑似重复或曾被拒绝的依据';return;}
@@ -2058,7 +2060,7 @@ async function admQueue() {
   const sugTabs = [['all', '全部', q.pending.length], ['approve', '建议通过', sugCount('approve')], ['history', '建议作为历史', sugCount('history')], ['reject', '建议拒绝', sugCount('reject')], ['judge', '需要你判断', sugCount('judge')], ['none', '未标注', sugCount('none')]].filter(([k, , n]) => k === 'all' || n);
   box.innerHTML = `<section class="card" data-review-summary><b>活动待审 <span data-activity-count>${counts.activities}</span> 项</b> · 线索复核 ${counts.leadReview} 条 · 暂停发布 ${counts.paused} 项<p class="small muted">活动待审包含系统补证和等待你决定；线索尚未形成活动，暂停发布不计入待审。新线索 ${counts.newLeads??q.newLeads} 条。</p></section>
     ${q.leadTasks?.length?`<details data-lead-section><summary>线索复核 · ${counts.leadReview} 条</summary><p class="small muted">尚未形成条目的线索会自动读取原文、搜索官方出处并查重。暂时受阻会按时重试；需要判断的可在这里关联已有活动、结束线索或重新核验。</p>${q.leadTasks.slice(0,10).map(leadTaskCard).join('')}${q.leadTasks.length>10?`<details><summary>其余 ${q.leadTasks.length-10} 条线索复核</summary>${q.leadTasks.slice(10).map(leadTaskCard).join('')}</details>`:''}</details>`:''}
-    ${q.priorityLeads?.filter(l=>l.status==='new').length?`<section><h3>重要新线索 · 等待研判</h3>${q.priorityLeads.filter(l=>l.status==='new').map(l=>`<p>#${l.id} ${esc(l.title||'')} · 将在下一轮研判</p>`).join('')}</section>`:''}
+    ${q.priorityLeads?.filter(l=>l.status==='new').length?`<section><h3>重要新线索 · 等待研判</h3>${q.priorityLeads.filter(l=>l.status==='new').map(l=>`<div data-priority-lead="${l.id}"><p>#${l.id} ${esc(l.title||'')} · 将在下一轮研判</p>${ADM.role==='admin'?`<details style="margin:0 0 8px"><summary class="small">⚡ 快速上架（我已确认官方或亲测）</summary>${fastTrackFormHtml({inline:true,benefit:String(l.title||'').slice(0,500),url:l.url||''})}</details>`:''}</div>`).join('')}</section>`:''}
     ${sugTabs.length > 2 ? `<div class="seg" role="tablist" style="margin-bottom:12px;flex-wrap:wrap">${sugTabs.map(([k, l, n]) => `<button type="button" data-sugtab="${k}" aria-pressed="${(ADM.sug || 'all') === k}">${l} ${n}</button>`).join('')}</div>` : ''}
     ${q.pendingPlatforms.length ? `<div class="card" style="margin-bottom:12px"><h3>新平台待准入</h3>${q.pendingPlatforms.map(p => `<div class="row" style="justify-content:space-between;padding:6px 0"><span>${esc(p.name)}（${esc(p.id)}）${p.site ? ` · <a href="${esc(p.site)}" target="_blank" rel="noopener">官网</a>` : ''}</span><span class="row"><button class="btn sm good" data-plat="${p.id}:approve">准入</button><button class="btn sm bad" data-plat="${p.id}:reject">拒绝</button></span></div>`).join('')}</div>` : ''}
     ${q.suggestAutoPublish.map(x => `<div class="card" style="margin-bottom:12px"><span class="st warn"><b>!</b>建议放开</span> 信源 ${esc(x.id)} 已连续原样通过 ${x.cleanStreak} 条 <button class="btn sm" data-autopub="${x.id}">放开自动上架</button></div>`).join('')}
@@ -2068,6 +2070,7 @@ async function admQueue() {
   const identityBox=box.querySelector('[data-identity-slot]');identityBox.dataset.identityReview='';const remainingTasks=(identity.tasks||[]).filter(t=>!managedIds.has(t.id));if(remainingTasks.length||identity.error||identity.nextCursor)renderIdentityTasks(identityBox,{...identity,tasks:remainingTasks},false,managedIds);
   const pausedSection=document.createElement('details');pausedSection.dataset.pausedSection='';pausedSection.innerHTML=`<summary>暂停发布 · ${counts.paused} 项（无需日常处理）</summary>`;const holdsBox=document.createElement('section');pausedSection.append(holdsBox);box.append(pausedSection);renderVisibilityHolds(holdsBox,holds);if(holds.error)holdsBox.textContent='暂停活动读取失败：'+holds.error;
   bindLeadTasks(box,q.leadTasks||[]);
+  box.querySelectorAll('[data-priority-lead]').forEach(el=>{const fast=el.querySelector('[data-fast-track]');if(fast)bindFastTrackForm(fast,Number(el.dataset.priorityLead),()=>{el.dataset.resolved='1';});});
   const applySug = () => $$('[data-sug]', box).forEach(el => { if (el.closest('details')) return; el.style.display = !ADM.sug || ADM.sug === 'all' || el.dataset.sug === ADM.sug ? '' : 'none'; });
   $$('[data-sugtab]', box).forEach(b => b.addEventListener('click', () => { ADM.sug = b.dataset.sugtab; $$('[data-sugtab]', box).forEach(x => x.setAttribute('aria-pressed', x === b)); applySug(); }));
   applySug();
@@ -2295,10 +2298,10 @@ function fastTrackFormHtml(p = {}) {
     <label class="field">官方链接<input type="url" name="url" required placeholder="https://（官网、公众号文章、厂商 X 推文）" value="${esc(p.url || '')}"></label>
     <label class="field">主要权益<input name="benefit" required minlength="2" maxlength="500" placeholder="比如：Odyssey-3 公开研究预览，可免费试用" value="${esc(p.benefit || '')}"></label>
     <label class="field">依据<select name="basis"><option value="official">官方发布</option><option value="tested">我亲测可领</option></select></label>
-    <details><summary class="small">可选：标题、日期、备注</summary><label class="field">标题<input name="title" maxlength="120"></label><div class="row" style="gap:8px"><label class="field">开始<input type="date" name="claimStart"></label><label class="field">截止<input type="date" name="claimEnd"></label></div><label class="field">备注（给模型的提示）<input name="note" maxlength="1000" value="${esc(p.note || '')}"></label></details>
+    <details><summary class="small">可选：标题、日期、备注</summary><label class="field">标题<input name="title" maxlength="120" value="${esc(p.title || '')}"></label><div class="row" style="gap:8px"><label class="field">开始<input type="date" name="claimStart"></label><label class="field">截止<input type="date" name="claimEnd"></label></div><label class="field">备注（给模型的提示）<input name="note" maxlength="1000" value="${esc(p.note || '')}"></label></details>
     <button class="btn pri" type="submit">⚡ 快速上架</button><p class="small" role="status" data-ft-msg></p></form>`;
 }
-function bindFastTrackForm(form, leadId, onDone) {
+function bindFastTrackForm(form, leadId, onDone, link = {}) {
   const select = form.querySelector('[name="platformId"]'), extra = form.querySelector('[data-ft-new]'), msg = form.querySelector('[data-ft-msg]');
   const sync = () => { extra.hidden = !!select.value; };
   select.addEventListener('change', sync); sync();
@@ -2307,7 +2310,7 @@ function bindFastTrackForm(form, leadId, onDone) {
     const fd = Object.fromEntries(new FormData(form)), button = form.querySelector('button[type="submit"]');
     if (!fd.platformId && !fd.newName.trim()) { msg.textContent = '请选择厂商，或填写新厂商名称'; return; }
     const body = { url: fd.url, benefit: fd.benefit.trim(), basis: fd.basis, ...(fd.platformId ? { platformId: fd.platformId } : { newPlatform: { name: fd.newName.trim(), type: fd.newType } }),
-      ...Object.fromEntries(['title', 'claimStart', 'claimEnd', 'note'].filter(k => fd[k]?.trim()).map(k => [k, fd[k].trim()])), ...(leadId ? { leadId } : {}) };
+      ...Object.fromEntries(['title', 'claimStart', 'claimEnd', 'note'].filter(k => fd[k]?.trim()).map(k => [k, fd[k].trim()])), ...(leadId ? { leadId } : {}), ...link };
     button.disabled = true;
     try {
       const r = await adm('/fast-track', body);

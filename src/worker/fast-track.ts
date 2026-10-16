@@ -42,10 +42,11 @@ export const fastTrackInput = z.object({
   claimStart: isoDate.optional(),
   claimEnd: isoDate.optional(),
   leadId: z.number().int().positive().optional(),
+  identityTaskId: z.string().min(1).max(200).optional(),
 }).refine(v => !!v.platformId !== !!v.newPlatform, '选择已有厂商或填写新厂商，二选一');
 export type FastTrackInput = z.input<typeof fastTrackInput>;
 
-interface JobRow { id: string; platform_id: string; url: string; benefit: string; basis: 'official' | 'tested'; note: string | null; owner_fields_json: string; lead_id: number | null; state: string; lease_until: string | null; attempts: number; fields_json: string | null; progress_json: string | null; missing_json: string | null; error: string | null; offer_id: string | null; actor: string; created_at: string; updated_at: string; published_at: string | null }
+interface JobRow { id: string; platform_id: string; url: string; benefit: string; basis: 'official' | 'tested'; note: string | null; owner_fields_json: string; lead_id: number | null; identity_task_id?: string | null; state: string; lease_until: string | null; attempts: number; fields_json: string | null; progress_json: string | null; missing_json: string | null; error: string | null; offer_id: string | null; actor: string; created_at: string; updated_at: string; published_at: string | null }
 interface PlatformRow { id: string; name: string; status: string; site: string | null; x_handles: string; staff_handles: string; wechat: string | null }
 
 const toOfficial = (p: PlatformRow): OfficialPlatform => ({ id: p.id, name: p.name, site: p.site, xHandles: JSON.parse(p.x_handles || '[]'), staffHandles: JSON.parse(p.staff_handles || '[]'), wechat: p.wechat });
@@ -137,18 +138,19 @@ export async function createFastTrack(env: Env, raw: unknown, actor: string): Pr
     platformId = platform.id;
   }
   if (input.leadId && !await db.prepare('SELECT 1 FROM leads WHERE id=?').bind(input.leadId).first()) throw new FastTrackError(404, '没有这条线索');
+  if (input.identityTaskId && !await db.prepare('SELECT 1 FROM review_tasks WHERE id=?').bind(input.identityTaskId).first()) throw new FastTrackError(404, '没有这个审核任务');
   const registered = await registerOfficialAddress(db, platformId, input.url, actor);
   const owner = Object.fromEntries(Object.entries({ title: input.title, claimStart: input.claimStart, claimEnd: input.claimEnd }).filter(([, v]) => v));
   const jobId = crypto.randomUUID();
-  await db.prepare("INSERT INTO fast_track_jobs(id,platform_id,url,benefit,basis,note,owner_fields_json,lead_id,state,actor,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,'queued',?,?,?)")
-    .bind(jobId, platformId, input.url, input.benefit, input.basis, input.note ?? null, JSON.stringify(owner), input.leadId ?? null, actor, now, now).run();
+  await db.prepare("INSERT INTO fast_track_jobs(id,platform_id,url,benefit,basis,note,owner_fields_json,lead_id,identity_task_id,state,actor,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,'queued',?,?,?)")
+    .bind(jobId, platformId, input.url, input.benefit, input.basis, input.note ?? null, JSON.stringify(owner), input.leadId ?? null, input.identityTaskId ?? null, actor, now, now).run();
   const dispatched = await dispatchCollect(env, true).catch(() => ({ ok: false }));
   return { jobId, platformId, registered, dispatched: dispatched.ok };
 }
 
 export async function listFastTrack(db: D1Database) {
   const rows = await db.prepare('SELECT j.*, p.name platform_name FROM fast_track_jobs j JOIN platforms p ON p.id=j.platform_id ORDER BY j.created_at DESC LIMIT 30').all<JobRow & { platform_name: string }>();
-  return rows.results.map(r => ({ id: r.id, platformId: r.platform_id, platformName: r.platform_name, url: r.url, benefit: r.benefit, basis: r.basis, state: r.state, attempts: r.attempts, missing: r.missing_json ? JSON.parse(r.missing_json) as string[] : [], error: r.error, offerId: r.offer_id, leadId: r.lead_id, createdAt: r.created_at, publishedAt: r.published_at }));
+  return rows.results.map(r => ({ id: r.id, platformId: r.platform_id, platformName: r.platform_name, url: r.url, benefit: r.benefit, basis: r.basis, state: r.state, attempts: r.attempts, missing: r.missing_json ? JSON.parse(r.missing_json) as string[] : [], error: r.error, offerId: r.offer_id, leadId: r.lead_id, identityTaskId: r.identity_task_id ?? null, createdAt: r.created_at, publishedAt: r.published_at }));
 }
 
 export async function fastTrackQueue(db: D1Database, now = new Date()) {
@@ -272,6 +274,17 @@ async function linkLead(db: D1Database, leadId: number, offerId: string) {
   await db.prepare("UPDATE leads SET status='linked', offer_id=?, resolution=? WHERE id=? AND status IN ('new','reviewing')").bind(offerId, JSON.stringify(resolution), leadId).run();
 }
 
+/**
+ * The owner fast-tracked from an identity review card: close that task as a duplicate of the offer just published.
+ * Best effort — a task already decided, or one whose shape needs an explicit identity decision, is left for the owner.
+ */
+async function closeIdentityTask(db: D1Database, job: JobRow, offerId: string) {
+  const task = await db.prepare("SELECT id,revision FROM review_tasks WHERE id=? AND state IN ('open','checking','manual')").bind(job.identity_task_id).first<{ id: string; revision: number }>();
+  if (!task) return;
+  await new IdentityService(db).decideTask(task.id, { requestId: `fast-track-close:${job.id}`, expectedRevision: task.revision, action: 'reject', actor: job.actor, role: 'admin', reasonCode: 'duplicate',
+    reason: `管理员已快速上架为 ${offerId}；本任务候选与之为同一活动` }).catch(error => { if (!(error instanceof IdentityError)) throw error; });
+}
+
 type PublishState = { state: 'published' | 'publishing' | 'needs_owner'; offerId?: string; missing?: string[]; error?: string; alreadyLive?: boolean };
 async function attemptPublish(env: Env, job: JobRow): Promise<PublishState> {
   const db = env.DB, now = () => new Date().toISOString();
@@ -288,6 +301,7 @@ async function attemptPublish(env: Env, job: JobRow): Promise<PublishState> {
     const published = await publishFastTrack(env, job, fields, stored.sourceText ?? '', progress, save);
     await db.prepare("UPDATE fast_track_jobs SET state='published', offer_id=?, progress_json=?, missing_json=NULL, error=NULL, lease_until=NULL, published_at=?, updated_at=? WHERE id=?").bind(published.offerId, JSON.stringify(progress), now(), now(), job.id).run();
     if (job.lead_id) await linkLead(db, job.lead_id, published.offerId);
+    if (job.identity_task_id) await closeIdentityTask(db, job, published.offerId);
     return { state: 'published', offerId: published.offerId, alreadyLive: published.alreadyLive };
   } catch (error) {
     // A step that cannot finish even with a fresh request budget would loop forever: hand it to the owner.
