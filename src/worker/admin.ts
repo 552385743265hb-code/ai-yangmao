@@ -634,6 +634,36 @@ admin.post('/sources/:id/auto-publish', async c => {
 
 type NoticeKind = 'digest' | 'urgent';
 const TOP = { standing: 5, rising: 3, lastcall: 3 }; // 飞书日报三个榜各推几条
+
+/**
+ * 飞书日报「今日专题」（2026-10-16）：原常驻榜每天取同样的前 5 条常驻额度，内容天天一样。改为按日轮换类型；
+ * 当天可领不足 3 条的专题跳过；同一专题再次轮到时从下一批条目开始，避免重复。榜单键仍为 standing。
+ */
+type ThemeOffer = { type: string; audience: string; requirements: string[]; modalities: string[] };
+export const DAILY_THEMES: { key: string; title: string; short: string; match: (o: ThemeOffer) => boolean }[] = [
+  { key: 'newuser', title: '🎁 今日专题 · 新人注册礼', short: '新人礼', match: o => o.type === 'new' },
+  { key: 'member', title: '👑 今日专题 · 会员与老用户福利', short: '会员福利', match: o => o.type === 'perk' || o.type === 'gift' || o.audience === 'old' },
+  { key: 'standing', title: '🏆 今日专题 · 常驻额度（一直能薅）', short: '常驻额度', match: o => o.type === 'standing' },
+  { key: 'limited', title: '⏳ 今日专题 · 限时免费开放', short: '限时免费', match: o => o.type === 'free' || o.type === 'trial' },
+  { key: 'student', title: '🎓 今日专题 · 学生与教师专享', short: '学生专享', match: o => o.requirements.includes('student') },
+  { key: 'media', title: '🎨 今日专题 · 图像、视频与语音', short: '多模态', match: o => o.modalities.some(m => m !== 'text') },
+  { key: 'nobarrier', title: '🆓 今日专题 · 零门槛直接领', short: '零门槛', match: o => o.requirements.length === 1 && o.requirements[0] === 'none' },
+  { key: 'apply', title: '📝 今日专题 · 申请制资助', short: '申请制', match: o => o.type === 'apply' },
+];
+const THEME_MIN = 3;
+/** Pick the day's theme and its window of items; `pool` is already sorted best-first. */
+export function dailyTheme<T extends { o: ThemeOffer }>(pool: T[], now: Date, size: number): { theme: (typeof DAILY_THEMES)[number]; items: T[] } {
+  const day = Math.floor(Date.parse(new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(now) + 'T00:00:00Z') / 86400_000);
+  // Rotate over the themes that have enough claimable perks today, so a thin theme never makes its neighbour repeat.
+  const viable = DAILY_THEMES.map(theme => ({ theme, list: pool.filter(x => theme.match(x.o)) })).filter(t => t.list.length >= THEME_MIN);
+  if (viable.length) {
+    const { theme, list } = viable[day % viable.length];
+    const start = (Math.floor(day / viable.length) * size) % list.length; // the theme's next turn shows the next batch
+    return { theme, items: [...list.slice(start), ...list.slice(0, start)].slice(0, size) };
+  }
+  const fallback = DAILY_THEMES.find(t => t.key === 'standing')!;
+  return { theme: fallback, items: pool.filter(x => fallback.match(x.o)).slice(0, size) };
+}
 type NoticeChannel = 'telegram' | 'feishu';
 type NoticeStage = 'new' | 'changed' | 'ending' | 'ended' | 'urgent';
 type NoticeMark = { offerId: string; stage: NoticeStage; messageId?: string;eventId?:string;eventKey?:string;entityId?:string;versionId?:string|null;publicationRevision?:number;generation?:number };
@@ -690,17 +720,19 @@ export async function buildNotice(env: Env, kind: NoticeKind, channel: NoticeCha
   marks = marks.filter(mark => !blocked.has(key(mark)) && !blockedItems.has(mark.offerId)).sort((a, b) => key(a).localeCompare(key(b)));
   for (const stage of Object.keys(out) as NoticeStage[]) out[stage] = out[stage].filter(item => marks.some(mark => mark.offerId === item.id && mark.stage === stage));
   // 飞书日报：三个榜，都按薅度分排。
-  //   常驻榜：全部可领的常驻额度取前 5（每天都排，不记推送）
+  //   今日专题（原常驻榜）：按日轮换类型（新人礼、会员福利、常驻额度、限时免费…），每个专题取 5 条（每天都排，不记推送）
   //   新星榜：最近 14 天新上架、还没推送过的取前 3（没选上的之后还有机会）
   //   末班车榜：3 天内结束的限时活动取前 3
   // 条款变化和已结束不进飞书日报（Telegram 照旧）。
-  let moreCount = 0;
+  let moreCount = 0, theme: { key: string; title: string; short: string } | null = null;
   if (kind === 'digest' && String(channel).startsWith('feishu')) {
     const scored = approved.filter(o=>!blockedItems.has(o.id)).map(o => ({ o, st: liveStatus(o, now), score: haoScore(o, now) })).sort((a, b) => b.score - a.score);
     const item = (x: typeof scored[number]) => ({ ...view(x.o, names[x.o.platformId] ?? x.o.platformId, now), score: x.score });
     const used = new Set<string>();
     const pick = (list: typeof scored, n: number) => { const got = list.filter(x => !used.has(x.o.id)).slice(0, n); got.forEach(x => used.add(x.o.id)); return got; };
-    const standing = pick(scored.filter(x => x.o.type === 'standing' && isClaimable(x.st)), TOP.standing);
+    const today = dailyTheme(scored.filter(x => isClaimable(x.st)), now, TOP.standing);
+    theme = { key: today.theme.key, title: today.theme.title, short: today.theme.short };
+    const standing = pick(today.items, TOP.standing);
     const freshPool = scored.filter(x => isClaimable(x.st) && !has(x.o.id, 'new') && !has(x.o.id, 'urgent') && now.getTime() - Date.parse(x.o.discoveredAt) <= 14 * 86400_000);
     const rising = pick(freshPool, TOP.rising);
     const lastcall = pick(scored.filter(x => x.st === 'ending' && !has(x.o.id, 'ending') && !has(x.o.id, 'urgent')), TOP.lastcall);
@@ -783,7 +815,7 @@ export async function buildNotice(env: Env, kind: NoticeKind, channel: NoticeCha
   marks=marks.map(mark=>{const e=identities.get(mark.offerId);return e?{...mark,...identityGuard(e),eventKey:mark.eventKey??`offer:${e.id}:${e.publication_revision}:${mark.stage}:${channel}`}:mark;});
   const itemIds=new Set(Object.values(out).flat().map(o=>o.id));const identityGuards=[...identities.values()].filter(e=>itemIds.has(e.canonical_offer_id)).map(identityGuard);
   const empty = !reviewAlerts.length && !d1Alert && !marks.length && !out.standing.length && !out.rising.length && !out.lastcall.length && (kind === 'urgent' || channel !== 'telegram' || (!pendingCount && !suggestAutoPublish.length && !needsVerificationCount && !coverageDegraded));
-  return { kind, channel, identityGuards, items: out, marks, moreCount, d1Alert, pendingCount, reviewAlerts, leadBacklog, suggestAutoPublish, needsVerificationCount, coverageDegraded, empty, blockedCount: blocked.size+inherited.blocked.size,identityDeliveryConflicts:inherited.conflicts };
+  return { kind, channel, identityGuards, items: out, marks, moreCount, theme, d1Alert, pendingCount, reviewAlerts, leadBacklog, suggestAutoPublish, needsVerificationCount, coverageDegraded, empty, blockedCount: blocked.size+inherited.blocked.size,identityDeliveryConflicts:inherited.conflicts };
 }
 
 const wechatHandoff=(l:{resolution?:{status?:string;reason?:string}|null})=>l.resolution?.status==='manual'&&!!l.resolution.reason?.startsWith(WECHAT_FAST_TRACK_REASON);

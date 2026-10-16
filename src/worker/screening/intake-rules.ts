@@ -12,6 +12,8 @@ import type { LeadResolution } from '../../shared/lead-review';
  */
 export const BLOCKABLE_CATEGORIES = ['non_ai', 'relay_station', 'account_pool', 'personal_giveaway', 'ordinary_discount'] as const satisfies readonly ReasonCategory[];
 const MIN_HITS = 3;
+// Filler words that recur in any forum title; a rule on them would say nothing about the content.
+const CJK_FILLER = /^(一下|分享|回复|帮帮|帮忙|大家|佬友|今天|一个|还有|有没有|免费|福利|领取|活动|求助|请问|已经|可以|不要|快来|最新|送个|来了)$/;
 const STOP = new Set(['the', 'and', 'for', 'with', 'you', 'free', 'api', 'new', 'get', 'now', 'are', 'from', 'this', 'that', 'pro', 'plus', 'max']);
 
 const escape = (term: string) => term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -34,14 +36,17 @@ async function positiveTitles(db: D1Database): Promise<string[]> {
 }
 
 /** Greedy set cover over terms that only ever appear in rejected titles of one category. */
-export function mineSuggestions(labeled: Labeled[], positives: string[], known: Set<string>): RuleSuggestion[] {
+export function mineSuggestions(labeled: Labeled[], positives: string[], known: Set<string>, vocabulary: string[] = []): RuleSuggestion[] {
   const positiveTerms = new Set<string>(); for (const t of positives) for (const term of titleTerms(t)) positiveTerms.add(term);
+  // Product and model names (Haiku, Kimi, 豆包…) can sit in junk titles too, but must never become a block rule.
+  const vocab = vocabulary.map(v => v.normalize('NFKC').toLowerCase()).filter(v => v.length >= 2);
+  const usable = (term: string) => !CJK_FILLER.test(term) && !vocab.some(v => v.includes(term) || (term.length >= 3 && term.includes(v)));
   const out: RuleSuggestion[] = [];
   for (const category of BLOCKABLE_CATEGORIES) {
     const rows = labeled.filter(l => l.category === category);
     const hits = new Map<string, Set<number>>();
-    for (const row of rows) for (const term of titleTerms(row.title)) if (!positiveTerms.has(term)) (hits.get(term) ?? hits.set(term, new Set()).get(term)!).add(row.id);
-    const ranked = [...hits].filter(([term, ids]) => ids.size >= MIN_HITS && !known.has(escape(term))).sort((a, b) => b[1].size - a[1].size || a[0].length - b[0].length);
+    for (const row of rows) for (const term of titleTerms(row.title)) if (!positiveTerms.has(term) && usable(term)) (hits.get(term) ?? hits.set(term, new Set()).get(term)!).add(row.id);
+    const ranked = [...hits].filter(([term, ids]) => ids.size >= MIN_HITS && !known.has(escape(term))).sort((a, b) => b[1].size - a[1].size || Math.min(b[0].length, 4) - Math.min(a[0].length, 4) || a[0].length - b[0].length); // equal coverage: a whole word (~4 chars) over a fragment
     const covered = new Set<number>();
     for (const [term, ids] of ranked) {
       if ([...ids].every(id => covered.has(id))) continue;
@@ -62,7 +67,10 @@ export async function suggestIntakeRules(db: D1Database): Promise<RuleSuggestion
   const labeled = await db.prepare(`SELECT l.id, l.title, l.origin, d.category FROM decision_labels d JOIN leads l ON d.subject_kind='lead' AND d.subject_id=CAST(l.id AS TEXT)
     WHERE d.actor_kind='owner' AND d.labeled_at>=? AND l.title IS NOT NULL AND d.category IN (SELECT value FROM json_each(?)) ORDER BY l.id DESC LIMIT 3000`).bind(since, JSON.stringify(BLOCKABLE_CATEGORIES)).all<Labeled>();
   const known = new Set((await db.prepare(`SELECT pattern FROM screening_rules WHERE kind='title_pattern' AND pattern IS NOT NULL`).all<{ pattern: string }>()).results.map(r => r.pattern));
-  return mineSuggestions(labeled.results, await positiveTitles(db), known);
+  const platforms = await db.prepare(`SELECT name, aliases FROM platforms`).all<{ name: string; aliases: string | null }>();
+  const models = await db.prepare(`SELECT DISTINCT m.value model FROM offers o, json_each(o.models) m WHERE o.review_state='approved' LIMIT 3000`).all<{ model: string }>();
+  const vocabulary = [...platforms.results.flatMap(p => [p.name, ...(JSON.parse(p.aliases || '[]') as string[])]), ...models.results.flatMap(m => String(m.model).split(/[\s/]+/))];
+  return mineSuggestions(labeled.results, await positiveTitles(db), known, vocabulary);
 }
 
 export const ruleInput = z.object({
