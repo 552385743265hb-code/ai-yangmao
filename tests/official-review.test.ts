@@ -147,3 +147,15 @@ describe('WeChat article reading', () => {
     delete process.env.EXA_API_KEY;
   });
 });
+
+it('treats the "scan in WeChat to open" page as blocked and reads the article through Exa', async () => {
+  process.env.EXA_API_KEY = 'exa-test';
+  const article = 'https://mp.weixin.qq.com/s/Z-t4CsaER-erJLsqRnT1eA';
+  const shell = '<html><body>Got It Scan with Weixin to use this Mini Program Cancel Allow 微信扫一扫可打开此内容，使用完整服务 Video Mini Program Like Share</body></html>';
+  vi.stubGlobal('fetch', vi.fn(async (input: string) => String(input) === 'https://api.exa.ai/contents'
+    ? Response.json({ results: [{ url: article, title: 'CodeBuddy 公告', text: '面向 CodeBuddy 国内版全量用户额外赠送 500 积分。'.repeat(20) }] })
+    : new Response(shell)));
+  const page = await fetchPage(article, { timeoutMs: 5000, tries: 1, minimumTextLength: 50 });
+  expect(page.fetchMethod).toBe('exa');
+  delete process.env.EXA_API_KEY;
+});
