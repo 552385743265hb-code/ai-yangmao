@@ -29,6 +29,10 @@ it('mines recurring title words from the owner\'s early rejections, never words 
   expect(suggestions[0].pattern).toMatch(/外卖|红包/);
   expect(suggestions.map(s => s.pattern)).not.toContain('免费');
   expect(suggestions.some(s => s.category === 'relay_station')).toBe(false); // one rejection is not a pattern
+  const relays = ['【富可敌国】来试试 Haiku 5.5 回复 ID 送 $0.5', '【富可敌国】试试 Haiku 5.5 回复送 1 元', '【富可敌国】Haiku 5.5 回复 ID 送额度'].map((title, i) => ({ id: 10 + i, title, origin: 'linuxdo', category: 'relay_station' as const }));
+  const named = mineSuggestions(relays, [], new Set(), ['Claude Haiku 5.5']).map(s => s.pattern);
+  expect(named).toContain('富可敌国');
+  expect(named.some(p => /haiku|回复/.test(p))).toBe(false);
 });
 
 it('an approved rule closes matching leads on arrival even in shadow mode, and can sweep the open backlog', async () => {
