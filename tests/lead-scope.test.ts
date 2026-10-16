@@ -60,3 +60,13 @@ it('stops automatic review of leads older than three days, except manual submiss
  expect(leadReviewStale({origin:'manual',createdAt:old,resolution:retry},now)).toBe(false);
  expect(leadReviewStale({origin:'linuxdo',createdAt:old,resolution:{...retry,attempts:0,reason:'管理员自定义理由'}},now)).toBe(false);
 });
+
+// 2026-10-15：只写产品名（ZCode、海螺AI、千问办公）的线索无法对应平台，复核一直“未能确认发放平台”。
+it('identifies a platform by its product aliases with token boundaries',()=>{
+ const zhipu={id:'zhipu',name:'智谱 Z.ai',aliases:['ZCode','BigModel']},hailuo={id:'hailuo',name:'海螺 AI',aliases:['海螺AI','Hailuo']},qwenwork={id:'qwenwork',name:'千问办公',aliases:['千问办公','QwenWork']};
+ for(const t of ['zcode 三亿额度','领 ZCode 3 亿臭鸡蛋啦！','[臭鸡蛋] zcode 周末 3 亿'])expect(platformMentioned(t,zhipu),t).toBe(true);
+ expect(platformMentioned('zcodex 新版本',zhipu)).toBe(false);
+ expect(platformMentioned('海螺AI 视频免费生成',hailuo)).toBe(true);
+ expect(platformMentioned('千问办公送会员',qwenwork)).toBe(true);
+ expect(platformMentioned('zcode 三亿额度',{id:'zhipu',name:'智谱 Z.ai'})).toBe(false);
+});

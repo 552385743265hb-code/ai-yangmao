@@ -123,9 +123,9 @@ async function redditOnce(src: Source): Promise<LeadIn[]> {
  * 本地中继（Mac）用 curl 抓社区 RSS：LINUX DO 前面的 Cloudflare 会按 Node 请求特征和频率间歇性发人机验证（403），
  * 换 UA 也不稳定，curl 在同一台机器上稳定返回 200（2026-10-01 排查）。
  */
-async function curlText(url: string): Promise<string> {
+async function curlText(url: string, accept = 'application/rss+xml,application/xml;q=0.9,*/*;q=0.8'): Promise<string> {
   const { execFile } = await import('node:child_process');
-  const out = await new Promise<string>((resolve, reject) => execFile('curl', ['-sL', '--max-time', '30', '-A', BROWSER_UA, '-H', 'Accept: application/rss+xml,application/xml;q=0.9,*/*;q=0.8', '-w', '\n%{http_code}', url],
+  const out = await new Promise<string>((resolve, reject) => execFile('curl', ['-sL', '--max-time', '30', '-A', BROWSER_UA, '-H', `Accept: ${accept}`, '-w', '\n%{http_code}', url],
     { maxBuffer: 20 * 1024 * 1024 }, (err, stdout) => (err ? reject(err) : resolve(stdout))));
   const cut = out.lastIndexOf('\n'), code = Number(out.slice(cut + 1));
   if (code !== 200) throw new Error(`HTTP ${code}`);
@@ -136,7 +136,25 @@ export async function feed(src: Source): Promise<LeadIn[]> {
   const cfg = (src.config ?? {}) as { origin?: LeadIn['origin']; filter?: 'all' | 'ai' | 'lead'; relay?: string };
   const items = parseFeed(cfg.relay === 'mac' ? await curlText(src.url) : await fetchText(src.url, { accept: 'application/rss+xml' }));
   const keep = (i: FeedItem) => cfg.filter === 'all' ? true : cfg.filter === 'ai' ? isAiFreebieTopic(i.title) : isLead(`${i.title} ${i.summary.slice(0, 300)}`);
-  return items
+  const leads = items
     .filter(i => i.link && keep(i))
     .map(i => ({ origin: cfg.origin ?? 'media', url: i.link, title: i.title.slice(0, 300), raw: i.summary.slice(0, 4000) }));
+  // LINUX DO 的 RSS 摘要常只有“N 个帖子 · 阅读完整话题”，云端又抓不到原帖（Cloudflare 拦截），线索里没有正文可研判（2026-10-15 ZCode 线索搁置 5 天）。
+  // 中继在本机用话题 JSON 补上首帖全文、外链和图片说明；失败时保留 RSS 摘要。
+  if (cfg.relay === 'mac' && cfg.origin === 'linuxdo') for (const lead of leads) {
+    try { lead.raw = (linuxdoFirstPost(await curlText(`${lead.url.replace(/\/$/, '')}.json`, 'application/json')) || lead.raw).slice(0, 4000); }
+    catch { /* 保留 RSS 摘要 */ }
+    await sleep(1500);
+  }
+  return leads;
+}
+
+/** LINUX DO 话题 JSON → 首帖正文（含外链地址和图片 alt），供线索研判。 */
+export function linuxdoFirstPost(json: string): string {
+  const cooked = (JSON.parse(json) as { post_stream?: { posts?: { cooked?: string }[] } }).post_stream?.posts?.[0]?.cooked ?? '';
+  const links = [...cooked.matchAll(/<a[^>]+href="(https?:\/\/[^"]+)"/g)].map(m => m[1].replace(/&amp;/g, '&')).filter(u => !/linux\.do\/(u|uploads|user_avatar)\//.test(u));
+  const text = cooked.replace(/<img[^>]*alt="([^"]*)"[^>]*>/g, ' [图片：$1] ').replace(/<br\s*\/?>|<\/p>/g, '\n').replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&')
+    .replace(/[ \t]+/g, ' ').replace(/\n\s*\n+/g, '\n').trim();
+  return [text, ...new Set(links)].filter(Boolean).join('\n');
 }

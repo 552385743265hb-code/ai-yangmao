@@ -309,7 +309,7 @@ async function correctionsFor(platform: string | null, source: string | null): P
 }
 
 /* ---------- 线索研判：把线索变成待审羊毛 ---------- */
-interface Plat { id: string; name: string; site: string | null; xHandles: string[]; staffHandles: string[] }
+interface Plat { id: string; name: string; site: string | null; xHandles: string[]; staffHandles: string[]; aliases?: string[] | null; company?: string | null }
 interface Lead { id: number; origin: string; url: string; title: string | null; raw: string | null; createdAt?: string }
 const host = (u: string) => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return ''; } };
 /** 证据级别：平台官网域名 → site；白名单里的官方 X 账号 → official；员工账号 → staff；其余（媒体、社区、公众号转载）→ media。 */

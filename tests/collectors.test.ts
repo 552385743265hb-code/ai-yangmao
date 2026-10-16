@@ -57,3 +57,16 @@ describe('RSS 摘要', () => {
     expect(parseFeed(body)[0].summary).toBe('对此，DeepSeek 将补偿所有 API 用户 7 天内的消耗金额');
   });
 });
+
+import { linuxdoFirstPost } from '../pipeline/collectors';
+describe('LINUX DO 首帖正文', () => {
+  it('取出首帖文字、外链和图片说明，去掉站内头像与上传链接', () => {
+    const json = JSON.stringify({ post_stream: { posts: [{ cooked: '<p>现在登录zcode，可领 3 亿额度&amp;今晚生效</p><p><a href="https://zcode.z.ai/cn">官网</a> <a href="https://linux.do/u/someone">@someone</a></p><p><img src="https://linux.do/uploads/x.png" alt="活动卡片截图"></p>' }, { cooked: '<p>回帖不要</p>' }] } });
+    const text = linuxdoFirstPost(json);
+    expect(text).toContain('现在登录zcode，可领 3 亿额度&今晚生效');
+    expect(text).toContain('[图片：活动卡片截图]');
+    expect(text).toContain('https://zcode.z.ai/cn');
+    expect(text).not.toContain('linux.do/u/');
+    expect(text).not.toContain('回帖不要');
+  });
+});
