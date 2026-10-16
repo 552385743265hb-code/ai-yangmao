@@ -71,10 +71,17 @@ function platformGroups(selected = '') {
   for (const [company, items] of groups) rows.push(items.length > 1 ? { name: company, company, items } : { name: items[0].name, items });
   return rows.sort((a, b) => a.name.localeCompare(b.name, 'zh'));
 }
+/** 公司分组里只显示产品名：去掉名称开头的公司前缀（如“MiniMax 海螺 AI”→“海螺 AI”）；“阿里云百炼”这类无空格的品牌名保持不变。 */
+const COMPANY_PREFIX = { 阿里巴巴: ['阿里巴巴', '阿里'], 字节跳动: ['字节跳动', '字节'] };
+function productName(p) {
+  const prefixes = [...(COMPANY_PREFIX[p.company] || []), p.company].filter(Boolean);
+  for (const prefix of prefixes) if (p.name.startsWith(prefix + ' ')) return p.name.slice(prefix.length + 1);
+  return p.name;
+}
 function platformOptionsHtml(selected = '') {
   const opt = (value, label) => `<option value="${esc(value)}" ${selected === value ? 'selected' : ''}>${esc(label)}</option>`;
   return opt('', '全部平台') + platformGroups(selected).map(g => g.company
-    ? `<optgroup label="${esc(g.company)}">${opt('co:' + g.company, `${g.company}（全部）`)}${g.items.map(p => opt(p.id, p.name)).join('')}</optgroup>`
+    ? `<optgroup label="${esc(g.company)}">${opt('co:' + g.company, `${g.company}（全部）`)}${g.items.map(p => opt(p.id, productName(p))).join('')}</optgroup>`
     : opt(g.items[0].id, g.items[0].name)).join('');
 }
 
@@ -1633,7 +1640,7 @@ function pCoverage() {
   <section>${secH('官方页面监控', `${plist.length} 个平台`)}<div class="chips">${plist.map(id => PMAP[id] ? `<a class="chip" href="#platform-${id}">${esc(PMAP[id].name)}</a>` : '').join('')}</div></section>
   <section>${secH('已知缺口')}<div class="rows">${gaps.map(g => `<div class="orow" style="grid-template-columns:auto minmax(0,1fr)">${stBadge(g[2], g[2] === 'critical' ? '✕' : '!', g[2] === 'critical' ? '暂不覆盖' : '部分覆盖')}<span class="t">${g[0]}<small>${g[1]}</small></span></div>`).join('')}</div></section>
   <section>${secH('平台白名单', `${platformGroups().length} 家（只列有条目的平台）`)}<div class="chips">${platformGroups().map(g => g.company
-    ? `<span class="chip"><b>${esc(g.company)}</b>&nbsp;${g.items.map(p => `<a href="#platform-${p.id}">${esc(p.name)}</a>`).join(' · ')}</span>`
+    ? `<span class="chip"><b>${esc(g.company)}</b>&nbsp;${g.items.map(p => `<a href="#platform-${p.id}">${esc(productName(p))}</a>`).join(' · ')}</span>`
     : `<a class="chip" href="#platform-${g.items[0].id}">${etagSvg(ptypeColor(g.items[0].type)).replace('<svg ', '<svg style="width:10px;height:12px" ')}${esc(g.items[0].name)}</a>`).join('')}</div></section>`;
 }
 
