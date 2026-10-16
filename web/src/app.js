@@ -2291,7 +2291,7 @@ function fastTrackFormHtml(p = {}) {
   return `<form data-fast-track class="card" style="display:flex;flex-direction:column;gap:10px;max-width:640px${p.inline ? ';margin-top:8px' : ''}">
     <p class="sub" style="margin:0"><b>⚡ 快速上架</b>：你确认是官方发布或亲测可领的权益，跳过筛查和审核直接上架。链接会登记为该厂商的官方地址；其余字段由免费模型从链接读取，读不出的再请你补。不发即时推送，次日飞书日报带上。</p>
     <label class="field">厂商<select name="platformId"><option value="">＋ 新厂商（在下面填写）</option>${adminPlatformOptions(p.platformId)}</select></label>
-    <div class="row" data-ft-new style="gap:8px;flex-wrap:wrap"><input name="newName" placeholder="新厂商名称"><input name="newId" placeholder="厂商 ID（中文名必填，如 odyssey）" pattern="[a-z0-9][a-z0-9\-]{1,60}"><select name="newType">${Object.entries(PTYPE).map(([k, v]) => `<option value="${k}" ${k === 'new' ? 'selected' : ''}>${v.l}</option>`).join('')}</select></div>
+    <div class="row" data-ft-new style="gap:8px;flex-wrap:wrap"><input name="newName" placeholder="新厂商名称"><select name="newType">${Object.entries(PTYPE).map(([k, v]) => `<option value="${k}" ${k === 'new' ? 'selected' : ''}>${v.l}</option>`).join('')}</select></div>
     <label class="field">官方链接<input type="url" name="url" required placeholder="https://（官网、公众号文章、厂商 X 推文）" value="${esc(p.url || '')}"></label>
     <label class="field">主要权益<input name="benefit" required minlength="2" maxlength="500" placeholder="比如：Odyssey-3 公开研究预览，可免费试用" value="${esc(p.benefit || '')}"></label>
     <label class="field">依据<select name="basis"><option value="official">官方发布</option><option value="tested">我亲测可领</option></select></label>
@@ -2306,7 +2306,7 @@ function bindFastTrackForm(form, leadId, onDone) {
     e.preventDefault();
     const fd = Object.fromEntries(new FormData(form)), button = form.querySelector('button[type="submit"]');
     if (!fd.platformId && !fd.newName.trim()) { msg.textContent = '请选择厂商，或填写新厂商名称'; return; }
-    const body = { url: fd.url, benefit: fd.benefit.trim(), basis: fd.basis, ...(fd.platformId ? { platformId: fd.platformId } : { newPlatform: { name: fd.newName.trim(), ...(fd.newId.trim() ? { id: fd.newId.trim() } : {}), type: fd.newType } }),
+    const body = { url: fd.url, benefit: fd.benefit.trim(), basis: fd.basis, ...(fd.platformId ? { platformId: fd.platformId } : { newPlatform: { name: fd.newName.trim(), type: fd.newType } }),
       ...Object.fromEntries(['title', 'claimStart', 'claimEnd', 'note'].filter(k => fd[k]?.trim()).map(k => [k, fd[k].trim()])), ...(leadId ? { leadId } : {}) };
     button.disabled = true;
     try {

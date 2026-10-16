@@ -148,3 +148,15 @@ it('the pipeline picks the extracted candidate closest to the owner benefit', ()
   expect(fields).toMatchObject({ title: extracted.title });
   expect(fastTrackFields([{ ...extracted, endKind: 'date', claimEnd: null }] as any, 'x')).toMatchObject({ endKind: 'unknown' });
 });
+
+it('vendor IDs never block fast-track: typed IDs are normalized, Chinese names on X get a hash ID (2026-10-16 "Replicas")', async () => {
+  const created = await call('admin/fast-track', { newPlatform: { name: 'Replicas', id: 'Replicas' }, url: 'https://x.com/connortbot/status/2110037854386843677', benefit: 'Replicas 注册一次性赠金 $300', basis: 'official' });
+  expect(created.status).toBe(200);
+  expect(created.body).toMatchObject({ platformId: 'replicas' });
+  const cn = await call('admin/fast-track', { newPlatform: { name: '某厂商' }, url: 'https://x.com/someone/status/2110037854386843678', benefit: '注册赠额' });
+  expect(cn.status).toBe(200);
+  expect(cn.body.platformId).toMatch(/^v-[0-9a-f]{8}$/);
+  const bad = await call('admin/fast-track', { newPlatform: { name: '某厂商', id: '某厂商' }, url: 'https://vendor-x.example/a', benefit: '注册赠额' });
+  expect(bad.status).toBe(400);
+  expect(JSON.stringify(bad.body)).toContain('厂商 ID 只能用英文字母');
+});
