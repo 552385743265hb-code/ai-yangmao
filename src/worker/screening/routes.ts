@@ -7,6 +7,7 @@ import { putProfile } from './profiles';
 import { compareQueueOrder, latestUsefulReviewAt, systemDueAt } from '../../shared/screening/urgency';
 import { buildMemoryPage, reviewerNames } from './memory';
 import { ScreeningStore } from './store';
+import { confirmAutoClosed, listAutoClosed, markWronglyClosed } from './spot-check';
 import { activeTitleRules, applyRuleToOpenLeads, createIntakeRule, listIntakeRules, retireIntakeRule, RuleError, suggestIntakeRules } from './intake-rules';
 import type { Env } from '../index';
 
@@ -188,4 +189,15 @@ screeningAdminRoutes.post('/rules/:id/retire', async c => {
   const body = await c.req.json().catch(() => ({})) as { reason?: string };
   try { await retireIntakeRule(c.env.DB, c.req.param('id'), body.reason || '管理员停用', c.get('who')); return c.json({ ok: true }); }
   catch (error) { if (error instanceof RuleError) return c.json({ error: error.message }, error.status); throw error; }
+});
+
+/** Spot-check of leads the system closed by itself (admin only). */
+screeningAdminRoutes.get('/spot-check', async c => c.json(await listAutoClosed(c.env.DB, Math.min(30, Math.max(1, Number(c.req.query('days') ?? 7) || 7)))));
+screeningAdminRoutes.post('/spot-check/confirm', async c => {
+  try { return c.json(await confirmAutoClosed(c.env.DB, await c.req.json().catch(() => null), c.get('who'))); }
+  catch (error) { if (error instanceof z.ZodError) return c.json({ error: '抽查确认格式不正确（每次最多 15 条）' }, 400); throw error; }
+});
+screeningAdminRoutes.post('/spot-check/:id/wrong', async c => {
+  const result = await markWronglyClosed(c.env.DB, Number(c.req.param('id')), c.get('who'));
+  return result.ok ? c.json(result) : c.json({ error: '没有这条已关闭的线索' }, 404);
 });
