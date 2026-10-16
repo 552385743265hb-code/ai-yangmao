@@ -1,3 +1,4 @@
+import { sourceUnhealthy } from '../shared/source-health';
 import {readCollectionStatus} from './collection-status';
 import { commentRoutes } from './comments';
 import {publicationError} from './publication';
@@ -149,17 +150,17 @@ app.get('/api/meta', async c => c.json(await readCollectionStatus(c.env.DB)));
 /** 覆盖范围页：监控了哪些渠道、健康状况。不含任何密钥或内部地址以外的信息。 */
 app.get('/api/coverage', async c => {
   const d = db(c.env);
-  const srcs = await d.select({ kind: s.sources.kind, enabled: s.sources.enabled, failStreak: s.sources.failStreak, lastOkAt: s.sources.lastOkAt, platformId: s.sources.platformId, url: s.sources.url, config: s.sources.config }).from(s.sources);
+  const srcs = await d.select({ kind: s.sources.kind, enabled: s.sources.enabled, failStreak: s.sources.failStreak, lastOkAt: s.sources.lastOkAt, createdAt: s.sources.createdAt, platformId: s.sources.platformId, url: s.sources.url, config: s.sources.config }).from(s.sources);
   const [{ n: platforms }] = await d.select({ n: sql<number>`count(*)` }).from(s.platforms).where(eq(s.platforms.status, 'approved'));
   const collection = await readCollectionStatus(c.env.DB);
   const byKind: Record<string, { total: number; enabled: number; failing: number }> = {};
-  const unhealthy = (x: typeof srcs[number]) => x.failStreak >= 3 || !x.lastOkAt || Date.now() - Date.parse(x.lastOkAt) > 12 * 3600_000;
+  const unhealthy = (x: typeof srcs[number]) => sourceUnhealthy(x);
   for (const x of srcs) {
     const k = (byKind[x.kind] ??= { total: 0, enabled: 0, failing: 0 });
     k.total++; if (x.enabled) k.enabled++; if (x.enabled && unhealthy(x)) k.failing++;
   }
   return c.json({ platforms, sources: srcs.filter(x => x.enabled).length, byKind, ...collection,
-    officialPages: srcs.filter(x => x.enabled && x.platformId).map(x => ({ platformId: x.platformId, url: x.url, kind: x.kind, healthy: !unhealthy(x) })) });
+    officialPages: srcs.filter(x => x.enabled && x.platformId).map(x => ({ platformId: x.platformId, url: x.url, kind: x.kind, healthy: !!x.lastOkAt && !unhealthy(x) })) }); // 未成功采集过的信源不算“健康”，但新登记 12 小时内也不算失效
 });
 
 const listQuery = z.object({

@@ -35,6 +35,7 @@ import { officialTier, officialReviewDue } from '../shared/official-review';
 import { sameBenefit } from '../shared/dedupe';
 import { parseValuation } from '../shared/valuation';
 import { offerRefFromInput } from '../shared/offer-ref';
+import { sourceHealthReason, sourceUnhealthy } from '../shared/source-health';
 import type { Env } from './index';
 import { advanceFastTrack, completeFastTrack, createFastTrack, FastTrackError, fastTrackHeld, listFastTrack, retryFastTrack } from './fast-track';
 
@@ -915,8 +916,8 @@ admin.get('/health', async c => {
   const [lastOk] = await d.select().from(s.runs).where(and(eq(s.runs.kind, 'collect'), eq(s.runs.ok, true))).orderBy(desc(s.runs.finishedAt)).limit(1);
   const [lastAttempt] = await d.select().from(s.runs).where(eq(s.runs.kind, 'collect')).orderBy(desc(s.runs.startedAt)).limit(1);
   const allSources = await d.select({ id: s.sources.id, failStreak: s.sources.failStreak, lastError: s.sources.lastError, lastOkAt: s.sources.lastOkAt,
-    kind: s.sources.kind, url: s.sources.url, autoPublish: s.sources.autoPublish, cleanStreak: s.sources.cleanStreak, enabled: s.sources.enabled }).from(s.sources);
-  const failing = allSources.filter(source => source.enabled && (source.failStreak >= 3 || !source.lastOkAt || Date.now() - Date.parse(source.lastOkAt) > 12 * 3600_000));
+    kind: s.sources.kind, url: s.sources.url, autoPublish: s.sources.autoPublish, cleanStreak: s.sources.cleanStreak, enabled: s.sources.enabled, createdAt: s.sources.createdAt }).from(s.sources);
+  const failing = allSources.filter(source => source.enabled && sourceUnhealthy(source)).map(source => ({ ...source, reason: sourceHealthReason(source) }));
   const hours = lastOk?.finishedAt ? (Date.now() - Date.parse(lastOk.finishedAt)) / 3600_000 : null;
   const today = new Date().toISOString().slice(0, 10);
   const b = await c.env.DB.prepare("SELECT COALESCE(SUM(CASE WHEN substr(started_at,1,10)=?1 THEN tokens END),0) AS t, COALESCE(SUM(CASE WHEN substr(started_at,1,7)=?2 THEN cost_cny END),0) AS c FROM runs").bind(today, today.slice(0, 7)).first<{ t: number; c: number }>();

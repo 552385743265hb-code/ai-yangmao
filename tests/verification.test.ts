@@ -835,8 +835,11 @@ describe('public status and subscriptions', () => {
   it('distinguishes an untouched source from a healthy source', async () => {
     const coverage = await call('coverage');
     expect((coverage.body.officialPages as { healthy: boolean }[])[0].healthy).toBe(false);
+    // 新登记、还没轮到采集的信源不报失效（2026-10-16）；登记超过 12 小时仍未成功才报。
+    expect(((await call('admin/health', undefined, 'admin')).body.failingSources as { id: string }[]).map(x => x.id)).not.toContain('source');
+    sqlite.prepare("UPDATE sources SET created_at='2026-01-01T00:00:00.000Z' WHERE id='source'").run();
     const health = await call('admin/health', undefined, 'admin');
-    expect((health.body.failingSources as { id: string }[]).map(x => x.id)).toContain('source');
+    expect((health.body.failingSources as { id: string; reason: string }[]).find(x => x.id === 'source')?.reason).toBe('登记超过 12 小时仍未采集到');
   });
 
   it('serves actual RSS XML for verified, approved offers', async () => {
