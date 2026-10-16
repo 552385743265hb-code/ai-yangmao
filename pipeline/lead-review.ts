@@ -25,12 +25,15 @@ export async function runLeadReviews(options:LeadReviewOptions){
     stats.checked++;
     const deadlineAt=Math.min(options.deadlineAt,Date.now()+3*60_000),queries:string[]=[],candidates:string[]=[],reasons:string[]=[],offerIds:string[]=[];
     let outcome:'linked'|'closed'|'retry'|'manual'='manual',reason='',evidenceUrl:string|undefined,quote:string|undefined,sourceText:string|undefined;
-    let stop=false,technical=false,readable=0,hadInvalid=false;
+    let stop=false,technical=false,readable=0,hadInvalid=false,wechatOnly=false;
     try{
       const {lead,platforms,sources}=job;
       const targetText=`${lead.title??''}\n${(lead.raw??'').split('[研判]')[0]}`;
       const authority=(url:string)=>platforms.filter(p=>officialTier(url,p,sources.filter(s=>s.platformId===p.id)));
       const primaryOwners=authority(lead.url);
+      // 微信公众号文章：分享链接不含账号 __biz，云端读取又会遇到微信验证页，无法自动核验。直接交管理员一键快速上架，
+      // 不再反复搜索官网（2026-10-16 WorkBuddy 补偿公告 #7681 因此搁置）。
+      wechatOnly=/^https?:\/\/mp\.weixin\.qq\.com\//i.test(lead.url)&&!primaryOwners.length;
       const identified=primaryOwners.length?primaryOwners:platforms.filter(p=>platformMentioned(targetText,p)).slice(0,4);
       const {corrections}=await api<{corrections:string[]}>('/corrections?limit=10');
       const urls=[lead.url,...(targetText.match(/https?:\/\/[^\s<>"）)]+/g)??[])];
@@ -121,9 +124,10 @@ export async function runLeadReviews(options:LeadReviewOptions){
         outcome=technical?'retry':'manual';
         reason=(reasons.join('；')||(!identified.length?'未能确认发放平台，请补充官方出处或平台准入':'尚未找到支持独立福利的官方证据')).slice(0,1000);
         if(!readable&&candidates.length)outcome='retry';
+        if(wechatOnly){outcome='manual';reason=('原文是微信公众号文章：分享链接不含账号 __biz、云端读取会遇到微信验证页，无法自动核验。确认是厂商官方号后，请在这条线索里用「⚡ 快速上架」一键上架。'+(reasons.length?'（'+reasons.join('；')+'）':'')).slice(0,1000);}
       }
     }catch(e){outcome='retry';reason='复核受阻：'+(e as Error).message.slice(0,800);stop=e instanceof BudgetExhaustedError||e instanceof BudgetLedgerError||e instanceof DeferError;}
-    const receipt=await api<{status:keyof typeof stats}>(`/lead-reviews/${q.id}/result`,{jobId:job.jobId,outcome,reason,offerIds:[...new Set(offerIds)],queries,candidates:[...new Set([...(job.previousCandidates??[]),...candidates])].slice(-12),evidenceUrl,quote,sourceText});
+    const receipt=await api<{status:keyof typeof stats}>(`/lead-reviews/${q.id}/result`,{jobId:job.jobId,outcome,...(wechatOnly&&outcome==='manual'?{manualNow:true}:{}),reason,offerIds:[...new Set(offerIds)],queries,candidates:[...new Set([...(job.previousCandidates??[]),...candidates])].slice(-12),evidenceUrl,quote,sourceText});
     if(receipt.status in stats)stats[receipt.status]++;
     options.log(`  受阻线索 #${q.id}：${receipt.status} ${reason.slice(0,100)}`);
     if(stop){stats.deferred+=jobs.length-index-1;break;}

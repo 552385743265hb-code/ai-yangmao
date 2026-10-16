@@ -1106,6 +1106,12 @@ describe('stuck lead rescue lifecycle',()=>{
     expect((await call('ingest/lead-reviews/queue?limit=4')).body.jobs).toEqual([]);
     expect((await call('ingest/lead-reviews/queue?limit=4&ids=1312')).body.jobs).toMatchObject([{id:1312}]);
   });
+  it('goes straight to manual review when automatic verification cannot succeed',async()=>{
+    seed();const lease=await call('ingest/lead-reviews/1312/claim',{});
+    const result=await call('ingest/lead-reviews/1312/result',{jobId:lease.body.jobId,outcome:'manual',manualNow:true,reason:'原文是微信公众号文章，请快速上架',candidates:[],queries:[]});
+    expect(result.status).toBe(200);expect(result.body.status).toBe('manual');
+    expect((await call('admin/queue',undefined,'admin')).body.leadTasks).toMatchObject([{id:1312,resolution:{status:'manual'}}]);
+  });
   it('records a timed retry then exposes an actionable manual task instead of losing the lead',async()=>{
     seed();const lease=await call('ingest/lead-reviews/1312/claim',{});
     const result=await call('ingest/lead-reviews/1312/result',{jobId:lease.body.jobId,outcome:'retry',reason:'官方页面暂时不可达',candidates:[],queries:[]});

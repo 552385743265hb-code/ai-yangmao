@@ -213,7 +213,7 @@ admin.get('/queue', async c => {
       }),
     ];
   const pendingCards=[...new Map(legacyCards.map(c=>[c.id,c])).values()];
-  const leadTasks=(await canonicalLeadProjection(c.env.DB,await d.select().from(s.leads).where(eq(s.leads.status,'reviewing')))).filter(l=>!l.resolution?.identityTaskIds?.length).sort((a,b)=>Number(b.resolution?.status==='manual')-Number(a.resolution?.status==='manual')||leadPriority(a)-leadPriority(b)||a.id-b.id).map(leadTask);
+  const leadTasks=(await canonicalLeadProjection(c.env.DB,await d.select().from(s.leads).where(eq(s.leads.status,'reviewing')))).filter(l=>!l.resolution?.identityTaskIds?.length).sort((a,b)=>Number(b.resolution?.status==='manual')-Number(a.resolution?.status==='manual')||leadPriority(a)-leadPriority(b)||b.id-a.id).map(leadTask); // 同组内新线索在前：只追最新福利（2026-10-16）
   const paused=await c.env.DB.prepare("SELECT count(*) n FROM benefit_entities e JOIN offers o ON o.id=e.canonical_offer_id WHERE e.state='active' AND e.current_approved_version_id IS NOT NULL AND (o.review_state<>'approved' OR o.withdrawn_at IS NOT NULL)").first<{n:number}>();
   const cards=[...pendingCards,...managedCards];
   const counts={activities:pendingCards.length+identityTasks.length,leadReview:leadTasks.length,newLeads,paused:paused?.n??0};

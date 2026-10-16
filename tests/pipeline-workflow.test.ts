@@ -527,3 +527,14 @@ describe('already-listed content is not re-processed', () => {
     expect(h.payloads('/snapshots').find(snapshot => snapshot.hash)?.hash).not.toBe(baseline.hash);
   });
 });
+
+// 2026-10-16：WorkBuddy 补偿只发在公众号，#7681 反复搜索官网多轮仍搁置。
+it('hands a WeChat article lead to the administrator for fast-track instead of retrying searches', async () => {
+  const h = harness({ rescueJob: true, officialSearchStatus: 429, modelOutput: JSON.stringify({ offers: [], leadAssessment: { outcome: 'unresolved', reason: '官网未提及' } }),
+    leads: [{ ...lead, url: 'https://mp.weixin.qq.com/s/dGd6Nz03MF4', title: 'Vendor 赠送 500 积分', raw: 'Vendor 官方公众号公告' }] });
+  const { runPipeline } = await import('../pipeline/run');
+  await runPipeline();
+  const result = h.payloads('/lead-reviews/1312/result')[0];
+  expect(result).toMatchObject({ outcome: 'manual', manualNow: true });
+  expect(result.reason).toContain('快速上架');
+});
