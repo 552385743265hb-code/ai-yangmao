@@ -168,6 +168,8 @@ OpenRouter默认备用为`openrouter/free`；404须检查模型可用性，不�
 
 官方出处搜索：配置了 Actions secret `EXA_API_KEY`（2026-10-15 已配置）时调用 Exa REST `POST https://api.exa.ai/search`（`type:auto` + `objective`，不取正文，只要结果网址），调用方以 `site:` 写的登记官方站点与 X 账号转成 `includeDomains`；未配置密钥时用 Exa 匿名 MCP 端点。两者限流或出错时改用 OpenRouter 联网搜索插件（免费模型，约 $0.007/次），按次预留并入账到同一月度付费上限，每轮最多 `OPENROUTER_SEARCH_PER_RUN`（默认 6）次。线索研判只附线索提到的平台的已有条目；`MODEL_OUTPUT_LIMIT` 为 8192，给推理型模型留出输出余量。
 
+微信公众号文章：云端直读、Jina、Exa `/contents` 均被微信拦截（“环境异常”验证页或“微信扫一扫可打开此内容”外壳；2026-10-16 实测 Exa 返回 status=error）。`fetchPage` 识别这两种拦截页，不把它们当正文；读取器保留 Exa 尝试。只有公众号原文的线索立即转人工（`manualNow`），结论附可读到的原文，Telegram 审核提醒置顶为「⚡ 公众号福利：点开一键快速上架」，后台线索卡的快速上架表单预填链接、标题与备注。诊断某个网址能否被生产读取器读到：`gh workflow run collect.yml -f probe_urls=<网址,…>`（只读取并打印方式、长度与正文开头，不运行采集，不输出密钥；排队时会取代同组尚在等待的定时任务）。
+
 已收录内容不反复交给模型：官方页面只有出现上次快照里没有的羊毛相关句子时才重新抽取（删句、换序、空白变化只更新快照，计 `unchangedPages`）；已批准条目被重读且全部原文摘录仍在页面上时不再提交（`rereadUnchanged`），身份侧同一官方页面重读按 `same_source_reread` 沿用已批准版本；线索自身网址就是某条已批准条目的证据原文（同一网址或同一条 X 帖子）时直接关联、不调用模型（`leadsLinkedByUrl`）。自动受阻复核只处理 3 天内的线索，管理员补录和管理员手动重试不受限，更早的线索留在后台列表。
 
 线索关联已有重置条目时按事件日期硬性校验（流水线三条路径及 Worker 复核结果），不同轮次降为人工处理。运行统计中复核/身份队列的等待与重试记入 `backlogDeferred`，不再使整轮 `coverageDegraded`；信源未抓、研判未执行、异常和核验失败仍算覆盖不完整。
