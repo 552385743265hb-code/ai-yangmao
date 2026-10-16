@@ -37,7 +37,7 @@ leadReviewRoutes.post('/:id/claim',async c=>{
   return c.json({claimed:true,jobId:resolution.jobId,lead:l,platforms,sources,existing,previousCandidates:l.resolution?.candidates??[]});
 });
 leadReviewRoutes.post('/:id/result',async c=>{
-  const body=z.object({jobId:z.string().uuid(),outcome:z.enum(['linked','closed','retry','manual']),reason:z.string().min(2).max(1000),
+  const body=z.object({jobId:z.string().uuid(),outcome:z.enum(['linked','closed','retry','manual']),manualNow:z.boolean().optional(),reason:z.string().min(2).max(1000),
     offerIds:z.array(z.string()).max(50).default([]),queries:z.array(z.string().max(350)).max(4),candidates:z.array(z.url()).max(12),
     evidenceUrl:z.url().optional(),quote:z.string().max(2000).optional(),sourceText:z.string().max(250000).optional()}).safeParse(await c.req.json().catch(()=>null));
   if(!body.success)return c.json({error:'线索复核结果不完整'},400);
@@ -69,7 +69,8 @@ leadReviewRoutes.post('/:id/result',async c=>{
   if(identity)return c.json({ok:true,identityHandled:true,...identity,status:identity.status==='linked'?'linked':identity.status==='rejected'?'closed':identity.deferredIds.length?'retry':'manual'});
   const old=l.resolution,now=Date.now();
   const inconclusive=old.inconclusive+(b.outcome==='manual'?1:0);
-  const status=b.outcome==='manual'&&inconclusive<3?'retry':b.outcome;
+  // manualNow：自动核验不可能成功（如微信公众号文章），不再等三次无结论，立即交管理员。
+  const status=b.outcome==='manual'&&inconclusive<3&&!b.manualNow?'retry':b.outcome;
   const delayHours=leadPriority(l)<=1?1:Math.min(24,2**Math.min(5,old.attempts-1));
   const resolution:LeadResolution={status,jobId:b.jobId,attempts:old.attempts,inconclusive,checkedAt:new Date(now).toISOString(),
     nextAttemptAt:status==='retry'?new Date(now+delayHours*3600_000).toISOString():null,
