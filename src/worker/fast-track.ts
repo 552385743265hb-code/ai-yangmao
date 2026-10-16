@@ -50,14 +50,31 @@ const hostOf = (url: string) => new URL(url).hostname.toLowerCase().replace(/^ww
 async function platformRow(db: D1Database, id: string) { return db.prepare('SELECT id,name,status,site,x_handles,staff_handles,wechat FROM platforms WHERE id=?').bind(id).first<PlatformRow>(); }
 async function platformSources(db: D1Database, id: string) { return (await db.prepare('SELECT url,tier FROM sources WHERE platform_id=?').bind(id).all<{ url: string; tier: string }>()).results; }
 
+/** 公众号文章页里的账号 __biz（var biz = "..."）；验证页、超时或格式不符时返回 null。 */
+export async function wechatBizFromArticle(url: string): Promise<string | null> {
+  try {
+    const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0 Safari/537.36' }, signal: AbortSignal.timeout(5000) });
+    if (!r.ok) return null;
+    const biz = /var\s+biz\s*=\s*["']([A-Za-z0-9+/=]{8,40})["']/.exec(await r.text())?.[1];
+    return biz ?? null;
+  } catch { return null; }
+}
+
 /** Record `url` as the vendor's official address: WeChat account, X handle, site or official source. */
 export async function registerOfficialAddress(db: D1Database, platformId: string, url: string, actor: string): Promise<{ kind: 'wechat' | 'x' | 'site' | 'source' | 'existing'; value: string }> {
   const host = hostOf(url);
   if (host === 'mp.weixin.qq.com') {
-    const biz = wechatBiz(url);
-    if (!biz) throw new FastTrackError(400, '公众号链接需要带 __biz：请在微信里用“复制链接”取得完整文章链接');
-    await learnWechatAccount(db, platformId, url);
-    return { kind: 'wechat', value: biz };
+    // 管理员担保的公众号链接一律接受（2026-10-16）。微信的分享短链（/s/xxxx）不带 __biz，且微信对自动访问常返回验证页：
+    // 先尝试从正文读出账号 __biz 并登记该公众号；读不到时只把这一篇文章登记为官方信源，不放行整个公众号域名。
+    const biz = wechatBiz(url) ?? await wechatBizFromArticle(url);
+    if (biz) {
+      await learnWechatAccount(db, platformId, wechatBiz(url) ? url : `${url}${url.includes('?') ? '&' : '?'}__biz=${encodeURIComponent(biz)}`);
+      return { kind: 'wechat', value: biz };
+    }
+    if (!await db.prepare('SELECT 1 FROM sources WHERE url=?').bind(url).first())
+      await db.prepare("INSERT INTO sources(id,platform_id,kind,url,tier,config,enabled,auto_publish) VALUES(?,?,'web_list',?,'official',?,0,0)")
+        .bind(`${platformId}-ft-wx-${Date.now().toString(36)}`.slice(0, 80), platformId, url, JSON.stringify({ addedBy: actor, fastTrack: true, wechatArticle: true })).run();
+    return { kind: 'source', value: url };
   }
   const platform = await platformRow(db, platformId);
   if (!platform) throw new FastTrackError(404, '没有这个厂商');
