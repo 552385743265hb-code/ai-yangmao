@@ -7,6 +7,7 @@ import { putProfile } from './profiles';
 import { compareQueueOrder, latestUsefulReviewAt, systemDueAt } from '../../shared/screening/urgency';
 import { buildMemoryPage, reviewerNames } from './memory';
 import { ScreeningStore } from './store';
+import { activeTitleRules, applyRuleToOpenLeads, createIntakeRule, listIntakeRules, retireIntakeRule, RuleError, suggestIntakeRules } from './intake-rules';
 import type { Env } from '../index';
 
 export const screeningIngestRoutes = new Hono<{ Bindings: Env }>();
@@ -163,4 +164,28 @@ screeningAdminRoutes.put('/profiles/:platformId', async c => {
   const saved = await putProfile(c.env.DB, c.req.param('platformId'), { ...body.data.profile, platformId: c.req.param('platformId') }, body.data.expectedRevision, c.get('who'));
   if (!saved) return c.json({ error: '平台画像已更新，请刷新后再保存' }, 409);
   return c.json({ ok: true, revision: body.data.expectedRevision + 1 });
+});
+
+/** Intake filter: owner-approved title rules that close junk leads on arrival (admin only; reviewers are not allow-listed). */
+screeningAdminRoutes.get('/rules', async c => c.json({ rules: await listIntakeRules(c.env.DB), suggestions: await suggestIntakeRules(c.env.DB) }));
+screeningAdminRoutes.post('/rules', async c => {
+  const body = await c.req.json().catch(() => ({})) as Record<string, unknown>;
+  try {
+    const rule = await createIntakeRule(c.env.DB, body, c.get('who'));
+    const swept = rule.status === 'active' && body.applyToOpen === true ? await applyRuleToOpenLeads(c.env.DB, rule) : { closed: 0, more: false };
+    return c.json({ rule, ...swept });
+  } catch (error) {
+    if (error instanceof RuleError) return c.json({ error: error.message, conflicts: error.conflicts }, error.status);
+    throw error;
+  }
+});
+screeningAdminRoutes.post('/rules/:id/apply', async c => {
+  const rule = (await activeTitleRules(c.env.DB)).find(r => r.id === c.req.param('id'));
+  if (!rule) return c.json({ error: '没有这条启用中的规则' }, 404);
+  return c.json(await applyRuleToOpenLeads(c.env.DB, rule));
+});
+screeningAdminRoutes.post('/rules/:id/retire', async c => {
+  const body = await c.req.json().catch(() => ({})) as { reason?: string };
+  try { await retireIntakeRule(c.env.DB, c.req.param('id'), body.reason || '管理员停用', c.get('who')); return c.json({ ok: true }); }
+  catch (error) { if (error instanceof RuleError) return c.json({ error: error.message }, error.status); throw error; }
 });

@@ -1668,7 +1668,7 @@ async function adm(path, body) {
   const r = await fetch('/api/admin' + path, { method: body === undefined ? 'GET' : 'POST', headers: { Authorization: 'Bearer ' + ADM.token, 'Content-Type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) });
   const j = await r.json().catch(() => ({}));
   if (r.status === 401) { ADM.token = ''; ADM.role = ''; admStore.clear(); throw new Error('管理员密钥不正确，请重新登录'); }
-  if (!r.ok) throw new Error((j.error || ('请求失败 ' + r.status)) + (Array.isArray(j.issues) && j.issues.length ? '：' + j.issues.map(i => `${FIELD_L[i.path?.[0]] || i.path?.join('.') || ''} ${i.message}`.trim()).join('；') : ''));
+  if (!r.ok) throw Object.assign(new Error((j.error || ('请求失败 ' + r.status)) + (Array.isArray(j.issues) && j.issues.length ? '：' + j.issues.map(i => `${FIELD_L[i.path?.[0]] || i.path?.join('.') || ''} ${i.message}`.trim()).join('；') : '')), { body: j });
   return j;
 }
 const TIER_L = { site: '官网', docs: '官方文档', official: '官方账号', staff: '员工账号', media: '媒体 / 社区转述', tested: '管理员实测（我亲自领到过）' };
@@ -2059,6 +2059,7 @@ async function admQueue() {
   const sugCount = k => q.pending.filter(o => (o.suggestion?.verdict || 'none') === k).length;
   const sugTabs = [['all', '全部', q.pending.length], ['approve', '建议通过', sugCount('approve')], ['history', '建议作为历史', sugCount('history')], ['reject', '建议拒绝', sugCount('reject')], ['judge', '需要你判断', sugCount('judge')], ['none', '未标注', sugCount('none')]].filter(([k, , n]) => k === 'all' || n);
   box.innerHTML = `<section class="card" data-review-summary><b>活动待审 <span data-activity-count>${counts.activities}</span> 项</b> · 线索复核 ${counts.leadReview} 条 · 暂停发布 ${counts.paused} 项<p class="small muted">活动待审包含系统补证和等待你决定；线索尚未形成活动，暂停发布不计入待审。新线索 ${counts.newLeads??q.newLeads} 条。</p></section>
+    ${ADM.role==='admin'?'<details data-intake-rules><summary>🚫 入口过滤规则（与 AI 无关、优惠券/购物券、中转站等线索一进来就关闭）</summary><div data-intake-body class="small muted">展开后读取…</div></details>':''}
     ${q.leadTasks?.length?`<details data-lead-section><summary>线索复核 · ${counts.leadReview} 条</summary><p class="small muted">尚未形成条目的线索会自动读取原文、搜索官方出处并查重。暂时受阻会按时重试；需要判断的可在这里关联已有活动、结束线索或重新核验。</p>${q.leadTasks.slice(0,10).map(leadTaskCard).join('')}${q.leadTasks.length>10?`<details><summary>其余 ${q.leadTasks.length-10} 条线索复核</summary>${q.leadTasks.slice(10).map(leadTaskCard).join('')}</details>`:''}</details>`:''}
     ${q.priorityLeads?.filter(l=>l.status==='new').length?`<section><h3>重要新线索 · 等待研判</h3>${q.priorityLeads.filter(l=>l.status==='new').map(l=>`<div data-priority-lead="${l.id}"><p>#${l.id} ${esc(l.title||'')} · 将在下一轮研判</p>${ADM.role==='admin'?`<details style="margin:0 0 8px"><summary class="small">⚡ 快速上架（我已确认官方或亲测）</summary>${fastTrackFormHtml({inline:true,benefit:String(l.title||'').slice(0,500),url:l.url||''})}</details>`:''}</div>`).join('')}</section>`:''}
     ${sugTabs.length > 2 ? `<div class="seg" role="tablist" style="margin-bottom:12px;flex-wrap:wrap">${sugTabs.map(([k, l, n]) => `<button type="button" data-sugtab="${k}" aria-pressed="${(ADM.sug || 'all') === k}">${l} ${n}</button>`).join('')}</div>` : ''}
@@ -2070,6 +2071,7 @@ async function admQueue() {
   const identityBox=box.querySelector('[data-identity-slot]');identityBox.dataset.identityReview='';const remainingTasks=(identity.tasks||[]).filter(t=>!managedIds.has(t.id));if(remainingTasks.length||identity.error||identity.nextCursor)renderIdentityTasks(identityBox,{...identity,tasks:remainingTasks},false,managedIds);
   const pausedSection=document.createElement('details');pausedSection.dataset.pausedSection='';pausedSection.innerHTML=`<summary>暂停发布 · ${counts.paused} 项（无需日常处理）</summary>`;const holdsBox=document.createElement('section');pausedSection.append(holdsBox);box.append(pausedSection);renderVisibilityHolds(holdsBox,holds);if(holds.error)holdsBox.textContent='暂停活动读取失败：'+holds.error;
   bindLeadTasks(box,q.leadTasks||[]);
+  {const panel=box.querySelector('[data-intake-rules]');if(panel)panel.addEventListener('toggle',()=>{if(panel.open&&!panel.dataset.loaded){panel.dataset.loaded='1';loadIntakeRules(panel.querySelector('[data-intake-body]'));}});}
   box.querySelectorAll('[data-priority-lead]').forEach(el=>{const fast=el.querySelector('[data-fast-track]');if(fast)bindFastTrackForm(fast,Number(el.dataset.priorityLead),()=>{el.dataset.resolved='1';});});
   const applySug = () => $$('[data-sug]', box).forEach(el => { if (el.closest('details')) return; el.style.display = !ADM.sug || ADM.sug === 'all' || el.dataset.sug === ADM.sug ? '' : 'none'; });
   $$('[data-sugtab]', box).forEach(b => b.addEventListener('click', () => { ADM.sug = b.dataset.sugtab; $$('[data-sugtab]', box).forEach(x => x.setAttribute('aria-pressed', x === b)); applySug(); }));
@@ -2290,6 +2292,40 @@ async function admLeads() {
 }
 /* ⚡ 快速上架：管理员担保的官方链接 + 主要权益，免费模型补其余字段，补齐即上架。 */
 const FT_STATE = { queued: '排队等模型读取', extracting: '模型读取中', publishing: '正在上架', needs_owner: '需要你补充', published: '已上架' };
+const INTAKE_CATS = ['non_ai', 'ordinary_discount', 'relay_station', 'account_pool', 'personal_giveaway'];
+async function loadIntakeRules(body) {
+  body.textContent = '正在读取…';
+  let data; try { data = await adm('/screening/rules'); } catch (e) { body.textContent = '读取失败：' + e.message; return; }
+  const active = data.rules.filter(r => r.status === 'active'), scope = r => r.scopeKind === 'global' ? '全部来源' : `仅 ${esc(r.scopeValue)}`;
+  const catOpts = sel => INTAKE_CATS.map(k => `<option value="${k}" ${k === sel ? 'selected' : ''}>${esc(REASON_LABEL[k])}</option>`).join('');
+  body.className = 'small';
+  body.innerHTML = `<p class="muted">启用的规则在线索进入时按标题匹配，直接关闭，不再研判、搜索或进审核。建议来自你在线索阶段的拒绝（只学“非 AI、优惠券/折扣、中转站、账号池、个人分享”）；会命中已上架或已关联福利的规则会被拒绝创建。</p>
+    <h4>建议 · ${data.suggestions.length} 条</h4>${data.suggestions.map((g, i) => `<div class="card" data-intake-sug="${i}" style="margin:6px 0"><b>标题含「${esc(g.pattern.replace(/\\/g, ''))}」</b> · ${esc(REASON_LABEL[g.category])} · ${scope(g)} · 你已拒绝 ${g.hits} 条<ul>${g.examples.map(t => `<li>${esc(t)}</li>`).join('')}</ul><label class="row" style="gap:6px"><input type="checkbox" data-apply checked> 同时关闭现有未处理的同类线索</label><div class="row"><button class="btn sm pri" data-intake-on>启用</button><button class="btn sm" data-intake-off>不再建议</button></div><p role="status" data-intake-msg></p></div>`).join('') || '<p class="muted">暂无建议：同一类拒绝累计 3 条以上、且标题有共同词时才会出现。</p>'}
+    <h4>启用中 · ${active.length} 条</h4>${active.map(r => `<p data-intake-rule="${esc(r.id)}">「${esc(r.pattern)}」 · ${esc(REASON_LABEL[r.category] || r.category)} · ${scope(r)} · 已拦截 ${r.hits} 条 <button class="btn sm" data-intake-retire>停用</button></p>`).join('') || '<p class="muted">还没有启用的规则。</p>'}
+    <details><summary>手动添加规则</summary><form data-intake-add class="row" style="gap:6px;flex-wrap:wrap"><input name="pattern" required minlength="2" placeholder="标题关键词或正则，如 购物券|外卖券"><select name="category">${catOpts('non_ai')}</select><input name="scopeValue" placeholder="仅限来源（可空，如 linuxdo）"><label class="row" style="gap:4px"><input type="checkbox" name="applyToOpen" checked> 关闭现有同类</label><button class="btn sm pri">添加</button><p role="status" data-intake-msg></p></form></details>`;
+  const create = async (payload, msg) => {
+    try {
+      const r = await adm('/screening/rules', payload); let closed = r.closed || 0;
+      for (let more = r.more, i = 0; more && i < 30; i++) { msg.textContent = `已启用，正在关闭现有同类线索（${closed} 条）…`; const next = await adm(`/screening/rules/${encodeURIComponent(r.rule.id)}/apply`, {}); closed += next.closed; more = next.more && next.closed > 0; }
+      msg.textContent = payload.status === 'declined' ? '已不再建议' : `已启用${closed ? `，并关闭 ${closed} 条现有线索` : ''}`; return true;
+    }
+    catch (e) { msg.textContent = e.message + (e.body?.conflicts?.length ? '：' + e.body.conflicts.join('；') : ''); return false; }
+  };
+  body.querySelectorAll('[data-intake-sug]').forEach(card => {
+    const g = data.suggestions[Number(card.dataset.intakeSug)], msg = card.querySelector('[data-intake-msg]');
+    const base = { pattern: g.pattern, category: g.category, scopeKind: g.scopeKind, scopeValue: g.scopeValue, exampleRefs: g.exampleRefs };
+    card.querySelector('[data-intake-on]').addEventListener('click', async e => { e.target.disabled = true; if (!await create({ ...base, applyToOpen: card.querySelector('[data-apply]').checked }, msg)) e.target.disabled = false; });
+    card.querySelector('[data-intake-off]').addEventListener('click', async e => { e.target.disabled = true; await create({ ...base, status: 'declined' }, msg); });
+  });
+  body.querySelectorAll('[data-intake-retire]').forEach(button => button.addEventListener('click', async () => {
+    button.disabled = true; try { await adm('/screening/rules/' + encodeURIComponent(button.closest('[data-intake-rule]').dataset.intakeRule) + '/retire', { reason: '管理员停用' }); button.textContent = '已停用'; } catch (e) { button.disabled = false; toast(e.message); }
+  }));
+  const form = body.querySelector('[data-intake-add]');
+  form.addEventListener('submit', async e => {
+    e.preventDefault(); const fd = Object.fromEntries(new FormData(form));
+    await create({ pattern: fd.pattern.trim(), category: fd.category, ...(fd.scopeValue.trim() ? { scopeKind: 'origin', scopeValue: fd.scopeValue.trim() } : {}), applyToOpen: !!fd.applyToOpen }, form.querySelector('[data-intake-msg]'));
+  });
+}
 function fastTrackFormHtml(p = {}) {
   return `<form data-fast-track class="card" style="display:flex;flex-direction:column;gap:10px;max-width:640px${p.inline ? ';margin-top:8px' : ''}">
     <p class="sub" style="margin:0"><b>⚡ 快速上架</b>：你确认是官方发布或亲测可领的权益，跳过筛查和审核直接上架。链接会登记为该厂商的官方地址；其余字段由免费模型从链接读取，读不出的再请你补。不发即时推送，次日飞书日报带上。</p>

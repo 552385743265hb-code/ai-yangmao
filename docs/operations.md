@@ -142,7 +142,17 @@ OpenRouter默认备用为`openrouter/free`；404须检查模型可用性，不�
 
 ## 线索筛选（影子模式）
 
-里程碑 1（2026-10-13 上线）在身份系统之前为每条新线索记录筛选判定与紧急度（P0–P3），**不关闭、不关联、不重排、不发布**。开关为 Worker 与 GitHub 变量 `SCREENING_MODE=off|shadow|suggest|auto`（现为 `shadow`）；`SCREENING_MODELS` 为固定的 OpenRouter `:free` 模型（逗号分隔，校准前按顺序兜底）；可选 `SCREENING_PAID_MODEL` 与 `SCREENING_PAID_PRICE_IN/OUT` 仅供 P0 兜底。每次调用经预算台账预留/结算：筛选单独记账（`SCREENING_MONTHLY_CAP_CNY`，默认 72），免费池每日 1000 次（P0/P1 预留 200、非紧急 ≤800、回填 ≤400）。后续阶段与门槛见[实施计划](superpowers/plans/2026-10-12-lead-screening-redesign.md)。
+里程碑 1（2026-10-13 上线）在身份系统之前为每条新线索记录筛选判定与紧急度（P0–P3），**不关闭、不关联、不重排、不发布**（管理员批准的入口过滤规则除外，见下）。开关为 Worker 与 GitHub 变量 `SCREENING_MODE=off|shadow|suggest|auto`（现为 `shadow`）；`SCREENING_MODELS` 为固定的 OpenRouter `:free` 模型（逗号分隔，校准前按顺序兜底）；可选 `SCREENING_PAID_MODEL` 与 `SCREENING_PAID_PRICE_IN/OUT` 仅供 P0 兜底。每次调用经预算台账预留/结算：筛选单独记账（`SCREENING_MONTHLY_CAP_CNY`，默认 72），免费池每日 1000 次（P0/P1 预留 200、非紧急 ≤800、回填 ≤400）。后续阶段与门槛见[实施计划](superpowers/plans/2026-10-12-lead-screening-redesign.md)。
+
+### 入口过滤规则（2026-10-16）
+
+模型筛选仍是影子模式，但**管理员批准的标题规则例外**：线索写入时（`POST /api/ingest/leads`）按 `screening_rules` 中启用的 `title_pattern` 匹配标题，命中即关闭线索（`status=rejected`，经身份系统留拒绝记录），不再研判、搜索或进审核；`SCREENING_MODE=off` 时不生效。后台「活动待审」顶部「🚫 入口过滤规则」：
+
+- 建议：从管理员在线索阶段的拒绝（`decision_labels`，owner）中挖掘同一类别累计 ≥3 条的共同标题词；只学 `non_ai`（含优惠券、购物券）、`ordinary_discount`、`relay_station`、`account_pool`、`personal_giveaway`。`duplicate`、`unverifiable`、`expired` 不说明“这类线索不该收”，不参与。
+- 创建前校验：规则命中任何已批准条目或已关联线索的标题即拒绝（409，列出冲突标题）；可勾选“同时关闭现有未处理的同类线索”。“不再建议”记为 `declined`。停用后立即不再拦截；`hits` 记录拦截数。
+- 接口（仅管理员）：`GET /api/admin/screening/rules`（规则与建议）、`POST /api/admin/screening/rules`、`POST /api/admin/screening/rules/:id/retire`。
+
+线索阶段的内容类拒绝（同上类别及 `paid_bundle`、`model_news_only`）同时进入 `/api/ingest/corrections`，研判与抽取提示词即时可见；每周 distill 把它们归纳成“研判时直接不收”的规则。
 
 身份任务：管理员对“没有已知事实”的候选确认“与已上架 X 相同”时，只要 X 已批准且同平台即可关联（`owner_confirmed_same`）；有已知事实冲突的候选仍走原有守卫。
 
