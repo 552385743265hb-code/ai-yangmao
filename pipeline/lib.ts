@@ -88,7 +88,10 @@ export function syndicatedPostText(url:string,payload:unknown):string|null {
  */
 /** via 表示读取方式类别：jina 指第三方阅读器（含 Exa），一律按间接来源处理；fetchMethod 记录实际读取方。 */
 export interface FetchedPage {sourceVerified?:boolean;text:string;via:'readability'|'direct'|'jina';originalUrl?:string;finalUrl:string;fetchedUrl?:string;fetchMethod?:'direct'|'readability'|'jina'|'exa'|'first_party_embed';truncated?:boolean}
-const WECHAT_CAPTCHA = /环境异常|完成验证后即可继续访问|去验证/;
+// 微信对自动访问返回的拦截页有多种：“环境异常 / 去验证”验证页，以及只有页面框架的“微信扫一扫可打开此内容，使用完整服务”（2026-10-16 CodeBuddy 公告）。
+const WECHAT_BLOCKED = /环境异常|完成验证后即可继续访问|去验证|微信扫一扫可打开此内容|使用完整服务/;
+/** 公众号页面是拦截页而不是正文。不按字数判断：补偿公告这类真文章可能只有三百来字。 */
+export const wechatBlocked = (text: string) => WECHAT_BLOCKED.test(text);
 const isWechat = (url: string) => { try { return new URL(url).hostname === 'mp.weixin.qq.com'; } catch { return false; } };
 /** Exa /contents（build-with-exa：contents 端点的 text 是顶层字段）。返回第三方阅读器结果，按间接来源处理；读不到或仍是验证页时返回 null。 */
 export async function exaContents(url: string, timeoutMs = 30000): Promise<FetchedPage | null> {
@@ -100,7 +103,7 @@ export async function exaContents(url: string, timeoutMs = 30000): Promise<Fetch
     const j = await r.json() as { results?: { url?: string; title?: string; author?: string; text?: string }[] };
     const hit = j.results?.[0];
     const body = hit?.text?.trim() ?? '';
-    if (!hit || body.length < 50 || WECHAT_CAPTCHA.test(body.slice(0, 200))) return null;
+    if (!hit || wechatBlocked(body)) return null;
     const text = [hit.title, hit.author ? `公众号：${hit.author}` : '', body].filter(Boolean).join('\n');
     return { text, via: 'jina', originalUrl: url, finalUrl: url, fetchedUrl: 'https://api.exa.ai/contents', fetchMethod: 'exa', truncated: false, sourceVerified: hit.url === url };
   } catch { return null; }
@@ -128,7 +131,7 @@ export async function fetchPage(url: string, opts: { timeoutMs?: number; tries?:
     // 哪个版本保留的羊毛相关内容多就用哪个；一样多时用更干净的 Readability
     if (read.length >= 800 && relevantText(read).length >= relevantText(full).length) { text = read; via = 'readability'; } else text = full;
   } catch { /* 直接抓失败就走 Jina */ }
-  if (text.length >= (opts.minimumTextLength ?? 800) && !(isWechat(url) && WECHAT_CAPTCHA.test(text))) return { text, via, originalUrl:url,finalUrl,fetchedUrl:finalUrl,fetchMethod:via,truncated:false,sourceVerified:true };
+  if (text.length >= (opts.minimumTextLength ?? 800) && !(isWechat(url) && wechatBlocked(text))) return { text, via, originalUrl:url,finalUrl,fetchedUrl:finalUrl,fetchMethod:via,truncated:false,sourceVerified:true };
   // 微信公众号文章：云端直读与 Jina 都会遇到验证页（“环境异常”），改用 Exa 从其服务器读取正文（2026-10-16）。
   if (isWechat(url)) { const exa = await exaContents(url, opts.timeoutMs ?? 30000); if (exa) return exa; }
   const headers: Record<string, string> = { 'User-Agent': UA, 'X-Return-Format': 'markdown', Accept: 'text/plain', 'X-Locale': 'en-US' };
