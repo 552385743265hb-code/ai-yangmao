@@ -12,6 +12,7 @@ import {noticeIdentities,pendingIdentityNotices,identityReviewAlerts,identityGua
 import {canonicalOffers,resolveCanonicalOffer,entityOfferVersion} from './identity/canonical';
 import { identityAdminRoutes } from './identity/routes';
 import { screeningAdminRoutes } from './screening/routes';
+import { reviewStats } from './review-stats';
 import { IdentityService } from './identity/service';
 import { IdentityError } from './identity/store';
 import { sha256,stableJson } from '../shared/identity/normalize';
@@ -101,6 +102,7 @@ admin.use('*', async (c, next) => {
 
 admin.route('/identity',identityAdminRoutes);
 admin.route('/screening', screeningAdminRoutes);
+admin.get('/review-stats', async c => c.json(await reviewStats(c.env.DB, Math.min(30, Math.max(1, Number(c.req.query('days') ?? 7) || 7)))));
 admin.route('/memberships',membershipAdminRoutes);
 
 admin.get('/whoami', c => c.json({ role: c.get('role'), who: c.get('who') }));
@@ -634,6 +636,7 @@ admin.post('/sources/:id/auto-publish', async c => {
 
 type NoticeKind = 'digest' | 'urgent';
 const TOP = { standing: 5, rising: 3, lastcall: 3 }; // 飞书日报三个榜各推几条
+export const IDENTITY_BACKLOG_MAX = 20, IDENTITY_BACKLOG_MAX_HOURS = 48; // 查重卡积压提醒阈值
 
 /**
  * 飞书日报「今日专题」（2026-10-16）：原常驻榜每天取同样的前 5 条常驻额度，内容天天一样。改为按日轮换类型；
@@ -796,7 +799,13 @@ export async function buildNotice(env: Env, kind: NoticeKind, channel: NoticeCha
     const proposals = await d.select().from(s.offerProposals).where(sql`NOT EXISTS(SELECT 1 FROM benefit_entities e WHERE e.canonical_offer_id=offer_proposals.offer_id)`);
     const unresolved = await d.select().from(s.leads).where(inArray(s.leads.status,['new','reviewing']));
     leadBacklog = unresolved.length;
+    // Identity backlog (2026-10-16): warn on day one of a pile-up, not at 90 open cards. Once a day at most.
+    const identityBacklog = await env.DB.prepare("SELECT count(*) n, min(created_at) oldest FROM review_tasks WHERE state IN ('open','checking','manual')").first<{ n: number; oldest: string | null }>();
+    const oldestHours = identityBacklog?.oldest ? Math.floor((now.getTime() - Date.parse(identityBacklog.oldest)) / 3600_000) : 0;
+    const backlogAlert: ReviewAlert[] = identityBacklog && (identityBacklog.n > IDENTITY_BACKLOG_MAX || oldestHours > IDENTITY_BACKLOG_MAX_HOURS)
+      ? [{ key: `backlog:identity:${now.toISOString().slice(0, 10)}`, priority: 0, title: `🚨 查重积压：${identityBacklog.n} 张卡待处理，最久已等 ${oldestHours} 小时`, state: '积压提醒：先处理有截止日期的卡', url: 'https://ai-yangmao.com/#admin' }] : [];
     reviewAlerts = [
+      ...backlogAlert,
       ...await identityReviewAlerts(env.DB,[...announced,...inherited.announcedReviewKeys]),
       ...awaiting.map(o=>({ key: o.officialReview && (o.officialReview.status === 'matched' || (o.officialReview.status!=='checking'&&!o.officialReview.nextAttemptAt)) ? `offer:${o.id}:official:${o.officialReview.jobId}` : `offer:${o.id}`, priority: reviewRank(o), title: `[${shortCode(o.id)}] ${o.title}`, state: o.officialReview?.status==='unresolved'&&!o.officialReview.nextAttemptAt?'官方复核待人工核对':'待审', url: `https://ai-yangmao.com/#admin-offer-${encodeURIComponent(o.id)}` })),
       ...proposals.filter(p=>p.diff.some(x=>isReviewField(x.field))).map(p=>({ key: `proposal:${p.offerId}:${JSON.stringify(p.diff)}`, priority: 2, title: String(p.candidate.title ?? p.offerId), state: '条款更新待审', url: `https://ai-yangmao.com/#admin-offer-${encodeURIComponent(p.offerId)}` })),
