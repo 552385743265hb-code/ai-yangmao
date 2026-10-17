@@ -34,3 +34,51 @@ export async function findPerkGroup(db: D1Database, candidateId: string, candida
   }
   return best?.key ?? null;
 }
+
+type OpenCard = { id: string; task_key: string; n: number; raw: string | null; created_at: string; revision: number; material_revision: number };
+export type RegroupPlan = { primary: string; title: string; absorbed: { id: string; title: string }[] }[];
+
+/**
+ * One-off regroup of cards opened before grouping existed (2026-10-16). Same matching as new reports; the oldest card of
+ * each group keeps the decision, the others hand over their candidates and are cancelled; leads waiting on a cancelled
+ * card are pointed at the surviving one. Leased cards (someone is working on them) are left alone. Bounded per call
+ * (identity requests share a 50-query budget): run until `remaining` is 0.
+ */
+export async function regroupOpenCards(db: D1Database, options: { dryRun: boolean; maxMerges?: number }): Promise<{ plan: RegroupPlan; merged: number; remaining: number }> {
+  const now = new Date().toISOString();
+  const cards = (await db.prepare(`SELECT t.id, t.task_key, t.created_at, t.revision, t.material_revision, (SELECT count(*) FROM task_candidates x WHERE x.task_id=t.id) n,
+      (SELECT c.raw_candidate_json FROM task_candidates tc JOIN intake_candidates c ON c.id=tc.candidate_id WHERE tc.task_id=t.id ORDER BY c.id LIMIT 1) raw
+    FROM review_tasks t WHERE t.kind='identity' AND t.entity_id IS NULL AND t.state IN ('open','checking','manual') AND (t.lease_until IS NULL OR t.lease_until<?)
+    ORDER BY t.created_at, t.id LIMIT 400`).bind(now).all<OpenCard>()).results;
+  const groups: { primary: OpenCard; view: PerkView; size: number; absorbed: OpenCard[] }[] = [];
+  for (const card of cards) {
+    const v = card.raw ? view(card.raw) : null;
+    if (!v) continue;
+    const home = groups.find(g => g.size + card.n <= GROUP_MAX && samePerk(g.view, v));
+    if (home) { home.absorbed.push(card); home.size += card.n; } else groups.push({ primary: card, view: v, size: card.n, absorbed: [] });
+  }
+  const merging = groups.filter(g => g.absorbed.length);
+  const plan: RegroupPlan = merging.map(g => ({ primary: g.primary.id, title: g.view.title, absorbed: g.absorbed.map(a => ({ id: a.id, title: (a.raw && view(a.raw)?.title) || '' })) }));
+  const total = merging.reduce((sum, g) => sum + g.absorbed.length, 0);
+  if (options.dryRun) return { plan, merged: 0, remaining: total };
+  let merged = 0, budget = options.maxMerges ?? 7; // 6 statements per merge + the read + primary bumps stay under 50
+  for (const g of merging) {
+    const take = g.absorbed.slice(0, budget);
+    if (!take.length) break;
+    const statements: D1PreparedStatement[] = [];
+    for (const a of take) {
+      statements.push(
+        db.prepare(`UPDATE OR IGNORE task_candidates SET task_id=? WHERE task_id=?`).bind(g.primary.id, a.id),
+        db.prepare(`DELETE FROM task_candidates WHERE task_id=?`).bind(a.id),
+        db.prepare(`UPDATE intake_candidates SET task_id=? WHERE task_id=?`).bind(g.primary.id, a.id),
+        db.prepare(`UPDATE leads SET resolution=replace(resolution, ?, ?) WHERE status IN ('new','reviewing') AND resolution LIKE ?`).bind(a.id, g.primary.id, `%${a.id}%`),
+        db.prepare(`UPDATE review_tasks SET state='cancelled', revision=revision+1, lease_token=NULL, lease_until=NULL WHERE id=? AND state IN ('open','checking','manual') AND revision=?`).bind(a.id, a.revision),
+      );
+    }
+    statements.push(db.prepare(`UPDATE review_tasks SET revision=revision+1, material_revision=material_revision+1 WHERE id=? AND state IN ('open','checking','manual')`).bind(g.primary.id));
+    await db.batch(statements);
+    merged += take.length; budget -= take.length;
+    if (budget <= 0) break;
+  }
+  return { plan, merged, remaining: total - merged };
+}

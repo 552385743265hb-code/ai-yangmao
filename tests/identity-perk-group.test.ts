@@ -36,3 +36,33 @@ it('anchors decide, not wording', () => {
   expect(samePerk(v('注册送 10 美元', '新用户 10 美元额度'), v('注册送 50 美元', '新用户 50 美元额度'))).toBe(false);
   expect(samePerk(v('注册送 10 美元', '新用户 10 美元额度'), { ...v('注册送 10 美元', '新用户 10 美元额度'), platformId: 'other' })).toBe(false);
 });
+
+it('a one-off regroup merges cards opened before grouping, moves their candidates and re-points waiting leads', async () => {
+  const f = auditFixture(); try {
+    const report = async (id: string, text: string, patch: Record<string, unknown>) => {
+      const o = await f.observation(id, text);
+      const c = await f.candidate(id, o, text, facts, patch);
+      return { candidateId: c.candidateId, ...(await f.call('ingest/identity-candidates/' + c.candidateId + '/resolve', { requestId: id + '-resolve' })).body };
+    };
+    const a = await report('old-a', 'Pro plan includes a 14-day trial with $20 credit.', { id: 'vendor-pro-14-day-trial', title: 'Vendor Pro 14 天免费试用', valueText: 'Pro 套餐 14 天试用，送 20 美元额度' });
+    const b = await report('old-b', 'Totally different text at first.', { id: 'vendor-other', title: '完全不同的活动', valueText: '新注册送 500 次图像生成' });
+    expect(b.taskId).not.toBe(a.taskId);
+    // Before grouping existed the second report kept its own card; make it the same perk in other words.
+    const raw = JSON.parse((f.sqlite.prepare('SELECT raw_candidate_json r FROM intake_candidates WHERE id=?').get(b.candidateId) as any).r);
+    raw.candidate.title = 'Vendor Pro 试用送 $20'; raw.candidate.valueText = '免费试用 Pro 14 天，含 $20 用量额度';
+    f.sqlite.prepare('UPDATE intake_candidates SET raw_candidate_json=? WHERE id=?').run(JSON.stringify(raw), b.candidateId);
+    f.sqlite.prepare("INSERT INTO leads(id,origin,url,status,title,resolution) VALUES(9401,'aihot','https://x.example/l','reviewing','Vercel 试用',?)").run(JSON.stringify({ status: 'checking', identityTaskIds: [b.taskId] }));
+
+    const dry = await f.call('admin/identity/regroup', { dryRun: true }, true);
+    expect(dry.body.plan).toEqual([{ primary: a.taskId, title: 'Vendor Pro 14 天免费试用', absorbed: [{ id: b.taskId, title: 'Vendor Pro 试用送 $20' }] }]);
+    expect((f.sqlite.prepare('SELECT state FROM review_tasks WHERE id=?').get(b.taskId) as any).state).not.toBe('cancelled');
+
+    const run = await f.call('admin/identity/regroup', { dryRun: false }, true);
+    expect(run.body).toMatchObject({ merged: 1, remaining: 0 });
+    expect(f.sqlite.prepare('SELECT state FROM review_tasks WHERE id=?').get(b.taskId)).toEqual({ state: 'cancelled' });
+    expect(f.sqlite.prepare('SELECT count(*) n FROM task_candidates WHERE task_id=?').get(a.taskId)).toEqual({ n: 2 });
+    expect(f.sqlite.prepare('SELECT task_id FROM intake_candidates WHERE id=?').get(b.candidateId)).toEqual({ task_id: a.taskId });
+    expect(JSON.parse((f.sqlite.prepare('SELECT resolution FROM leads WHERE id=9401').get() as any).resolution).identityTaskIds).toEqual([a.taskId]);
+    expect((await f.call('admin/identity/regroup', { dryRun: true }, true)).body.plan).toEqual([]);
+  } finally { f.sqlite.close(); }
+});
