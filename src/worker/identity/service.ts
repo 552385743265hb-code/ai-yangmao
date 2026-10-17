@@ -21,6 +21,7 @@ import { compareCandidate,evidenceGrounded,factSlots,RESOLVER_VERSION,RULES_VERS
 import { decisionApplies,evaluateReopen,reviewTaskKey } from '../../shared/identity/decision-policy';
 import { claimIdentityKey,hashTerms,sha256,stableJson } from '../../shared/identity/normalize';
 import { IdentityStore,IdentityError,readReviewDecision } from './store';
+import { findPerkGroup } from './perk-group';
 import { MutationBuilder,commitIdentityMutation,readIdentityReceipt,type Binding,type ExpectedRevision } from './commit';
 type OfferRow=typeof tables.offers.$inferSelect;
 type CandidateRow={id:string;observation_id:string;facts_json:string;facts_hash:string;raw_candidate_json:string;receipt_json:string|null;revision:number;entity_id:string|null;state:string;task_id:string|null;last_error:string|null;claim_family_key:string|null;assertion_facts_hash:string|null;source_fetch_id:string|null};
@@ -537,6 +538,8 @@ export class IdentityService {
    }
    builder.insert('entity_observations',{entity_id:entity.id,candidate_id:candidate.id,relation:comparison?.termsRelation==='CHANGED'?'changed':comparison?.termsRelation==='EQUIVALENT'?'same':'evidence_only',resolver_version:RESOLVER_VERSION,reason_json:JSON.stringify(receipt.reasonCodes)},'nothing');
   } else if(!['duplicate_rejected','evidence_reopen'].includes(receipt.outcome)){receipt.outcome='needs_identity_review';receipt.entityId=null;receipt.versionId=null;receipt.reasonCodes.push('identity_unproven');}
+  // Repeated reports of one perk join the open card for it instead of opening another (see perk-group.ts).
+  if(!control&&!entity&&taskKind==='identity'&&receipt.outcome==='needs_identity_review'&&taskKey===reviewTaskKey({kind:'identity',clusterId:candidate.id})){const grouped=await findPerkGroup(this.db,candidate.id,candidate.raw_candidate_json);if(grouped){taskKey=grouped;receipt.reasonCodes.push('grouped_with_open_card');}}
   if(!['duplicate_approved','duplicate_rejected'].includes(receipt.outcome)) {
    const active=await this.db.prepare("SELECT * FROM review_tasks WHERE task_key=? AND state IN ('open','checking','manual')").bind(taskKey).first<TaskRow>();
    const taskId=active?.id??crypto.randomUUID();receipt.taskId=taskId;

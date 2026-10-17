@@ -1,4 +1,5 @@
 import {offerIn,type OfferIn} from '../../shared/ingest';
+import { introducesNothingNew, pageContains } from '../../shared/identity/perk-anchors';
 import {stableJson,normalizeDocumentUrl} from '../../shared/identity/normalize';
 import {factSlots} from '../../shared/identity/compare';
 import {canonicalTermsSchema,type CanonicalTermsV1} from '../../shared/identity/types';
@@ -50,30 +51,43 @@ return {entityId:row.entity_id,versionId:row.version_id,decisionId:row.decision_
  * the public baseline (policy: re-confirmed old terms are kept). A page that no longer carries the approved wording
  * still goes to review, so real term changes are never auto-absorbed.
  */
+/**
+ * A re-read of an approved perk's own official page (2026-10-16). Matched by the page, not the model-made offer ID:
+ * the extractor invents a new ID slug and new wording on every run, which let most re-reads through to the owner.
+ * Same vendor, same normalized page URL, the approved benefit quote still on the page (tolerant of reflow, width and
+ * punctuation), and the candidate states no amount, model or requirement the approved terms lack.
+ */
 export async function findSameSourceReread(db:D1Database,raw:string,facts:CanonicalTermsV1,observationId:string,sourceFetchId:string|null):Promise<ReviewedLegacyMatch|null>{
  if(hasKnownTerms(facts))return null;
  const parsed=offerIn.safeParse(JSON.parse(raw).candidate);if(!parsed.success)return null;
- const offer=parsed.data;
- const row=await db.prepare(`SELECT e.id entity_id,e.business_revision,e.canonical_offer_id,o.updated_at,o.evidence offer_evidence,v.id version_id,v.display_candidate_json,d.id decision_id,p.site,p.x_handles,p.staff_handles,p.wechat
+ const offer=parsed.data,page=normalizeDocumentUrl(offer.evidence.url);
+ const rows=(await db.prepare(`SELECT e.id entity_id,e.business_revision,e.canonical_offer_id,o.updated_at,o.evidence offer_evidence,v.id version_id,v.display_candidate_json,d.id decision_id,p.site,p.x_handles,p.staff_handles,p.wechat
   FROM benefit_entities e JOIN offers o ON o.id=e.canonical_offer_id JOIN platforms p ON p.id=e.platform_id
   JOIN benefit_versions v ON v.id=e.current_approved_version_id AND v.entity_id=e.id
   JOIN review_decisions d ON d.entity_id=e.id AND d.version_id=v.id AND d.action='approve' AND NOT EXISTS(SELECT 1 FROM review_decisions n WHERE n.supersedes_id=d.id)
-  WHERE o.id=? AND e.platform_id=? AND e.state='active' AND o.review_state='approved' AND o.withdrawn_at IS NULL
+  WHERE e.platform_id=? AND e.state='active' AND o.review_state='approved' AND o.withdrawn_at IS NULL
   AND NOT EXISTS(SELECT 1 FROM review_decisions other WHERE other.entity_id=e.id AND other.action='reject' AND (other.version_id=v.id OR json_extract(other.scope_json,'$.kind')='entity_alias') AND NOT EXISTS(SELECT 1 FROM review_decisions n WHERE n.supersedes_id=other.id))
-  ORDER BY d.created_at DESC LIMIT 1`).bind(offer.id,offer.platformId).first<{entity_id:string;business_revision:number;canonical_offer_id:string;updated_at:string;offer_evidence:string;version_id:string;display_candidate_json:string;decision_id:string;site:string|null;x_handles:string;staff_handles:string;wechat:string|null}>();
- if(!row)return null;
- const approvedEvidence=JSON.parse(row.offer_evidence) as {url?:string;excerpts?:{benefit?:string}};
- const approvedDisplay=offerIn.safeParse(JSON.parse(row.display_candidate_json));
- const benefit=(approvedDisplay.success?approvedDisplay.data.evidence.excerpts.benefit:undefined)??approvedEvidence.excerpts?.benefit;
- if(!approvedEvidence.url||!benefit?.trim()||normalizeDocumentUrl(approvedEvidence.url)!==normalizeDocumentUrl(offer.evidence.url))return null;
+  ORDER BY d.created_at DESC LIMIT 200`).bind(offer.platformId).all<{entity_id:string;business_revision:number;canonical_offer_id:string;updated_at:string;offer_evidence:string;version_id:string;display_candidate_json:string;decision_id:string;site:string|null;x_handles:string;staff_handles:string;wechat:string|null}>()).results;
+ const onPage=rows.filter(row=>{const url=(JSON.parse(row.offer_evidence) as {url?:string}).url;return !!url&&normalizeDocumentUrl(url)===page;});
+ if(!onPage.length)return null;
  const sources=(await db.prepare('SELECT url,tier FROM sources WHERE platform_id=?').bind(offer.platformId).all<{url:string;tier:string}>()).results;
- const platform={id:offer.platformId,name:offer.platformId,site:row.site,xHandles:JSON.parse(row.x_handles||'[]'),staffHandles:JSON.parse(row.staff_handles||'[]'),wechat:row.wechat};
+ const first=onPage[0],platform={id:offer.platformId,name:offer.platformId,site:first.site,xHandles:JSON.parse(first.x_handles||'[]'),staffHandles:JSON.parse(first.staff_handles||'[]'),wechat:first.wechat};
  if(!['site','docs','official'].includes(officialTier(offer.evidence.url,platform,sources)??''))return null;
  const obs=await db.prepare("SELECT o.text,coalesce(json_extract(f.provenance_json,'$.truncated'),o.text_truncated) truncated,coalesce(f.provenance_json,o.trust_json) trust_json FROM source_observations o LEFT JOIN source_observation_fetches f ON f.id=? AND f.observation_id=o.id WHERE o.id=?").bind(sourceFetchId,observationId).first<{text:string;truncated:number|null;trust_json:string}>();
  if(!obs||obs.truncated)return null;
  const trust=JSON.parse(obs.trust_json) as {sourceVerified?:boolean;productId?:string|null};
  if(trust.sourceVerified!==true||trust.productId!==offer.platformId)return null;
- const flat=(s:string)=>s.normalize('NFKC').replace(/\s+/g,' ').trim().toLowerCase();
- if(!flat(obs.text).includes(flat(benefit)))return null;
+ // Several approved perks can share one page (a pricing page); keep those whose approved quote is still on it and
+ // which the candidate's anchors fit. Exactly one must remain, otherwise the owner decides.
+ const fitting=onPage.filter(row=>{
+  const approved=offerIn.safeParse(JSON.parse(row.display_candidate_json)),stored=JSON.parse(row.offer_evidence) as {excerpts?:{benefit?:string}};
+  const benefit=(approved.success?approved.data.evidence.excerpts.benefit:undefined)??stored.excerpts?.benefit;
+  if(!benefit?.trim()||!pageContains(obs.text,benefit))return false;
+  const a=approved.success?approved.data:null;
+  const texts=[a?.title,a?.valueText,a?.creditValidity,...(a?.steps??[]),...Object.values(a?.evidence.excerpts??stored.excerpts??{})].filter((x):x is string=>!!x);
+  return introducesNothingNew(offer,{texts,models:a?.models,requirements:a?.requirements});
+ });
+ if(fitting.length!==1)return null;
+ const row=fitting[0];
  return {entityId:row.entity_id,versionId:row.version_id,decisionId:row.decision_id,offerId:row.canonical_offer_id,action:'approve',revision:row.business_revision,updatedAt:row.updated_at,display:row.display_candidate_json,relatedRevisions:[{id:row.entity_id,revision:row.business_revision}],reason:'same_source_reread'};
 }

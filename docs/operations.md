@@ -152,6 +152,15 @@ OpenRouter默认备用为`openrouter/free`；404须检查模型可用性，不�
 - 创建前校验：规则命中任何已批准条目或已关联线索的标题即拒绝（409，列出冲突标题）；可勾选“同时关闭现有未处理的同类线索”。“不再建议”记为 `declined`。停用后立即不再拦截；`hits` 记录拦截数。
 - 接口（仅管理员）：`GET /api/admin/screening/rules`（规则与建议）、`POST /api/admin/screening/rules`、`POST /api/admin/screening/rules/:id/retire`。
 
+### 查重减负（2026-10-16）
+
+一周 283 张查重卡全部由人（管理员或代理）决定，其中 70% 是已上架权益的重复报道。改为：
+
+- **同页重读自动确认**（`findSameSourceReread`）：按同平台 + 同一官方页面（规范化 URL）匹配已批准条目，不再要求模型生成相同的条目 ID；已批准的权益原文须仍在页面上（`pageContains` 折叠换行、全半角、标点、千分位），候选的金额、模型、门槛须都已在批准条款里（`introducesNothingNew`）。同页多条已批准条目时须恰好一条符合，否则人工。
+- **同一权益合并一张卡**（`identity/perk-group.ts`）：同平台、金额/模型一致且文字相近（或文字高度相近）的未决候选并入 21 天内已开的同类卡（每卡最多 10 条），金额或模型冲突一律不并。卡片上的“关联/新建”作用于所选来源，其余来源随后按 `duplicate` 一并结案；拒绝整组拒绝。
+- **积压提醒**：Telegram 每日至多一次，查重卡超过 20 张或最久超过 48 小时即置顶提醒（`IDENTITY_BACKLOG_MAX`）。
+- **真实分工统计**：`GET /api/admin/review-stats?days=7`，后台「活动待审」顶部显示。查重决定按请求 ID 区分：`ui-` 为网页点击、`fast-track-` 为快速上架、其余管理员请求为代理/脚本；线索区分系统、入口规则、人工。
+
 ### 自动关闭抽查（2026-10-16）
 
 后台「活动待审」顶部「🔍 自动关闭抽查」列出最近 7 天系统自己关闭（自动研判或入口规则）、管理员尚未看过的线索，建议每周看一次。标题提到已知厂商或含“免费、额度、赠送、credits”等词的排在“可能误关”组。每条可：选类别后「✅ 本组其余都关得对」（写 owner 标签，即里程碑 2 的校准样本；每次最多 15 条）、「✗ 误关」（`resolution.spotCheck.verdict=wrong`；入口规则的 `overrides+1`，命中 ≥10 且误关率 >10% 自动停用）、「⚡ 上架」（快速上架并把该线索改为 linked）。接口（仅管理员）：`GET /api/admin/screening/spot-check?days=7`、`POST .../spot-check/confirm`、`POST .../spot-check/:id/wrong`。

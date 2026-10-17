@@ -14,7 +14,8 @@ async function approvedFixture(){
 async function reread(f:ReturnType<typeof auditFixture>,offer:ReturnType<typeof displayOffer>,page:string,overrides:Record<string,unknown>={}){
  const url=(overrides.url as string|undefined)??offer.evidence.url;
  const sourceFetch={originalUrl:url,finalUrl:url,fetchedUrl:url,method:'direct',sourceVerified:true,truncated:false,contentHash:await sha256(page)};
- return f.call('ingest/offers',[{...offer,title:'注册即送 API 额度',valueText:'新用户注册后可获得 10 美元 API 赠额',evidence:{...offer.evidence,url},sourceText:page,sourceFetch,identityRequestId:'reread-'+(await sha256(page+url)).slice(0,12)}]);
+ const {url:_url,...fields}=overrides;
+ return f.call('ingest/offers',[{...offer,title:'注册即送 API 额度',valueText:'新用户注册后可获得 10 美元 API 赠额',...fields,evidence:{...offer.evidence,url},sourceText:page,sourceFetch,identityRequestId:'reread-'+(await sha256(page+url+JSON.stringify(fields))).slice(0,12)}]);
 }
 const tasks=(f:ReturnType<typeof auditFixture>)=>f.sqlite.prepare("SELECT count(*) n FROM review_tasks WHERE state<>'resolved'").get();
 it('a reworded re-read of the same official page that still carries the approved wording needs no task',async()=>{
@@ -39,6 +40,23 @@ it('a different page cannot borrow the approved activity',async()=>{
  const {f,offer}=await approvedFixture();try{
   const response=await reread(f,offer,`${offer.evidence.excerpts.benefit}`,{url:'https://vendor.example/other'});
   expect(response.status).toBe(200);
+  expect(response.body.results[0].identityReceipt?.outcome).not.toBe('duplicate_approved');
+ }finally{f.sqlite.close();}
+});
+
+// 2026-10-16: the extractor invents a new offer ID slug and new wording on every run; the page and the anchors decide.
+it('a re-read under a new model-made ID and reworded title still resolves to the approved perk',async()=>{
+ const {f,offer}=await approvedFixture();try{
+  const benefit=offer.evidence.excerpts.benefit!;
+  const page=`Pricing\n${benefit}\nFAQ`;
+  const response=await reread(f,offer,page,{id:'vendor-vendor-signup-credit-renamed',title:'Vendor 新用户 API 赠额'});
+  expect(response.body.results[0].identityReceipt).toMatchObject({outcome:'duplicate_approved',canonicalOfferId:offer.id,reasonCodes:['same_source_reread']});
+ }finally{f.sqlite.close();}
+});
+it('a re-read that states a new amount goes to the owner even though the approved quote is still on the page',async()=>{
+ const {f,offer}=await approvedFixture();try{
+  const page=`Pricing\n${offer.evidence.excerpts.benefit}\nNow also 500 bonus credits.`;
+  const response=await reread(f,offer,page,{id:'vendor-vendor-signup-credit-v2',valueText:'新用户注册后可获得 10 美元 API 赠额，另送 500 积分'});
   expect(response.body.results[0].identityReceipt?.outcome).not.toBe('duplicate_approved');
  }finally{f.sqlite.close();}
 });
