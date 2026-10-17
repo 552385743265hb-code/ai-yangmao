@@ -42,6 +42,13 @@ export async function preparationQueue(db:D1Database,products:string[]){
  const tasks=oldest&&!top.slice(0,3).some(task=>task.id===oldest.id)?[...top.slice(0,3),oldest]:top;
  return {tasks};
 }
+/** Whether the system may fetch this source to verify it: an official address of an approved vendor. */
+async function officialFetchable(db:D1Database,finalUrl:string,rawCandidate:string){
+ const offer=offerIn.safeParse(JSON.parse(rawCandidate).candidate);const productId=offer.success?offer.data.platformId:null;
+ const platform=productId?await db.prepare('SELECT id,name,site,x_handles,staff_handles,status FROM platforms WHERE id=?').bind(productId).first<{id:string;name:string;site:string|null;x_handles:string;staff_handles:string;status:string}>():null;
+ const sources=platform?(await db.prepare('SELECT url,tier FROM sources WHERE platform_id=? ORDER BY id LIMIT 21').bind(platform.id).all<{url:string;tier:string}>()).results:[];
+ return {productId,allowed:!!platform&&platform.status==='approved'&&sources.length<=20&&!!officialTier(finalUrl,{id:platform.id,name:platform.name,site:platform.site,xHandles:JSON.parse(platform.x_handles),staffHandles:JSON.parse(platform.staff_handles)},sources)};
+}
 export async function preparationSource(db:D1Database,taskId:string){
  const task=await db.prepare("SELECT id FROM review_tasks WHERE id=? AND kind IN ('identity','merge_conflict') AND state IN ('open','manual','checking')").bind(taskId).first();if(!task)throw new IdentityError(404,'identity task missing');
  const rows=(await db.prepare(taskSourcesCte+" SELECT c.raw_candidate_json,o.final_url,coalesce(f.provenance_json,o.trust_json) trust_json,coalesce(json_extract(f.provenance_json,'$.truncated'),o.text_truncated) text_truncated FROM task_candidates tc JOIN intake_candidates c ON c.id=tc.candidate_id JOIN source_observations o ON o.id=c.observation_id LEFT JOIN source_observation_fetches f ON f.id=c.source_fetch_id AND f.observation_id=o.id WHERE tc.task_id IN (SELECT id FROM task_sources) ORDER BY c.id LIMIT 11").bind(taskId).all<{raw_candidate_json:string;final_url:string;trust_json:string;text_truncated:number}>()).results;
@@ -101,6 +108,9 @@ export async function scanIdentityTask(db:D1Database,taskId:string,raw:unknown){
   }
   }
  }
+  // A source that is not a registered official address is never fetched for verification, so it could never leave
+  // needs_source either; the owner decides those too.
+ if(next.status==='needs_source'&&!unverifiable&&!freshObservationId&&prior?.status!=='source_unverifiable'&&!sourceIsVerified(sourceToRefresh)&&!(await officialFetchable(db,sourceToRefresh.final_url??'',sourceToRefresh.raw_candidate_json)).allowed)unverifiable='来源不是该厂商已登记的官方地址，系统不能据此核实';
   // 2026-10-16: a source the system cannot re-verify used to throw and leave the card locked in needs_source for days
   // (the owner's buttons stay hidden until "ready"). Hand it to the owner instead, and re-check every few days.
  if(next.status==='needs_source'&&(unverifiable||(prior?.status==='source_unverifiable'&&!freshObservationId))){
