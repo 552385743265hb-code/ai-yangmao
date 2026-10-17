@@ -260,3 +260,17 @@ it('an official page that no longer shows the quote hands the card to the owner 
   for(const table of ['offers','review_decisions'])expect(f.sqlite.prepare('SELECT count(*) n FROM '+table).get()).toEqual({n:0});
  }finally{f.sqlite.close();}
 });
+it('a candidate whose source is not a registered official address goes to the owner, not into an endless wait',async()=>{
+ const f=auditFixture();try{
+  const text='Campaign media-2026 grants 10 USD to new individual accounts.';
+  const observed=await f.call('ingest/observations',{requestId:'media-source',originalUrl:'https://news.example/vendor-promo',finalUrl:'https://news.example/vendor-promo',text,sourceId:'vendor-source',fetchKind:'indirect',observedAt:'2026-10-12T10:00:00Z'});
+  const facts=canonicalTermsSchema.parse({schemaVersion:'terms-v1',issuerProductId:unknown,mechanism:unknown,benefitPools:[],eligibility:unknown,geography:unknown,claimChannels:unknown,costs:unknown,claimWindow:unknown,occurrenceAnchor:unknown});
+  const c=await f.candidate('media-benefit',observed.body.observationId,text,facts,{id:'media-benefit',title:'媒体转述的权益',evidence:{url:'https://news.example/vendor-promo',tier:'media',capturedAt:'2026-10-12T10:00:00Z',excerpts:{benefit:text}}});
+  const task=(await f.call('ingest/identity-candidates/'+c.candidateId+'/resolve',{requestId:'media-create'})).body;
+  const scan=await f.call('ingest/identity-preparations/'+task.taskId+'/scan',{requestId:'media-first',expectedRevision:0});
+  expect(scan.body.status).toBe('source_unverifiable');
+  const card=(await f.call('admin/identity/tasks',undefined,true)).body.tasks.find((t:any)=>t.id===task.taskId);
+  expect(card.reviewPreparation).toMatchObject({state:'source_unverifiable',canDecide:true});
+  expect(card.reviewPreparation.reason).toContain('不是该厂商已登记的官方地址');
+ }finally{f.sqlite.close();}
+});
