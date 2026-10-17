@@ -258,6 +258,10 @@ it('an official page that no longer shows the quote hands the card to the owner 
   const again=await f.call('ingest/identity-preparations/'+task.taskId+'/scan',{requestId:'unverifiable-again',expectedRevision:handed.body.revision});
   expect(again.body.status).toBe('source_unverifiable');
   for(const table of ['offers','review_decisions'])expect(f.sqlite.prepare('SELECT count(*) n FROM '+table).get()).toEqual({n:0});
+  // A plain rejection needs only a category and a reason — no original rejection ID (2026-10-16 即梦 card).
+  const rejected=await f.call('admin/identity/tasks/'+task.taskId+'/resolve',{requestId:'unverifiable-reject',expectedRevision:again.body.revision,action:'reject',reasonCategory:'duplicate',reason:'与已上架的注册礼重复'},true);
+  expect(rejected.status,JSON.stringify(rejected.body)).toBe(200);
+  expect(f.sqlite.prepare('SELECT state FROM review_tasks WHERE id=?').get(task.taskId)).toEqual({state:'resolved'});
  }finally{f.sqlite.close();}
 });
 it('a candidate whose source is not a registered official address goes to the owner, not into an endless wait',async()=>{
