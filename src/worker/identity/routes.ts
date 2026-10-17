@@ -1,3 +1,4 @@
+import { sweepStuckLeads } from './lead-sweep';
 import { regroupOpenCards } from './perk-group';
 import {preparationQueue,preparationSource,recordIdentityHint,scanIdentityTask} from './preparation';
 import {identityReviewPresentation} from './review-presentation';
@@ -56,6 +57,7 @@ async function requireTaskSelected(env:Env,id:string){
  const products=taskProducts(env);
  if(env.IDENTITY_MODE!=='enforce'||!products.length||!await env.DB.prepare(`SELECT 1 FROM review_tasks t WHERE t.id=? AND ${selectedTaskSql}`).bind(id,JSON.stringify(products)).first())throw new IdentityError(409,'identity task is outside the active Worker canary');
 }
+identityIngestRoutes.post('/lead-sweep',async c=>c.json(await sweepStuckLeads(c.env.DB)));
 identityIngestRoutes.get('/identity-preparations',async c=>{const products=taskProducts(c.env);if(c.env.IDENTITY_MODE!=='enforce'||!products.length)return c.json({tasks:[]});return c.json(await preparationQueue(c.env.DB,products));});
 identityIngestRoutes.get('/identity-preparations/:id/source',async c=>{await requireTaskSelected(c.env,c.req.param('id'));return c.json(await preparationSource(c.env.DB,c.req.param('id')));});
 identityIngestRoutes.post('/identity-preparations/:id/scan',async c=>{await requireTaskSelected(c.env,c.req.param('id'));return c.json(await scanIdentityTask(c.env.DB,c.req.param('id'),await c.req.json()));});

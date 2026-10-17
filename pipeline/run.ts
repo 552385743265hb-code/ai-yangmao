@@ -504,6 +504,8 @@ export async function runPipeline() {
       systemic(`读取复核队列失败：${(error as Error).message}`);
     }
   }
+  // Leads whose identity cards are all decided, or stuck in automatic review, would otherwise wait forever (2026-10-16).
+  if(!DRY)try {const swept={reconciled:0,handedToOwner:0,remaining:0};for(let i=0;i<6;i++){const r=await api<{reconciled:number;handedToOwner:number;remaining:number}>('/lead-sweep',{});swept.reconciled+=r.reconciled;swept.handedToOwner+=r.handedToOwner;swept.remaining=r.remaining;if(!r.reconciled||!r.remaining)break;}Object.assign(stats,{leadSweep:swept});} catch(error){log('线索清理失败', error instanceof Error ? error.message : error);}
   try {const identity=await resumeIdentityIntake(Math.min(deadline,Date.now()+90000));Object.assign(stats,{identity});stats.backlogDeferred+=identity.deferred;if(identity.status==='not_evaluated')systemic('身份维护未评估：'+identity.reason);}catch{stats.deferred++;systemic('身份候选重试暂不可用');}
   // 个别信源失败在健康页逐条列出；只有系统性错误、未完成的工作或失败超过 5% 才算本轮覆盖不完整。
   // 2026-10-16：几个长期打不开的页面让“最近一次完整成功采集”8 天没有更新，告警一直亮着而失去意义。
