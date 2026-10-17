@@ -56,7 +56,6 @@ export interface Env {
   INGEST_TOKEN: string;
   IDENTITY_MODE?: 'off' | 'shadow' | 'enforce';
   IDENTITY_CANARY_PLATFORMS?: string;
-  IDENTITY_MODEL_ASSIST?: string;
   HISTORICAL_MERGE_ENABLED?: string;
   IDENTITY_HISTORY_ENVIRONMENT?: 'synthetic'|'redacted_local'|'production';
   IDENTITY_HISTORY_SOURCE_SHA?: string;

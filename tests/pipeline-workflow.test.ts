@@ -95,7 +95,7 @@ const rss = (...urls: string[]) => `<rss><channel>${urls.map(url => `<item><titl
 
 beforeEach(() => {
   vi.resetModules();
-  for (const [key, value] of Object.entries({ API_BASE: 'https://mock.local', IDENTITY_MODE:'shadow', IDENTITY_MODEL_ASSIST:'false', INGEST_TOKEN: 'test-ingest', GEMINI_API_KEY: 'test-key', OPENROUTER_API_KEY: '', GLM_API_KEY: '', DEEPSEEK_API_KEY: '', FAST_LEADS: '1', FORCE: '0', DRY_RUN: '0', ONLY_SOURCES: '', DAILY_TOKEN_CAP: '0', MONTHLY_COST_CAP_CNY: '10', LLM_MIN_GAP_MS: '0' })) vi.stubEnv(key, value);
+  for (const [key, value] of Object.entries({ API_BASE: 'https://mock.local', IDENTITY_MODE:'shadow', INGEST_TOKEN: 'test-ingest', GEMINI_API_KEY: 'test-key', OPENROUTER_API_KEY: '', GLM_API_KEY: '', DEEPSEEK_API_KEY: '', FAST_LEADS: '1', FORCE: '0', DRY_RUN: '0', ONLY_SOURCES: '', DAILY_TOKEN_CAP: '0', MONTHLY_COST_CAP_CNY: '10', LLM_MIN_GAP_MS: '0' })) vi.stubEnv(key, value);
   vi.spyOn(console, 'log').mockImplementation(() => undefined);
 });
 afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); vi.unstubAllEnvs(); vi.restoreAllMocks(); });
