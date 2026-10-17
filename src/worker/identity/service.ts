@@ -362,7 +362,10 @@ export class IdentityService {
   builder.require('EXISTS(SELECT 1 FROM intake_candidates WHERE id=? AND revision=?)',[candidate.id,candidate.revision]);
   if(candidate.claim_family_key&&!control&&!ambiguousFamily)builder.require('NOT EXISTS(SELECT 1 FROM intake_candidates WHERE claim_family_key=? AND id<>?)',[candidate.claim_family_key,candidate.id]);
   const leadRaw=JSON.parse(candidate.raw_candidate_json).candidate?._identityLegacyLead;
-  const legacyLead=!control&&leadRaw?z.strictObject({leadId:z.number().int().positive(),resolution:z.string()}).parse(leadRaw):null;
+  let legacyLead=!control&&leadRaw?z.strictObject({leadId:z.number().int().positive(),resolution:z.string()}).parse(leadRaw):null;
+  // 2026-10-16: when the originating lead has since been linked, closed or re-queued, the coupling below can never hold
+  // again and the candidate failed with 409 on every run. Resolve it on its own instead.
+  if(legacyLead&&!await this.db.prepare("SELECT 1 FROM leads WHERE id=? AND status='reviewing' AND resolution=? AND json_extract(resolution,'$.status')='checking'").bind(legacyLead.leadId,legacyLead.resolution).first())legacyLead=null;
   if(legacyLead)builder.require("EXISTS(SELECT 1 FROM leads WHERE id=? AND status='reviewing' AND resolution=? AND json_extract(resolution,'$.status')='checking')",[legacyLead.leadId,legacyLead.resolution]);
   const legacyRaw=JSON.parse(candidate.raw_candidate_json).candidate?._identityLegacyJob;
   const legacyJob=!control&&legacyRaw?z.strictObject({offerId:z.string(),entityId:z.string(),entityRevision:z.number().int().nonnegative(),originalJob:z.string()}).parse(legacyRaw):null;
