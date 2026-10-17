@@ -60,3 +60,22 @@ it('a re-read that states a new amount goes to the owner even though the approve
   expect(response.body.results[0].identityReceipt?.outcome).not.toBe('duplicate_approved');
  }finally{f.sqlite.close();}
 });
+// 2026-10-16 即梦 card: the owner links an unverified card to a listed perk without choosing a claim mechanism.
+it('the owner can confirm an unverified card is the same as a listed perk without supplying facts',async()=>{
+ const {f,offer}=await approvedFixture();try{
+  const {canonicalTermsSchema}=await import('../src/shared/identity/types');
+  const {unknown}=await import('./fixtures/identity/terms');
+  const text='Media says new users get the signup credit.';
+  const observed=await f.call('ingest/observations',{requestId:'owner-same-ob',originalUrl:'https://vendor.example/media-copy',finalUrl:'https://vendor.example/media-copy',text,sourceId:'vendor-source',fetchKind:'indirect',observedAt:'2026-10-12T10:00:00Z'});
+  const facts=canonicalTermsSchema.parse({schemaVersion:'terms-v1',issuerProductId:unknown,mechanism:unknown,benefitPools:[],eligibility:unknown,geography:unknown,claimChannels:unknown,costs:unknown,claimWindow:unknown,occurrenceAnchor:unknown});
+  const c=await f.candidate('owner-same',observed.body.observationId,text,facts,{id:'vendor-other-promo-copy',title:'Vendor 社区转述的体验活动',valueText:'转述：体验 7 次',type:'trial'});
+  const task=(await f.call('ingest/identity-candidates/'+c.candidateId+'/resolve',{requestId:'owner-same-create'})).body;
+  expect(task.taskId,JSON.stringify(task).slice(0,300)).toBeTruthy();
+  const entityId=(f.sqlite.prepare('SELECT id FROM benefit_entities WHERE canonical_offer_id=?').get(offer.id) as any).id;
+  const rev=(f.sqlite.prepare('SELECT revision FROM review_tasks WHERE id=?').get(task.taskId) as any).revision;
+  const r=await f.call('admin/identity/tasks/'+task.taskId+'/resolve',{requestId:'owner-same-decide',expectedRevision:rev,action:'same',candidateId:c.candidateId,entityId,reason:'与已上架的注册礼重复'},true);
+  expect(r.status,JSON.stringify(r.body)).toBe(200);
+  expect(r.body.canonicalOfferId).toBe(offer.id);
+  expect(f.sqlite.prepare('SELECT state FROM review_tasks WHERE id=?').get(task.taskId)).toEqual({state:'resolved'});
+ }finally{f.sqlite.close();}
+});
