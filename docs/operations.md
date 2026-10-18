@@ -30,7 +30,7 @@ npx tsx .claude/skills/yangmao-review/scripts/offer.ts plan <短码> patch.json
 | 下架/撤回、平台准入、启用自动上架 | 不可 | 可 |
 | 健康/分析、发送通知、处理送达台账 | 不可 | 可 |
 
-以`src/worker/admin.ts`的`REVIEWER_ALLOWED`为准。`REVIEWER_TOKENS`使用name:token列表，令牌至少16字符。角色能力不扩大本次任务授权。平台准入不等于条目批准；`reject`对已上架条目持久保存被拒证据后移除更新提案，误收条目用`unpublish`，官方明确撤回用`withdraw`并保存官方链接及理由。
+条目页「✏️ 在线编辑」（2026-10-18）：本浏览器已用管理员或审核员密钥登录时显示，复用审核卡片的编辑表单，经 `GET/POST /api/admin/offers/:ref(/edit)` 按审核版本保存，字段合同、会员目录与上架检查照常；身份管理的条目保存为待发布修改，须在同一面板按新版本点“通过”才公开，审核员同样不能下架或标亲测。以`src/worker/admin.ts`的`REVIEWER_ALLOWED`为准。`REVIEWER_TOKENS`使用name:token列表，令牌至少16字符。角色能力不扩大本次任务授权。平台准入不等于条目批准；`reject`对已上架条目持久保存被拒证据后移除更新提案，误收条目用`unpublish`，官方明确撤回用`withdraw`并保存官方链接及理由。
 
 ## 调度与线索到审核
 
