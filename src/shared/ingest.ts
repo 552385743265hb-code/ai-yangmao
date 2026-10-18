@@ -16,6 +16,21 @@ export const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, '日期格式应�
 }, '日期不存在');
 const REQ = /^(none|unknown|phone|card|net|realname|biz|student|invite|targeted|pay:.+|member:.+)$/;
 
+/**
+ * Models often write a bare `member` / `pay`, a comma string or upper case. Bare member/pay get a placeholder
+ * label (the product's paid subscription when known); anything else invalid becomes `unknown` so a reviewer fills it.
+ */
+export function normalizeRequirements(value: unknown, platformName?: string): string[] {
+  const list = Array.isArray(value) ? value.map(x => String(x).trim()).filter(Boolean)
+    : typeof value === 'string' ? value.split(/[,，、/|\s]+/).map(x => x.trim()).filter(Boolean) : [];
+  const member = platformName?.trim() ? `member:${platformName.trim()} 付费订阅` : 'member:付费会员';
+  const requirements = list.map(x => x.includes(':') ? x : x.toLowerCase())
+    .map(x => x === 'member' ? member : x === 'pay' ? 'pay:金额未写明' : x)
+    .map(x => REQ.test(x) ? x : 'unknown');
+  const unique = [...new Set(requirements)];
+  return unique.length > 1 ? unique.filter(x => x !== 'none') : unique.length ? unique : ['unknown'];
+}
+
 export const leadIn = z.object({
   origin: z.enum(['aihot', 'email', 'sweep', 'manual', 'telegram', 'hn', 'reddit', 'discord', 'media', 'linuxdo', 'ithome', 'v2ex']),
   url: z.url(),

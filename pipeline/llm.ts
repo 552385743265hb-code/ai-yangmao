@@ -1,4 +1,5 @@
 import {applyNetworkRequirements} from '../src/shared/network-requirements';
+import { normalizeRequirements } from '../src/shared/ingest';
 import type { CanonicalTermsV1 } from '../src/shared/identity/types';
 import { jsonrepair } from 'jsonrepair';
 // 模型抽取：主用 Gemini Flash 免费档，GLM Flash、OpenRouter 免费模型备用。
@@ -244,14 +245,6 @@ function toList(v: unknown): string[] {
   if (Array.isArray(v)) return v.map(x => String(x).trim()).filter(Boolean);
   if (typeof v === 'string') return v.split(/[,，、/|\s]+/).map(x => x.trim()).filter(Boolean);
   return [];
-}
-function normalizeRequirements(value: unknown): string[] {
-  const accepted = /^(none|unknown|phone|card|net|realname|biz|student|invite|targeted|pay:.+|member:.+)$/;
-  const requirements = toList(value).map(x => x.includes(':') ? x : x.toLowerCase())
-    .map(x => x === 'member' ? 'member:付费会员' : x === 'pay' ? 'pay:金额未写明' : x)
-    .map(x => accepted.test(x) ? x : 'unknown');
-  const unique = [...new Set(requirements)];
-  return unique.length > 1 ? unique.filter(x => x !== 'none') : unique.length ? unique : ['unknown'];
 }
 /**
  * 枚举字段遇到不认识的值：映射到最接近的合法值，或退回“待确认”的默认值，绝不让整条羊毛因校验失败被丢弃。
