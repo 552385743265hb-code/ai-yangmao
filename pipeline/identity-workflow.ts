@@ -3,10 +3,9 @@ import {fetchedSource} from './fetch-evidence';
 import { z } from 'zod';
 import { api } from './lib';
 import { intakeReceiptSchema } from '../src/shared/identity/types';
-import { reviewIdentity,type IdentityReviewInput } from './identity-review';
-export interface IdentityMaintenanceStats {resolved:number;deferred:number;modelTasks:number;handedToOwner?:number;errors?:Record<string,number>;status:'processed'|'disabled'|'not_evaluated';reason?:string}
+export interface IdentityMaintenanceStats {resolved:number;deferred:number;handedToOwner?:number;errors?:Record<string,number>;status:'processed'|'disabled'|'not_evaluated';reason?:string}
 export async function resumeIdentityIntake(deadlineAt:number):Promise<IdentityMaintenanceStats> {
- const stats:IdentityMaintenanceStats={resolved:0,deferred:0,modelTasks:0,handedToOwner:0,errors:{},status:'processed'};
+ const stats:IdentityMaintenanceStats={resolved:0,deferred:0,handedToOwner:0,errors:{},status:'processed'};
  // Every deferral is counted by reason: the loop used to swallow errors, so a week of failures showed only "deferred".
  const fail=(where:string,error:unknown)=>{stats.deferred++;const key=where+': '+String(error instanceof Error?error.message:error).slice(0,120);stats.errors![key]=(stats.errors![key]??0)+1;};
  const skip=(status:IdentityMaintenanceStats['status'],reason:string)=>({...stats,status,reason});
@@ -15,7 +14,6 @@ export async function resumeIdentityIntake(deadlineAt:number):Promise<IdentityMa
  if(!mode)return skip('not_evaluated','missing_identity_mode');
  if(!['off','shadow','enforce'].includes(mode))return skip('not_evaluated','invalid_identity_mode');
  if(mode!=='enforce')return skip('disabled','mode_'+mode);
- if(!['true','false'].includes(process.env.IDENTITY_MODEL_ASSIST??''))return skip('not_evaluated','invalid_or_missing_identity_model_assist');
  if(!process.env.API_BASE?.trim())return skip('not_evaluated','explicit_api_base_required');
  if(Date.now()>=deadlineAt)return skip('not_evaluated','deadline_reached');
  const queue=z.object({reason:z.string().optional(),candidates:z.array(z.object({id:z.string(),revision:z.number().int()})).max(4)}).parse(await api('/identity-retries'));
@@ -49,15 +47,7 @@ export async function resumeIdentityIntake(deadlineAt:number):Promise<IdentityMa
    }
   }
  }catch(error){fail('preparation-queue',error);}
- if(process.env.IDENTITY_MODEL_ASSIST!=='true'||Date.now()>=deadlineAt)return stats;
- const tasks=z.object({tasks:z.array(z.object({id:z.string(),revision:z.number().int()})).max(4)}).parse(await api('/identity-tasks'));
- for(const task of tasks.tasks){
-  if(Date.now()>=deadlineAt)break;
-  try {
-   const claimed=await api<{revision:number;leaseToken:string;context:IdentityReviewInput}>('/identity-tasks/'+encodeURIComponent(task.id)+'/claim',{requestId:crypto.randomUUID(),expectedRevision:task.revision});
-   const result=await reviewIdentity(claimed.context,deadlineAt);
-   await api('/identity-tasks/'+encodeURIComponent(task.id)+'/result',{requestId:crypto.randomUUID(),expectedRevision:claimed.revision,leaseToken:claimed.leaseToken,result});stats.modelTasks++;
-  } catch(error){fail('model',error);}
- }
+ // No model step: the Worker's comparator already decides every case it can, and a model guess could only
+ // ever become a manual suggestion. 2026-10-10..17: ~246 model jobs, 0 decisions, all ended retrieval_incomplete.
  return stats;
 }

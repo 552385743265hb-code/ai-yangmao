@@ -1994,13 +1994,6 @@ function renderIdentityTasks(box,data,append=false,managedIds=new Set()){
  if(data.nextCursor){const more=document.createElement('button');more.className='btn sm';more.textContent='加载更多活动';box.append(more);more.addEventListener('click',async()=>{more.disabled=true;try{const page=await adm('/identity/tasks?cursor='+encodeURIComponent(data.nextCursor));more.remove();renderIdentityTasks(box,page,true,managedIds);}catch(error){more.disabled=false;more.textContent=error.message;}});}
 }
 
-function renderVisibilityHolds(box,data,append=false){
- if(!append)box.innerHTML=data.holds?.length?'<p class="small">这些活动当前不公开，不计入待审。没有恢复发布的意图就无需处理；明确重开后仍需审核，不会直接上架。</p>':'';
- for(const hold of data.holds||[]){const card=document.createElement('article');card.className='card';card.dataset.visibilityHold=hold.offerId;card.innerHTML=`<h4>${esc(hold.title)}</h4><p>${esc(hold.reason==='历史可见性状态需要明确重开'?'历史记录当前处于非公开状态，尚未记录明确的恢复依据。':hold.reason)}</p>${hold.restorationTaskId?'<p>已重开，等待新的恢复审核。</p>':'<label class="field">重开依据<input data-reopen-reason minlength="8"></label><button class="btn sm" data-reopen-preview>预览重开</button><div data-reopen-confirmation></div>'}<p role="status" data-reopen-status></p>`;box.append(card);
- card.querySelector('[data-reopen-preview]')?.addEventListener('click',()=>{const reason=card.querySelector('[data-reopen-reason]').value.trim(),status=card.querySelector('[data-reopen-status]');if(reason.length<8){status.textContent='请写清楚至少 8 字的重开依据';return;}const confirmation=card.querySelector('[data-reopen-confirmation]');confirmation.innerHTML='<p>将新建恢复审核任务，仍需审核；旧卡片不会恢复权限。</p><button class="btn sm pri" data-reopen-confirm>确认重开到待审</button>';confirmation.querySelector('button').addEventListener('click',async event=>{const button=event.currentTarget;button.disabled=true;try{await adm('/offers/'+encodeURIComponent(hold.offerId)+'/reopen-visibility',{expectedReviewVersion:hold.visibilityVersion,reason});status.textContent='已重开到待审，尚未发布';await admQueue();}catch(error){status.textContent=error.message;button.disabled=false;}});});}
- if(data.nextCursor){const button=document.createElement('button');button.className='btn sm';button.textContent='加载更多暂停活动';box.append(button);button.addEventListener('click',async()=>{button.disabled=true;try{const page=await adm('/identity/visibility-holds?cursor='+encodeURIComponent(data.nextCursor));button.remove();renderVisibilityHolds(box,page,true);}catch(error){button.disabled=false;button.textContent=error.message;}});}
-}
-
 function reviewValuationBlock(o) {
   const v = valuationOf(o);
   if (!v) return '<div class="small warn-note" data-review-valuation>参考价值尚无完整计算依据；不能仅填写金额后通过审核。</div>';
@@ -2015,9 +2008,9 @@ function reviewValuationBlock(o) {
 
 async function admQueue() {
   const box = $('#admBody');
-  const [q,identity,holds] = await Promise.all([adm('/queue'),adm('/identity/tasks').catch(error=>({tasks:[],error:error.message})),ADM.role==='reviewer'?Promise.resolve({holds:[]}):adm('/identity/visibility-holds').catch(error=>({holds:[],error:error.message})),refreshAdminPlatforms()]);
+  const [q,identity] = await Promise.all([adm('/queue'),adm('/identity/tasks').catch(error=>({tasks:[],error:error.message})),refreshAdminPlatforms()]);
   if (!box?.isConnected || ADM.tab !== 'queue') return;
-  const counts=q.counts||{activities:q.pending.length+(identity.tasks?.length||0),leadReview:q.leadTasks?.length||0,paused:holds.holds?.length||0,newLeads:q.newLeads};
+  const counts=q.counts||{activities:q.pending.length+(identity.tasks?.length||0),leadReview:q.leadTasks?.length||0,newLeads:q.newLeads};
   const managedIds=new Set(q.managedTaskIds||[]);
   const readyCards=q.pending.filter(o=>!o.preparation||o.preparation.stage==='ready');
   const evidenceCards=q.pending.filter(o=>o.preparation&&o.preparation.stage!=='ready');
@@ -2071,7 +2064,7 @@ async function admQueue() {
   </article>`;
   const sugCount = k => q.pending.filter(o => (o.suggestion?.verdict || 'none') === k).length;
   const sugTabs = [['all', '全部', q.pending.length], ['approve', '建议通过', sugCount('approve')], ['history', '建议作为历史', sugCount('history')], ['reject', '建议拒绝', sugCount('reject')], ['judge', '需要你判断', sugCount('judge')], ['none', '未标注', sugCount('none')]].filter(([k, , n]) => k === 'all' || n);
-  box.innerHTML = `<section class="card" data-review-summary><b>活动待审 <span data-activity-count>${counts.activities}</span> 项</b> · 线索复核 ${counts.leadReview} 条 · 暂停发布 ${counts.paused} 项<p class="small muted">活动待审包含系统补证和等待你决定；线索尚未形成活动，暂停发布不计入待审。新线索 ${counts.newLeads??q.newLeads} 条。</p></section>
+  box.innerHTML = `<section class="card" data-review-summary><b>活动待审 <span data-activity-count>${counts.activities}</span> 项</b> · 线索复核 ${counts.leadReview} 条<p class="small muted">活动待审包含系统补证和等待你决定；线索尚未形成活动。已下架或已标成历史的活动留在原决定里，不再排进这个队列。新线索 ${counts.newLeads??q.newLeads} 条。</p></section>
     ${ADM.role==='admin'?'<p class="small muted" data-review-stats>正在统计最近 7 天谁在审核…</p>':''}
     ${ADM.role==='admin'?'<details data-intake-rules><summary>🚫 入口过滤规则（与 AI 无关、优惠券/购物券、中转站等线索一进来就关闭）</summary><div data-intake-body class="small muted">展开后读取…</div></details><details data-spot-check><summary>🔍 自动关闭抽查（最近 7 天，建议每周看一次）</summary><div data-spot-body class="small muted">展开后读取…</div></details>':''}
     ${q.leadTasks?.length?`<details data-lead-section><summary>线索复核 · ${counts.leadReview} 条</summary><p class="small muted">尚未形成条目的线索会自动读取原文、搜索官方出处并查重。暂时受阻会按时重试；需要判断的可在这里关联已有活动、结束线索或重新核验。</p>${q.leadTasks.slice(0,10).map(leadTaskCard).join('')}${q.leadTasks.length>10?`<details><summary>其余 ${q.leadTasks.length-10} 条线索复核</summary>${q.leadTasks.slice(10).map(leadTaskCard).join('')}</details>`:''}</details>`:''}
@@ -2083,7 +2076,6 @@ async function admQueue() {
     <section data-activity-section><h3>活动待审</h3><p class="small muted">证据充分后再由你决定。系统补证、模型建议都不会自动通过上架。</p><h4>等待你决定 · ${readyCards.length} 项</h4><div class="grid g2">${readyCards.map(o=>card(o)).join('')||'<p class="small muted">当前没有资料齐备的活动需要你决定。</p>'}</div>${evidenceCards.length?`<details data-system-evidence open><summary>系统补证 / 补证受阻 · ${evidenceCards.length} 项</summary><div class="grid g2">${evidenceCards.map(o=>card(o)).join('')}</div></details>`:''}<div data-identity-slot></div></section>
     ${q.incomplete?.length ? `<section><details data-incomplete><summary style="cursor:pointer">${secH('已上架、字段待补', `${q.incomplete.length} 条：补齐后日历、时间线、按模型找、价值统计等栏目才完整`)}</summary><div class="grid g2" data-incomplete-body></div></details></section>` : ''}`;
   const identityBox=box.querySelector('[data-identity-slot]');identityBox.dataset.identityReview='';const remainingTasks=(identity.tasks||[]).filter(t=>!managedIds.has(t.id));if(remainingTasks.length||identity.error||identity.nextCursor)renderIdentityTasks(identityBox,{...identity,tasks:remainingTasks},false,managedIds);
-  const pausedSection=document.createElement('details');pausedSection.dataset.pausedSection='';pausedSection.innerHTML=`<summary>暂停发布 · ${counts.paused} 项（无需日常处理）</summary>`;const holdsBox=document.createElement('section');pausedSection.append(holdsBox);box.append(pausedSection);renderVisibilityHolds(holdsBox,holds);if(holds.error)holdsBox.textContent='暂停活动读取失败：'+holds.error;
   bindLeadTasks(box,q.leadTasks||[]);
   {const stats=box.querySelector('[data-review-stats]');if(stats)adm('/review-stats?days=7').then(r=>{stats.textContent=`最近 7 天 · 线索 ${r.leads.total}：系统处理 ${r.leads.system}、入口规则 ${r.leads.rule}、人工关闭 ${r.leads.owner}、待处理 ${r.leads.open} · 查重卡 ${r.identity.total}：你在网页 ${r.identity.web}、快速上架 ${r.identity.fastTrack}、代理/脚本 ${r.identity.agent}、系统 ${r.identity.system}、待处理 ${r.identity.open} · 免开卡：同页重读 ${r.avoided.sameSourceReread}、并入已有卡 ${r.avoided.groupedIntoOpenCard}`;}).catch(()=>{stats.remove();});}
   {const spot=box.querySelector('[data-spot-check]');if(spot)spot.addEventListener('toggle',()=>{if(spot.open&&!spot.dataset.loaded){spot.dataset.loaded='1';loadSpotCheck(spot.querySelector('[data-spot-body]'));}});}
