@@ -56,6 +56,59 @@ it('missing basic fields wait for the owner, who completes them and publishes im
   expect(f.sqlite.prepare('SELECT review_state FROM offers WHERE id=?').get(done.body.offerId)).toEqual({ review_state: 'approved' });
 });
 
+const catalog = { products: [{ id: 'odyssey', name: 'Odyssey', aliases: [], status: 'verified', sourceUrl: 'https://odyssey.world/pricing', verifiedAt: '2026-10-01T00:00:00.000Z', revision: 1 }],
+  plans: [{ id: 'odyssey-pro', productId: 'odyssey', name: 'Pro', aliases: [], status: 'verified', sourceUrl: 'https://odyssey.world/pricing', verifiedAt: '2026-10-01T00:00:00.000Z', revision: 1, billing: 'paid' }] };
+const proMembership = (revision: number) => ({ schemaVersion: 'membership-v1', status: 'confirmed', catalogRevision: revision, anyOf: [{ allOf: [{ productId: 'odyssey', scope: 'plans', planIds: ['odyssey-pro'], excludePlanIds: [] }] }], evidenceUrls: ['https://odyssey.world/introducing-odyssey-3'] });
+const memberPerk = { ...extracted, type: 'perk', claimMethod: 'member', requirements: ['member', 'net'] };
+
+it('a member perk waits for the owner\'s catalog membership, then publishes with it confirmed (2026-10-17 Higgsfield Wan 3.0)', async () => {
+  const created = await call('admin/fast-track', { newPlatform: { name: 'Odyssey' }, url: 'https://odyssey.world/introducing-odyssey-3', benefit: 'Odyssey-3 Pro 会员 7 天无限使用' });
+  f.sqlite.prepare('UPDATE membership_catalog SET revision=1, data_json=? WHERE id=1').run(JSON.stringify(catalog));
+  await ingest(`fast-track/${created.body.jobId}/claim`, {});
+  // A bare `member` used to fail the listing schema with nothing for the owner to fill.
+  const waiting = await ingest(`fast-track/${created.body.jobId}/result`, { fields: memberPerk, sourceText: page, model: 'free' });
+  expect(waiting.body).toMatchObject({ state: 'needs_owner', missing: ['membershipRequirement'] });
+  expect(f.sqlite.prepare('SELECT count(*) n FROM offers').get()).toEqual({ n: 0 });
+  expect((await call('admin/fast-track')).body.jobs[0].requirements).toEqual(['member:Odyssey 付费订阅', 'net']);
+  const done = await settle(created.body.jobId, await call(`admin/fast-track/${created.body.jobId}/complete`, { fields: { membershipRequirement: proMembership(1) } }));
+  expect(done.body).toMatchObject({ state: 'published' });
+  const offer = f.sqlite.prepare('SELECT review_state,requirements,membership_requirement FROM offers WHERE id=?').get(done.body.offerId) as any;
+  expect(offer.review_state).toBe('approved');
+  expect(JSON.parse(offer.requirements)).toEqual(['net', 'member:Odyssey Pro']);
+  expect(JSON.parse(offer.membership_requirement)).toMatchObject({ status: 'confirmed', anyOf: [{ allOf: [{ planIds: ['odyssey-pro'] }] }] });
+});
+
+it('a membership picked on the fast-track form publishes in one go', async () => {
+  f.sqlite.prepare('UPDATE membership_catalog SET revision=1, data_json=? WHERE id=1').run(JSON.stringify(catalog));
+  const created = await call('admin/fast-track', { newPlatform: { name: 'Odyssey' }, url: 'https://odyssey.world/introducing-odyssey-3', benefit: 'Odyssey-3 Pro 会员 7 天无限使用', membershipRequirement: proMembership(1) });
+  expect(created.status).toBe(200);
+  await ingest(`fast-track/${created.body.jobId}/claim`, {});
+  const done = await settle(created.body.jobId, await ingest(`fast-track/${created.body.jobId}/result`, { fields: memberPerk, sourceText: page, model: 'free' }));
+  expect(done.body).toMatchObject({ state: 'published' });
+  expect(JSON.parse((f.sqlite.prepare('SELECT requirements FROM offers WHERE id=?').get(done.body.offerId) as any).requirements)).toEqual(['net', 'member:Odyssey Pro']);
+});
+
+it('a stale catalog choice hands the job back with the server reason, and a corrected choice resumes without a second draft', async () => {
+  f.sqlite.prepare('UPDATE membership_catalog SET revision=2, data_json=? WHERE id=1').run(JSON.stringify(catalog));
+  const created = await call('admin/fast-track', { newPlatform: { name: 'Odyssey' }, url: 'https://odyssey.world/introducing-odyssey-3', benefit: 'Odyssey-3 Pro 会员 7 天无限使用', membershipRequirement: proMembership(1) });
+  await ingest(`fast-track/${created.body.jobId}/claim`, {});
+  const stale = await settle(created.body.jobId, await ingest(`fast-track/${created.body.jobId}/result`, { fields: memberPerk, sourceText: page, model: 'free' }));
+  expect(stale.body.state).toBe('needs_owner');
+  expect(stale.body.error).toContain('会员目录');
+  const done = await settle(created.body.jobId, await call(`admin/fast-track/${created.body.jobId}/complete`, { fields: { membershipRequirement: proMembership(2) } }));
+  expect(done.body).toMatchObject({ state: 'published' });
+  expect(f.sqlite.prepare('SELECT count(*) n FROM offers').get()).toEqual({ n: 1 });
+});
+
+it('requirements the schema cannot accept become a field the owner fills, not a dead-end error', () => {
+  expect(mergeFastTrackFields({ requirements: ['member', 'pay', 'NET'] }, {}, 'x', 'Higgsfield').requirements).toEqual(['member:Higgsfield 付费订阅', 'pay:金额未写明', 'net']);
+  expect(mergeFastTrackFields({ requirements: ['member:Higgsfield Pro 及以上套餐', 'net'] }, {}, 'x', 'Higgsfield').requirements).toEqual(['member:Higgsfield Pro 及以上套餐', 'net']);
+  const odd = mergeFastTrackFields({ requirements: ['subscription'] }, {}, 'x', 'Higgsfield');
+  expect(odd.requirements).toEqual(['unknown']);
+  expect(missingBasicFields(odd)).toContain('requirements');
+  expect(mergeFastTrackFields({}, {}, 'x', 'Higgsfield').requirements).toBeUndefined();
+});
+
 it('a second benefit for a vendor with a live offer passes the identity task as a new activity', async () => {
   const publish = async (benefit: string, fields: Record<string, unknown>) => {
     const created = await call('admin/fast-track', { platformId: 'vendor', url: 'https://vendor.example/rewards', benefit });

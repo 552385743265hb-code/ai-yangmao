@@ -2379,29 +2379,40 @@ function fastTrackFormHtml(p = {}) {
     <label class="field">主要权益<input name="benefit" required minlength="2" maxlength="500" placeholder="比如：Odyssey-3 公开研究预览，可免费试用" value="${esc(p.benefit || '')}"></label>
     <label class="field">依据<select name="basis"><option value="official">官方发布</option><option value="tested">我亲测可领</option></select></label>
     <details><summary class="small">可选：标题、日期、备注</summary><label class="field">标题<input name="title" maxlength="120" value="${esc(p.title || '')}"></label><div class="row" style="gap:8px"><label class="field">开始<input type="date" name="claimStart"></label><label class="field">截止<input type="date" name="claimEnd"></label></div><label class="field">备注（给模型的提示）<input name="note" maxlength="1000" value="${esc(p.note || '')}"></label></details>
+    <details data-ft-membership><summary class="small">可选：需要会员才能领？选择会员资格（选好后一次上架）</summary><div class="field" data-membership-editor>展开后加载会员目录…</div></details>
     <button class="btn pri" type="submit">⚡ 快速上架</button><p class="small" role="status" data-ft-msg></p></form>`;
 }
 function bindFastTrackForm(form, leadId, onDone, link = {}) {
   const select = form.querySelector('[name="platformId"]'), extra = form.querySelector('[data-ft-new]'), msg = form.querySelector('[data-ft-msg]');
   const sync = () => { extra.hidden = !!select.value; };
   select.addEventListener('change', sync); sync();
+  // The catalog loads only when the owner opens the picker: this form appears on many cards at once.
+  const member = form.querySelector('[data-ft-membership]');
+  const mountMember = () => { const host = member.querySelector('[data-membership-editor]'), fresh = host.cloneNode(false); fresh.textContent = '正在加载会员资格目录…'; host.replaceWith(fresh); form.membershipEditor = undefined; mountMembershipEditor(form, { requirements: [] }); };
+  member.addEventListener('toggle', () => { if (member.open && !form.membershipEditor) mountMember(); });
   form.addEventListener('submit', async e => {
     e.preventDefault();
     const fd = Object.fromEntries(new FormData(form)), button = form.querySelector('button[type="submit"]');
     if (!fd.platformId && !fd.newName.trim()) { msg.textContent = '请选择厂商，或填写新厂商名称'; return; }
     const body = { url: fd.url, benefit: fd.benefit.trim(), basis: fd.basis, ...(fd.platformId ? { platformId: fd.platformId } : { newPlatform: { name: fd.newName.trim(), type: fd.newType } }),
       ...Object.fromEntries(['title', 'claimStart', 'claimEnd', 'note'].filter(k => fd[k]?.trim()).map(k => [k, fd[k].trim()])), ...(leadId ? { leadId } : {}), ...link };
+    if (form.membershipEditor?.touched) {
+      try { const { membershipRequirement } = membershipEditFields({ requirements: [] }, form.membershipEditor, [], false, fd.url); if (membershipRequirement.status !== 'not_required') body.membershipRequirement = membershipRequirement; }
+      catch (err) { msg.textContent = err.message; return; }
+    }
     button.disabled = true;
     try {
       const r = await adm('/fast-track', body);
       msg.textContent = `官方地址${r.registered.kind === 'existing' ? '已在白名单' : '已登记'}；${r.dispatched ? '已触发采集，模型读取后自动上架' : '下一轮采集读取后自动上架'}。进度见“补录”页的快速上架列表。`;
-      form.reset(); sync(); onDone?.();
+      form.reset(); sync(); if (form.membershipEditor) { member.open = false; form.membershipEditor = undefined; } onDone?.();
     } catch (err) { msg.textContent = err.message; } finally { button.disabled = false; }
   });
 }
 async function settleFastTrack(id, r) { for (let i = 0; r.state === 'publishing' && i < 8; i++) r = await adm(`/fast-track/${id}/advance`, {}); return r; }
 function fastTrackCompleteHtml(j) {
-  const all = ['title', 'type', 'claimMethod', 'modalities', 'requirements', 'endKind', 'claimEnd'], need = new Set(j.missing.length ? [...j.missing, ...(j.missing.includes('endKind') ? ['claimEnd'] : [])] : all);
+  const all = ['title', 'type', 'claimMethod', 'modalities', 'requirements', 'endKind', 'claimEnd', 'membershipRequirement'], need = new Set(j.missing.length ? [...j.missing, ...(j.missing.includes('endKind') ? ['claimEnd'] : [])] : all);
+  const memberText = (j.requirements || []).filter(r => r.startsWith('member:')).map(r => r.slice(7));
+  if (!memberText.length && !j.missing.includes('membershipRequirement')) need.delete('membershipRequirement');
   const field = {
     title: '<label class="field">标题<input name="title" maxlength="120"></label>',
     type: `<label class="field">类型<select name="type">${Object.entries(TYPES).map(([k, v]) => `<option value="${k}">${v.l}</option>`).join('')}</select></label>`,
@@ -2410,6 +2421,7 @@ function fastTrackCompleteHtml(j) {
     requirements: `<div class="field">门槛<div class="chips">${Object.entries(REQ).filter(([k]) => k !== 'unknown').map(([k, l]) => `<label class="chip"><input type="checkbox" name="requirements" value="${k}"> ${l}</label>`).join('')}</div></div>`,
     endKind: `<label class="field">截止方式<select name="endKind"><option value="unknown">截止未知</option><option value="date">有截止日期</option><option value="standing">常驻 / 申请制</option></select></label>`,
     claimEnd: '<label class="field">截止日期<input type="date" name="claimEnd"></label>',
+    membershipRequirement: `<div class="field"><span>会员资格${memberText.length ? `<span class="small muted">（模型读到：${esc(memberText.join('、'))}）</span>` : ''}</span><div data-membership-editor>正在加载会员资格目录…</div></div>`,
   };
   return `<form data-ft-complete style="display:flex;flex-direction:column;gap:8px;margin-top:6px"><p class="small">${j.missing.length ? '模型没读出这些字段，补上后立即上架：' + j.missing.map(k => esc(FIELD_L[k] || k)).join('、') : '可以修正字段后再上架，或让模型重新读取。'}</p>
     ${all.filter(k => need.has(k)).map(k => field[k]).join('')}<div class="row" style="gap:8px"><button class="btn sm pri" type="submit">补齐并上架</button><button class="btn sm" type="button" data-ft-retry>让模型重新读取</button></div></form>`;
@@ -2420,12 +2432,19 @@ async function loadFastTrackJobs(box) {
     box.innerHTML = jobs.length ? jobs.map(j => `<div class="card" data-ft-job="${esc(j.id)}" style="margin:6px 0"><b>${esc(j.platformName)}</b> · ${esc(j.benefit)}
       <p class="small">${esc(FT_STATE[j.state] || j.state)}${j.offerId ? ` · <a href="/#offer-${esc(j.offerId)}" target="_blank" rel="noopener">查看条目</a>` : ''}${j.leadId ? ` · 线索 #${j.leadId}` : ''} · <a href="${esc(j.url)}" target="_blank" rel="noopener">官方链接 ↗</a>${j.error ? ` · ${esc(j.error)}` : ''}</p>
       ${j.state === 'needs_owner' ? fastTrackCompleteHtml(j) : ''}${j.state === 'publishing' ? '<button class="btn sm" type="button" data-ft-advance>继续上架</button>' : ''}</div>`).join('') : '<p class="small muted">还没有快速上架任务。</p>';
+    const job = card => jobs.find(j => j.id === card.dataset.ftJob), need = card => job(card)?.missing || [];
     box.querySelectorAll('[data-ft-job]').forEach(card => {
+      const complete = card.querySelector('[data-ft-complete]');
+      if (complete?.querySelector('[data-membership-editor]')) mountMembershipEditor(complete, { requirements: job(card).requirements || [] });
       const id = card.dataset.ftJob, done = r => { toast(r.state === 'published' ? '已上架' : r.state === 'needs_owner' ? (r.error || '还缺字段：' + (r.missing || []).map(k => FIELD_L[k] || k).join('、')) : '已提交'); loadFastTrackJobs(box); };
       card.querySelector('[data-ft-complete]')?.addEventListener('submit', async e => {
         e.preventDefault(); const form = e.currentTarget, fd = new FormData(form), fields = {};
         for (const key of ['title', 'type', 'claimMethod', 'endKind', 'claimEnd']) if (fd.get(key)) fields[key] = String(fd.get(key)).trim();
         for (const key of ['modalities', 'requirements']) if (form.querySelector(`[name="${key}"]`)) fields[key] = fd.getAll(key);
+        if (form.querySelector('[data-membership-editor]')) {
+          if (!form.membershipEditor?.touched && need(card).includes('membershipRequirement')) { toast('请先选择会员资格：产品、套餐和限制'); return; }
+          if (form.membershipEditor?.touched) { try { fields.membershipRequirement = membershipEditFields(job(card), form.membershipEditor, [], false, job(card).url).membershipRequirement; } catch (err) { toast(err.message); return; } }
+        }
         try { done(await settleFastTrack(id, await adm(`/fast-track/${id}/complete`, { fields }))); } catch (err) { toast(err.message); }
       });
       card.querySelector('[data-ft-retry]')?.addEventListener('click', async () => { try { await adm(`/fast-track/${id}/retry`, {}); done({ state: 'queued' }); } catch (err) { toast(err.message); } });

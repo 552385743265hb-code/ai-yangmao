@@ -4,7 +4,7 @@ import { createContext, runInContext } from 'node:vm';
 import { parseHTML } from 'linkedom';
 
 /** Runs the real web/src scripts (minus boot) in a VM over the real body.html. */
-export function fixture(handle: (url: string, init?: RequestInit) => unknown | Promise<unknown>, hash = '#admin') {
+export function fixture(handle: (url: string, init?: RequestInit) => unknown | Promise<unknown>, hash = '#admin', catalog: unknown = {revision:0,products:[],plans:[]}) {
   const { window, document } = parseHTML(`<html><body>${readFileSync('web/src/body.html', 'utf8')}</body></html>`);
   document.querySelector('#main')!.innerHTML = '<div id="admBody"></div>';
   window.scrollTo = () => {};
@@ -15,7 +15,7 @@ export function fixture(handle: (url: string, init?: RequestInit) => unknown | P
     matchMedia: () => ({ matches: false, addEventListener() {} }), MutationObserver: class { observe() {} },
     localStorage: storage, sessionStorage: storage, setTimeout, clearTimeout, setInterval() {},
     echarts: { getInstanceByDom: () => null, init: (element: HTMLElement) => ({ setOption: (options: any) => charts.set(element.id, options), on() {}, dispose() {}, isDisposed: () => false }) },
-    fetch: async (url: string, init?: RequestInit) => new Response(JSON.stringify(url.endsWith('/memberships') ? {revision:0,products:[],plans:[]} : await handle(url, init))),
+    fetch: async (url: string, init?: RequestInit) => new Response(JSON.stringify(url.endsWith('/memberships') ? catalog : await handle(url, init))),
   });
   const app = readFileSync('web/src/app.js', 'utf8');
   runInContext(readFileSync('web/src/data.js', 'utf8') + '\n' + readFileSync('web/src/membership.js', 'utf8') + '\n' + app.slice(0, app.indexOf('(async function boot()')), context);

@@ -10,7 +10,9 @@ import { IdentityError } from './identity/store';
 import { IdentityQueryBudgetError, withIdentityQueryBudget } from './identity/budget';
 import { learnWechatAccount } from './wechat-accounts';
 import { dispatchCollect } from './feishu';
-import { mergeFastTrackFields, missingBasicFields, type FastTrackFields } from '../shared/fast-track-fields';
+import { mergeFastTrackFields, missingBasicFields, missingOwnerChoices, type FastTrackFields } from '../shared/fast-track-fields';
+import { membershipSchema } from '../shared/membership';
+import { sha256, stableJson } from '../shared/identity/normalize';
 
 /**
  * Administrator fast-track. The owner vouches for an official URL (or an in-app test) and a one-line benefit;
@@ -41,6 +43,7 @@ export const fastTrackInput = z.object({
   title: z.string().trim().min(2).max(120).optional(),
   claimStart: isoDate.optional(),
   claimEnd: isoDate.optional(),
+  membershipRequirement: membershipSchema.optional(),
   leadId: z.number().int().positive().optional(),
   identityTaskId: z.string().min(1).max(200).optional(),
 }).refine(v => !!v.platformId !== !!v.newPlatform, '选择已有厂商或填写新厂商，二选一');
@@ -140,7 +143,7 @@ export async function createFastTrack(env: Env, raw: unknown, actor: string): Pr
   if (input.leadId && !await db.prepare('SELECT 1 FROM leads WHERE id=?').bind(input.leadId).first()) throw new FastTrackError(404, '没有这条线索');
   if (input.identityTaskId && !await db.prepare('SELECT 1 FROM review_tasks WHERE id=?').bind(input.identityTaskId).first()) throw new FastTrackError(404, '没有这个审核任务');
   const registered = await registerOfficialAddress(db, platformId, input.url, actor);
-  const owner = Object.fromEntries(Object.entries({ title: input.title, claimStart: input.claimStart, claimEnd: input.claimEnd }).filter(([, v]) => v));
+  const owner = Object.fromEntries(Object.entries({ title: input.title, claimStart: input.claimStart, claimEnd: input.claimEnd, membershipRequirement: input.membershipRequirement }).filter(([, v]) => v));
   const jobId = crypto.randomUUID();
   await db.prepare("INSERT INTO fast_track_jobs(id,platform_id,url,benefit,basis,note,owner_fields_json,lead_id,identity_task_id,state,actor,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,'queued',?,?,?)")
     .bind(jobId, platformId, input.url, input.benefit, input.basis, input.note ?? null, JSON.stringify(owner), input.leadId ?? null, input.identityTaskId ?? null, actor, now, now).run();
@@ -150,7 +153,14 @@ export async function createFastTrack(env: Env, raw: unknown, actor: string): Pr
 
 export async function listFastTrack(db: D1Database) {
   const rows = await db.prepare('SELECT j.*, p.name platform_name FROM fast_track_jobs j JOIN platforms p ON p.id=j.platform_id ORDER BY j.created_at DESC LIMIT 30').all<JobRow & { platform_name: string }>();
-  return rows.results.map(r => ({ id: r.id, platformId: r.platform_id, platformName: r.platform_name, url: r.url, benefit: r.benefit, basis: r.basis, state: r.state, attempts: r.attempts, missing: r.missing_json ? JSON.parse(r.missing_json) as string[] : [], error: r.error, offerId: r.offer_id, leadId: r.lead_id, identityTaskId: r.identity_task_id ?? null, createdAt: r.created_at, publishedAt: r.published_at }));
+  return rows.results.map(r => ({ id: r.id, platformId: r.platform_id, platformName: r.platform_name, url: r.url, benefit: r.benefit, basis: r.basis, state: r.state, attempts: r.attempts, missing: r.missing_json ? JSON.parse(r.missing_json) as string[] : [], error: r.error, offerId: r.offer_id, leadId: r.lead_id, identityTaskId: r.identity_task_id ?? null, createdAt: r.created_at, publishedAt: r.published_at,
+    // Current requirements let the membership picker show what the model read and keep the non-member ones.
+    requirements: jobRequirements(r, r.platform_name) }));
+}
+function jobRequirements(r: JobRow, platformName: string): string[] {
+  const stored = JSON.parse(r.fields_json ?? '{}') as { fields?: FastTrackFields }, owner = JSON.parse(r.owner_fields_json) as FastTrackFields;
+  const value = mergeFastTrackFields(stored.fields ?? {}, owner, r.benefit, platformName).requirements;
+  return Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string') : [];
 }
 
 export async function fastTrackQueue(db: D1Database, now = new Date()) {
@@ -173,7 +183,7 @@ function terms(platformId: string, type: string): CanonicalTermsV1 {
   return canonicalTermsSchema.parse({ schemaVersion: 'terms-v1', issuerProductId: { state: 'known', value: platformId, evidenceRefs: ['benefit'] }, mechanism: { state: 'known', value: MECHANISM[type] ?? 'other', evidenceRefs: ['benefit'] }, benefitPools: [], eligibility: unknown, geography: unknown, claimChannels: unknown, costs: unknown, claimWindow: unknown, occurrenceAnchor: unknown });
 }
 
-interface Progress { pending?: { candidateId: string; requestId: string }; receipt?: IntakeReceipt; entityId?: string; offerId?: string; approved?: boolean; testedTask?: { id: string; revision: number } | null; testedTier?: boolean }
+interface Progress { pending?: { candidateId: string; requestId: string }; receipt?: IntakeReceipt; entityId?: string; offerId?: string; membership?: boolean; approved?: boolean; testedTask?: { id: string; revision: number } | null; testedTier?: boolean }
 /** Identity work gets its own slice of the 50-query request budget; the rest is left for job bookkeeping. */
 const IDENTITY_SLICE = 38;
 class StepDeferred extends Error {}
@@ -238,6 +248,19 @@ export async function publishFastTrack(env: Env, job: JobRow, fields: FastTrackF
     if (!progress.entityId || !progress.offerId) throw new FastTrackError(409, '身份系统没有建立活动');
     await save();
   }
+  // The owner's catalog membership replaces the model's member: text on the draft, through the same guarded edit as the review page.
+  // Without it every member perk stopped at approval: “会员资格尚未结构化确认” (2026-10-17 Higgsfield Wan 3.0).
+  const membership = fields.membershipRequirement;
+  if (membership && !progress.membership) {
+    const initial = await db.prepare("SELECT id,revision FROM review_tasks WHERE entity_id=? AND kind='initial' AND state IN ('open','checking','manual') ORDER BY created_at DESC LIMIT 1").bind(progress.entityId).first<{ id: string; revision: number }>();
+    if (initial) {
+      const requirements = (Array.isArray(fields.requirements) ? fields.requirements : []).filter(r => typeof r === 'string' && !r.startsWith('member:'));
+      const key = (await sha256(stableJson(membership))).slice(0, 16);
+      await step(() => service.editManagedOffer(progress.offerId!, { requestId: `fast-track-membership:${job.id}:${key}`, taskId: initial.id, expectedTaskRevision: initial.revision, fields: { membershipRequirement: membership, requirements }, actor: job.actor }));
+    }
+    progress.membership = true;
+    await save();
+  }
   if (!progress.approved) {
     const initial = await db.prepare("SELECT id,revision FROM review_tasks WHERE entity_id=? AND kind='initial' AND state IN ('open','checking','manual') ORDER BY created_at DESC LIMIT 1").bind(progress.entityId).first<{ id: string; revision: number }>();
     if (initial) await step(() => service.decideTask(initial.id, { requestId: `fast-track-approve:${job.id}`, expectedRevision: initial.revision, action: 'approve', actor: job.actor, role: 'admin', reason: `管理员快速上架（${job.basis === 'tested' ? '管理员实测' : '官方来源'}）` }));
@@ -290,8 +313,9 @@ type PublishState = { state: 'published' | 'publishing' | 'needs_owner'; offerId
 async function attemptPublish(env: Env, job: JobRow): Promise<PublishState> {
   const db = env.DB, now = () => new Date().toISOString();
   const stored = JSON.parse(job.fields_json ?? '{}') as { fields?: FastTrackFields; sourceText?: string };
-  const fields = mergeFastTrackFields(stored.fields ?? {}, JSON.parse(job.owner_fields_json), job.benefit);
-  const missing = missingBasicFields(fields);
+  const platform = await db.prepare('SELECT name FROM platforms WHERE id=?').bind(job.platform_id).first<{ name: string }>();
+  const fields = mergeFastTrackFields(stored.fields ?? {}, JSON.parse(job.owner_fields_json), job.benefit, platform?.name);
+  const missing = [...missingBasicFields(fields), ...missingOwnerChoices(fields)];
   if (missing.length) {
     await db.prepare("UPDATE fast_track_jobs SET state='needs_owner', missing_json=?, error=NULL, lease_until=NULL, updated_at=? WHERE id=?").bind(JSON.stringify(missing), now(), job.id).run();
     return { state: 'needs_owner', missing };

@@ -1,11 +1,15 @@
 /** Fast-track listing fields: shared by the Worker (publish gate) and the pipeline (paid fallback decision). */
+import { normalizeRequirements } from './ingest';
+
 export const BASIC_FIELDS = ['title', 'type', 'claimMethod', 'valueText', 'modalities', 'requirements', 'endKind'] as const;
 export type FastTrackFields = Record<string, unknown>;
 
 /** Owner-entered values win; the owner's benefit line is the listing's benefit text; the model fills the rest. */
-export function mergeFastTrackFields(extracted: FastTrackFields, owner: FastTrackFields, benefit: string): FastTrackFields {
+export function mergeFastTrackFields(extracted: FastTrackFields, owner: FastTrackFields, benefit: string, platformName?: string): FastTrackFields {
   const fields: FastTrackFields = { ...extracted };
   for (const [key, value] of Object.entries(owner)) if (value !== undefined && value !== null && value !== '' && !(Array.isArray(value) && !value.length)) fields[key] = value;
+  // A bare `member` used to fail the listing schema with no field for the owner to fix (Higgsfield Wan 3.0, 2026-10-16/17).
+  if (fields.requirements !== undefined) fields.requirements = normalizeRequirements(fields.requirements, platformName);
   fields.valueText = typeof owner.valueText === 'string' && owner.valueText.trim() ? owner.valueText : benefit;
   if (owner.claimEnd) fields.endKind = 'date';
   // Models often call an open-ended preview “standing”; only standing/apply offers may be (owner choices are kept).
@@ -13,6 +17,16 @@ export function mergeFastTrackFields(extracted: FastTrackFields, owner: FastTrac
   if (!owner.endKind && !owner.claimEnd && recurring !== (fields.endKind === 'standing')) fields.endKind = recurring ? 'standing' : 'unknown';
   if (!fields.sourceTz) fields.sourceTz = owner.claimEnd || owner.claimStart ? 'Asia/Shanghai' : 'UTC';
   return fields;
+}
+
+/**
+ * The model never fills a catalog membership: a member: requirement publishes only once the owner picked one
+ * (or chose “no membership needed”). Worker-only, so the pipeline does not spend a paid fallback on it.
+ */
+export function missingOwnerChoices(fields: FastTrackFields): string[] {
+  const member = Array.isArray(fields.requirements) && fields.requirements.some(r => typeof r === 'string' && r.startsWith('member:'));
+  const picked = (fields.membershipRequirement as { status?: unknown } | undefined)?.status;
+  return member && picked !== 'confirmed' && picked !== 'not_required' ? ['membershipRequirement'] : [];
 }
 
 export function missingBasicFields(fields: FastTrackFields): string[] {
