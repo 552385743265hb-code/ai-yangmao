@@ -52,7 +52,7 @@ function membershipVendorPlans(vendorId) {
   return MEMBERSHIP_CATALOG.plans.filter(p => products.some(x => x.id === p.productId) && p.status !== 'retired');
 }
 function membershipEmptyVendor(vendor) {
-  return vendor?.status === 'none' ? '官方资料确认没有会员订阅。' : '该厂商的会员目录尚待补齐。';
+  return vendor?.status === 'none' ? '已核对官方资料，暂无公开会员套餐。' : '该厂商的会员目录尚待补齐。';
 }
 function subscriptionControls() {
   if (!MEMBERSHIP_CATALOG_OK) return '<p class="warn-note">会员目录暂时不可用，会员资格显示为还需确认；其他条件仍可使用。</p>';

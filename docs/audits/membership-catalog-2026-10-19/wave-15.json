@@ -1,0 +1,142 @@
+{
+  "checkedAt": "2026-10-19",
+  "expectedRevision": 44,
+  "revision": 45,
+  "products": 77,
+  "plans": 416,
+  "fullReadback": true,
+  "changes": [
+    {
+      "id": "gamma-free",
+      "oldName": "Gamma Free",
+      "name": "Gamma Free",
+      "productId": "gamma"
+    },
+    {
+      "id": "gamma-plus",
+      "oldName": "Gamma Plus",
+      "name": "Gamma Plus",
+      "productId": "gamma"
+    },
+    {
+      "id": "gamma-pro",
+      "oldName": "Gamma Pro",
+      "name": "Gamma Pro",
+      "productId": "gamma"
+    },
+    {
+      "id": "gamma-ultra",
+      "oldName": "Gamma Ultra",
+      "name": "Gamma Ultra",
+      "productId": "gamma"
+    },
+    {
+      "id": "gamma-business",
+      "oldName": "Gamma Business",
+      "name": "Gamma Business",
+      "productId": "gamma"
+    },
+    {
+      "id": "gamma-enterprise",
+      "oldName": "Gamma Enterprise",
+      "name": "Gamma Enterprise",
+      "productId": "gamma"
+    },
+    {
+      "id": "ideogram-free",
+      "oldName": "Ideogram Free",
+      "name": "Ideogram Free",
+      "productId": "ideogram"
+    },
+    {
+      "id": "ideogram-plus",
+      "oldName": "Ideogram Plus",
+      "name": "Ideogram Plus",
+      "productId": "ideogram"
+    },
+    {
+      "id": "ideogram-pro",
+      "oldName": "Ideogram Pro",
+      "name": "Ideogram Pro",
+      "productId": "ideogram"
+    },
+    {
+      "id": "ideogram-team",
+      "oldName": "Ideogram Team",
+      "name": "Ideogram Team",
+      "productId": "ideogram"
+    },
+    {
+      "id": "ideogram-enterprise",
+      "oldName": "Ideogram Enterprise",
+      "name": "Ideogram Enterprise",
+      "productId": "ideogram"
+    },
+    {
+      "id": "leonardo-solo-free",
+      "oldName": "Leonardo.Ai Free",
+      "name": "Leonardo.Ai Free",
+      "productId": "leonardo-solo"
+    },
+    {
+      "id": "leonardo-solo-essential",
+      "oldName": "Leonardo.Ai Essential",
+      "name": "Leonardo.Ai Essential",
+      "productId": "leonardo-solo"
+    },
+    {
+      "id": "leonardo-solo-premium",
+      "oldName": "Leonardo.Ai Premium",
+      "name": "Leonardo.Ai Premium",
+      "productId": "leonardo-solo"
+    },
+    {
+      "id": "leonardo-solo-ultimate",
+      "oldName": "Leonardo.Ai Ultimate",
+      "name": "Leonardo.Ai Ultimate",
+      "productId": "leonardo-solo"
+    },
+    {
+      "id": "leonardo-teams-starter",
+      "oldName": "Leonardo.Ai for Teams Starter",
+      "name": "Leonardo.Ai for Teams Starter",
+      "productId": "leonardo-teams"
+    },
+    {
+      "id": "leonardo-teams-growth",
+      "oldName": "Leonardo.Ai for Teams Growth",
+      "name": "Leonardo.Ai for Teams Growth",
+      "productId": "leonardo-teams"
+    },
+    {
+      "id": "leonardo-teams-custom",
+      "oldName": "Leonardo.Ai for Teams Custom",
+      "name": "Leonardo.Ai for Teams Custom",
+      "productId": "leonardo-teams"
+    },
+    {
+      "id": "tripo-studio-free",
+      "oldName": "Tripo Studio Free",
+      "name": "Tripo Studio Free",
+      "productId": "tripo-studio"
+    },
+    {
+      "id": "tripo-studio-pro",
+      "oldName": "Tripo Studio Pro",
+      "name": "Tripo Studio Pro",
+      "productId": "tripo-studio"
+    },
+    {
+      "id": "tripo-studio-max",
+      "oldName": "Tripo Studio Max",
+      "name": "Tripo Studio Max",
+      "productId": "tripo-studio"
+    },
+    {
+      "id": "tripo-studio-team",
+      "oldName": "Tripo Studio Team",
+      "name": "Tripo Studio Team",
+      "productId": "tripo-studio"
+    }
+  ]
+}

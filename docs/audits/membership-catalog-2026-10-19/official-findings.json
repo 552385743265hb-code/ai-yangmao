@@ -2031,6 +2031,111 @@
         "尊享版": "baidu-token-enterprise-premium"
       },
       "note": "四种按席位包月订阅；共享积分包为附加用量，不创建重复会员。"
+    },
+    {
+      "productId": "gamma",
+      "platformIds": [
+        "gamma"
+      ],
+      "name": "Gamma",
+      "plans": [
+        "Free",
+        "Plus",
+        "Pro",
+        "Ultra",
+        "Business",
+        "Enterprise"
+      ],
+      "freePlans": [
+        "Free"
+      ],
+      "sourceUrl": "https://gamma.app/pricing",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Free; Plus; Pro; Ultra; Business; Enterprise",
+      "verificationNote": "已实际切换官网Business页签，确认Business与Enterprise；不是仅抓默认个人页签。"
+    },
+    {
+      "productId": "ideogram",
+      "platformIds": [
+        "ideogram"
+      ],
+      "name": "Ideogram",
+      "plans": [
+        "Free",
+        "Plus",
+        "Pro",
+        "Team",
+        "Enterprise"
+      ],
+      "freePlans": [
+        "Free"
+      ],
+      "sourceUrl": "https://ideogram.ai/pricing/",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Free; Plus; Pro; Team; Enterprise",
+      "verificationNote": "FAQ明确免费账号；Enterprise为定制软件团队计划。按量积分不作为月付会员。旧Basic是否仍支持需进一步核实。"
+    },
+    {
+      "productId": "leonardo-solo",
+      "platformIds": [
+        "leonardo"
+      ],
+      "name": "Leonardo.Ai",
+      "plans": [
+        "Free",
+        "Essential",
+        "Premium",
+        "Ultimate"
+      ],
+      "freePlans": [
+        "Free"
+      ],
+      "sourceUrl": "https://leonardo.ai/pricing",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Free; Essential; Premium; Ultimate",
+      "verificationNote": "当前英文价格页；不根据未更新译文推断Apprentice/Artisan/Maestro仍在售或自动对应。"
+    },
+    {
+      "productId": "leonardo-teams",
+      "platformIds": [
+        "leonardo"
+      ],
+      "name": "Leonardo.Ai for Teams",
+      "plans": [
+        "Starter",
+        "Growth",
+        "Custom"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://leonardo.ai/pricing",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Starter; Growth; Custom",
+      "verificationNote": "官网明确Starter/Growth及custom plan。API按量和充值是独立计费，不重复建订阅。"
+    },
+    {
+      "productId": "tripo-studio",
+      "platformIds": [
+        "tripo"
+      ],
+      "name": "Tripo Studio",
+      "plans": [
+        "Free",
+        "Pro",
+        "Max",
+        "Team"
+      ],
+      "freePlans": [
+        "Free"
+      ],
+      "sourceUrl": "https://www.tripo3d.ai/pricing",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Free; Pro; Max; Team",
+      "verificationNote": "当前Studio四档；API及Enterprise渠道仍需独立核查。"
     }
   ]
 }

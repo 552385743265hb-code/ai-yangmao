@@ -29,7 +29,7 @@ it('lets visitors select every vendor and toggles plans without duplicates while
  expect(vm.runInContext('C.subscriptions',ctx)).toEqual([{planId:'a-pro'}]);
  change('[data-owned-vendor]','beta');change('[data-owned-plan="b-pro"]',undefined,true);
  expect(vm.runInContext('C.subscriptions',ctx)).toEqual([{planId:'a-pro'},{planId:'b-pro'}]);
- change('[data-owned-vendor]','api');expect(document.querySelector('[data-owned-subscriptions]')!.textContent).toContain('没有会员订阅');
+ change('[data-owned-vendor]','api');expect(document.querySelector('[data-owned-subscriptions]')!.textContent).toContain('暂无公开会员套餐');
  expect(vm.runInContext('C.phone',ctx)).toBe(true);
 });
 it('migrates saved exact plan IDs once, removes duplicate selections and preserves nonmembership settings',()=>{

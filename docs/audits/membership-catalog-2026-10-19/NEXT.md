@@ -4,9 +4,9 @@
 
 ## 已核实当前状态（2026-10-19）
 
-- 生产会员目录 **revision 44**：72 产品、394 套餐；374 verified、16 retired、4 pending。完整产品/套餐及根级别迁移元数据已与预备补丁逐项读回一致。
+- 生产会员目录 **revision 45**：77 产品、416 套餐；396 verified、16 retired、4 pending。完整产品/套餐及根级别迁移元数据已与预备补丁逐项读回一致。
 - 4 个旧 pending：`cursor-plan-1`、`grok-supergrok-lite`、`grok-bot`、`x-plan-1`，均涉及 Cursor/Grok/X 订阅归并。
-- 厂商研究覆盖：40 research_complete、28 partial、56 unreviewed。**这比 pending 数更接近剩余工作规模，不能只清四条就宣布完成。**
+- 厂商研究覆盖：43 research_complete、32 partial、49 unreviewed。**这比 pending 数更接近剩余工作规模，不能只清四条就宣布完成。**
 - 生产代码已更新为 PR106 / cc1f94632ef2（100%流量，2026-10-19实时读取）；新界面在草稿 PR105，未合并部署。当前工作区 `/tmp/ym-hf-link-worktree`，分支 `codex/membership-catalog-complete`。
 - 主 checkout 是其他任务的估值修复，勿覆盖。node_modules 为临时 symlink，不提交。
 - 本地最近完整验证：类型检查、1423 Vitest + 11 CLI、build:web、diff --check 通过。代码新增：按厂商套餐复选、个人选择去重、旧记录提示可单独清除、跨厂商资格默认显示实际会员厂商、退休产品不重新出现在厂商下拉、目录准备工具的归并/退休守卫与回归。
@@ -16,9 +16,9 @@
 - **整份目录已超过 D1 单条 SQL 100KB 限制。不要再把 JSON 内联到 wrangler execute --file。** 第11批内联写入返回 SQLITE_TOOBIG，已确认没有生效；随后改为 SQL 绑定参数原子 CAS，成功从40写到41并完整读回。
 - 后续预备补丁：`node scripts/prepare-membership-catalog.mjs <当前目录快照> docs/audits/membership-catalog-2026-10-19/official-findings.json <预备文件>`。仅 verified+applyReady 的事实被采用；未显式处理的旧套餐会报错。
 - 当前可复用私有绑定参数写入器：`node /tmp/ym-membership-apply-bound.mjs <预备文件> <私有凭证前缀>`。它使用现有 Wrangler OAuth（不输出令牌），固定只更新 membership_catalog id=1，检查 expectedRevision，保存前后快照并全量对照。API失败后先读状态，不盲目重放。若 OAuth 过期，用正常 Wrangler CLI 刷新，不输出凭据。
-- 最新完整 D1 原件：`/tmp/ym-membership-wave14-bound-after.json`（revision + data_json）。原始基线：`/tmp/ym-membership-catalog-before.json` rev29；`/tmp/ym-membership-offers-before.json`（96条会员权益）；`/tmp/ym-membership-profiles-before.json`。
+- 最新完整 D1 原件：`/tmp/ym-membership-wave15-bound-after.json`（revision + data_json）。原始基线：`/tmp/ym-membership-catalog-before.json` rev29；`/tmp/ym-membership-offers-before.json`（96条会员权益）；`/tmp/ym-membership-profiles-before.json`。
 - 生产旧 API 目前只返回 revision/products/plans，**会省略根级别 productIdAliases/productReplacements**。准备工具会根据事实文件重建这些映射；最终部署新读取代码后需核验根元数据保留。完整 D1 快照优于只靠公开 API。
-- `wave-1` 至 `wave-14` 记录已入审计目录。生产触发器自动保留每次目录修改前后原件。
+- `wave-1` 至 `wave-15` 记录已入审计目录。生产触发器自动保留每次目录修改前后原件。
 
 ## 官方研究证据与发现
 
@@ -60,3 +60,7 @@ CUA的IAB临时tab2当前在TRAE计费文档，可继续看企业版；`pvCatalo
 - planReplacements及旧歧义会员匹配代码在本地已新增，尚未上线；不得提前把cursor-teams退休导致生产不认识映射。
 
 - 第14批已写入rev44：百度个人Mini/Lite/Pro/Max各分积分制与Token制（单向可选迁移，权益不同），企业轻享/标准/高级/尊享；火山Coding Lite/Pro与Agent Small/Medium/Large/Max分别建档。百度旧Coding于7月13日停售，未到期可继续使用；仍须补历史资格和其他百度产品。官方原件缓存baidu-legacy-end.json、volc-agent-overview.json；百度个人/企业文档路径Dmrabu8b6、ymq8wwch2。
+
+- 第15批rev45已全量读回：Gamma六档（浏览器实际切Business核对），Ideogram当前Free/Plus/Pro/Team/Enterprise，Leonardo个人Free/Essential/Premium/Ultimate与团队Starter/Growth/Custom，Tripo Studio四档。旧Ideogram Basic、Leonardo旧命名是否续用和Tripo API/企业仍待核；只有Gamma标研究完成。
+- Groq已读官方Billing FAQ确认为按量API账户级别；DeepSeek官网三产品入口、价格文档及帮助中心均未发现公开会员订阅，分别标研究完成/none。Inception API无固定订阅，但Mercury Chat仍需核对，保持partial。
+- 无套餐的界面文案改为“已核对官方资料，暂无公开会员套餐”，避免把公开资料范围扩大成所有私有合同不存在。

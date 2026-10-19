@@ -234,14 +234,21 @@
       "platformId": "groq",
       "name": "Groq",
       "site": "https://groq.com",
-      "status": "unreviewed",
-      "sources": [],
+      "status": "research_complete",
+      "sources": [
+        "https://console.groq.com/docs/billing-faqs",
+        "https://console.groq.com/docs/rate-limits",
+        "https://groq.com/"
+      ],
       "productIds": [],
       "homepageRead": {
         "url": "https://groq.com",
         "chars": 945,
         "error": null
-      }
+      },
+      "subscriptionStatus": "none",
+      "note": "公开Free/Developer为API使用级别，Developer按实际token后付费，无固定会员订阅；enterprise算力合同不冒充软件会员。",
+      "quote": "pay-as-you-go pricing"
     },
     {
       "platformId": "hoonify-ai",
@@ -535,14 +542,21 @@
       "platformId": "deepseek",
       "name": "DeepSeek",
       "site": "https://www.deepseek.com",
-      "status": "unreviewed",
-      "sources": [],
+      "status": "research_complete",
+      "sources": [
+        "https://www.deepseek.com/",
+        "https://api-docs.deepseek.com/zh-cn/quick_start/pricing/",
+        "https://www.deepseek.com/harness/",
+        "https://static.deepseek.com/faq/index.html?lang=en"
+      ],
       "productIds": [],
       "homepageRead": {
         "url": "https://www.deepseek.com",
         "chars": 550,
         "error": null
-      }
+      },
+      "subscriptionStatus": "none",
+      "note": "已核官网全部三项产品入口及帮助中心：聊天应用未公布会员套餐，Harness为开放测试的开源产品，API明确从充值/赠送余额按实际token扣费；未发现公开会员订阅档位。不是将充值账户当作会员。"
     },
     {
       "platformId": "google",
@@ -583,14 +597,17 @@
       "platformId": "inception",
       "name": "Inception",
       "site": "https://www.inceptionlabs.ai",
-      "status": "unreviewed",
-      "sources": [],
+      "status": "partial",
+      "sources": [
+        "https://www.inceptionlabs.ai/models"
+      ],
       "productIds": [],
       "homepageRead": {
         "url": "https://www.inceptionlabs.ai",
         "chars": 9880,
         "error": null
-      }
+      },
+      "note": "API页列Free/按量/Enterprise用量报价；尚需核对Mercury Chat是否有独立订阅，不能仅从API页推断全厂商无会员。"
     },
     {
       "platformId": "moonshot",
@@ -1204,9 +1221,13 @@
       "platformId": "gamma",
       "name": "Gamma",
       "site": "https://gamma.app",
-      "status": "unreviewed",
-      "sources": [],
-      "productIds": [],
+      "status": "research_complete",
+      "sources": [
+        "https://gamma.app/pricing"
+      ],
+      "productIds": [
+        "gamma"
+      ],
       "homepageRead": {
         "url": "https://gamma.app",
         "chars": 0,
@@ -1266,9 +1287,13 @@
       "platformId": "ideogram",
       "name": "Ideogram",
       "site": "https://ideogram.ai",
-      "status": "unreviewed",
-      "sources": [],
-      "productIds": [],
+      "status": "partial",
+      "sources": [
+        "https://ideogram.ai/pricing/"
+      ],
+      "productIds": [
+        "ideogram"
+      ],
       "homepageRead": {
         "url": "https://ideogram.ai",
         "chars": 0,
@@ -1347,9 +1372,14 @@
       "platformId": "leonardo",
       "name": "Leonardo.Ai",
       "site": "https://leonardo.ai",
-      "status": "unreviewed",
-      "sources": [],
-      "productIds": [],
+      "status": "partial",
+      "sources": [
+        "https://leonardo.ai/pricing"
+      ],
+      "productIds": [
+        "leonardo-solo",
+        "leonardo-teams"
+      ],
       "homepageRead": {
         "url": "https://leonardo.ai",
         "chars": 0,
@@ -1767,9 +1797,13 @@
       "platformId": "tripo",
       "name": "Tripo",
       "site": "https://www.tripo3d.ai",
-      "status": "unreviewed",
-      "sources": [],
-      "productIds": [],
+      "status": "partial",
+      "sources": [
+        "https://www.tripo3d.ai/pricing"
+      ],
+      "productIds": [
+        "tripo-studio"
+      ],
       "homepageRead": {
         "url": "https://www.tripo3d.ai",
         "chars": 0,
