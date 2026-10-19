@@ -1,0 +1,794 @@
+{
+  "checkedAt": "2026-10-19",
+  "products": [
+    {
+      "productId": "elevenlabs",
+      "platformIds": [
+        "elevenlabs"
+      ],
+      "name": "ElevenLabs",
+      "sourceUrl": "https://elevenlabs.io/pricing",
+      "plans": [
+        "Free",
+        "Starter",
+        "Creator",
+        "Pro",
+        "Scale",
+        "Business",
+        "Enterprise"
+      ],
+      "freePlans": [
+        "Free"
+      ],
+      "status": "verified",
+      "quote": "Free $0; Starter $6; Creator $22; Pro $99; Scale $299; Business $990; Enterprise is custom.",
+      "applyReady": true
+    },
+    {
+      "productId": "genspark",
+      "platformIds": [
+        "genspark"
+      ],
+      "name": "Genspark",
+      "sourceUrl": "https://www.genspark.ai/helpcenter/membership-plans",
+      "plans": [
+        "Free",
+        "Plus",
+        "Pro",
+        "Team",
+        "Enterprise"
+      ],
+      "freePlans": [
+        "Free"
+      ],
+      "status": "verified",
+      "quote": "Free; Plus; Pro; Team; Enterprise",
+      "applyReady": true
+    },
+    {
+      "productId": "midjourney",
+      "platformIds": [
+        "midjourney"
+      ],
+      "name": "Midjourney",
+      "sourceUrl": "https://docs.midjourney.com/hc/en-us/articles/27870484040333-Comparing-Midjourney-Plans",
+      "plans": [
+        "Basic Plan",
+        "Standard Plan",
+        "Pro Plan",
+        "Mega Plan"
+      ],
+      "freePlans": [],
+      "status": "verified",
+      "quote": "Basic Plan | Standard Plan | Pro Plan | Mega Plan",
+      "applyReady": true,
+      "existingPlanIds": {
+        "Basic Plan": "midjourney-basic-plan",
+        "Standard Plan": "midjourney-standard",
+        "Pro Plan": "midjourney-pro",
+        "Mega Plan": "midjourney-mega"
+      }
+    },
+    {
+      "productId": "opencode",
+      "platformIds": [
+        "opencode"
+      ],
+      "name": "OpenCode",
+      "sourceUrl": "https://opencode.ai/docs/go/",
+      "plans": [
+        "Go",
+        "Go Plus"
+      ],
+      "freePlans": [],
+      "status": "verified",
+      "quote": "Go $10/month; Go Plus $40/month",
+      "applyReady": true
+    },
+    {
+      "productId": "qwenwork",
+      "platformIds": [
+        "qwenwork"
+      ],
+      "name": "千问办公",
+      "sourceUrl": "https://qwenwork.cn/pricing",
+      "plans": [
+        "免费版",
+        "个人标准版",
+        "个人高级版",
+        "企业标准版",
+        "企业旗舰版"
+      ],
+      "freePlans": [
+        "免费版"
+      ],
+      "status": "verified",
+      "quote": "免费版 0元；个人标准版 78元/月起；个人高级版 158元/月起；企业标准版 198元/月/席；企业旗舰版 298元/月/席",
+      "applyReady": true,
+      "existingPlanIds": {
+        "个人标准版": "qwenwork-plan-1",
+        "个人高级版": "qwenwork-plan-2"
+      },
+      "newPlanIds": {
+        "免费版": "qwenwork-free",
+        "企业标准版": "qwenwork-enterprise-standard",
+        "企业旗舰版": "qwenwork-enterprise-premium"
+      },
+      "planSources": {
+        "企业标准版": "https://qwenwork.cn/pricing?audience=enterprise&billing=monthly",
+        "企业旗舰版": "https://qwenwork.cn/pricing?audience=enterprise&billing=monthly"
+      }
+    },
+    {
+      "productId": "pixverse",
+      "platformIds": [
+        "pixverse"
+      ],
+      "name": "PixVerse",
+      "sourceUrl": "https://app.pixverse.ai/subscribe",
+      "plans": [
+        "Basic",
+        "Standard",
+        "Pro",
+        "Premium",
+        "Ultra",
+        "Team Ultra"
+      ],
+      "freePlans": [
+        "Basic"
+      ],
+      "status": "needs_billing_check",
+      "quote": "Feature | Basic | Standard | Pro | Premium | Ultra | Team Ultra"
+    },
+    {
+      "productId": "hailuo-ai",
+      "platformIds": [
+        "hailuo"
+      ],
+      "name": "海螺 AI（国际版）",
+      "sourceUrl": "https://hailuoai.video/doc/payment-policy.html",
+      "plans": [
+        "Standard",
+        "Pro",
+        "Master",
+        "Ultra",
+        "Max",
+        "Unlimited（存量）"
+      ],
+      "freePlans": [],
+      "legacyPlans": [
+        "Unlimited（存量）"
+      ],
+      "status": "verified",
+      "quote": "Standard Plan; Pro Plan; Master Plan; Unlimited Plan; Ultra Plan; Max Plan",
+      "remaining": "核对国内版目录；不能合并国际版和国内版"
+    },
+    {
+      "productId": "luma-ai",
+      "platformIds": [
+        "luma"
+      ],
+      "name": "Luma Agents",
+      "sourceUrl": "https://lumalabs.ai/pricing",
+      "plans": [
+        "Plus",
+        "Pro",
+        "Ultra",
+        "Team",
+        "Enterprise"
+      ],
+      "freePlans": [],
+      "status": "partial",
+      "quote": "Individual plans: Plus, Pro, Ultra. Business plans: Team, Enterprise.",
+      "remaining": "旧 Agents FAQ 把 Plus/Pro 的价格反写，使用当前价格页；仍需查 Dream Machine 存量目录"
+    },
+    {
+      "productId": "coze",
+      "platformIds": [
+        "coze"
+      ],
+      "name": "扣子（国内版）",
+      "sourceUrl": "https://docs.coze.cn/guides_20260119_coze_premium_upgraded",
+      "plans": [
+        "个人免费版",
+        "个人进阶版",
+        "个人高阶版",
+        "个人旗舰版",
+        "企业标准版",
+        "企业旗舰版"
+      ],
+      "freePlans": [
+        "个人免费版"
+      ],
+      "status": "partial",
+      "quote": "新增个人高阶版、个人旗舰版，原团队版调整为企业标准版，原企业版调整为企业旗舰版",
+      "remaining": "核对当前订阅页及旧套餐存量，另查国际版"
+    },
+    {
+      "productId": "hugging-face",
+      "platformIds": [
+        "hf"
+      ],
+      "name": "Hugging Face",
+      "sourceUrl": "https://huggingface.co/pricing",
+      "plans": [
+        "PRO",
+        "Team",
+        "Enterprise"
+      ],
+      "freePlans": [],
+      "status": "verified",
+      "quote": "PRO Account $9/month; Team $20/month; Enterprise $50/month",
+      "applyReady": true
+    },
+    {
+      "productId": "claude",
+      "platformIds": [
+        "anthropic"
+      ],
+      "name": "Claude",
+      "sourceUrl": "https://claude.com/pricing",
+      "plans": [
+        "Free",
+        "Pro",
+        "Max 5x",
+        "Max 20x",
+        "Team Standard",
+        "Team Premium",
+        "Enterprise",
+        "Education"
+      ],
+      "freePlans": [
+        "Free"
+      ],
+      "status": "partial",
+      "quote": "Free | Pro | Max 5x | Max 20x; Team Standard seat; Premium seat; Enterprise; Education plan",
+      "remaining": "核对存量 Enterprise Standard/Premium 席位，旧 Max/Team 泛档位替换映射"
+    },
+    {
+      "productId": "devin",
+      "platformIds": [
+        "devin"
+      ],
+      "name": "Devin",
+      "sourceUrl": "https://devin.ai/pricing",
+      "plans": [
+        "Free",
+        "Pro",
+        "Max",
+        "Teams",
+        "Enterprise"
+      ],
+      "freePlans": [
+        "Free"
+      ],
+      "status": "verified",
+      "quote": "Free $0; Pro $20 per month; Max $200 per month; Teams; Enterprise"
+    },
+    {
+      "productId": "n8n-cloud",
+      "platformIds": [
+        "n8n"
+      ],
+      "name": "n8n Cloud",
+      "sourceUrl": "https://n8n.io/pricing/",
+      "plans": [
+        "Starter",
+        "Pro",
+        "Enterprise"
+      ],
+      "freePlans": [],
+      "status": "verified",
+      "quote": "Cloud: Starter, Pro, Enterprise"
+    },
+    {
+      "productId": "n8n-self-hosted",
+      "platformIds": [
+        "n8n"
+      ],
+      "name": "n8n Self-hosted",
+      "sourceUrl": "https://n8n.io/pricing/",
+      "plans": [
+        "Community Edition",
+        "Business",
+        "Enterprise"
+      ],
+      "freePlans": [
+        "Community Edition"
+      ],
+      "status": "partial",
+      "quote": "Business Self-hosted only; Enterprise Hosted by n8n or Self-hosted; Community Edition",
+      "remaining": "核对 Start-up Plan 对应 Business 资格与命名，不重复建立折扣档位"
+    },
+    {
+      "productId": "x-subscription",
+      "platformIds": [
+        "cursor",
+        "xai"
+      ],
+      "name": "The X Subscription（Cursor / Grok / X）",
+      "sourceUrl": "https://cursor.com/help/account-and-billing/pricing",
+      "plans": [
+        "Free",
+        "Plus",
+        "Premium",
+        "Super",
+        "Ultra",
+        "Teams Premium",
+        "Teams Super",
+        "Teams Ultra",
+        "Enterprise"
+      ],
+      "freePlans": [
+        "Free"
+      ],
+      "status": "partial",
+      "quote": "one subscription for Grok, Cursor, and X",
+      "remaining": "补 Grok/X 官方迁移与存量档位；新旧 Ultra 不能混同"
+    },
+    {
+      "productId": "cursor",
+      "platformIds": [
+        "cursor"
+      ],
+      "name": "Cursor（存量订阅）",
+      "sourceUrl": "https://cursor.com/help/account-and-billing/pricing",
+      "plans": [
+        "Hobby",
+        "Start（印度）",
+        "Pro",
+        "Pro+",
+        "Ultra",
+        "Teams Standard",
+        "Teams Premium"
+      ],
+      "freePlans": [
+        "Hobby"
+      ],
+      "legacyPlans": [
+        "Hobby",
+        "Start（印度）",
+        "Pro",
+        "Pro+",
+        "Ultra",
+        "Teams Standard",
+        "Teams Premium"
+      ],
+      "status": "verified",
+      "quote": "Legacy plans: Hobby, Start, Pro, Pro+, Ultra, Teams Standard, Teams Premium"
+    },
+    {
+      "productId": "workbuddy",
+      "platformIds": [
+        "workbuddy"
+      ],
+      "name": "Buddy AI（WorkBuddy / CodeBuddy 国内个人版）",
+      "sourceUrl": "https://www.workbuddy.cn/docs/workbuddy/Pricing",
+      "plans": [
+        "体验版",
+        "标准版",
+        "高级版",
+        "旗舰版"
+      ],
+      "freePlans": [
+        "体验版"
+      ],
+      "status": "partial",
+      "quote": "WorkBuddy 和 CodeBuddy 同一账号积分共享，无需分别订阅。",
+      "remaining": "另核企业版；旧专业版已自动升级标准版，不能再造独立套餐"
+    },
+    {
+      "productId": "krea",
+      "platformIds": [
+        "krea"
+      ],
+      "name": "Krea",
+      "sourceUrl": "https://www.krea.ai/pricing",
+      "plans": [
+        "Free",
+        "Basic",
+        "Pro",
+        "Max",
+        "Business",
+        "Enterprise"
+      ],
+      "freePlans": [
+        "Free"
+      ],
+      "status": "verified",
+      "quote": "Free; Basic; Pro; Max; Business; Enterprise",
+      "remaining": "",
+      "applyReady": true
+    },
+    {
+      "productId": "ollama",
+      "platformIds": [
+        "ollama"
+      ],
+      "name": "Ollama",
+      "sourceUrl": "https://ollama.com/pricing",
+      "plans": [
+        "Free",
+        "Pro",
+        "Max",
+        "Team",
+        "Enterprise"
+      ],
+      "freePlans": [
+        "Free"
+      ],
+      "status": "verified",
+      "quote": "Free; Pro; Max; Team; Enterprise",
+      "remaining": "",
+      "applyReady": true
+    },
+    {
+      "productId": "pika",
+      "platformIds": [
+        "pika"
+      ],
+      "name": "Pika",
+      "sourceUrl": "https://pika.art/pricing",
+      "plans": [
+        "Free",
+        "Starter",
+        "Creator",
+        "Fancy",
+        "Enterprise"
+      ],
+      "freePlans": [
+        "Free"
+      ],
+      "status": "partial",
+      "quote": "Free; Starter; Creator; Fancy; Enterprise",
+      "remaining": "另查 Pika API Club 会员档位"
+    },
+    {
+      "productId": "meshy",
+      "platformIds": [
+        "meshy"
+      ],
+      "name": "Meshy",
+      "sourceUrl": "https://www.meshy.ai/pricing",
+      "plans": [
+        "Free",
+        "Pro",
+        "Premium",
+        "Ultra",
+        "Studio",
+        "Enterprise"
+      ],
+      "freePlans": [
+        "Free"
+      ],
+      "status": "partial",
+      "quote": "Free; Pro; Premium; Ultra; Studio; Enterprise",
+      "remaining": "核对 Studio 存量/团队属性及企业套餐，不将比较表名称推断为在售"
+    },
+    {
+      "productId": "niteshift",
+      "platformIds": [
+        "niteshift"
+      ],
+      "name": "Niteshift",
+      "sourceUrl": "https://niteshift.dev/pricing",
+      "plans": [
+        "Free",
+        "Individual",
+        "Team"
+      ],
+      "freePlans": [
+        "Free"
+      ],
+      "status": "verified",
+      "quote": "Free; Individual; Team",
+      "remaining": "",
+      "applyReady": true
+    },
+    {
+      "productId": "replit",
+      "platformIds": [
+        "replit"
+      ],
+      "name": "Replit",
+      "sourceUrl": "https://replit.com/pricing",
+      "plans": [
+        "Core",
+        "Pro",
+        "Enterprise"
+      ],
+      "freePlans": [],
+      "status": "partial",
+      "quote": "Core; Pro; Enterprise",
+      "remaining": "核对免费 Starter 与 Teams 存量是否仍在用"
+    },
+    {
+      "productId": "otter-ai",
+      "platformIds": [
+        "otter"
+      ],
+      "name": "Otter.ai",
+      "sourceUrl": "https://otter.ai/pricing",
+      "plans": [
+        "Basic",
+        "Pro",
+        "Business",
+        "Enterprise"
+      ],
+      "freePlans": [
+        "Basic"
+      ],
+      "status": "verified",
+      "quote": "Basic; Pro; Business; Enterprise",
+      "remaining": "",
+      "applyReady": true
+    },
+    {
+      "productId": "dreamina",
+      "platformIds": [
+        "dreamina"
+      ],
+      "name": "Dreamina",
+      "sourceUrl": "https://dreamina.capcut.com/pricing/dreamina-price",
+      "plans": [
+        "Basic",
+        "Standard",
+        "Advanced",
+        "Ultra"
+      ],
+      "freePlans": [],
+      "status": "verified",
+      "quote": "Basic; Standard; Advanced; Ultra",
+      "remaining": "",
+      "applyReady": true
+    },
+    {
+      "productId": "oiioii",
+      "platformIds": [
+        "oiioii"
+      ],
+      "name": "OiiOii",
+      "sourceUrl": "https://www.oiioii.ai/price",
+      "plans": [
+        "BASE",
+        "STAR",
+        "PRO",
+        "APEX",
+        "TEAM LITE",
+        "TEAM PLUS",
+        "TEAM PRO",
+        "TEAM MAX"
+      ],
+      "freePlans": [],
+      "status": "partial",
+      "quote": "BASE; STAR; PRO; APEX; TEAM LITE; TEAM PLUS; TEAM PRO; TEAM MAX",
+      "remaining": "核对企业定制入口与国内版本"
+    },
+    {
+      "productId": "kiro",
+      "platformIds": [
+        "kiro"
+      ],
+      "name": "Kiro",
+      "sourceUrl": "https://kiro.dev/pricing/",
+      "plans": [
+        "Free",
+        "Pro",
+        "Pro+",
+        "Pro Max",
+        "Power"
+      ],
+      "freePlans": [
+        "Free"
+      ],
+      "status": "partial",
+      "quote": "Free; Pro; Pro+; Pro Max; Power",
+      "remaining": "核对企业席位和 GovCloud 是否独立产品"
+    },
+    {
+      "productId": "runway",
+      "platformIds": [
+        "runway"
+      ],
+      "name": "Runway",
+      "sourceUrl": "https://runway.com/pricing",
+      "plans": [
+        "Free",
+        "Standard",
+        "Pro",
+        "Max"
+      ],
+      "freePlans": [
+        "Free"
+      ],
+      "status": "partial",
+      "quote": "Free; Standard; Pro; Max",
+      "remaining": "需读取 Team & Enterprise 页签及旧 Unlimited 是否保留"
+    },
+    {
+      "productId": "free-ai",
+      "platformIds": [
+        "free-ai"
+      ],
+      "name": "Free.ai",
+      "sourceUrl": "https://free.ai/pricing/",
+      "plans": [
+        "Free",
+        "Basic",
+        "Starter",
+        "Pro",
+        "Business",
+        "Team",
+        "Enterprise",
+        "Enterprise+",
+        "Scale"
+      ],
+      "freePlans": [
+        "Free"
+      ],
+      "status": "partial",
+      "quote": "Free; Basic; Starter; Pro; Business; Team; Enterprise; Enterprise+; Scale",
+      "remaining": "另有 VPS hosting Hatchling/Starter/Pro，需确认是否属于 AI 会员资格范围"
+    },
+    {
+      "productId": "chatgpt",
+      "platformIds": [
+        "openai"
+      ],
+      "name": "ChatGPT（含 Codex / Work）",
+      "sourceUrl": "https://learn.chatgpt.com/docs/pricing",
+      "plans": [
+        "Free",
+        "Go",
+        "Plus",
+        "Pro $100",
+        "Pro $200",
+        "Pro $500",
+        "Business",
+        "Edu",
+        "Enterprise"
+      ],
+      "freePlans": [
+        "Free"
+      ],
+      "status": "partial",
+      "quote": "Plans at $100, $200, or $500 USD per month",
+      "remaining": "核对 Business Premium 与 Teachers；合并 openai-codex/chatgpt-work 重复产品，旧泛 Pro 需映射多档"
+    },
+    {
+      "productId": "google-ai",
+      "platformIds": [
+        "google"
+      ],
+      "name": "Google AI",
+      "sourceUrl": "https://one.google.com/intl/en/about/google-ai-plans/?gl=US",
+      "plans": [
+        "Plus",
+        "Pro",
+        "Ultra 5x",
+        "Ultra 20x"
+      ],
+      "freePlans": [],
+      "status": "partial",
+      "quote": "Google AI Plus; Google AI Pro; Google AI Ultra 5x; Google AI Ultra 20x",
+      "remaining": "核对 Workspace/Gemini 企业和教育目录；家庭分享不是重复套餐"
+    },
+    {
+      "productId": "z-ai-devpack",
+      "platformIds": [
+        "zhipu"
+      ],
+      "name": "GLM Coding Plan（Z.ai 国际版）",
+      "sourceUrl": "https://docs.z.ai/devpack/overview",
+      "plans": [
+        "Lite",
+        "Pro",
+        "Max"
+      ],
+      "freePlans": [],
+      "status": "partial",
+      "quote": "Lite | Pro | Max",
+      "remaining": "正文已核对；继续 Team Plan、国内版与 ZCode 归并"
+    },
+    {
+      "productId": "bolt",
+      "platformIds": [
+        "bolt"
+      ],
+      "name": "Bolt",
+      "sourceUrl": "https://bolt.new/pricing",
+      "plans": [
+        "Free",
+        "Pro",
+        "Teams",
+        "Enterprise"
+      ],
+      "freePlans": [
+        "Free"
+      ],
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Free; Pro; Teams; Enterprise"
+    },
+    {
+      "productId": "suno",
+      "platformIds": [
+        "suno"
+      ],
+      "name": "Suno",
+      "sourceUrl": "https://suno.com/pricing",
+      "plans": [
+        "Free",
+        "Pro",
+        "Premier"
+      ],
+      "freePlans": [
+        "Free"
+      ],
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Free; Pro; Premier"
+    },
+    {
+      "productId": "lovable",
+      "platformIds": [
+        "lovable"
+      ],
+      "name": "Lovable",
+      "sourceUrl": "https://docs.lovable.dev/introduction/subscription-plans",
+      "plans": [
+        "Free",
+        "Pro",
+        "Business",
+        "Enterprise"
+      ],
+      "freePlans": [
+        "Free"
+      ],
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Free; Pro; Business; Enterprise"
+    },
+    {
+      "productId": "worldlabs-marble",
+      "platformIds": [
+        "worldlabs"
+      ],
+      "name": "World Labs Marble",
+      "sourceUrl": "https://docs.worldlabs.ai/marble/support/account-billing",
+      "plans": [
+        "Free",
+        "Standard",
+        "Pro",
+        "Max",
+        "Enterprise"
+      ],
+      "freePlans": [
+        "Free"
+      ],
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Free; Standard; Pro; Max; Enterprise"
+    },
+    {
+      "productId": "nous-research",
+      "platformIds": [
+        "nous"
+      ],
+      "name": "Nous Portal",
+      "sourceUrl": "https://portal.nousresearch.com/",
+      "plans": [
+        "Free",
+        "Plus",
+        "Super",
+        "Ultra"
+      ],
+      "freePlans": [
+        "Free"
+      ],
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Free; Plus; Super; Ultra"
+    }
+  ]
+}

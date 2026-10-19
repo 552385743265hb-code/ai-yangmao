@@ -3,11 +3,22 @@ import { z } from 'zod';
 export interface MembershipProduct {
   id: string; name: string; aliases: string[]; status: 'pending' | 'verified' | 'retired';
   sourceUrl: string; verifiedAt: string | null; revision: number;
+  /** Products may be shared by multiple vendor applications (for example Cursor and Grok). */
+  platformIds?: string[]; legacy?: boolean;
 }
 export interface MembershipPlan extends MembershipProduct {
   productId: string; billing: 'free' | 'paid' | 'unknown';
 }
-export interface MembershipCatalog { revision: number; products: MembershipProduct[]; plans: MembershipPlan[] }
+export interface MembershipVendor {
+  id: string; name: string; status: 'available' | 'none' | 'unverified';
+  sourceUrl?: string; verifiedAt?: string | null;
+}
+export interface MembershipCatalog {
+  revision: number; products: MembershipProduct[]; plans: MembershipPlan[];
+  vendors?: MembershipVendor[];
+  /** Only evidence-backed one-to-one ID migrations; ambiguous legacy selections remain unresolved. */
+  planIdAliases?: Record<string,string>;
+}
 const strings = () => z.array(z.string().trim().min(1).max(200)).max(100);
 const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(v => {
   const parsed = new Date(`${v}T00:00:00Z`);
@@ -101,7 +112,7 @@ export function membershipFacts(r: MembershipRequirement) {
   return facts;
 }
 /** Match complete name boundaries: Alpha must not match Alphabet. */
-function qualifiedPlanName(plan: MembershipPlan, catalog: MembershipCatalog): string {
+export function qualifiedPlanName(plan: MembershipPlan, catalog: MembershipCatalog): string {
   const product = catalog.products.find(p => p.id === plan.productId);
   if (!product) return plan.name;
   const escaped = product.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -166,8 +177,8 @@ function exactPlan(value: string, catalog: MembershipCatalog): MembershipPlan | 
   const candidates = catalog.plans.filter(p => {
     const product = catalog.products.find(x => x.id === p.productId && x.status === 'verified');
     if (p.status !== 'verified' || !product) return false;
-    const fullName = qualifiedPlanName(p, catalog);
-    return target === fullName.toLocaleLowerCase('en');
+    const names=[p.name,...p.aliases].map(name=>qualifiedPlanName({...p,name},catalog));
+    return names.some(name=>target===name.toLocaleLowerCase('en'));
   });
   return candidates.length === 1 ? candidates[0] : undefined;
 }

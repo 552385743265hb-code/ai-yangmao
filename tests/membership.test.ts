@@ -65,3 +65,7 @@ describe('membership qualification', () => {
   r.evidenceUrls=['javascript:alert(1)']; expect(membershipSchema.safeParse(r).success).toBe(false);
  });
 });
+it('recognizes exact qualified historical aliases after an official plan rename, without treating bare Pro as a product',()=>{
+ const c=structuredClone(catalog);c.plans[0].name='Alpha Professional';c.plans[0].aliases=['Pro'];
+ expect(migrateMemberSelections(['Alpha Pro','Pro'],c)).toEqual({subscriptions:[{planId:'ap'}],unresolved:['Pro']});
+});

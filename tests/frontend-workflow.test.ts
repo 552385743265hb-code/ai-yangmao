@@ -841,13 +841,10 @@ describe('membership draft saving without implicit approval',()=>{
     const form=card.querySelector('[data-editform]')!;
     expect(form.querySelector('button[type="submit"]')!.textContent).toBe(live?'保存':'保存草稿');
     (form.querySelector('[name="title"]') as HTMLInputElement).value='标题修订';
-    if(!live){
-      const status=form.querySelector('[data-membership-status]')!;Object.defineProperty(status,'value',{configurable:true,value:'needs_review'});status.dispatchEvent(new page.window.Event('change',{bubbles:true}));
-      form.querySelector('[data-membership-unresolved]')!.dispatchEvent(new page.window.Event('click',{bubbles:true}));
-    }
+    if(!live)expect(form.querySelector('[data-membership-status], [data-clause], [data-limit]')).toBeNull();
     form.dispatchEvent(new page.window.Event('submit'));await pause();
     expect(writes).toHaveLength(1);expect(writes[0].approve).toBe(false);
-    if(!live)expect(writes[0].fields.membershipRequirement.status).toBe('needs_review');
+    if(!live)expect(writes[0].fields.membershipRequirement).toBeUndefined(); // unrelated title edit preserves unresolved original membership
     expect(page.run('saveMessages.join("；")')).toContain(live?'已保存':'草稿已保存，尚未通过上架');
     if(live)expect(page.run('saveMessages.join("；")')).not.toContain('草稿');
   });

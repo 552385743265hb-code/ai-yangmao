@@ -1,0 +1,1793 @@
+{
+  "checkedAt": "2026-10-19",
+  "vendors": [
+    {
+      "platformId": "aws",
+      "name": "AWS",
+      "site": "https://aws.amazon.com",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://aws.amazon.com",
+        "chars": 9957,
+        "error": null
+      }
+    },
+    {
+      "platformId": "gcloud",
+      "name": "Google Cloud",
+      "site": "https://cloud.google.com",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://cloud.google.com",
+        "chars": 44587,
+        "error": null
+      }
+    },
+    {
+      "platformId": "azure",
+      "name": "Microsoft Azure",
+      "site": "https://azure.microsoft.com",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://azure.microsoft.com/en-us",
+        "chars": 14868,
+        "error": null
+      }
+    },
+    {
+      "platformId": "huaweicloud",
+      "name": "华为云",
+      "site": "https://www.huaweicloud.com",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://www.huaweicloud.com",
+        "chars": 16279,
+        "error": null
+      }
+    },
+    {
+      "platformId": "volc",
+      "name": "火山方舟",
+      "site": "https://www.volcengine.com/product/ark",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://www.volcengine.com/product/ark",
+        "chars": 0,
+        "error": null
+      }
+    },
+    {
+      "platformId": "baidu",
+      "name": "百度千帆",
+      "site": "https://cloud.baidu.com",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://cloud.baidu.com",
+        "chars": 4149,
+        "error": null
+      }
+    },
+    {
+      "platformId": "tencent",
+      "name": "腾讯云",
+      "site": "https://cloud.tencent.com",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://cloud.tencent.com",
+        "chars": 75,
+        "error": null
+      }
+    },
+    {
+      "platformId": "aliyun",
+      "name": "阿里云百炼",
+      "site": "https://bailian.console.aliyun.com",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://bailian.console.aliyun.com",
+        "chars": 23,
+        "error": null
+      }
+    },
+    {
+      "platformId": "cerebras",
+      "name": "Cerebras",
+      "site": "https://www.cerebras.ai",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://www.cerebras.ai",
+        "chars": 7297,
+        "error": null
+      }
+    },
+    {
+      "platformId": "cloudflare",
+      "name": "Cloudflare Workers AI",
+      "site": "https://developers.cloudflare.com/workers-ai/",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://developers.cloudflare.com/workers-ai/",
+        "chars": 5447,
+        "error": null
+      }
+    },
+    {
+      "platformId": "deepinfra",
+      "name": "DeepInfra",
+      "site": "https://deepinfra.com",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://deepinfra.com",
+        "chars": 10838,
+        "error": null
+      }
+    },
+    {
+      "platformId": "fireworks",
+      "name": "Fireworks AI",
+      "site": "https://fireworks.ai",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://fireworks.ai",
+        "chars": 9397,
+        "error": null
+      }
+    },
+    {
+      "platformId": "gmi",
+      "name": "GMI Cloud",
+      "site": "https://www.gmicloud.ai",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://www.gmicloud.ai/en",
+        "chars": 4888,
+        "error": null
+      }
+    },
+    {
+      "platformId": "github",
+      "name": "GitHub Models",
+      "site": "https://github.com/marketplace/models",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://github.com/marketplace/models",
+        "chars": 0,
+        "error": "HTTP Error 404: Not Found"
+      }
+    },
+    {
+      "platformId": "groq",
+      "name": "Groq",
+      "site": "https://groq.com",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://groq.com",
+        "chars": 945,
+        "error": null
+      }
+    },
+    {
+      "platformId": "hoonify-ai",
+      "name": "Hoonify AI",
+      "site": "https://www.hoonify.com",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://www.hoonify.com",
+        "chars": 11232,
+        "error": null
+      }
+    },
+    {
+      "platformId": "hf",
+      "name": "Hugging Face",
+      "site": "https://huggingface.co",
+      "status": "research_complete",
+      "sources": [
+        "https://huggingface.co/pricing"
+      ],
+      "productIds": [
+        "hugging-face"
+      ],
+      "homepageRead": {
+        "url": "https://huggingface.co",
+        "chars": 4504,
+        "error": null
+      },
+      "appliedCatalogRevision": 30
+    },
+    {
+      "platformId": "nvidia",
+      "name": "NVIDIA NIM",
+      "site": "https://build.nvidia.com",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://build.nvidia.com",
+        "chars": 1381,
+        "error": null
+      }
+    },
+    {
+      "platformId": "novita",
+      "name": "Novita AI",
+      "site": "https://novita.ai",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://novita.ai",
+        "chars": 7869,
+        "error": null
+      }
+    },
+    {
+      "platformId": "opencode",
+      "name": "OpenCode（Zen / Go）",
+      "site": "https://opencode.ai",
+      "status": "research_complete",
+      "sources": [
+        "https://opencode.ai/docs/go/"
+      ],
+      "productIds": [
+        "opencode"
+      ],
+      "homepageRead": {
+        "url": "https://opencode.ai",
+        "chars": 2157,
+        "error": null
+      },
+      "appliedCatalogRevision": 30
+    },
+    {
+      "platformId": "openrouter",
+      "name": "OpenRouter",
+      "site": "https://openrouter.ai",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://openrouter.ai",
+        "chars": 3345,
+        "error": null
+      }
+    },
+    {
+      "platformId": "ppio",
+      "name": "PPIO 派欧云",
+      "site": "https://ppio.com",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://ppio.com",
+        "chars": 2798,
+        "error": null
+      }
+    },
+    {
+      "platformId": "replicas",
+      "name": "Replicas",
+      "site": null,
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": null,
+        "chars": 0,
+        "error": "No registered official homepage; discover from platform sources"
+      }
+    },
+    {
+      "platformId": "sambanova",
+      "name": "SambaNova",
+      "site": "https://sambanova.ai",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://sambanova.ai",
+        "chars": 6693,
+        "error": null
+      }
+    },
+    {
+      "platformId": "together",
+      "name": "Together AI",
+      "site": "https://www.together.ai",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://www.together.ai",
+        "chars": 23016,
+        "error": null
+      }
+    },
+    {
+      "platformId": "ucloud",
+      "name": "UCloud 星图",
+      "site": "https://www.ucloud.cn",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://www.ucloud.cn",
+        "chars": 4627,
+        "error": null
+      }
+    },
+    {
+      "platformId": "vercel",
+      "name": "Vercel AI Gateway",
+      "site": "https://vercel.com/ai-gateway",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://vercel.com/ai-gateway",
+        "chars": 33821,
+        "error": null
+      }
+    },
+    {
+      "platformId": "qiniu",
+      "name": "七牛云 AI",
+      "site": "https://www.qiniu.com",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://www.qiniu.com",
+        "chars": 4980,
+        "error": null
+      }
+    },
+    {
+      "platformId": "tokenrhythm",
+      "name": "基元律动 TokenRhythm",
+      "site": "https://tokenrhythm.studio",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://tokenrhythm.studio",
+        "chars": 1013,
+        "error": null
+      }
+    },
+    {
+      "platformId": "moark",
+      "name": "模力方舟",
+      "site": "https://ai.gitee.com",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://ai.gitee.com",
+        "chars": 2785,
+        "error": null
+      }
+    },
+    {
+      "platformId": "siliconflow",
+      "name": "硅基流动",
+      "site": "https://siliconflow.cn",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://siliconflow.cn",
+        "chars": 0,
+        "error": "The read operation timed out"
+      }
+    },
+    {
+      "platformId": "modelscope",
+      "name": "阿里 魔搭 ModelScope",
+      "site": "https://modelscope.cn",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://modelscope.cn/home",
+        "chars": 20,
+        "error": null
+      }
+    },
+    {
+      "platformId": "anthropic",
+      "name": "Anthropic",
+      "site": "https://www.anthropic.com",
+      "status": "partial",
+      "sources": [
+        "https://claude.com/pricing"
+      ],
+      "productIds": [
+        "claude"
+      ],
+      "homepageRead": {
+        "url": "https://www.anthropic.com",
+        "chars": 4861,
+        "error": null
+      }
+    },
+    {
+      "platformId": "cohere",
+      "name": "Cohere",
+      "site": "https://cohere.com",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://cohere.com",
+        "chars": 8567,
+        "error": null
+      }
+    },
+    {
+      "platformId": "deepseek",
+      "name": "DeepSeek",
+      "site": "https://www.deepseek.com",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://www.deepseek.com",
+        "chars": 550,
+        "error": null
+      }
+    },
+    {
+      "platformId": "google",
+      "name": "Google AI（Gemini / AI Studio）",
+      "site": "https://ai.google.dev",
+      "status": "partial",
+      "sources": [
+        "https://one.google.com/intl/en/about/google-ai-plans/?gl=US"
+      ],
+      "productIds": [
+        "google-ai"
+      ],
+      "homepageRead": {
+        "url": "https://ai.google.dev",
+        "chars": 6117,
+        "error": null
+      }
+    },
+    {
+      "platformId": "hume",
+      "name": "Hume AI",
+      "site": "https://www.hume.ai",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://www.hume.ai",
+        "chars": 5406,
+        "error": null
+      }
+    },
+    {
+      "platformId": "inception",
+      "name": "Inception",
+      "site": "https://www.inceptionlabs.ai",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://www.inceptionlabs.ai",
+        "chars": 9880,
+        "error": null
+      }
+    },
+    {
+      "platformId": "moonshot",
+      "name": "Kimi 开放平台（月之暗面）",
+      "site": "https://platform.moonshot.cn",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://platform.kimi.com/",
+        "chars": 3516,
+        "error": null
+      }
+    },
+    {
+      "platformId": "meta",
+      "name": "Meta Llama",
+      "site": "https://www.llama.com",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://dev.meta.ai/",
+        "chars": 5870,
+        "error": null
+      }
+    },
+    {
+      "platformId": "microsoft-ai",
+      "name": "Microsoft AI（Copilot）",
+      "site": "https://microsoft.ai",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://microsoft.ai",
+        "chars": 0,
+        "error": "HTTP Error 403: Forbidden"
+      }
+    },
+    {
+      "platformId": "minimax",
+      "name": "MiniMax",
+      "site": "https://www.minimaxi.com",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://www.minimax.cn/",
+        "chars": 1702,
+        "error": null
+      }
+    },
+    {
+      "platformId": "mistral",
+      "name": "Mistral AI",
+      "site": "https://mistral.ai",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://mistral.ai",
+        "chars": 5533,
+        "error": null
+      }
+    },
+    {
+      "platformId": "nex-agi",
+      "name": "Nex AGI",
+      "site": "https://nex.sii.edu.cn",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://nex.sii.edu.cn",
+        "chars": 5715,
+        "error": null
+      }
+    },
+    {
+      "platformId": "odyssey",
+      "name": "Odyssey",
+      "site": "https://odyssey.systems",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://odyssey.systems",
+        "chars": 7344,
+        "error": null
+      }
+    },
+    {
+      "platformId": "openai",
+      "name": "OpenAI",
+      "site": "https://openai.com",
+      "status": "partial",
+      "sources": [
+        "https://learn.chatgpt.com/docs/pricing"
+      ],
+      "productIds": [
+        "chatgpt"
+      ],
+      "homepageRead": {
+        "url": "https://openai.com",
+        "chars": 0,
+        "error": "HTTP Error 403: Forbidden"
+      }
+    },
+    {
+      "platformId": "sakana",
+      "name": "Sakana AI（Fugu）",
+      "site": "https://sakana.ai",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://sakana.ai",
+        "chars": 5231,
+        "error": null
+      }
+    },
+    {
+      "platformId": "xai",
+      "name": "xAI",
+      "site": "https://x.ai",
+      "status": "partial",
+      "sources": [
+        "https://cursor.com/help/account-and-billing/pricing"
+      ],
+      "productIds": [
+        "x-subscription"
+      ],
+      "homepageRead": {
+        "url": "https://x.ai",
+        "chars": 0,
+        "error": "HTTP Error 403: Forbidden"
+      }
+    },
+    {
+      "platformId": "unisound",
+      "name": "云知声 Unisound（Token Hub）",
+      "site": "https://maas.unisound.com/",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://maas.unisound.com/",
+        "chars": 2165,
+        "error": null
+      }
+    },
+    {
+      "platformId": "sensenova",
+      "name": "商汤 SenseNova（日日新）",
+      "site": "https://platform.sensenova.cn",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://platform.sensenova.cn",
+        "chars": 24,
+        "error": null
+      }
+    },
+    {
+      "platformId": "doubao",
+      "name": "字节跳动 豆包 Doubao",
+      "site": "https://www.doubao.com",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://www.doubao.com",
+        "chars": 0,
+        "error": "HTTP Error 503: Service Unavailable"
+      }
+    },
+    {
+      "platformId": "xiaomi-mimo",
+      "name": "小米 MiMo",
+      "site": "https://mimo.mi.com",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://mimo.mi.com",
+        "chars": 8130,
+        "error": null
+      }
+    },
+    {
+      "platformId": "zhipu",
+      "name": "智谱 Z.ai",
+      "site": "https://bigmodel.cn",
+      "status": "partial",
+      "sources": [
+        "https://docs.z.ai/devpack/overview"
+      ],
+      "productIds": [
+        "z-ai-devpack"
+      ],
+      "homepageRead": {
+        "url": "https://bigmodel.cn",
+        "chars": 14,
+        "error": null
+      }
+    },
+    {
+      "platformId": "baichuan",
+      "name": "百川智能",
+      "site": "https://www.baichuan-ai.com",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://www.baichuan-ai.com",
+        "chars": 10,
+        "error": null
+      }
+    },
+    {
+      "platformId": "meituan",
+      "name": "美团 LongCat",
+      "site": "https://longcat.chat",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://longcat.chat",
+        "chars": 10,
+        "error": null
+      }
+    },
+    {
+      "platformId": "tencent-hy",
+      "name": "腾讯混元",
+      "site": "https://hunyuan.tencent.com",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://hunyuan.tencent.com",
+        "chars": 4,
+        "error": null
+      }
+    },
+    {
+      "platformId": "stepfun",
+      "name": "阶跃星辰",
+      "site": "https://www.stepfun.com",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://www.stepfun.com",
+        "chars": 4,
+        "error": null
+      }
+    },
+    {
+      "platformId": "qwen",
+      "name": "阿里 通义千问 Qwen",
+      "site": "https://qwen.ai",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://qwen.ai",
+        "chars": 4,
+        "error": null
+      }
+    },
+    {
+      "platformId": "ami-labs",
+      "name": "AMI Labs（Yann LeCun）",
+      "site": "https://amilabs.xyz",
+      "status": "research_complete",
+      "sources": [
+        "https://amilabs.xyz"
+      ],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://amilabs.xyz",
+        "chars": 2146,
+        "error": null
+      },
+      "subscriptionStatus": "none",
+      "note": "已读取官方介绍及导航，官网当前未公开会员订阅产品或定价目录；不虚构套餐。"
+    },
+    {
+      "platformId": "bolt",
+      "name": "Bolt",
+      "site": null,
+      "status": "research_complete",
+      "sources": [
+        "https://bolt.new/pricing"
+      ],
+      "productIds": [
+        "bolt"
+      ],
+      "homepageRead": {
+        "url": null,
+        "chars": 0,
+        "error": "No registered official homepage; discover from platform sources"
+      },
+      "appliedCatalogRevision": 32
+    },
+    {
+      "platformId": "nous",
+      "name": "Nous Research",
+      "site": "https://nousresearch.com",
+      "status": "partial",
+      "sources": [
+        "https://portal.nousresearch.com/"
+      ],
+      "productIds": [
+        "nous-research"
+      ],
+      "homepageRead": {
+        "url": "https://nousresearch.com",
+        "chars": 3854,
+        "error": null
+      },
+      "appliedCatalogRevision": 32,
+      "note": "Portal 四档已写入；另查 Hermes Cloud 是否独立订阅"
+    },
+    {
+      "platformId": "periodic",
+      "name": "Periodic Labs",
+      "site": "https://periodic.com",
+      "status": "research_complete",
+      "sources": [
+        "https://periodic.com"
+      ],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://periodic.com",
+        "chars": 4212,
+        "error": null
+      },
+      "subscriptionStatus": "none",
+      "note": "已读取官方介绍及导航，官网当前未公开会员订阅产品或定价目录；不虚构套餐。"
+    },
+    {
+      "platformId": "physical-intelligence",
+      "name": "Physical Intelligence",
+      "site": "https://www.pi.website",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://www.pi.website",
+        "chars": 3427,
+        "error": null
+      }
+    },
+    {
+      "platformId": "prime-intellect",
+      "name": "Prime Intellect",
+      "site": "https://www.primeintellect.ai",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://www.primeintellect.ai",
+        "chars": 8968,
+        "error": null
+      }
+    },
+    {
+      "platformId": "reflection",
+      "name": "Reflection AI",
+      "site": "https://reflection.ai",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://reflection.ai",
+        "chars": 3490,
+        "error": null
+      }
+    },
+    {
+      "platformId": "ssi",
+      "name": "Safe Superintelligence（SSI，Ilya Sutskever）",
+      "site": "https://ssi.inc",
+      "status": "research_complete",
+      "sources": [
+        "https://ssi.inc"
+      ],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://ssi.inc",
+        "chars": 1674,
+        "error": null
+      },
+      "subscriptionStatus": "none",
+      "note": "已读取官方介绍及导航，官网当前未公开会员订阅产品或定价目录；不虚构套餐。"
+    },
+    {
+      "platformId": "thinking-machines",
+      "name": "Thinking Machines Lab（Mira Murati）",
+      "site": "https://thinkingmachines.ai",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://thinkingmachines.ai",
+        "chars": 4910,
+        "error": null
+      }
+    },
+    {
+      "platformId": "typesafe",
+      "name": "TypeSafe · Jev",
+      "site": "https://typesafe.ai",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://typesafe.ai",
+        "chars": 5381,
+        "error": null
+      }
+    },
+    {
+      "platformId": "worldlabs",
+      "name": "World Labs（李飞飞）",
+      "site": "https://www.worldlabs.ai",
+      "status": "research_complete",
+      "sources": [
+        "https://docs.worldlabs.ai/marble/support/account-billing"
+      ],
+      "productIds": [
+        "worldlabs-marble"
+      ],
+      "homepageRead": {
+        "url": "https://www.worldlabs.ai",
+        "chars": 2726,
+        "error": null
+      },
+      "appliedCatalogRevision": 32
+    },
+    {
+      "platformId": "adobe-firefly",
+      "name": "Adobe Firefly",
+      "site": "https://firefly.adobe.com",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://firefly.adobe.com",
+        "chars": 276,
+        "error": null
+      }
+    },
+    {
+      "platformId": "browser-use",
+      "name": "Browser Use",
+      "site": "https://browser-use.com",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://browser-use.com",
+        "chars": 4706,
+        "error": null
+      }
+    },
+    {
+      "platformId": "cline",
+      "name": "Cline",
+      "site": "https://cline.bot",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://cline.bot",
+        "chars": 3719,
+        "error": null
+      }
+    },
+    {
+      "platformId": "cursor",
+      "name": "Cursor（Anysphere）",
+      "site": "https://cursor.com",
+      "status": "partial",
+      "sources": [
+        "https://cursor.com/help/account-and-billing/pricing"
+      ],
+      "productIds": [
+        "x-subscription",
+        "cursor"
+      ],
+      "homepageRead": {
+        "url": "https://cursor.com",
+        "chars": 17786,
+        "error": null
+      }
+    },
+    {
+      "platformId": "devin",
+      "name": "Devin（Cognition）",
+      "site": "https://devin.ai",
+      "status": "partial",
+      "sources": [
+        "https://devin.ai/pricing"
+      ],
+      "productIds": [
+        "devin"
+      ],
+      "homepageRead": {
+        "url": "https://devin.ai",
+        "chars": 12937,
+        "error": null
+      }
+    },
+    {
+      "platformId": "dreamina",
+      "name": "Dreamina（CapCut 国际版即梦）",
+      "site": "https://dreamina.capcut.com",
+      "status": "research_complete",
+      "sources": [
+        "https://dreamina.capcut.com/pricing/dreamina-price"
+      ],
+      "productIds": [
+        "dreamina"
+      ],
+      "homepageRead": {
+        "url": "https://dreamina.capcut.com",
+        "chars": 30196,
+        "error": null
+      },
+      "appliedCatalogRevision": 30
+    },
+    {
+      "platformId": "elevenlabs",
+      "name": "ElevenLabs",
+      "site": "https://elevenlabs.io",
+      "status": "research_complete",
+      "sources": [
+        "https://elevenlabs.io/pricing"
+      ],
+      "productIds": [
+        "elevenlabs"
+      ],
+      "homepageRead": {
+        "url": "https://elevenlabs.io",
+        "chars": 10649,
+        "error": null
+      },
+      "appliedCatalogRevision": 30
+    },
+    {
+      "platformId": "free-ai",
+      "name": "Free.ai",
+      "site": "https://free.ai",
+      "status": "partial",
+      "sources": [
+        "https://free.ai/pricing/"
+      ],
+      "productIds": [
+        "free-ai"
+      ],
+      "homepageRead": {
+        "url": "https://free.ai",
+        "chars": 8007,
+        "error": null
+      }
+    },
+    {
+      "platformId": "gamma",
+      "name": "Gamma",
+      "site": "https://gamma.app",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://gamma.app",
+        "chars": 0,
+        "error": "HTTP Error 403: Forbidden"
+      }
+    },
+    {
+      "platformId": "genspark",
+      "name": "Genspark",
+      "site": "https://www.genspark.ai",
+      "status": "research_complete",
+      "sources": [
+        "https://www.genspark.ai/helpcenter/membership-plans"
+      ],
+      "productIds": [
+        "genspark"
+      ],
+      "homepageRead": {
+        "url": "https://www.genspark.ai",
+        "chars": 0,
+        "error": "HTTP Error 403: Forbidden"
+      },
+      "appliedCatalogRevision": 30
+    },
+    {
+      "platformId": "copilot",
+      "name": "GitHub Copilot",
+      "site": "https://github.com/features/copilot",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://github.com/features/copilot",
+        "chars": 67193,
+        "error": null
+      }
+    },
+    {
+      "platformId": "higgsfield",
+      "name": "Higgsfield",
+      "site": "https://higgsfield.ai",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://higgsfield.ai",
+        "chars": 3072,
+        "error": null
+      }
+    },
+    {
+      "platformId": "ideogram",
+      "name": "Ideogram",
+      "site": "https://ideogram.ai",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://ideogram.ai",
+        "chars": 0,
+        "error": "HTTP Error 403: Forbidden"
+      }
+    },
+    {
+      "platformId": "instinct",
+      "name": "Instinct（Spear Street Technology）",
+      "site": "https://instinct.com",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://instinct.com",
+        "chars": 507,
+        "error": null
+      }
+    },
+    {
+      "platformId": "kilo",
+      "name": "Kilo Code",
+      "site": "https://kilo.ai",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://kilo.ai",
+        "chars": 7368,
+        "error": null
+      }
+    },
+    {
+      "platformId": "kiro",
+      "name": "Kiro",
+      "site": "https://kiro.dev",
+      "status": "partial",
+      "sources": [
+        "https://kiro.dev/pricing/"
+      ],
+      "productIds": [
+        "kiro"
+      ],
+      "homepageRead": {
+        "url": "https://kiro.dev",
+        "chars": 22111,
+        "error": null
+      }
+    },
+    {
+      "platformId": "krea",
+      "name": "Krea",
+      "site": "https://www.krea.ai",
+      "status": "research_complete",
+      "sources": [
+        "https://www.krea.ai/pricing"
+      ],
+      "productIds": [
+        "krea"
+      ],
+      "homepageRead": {
+        "url": "https://www.krea.ai",
+        "chars": 18354,
+        "error": null
+      },
+      "appliedCatalogRevision": 30
+    },
+    {
+      "platformId": "leonardo",
+      "name": "Leonardo.Ai",
+      "site": "https://leonardo.ai",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://leonardo.ai",
+        "chars": 0,
+        "error": "HTTP Error 403: Forbidden"
+      }
+    },
+    {
+      "platformId": "liblibtv",
+      "name": "LiblibAI（含 LibTV）",
+      "site": "https://www.liblib.art",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://www.liblib.art",
+        "chars": 32,
+        "error": null
+      }
+    },
+    {
+      "platformId": "lovable",
+      "name": "Lovable",
+      "site": "https://lovable.dev",
+      "status": "research_complete",
+      "sources": [
+        "https://docs.lovable.dev/introduction/subscription-plans"
+      ],
+      "productIds": [
+        "lovable"
+      ],
+      "homepageRead": {
+        "url": "https://lovable.dev",
+        "chars": 0,
+        "error": "HTTP Error 403: Forbidden"
+      },
+      "appliedCatalogRevision": 32
+    },
+    {
+      "platformId": "lovart",
+      "name": "Lovart",
+      "site": "https://www.lovart.ai",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://www.lovart.ai",
+        "chars": 488,
+        "error": null
+      }
+    },
+    {
+      "platformId": "luma",
+      "name": "Luma AI",
+      "site": "https://lumalabs.ai",
+      "status": "partial",
+      "sources": [
+        "https://lumalabs.ai/pricing"
+      ],
+      "productIds": [
+        "luma-ai"
+      ],
+      "homepageRead": {
+        "url": "https://lumalabs.ai",
+        "chars": 3295,
+        "error": null
+      }
+    },
+    {
+      "platformId": "magnific",
+      "name": "Magnific",
+      "site": "https://www.magnific.com",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://www.magnific.com",
+        "chars": 0,
+        "error": "HTTP Error 403: Forbidden"
+      }
+    },
+    {
+      "platformId": "manus",
+      "name": "Manus",
+      "site": "https://manus.im",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://manus.im",
+        "chars": 795,
+        "error": null
+      }
+    },
+    {
+      "platformId": "meshy",
+      "name": "Meshy",
+      "site": "https://www.meshy.ai",
+      "status": "partial",
+      "sources": [
+        "https://www.meshy.ai/pricing"
+      ],
+      "productIds": [
+        "meshy"
+      ],
+      "homepageRead": {
+        "url": "https://www.meshy.ai",
+        "chars": 6883,
+        "error": null
+      }
+    },
+    {
+      "platformId": "midjourney",
+      "name": "Midjourney",
+      "site": "https://www.midjourney.com",
+      "status": "research_complete",
+      "sources": [
+        "https://docs.midjourney.com/hc/en-us/articles/27870484040333-Comparing-Midjourney-Plans"
+      ],
+      "productIds": [
+        "midjourney"
+      ],
+      "homepageRead": {
+        "url": "https://www.midjourney.com",
+        "chars": 0,
+        "error": "HTTP Error 403: Forbidden"
+      },
+      "appliedCatalogRevision": 30
+    },
+    {
+      "platformId": "hailuo",
+      "name": "MiniMax 海螺 AI",
+      "site": "https://hailuoai.com",
+      "status": "partial",
+      "sources": [
+        "https://hailuoai.video/doc/payment-policy.html"
+      ],
+      "productIds": [
+        "hailuo-ai"
+      ],
+      "homepageRead": {
+        "url": "https://hailuoai.com",
+        "chars": 417,
+        "error": null
+      }
+    },
+    {
+      "platformId": "niteshift",
+      "name": "Niteshift",
+      "site": "https://niteshift.dev",
+      "status": "research_complete",
+      "sources": [
+        "https://niteshift.dev/pricing"
+      ],
+      "productIds": [
+        "niteshift"
+      ],
+      "homepageRead": {
+        "url": "https://niteshift.dev",
+        "chars": 5738,
+        "error": null
+      },
+      "appliedCatalogRevision": 30
+    },
+    {
+      "platformId": "oiioii",
+      "name": "OiiOii（AI 动画创作）",
+      "site": "https://www.oiioii.ai",
+      "status": "partial",
+      "sources": [
+        "https://www.oiioii.ai/price"
+      ],
+      "productIds": [
+        "oiioii"
+      ],
+      "homepageRead": {
+        "url": "https://www.oiioii.ai",
+        "chars": 2938,
+        "error": null
+      }
+    },
+    {
+      "platformId": "ollama",
+      "name": "Ollama",
+      "site": "https://ollama.com",
+      "status": "research_complete",
+      "sources": [
+        "https://ollama.com/pricing"
+      ],
+      "productIds": [
+        "ollama"
+      ],
+      "homepageRead": {
+        "url": "https://ollama.com",
+        "chars": 524,
+        "error": null
+      },
+      "appliedCatalogRevision": 30
+    },
+    {
+      "platformId": "otter",
+      "name": "Otter.ai",
+      "site": "https://otter.ai",
+      "status": "research_complete",
+      "sources": [
+        "https://otter.ai/pricing"
+      ],
+      "productIds": [
+        "otter-ai"
+      ],
+      "homepageRead": {
+        "url": "https://otter.ai",
+        "chars": 10017,
+        "error": null
+      },
+      "appliedCatalogRevision": 30
+    },
+    {
+      "platformId": "perplexity",
+      "name": "Perplexity",
+      "site": "https://www.perplexity.ai",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://www.perplexity.ai",
+        "chars": 10,
+        "error": null
+      }
+    },
+    {
+      "platformId": "pika",
+      "name": "Pika",
+      "site": "https://pika.art",
+      "status": "partial",
+      "sources": [
+        "https://pika.art/pricing"
+      ],
+      "productIds": [
+        "pika"
+      ],
+      "homepageRead": {
+        "url": "https://pika.art",
+        "chars": 5871,
+        "error": null
+      }
+    },
+    {
+      "platformId": "pixverse",
+      "name": "PixVerse",
+      "site": "https://pixverse.ai",
+      "status": "partial",
+      "sources": [
+        "https://app.pixverse.ai/subscribe"
+      ],
+      "productIds": [
+        "pixverse"
+      ],
+      "homepageRead": {
+        "url": "https://pixverse.ai/ja",
+        "chars": 4340,
+        "error": null
+      }
+    },
+    {
+      "platformId": "poe",
+      "name": "Poe",
+      "site": "https://poe.com",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://poe.com",
+        "chars": 0,
+        "error": "HTTP Error 403: Forbidden"
+      }
+    },
+    {
+      "platformId": "pollo",
+      "name": "Pollo AI",
+      "site": "https://pollo.ai",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://pollo.ai",
+        "chars": 0,
+        "error": "HTTP Error 403: Forbidden"
+      }
+    },
+    {
+      "platformId": "replit",
+      "name": "Replit",
+      "site": "https://replit.com",
+      "status": "partial",
+      "sources": [
+        "https://replit.com/pricing"
+      ],
+      "productIds": [
+        "replit"
+      ],
+      "homepageRead": {
+        "url": "https://replit.com",
+        "chars": 9577,
+        "error": null
+      }
+    },
+    {
+      "platformId": "runway",
+      "name": "Runway",
+      "site": "https://runwayml.com",
+      "status": "partial",
+      "sources": [
+        "https://runway.com/pricing"
+      ],
+      "productIds": [
+        "runway"
+      ],
+      "homepageRead": {
+        "url": "https://runway.com/",
+        "chars": 4259,
+        "error": null
+      }
+    },
+    {
+      "platformId": "seaart",
+      "name": "SeaArt",
+      "site": "https://www.seaart.ai",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://www.seaart.ai",
+        "chars": 3542,
+        "error": null
+      }
+    },
+    {
+      "platformId": "suno",
+      "name": "Suno",
+      "site": "https://suno.com",
+      "status": "research_complete",
+      "sources": [
+        "https://suno.com/pricing"
+      ],
+      "productIds": [
+        "suno"
+      ],
+      "homepageRead": {
+        "url": "https://suno.com",
+        "chars": 6109,
+        "error": null
+      },
+      "appliedCatalogRevision": 32
+    },
+    {
+      "platformId": "tapnow",
+      "name": "TapNow",
+      "site": "https://www.tapnow.ai",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://www.tapnow.ai",
+        "chars": 702,
+        "error": null
+      }
+    },
+    {
+      "platformId": "trae",
+      "name": "Trae",
+      "site": "https://www.trae.ai",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://www.trae.ai",
+        "chars": 81,
+        "error": null
+      }
+    },
+    {
+      "platformId": "tripo",
+      "name": "Tripo",
+      "site": "https://www.tripo3d.ai",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://www.tripo3d.ai",
+        "chars": 0,
+        "error": "HTTP Error 403: Forbidden"
+      }
+    },
+    {
+      "platformId": "vidu",
+      "name": "Vidu",
+      "site": "https://www.vidu.com",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://www.vidu.com",
+        "chars": 11936,
+        "error": null
+      }
+    },
+    {
+      "platformId": "lingxi",
+      "name": "WPS 灵犀",
+      "site": "https://www.lingxi.cn",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://www.lingxi.cn",
+        "chars": 2482,
+        "error": null
+      }
+    },
+    {
+      "platformId": "windsurf",
+      "name": "Windsurf",
+      "site": "https://windsurf.com",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://devin.ai/desktop",
+        "chars": 12326,
+        "error": null
+      }
+    },
+    {
+      "platformId": "workbuddy",
+      "name": "WorkBuddy",
+      "site": "https://www.workbuddy.cn",
+      "status": "partial",
+      "sources": [
+        "https://www.workbuddy.cn/docs/workbuddy/Pricing"
+      ],
+      "productIds": [
+        "workbuddy"
+      ],
+      "homepageRead": {
+        "url": "https://www.workbuddy.cn",
+        "chars": 26,
+        "error": null
+      }
+    },
+    {
+      "platformId": "n8n",
+      "name": "n8n",
+      "site": "https://n8n.io",
+      "status": "partial",
+      "sources": [
+        "https://n8n.io/pricing/"
+      ],
+      "productIds": [
+        "n8n-cloud",
+        "n8n-self-hosted"
+      ],
+      "homepageRead": {
+        "url": "https://n8n.io",
+        "chars": 7730,
+        "error": null
+      }
+    },
+    {
+      "platformId": "jimeng",
+      "name": "即梦",
+      "site": "https://jimeng.jianying.com",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://jimeng.jianying.com",
+        "chars": 1091,
+        "error": null
+      }
+    },
+    {
+      "platformId": "kling",
+      "name": "可灵 AI",
+      "site": "https://klingai.com",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://kling.ai/",
+        "chars": 6639,
+        "error": null
+      }
+    },
+    {
+      "platformId": "feishu",
+      "name": "字节跳动 飞书 Lark",
+      "site": "https://www.feishu.cn",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://www.larksuite.com/ja_jp/?from_site=feishu",
+        "chars": 25,
+        "error": null
+      }
+    },
+    {
+      "platformId": "coze",
+      "name": "扣子",
+      "site": "https://www.coze.cn",
+      "status": "partial",
+      "sources": [
+        "https://docs.coze.cn/guides_20260119_coze_premium_upgraded"
+      ],
+      "productIds": [
+        "coze"
+      ],
+      "homepageRead": {
+        "url": "https://www.coze.cn",
+        "chars": 43,
+        "error": null
+      }
+    },
+    {
+      "platformId": "doubao-work",
+      "name": "豆包工作",
+      "site": "https://www.doubao.com/work",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://www.doubao.com/work",
+        "chars": 18,
+        "error": null
+      }
+    },
+    {
+      "platformId": "qoder",
+      "name": "阿里 Qoder",
+      "site": "https://qoder.cn",
+      "status": "unreviewed",
+      "sources": [],
+      "productIds": [],
+      "homepageRead": {
+        "url": "https://qoder.cn",
+        "chars": 8290,
+        "error": null
+      }
+    },
+    {
+      "platformId": "qwenwork",
+      "name": "阿里 千问办公",
+      "site": "https://qwenwork.cn",
+      "status": "research_complete",
+      "sources": [
+        "https://qwenwork.cn/pricing",
+        "https://qwenwork.cn/pricing?audience=enterprise&billing=monthly"
+      ],
+      "productIds": [
+        "qwenwork"
+      ],
+      "homepageRead": {
+        "url": "https://qwenwork.cn",
+        "chars": 3503,
+        "error": null
+      },
+      "appliedCatalogRevision": 31
+    }
+  ]
+}

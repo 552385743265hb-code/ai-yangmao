@@ -1,12 +1,12 @@
 import {Hono} from 'hono';
 import {z} from 'zod';
-import {membershipSchema,validateMembership,normalizeMembership,formatMembership,migrateLegacyMembership,type MembershipCatalog,type MembershipRequirement,type MembershipProduct,type MembershipPlan} from '../shared/membership';
+import {membershipSchema,qualifiedPlanName,validateMembership,normalizeMembership,formatMembership,migrateLegacyMembership,type MembershipCatalog,type MembershipRequirement,type MembershipProduct,type MembershipPlan} from '../shared/membership';
 import type {Env} from './index';
 export class MembershipError extends Error {constructor(public status:400|409,message:string){super(message);}}
 export async function readMembershipCatalog(db:D1Database):Promise<MembershipCatalog>{
  const row=await db.prepare('SELECT revision,data_json FROM membership_catalog WHERE id=1').first<{revision:number;data_json:string}>();
  if(!row)throw new MembershipError(409,'会员目录尚未初始化');
- const data=JSON.parse(row.data_json);return {revision:row.revision,products:data.products,plans:data.plans};
+ const data=JSON.parse(row.data_json);return {...data,revision:row.revision};
 }
 type MemberOffer={requirements:string[];membershipRequirement?:MembershipRequirement|null};
 const memberTexts=(requirements:string[])=>requirements.filter(r=>r.startsWith('member:'));
@@ -54,10 +54,10 @@ export function collectedMembership(requirements:string[],input:MembershipRequir
  return migrateLegacyMembership(requirements,catalog);
 }
 const url=z.string().max(2000).refine(s=>{try{const u=new URL(s);return /^https?:$/.test(u.protocol)&&!u.username&&!u.password;}catch{return false;}},'需要有效的官方来源链接');
-const inputSchema=z.object({kind:z.enum(['product','plan']),name:z.string().trim().min(2).max(120),productId:z.string().optional(),aliases:z.array(z.string().trim().min(1).max(120)).max(30).default([]),billing:z.enum(['free','paid','unknown']).default('unknown'),sourceUrl:url,expectedCatalogRevision:z.number().int().nonnegative()}).strict();
+const inputSchema=z.object({kind:z.enum(['product','plan']),name:z.string().trim().min(2).max(120),productId:z.string().optional(),platformIds:z.array(z.string().min(1).max(200)).min(1).max(10).optional(),aliases:z.array(z.string().trim().min(1).max(120)).max(30).default([]),billing:z.enum(['free','paid','unknown']).default('unknown'),sourceUrl:url,expectedCatalogRevision:z.number().int().nonnegative()}).strict();
 const key=(s:string)=>s.normalize('NFKC').trim().toLocaleLowerCase();
 async function saveCatalog(db:D1Database,previous:MembershipCatalog,next:MembershipCatalog){
- const result=await db.prepare("UPDATE membership_catalog SET revision=revision+1,data_json=?,updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=1 AND revision=? RETURNING revision").bind(JSON.stringify({products:next.products,plans:next.plans}),previous.revision).first();
+ const result=await db.prepare("UPDATE membership_catalog SET revision=revision+1,data_json=?,updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=1 AND revision=? RETURNING revision").bind(JSON.stringify({...next,revision:undefined}),previous.revision).first();
  if(!result)throw new MembershipError(409,'会员目录已被其他审核员修改，请刷新');
 }
 export async function membershipImpact(db:D1Database,catalog:MembershipCatalog,id:string,kind:string){
@@ -73,9 +73,16 @@ membershipAdminRoutes.post('/',async c=>{
  const parsed=inputSchema.safeParse(await c.req.json().catch(()=>null));if(!parsed.success)return c.json({error:'目录资料不正确',issues:parsed.error.issues},400);
  const b=parsed.data,old=await readMembershipCatalog(c.env.DB);if(old.revision!==b.expectedCatalogRevision)throw new MembershipError(409,'会员目录已更新');
  if(b.kind==='plan'&&!old.products.some(p=>p.id===b.productId))throw new MembershipError(400,'会员产品不存在');
+ if(b.platformIds?.length){
+  if(b.kind!=='product')throw new MembershipError(400,'厂商归属在会员产品上设置');
+  const rows=await c.env.DB.prepare(`SELECT id FROM platforms WHERE id IN (${b.platformIds.map(()=>'?').join(',')})`).bind(...b.platformIds).all<{id:string}>();
+  if(b.platformIds.some(id=>!rows.results.some(p=>p.id===id)))throw new MembershipError(400,'厂商不存在');
+ }
+ const product=old.products.find(p=>p.id===b.productId);
+ const name=b.kind==='plan'&&product?qualifiedPlanName({id:'new',name:b.name,aliases:[],status:'pending',sourceUrl:b.sourceUrl,verifiedAt:null,revision:1,productId:product.id,billing:b.billing},old):b.name;
  const entries=b.kind==='product'?old.products:old.plans.filter(p=>p.productId===b.productId);
- const incoming=new Set([b.name,...b.aliases].map(key));if(entries.some(p=>[p.name,...p.aliases].some(n=>incoming.has(key(n)))))throw new MembershipError(409,'这个名称或别名已在同一产品目录中存在');
- const entry:MembershipProduct|MembershipPlan={id:'member-'+crypto.randomUUID(),name:b.name,aliases:b.aliases,status:'pending',sourceUrl:b.sourceUrl,verifiedAt:null,revision:1,...(b.kind==='plan'?{productId:b.productId!,billing:b.billing}:{})};
+ const incoming=new Set([name,b.name,...b.aliases].map(key));if(entries.some(p=>[p.name,...p.aliases].some(n=>incoming.has(key(n)))))throw new MembershipError(409,'这个名称或别名已在同一产品目录中存在');
+ const entry:MembershipProduct|MembershipPlan={id:'member-'+crypto.randomUUID(),name,aliases:[...new Set([...b.aliases,...(name!==b.name?[b.name]:[])])],...(b.platformIds?{platformIds:[...new Set(b.platformIds)]}:{}),status:'pending',sourceUrl:b.sourceUrl,verifiedAt:null,revision:1,...(b.kind==='plan'?{productId:b.productId!,billing:b.billing}:{})};
  const next=structuredClone(old);if(b.kind==='product')next.products.push(entry);else next.plans.push(entry as MembershipPlan);await saveCatalog(c.env.DB,old,next);
  return c.json({entry,catalogRevision:old.revision+1},201);
 });

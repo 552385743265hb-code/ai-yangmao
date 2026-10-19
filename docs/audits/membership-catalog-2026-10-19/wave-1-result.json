@@ -1,0 +1,287 @@
+{
+  "appliedAt": "2026-10-19",
+  "beforeRevision": 29,
+  "afterRevision": 30,
+  "products": 40,
+  "plans": 140,
+  "verifiedPlans": 81,
+  "readback": "46 changed plan objects equal prepared patch; original IDs retained",
+  "changes": [
+    {
+      "id": "elevenlabs-free",
+      "oldName": "ElevenLabs Free",
+      "name": "ElevenLabs Free",
+      "productId": "elevenlabs"
+    },
+    {
+      "id": "elevenlabs-starter",
+      "oldName": "ElevenLabs Starter",
+      "name": "ElevenLabs Starter",
+      "productId": "elevenlabs"
+    },
+    {
+      "id": "elevenlabs-creator",
+      "oldName": "Creator",
+      "name": "ElevenLabs Creator",
+      "productId": "elevenlabs"
+    },
+    {
+      "id": "elevenlabs-pro",
+      "oldName": "ElevenLabs Pro",
+      "name": "ElevenLabs Pro",
+      "productId": "elevenlabs"
+    },
+    {
+      "id": "elevenlabs-scale",
+      "oldName": "ElevenLabs Scale",
+      "name": "ElevenLabs Scale",
+      "productId": "elevenlabs"
+    },
+    {
+      "id": "elevenlabs-business",
+      "oldName": "ElevenLabs Business",
+      "name": "ElevenLabs Business",
+      "productId": "elevenlabs"
+    },
+    {
+      "id": "elevenlabs-enterprise",
+      "oldName": "ElevenLabs Enterprise",
+      "name": "ElevenLabs Enterprise",
+      "productId": "elevenlabs"
+    },
+    {
+      "id": "genspark-free",
+      "oldName": "Genspark Free",
+      "name": "Genspark Free",
+      "productId": "genspark"
+    },
+    {
+      "id": "genspark-plus",
+      "oldName": "Plus",
+      "name": "Genspark Plus",
+      "productId": "genspark"
+    },
+    {
+      "id": "genspark-pro",
+      "oldName": "Pro",
+      "name": "Genspark Pro",
+      "productId": "genspark"
+    },
+    {
+      "id": "genspark-team",
+      "oldName": "Genspark Team",
+      "name": "Genspark Team",
+      "productId": "genspark"
+    },
+    {
+      "id": "genspark-enterprise",
+      "oldName": "Genspark Enterprise",
+      "name": "Genspark Enterprise",
+      "productId": "genspark"
+    },
+    {
+      "id": "midjourney-basic-plan",
+      "oldName": "Basic Plan",
+      "name": "Midjourney Basic Plan",
+      "productId": "midjourney"
+    },
+    {
+      "id": "midjourney-standard",
+      "oldName": "Standard",
+      "name": "Midjourney Standard Plan",
+      "productId": "midjourney"
+    },
+    {
+      "id": "midjourney-pro",
+      "oldName": "Pro",
+      "name": "Midjourney Pro Plan",
+      "productId": "midjourney"
+    },
+    {
+      "id": "midjourney-mega",
+      "oldName": "Mega",
+      "name": "Midjourney Mega Plan",
+      "productId": "midjourney"
+    },
+    {
+      "id": "opencode-go",
+      "oldName": "Go",
+      "name": "OpenCode Go",
+      "productId": "opencode"
+    },
+    {
+      "id": "opencode-go-plus",
+      "oldName": "Go Plus",
+      "name": "OpenCode Go Plus",
+      "productId": "opencode"
+    },
+    {
+      "id": "qwenwork-free",
+      "oldName": "千问办公 免费版",
+      "name": "千问办公 免费版",
+      "productId": "qwenwork"
+    },
+    {
+      "id": "qwenwork-plan-1",
+      "oldName": "个人标准版",
+      "name": "千问办公 个人标准版",
+      "productId": "qwenwork"
+    },
+    {
+      "id": "qwenwork-plan-2",
+      "oldName": "个人高级版",
+      "name": "千问办公 个人高级版",
+      "productId": "qwenwork"
+    },
+    {
+      "id": "hugging-face-pro",
+      "oldName": "PRO",
+      "name": "Hugging Face PRO",
+      "productId": "hugging-face"
+    },
+    {
+      "id": "hugging-face-team",
+      "oldName": "Team",
+      "name": "Hugging Face Team",
+      "productId": "hugging-face"
+    },
+    {
+      "id": "hugging-face-enterprise",
+      "oldName": "Enterprise",
+      "name": "Hugging Face Enterprise",
+      "productId": "hugging-face"
+    },
+    {
+      "id": "krea-free",
+      "oldName": "Krea Free",
+      "name": "Krea Free",
+      "productId": "krea"
+    },
+    {
+      "id": "krea-basic",
+      "oldName": "Krea Basic",
+      "name": "Krea Basic",
+      "productId": "krea"
+    },
+    {
+      "id": "krea-pro",
+      "oldName": "Krea Pro",
+      "name": "Krea Pro",
+      "productId": "krea"
+    },
+    {
+      "id": "krea-max",
+      "oldName": "Krea Max",
+      "name": "Krea Max",
+      "productId": "krea"
+    },
+    {
+      "id": "krea-business",
+      "oldName": "Krea Business",
+      "name": "Krea Business",
+      "productId": "krea"
+    },
+    {
+      "id": "krea-enterprise",
+      "oldName": "Krea Enterprise",
+      "name": "Krea Enterprise",
+      "productId": "krea"
+    },
+    {
+      "id": "ollama-free",
+      "oldName": "Ollama Free",
+      "name": "Ollama Free",
+      "productId": "ollama"
+    },
+    {
+      "id": "ollama-pro",
+      "oldName": "Ollama Pro",
+      "name": "Ollama Pro",
+      "productId": "ollama"
+    },
+    {
+      "id": "ollama-max",
+      "oldName": "Ollama Max",
+      "name": "Ollama Max",
+      "productId": "ollama"
+    },
+    {
+      "id": "ollama-team",
+      "oldName": "Ollama Team",
+      "name": "Ollama Team",
+      "productId": "ollama"
+    },
+    {
+      "id": "ollama-enterprise",
+      "oldName": "Ollama Enterprise",
+      "name": "Ollama Enterprise",
+      "productId": "ollama"
+    },
+    {
+      "id": "niteshift-free",
+      "oldName": "Niteshift Free",
+      "name": "Niteshift Free",
+      "productId": "niteshift"
+    },
+    {
+      "id": "niteshift-individual",
+      "oldName": "Niteshift Individual",
+      "name": "Niteshift Individual",
+      "productId": "niteshift"
+    },
+    {
+      "id": "niteshift-team",
+      "oldName": "Niteshift Team",
+      "name": "Niteshift Team",
+      "productId": "niteshift"
+    },
+    {
+      "id": "otter-ai-basic",
+      "oldName": "Otter.ai Basic",
+      "name": "Otter.ai Basic",
+      "productId": "otter-ai"
+    },
+    {
+      "id": "otter-ai-pro",
+      "oldName": "Pro",
+      "name": "Otter.ai Pro",
+      "productId": "otter-ai"
+    },
+    {
+      "id": "otter-ai-business",
+      "oldName": "Otter.ai Business",
+      "name": "Otter.ai Business",
+      "productId": "otter-ai"
+    },
+    {
+      "id": "otter-ai-enterprise",
+      "oldName": "Otter.ai Enterprise",
+      "name": "Otter.ai Enterprise",
+      "productId": "otter-ai"
+    },
+    {
+      "id": "dreamina-basic",
+      "oldName": "Dreamina Basic",
+      "name": "Dreamina Basic",
+      "productId": "dreamina"
+    },
+    {
+      "id": "dreamina-standard",
+      "oldName": "Dreamina Standard",
+      "name": "Dreamina Standard",
+      "productId": "dreamina"
+    },
+    {
+      "id": "dreamina-advanced",
+      "oldName": "Dreamina Advanced",
+      "name": "Dreamina Advanced",
+      "productId": "dreamina"
+    },
+    {
+      "id": "dreamina-ultra",
+      "oldName": "Dreamina Ultra",
+      "name": "Dreamina Ultra",
+      "productId": "dreamina"
+    }
+  ]
+}

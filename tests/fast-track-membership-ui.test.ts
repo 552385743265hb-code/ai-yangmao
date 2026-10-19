@@ -19,9 +19,8 @@ function formData(window: any) {
 }
 function pick(document: any, window: any) {
   const change = (selector: string, value: string) => { const input = document.querySelector(selector)!; Object.defineProperty(input, 'value', { configurable: true, value }); input.dispatchEvent(new window.Event('change', { bubbles: true })); };
-  change('[data-membership-status]', 'confirmed');
-  change('[data-clause="productId"]', 'higgsfield');
-  const plan = document.querySelector('[data-plan="planIds"][value="higgsfield-pro"]')!; plan.checked = true; plan.setAttribute('checked', ''); plan.dispatchEvent(new window.Event('change', { bubbles: true }));
+  change('[data-member-vendor]', 'higgsfield');
+  const plan = document.querySelector('[data-member-plan="higgsfield-pro"]')!; plan.checked = true; plan.setAttribute('checked', ''); plan.dispatchEvent(new window.Event('change', { bubbles: true }));
 }
 
 it('the needs-owner panel asks for a catalog membership and submits the picked plan', async () => {
