@@ -1,3 +1,4 @@
+import { reopenLeadClosure } from '../identity/lead-closure';
 import { IdentityService } from '../identity/service';
 import { IdentityError } from '../identity/store';
 import { sha256 } from '../../shared/identity/normalize';
@@ -119,21 +120,28 @@ export async function markWronglyClosed(db: D1Database, id: number, actor: strin
   // Already-linked and approved canonical records retain their publication and linkage.
   const approved = await db.prepare(`SELECT o.id FROM offers o WHERE o.review_state='approved' AND (o.id=? OR EXISTS(SELECT 1 FROM lead_candidate_links l JOIN intake_candidates c ON c.id=l.candidate_id JOIN benefit_entities e ON e.id=c.entity_id WHERE l.lead_id=? AND e.canonical_offer_id=o.id AND e.current_approved_version_id IS NOT NULL)) LIMIT 1`).bind(row.offer_id, id).first<{ id: string }>();
   const preserveLinked = row.status === 'linked' || !!approved;
-  const refusal = preserveLinked ? null : await db.prepare(`SELECT d.id, coalesce((SELECT business_revision FROM benefit_entities WHERE id=d.entity_id),
+  const refusal = preserveLinked ? null : await db.prepare(`SELECT d.id, (SELECT extraction_version FROM intake_candidates WHERE id=d.candidate_id) extraction_version, coalesce((SELECT business_revision FROM benefit_entities WHERE id=d.entity_id),
     (SELECT revision FROM intake_candidates WHERE id=d.candidate_id),
-    (SELECT c.revision FROM review_tasks t JOIN task_candidates tc ON tc.task_id=t.id JOIN intake_candidates c ON c.id=tc.candidate_id WHERE t.decision_id=d.id ORDER BY c.id LIMIT 1)) revision ${refusalFrom} ORDER BY d.id LIMIT 1`).bind(id).first<{ id: string; revision: number }>();
+    (SELECT c.revision FROM review_tasks t JOIN task_candidates tc ON tc.task_id=t.id JOIN intake_candidates c ON c.id=tc.candidate_id WHERE t.decision_id=d.id ORDER BY c.id LIMIT 1)) revision ${refusalFrom} ORDER BY d.id LIMIT 1`).bind(id).first<{ id: string; revision: number; extraction_version: string|null }>();
   if (refusal) {
+    if(refusal.extraction_version==='lead-closure-v1'){
+      await reopenLeadClosure(db,{leadId:id,decisionId:refusal.id,expectedRevision:refusal.revision,requestId:`spot:${id}:${recovery.operationId}:${refusal.id}`,actor});
+      recovery.reanalysisRequested=true;
+    }else{
     const opened = await new IdentityService(db).reopenDecision(refusal.id, { requestId: `spot:${id}:${recovery.operationId}:${refusal.id}`.slice(0, 200), expectedRevision: refusal.revision,
       reason: '管理员抽查确认误关，恢复待审', basis: { description: `管理员确认线索 #${id} 原自动关闭有误，保留拒绝历史并重新审核；不自动批准。` }, actor });
     recovery.taskIds = [...new Set([...recovery.taskIds, opened.taskId])];
+    }
   }
   const openTasks = await db.prepare(`SELECT DISTINCT t.id FROM lead_candidate_links l JOIN task_candidates tc ON tc.candidate_id=l.candidate_id JOIN review_tasks t ON t.id=tc.task_id WHERE l.lead_id=? AND t.state IN ('open','checking','manual')`).bind(id).all<{ id: string }>();
   recovery.taskIds = [...new Set([...recovery.taskIds, ...openTasks.results.map(t => t.id)])];
   const more = !preserveLinked && !!await db.prepare(`SELECT d.id ${refusalFrom} LIMIT 1`).bind(id).first();
   recovery.state = more ? 'pending' : 'completed';
   if (!more) recovery.completedAt = new Date().toISOString();
+  if(!preserveLinked&&!recovery.taskIds.length&&!recovery.reanalysisRequested)recovery.reanalysisRequested=!!await db.prepare("SELECT 1 FROM lead_candidate_links l JOIN intake_candidates c ON c.id=l.candidate_id WHERE l.lead_id=? AND c.extraction_version='lead-closure-v1' AND json_extract(c.receipt_json,'$.reasonCodes[0]')='lead_reanalysis_requested' LIMIT 1").bind(id).first();
+  const reanalyze=!more&&!preserveLinked&&recovery.reanalysisRequested&&!recovery.taskIds.length;
   const nextStatus = more ? row.status : preserveLinked ? 'linked' : 'reviewing';
-  const next = JSON.stringify({ ...resolution, ...(!more && !preserveLinked ? { status: 'manual', jobId: `spot-recovery-${recovery.operationId}`, attempts: 0, inconclusive: 0, checkedAt: new Date().toISOString(), nextAttemptAt: null, queries: resolution.queries ?? [], candidates: resolution.candidates ?? [], identityTaskIds: recovery.taskIds, reason: '管理员抽查确认误关，恢复待审' } : {}), spotCheck: { ...resolution.spotCheck, recovery } });
+  const next = JSON.stringify({ ...resolution, ...(!more && !preserveLinked ? { status: reanalyze?'retry':'manual', jobId: `spot-recovery-${recovery.operationId}`, attempts: 0, inconclusive: 0, checkedAt: new Date().toISOString(), nextAttemptAt: reanalyze?new Date().toISOString():null, queries: resolution.queries ?? [], candidates: resolution.candidates ?? [], identityTaskIds: recovery.taskIds, reason: reanalyze?'管理员确认误关，重新读取正文并研判官方权益':'管理员抽查确认误关，恢复待审' } : {}), spotCheck: { ...resolution.spotCheck, recovery } });
   const guard = sameLead(row);
   const noRefusal = !more && !preserveLinked ? ` AND NOT EXISTS(SELECT 1 ${refusalFrom})` : '';
   const saved = await db.prepare(`UPDATE leads SET status=?,offer_id=?,resolution=? WHERE ${guard.sql}${noRefusal} RETURNING id`).bind(nextStatus, approved?.id ?? row.offer_id, next, ...guard.args, ...(!more && !preserveLinked ? [id] : [])).first();
