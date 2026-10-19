@@ -53,3 +53,10 @@ it('does not reclassify a genuine member bonus as global free access',()=>{
  const fields={...wrong,type:'perk',audience:'all',modalities:['text'],requirements:['net','member:Perplexity Pro']};
  expect(fastTrackFieldIssues(fields,c).filter(i=>i.startsWith('type:'))).toEqual([]);
 });
+
+it('preserves a real old-account restriction despite an unrelated all-users notice elsewhere on the page',()=>{
+ const benefit='Only existing subscribers registered before October 1 receive 500 bonus credits.';
+ const c={...context,benefit,sourceText:'All users can read the support page. '+benefit};
+ const result=makeSemanticReview({...wrong,type:'perk',modalities:['text']},{type:{value:'perk',quote:benefit},modalities:[{value:'text',quote:benefit}],audience:{value:'old',quote:benefit}},c,'review');
+ expect(result.issues).toEqual([]);expect(result.fields.audience).toBe('old');
+});

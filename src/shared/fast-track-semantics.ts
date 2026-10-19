@@ -48,7 +48,7 @@ export function semanticFieldIssues(fields:ListingFields,c:SemanticContext):stri
  else if(fields.type==='trial'&&globalFree.test(source)&&globalWindow.test(source)&&!personalTrial.test(source))issues.push('type: 全局活动截止前免费不是首次使用试用，应按限时免费 free 核对');
  if(fields.audience==='old'&&!oldOnly.test(source))issues.push('audience: 会员资格不等于仅老用户；没有明确老用户排他条件时按 all 核对');
  if(fields.audience==='new'&&!newOnly.test(source))issues.push('audience: 没有新注册/首次使用的限定，不得标仅新用户');
- if((fields.audience==='old'||fields.audience==='new')&&inclusive.test(source))issues.push('audience: 原文包含新老用户或 anyone，应核对 all');
+ if((fields.audience==='old'||fields.audience==='new')&&inclusive.test(focus))issues.push('audience: 原文包含新老用户或 anyone，应核对 all');
  if(Array.isArray(fields.modalities))for(const m of fields.modalities){
   if(typeof m==='string'&&generation[m]&&(!generation[m].test(source)||deniedGeneration.test(source)&&!source.split(/[\n.!。]/).some(line=>generation[m].test(line)&&!deniedGeneration.test(line))))issues.push(`modalities: ${m} 缺少实际生成/转写输出依据，界面、截图、输入素材不代表免费生成`);
  }
