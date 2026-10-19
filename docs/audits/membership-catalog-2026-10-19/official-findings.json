@@ -2739,6 +2739,93 @@
       "note": "Ultra Access已停售，只有2026-05-05前固定期合同可延续至下一次续费，按合同迁移；不是个人Google AI Ultra，不能自动合并。",
       "status": "verified",
       "applyReady": true
+    },
+    {
+      "productId": "mistral",
+      "platformIds": [
+        "mistral"
+      ],
+      "name": "Mistral",
+      "plans": [
+        "Free",
+        "Pro",
+        "Team",
+        "Enterprise"
+      ],
+      "freePlans": [
+        "Free"
+      ],
+      "sourceUrl": "https://mistral.ai/pricing/",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Free; Pro; Team; Enterprise",
+      "verificationNote": "官方同一订阅覆盖Vibe聊天与编程；教育价格是Pro资格优惠，不另造相同会员。API按模型实际用量计费，不创建独立充值会员。"
+    },
+    {
+      "productId": "lovart",
+      "platformIds": [
+        "lovart"
+      ],
+      "name": "Lovart",
+      "plans": [
+        "Free",
+        "Starter",
+        "Basic",
+        "Pro",
+        "Ultimate",
+        "Team"
+      ],
+      "freePlans": [
+        "Free"
+      ],
+      "sourceUrl": "https://www.lovart.ai/pricing",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Free; Starter; Basic; Pro; Ultimate; Team",
+      "verificationNote": "真实浏览器读取四个个人付费档、比较表Free，以及Team弹窗；10+席是团队定制配置，不重复命名为新Enterprise。"
+    },
+    {
+      "productId": "vidu-global",
+      "platformIds": [
+        "vidu"
+      ],
+      "name": "Vidu（国际版）",
+      "plans": [
+        "Free",
+        "Standard",
+        "Premium",
+        "Ultimate"
+      ],
+      "freePlans": [
+        "Free"
+      ],
+      "sourceUrl": "https://www.vidu.com/pricing",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Free; Standard; Premium; Ultimate",
+      "verificationNote": "真实浏览器读动态卡片；Ultimate可调整积分数量，同一档位不按积分滑块重复建套餐。国内版与企业/API入口继续核对。"
+    },
+    {
+      "productId": "seaart",
+      "platformIds": [
+        "seaart"
+      ],
+      "name": "SeaArt SVIP",
+      "plans": [
+        "Free",
+        "Beginner",
+        "Standard",
+        "Professional",
+        "Master"
+      ],
+      "freePlans": [
+        "Free"
+      ],
+      "sourceUrl": "https://www.seaart.ai/mall",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Free; Beginner; Standard; Professional; Master",
+      "verificationNote": "从官网Pricing链接进入真实会员页面，浏览器确认四种付费SVIP及Free；充值包和装饰箱不是会员。"
     }
   ]
 }

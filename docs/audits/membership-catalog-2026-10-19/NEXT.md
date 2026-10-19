@@ -4,9 +4,9 @@
 
 ## 已核实当前状态（2026-10-19）
 
-- 生产会员目录 **revision 52**：102 产品、531 套餐；511 verified、19 retired、1 pending。完整产品/套餐及根级别迁移元数据已与预备补丁逐项读回一致。
+- 生产会员目录 **revision 54**：106 产品、550 套餐；530 verified、19 retired、1 pending。完整产品/套餐及根级别迁移元数据已与预备补丁逐项读回一致。
 - 仅剩1个旧pending：`cursor-plan-1`。Grok/X三个占位项已退休并补官方具体套餐。
-- 厂商研究覆盖：50 research_complete、32 partial、42 unreviewed。**这比 pending 数更接近剩余工作规模，不能只清四条就宣布完成。**
+- 厂商研究覆盖：56 research_complete、34 partial、34 unreviewed。**这比 pending 数更接近剩余工作规模，不能只清四条就宣布完成。**
 - 生产代码已更新为 PR106 / cc1f94632ef2（100%流量，2026-10-19实时读取）；新界面在草稿 PR105，未合并部署。当前工作区 `/tmp/ym-hf-link-worktree`，分支 `codex/membership-catalog-complete`。
 - 主 checkout 是其他任务的估值修复，勿覆盖。node_modules 为临时 symlink，不提交。
 - 本地最近完整验证：类型检查、1426 Vitest + 11 CLI、build:web、diff --check 通过。代码新增：按厂商套餐复选、个人选择去重、旧记录提示可单独清除、跨厂商资格默认显示实际会员厂商、退休产品不重新出现在厂商下拉、目录准备工具的归并/退休守卫与回归。
@@ -16,9 +16,9 @@
 - **整份目录已超过 D1 单条 SQL 100KB 限制。不要再把 JSON 内联到 wrangler execute --file。** 第11批内联写入返回 SQLITE_TOOBIG，已确认没有生效；随后改为 SQL 绑定参数原子 CAS，成功从40写到41并完整读回。
 - 后续预备补丁：`node scripts/prepare-membership-catalog.mjs <当前目录快照> docs/audits/membership-catalog-2026-10-19/official-findings.json <预备文件> docs/audits/membership-catalog-2026-10-19/coverage.json`。仅 verified+applyReady 的事实被采用；未显式处理的旧套餐会报错。
 - 当前可复用私有绑定参数写入器：`node /tmp/ym-membership-apply-bound.mjs <预备文件> <私有凭证前缀>`。它使用现有 Wrangler OAuth（不输出令牌），固定只更新 membership_catalog id=1，检查 expectedRevision，保存前后快照并全量对照。API失败后先读状态，不盲目重放。若 OAuth 过期，用正常 Wrangler CLI 刷新，不输出凭据。
-- 最新完整 D1 原件：`/tmp/ym-membership-wave22-bound-after.json`（revision + data_json）。原始基线：`/tmp/ym-membership-catalog-before.json` rev29；`/tmp/ym-membership-offers-before.json`（96条会员权益）；`/tmp/ym-membership-profiles-before.json`。
+- 最新完整 D1 原件：`/tmp/ym-membership-wave24-bound-after.json`（revision + data_json）。原始基线：`/tmp/ym-membership-catalog-before.json` rev29；`/tmp/ym-membership-offers-before.json`（96条会员权益）；`/tmp/ym-membership-profiles-before.json`。
 - 生产旧 API 目前只返回 revision/products/plans，**会省略根级别 productIdAliases/productReplacements**。准备工具会根据事实文件重建这些映射；最终部署新读取代码后需核验根元数据保留。完整 D1 快照优于只靠公开 API。
-- `wave-1` 至 `wave-22` 记录已入审计目录。生产触发器自动保留每次目录修改前后原件。
+- `wave-1` 至 `wave-24` 记录已入审计目录。生产触发器自动保留每次目录修改前后原件。
 
 ## 官方研究证据与发现
 
@@ -72,7 +72,7 @@ CUA的IAB临时tab2当前在TRAE计费文档，可继续看企业版；`pvCatalo
 
 - 本地前端+生产公开数据快照，真实浏览器逐个切换126个入口，438个已启用套餐控件全部勾选/取消/检查去重。生产目录429个唯一verified计划，Devin/Windsurf九个共享ID重复展示所以控件数438。跨厂商Copilot Pro/Qoder国际Pro选择刷新保留、单独移除互不影响，清理后为空，无控制台错误。详细凭证browser-sweep-rev48.json。
 - 验收未通过项：Cursor旧占位、Grok两个旧占位、X旧占位共四个disabled，额外Grok/X厂商入口导致126不是124。需迁移完再最终重测。资料不全的空厂商只测切换不算研究完成。
-- 浏览器membershipPreviewTab=IAB tab4，localhost:8769。私有预览服务器/tmp/ym-membership-preview.py，当前exec session92456（恢复时先查是否仍活跃），只读使用/tmp/ym-preview-{platforms,offers,meta,coverage}.json及wave22-bound-after.json；不会写生产或触发外部消息。当前本地选择已清空。
+- 浏览器membershipPreviewTab=IAB tab4，localhost:8769。私有预览服务器/tmp/ym-membership-preview.py，当前exec session92456（恢复时先查是否仍活跃），只读使用/tmp/ym-preview-{platforms,offers,meta,coverage}.json及wave24-bound-after.json；不会写生产或触发外部消息。当前本地选择已清空。
 
 ## rev49/50后续进展
 
@@ -88,3 +88,11 @@ CUA的IAB临时tab2当前在TRAE计费文档，可继续看企业版；`pvCatalo
 - AI Ultra Access官方https://knowledge.workspace.google.com/admin/generative-ai/workspace-with-gemini/ai-ultra-access 明确5月5日前固定期可用到7月7日后下一次续费；别名Google AI Ultra for Business。个人Google AI Ultra不受影响。AI Expanded Access为现行独立加购。
 - Colab个人页https://colab.research.google.com/signup 已真实浏览器读取Pro/Pro+，Workspace官方add-ons页也列同名许可；计算单元包明示不需要订阅，不造会员。Google AI套餐包含Colab能力不另建假订阅。
 - Google剩余：Workspace Individual/Nonprofits、旧G Suite与旧Gemini附加包目前是否仍有效、Teaching and Learning旧附加包、可能的Gemini for Government具名许可、AppSheet AI相关订阅。避免从翻译旧页和一般资源SKU推断现行套餐；当前管理文档与营销页不一致时保留核查。缓存google-dev-faq.txt/google-enterprise-editions.txt/workspace-{education,enterprise,essentials}.txt可继续查链接。
+
+## rev53/54创作平台与实验室
+
+- Mistral Free/Pro/Team/Enterprise，Lovart Free/Starter/Basic/Pro/Ultimate/Team，SeaArt Free/Beginner/Standard/Professional/Master均研究完成并入库。Lovart团队弹窗的10+席是Team定制配置，不造第二个未命名Enterprise。SeaArt真实会员入口是https://www.seaart.ai/mall；不要用用户articleDetail内容或不存在的/vip路径。
+- Vidu国际Free/Standard/Premium/Ultimate已浏览器读取动态卡片，Ultimate10k/20k积分滑块不造重复档位；仍须核对国内和企业/API渠道，保持partial。
+- Physical Intelligence官网Pi API beta只有分批申请入口，未公开会员档位；Thinking Machines Tinker官网pricing覆盖训练/推理Inkling/Inkling-Small与存储，按量无固定会员；Nex官网Mini/Pro/Max是模型名，Try Now去OpenRouter，Weaver按token额度申请。三个厂商标research_complete/none。
+- Reflection保持partial：已读官网和完整docs索引，Mirror代理+Beam API，无公开定价文档，仍需核平台计费入口。缓存reflection-index.txt/reflection-quickstart.md/reflection-docs.txt可复用，不要把模型或org权限称为会员。
+- 第24批初次绑定参数写入因OAuth过期在读取之前失败（7403）；标准Wrangler读取确认仍rev53并自动刷新认证，之后重放成功到rev54且完整读回。没有重复写入。

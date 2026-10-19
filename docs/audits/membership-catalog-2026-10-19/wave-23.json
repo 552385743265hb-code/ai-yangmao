@@ -1,0 +1,125 @@
+{
+  "checkedAt": "2026-10-19",
+  "expectedRevision": 52,
+  "revision": 53,
+  "products": 106,
+  "plans": 550,
+  "vendors": 124,
+  "fullReadback": true,
+  "changes": [
+    {
+      "id": "mistral-free",
+      "oldName": "Mistral Free",
+      "name": "Mistral Free",
+      "productId": "mistral"
+    },
+    {
+      "id": "mistral-pro",
+      "oldName": "Mistral Pro",
+      "name": "Mistral Pro",
+      "productId": "mistral"
+    },
+    {
+      "id": "mistral-team",
+      "oldName": "Mistral Team",
+      "name": "Mistral Team",
+      "productId": "mistral"
+    },
+    {
+      "id": "mistral-enterprise",
+      "oldName": "Mistral Enterprise",
+      "name": "Mistral Enterprise",
+      "productId": "mistral"
+    },
+    {
+      "id": "lovart-free",
+      "oldName": "Lovart Free",
+      "name": "Lovart Free",
+      "productId": "lovart"
+    },
+    {
+      "id": "lovart-starter",
+      "oldName": "Lovart Starter",
+      "name": "Lovart Starter",
+      "productId": "lovart"
+    },
+    {
+      "id": "lovart-basic",
+      "oldName": "Lovart Basic",
+      "name": "Lovart Basic",
+      "productId": "lovart"
+    },
+    {
+      "id": "lovart-pro",
+      "oldName": "Lovart Pro",
+      "name": "Lovart Pro",
+      "productId": "lovart"
+    },
+    {
+      "id": "lovart-ultimate",
+      "oldName": "Lovart Ultimate",
+      "name": "Lovart Ultimate",
+      "productId": "lovart"
+    },
+    {
+      "id": "lovart-team",
+      "oldName": "Lovart Team",
+      "name": "Lovart Team",
+      "productId": "lovart"
+    },
+    {
+      "id": "vidu-global-free",
+      "oldName": "Vidu（国际版） Free",
+      "name": "Vidu（国际版） Free",
+      "productId": "vidu-global"
+    },
+    {
+      "id": "vidu-global-standard",
+      "oldName": "Vidu（国际版） Standard",
+      "name": "Vidu（国际版） Standard",
+      "productId": "vidu-global"
+    },
+    {
+      "id": "vidu-global-premium",
+      "oldName": "Vidu（国际版） Premium",
+      "name": "Vidu（国际版） Premium",
+      "productId": "vidu-global"
+    },
+    {
+      "id": "vidu-global-ultimate",
+      "oldName": "Vidu（国际版） Ultimate",
+      "name": "Vidu（国际版） Ultimate",
+      "productId": "vidu-global"
+    },
+    {
+      "id": "seaart-free",
+      "oldName": "SeaArt SVIP Free",
+      "name": "SeaArt SVIP Free",
+      "productId": "seaart"
+    },
+    {
+      "id": "seaart-beginner",
+      "oldName": "SeaArt SVIP Beginner",
+      "name": "SeaArt SVIP Beginner",
+      "productId": "seaart"
+    },
+    {
+      "id": "seaart-standard",
+      "oldName": "SeaArt SVIP Standard",
+      "name": "SeaArt SVIP Standard",
+      "productId": "seaart"
+    },
+    {
+      "id": "seaart-professional",
+      "oldName": "SeaArt SVIP Professional",
+      "name": "SeaArt SVIP Professional",
+      "productId": "seaart"
+    },
+    {
+      "id": "seaart-master",
+      "oldName": "SeaArt SVIP Master",
+      "name": "SeaArt SVIP Master",
+      "productId": "seaart"
+    }
+  ]
+}

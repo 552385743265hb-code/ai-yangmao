@@ -717,9 +717,13 @@
       "platformId": "mistral",
       "name": "Mistral AI",
       "site": "https://mistral.ai",
-      "status": "unreviewed",
-      "sources": [],
-      "productIds": [],
+      "status": "research_complete",
+      "sources": [
+        "https://mistral.ai/pricing/"
+      ],
+      "productIds": [
+        "mistral"
+      ],
       "homepageRead": {
         "url": "https://mistral.ai",
         "chars": 5533,
@@ -730,14 +734,19 @@
       "platformId": "nex-agi",
       "name": "Nex AGI",
       "site": "https://nex.sii.edu.cn",
-      "status": "unreviewed",
-      "sources": [],
+      "status": "research_complete",
+      "sources": [
+        "https://nex.sii.edu.cn/",
+        "https://nex.sii.edu.cn/platform/usage-billing-quota.html"
+      ],
       "productIds": [],
       "homepageRead": {
         "url": "https://nex.sii.edu.cn",
         "chars": 5715,
         "error": null
-      }
+      },
+      "subscriptionStatus": "none",
+      "note": "已实际浏览官网：Nex-N2.5 Mini/Pro/Max是模型，不是会员；体验入口指向OpenRouter。Weaver训练平台按Token计量额度并申请补额，公开资料未列固定会员套餐。"
     },
     {
       "platformId": "odyssey",
@@ -1028,14 +1037,20 @@
       "platformId": "physical-intelligence",
       "name": "Physical Intelligence",
       "site": "https://www.pi.website",
-      "status": "unreviewed",
-      "sources": [],
+      "status": "research_complete",
+      "sources": [
+        "https://www.pi.website/",
+        "https://www.pi.website/blog/api-beta",
+        "https://www.pi.website/waitlist"
+      ],
       "productIds": [],
       "homepageRead": {
         "url": "https://www.pi.website",
         "chars": 3427,
         "error": null
-      }
+      },
+      "subscriptionStatus": "none",
+      "note": "官方目前公开Pi API beta并分批接受团队申请，没有公开会员套餐档位；不把beta申请、机器人硬件或研究模型型号当会员。"
     },
     {
       "platformId": "prime-intellect",
@@ -1054,14 +1069,20 @@
       "platformId": "reflection",
       "name": "Reflection AI",
       "site": "https://reflection.ai",
-      "status": "unreviewed",
-      "sources": [],
+      "status": "partial",
+      "sources": [
+        "https://reflection.ai/",
+        "https://developers.reflection.ai/introduction",
+        "https://developers.reflection.ai/llms.txt",
+        "https://developers.reflection.ai/quickstart"
+      ],
       "productIds": [],
       "homepageRead": {
         "url": "https://reflection.ai",
         "chars": 3490,
         "error": null
-      }
+      },
+      "note": "已核Reflection API、Mirror代码代理及完整文档索引，未找到公开订阅价格页；尚须核对平台计费入口，不能仅凭API文档不存在价格表就断言没有套餐。"
     },
     {
       "platformId": "ssi",
@@ -1084,14 +1105,19 @@
       "platformId": "thinking-machines",
       "name": "Thinking Machines Lab（Mira Murati）",
       "site": "https://thinkingmachines.ai",
-      "status": "unreviewed",
-      "sources": [],
+      "status": "research_complete",
+      "sources": [
+        "https://thinkingmachines.ai/",
+        "https://thinkingmachines.ai/tinker/pricing/"
+      ],
       "productIds": [],
       "homepageRead": {
         "url": "https://thinkingmachines.ai",
         "chars": 4910,
         "error": null
-      }
+      },
+      "subscriptionStatus": "none",
+      "note": "官方公开Tinker训练、推理（Inkling/Inkling-Small）按Token及检查点存储按GB计费；未提供公开软件会员档位。"
     },
     {
       "platformId": "typesafe",
@@ -1477,9 +1503,13 @@
       "platformId": "lovart",
       "name": "Lovart",
       "site": "https://www.lovart.ai",
-      "status": "unreviewed",
-      "sources": [],
-      "productIds": [],
+      "status": "research_complete",
+      "sources": [
+        "https://www.lovart.ai/pricing"
+      ],
+      "productIds": [
+        "lovart"
+      ],
       "homepageRead": {
         "url": "https://www.lovart.ai",
         "chars": 488,
@@ -1793,9 +1823,13 @@
       "platformId": "seaart",
       "name": "SeaArt",
       "site": "https://www.seaart.ai",
-      "status": "unreviewed",
-      "sources": [],
-      "productIds": [],
+      "status": "research_complete",
+      "sources": [
+        "https://www.seaart.ai/mall"
+      ],
+      "productIds": [
+        "seaart"
+      ],
       "homepageRead": {
         "url": "https://www.seaart.ai",
         "chars": 3542,
@@ -1872,9 +1906,13 @@
       "platformId": "vidu",
       "name": "Vidu",
       "site": "https://www.vidu.com",
-      "status": "unreviewed",
-      "sources": [],
-      "productIds": [],
+      "status": "partial",
+      "sources": [
+        "https://www.vidu.com/pricing"
+      ],
+      "productIds": [
+        "vidu-global"
+      ],
       "homepageRead": {
         "url": "https://www.vidu.com",
         "chars": 11936,
