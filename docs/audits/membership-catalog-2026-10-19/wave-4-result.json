@@ -1,0 +1,132 @@
+{
+  "appliedAt": "2026-10-19",
+  "beforeRevision": 33,
+  "afterRevision": 34,
+  "products": 46,
+  "plans": 183,
+  "planStates": {
+    "verified": 149,
+    "retired": 4,
+    "pending": 30
+  },
+  "changes": [
+    {
+      "id": "claude-free",
+      "oldName": "Claude Free",
+      "name": "Claude Free",
+      "productId": "claude"
+    },
+    {
+      "id": "claude-pro",
+      "oldName": "Pro",
+      "name": "Claude Pro",
+      "productId": "claude"
+    },
+    {
+      "id": "claude-max-5x",
+      "oldName": "Max 5x",
+      "name": "Claude Max 5x",
+      "productId": "claude"
+    },
+    {
+      "id": "claude-max-20x",
+      "oldName": "Max 20x",
+      "name": "Claude Max 20x",
+      "productId": "claude"
+    },
+    {
+      "id": "claude-team-standard",
+      "oldName": "Claude Team Standard",
+      "name": "Claude Team Standard",
+      "productId": "claude"
+    },
+    {
+      "id": "claude-team-premium",
+      "oldName": "Claude Team Premium",
+      "name": "Claude Team Premium",
+      "productId": "claude"
+    },
+    {
+      "id": "claude-enterprise",
+      "oldName": "Claude Enterprise",
+      "name": "Claude Enterprise",
+      "productId": "claude"
+    },
+    {
+      "id": "claude-education",
+      "oldName": "Claude Education",
+      "name": "Claude Education",
+      "productId": "claude"
+    },
+    {
+      "id": "claude-enterprise-standard-legacy",
+      "oldName": "Claude Enterprise Standard（旧版席位）",
+      "name": "Claude Enterprise Standard（旧版席位）",
+      "productId": "claude"
+    },
+    {
+      "id": "claude-enterprise-premium-legacy",
+      "oldName": "Claude Enterprise Premium（旧版席位）",
+      "name": "Claude Enterprise Premium（旧版席位）",
+      "productId": "claude"
+    },
+    {
+      "id": "claude-max",
+      "oldName": "Max",
+      "name": "Max",
+      "productId": "claude",
+      "action": "retire",
+      "reason": "未区分用量档位的旧聚合记录；正式目录分为 Max 5x 与 Max 20x"
+    },
+    {
+      "id": "claude-team",
+      "oldName": "Team",
+      "name": "Team",
+      "productId": "claude",
+      "action": "retire",
+      "reason": "未区分席位的旧聚合记录；正式目录分为 Team Standard 与 Team Premium"
+    },
+    {
+      "id": "claude-plan-3",
+      "oldName": "付费订阅（具体档位待核实）",
+      "name": "付费订阅（具体档位待核实）",
+      "productId": "claude",
+      "action": "retire",
+      "reason": "旧抽取占位项，不是官方套餐名称"
+    },
+    {
+      "id": "pollo-ai-free",
+      "oldName": "Pollo AI Free",
+      "name": "Pollo AI Free",
+      "productId": "pollo-ai"
+    },
+    {
+      "id": "pollo-ai-lite",
+      "oldName": "Lite",
+      "name": "Pollo AI Lite",
+      "productId": "pollo-ai"
+    },
+    {
+      "id": "pollo-ai-pro",
+      "oldName": "Pro",
+      "name": "Pollo AI Pro",
+      "productId": "pollo-ai"
+    },
+    {
+      "id": "pollo-ai-ultra",
+      "oldName": "Ultra",
+      "name": "Pollo AI Ultra",
+      "productId": "pollo-ai"
+    },
+    {
+      "id": "pollo-ai-plan-4",
+      "oldName": "付费套餐（具体档位待核实）",
+      "name": "付费套餐（具体档位待核实）",
+      "productId": "pollo-ai",
+      "action": "retire",
+      "reason": "旧抽取占位项，不是官方套餐名称；已核对官网四档"
+    }
+  ],
+  "verification": "final revision 41 full catalog products/plans/root metadata equals prepared plan; intermediate snapshots retained outside Git",
+  "writeMethod": "D1 revision-guarded catalog update"
+}

@@ -1,0 +1,225 @@
+{
+  "appliedAt": "2026-10-19",
+  "beforeRevision": 32,
+  "afterRevision": 33,
+  "products": 46,
+  "plans": 175,
+  "planStates": {
+    "verified": 138,
+    "pending": 37
+  },
+  "changes": [
+    {
+      "id": "pixverse-basic",
+      "oldName": "PixVerse Basic",
+      "name": "PixVerse Basic",
+      "productId": "pixverse"
+    },
+    {
+      "id": "pixverse-standard",
+      "oldName": "Standard",
+      "name": "PixVerse Standard",
+      "productId": "pixverse"
+    },
+    {
+      "id": "pixverse-pro",
+      "oldName": "Pro",
+      "name": "PixVerse Pro",
+      "productId": "pixverse"
+    },
+    {
+      "id": "pixverse-premium",
+      "oldName": "Premium",
+      "name": "PixVerse Premium",
+      "productId": "pixverse"
+    },
+    {
+      "id": "pixverse-ultra",
+      "oldName": "Ultra",
+      "name": "PixVerse Ultra",
+      "productId": "pixverse"
+    },
+    {
+      "id": "pixverse-team-ultra",
+      "oldName": "Team Ultra",
+      "name": "PixVerse Team Ultra",
+      "productId": "pixverse"
+    },
+    {
+      "id": "hailuo-ai-standard",
+      "oldName": "海螺 AI（国际版） Standard",
+      "name": "海螺 AI（国际版） Standard",
+      "productId": "hailuo-ai"
+    },
+    {
+      "id": "hailuo-ai-pro",
+      "oldName": "海螺 AI（国际版） Pro",
+      "name": "海螺 AI（国际版） Pro",
+      "productId": "hailuo-ai"
+    },
+    {
+      "id": "hailuo-ai-master",
+      "oldName": "海螺 AI（国际版） Master",
+      "name": "海螺 AI（国际版） Master",
+      "productId": "hailuo-ai"
+    },
+    {
+      "id": "hailuo-ai-ultra",
+      "oldName": "海螺 AI（国际版） Ultra",
+      "name": "海螺 AI（国际版） Ultra",
+      "productId": "hailuo-ai"
+    },
+    {
+      "id": "hailuo-ai-max",
+      "oldName": "Max",
+      "name": "海螺 AI（国际版） Max",
+      "productId": "hailuo-ai"
+    },
+    {
+      "id": "hailuo-ai-unlimited",
+      "oldName": "海螺 AI（国际版） Unlimited（存量）",
+      "name": "海螺 AI（国际版） Unlimited（存量）",
+      "productId": "hailuo-ai"
+    },
+    {
+      "id": "luma-ai-plus",
+      "oldName": "Plus",
+      "name": "Luma Agents Plus",
+      "productId": "luma-ai"
+    },
+    {
+      "id": "luma-ai-pro",
+      "oldName": "Pro",
+      "name": "Luma Agents Pro",
+      "productId": "luma-ai"
+    },
+    {
+      "id": "luma-ai-ultra",
+      "oldName": "Ultra",
+      "name": "Luma Agents Ultra",
+      "productId": "luma-ai"
+    },
+    {
+      "id": "luma-ai-team",
+      "oldName": "Luma Agents Team",
+      "name": "Luma Agents Team",
+      "productId": "luma-ai"
+    },
+    {
+      "id": "luma-ai-enterprise",
+      "oldName": "Luma Agents Enterprise",
+      "name": "Luma Agents Enterprise",
+      "productId": "luma-ai"
+    },
+    {
+      "id": "workbuddy-free",
+      "oldName": "Buddy AI（WorkBuddy / CodeBuddy 国内个人版） 体验版",
+      "name": "Buddy AI（WorkBuddy / CodeBuddy 国内个人版） 体验版",
+      "productId": "workbuddy"
+    },
+    {
+      "id": "workbuddy-plan-1",
+      "oldName": "标准版",
+      "name": "Buddy AI（WorkBuddy / CodeBuddy 国内个人版） 标准版",
+      "productId": "workbuddy"
+    },
+    {
+      "id": "workbuddy-plan-2",
+      "oldName": "高级版",
+      "name": "Buddy AI（WorkBuddy / CodeBuddy 国内个人版） 高级版",
+      "productId": "workbuddy"
+    },
+    {
+      "id": "workbuddy-plan-3",
+      "oldName": "旗舰版",
+      "name": "Buddy AI（WorkBuddy / CodeBuddy 国内个人版） 旗舰版",
+      "productId": "workbuddy"
+    },
+    {
+      "id": "stepfun-flash-mini",
+      "oldName": "Flash Mini",
+      "name": "Step Plan Mini",
+      "productId": "stepfun"
+    },
+    {
+      "id": "stepfun-flash-plus",
+      "oldName": "Flash Plus",
+      "name": "Step Plan Plus",
+      "productId": "stepfun"
+    },
+    {
+      "id": "stepfun-flash-pro",
+      "oldName": "Flash Pro",
+      "name": "Step Plan Pro",
+      "productId": "stepfun"
+    },
+    {
+      "id": "stepfun-flash-max",
+      "oldName": "Flash Max",
+      "name": "Step Plan Max",
+      "productId": "stepfun"
+    },
+    {
+      "id": "qiniu-2999",
+      "oldName": "2999元/月",
+      "name": "七牛云 AI Token 企业订阅 Enterprise S",
+      "productId": "qiniu"
+    },
+    {
+      "id": "qiniu-4999",
+      "oldName": "4999元/月",
+      "name": "七牛云 AI Token 企业订阅 Enterprise M",
+      "productId": "qiniu"
+    },
+    {
+      "id": "qiniu-9999",
+      "oldName": "9999元/月",
+      "name": "七牛云 AI Token 企业订阅 Enterprise B",
+      "productId": "qiniu"
+    },
+    {
+      "id": "workbuddy-enterprise-flagship",
+      "oldName": "WorkBuddy Enterprise 旗舰版",
+      "name": "WorkBuddy Enterprise 旗舰版",
+      "productId": "workbuddy-enterprise"
+    },
+    {
+      "id": "workbuddy-enterprise-exclusive",
+      "oldName": "WorkBuddy Enterprise 专享版",
+      "name": "WorkBuddy Enterprise 专享版",
+      "productId": "workbuddy-enterprise"
+    },
+    {
+      "id": "workbuddy-enterprise-private",
+      "oldName": "WorkBuddy Enterprise 私有化企业版",
+      "name": "WorkBuddy Enterprise 私有化企业版",
+      "productId": "workbuddy-enterprise"
+    },
+    {
+      "id": "stepfun-consumer-entry",
+      "oldName": "阶跃 AI（StepClaw） 入门版",
+      "name": "阶跃 AI（StepClaw） 入门版",
+      "productId": "stepfun-consumer"
+    },
+    {
+      "id": "stepfun-consumer-advanced",
+      "oldName": "阶跃 AI（StepClaw） 高级版",
+      "name": "阶跃 AI（StepClaw） 高级版",
+      "productId": "stepfun-consumer"
+    },
+    {
+      "id": "stepfun-consumer-progress",
+      "oldName": "阶跃 AI（StepClaw） 进阶版",
+      "name": "阶跃 AI（StepClaw） 进阶版",
+      "productId": "stepfun-consumer"
+    },
+    {
+      "id": "stepfun-consumer-professional",
+      "oldName": "阶跃 AI（StepClaw） 专业版",
+      "name": "阶跃 AI（StepClaw） 专业版",
+      "productId": "stepfun-consumer"
+    }
+  ],
+  "verification": "final revision 41 full catalog products/plans/root metadata equals prepared plan; intermediate snapshots retained outside Git",
+  "writeMethod": "D1 revision-guarded catalog update"
+}

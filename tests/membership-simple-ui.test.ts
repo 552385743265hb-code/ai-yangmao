@@ -37,3 +37,17 @@ it('migrates saved exact plan IDs once, removes duplicate selections and preserv
  const result=vm.runInContext(`migrateMembershipPreferences({membershipStorageVersion:1,phone:true,subscriptions:[{planId:'old-alpha-pro'},{planId:'a-pro'},{planId:'unknown-old'}]})`,ctx);
  expect(result.subscriptions).toEqual([{planId:'a-pro'}]);expect(result.phone).toBe(true);expect(result.unresolvedMembers).toContain('unknown-old');expect(result.membershipStorageVersion).toBe(2);
 });
+it('does not recreate retired duplicate products as extra vendors',()=>{
+ const {ctx}=fixture();vm.runInContext(`MEMBERSHIP_CATALOG={...MEMBERSHIP_CATALOG,products:[...MEMBERSHIP_CATALOG.products,{id:'old-app',name:'Old App',status:'retired',aliases:[]}],plans:[...MEMBERSHIP_CATALOG.plans,{id:'old-stub',name:'未知套餐',productId:'old-app',status:'retired'}]}`,ctx);
+ expect(vm.runInContext('membershipVendors().map(v=>v.id)',ctx)).toEqual(['alpha','beta','api']);
+});
+it('opens a cross-vendor benefit at the vendor of its selected membership, rather than hiding the selection under the issuer',async()=>{
+ const {ctx,document}=fixture();vm.runInContext(`offer={platformId:'alpha',membershipRequirement:{schemaVersion:'membership-v1',status:'confirmed',catalogRevision:1,evidenceUrls:['https://official.example/perk'],anyOf:[{allOf:[{productId:'b',scope:'plans',planIds:['b-pro'],excludePlanIds:[]}]}]}}`,ctx);
+ await vm.runInContext(`mountMembershipEditor(document.querySelector('form'),offer)`,ctx);
+ expect(document.querySelector('[data-member-plan="b-pro"]')).not.toBeNull();expect(document.querySelector('[data-member-plan="b-pro"]')!.hasAttribute('checked')).toBe(true);
+});
+it('lets users remove an ambiguous old membership notice without clearing valid memberships or other preferences',()=>{
+ const {ctx,document,change}=fixture();vm.runInContext(`C={phone:true,subscriptions:[{planId:'a-pro'}],unresolvedMembers:['Pro']};document.querySelector('#owned').innerHTML=subscriptionControls();bindSubscriptionEvents()`,ctx);
+ const remove=document.querySelector('[data-remove-unresolved-member]');expect(remove).not.toBeNull();remove!.dispatchEvent(new (ctx.window as any).Event('click',{bubbles:true}));
+ expect(vm.runInContext('C.unresolvedMembers',ctx)).toEqual([]);expect(vm.runInContext('C.subscriptions',ctx)).toEqual([{planId:'a-pro'}]);expect(vm.runInContext('C.phone',ctx)).toBe(true);
+});

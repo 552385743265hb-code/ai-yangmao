@@ -5,6 +5,7 @@ export interface MembershipProduct {
   sourceUrl: string; verifiedAt: string | null; revision: number;
   /** Products may be shared by multiple vendor applications (for example Cursor and Grok). */
   platformIds?: string[]; legacy?: boolean;
+  retiredReason?: string; retiredSourceUrl?: string; retiredAt?: string;
 }
 export interface MembershipPlan extends MembershipProduct {
   productId: string; billing: 'free' | 'paid' | 'unknown';
@@ -18,6 +19,8 @@ export interface MembershipCatalog {
   vendors?: MembershipVendor[];
   /** Only evidence-backed one-to-one ID migrations; ambiguous legacy selections remain unresolved. */
   planIdAliases?: Record<string,string>;
+  productIdAliases?: Record<string,string>;
+  productReplacements?: Record<string,string[]>;
 }
 const strings = () => z.array(z.string().trim().min(1).max(200)).max(100);
 const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(v => {

@@ -1,0 +1,106 @@
+{
+  "appliedAt": "2026-10-19",
+  "beforeRevision": 34,
+  "afterRevision": 35,
+  "products": 46,
+  "plans": 193,
+  "planStates": {
+    "verified": 160,
+    "retired": 7,
+    "pending": 26
+  },
+  "changes": [
+    {
+      "id": "chatgpt-free",
+      "oldName": "ChatGPT Free",
+      "name": "ChatGPT Free",
+      "productId": "chatgpt"
+    },
+    {
+      "id": "chatgpt-go",
+      "oldName": "ChatGPT Go",
+      "name": "ChatGPT Go",
+      "productId": "chatgpt"
+    },
+    {
+      "id": "chatgpt-plus",
+      "oldName": "ChatGPT Plus",
+      "name": "ChatGPT Plus",
+      "productId": "chatgpt"
+    },
+    {
+      "id": "chatgpt-pro-100",
+      "oldName": "ChatGPT Pro 100",
+      "name": "ChatGPT Pro 100",
+      "productId": "chatgpt"
+    },
+    {
+      "id": "chatgpt-pro-200",
+      "oldName": "ChatGPT Pro 200",
+      "name": "ChatGPT Pro 200",
+      "productId": "chatgpt"
+    },
+    {
+      "id": "chatgpt-pro-500",
+      "oldName": "ChatGPT Pro 500",
+      "name": "ChatGPT Pro 500",
+      "productId": "chatgpt"
+    },
+    {
+      "id": "chatgpt-business-standard",
+      "oldName": "ChatGPT Business Standard",
+      "name": "ChatGPT Business Standard",
+      "productId": "chatgpt"
+    },
+    {
+      "id": "chatgpt-business-premium",
+      "oldName": "Business Premium",
+      "name": "ChatGPT Business Premium",
+      "productId": "chatgpt"
+    },
+    {
+      "id": "chatgpt-edu",
+      "oldName": "ChatGPT Edu",
+      "name": "ChatGPT Edu",
+      "productId": "chatgpt"
+    },
+    {
+      "id": "chatgpt-enterprise",
+      "oldName": "ChatGPT Enterprise",
+      "name": "ChatGPT Enterprise",
+      "productId": "chatgpt"
+    },
+    {
+      "id": "chatgpt-for-teachers",
+      "oldName": "ChatGPT for Teachers",
+      "name": "ChatGPT for Teachers",
+      "productId": "chatgpt"
+    },
+    {
+      "id": "chatgpt-pro",
+      "oldName": "Pro",
+      "name": "Pro",
+      "productId": "chatgpt",
+      "action": "retire",
+      "reason": "旧泛 Pro 未区分额度档位，正式目录拆分 Pro 100/200/500"
+    },
+    {
+      "id": "openai-codex-plan-1",
+      "oldName": "付费订阅（具体档位待核实）",
+      "name": "付费订阅（具体档位待核实）",
+      "productId": "openai-codex",
+      "action": "retire",
+      "reason": "官方明确此应用使用 ChatGPT 订阅，不是独立会员产品"
+    },
+    {
+      "id": "chatgpt-work-plan-1",
+      "oldName": "付费订阅（具体档位待核实）",
+      "name": "付费订阅（具体档位待核实）",
+      "productId": "chatgpt-work",
+      "action": "retire",
+      "reason": "官方明确此应用使用 ChatGPT 订阅，不是独立会员产品"
+    }
+  ],
+  "verification": "final revision 41 full catalog products/plans/root metadata equals prepared plan; intermediate snapshots retained outside Git",
+  "writeMethod": "D1 revision-guarded catalog update"
+}

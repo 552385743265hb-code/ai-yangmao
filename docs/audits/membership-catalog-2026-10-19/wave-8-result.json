@@ -1,0 +1,102 @@
+{
+  "appliedAt": "2026-10-19",
+  "beforeRevision": 37,
+  "afterRevision": 38,
+  "products": 46,
+  "plans": 255,
+  "planStates": {
+    "verified": 234,
+    "retired": 11,
+    "pending": 10
+  },
+  "changes": [
+    {
+      "id": "runway-free",
+      "oldName": "Runway Free",
+      "name": "Runway Free",
+      "productId": "runway"
+    },
+    {
+      "id": "runway-standard",
+      "oldName": "Standard",
+      "name": "Runway Standard",
+      "productId": "runway"
+    },
+    {
+      "id": "runway-pro",
+      "oldName": "Pro",
+      "name": "Runway Pro",
+      "productId": "runway"
+    },
+    {
+      "id": "runway-max",
+      "oldName": "Max",
+      "name": "Runway Max",
+      "productId": "runway"
+    },
+    {
+      "id": "runway-team",
+      "oldName": "Runway Team",
+      "name": "Runway Team",
+      "productId": "runway"
+    },
+    {
+      "id": "runway-enterprise",
+      "oldName": "Runway Enterprise",
+      "name": "Runway Enterprise",
+      "productId": "runway"
+    },
+    {
+      "id": "runway-unlimited-legacy",
+      "oldName": "Runway Unlimited（存量至2026-11-30）",
+      "name": "Runway Unlimited（存量至2026-11-30）",
+      "productId": "runway"
+    },
+    {
+      "id": "runway-explore-mode-mcp",
+      "oldName": "具有 Explore Mode 及 MCP 权限的付费方案（档位待核实）",
+      "name": "具有 Explore Mode 及 MCP 权限的付费方案（档位待核实）",
+      "productId": "runway",
+      "action": "retire",
+      "reason": "旧功能描述占位项不是套餐名称；真实存量套餐为 Unlimited，不能混同 Max"
+    },
+    {
+      "id": "magnific-premium",
+      "oldName": "Magnific Premium",
+      "name": "Magnific Premium",
+      "productId": "magnific"
+    },
+    {
+      "id": "magnific-premium-plus",
+      "oldName": "Premium+",
+      "name": "Magnific Premium+",
+      "productId": "magnific"
+    },
+    {
+      "id": "magnific-pro-starter",
+      "oldName": "Pro Starter",
+      "name": "Magnific Pro Starter",
+      "productId": "magnific"
+    },
+    {
+      "id": "magnific-pro",
+      "oldName": "Pro",
+      "name": "Magnific Pro",
+      "productId": "magnific"
+    },
+    {
+      "id": "magnific-business",
+      "oldName": "Business",
+      "name": "Magnific Business",
+      "productId": "magnific"
+    },
+    {
+      "id": "magnific-enterprise",
+      "oldName": "Magnific Enterprise",
+      "name": "Magnific Enterprise",
+      "productId": "magnific"
+    }
+  ],
+  "verification": "final revision 41 full catalog products/plans/root metadata equals prepared plan; intermediate snapshots retained outside Git",
+  "writeMethod": "D1 revision-guarded catalog update"
+}

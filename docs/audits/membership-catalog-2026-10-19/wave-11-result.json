@@ -1,0 +1,146 @@
+{
+  "appliedAt": "2026-10-19",
+  "beforeRevision": 40,
+  "afterRevision": 41,
+  "products": 54,
+  "plans": 333,
+  "planStates": {
+    "verified": 313,
+    "retired": 16,
+    "pending": 4
+  },
+  "changes": [
+    {
+      "id": "coze-personal-free",
+      "oldName": "扣子（国内版） 个人免费版",
+      "name": "扣子（国内版） 个人免费版",
+      "productId": "coze"
+    },
+    {
+      "id": "coze-personal-starter",
+      "oldName": "扣子（国内版） 个人进阶版",
+      "name": "扣子（国内版） 个人进阶版",
+      "productId": "coze"
+    },
+    {
+      "id": "coze-personal-advanced",
+      "oldName": "扣子（国内版） 个人高阶版",
+      "name": "扣子（国内版） 个人高阶版",
+      "productId": "coze"
+    },
+    {
+      "id": "coze-personal-flagship",
+      "oldName": "扣子（国内版） 个人旗舰版",
+      "name": "扣子（国内版） 个人旗舰版",
+      "productId": "coze"
+    },
+    {
+      "id": "coze-personal-ultimate",
+      "oldName": "扣子（国内版） 个人尊享版",
+      "name": "扣子（国内版） 个人尊享版",
+      "productId": "coze"
+    },
+    {
+      "id": "coze-team-advanced",
+      "oldName": "扣子（国内版） 团队高阶版",
+      "name": "扣子（国内版） 团队高阶版",
+      "productId": "coze"
+    },
+    {
+      "id": "coze-team-flagship",
+      "oldName": "扣子（国内版） 团队旗舰版",
+      "name": "扣子（国内版） 团队旗舰版",
+      "productId": "coze"
+    },
+    {
+      "id": "coze-team-ultimate",
+      "oldName": "扣子（国内版） 团队尊享版",
+      "name": "扣子（国内版） 团队尊享版",
+      "productId": "coze"
+    },
+    {
+      "id": "coze-enterprise-standard",
+      "oldName": "扣子（国内版） 企业标准版",
+      "name": "扣子（国内版） 企业标准版",
+      "productId": "coze"
+    },
+    {
+      "id": "coze-enterprise-flagship",
+      "oldName": "扣子（国内版） 企业旗舰版",
+      "name": "扣子（国内版） 企业旗舰版",
+      "productId": "coze"
+    },
+    {
+      "id": "coze-team-legacy",
+      "oldName": "扣子（国内版） 团队版（2026-01-18前旧版）",
+      "name": "扣子（国内版） 团队版（2026-01-18前旧版）",
+      "productId": "coze"
+    },
+    {
+      "id": "coze-enterprise-legacy",
+      "oldName": "扣子（国内版） 企业版（2026-01-18前旧版）",
+      "name": "扣子（国内版） 企业版（2026-01-18前旧版）",
+      "productId": "coze"
+    },
+    {
+      "id": "coze-plan-1",
+      "oldName": "付费套餐（具体档位待核实）",
+      "name": "付费套餐（具体档位待核实）",
+      "productId": "coze",
+      "action": "retire",
+      "reason": "旧泛付费套餐占位项，官方已列明个人、团队、企业正式档位"
+    },
+    {
+      "id": "trae-free",
+      "oldName": "TRAE（国际版） Free",
+      "name": "TRAE（国际版） Free",
+      "productId": "trae"
+    },
+    {
+      "id": "trae-lite",
+      "oldName": "TRAE（国际版） Lite",
+      "name": "TRAE（国际版） Lite",
+      "productId": "trae"
+    },
+    {
+      "id": "trae-pro-current",
+      "oldName": "TRAE（国际版） Pro",
+      "name": "TRAE（国际版） Pro",
+      "productId": "trae"
+    },
+    {
+      "id": "trae-pro-plus",
+      "oldName": "TRAE（国际版） Pro+",
+      "name": "TRAE（国际版） Pro+",
+      "productId": "trae"
+    },
+    {
+      "id": "trae-ultra",
+      "oldName": "TRAE（国际版） Ultra",
+      "name": "TRAE（国际版） Ultra",
+      "productId": "trae"
+    },
+    {
+      "id": "trae-pro-plus-legacy-usage",
+      "oldName": "TRAE（国际版） Pro+（旧额度版，$90用量/月）",
+      "name": "TRAE（国际版） Pro+（旧额度版，$90用量/月）",
+      "productId": "trae"
+    },
+    {
+      "id": "trae-ultra-legacy-usage",
+      "oldName": "TRAE（国际版） Ultra（旧额度版，$400用量/月）",
+      "name": "TRAE（国际版） Ultra（旧额度版，$400用量/月）",
+      "productId": "trae"
+    },
+    {
+      "id": "trae-pro",
+      "oldName": "旧版 Pro",
+      "name": "旧版 Pro",
+      "productId": "trae",
+      "action": "retire",
+      "reason": "该旧目录来源对应2026年2月前请求制 Pro；当前套餐已升级为按 Token 计费，保留历史原件而不混同新 Pro"
+    }
+  ],
+  "verification": "final revision 41 full catalog products/plans/root metadata equals prepared plan; intermediate snapshots retained outside Git",
+  "writeMethod": "D1 bound parameters after SQLITE_TOOBIG"
+}

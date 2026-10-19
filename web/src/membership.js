@@ -15,7 +15,7 @@ function migrateMembershipPreferences(previous) {
   const subscriptions=[],unresolved=[...legacy.unresolved];
   for(const old of legacy.subscriptions){
     const planId=MEMBERSHIP_CATALOG.planIdAliases?.[old.planId]||old.planId;
-    if(!MEMBERSHIP_CATALOG.plans.some(p=>p.id===planId&&p.status==='verified')){unresolved.push(old.planId);continue;}
+    if(!MEMBERSHIP_CATALOG.plans.some(p=>p.id===planId&&p.status==='verified')){const previousPlan=MEMBERSHIP_CATALOG.plans.find(p=>p.id===old.planId);unresolved.push(previousPlan?membershipPlanLabel(previousPlan):old.planId);continue;}
     if(!subscriptions.some(p=>p.planId===planId))subscriptions.push({...old,planId});
   }
   return {...previous,subscriptions,unresolvedMembers:[...new Set(unresolved)],membershipStorageVersion:2,membershipCatalogRevision:MEMBERSHIP_CATALOG.revision};
@@ -42,7 +42,7 @@ function membershipVendors() {
   const vendors = known.map(p => ({...p, status:p.status === 'none' ? 'none' : p.status === 'available' ? 'available' : 'unverified'}));
   // Compatibility for existing catalogs; new directory products have explicit platformIds.
   for (const p of MEMBERSHIP_CATALOG.products) {
-    if (!p.platformIds?.length && !vendors.some(v => v.id === p.id)) vendors.push({id:p.id,name:p.name,status:'unverified'});
+    if (p.status !== 'retired' && !p.platformIds?.length && !vendors.some(v => v.id === p.id)) vendors.push({id:p.id,name:p.name,status:'unverified'});
   }
   return vendors;
 }
@@ -59,9 +59,9 @@ function subscriptionControls() {
   if(!vendors.some(v=>v.id===ownedMembershipVendor))ownedMembershipVendor=vendors[0]?.id||'';
   const vendor=vendors.find(v=>v.id===ownedMembershipVendor),plans=membershipVendorPlans(ownedMembershipVendor);
   return `<div data-owned-subscriptions><p class="small muted">选择厂商，勾选你持有的会员套餐。可选择多个厂商，选择会保存在这台设备。</p>
-    ${C.unresolvedMembers?.length?`<p class="warn-note">请重新确认这些旧会员名称：${C.unresolvedMembers.map(esc).join('、')}</p>`:''}
+    ${C.unresolvedMembers?.length?`<p class="warn-note">请重新确认这些旧会员名称：${C.unresolvedMembers.map((name,i)=>`<button type="button" class="btn sm" data-remove-unresolved-member="${i}" title="移除此旧记录">${esc(name)} ×</button>`).join(' ')}</p>`:''}
     <label class="field">厂商<select data-owned-vendor>${vendors.map(v=>membershipOption(v.id,v.name,v.id===ownedMembershipVendor)).join('')}</select></label>
-    <div class="chips">${plans.map(p=>`<label class="chip"><input type="checkbox" data-owned-plan="${esc(p.id)}" ${subscriptions.some(s=>s.planId===p.id)?'checked':''} ${p.status!=='verified'?'disabled':''}>${esc(membershipPlanLabel(p))}${p.legacy?'（存量）':''}${p.status!=='verified'?'（待核实）':''}</label>`).join('')||`<p class="small muted">${esc(membershipEmptyVendor(vendor))}</p>`}</div>
+    <div class="chips">${plans.map(p=>`<label class="chip"><input type="checkbox" data-owned-plan="${esc(p.id)}" ${subscriptions.some(s=>s.planId===p.id)?'checked':''} ${p.status!=='verified'?'disabled':''}>${esc(membershipPlanLabel(p))}${p.legacy?'（历史套餐）':''}${p.status!=='verified'?'（待核实）':''}</label>`).join('')||`<p class="small muted">${esc(membershipEmptyVendor(vendor))}</p>`}</div>
     ${subscriptions.length?`<p class="small">已选 ${subscriptions.length} 项</p><div class="chips">${subscriptions.map(s=>{const p=MEMBERSHIP_CATALOG.plans.find(p=>p.id===s.planId);return `<button type="button" class="btn sm" data-remove-owned-plan="${esc(s.planId)}">${esc(p?membershipPlanLabel(p):s.planId)} ×</button>`;}).join('')}</div>`:''}</div>`;
 }
 function refreshSubscriptionControls() {
@@ -74,6 +74,7 @@ function persistSubscriptionChange() {
 }
 function bindSubscriptionEvents() {
   document.addEventListener('click',e=>{
+    const unresolved=e.target.closest('[data-remove-unresolved-member]');if(unresolved){C.unresolvedMembers=(C.unresolvedMembers||[]).filter((_,i)=>i!==Number(unresolved.dataset.removeUnresolvedMember));persistSubscriptionChange();return;}
     const remove=e.target.closest('[data-remove-owned-plan]');if(!remove)return;
     C.subscriptions=(C.subscriptions||[]).filter(s=>s.planId!==remove.dataset.removeOwnedPlan);persistSubscriptionChange();
   });
@@ -110,7 +111,7 @@ function membershipEditorMarkup(state) {
     ${state.requirement.legacyText?.length?`<p class="small muted">原会员条件：${state.requirement.legacyText.map(esc).join('；')}</p>`:''}
     ${state.catalogRevision!==MEMBERSHIP_CATALOG.revision?'<p class="warn-note">目录已更新，请刷新后核对选择。</p>':''}
     <label class="field">厂商<select data-member-vendor>${vendors.map(v=>membershipOption(v.id,v.name,v.id===state.vendorId)).join('')}</select></label>
-    <div class="chips">${plans.map(p=>`<label class="chip"><input type="checkbox" data-member-plan="${esc(p.id)}" ${state.selectedPlanIds.includes(p.id)?'checked':''} ${p.status!=='verified'?'disabled':''}>${esc(membershipPlanLabel(p))}${p.legacy?'（存量）':''}${p.status!=='verified'?'（待核实）':''}</label>`).join('')||`<p class="small muted">${esc(membershipEmptyVendor(vendor))}</p>`}</div>
+    <div class="chips">${plans.map(p=>`<label class="chip"><input type="checkbox" data-member-plan="${esc(p.id)}" ${state.selectedPlanIds.includes(p.id)?'checked':''} ${p.status!=='verified'?'disabled':''}>${esc(membershipPlanLabel(p))}${p.legacy?'（历史套餐）':''}${p.status!=='verified'?'（待核实）':''}</label>`).join('')||`<p class="small muted">${esc(membershipEmptyVendor(vendor))}</p>`}</div>
     <p data-membership-preview class="small" aria-live="polite">${esc(YMMembership.formatMembership(state.requirement,MEMBERSHIP_CATALOG))}</p>
     <button type="button" class="btn sm" data-membership-clear>清除会员选择</button> <button type="button" class="btn sm" data-membership-refresh>刷新目录</button>
     <details data-membership-detail="catalog"><summary>管理会员目录</summary><div data-membership-catalog></div></details>`;
@@ -124,6 +125,11 @@ async function mountMembershipEditor(form, original) {
   try{const catalog=await adm('/memberships');if(!Array.isArray(catalog.products)||!Array.isArray(catalog.plans))throw new Error('目录响应无效');MEMBERSHIP_CATALOG=catalog;MEMBERSHIP_CATALOG_OK=true;state.catalogAvailable=true;state.catalogRevision=catalog.revision;}
   catch{state.error='会员目录加载失败：可编辑其他字段，不能确认会员资格';}
   state.selectedPlanIds=membershipSelectedPlans(requirement);
+  if(state.selectedPlanIds.length&&!membershipVendorPlans(state.vendorId).some(p=>state.selectedPlanIds.includes(p.id))){
+    const selected=MEMBERSHIP_CATALOG.plans.find(p=>p.id===state.selectedPlanIds[0]);
+    const product=MEMBERSHIP_CATALOG.products.find(p=>p.id===selected?.productId);
+    state.vendorId=product?.platformIds?.[0]||product?.id||state.vendorId;
+  }
   const redraw=()=>{const open=host.querySelector('[data-membership-detail="catalog"]')?.open;host.innerHTML=membershipEditorMarkup(state);host.querySelector('[data-membership-detail="catalog"]').open=!!open;renderMembershipCatalog(host.querySelector('[data-membership-catalog]'),redraw);};
   const update=()=>{state.touched=true;state.requirement=membershipSelectionRequirement(state.selectedPlanIds,state.original,state.catalogRevision);redraw();};
   redraw();

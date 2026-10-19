@@ -135,40 +135,55 @@
       "platformId": "deepinfra",
       "name": "DeepInfra",
       "site": "https://deepinfra.com",
-      "status": "unreviewed",
-      "sources": [],
+      "status": "research_complete",
+      "sources": [
+        "https://deepinfra.com/pricing"
+      ],
       "productIds": [],
       "homepageRead": {
         "url": "https://deepinfra.com",
         "chars": 10838,
         "error": null
-      }
+      },
+      "subscriptionStatus": "none",
+      "note": "官方列示 API/算力按量与预留资源计费，未列示 AI 会员订阅档位；不把充值余额或租用 GPU 当会员。",
+      "quote": "Pre-paid accounts draw down their balance as they go; invoiced accounts are billed the following month."
     },
     {
       "platformId": "fireworks",
       "name": "Fireworks AI",
       "site": "https://fireworks.ai",
-      "status": "unreviewed",
-      "sources": [],
+      "status": "research_complete",
+      "sources": [
+        "https://fireworks.ai/pricing"
+      ],
       "productIds": [],
       "homepageRead": {
         "url": "https://fireworks.ai",
         "chars": 9397,
         "error": null
-      }
+      },
+      "subscriptionStatus": "none",
+      "note": "官方列示 API/算力按量与预留资源计费，未列示 AI 会员订阅档位；不把充值余额或租用 GPU 当会员。",
+      "quote": "Pay per token with pre-paid, usage-based billing."
     },
     {
       "platformId": "gmi",
       "name": "GMI Cloud",
       "site": "https://www.gmicloud.ai",
-      "status": "unreviewed",
-      "sources": [],
+      "status": "research_complete",
+      "sources": [
+        "https://www.gmicloud.ai/en/pricing"
+      ],
       "productIds": [],
       "homepageRead": {
         "url": "https://www.gmicloud.ai/en",
         "chars": 4888,
         "error": null
-      }
+      },
+      "subscriptionStatus": "none",
+      "note": "官方列示 API/算力按量与预留资源计费，未列示 AI 会员订阅档位；不把充值余额或租用 GPU 当会员。",
+      "quote": "Start on-demand and transition to dedicated or committed deployments."
     },
     {
       "platformId": "github",
@@ -225,7 +240,7 @@
         "chars": 4504,
         "error": null
       },
-      "appliedCatalogRevision": 30
+      "appliedCatalogRevision": 41
     },
     {
       "platformId": "nvidia",
@@ -244,14 +259,19 @@
       "platformId": "novita",
       "name": "Novita AI",
       "site": "https://novita.ai",
-      "status": "unreviewed",
-      "sources": [],
+      "status": "research_complete",
+      "sources": [
+        "https://novita.ai/pricing"
+      ],
       "productIds": [],
       "homepageRead": {
         "url": "https://novita.ai",
         "chars": 7869,
         "error": null
-      }
+      },
+      "subscriptionStatus": "none",
+      "note": "官方列示 API/算力按量与预留资源计费，未列示 AI 会员订阅档位；不把充值余额或租用 GPU 当会员。",
+      "quote": "Model APIs and GPU resources use transparent per-model and resource rates."
     },
     {
       "platformId": "opencode",
@@ -269,7 +289,7 @@
         "chars": 2157,
         "error": null
       },
-      "appliedCatalogRevision": 30
+      "appliedCatalogRevision": 41
     },
     {
       "platformId": "openrouter",
@@ -327,14 +347,19 @@
       "platformId": "together",
       "name": "Together AI",
       "site": "https://www.together.ai",
-      "status": "unreviewed",
-      "sources": [],
+      "status": "research_complete",
+      "sources": [
+        "https://www.together.ai/pricing"
+      ],
       "productIds": [],
       "homepageRead": {
         "url": "https://www.together.ai",
         "chars": 23016,
         "error": null
-      }
+      },
+      "subscriptionStatus": "none",
+      "note": "官方列示 API/算力按量与预留资源计费，未列示 AI 会员订阅档位；不把充值余额或租用 GPU 当会员。",
+      "quote": "Pay as you go GPU capacity on an hourly basis; model inference priced per token."
     },
     {
       "platformId": "ucloud",
@@ -366,14 +391,19 @@
       "platformId": "qiniu",
       "name": "七牛云 AI",
       "site": "https://www.qiniu.com",
-      "status": "unreviewed",
-      "sources": [],
-      "productIds": [],
+      "status": "partial",
+      "sources": [
+        "https://www.qiniu.com/ai/plan"
+      ],
+      "productIds": [
+        "qiniu"
+      ],
       "homepageRead": {
         "url": "https://www.qiniu.com",
         "chars": 4980,
         "error": null
-      }
+      },
+      "appliedCatalogRevision": 41
     },
     {
       "platformId": "tokenrhythm",
@@ -431,9 +461,10 @@
       "platformId": "anthropic",
       "name": "Anthropic",
       "site": "https://www.anthropic.com",
-      "status": "partial",
+      "status": "research_complete",
       "sources": [
-        "https://claude.com/pricing"
+        "https://claude.com/pricing",
+        "https://support.claude.com/en/articles/15424964-claude-fable-models-on-your-plan"
       ],
       "productIds": [
         "claude"
@@ -442,7 +473,8 @@
         "url": "https://www.anthropic.com",
         "chars": 4861,
         "error": null
-      }
+      },
+      "appliedCatalogRevision": 41
     },
     {
       "platformId": "cohere",
@@ -491,14 +523,19 @@
       "platformId": "hume",
       "name": "Hume AI",
       "site": "https://www.hume.ai",
-      "status": "unreviewed",
-      "sources": [],
-      "productIds": [],
+      "status": "research_complete",
+      "sources": [
+        "https://www.hume.ai/pricing"
+      ],
+      "productIds": [
+        "hume-voice"
+      ],
       "homepageRead": {
         "url": "https://www.hume.ai",
         "chars": 5406,
         "error": null
-      }
+      },
+      "appliedCatalogRevision": 41
     },
     {
       "platformId": "inception",
@@ -556,14 +593,23 @@
       "platformId": "minimax",
       "name": "MiniMax",
       "site": "https://www.minimaxi.com",
-      "status": "unreviewed",
-      "sources": [],
-      "productIds": [],
+      "status": "partial",
+      "sources": [
+        "https://platform.minimaxi.com/docs/m-plan/intro",
+        "https://platform.minimaxi.com/docs/m-plan/token-plan-notice",
+        "https://platform.minimax.io/docs/m-plan/intro",
+        "https://platform.minimax.io/docs/m-plan/token-plan-notice"
+      ],
+      "productIds": [
+        "minimax",
+        "member-ecd9b66d-5b49-4fe9-87fd-0252cf6b42d7"
+      ],
       "homepageRead": {
         "url": "https://www.minimax.cn/",
         "chars": 1702,
         "error": null
-      }
+      },
+      "appliedCatalogRevision": 41
     },
     {
       "platformId": "mistral",
@@ -608,9 +654,12 @@
       "platformId": "openai",
       "name": "OpenAI",
       "site": "https://openai.com",
-      "status": "partial",
+      "status": "research_complete",
       "sources": [
-        "https://learn.chatgpt.com/docs/pricing"
+        "https://learn.chatgpt.com/docs/pricing",
+        "https://help.openai.com/en/articles/9793128-about-chatgpt-pro-tiers",
+        "https://help.openai.com/en/articles/8542115-chatgpt-business-general-faq",
+        "https://help.openai.com/en/articles/12844995-chatgpt-for-teachers"
       ],
       "productIds": [
         "chatgpt"
@@ -619,7 +668,8 @@
         "url": "https://openai.com",
         "chars": 0,
         "error": "HTTP Error 403: Forbidden"
-      }
+      },
+      "appliedCatalogRevision": 41
     },
     {
       "platformId": "sakana",
@@ -709,16 +759,25 @@
       "site": "https://bigmodel.cn",
       "status": "partial",
       "sources": [
-        "https://docs.z.ai/devpack/overview"
+        "https://docs.z.ai/devpack/overview",
+        "https://docs.z.ai/devpack/teamplan",
+        "https://docs.z.ai/devpack/notice/usage-revision",
+        "https://zcode.z.ai/en/docs/configuration",
+        "https://docs.bigmodel.cn/cn/coding-plan/overview",
+        "https://docs.bigmodel.cn/cn/coding-plan/team",
+        "https://docs.bigmodel.cn/cn/coding-plan/notice/usage-revision",
+        "https://zcode.z.ai/cn/docs/configuration"
       ],
       "productIds": [
-        "z-ai-devpack"
+        "z-ai-devpack",
+        "glm-coding-cn"
       ],
       "homepageRead": {
         "url": "https://bigmodel.cn",
         "chars": 14,
         "error": null
-      }
+      },
+      "appliedCatalogRevision": 41
     },
     {
       "platformId": "baichuan",
@@ -763,14 +822,21 @@
       "platformId": "stepfun",
       "name": "阶跃星辰",
       "site": "https://www.stepfun.com",
-      "status": "unreviewed",
-      "sources": [],
-      "productIds": [],
+      "status": "partial",
+      "sources": [
+        "https://platform.stepfun.com/docs/zh/step-plan/pricing",
+        "https://www.stepfun.com/subscription/membership-benefits-explanation"
+      ],
+      "productIds": [
+        "stepfun",
+        "stepfun-consumer"
+      ],
       "homepageRead": {
         "url": "https://www.stepfun.com",
         "chars": 4,
         "error": null
-      }
+      },
+      "appliedCatalogRevision": 41
     },
     {
       "platformId": "qwen",
@@ -818,7 +884,7 @@
         "chars": 0,
         "error": "No registered official homepage; discover from platform sources"
       },
-      "appliedCatalogRevision": 32
+      "appliedCatalogRevision": 41
     },
     {
       "platformId": "nous",
@@ -836,7 +902,7 @@
         "chars": 3854,
         "error": null
       },
-      "appliedCatalogRevision": 32,
+      "appliedCatalogRevision": 41,
       "note": "Portal 四档已写入；另查 Hermes Cloud 是否独立订阅"
     },
     {
@@ -954,33 +1020,42 @@
         "chars": 2726,
         "error": null
       },
-      "appliedCatalogRevision": 32
+      "appliedCatalogRevision": 41
     },
     {
       "platformId": "adobe-firefly",
       "name": "Adobe Firefly",
       "site": "https://firefly.adobe.com",
-      "status": "unreviewed",
-      "sources": [],
-      "productIds": [],
+      "status": "partial",
+      "sources": [
+        "https://helpx.adobe.com/creative-cloud/apps/generative-ai/generative-credits-faq.html"
+      ],
+      "productIds": [
+        "adobe-firefly",
+        "adobe-creative-cloud"
+      ],
       "homepageRead": {
         "url": "https://firefly.adobe.com",
         "chars": 276,
         "error": null
-      }
+      },
+      "appliedCatalogRevision": 41
     },
     {
       "platformId": "browser-use",
       "name": "Browser Use",
       "site": "https://browser-use.com",
-      "status": "unreviewed",
-      "sources": [],
+      "status": "partial",
+      "sources": [
+        "https://browser-use.com/pricing"
+      ],
       "productIds": [],
       "homepageRead": {
         "url": "https://browser-use.com",
         "chars": 4706,
         "error": null
-      }
+      },
+      "note": "现行官网明确 No subscription，另保留 Legacy subscriptions 管理入口，继续核对旧目录是否仍有效。"
     },
     {
       "platformId": "cline",
@@ -1017,18 +1092,22 @@
       "platformId": "devin",
       "name": "Devin（Cognition）",
       "site": "https://devin.ai",
-      "status": "partial",
+      "status": "research_complete",
       "sources": [
-        "https://devin.ai/pricing"
+        "https://devin.ai/pricing",
+        "https://devin.ai/desktop",
+        "https://devin.ai/blog/gemini-31-pro"
       ],
       "productIds": [
-        "devin"
+        "devin",
+        "windsurf"
       ],
       "homepageRead": {
         "url": "https://devin.ai",
         "chars": 12937,
         "error": null
-      }
+      },
+      "appliedCatalogRevision": 41
     },
     {
       "platformId": "dreamina",
@@ -1046,7 +1125,7 @@
         "chars": 30196,
         "error": null
       },
-      "appliedCatalogRevision": 30
+      "appliedCatalogRevision": 41
     },
     {
       "platformId": "elevenlabs",
@@ -1064,7 +1143,7 @@
         "chars": 10649,
         "error": null
       },
-      "appliedCatalogRevision": 30
+      "appliedCatalogRevision": 41
     },
     {
       "platformId": "free-ai",
@@ -1112,7 +1191,7 @@
         "chars": 0,
         "error": "HTTP Error 403: Forbidden"
       },
-      "appliedCatalogRevision": 30
+      "appliedCatalogRevision": 41
     },
     {
       "platformId": "copilot",
@@ -1131,14 +1210,21 @@
       "platformId": "higgsfield",
       "name": "Higgsfield",
       "site": "https://higgsfield.ai",
-      "status": "unreviewed",
-      "sources": [],
-      "productIds": [],
+      "status": "partial",
+      "sources": [
+        "https://higgsfield.ai/pricing",
+        "https://higgsfield.ai/creator-hub/changelog#credit-reset",
+        "https://higgsfield.ai/blog/how-to-get-free-unlimited-seedance-2"
+      ],
+      "productIds": [
+        "higgsfield"
+      ],
       "homepageRead": {
         "url": "https://higgsfield.ai",
         "chars": 3072,
         "error": null
-      }
+      },
+      "appliedCatalogRevision": 41
     },
     {
       "platformId": "ideogram",
@@ -1170,14 +1256,20 @@
       "platformId": "kilo",
       "name": "Kilo Code",
       "site": "https://kilo.ai",
-      "status": "unreviewed",
-      "sources": [],
-      "productIds": [],
+      "status": "research_complete",
+      "sources": [
+        "https://kilo.ai/pricing"
+      ],
+      "productIds": [
+        "kilo-code",
+        "kilo-pass"
+      ],
       "homepageRead": {
         "url": "https://kilo.ai",
         "chars": 7368,
         "error": null
-      }
+      },
+      "appliedCatalogRevision": 41
     },
     {
       "platformId": "kiro",
@@ -1194,7 +1286,8 @@
         "url": "https://kiro.dev",
         "chars": 22111,
         "error": null
-      }
+      },
+      "appliedCatalogRevision": 41
     },
     {
       "platformId": "krea",
@@ -1212,7 +1305,7 @@
         "chars": 18354,
         "error": null
       },
-      "appliedCatalogRevision": 30
+      "appliedCatalogRevision": 41
     },
     {
       "platformId": "leonardo",
@@ -1256,7 +1349,7 @@
         "chars": 0,
         "error": "HTTP Error 403: Forbidden"
       },
-      "appliedCatalogRevision": 32
+      "appliedCatalogRevision": 41
     },
     {
       "platformId": "lovart",
@@ -1286,20 +1379,26 @@
         "url": "https://lumalabs.ai",
         "chars": 3295,
         "error": null
-      }
+      },
+      "appliedCatalogRevision": 41
     },
     {
       "platformId": "magnific",
       "name": "Magnific",
       "site": "https://www.magnific.com",
-      "status": "unreviewed",
-      "sources": [],
-      "productIds": [],
+      "status": "research_complete",
+      "sources": [
+        "https://www.magnific.com/pricing"
+      ],
+      "productIds": [
+        "magnific"
+      ],
       "homepageRead": {
         "url": "https://www.magnific.com",
         "chars": 0,
         "error": "HTTP Error 403: Forbidden"
-      }
+      },
+      "appliedCatalogRevision": 41
     },
     {
       "platformId": "manus",
@@ -1347,7 +1446,7 @@
         "chars": 0,
         "error": "HTTP Error 403: Forbidden"
       },
-      "appliedCatalogRevision": 30
+      "appliedCatalogRevision": 41
     },
     {
       "platformId": "hailuo",
@@ -1364,7 +1463,8 @@
         "url": "https://hailuoai.com",
         "chars": 417,
         "error": null
-      }
+      },
+      "appliedCatalogRevision": 41
     },
     {
       "platformId": "niteshift",
@@ -1382,7 +1482,7 @@
         "chars": 5738,
         "error": null
       },
-      "appliedCatalogRevision": 30
+      "appliedCatalogRevision": 41
     },
     {
       "platformId": "oiioii",
@@ -1417,7 +1517,7 @@
         "chars": 524,
         "error": null
       },
-      "appliedCatalogRevision": 30
+      "appliedCatalogRevision": 41
     },
     {
       "platformId": "otter",
@@ -1435,20 +1535,25 @@
         "chars": 10017,
         "error": null
       },
-      "appliedCatalogRevision": 30
+      "appliedCatalogRevision": 41
     },
     {
       "platformId": "perplexity",
       "name": "Perplexity",
       "site": "https://www.perplexity.ai",
-      "status": "unreviewed",
-      "sources": [],
-      "productIds": [],
+      "status": "research_complete",
+      "sources": [
+        "https://www.perplexity.ai/help-center/en/articles/11187416-which-perplexity-subscription-plan-is-right-for-you"
+      ],
+      "productIds": [
+        "member-82a8d76f-fa59-4a77-96bd-0fc254908394"
+      ],
       "homepageRead": {
         "url": "https://www.perplexity.ai",
         "chars": 10,
         "error": null
-      }
+      },
+      "appliedCatalogRevision": 41
     },
     {
       "platformId": "pika",
@@ -1482,7 +1587,8 @@
         "url": "https://pixverse.ai/ja",
         "chars": 4340,
         "error": null
-      }
+      },
+      "appliedCatalogRevision": 41
     },
     {
       "platformId": "poe",
@@ -1501,14 +1607,19 @@
       "platformId": "pollo",
       "name": "Pollo AI",
       "site": "https://pollo.ai",
-      "status": "unreviewed",
-      "sources": [],
-      "productIds": [],
+      "status": "partial",
+      "sources": [
+        "https://pollo.ai/pricing"
+      ],
+      "productIds": [
+        "pollo-ai"
+      ],
       "homepageRead": {
         "url": "https://pollo.ai",
         "chars": 0,
         "error": "HTTP Error 403: Forbidden"
-      }
+      },
+      "appliedCatalogRevision": 41
     },
     {
       "platformId": "replit",
@@ -1531,9 +1642,11 @@
       "platformId": "runway",
       "name": "Runway",
       "site": "https://runwayml.com",
-      "status": "partial",
+      "status": "research_complete",
       "sources": [
-        "https://runway.com/pricing"
+        "https://runway.com/pricing",
+        "https://runway.com/pricing?tab=team",
+        "https://help.runwayml.com/hc/en-us/articles/52068047744019-Unlimited-plan-is-switching-to-Max"
       ],
       "productIds": [
         "runway"
@@ -1542,7 +1655,8 @@
         "url": "https://runway.com/",
         "chars": 4259,
         "error": null
-      }
+      },
+      "appliedCatalogRevision": 41
     },
     {
       "platformId": "seaart",
@@ -1573,7 +1687,7 @@
         "chars": 6109,
         "error": null
       },
-      "appliedCatalogRevision": 32
+      "appliedCatalogRevision": 41
     },
     {
       "platformId": "tapnow",
@@ -1592,14 +1706,19 @@
       "platformId": "trae",
       "name": "Trae",
       "site": "https://www.trae.ai",
-      "status": "unreviewed",
-      "sources": [],
-      "productIds": [],
+      "status": "partial",
+      "sources": [
+        "https://docs.trae.ai/ide/new-plans-and-billing?_lang=en"
+      ],
+      "productIds": [
+        "trae"
+      ],
       "homepageRead": {
         "url": "https://www.trae.ai",
         "chars": 81,
         "error": null
-      }
+      },
+      "appliedCatalogRevision": 41
     },
     {
       "platformId": "tripo",
@@ -1644,14 +1763,22 @@
       "platformId": "windsurf",
       "name": "Windsurf",
       "site": "https://windsurf.com",
-      "status": "unreviewed",
-      "sources": [],
-      "productIds": [],
+      "status": "research_complete",
+      "sources": [
+        "https://devin.ai/pricing",
+        "https://devin.ai/desktop",
+        "https://devin.ai/blog/gemini-31-pro"
+      ],
+      "productIds": [
+        "devin",
+        "windsurf"
+      ],
       "homepageRead": {
         "url": "https://devin.ai/desktop",
         "chars": 12326,
         "error": null
-      }
+      },
+      "appliedCatalogRevision": 41
     },
     {
       "platformId": "workbuddy",
@@ -1659,34 +1786,39 @@
       "site": "https://www.workbuddy.cn",
       "status": "partial",
       "sources": [
-        "https://www.workbuddy.cn/docs/workbuddy/Pricing"
+        "https://www.workbuddy.cn/docs/workbuddy/Pricing",
+        "https://cloud.tencent.com/document/product/1831/134332"
       ],
       "productIds": [
-        "workbuddy"
+        "workbuddy",
+        "workbuddy-enterprise"
       ],
       "homepageRead": {
         "url": "https://www.workbuddy.cn",
         "chars": 26,
         "error": null
-      }
+      },
+      "appliedCatalogRevision": 41
     },
     {
       "platformId": "n8n",
       "name": "n8n",
       "site": "https://n8n.io",
-      "status": "partial",
+      "status": "research_complete",
       "sources": [
         "https://n8n.io/pricing/"
       ],
       "productIds": [
         "n8n-cloud",
-        "n8n-self-hosted"
+        "n8n-self-hosted",
+        "n8n-enterprise"
       ],
       "homepageRead": {
         "url": "https://n8n.io",
         "chars": 7730,
         "error": null
-      }
+      },
+      "appliedCatalogRevision": 41
     },
     {
       "platformId": "jimeng",
@@ -1733,6 +1865,7 @@
       "site": "https://www.coze.cn",
       "status": "partial",
       "sources": [
+        "https://docs.coze.cn/coze_pro_premium_package",
         "https://docs.coze.cn/guides_20260119_coze_premium_upgraded"
       ],
       "productIds": [
@@ -1742,7 +1875,8 @@
         "url": "https://www.coze.cn",
         "chars": 43,
         "error": null
-      }
+      },
+      "appliedCatalogRevision": 41
     },
     {
       "platformId": "doubao-work",
@@ -1787,7 +1921,7 @@
         "chars": 3503,
         "error": null
       },
-      "appliedCatalogRevision": 31
+      "appliedCatalogRevision": 41
     }
   ]
 }

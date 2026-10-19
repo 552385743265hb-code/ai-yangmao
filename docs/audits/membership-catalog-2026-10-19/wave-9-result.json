@@ -1,0 +1,394 @@
+{
+  "appliedAt": "2026-10-19",
+  "beforeRevision": 38,
+  "afterRevision": 39,
+  "products": 51,
+  "plans": 303,
+  "planStates": {
+    "verified": 282,
+    "retired": 14,
+    "pending": 7
+  },
+  "changes": [
+    {
+      "id": "z-ai-devpack-lite",
+      "oldName": "GLM Coding Plan（Z.ai 国际版） Lite",
+      "name": "GLM Coding Plan（Z.ai 国际版） Lite",
+      "productId": "z-ai-devpack"
+    },
+    {
+      "id": "z-ai-devpack-pro",
+      "oldName": "GLM Coding Plan（Z.ai 国际版） Pro",
+      "name": "GLM Coding Plan（Z.ai 国际版） Pro",
+      "productId": "z-ai-devpack"
+    },
+    {
+      "id": "z-ai-devpack-max",
+      "oldName": "GLM Coding Plan（Z.ai 国际版） Max",
+      "name": "GLM Coding Plan（Z.ai 国际版） Max",
+      "productId": "z-ai-devpack"
+    },
+    {
+      "id": "z-ai-devpack-team-standard-seat",
+      "oldName": "GLM Coding Plan（Z.ai 国际版） Team Standard Seat",
+      "name": "GLM Coding Plan（Z.ai 国际版） Team Standard Seat",
+      "productId": "z-ai-devpack"
+    },
+    {
+      "id": "z-ai-devpack-team-premium-seat",
+      "oldName": "GLM Coding Plan（Z.ai 国际版） Team Premium Seat",
+      "name": "GLM Coding Plan（Z.ai 国际版） Team Premium Seat",
+      "productId": "z-ai-devpack"
+    },
+    {
+      "id": "z-ai-devpack-trial",
+      "oldName": "GLM Coding Plan（Z.ai 国际版） Trial",
+      "name": "GLM Coding Plan（Z.ai 国际版） Trial",
+      "productId": "z-ai-devpack"
+    },
+    {
+      "id": "z-ai-devpack-lite-legacy-v1",
+      "oldName": "GLM Coding Plan（Z.ai 国际版） Lite（Legacy V1）",
+      "name": "GLM Coding Plan（Z.ai 国际版） Lite（Legacy V1）",
+      "productId": "z-ai-devpack"
+    },
+    {
+      "id": "z-ai-devpack-pro-legacy-v1",
+      "oldName": "GLM Coding Plan（Z.ai 国际版） Pro（Legacy V1）",
+      "name": "GLM Coding Plan（Z.ai 国际版） Pro（Legacy V1）",
+      "productId": "z-ai-devpack"
+    },
+    {
+      "id": "z-ai-devpack-max-legacy-v1",
+      "oldName": "GLM Coding Plan（Z.ai 国际版） Max（Legacy V1）",
+      "name": "GLM Coding Plan（Z.ai 国际版） Max（Legacy V1）",
+      "productId": "z-ai-devpack"
+    },
+    {
+      "id": "z-ai-devpack-lite-legacy-v2",
+      "oldName": "GLM Coding Plan（Z.ai 国际版） Lite（Legacy V2）",
+      "name": "GLM Coding Plan（Z.ai 国际版） Lite（Legacy V2）",
+      "productId": "z-ai-devpack"
+    },
+    {
+      "id": "z-ai-devpack-pro-legacy-v2",
+      "oldName": "GLM Coding Plan（Z.ai 国际版） Pro（Legacy V2）",
+      "name": "GLM Coding Plan（Z.ai 国际版） Pro（Legacy V2）",
+      "productId": "z-ai-devpack"
+    },
+    {
+      "id": "z-ai-devpack-max-legacy-v2",
+      "oldName": "GLM Coding Plan（Z.ai 国际版） Max（Legacy V2）",
+      "name": "GLM Coding Plan（Z.ai 国际版） Max（Legacy V2）",
+      "productId": "z-ai-devpack"
+    },
+    {
+      "id": "z-ai-devpack-team-standard-legacy",
+      "oldName": "GLM Coding Plan（Z.ai 国际版） Team Standard Seat（旧版）",
+      "name": "GLM Coding Plan（Z.ai 国际版） Team Standard Seat（旧版）",
+      "productId": "z-ai-devpack"
+    },
+    {
+      "id": "z-ai-devpack-team-premium-legacy",
+      "oldName": "GLM Coding Plan（Z.ai 国际版） Team Premium Seat（旧版）",
+      "name": "GLM Coding Plan（Z.ai 国际版） Team Premium Seat（旧版）",
+      "productId": "z-ai-devpack"
+    },
+    {
+      "id": "glm-coding-cn-lite",
+      "oldName": "GLM Coding Plan（BigModel 国内版） Lite",
+      "name": "GLM Coding Plan（BigModel 国内版） Lite",
+      "productId": "glm-coding-cn"
+    },
+    {
+      "id": "glm-coding-cn-pro",
+      "oldName": "GLM Coding Plan（BigModel 国内版） Pro",
+      "name": "GLM Coding Plan（BigModel 国内版） Pro",
+      "productId": "glm-coding-cn"
+    },
+    {
+      "id": "glm-coding-cn-max",
+      "oldName": "GLM Coding Plan（BigModel 国内版） Max",
+      "name": "GLM Coding Plan（BigModel 国内版） Max",
+      "productId": "glm-coding-cn"
+    },
+    {
+      "id": "glm-coding-cn-team-standard",
+      "oldName": "GLM Coding Plan（BigModel 国内版） 团队标准版",
+      "name": "GLM Coding Plan（BigModel 国内版） 团队标准版",
+      "productId": "glm-coding-cn"
+    },
+    {
+      "id": "glm-coding-cn-team-premium",
+      "oldName": "GLM Coding Plan（BigModel 国内版） 团队高级版",
+      "name": "GLM Coding Plan（BigModel 国内版） 团队高级版",
+      "productId": "glm-coding-cn"
+    },
+    {
+      "id": "glm-coding-cn-trial-5-days",
+      "oldName": "GLM Coding Plan（BigModel 国内版） 体验套餐（5天）",
+      "name": "GLM Coding Plan（BigModel 国内版） 体验套餐（5天）",
+      "productId": "glm-coding-cn"
+    },
+    {
+      "id": "glm-coding-cn-lite-v1",
+      "oldName": "GLM Coding Plan（BigModel 国内版） Lite（历史 V1）",
+      "name": "GLM Coding Plan（BigModel 国内版） Lite（历史 V1）",
+      "productId": "glm-coding-cn"
+    },
+    {
+      "id": "glm-coding-cn-pro-v1",
+      "oldName": "GLM Coding Plan（BigModel 国内版） Pro（历史 V1）",
+      "name": "GLM Coding Plan（BigModel 国内版） Pro（历史 V1）",
+      "productId": "glm-coding-cn"
+    },
+    {
+      "id": "glm-coding-cn-max-v1",
+      "oldName": "GLM Coding Plan（BigModel 国内版） Max（历史 V1）",
+      "name": "GLM Coding Plan（BigModel 国内版） Max（历史 V1）",
+      "productId": "glm-coding-cn"
+    },
+    {
+      "id": "glm-coding-cn-lite-v2",
+      "oldName": "GLM Coding Plan（BigModel 国内版） Lite（历史 V2）",
+      "name": "GLM Coding Plan（BigModel 国内版） Lite（历史 V2）",
+      "productId": "glm-coding-cn"
+    },
+    {
+      "id": "glm-coding-cn-pro-v2",
+      "oldName": "GLM Coding Plan（BigModel 国内版） Pro（历史 V2）",
+      "name": "GLM Coding Plan（BigModel 国内版） Pro（历史 V2）",
+      "productId": "glm-coding-cn"
+    },
+    {
+      "id": "glm-coding-cn-max-v2",
+      "oldName": "GLM Coding Plan（BigModel 国内版） Max（历史 V2）",
+      "name": "GLM Coding Plan（BigModel 国内版） Max（历史 V2）",
+      "productId": "glm-coding-cn"
+    },
+    {
+      "id": "glm-coding-cn-team-standard-legacy",
+      "oldName": "GLM Coding Plan（BigModel 国内版） 团队标准版（旧版）",
+      "name": "GLM Coding Plan（BigModel 国内版） 团队标准版（旧版）",
+      "productId": "glm-coding-cn"
+    },
+    {
+      "id": "glm-coding-cn-team-premium-legacy",
+      "oldName": "GLM Coding Plan（BigModel 国内版） 团队高级版（旧版）",
+      "name": "GLM Coding Plan（BigModel 国内版） 团队高级版（旧版）",
+      "productId": "glm-coding-cn"
+    },
+    {
+      "id": "zcode-plan-1",
+      "oldName": "付费套餐（具体档位待核实）",
+      "name": "付费套餐（具体档位待核实）",
+      "productId": "zcode",
+      "action": "retire",
+      "reason": "ZCode 官方确认使用 BigModel 或 Z.ai Coding Plan，无独立订阅；旧占位项不能猜地区"
+    },
+    {
+      "id": "minimax-m-plan-go",
+      "oldName": "MiniMax（国内版 M Plan / Token Plan） M Plan Go",
+      "name": "MiniMax（国内版 M Plan / Token Plan） M Plan Go",
+      "productId": "minimax"
+    },
+    {
+      "id": "minimax-m-plan-explore",
+      "oldName": "MiniMax（国内版 M Plan / Token Plan） M Plan Explore",
+      "name": "MiniMax（国内版 M Plan / Token Plan） M Plan Explore",
+      "productId": "minimax"
+    },
+    {
+      "id": "minimax-m-plan-build",
+      "oldName": "MiniMax（国内版 M Plan / Token Plan） M Plan Build",
+      "name": "MiniMax（国内版 M Plan / Token Plan） M Plan Build",
+      "productId": "minimax"
+    },
+    {
+      "id": "minimax-token-plan-plus",
+      "oldName": "MiniMax（国内版 M Plan / Token Plan） Token Plan Plus（存量）",
+      "name": "MiniMax（国内版 M Plan / Token Plan） Token Plan Plus（存量）",
+      "productId": "minimax"
+    },
+    {
+      "id": "minimax-token-plan-max",
+      "oldName": "MiniMax（国内版 M Plan / Token Plan） Token Plan Max（存量）",
+      "name": "MiniMax（国内版 M Plan / Token Plan） Token Plan Max（存量）",
+      "productId": "minimax"
+    },
+    {
+      "id": "minimax-token-plan-ultra",
+      "oldName": "MiniMax（国内版 M Plan / Token Plan） Token Plan Ultra（存量）",
+      "name": "MiniMax（国内版 M Plan / Token Plan） Token Plan Ultra（存量）",
+      "productId": "minimax"
+    },
+    {
+      "id": "minimax-m-plan",
+      "oldName": "M Plan",
+      "name": "M Plan",
+      "productId": "minimax",
+      "action": "retire",
+      "reason": "旧记录只写产品家族未区分正式档位，已按官方档位展开"
+    },
+    {
+      "id": "minimax-token-plan",
+      "oldName": "Token Plan",
+      "name": "Token Plan",
+      "productId": "minimax",
+      "action": "retire",
+      "reason": "旧记录只写产品家族未区分正式档位，已按官方档位展开"
+    },
+    {
+      "id": "member-82a8d76f-fa59-4a77-96bd-0fc254908394-standard-free",
+      "oldName": "Perplexity Standard (Free)",
+      "name": "Perplexity Standard (Free)",
+      "productId": "member-82a8d76f-fa59-4a77-96bd-0fc254908394"
+    },
+    {
+      "id": "member-acc0361c-cd76-4745-95d0-eb86da7a555d",
+      "oldName": "Pro",
+      "name": "Perplexity Pro",
+      "productId": "member-82a8d76f-fa59-4a77-96bd-0fc254908394"
+    },
+    {
+      "id": "member-518eb7a8-9b00-411a-a988-1952187be842",
+      "oldName": "Max",
+      "name": "Perplexity Max",
+      "productId": "member-82a8d76f-fa59-4a77-96bd-0fc254908394"
+    },
+    {
+      "id": "member-90214167-209c-4b28-9e6c-bfdb45c25e18",
+      "oldName": "Education Pro",
+      "name": "Perplexity Education Pro",
+      "productId": "member-82a8d76f-fa59-4a77-96bd-0fc254908394"
+    },
+    {
+      "id": "member-ad6a690b-d6af-4867-bc8c-89ce4d22a407",
+      "oldName": "Enterprise Pro",
+      "name": "Perplexity Enterprise Pro",
+      "productId": "member-82a8d76f-fa59-4a77-96bd-0fc254908394"
+    },
+    {
+      "id": "member-4b38ea54-97b4-4dc5-941c-3fbf441e25a6",
+      "oldName": "Enterprise Max",
+      "name": "Perplexity Enterprise Max",
+      "productId": "member-82a8d76f-fa59-4a77-96bd-0fc254908394"
+    },
+    {
+      "id": "member-706870f6-f40a-47fa-bfb6-7230e3a3ae46",
+      "oldName": "M Plan Go",
+      "name": "MiniMax Code（国际版 M Plan / Token Plan） M Plan Go",
+      "productId": "member-ecd9b66d-5b49-4fe9-87fd-0252cf6b42d7"
+    },
+    {
+      "id": "member-70cb77ef-be68-4bf7-82d5-daff45a766c8",
+      "oldName": "M Plan Explore",
+      "name": "MiniMax Code（国际版 M Plan / Token Plan） M Plan Explore",
+      "productId": "member-ecd9b66d-5b49-4fe9-87fd-0252cf6b42d7"
+    },
+    {
+      "id": "member-791b388d-6f69-483a-a7f9-b22c2ca75d73",
+      "oldName": "M Plan Build",
+      "name": "MiniMax Code（国际版 M Plan / Token Plan） M Plan Build",
+      "productId": "member-ecd9b66d-5b49-4fe9-87fd-0252cf6b42d7"
+    },
+    {
+      "id": "member-f2cb16c8-71f8-423a-a878-6e55efc3c046",
+      "oldName": "Token Plan Plus（存量）",
+      "name": "MiniMax Code（国际版 M Plan / Token Plan） Token Plan Plus（存量）",
+      "productId": "member-ecd9b66d-5b49-4fe9-87fd-0252cf6b42d7"
+    },
+    {
+      "id": "member-dcbe7ca1-851d-4cc9-9161-97d7352bf577",
+      "oldName": "Token Plan Max（存量）",
+      "name": "MiniMax Code（国际版 M Plan / Token Plan） Token Plan Max（存量）",
+      "productId": "member-ecd9b66d-5b49-4fe9-87fd-0252cf6b42d7"
+    },
+    {
+      "id": "member-15069624-ae5a-4317-8bb3-ffc458279fff",
+      "oldName": "Token Plan Ultra（存量）",
+      "name": "MiniMax Code（国际版 M Plan / Token Plan） Token Plan Ultra（存量）",
+      "productId": "member-ecd9b66d-5b49-4fe9-87fd-0252cf6b42d7"
+    },
+    {
+      "id": "hume-voice-free",
+      "oldName": "Hume Voice Free",
+      "name": "Hume Voice Free",
+      "productId": "hume-voice"
+    },
+    {
+      "id": "hume-voice-starter",
+      "oldName": "Hume Voice Starter",
+      "name": "Hume Voice Starter",
+      "productId": "hume-voice"
+    },
+    {
+      "id": "hume-voice-creator",
+      "oldName": "Hume Voice Creator",
+      "name": "Hume Voice Creator",
+      "productId": "hume-voice"
+    },
+    {
+      "id": "hume-voice-pro",
+      "oldName": "Hume Voice Pro",
+      "name": "Hume Voice Pro",
+      "productId": "hume-voice"
+    },
+    {
+      "id": "hume-voice-scale",
+      "oldName": "Hume Voice Scale",
+      "name": "Hume Voice Scale",
+      "productId": "hume-voice"
+    },
+    {
+      "id": "hume-voice-business",
+      "oldName": "Hume Voice Business",
+      "name": "Hume Voice Business",
+      "productId": "hume-voice"
+    },
+    {
+      "id": "hume-voice-enterprise",
+      "oldName": "Hume Voice Enterprise",
+      "name": "Hume Voice Enterprise",
+      "productId": "hume-voice"
+    },
+    {
+      "id": "kilo-code-individual-free",
+      "oldName": "Kilo Code Individual (Free)",
+      "name": "Kilo Code Individual (Free)",
+      "productId": "kilo-code"
+    },
+    {
+      "id": "kilo-code-teams",
+      "oldName": "Kilo Code Teams",
+      "name": "Kilo Code Teams",
+      "productId": "kilo-code"
+    },
+    {
+      "id": "kilo-code-enterprise",
+      "oldName": "Kilo Code Enterprise",
+      "name": "Kilo Code Enterprise",
+      "productId": "kilo-code"
+    },
+    {
+      "id": "kilo-pass-starter",
+      "oldName": "Kilo Pass Starter",
+      "name": "Kilo Pass Starter",
+      "productId": "kilo-pass"
+    },
+    {
+      "id": "kilo-pass-pro",
+      "oldName": "Kilo Pass Pro",
+      "name": "Kilo Pass Pro",
+      "productId": "kilo-pass"
+    },
+    {
+      "id": "kilo-pass-expert",
+      "oldName": "Kilo Pass Expert",
+      "name": "Kilo Pass Expert",
+      "productId": "kilo-pass"
+    }
+  ],
+  "verification": "final revision 41 full catalog products/plans/root metadata equals prepared plan; intermediate snapshots retained outside Git",
+  "writeMethod": "D1 revision-guarded catalog update"
+}

@@ -137,8 +137,10 @@
       "freePlans": [
         "Basic"
       ],
-      "status": "needs_billing_check",
-      "quote": "Feature | Basic | Standard | Pro | Premium | Ultra | Team Ultra"
+      "status": "verified",
+      "quote": "Basic $0/month; Standard; Pro; Premium; Ultra; Team Ultra",
+      "applyReady": true,
+      "remaining": "浏览器已核对六档；另有 Enterprise API 起充入口，尚需核对是否固定订阅"
     },
     {
       "productId": "hailuo-ai",
@@ -161,7 +163,8 @@
       ],
       "status": "verified",
       "quote": "Standard Plan; Pro Plan; Master Plan; Unlimited Plan; Ultra Plan; Max Plan",
-      "remaining": "核对国内版目录；不能合并国际版和国内版"
+      "remaining": "核对国内版目录；不能合并国际版和国内版",
+      "applyReady": true
     },
     {
       "productId": "luma-ai",
@@ -178,9 +181,10 @@
         "Enterprise"
       ],
       "freePlans": [],
-      "status": "partial",
+      "status": "verified",
       "quote": "Individual plans: Plus, Pro, Ultra. Business plans: Team, Enterprise.",
-      "remaining": "旧 Agents FAQ 把 Plus/Pro 的价格反写，使用当前价格页；仍需查 Dream Machine 存量目录"
+      "remaining": "旧 Agents FAQ 把 Plus/Pro 的价格反写，使用当前价格页；仍需查 Dream Machine 存量目录",
+      "applyReady": true
     },
     {
       "productId": "coze",
@@ -188,21 +192,57 @@
         "coze"
       ],
       "name": "扣子（国内版）",
-      "sourceUrl": "https://docs.coze.cn/guides_20260119_coze_premium_upgraded",
+      "sourceUrl": "https://docs.coze.cn/coze_pro_premium_package",
       "plans": [
         "个人免费版",
         "个人进阶版",
         "个人高阶版",
         "个人旗舰版",
+        "个人尊享版",
+        "团队高阶版",
+        "团队旗舰版",
+        "团队尊享版",
         "企业标准版",
-        "企业旗舰版"
+        "企业旗舰版",
+        "团队版（2026-01-18前旧版）",
+        "企业版（2026-01-18前旧版）"
       ],
       "freePlans": [
         "个人免费版"
       ],
-      "status": "partial",
-      "quote": "新增个人高阶版、个人旗舰版，原团队版调整为企业标准版，原企业版调整为企业旗舰版",
-      "remaining": "核对当前订阅页及旧套餐存量，另查国际版"
+      "status": "verified",
+      "quote": "个人免费/进阶/高阶/旗舰/尊享；团队高阶/旗舰/尊享；企业标准/旗舰",
+      "remaining": "国内版已按当前十档及可续费的旧团队/企业核实；继续核对国际 Coze 是否仍有独立订阅",
+      "legacyPlans": [
+        "团队版（2026-01-18前旧版）",
+        "企业版（2026-01-18前旧版）"
+      ],
+      "applyReady": true,
+      "newPlanIds": {
+        "个人免费版": "coze-personal-free",
+        "个人进阶版": "coze-personal-starter",
+        "个人高阶版": "coze-personal-advanced",
+        "个人旗舰版": "coze-personal-flagship",
+        "个人尊享版": "coze-personal-ultimate",
+        "团队高阶版": "coze-team-advanced",
+        "团队旗舰版": "coze-team-flagship",
+        "团队尊享版": "coze-team-ultimate",
+        "企业标准版": "coze-enterprise-standard",
+        "企业旗舰版": "coze-enterprise-flagship",
+        "团队版（2026-01-18前旧版）": "coze-team-legacy",
+        "企业版（2026-01-18前旧版）": "coze-enterprise-legacy"
+      },
+      "planSources": {
+        "团队版（2026-01-18前旧版）": "https://docs.coze.cn/guides_20260119_coze_premium_upgraded",
+        "企业版（2026-01-18前旧版）": "https://docs.coze.cn/guides_20260119_coze_premium_upgraded"
+      },
+      "retirePlans": [
+        {
+          "id": "coze-plan-1",
+          "reason": "旧泛付费套餐占位项，官方已列明个人、团队、企业正式档位",
+          "sourceUrl": "https://docs.coze.cn/coze_pro_premium_package"
+        }
+      ]
     },
     {
       "productId": "hugging-face",
@@ -236,19 +276,52 @@
         "Team Standard",
         "Team Premium",
         "Enterprise",
-        "Education"
+        "Education",
+        "Enterprise Standard（旧版席位）",
+        "Enterprise Premium（旧版席位）"
       ],
       "freePlans": [
         "Free"
       ],
-      "status": "partial",
+      "status": "verified",
       "quote": "Free | Pro | Max 5x | Max 20x; Team Standard seat; Premium seat; Enterprise; Education plan",
-      "remaining": "核对存量 Enterprise Standard/Premium 席位，旧 Max/Team 泛档位替换映射"
+      "remaining": "旧泛 Max/Team 用户选择需重新选实际档位，不自动推定",
+      "applyReady": true,
+      "legacyPlans": [
+        "Enterprise Standard（旧版席位）",
+        "Enterprise Premium（旧版席位）"
+      ],
+      "newPlanIds": {
+        "Enterprise Standard（旧版席位）": "claude-enterprise-standard-legacy",
+        "Enterprise Premium（旧版席位）": "claude-enterprise-premium-legacy"
+      },
+      "planSources": {
+        "Enterprise Standard（旧版席位）": "https://support.claude.com/en/articles/15424964-claude-fable-models-on-your-plan",
+        "Enterprise Premium（旧版席位）": "https://support.claude.com/en/articles/15424964-claude-fable-models-on-your-plan"
+      },
+      "retirePlans": [
+        {
+          "id": "claude-max",
+          "reason": "未区分用量档位的旧聚合记录；正式目录分为 Max 5x 与 Max 20x",
+          "sourceUrl": "https://claude.com/pricing"
+        },
+        {
+          "id": "claude-team",
+          "reason": "未区分席位的旧聚合记录；正式目录分为 Team Standard 与 Team Premium",
+          "sourceUrl": "https://claude.com/pricing"
+        },
+        {
+          "id": "claude-plan-3",
+          "reason": "旧抽取占位项，不是官方套餐名称",
+          "sourceUrl": "https://claude.com/pricing"
+        }
+      ]
     },
     {
       "productId": "devin",
       "platformIds": [
-        "devin"
+        "devin",
+        "windsurf"
       ],
       "name": "Devin",
       "sourceUrl": "https://devin.ai/pricing",
@@ -263,7 +336,8 @@
         "Free"
       ],
       "status": "verified",
-      "quote": "Free $0; Pro $20 per month; Max $200 per month; Teams; Enterprise"
+      "quote": "Free $0; Pro $20 per month; Max $200 per month; Teams; Enterprise",
+      "applyReady": true
     },
     {
       "productId": "n8n-cloud",
@@ -274,12 +348,12 @@
       "sourceUrl": "https://n8n.io/pricing/",
       "plans": [
         "Starter",
-        "Pro",
-        "Enterprise"
+        "Pro"
       ],
       "freePlans": [],
       "status": "verified",
-      "quote": "Cloud: Starter, Pro, Enterprise"
+      "quote": "Cloud: Starter, Pro, Enterprise",
+      "applyReady": true
     },
     {
       "productId": "n8n-self-hosted",
@@ -290,15 +364,15 @@
       "sourceUrl": "https://n8n.io/pricing/",
       "plans": [
         "Community Edition",
-        "Business",
-        "Enterprise"
+        "Business"
       ],
       "freePlans": [
         "Community Edition"
       ],
-      "status": "partial",
+      "status": "verified",
       "quote": "Business Self-hosted only; Enterprise Hosted by n8n or Self-hosted; Community Edition",
-      "remaining": "核对 Start-up Plan 对应 Business 资格与命名，不重复建立折扣档位"
+      "remaining": "Enterprise 统一单列，避免云端和自托管重复；Start-up 为 Business 优惠资格，不是独立档位",
+      "applyReady": true
     },
     {
       "productId": "x-subscription",
@@ -373,9 +447,18 @@
       "freePlans": [
         "体验版"
       ],
-      "status": "partial",
+      "status": "verified",
       "quote": "WorkBuddy 和 CodeBuddy 同一账号积分共享，无需分别订阅。",
-      "remaining": "另核企业版；旧专业版已自动升级标准版，不能再造独立套餐"
+      "remaining": "另核企业版；旧专业版已自动升级标准版，不能再造独立套餐",
+      "applyReady": true,
+      "existingPlanIds": {
+        "标准版": "workbuddy-plan-1",
+        "高级版": "workbuddy-plan-2",
+        "旗舰版": "workbuddy-plan-3"
+      },
+      "newPlanIds": {
+        "体验版": "workbuddy-free"
+      }
     },
     {
       "productId": "krea",
@@ -581,9 +664,10 @@
       "freePlans": [
         "Free"
       ],
-      "status": "partial",
+      "status": "verified",
       "quote": "Free; Pro; Pro+; Pro Max; Power",
-      "remaining": "核对企业席位和 GovCloud 是否独立产品"
+      "remaining": "企业控制由同档席位提供；GovCloud 定价不同，继续核对是否另列独立权益档位",
+      "applyReady": true
     },
     {
       "productId": "runway",
@@ -596,14 +680,36 @@
         "Free",
         "Standard",
         "Pro",
-        "Max"
+        "Max",
+        "Team",
+        "Enterprise",
+        "Unlimited（存量至2026-11-30）"
       ],
       "freePlans": [
         "Free"
       ],
-      "status": "partial",
-      "quote": "Free; Standard; Pro; Max",
-      "remaining": "需读取 Team & Enterprise 页签及旧 Unlimited 是否保留"
+      "status": "verified",
+      "quote": "Free; Standard; Pro; Max; Team; Enterprise; legacy Unlimited through November 30th, 2026.",
+      "remaining": "目录已补当前团队档与仍有效的 Unlimited 存量档；11月30日迁移 Max 需届时更新",
+      "applyReady": true,
+      "legacyPlans": [
+        "Unlimited（存量至2026-11-30）"
+      ],
+      "newPlanIds": {
+        "Unlimited（存量至2026-11-30）": "runway-unlimited-legacy"
+      },
+      "planSources": {
+        "Team": "https://runway.com/pricing?tab=team",
+        "Enterprise": "https://runway.com/pricing?tab=team",
+        "Unlimited（存量至2026-11-30）": "https://help.runwayml.com/hc/en-us/articles/52068047744019-Unlimited-plan-is-switching-to-Max"
+      },
+      "retirePlans": [
+        {
+          "id": "runway-explore-mode-mcp",
+          "reason": "旧功能描述占位项不是套餐名称；真实存量套餐为 Unlimited，不能混同 Max",
+          "sourceUrl": "https://help.runwayml.com/hc/en-us/articles/52068047744019-Unlimited-plan-is-switching-to-Max"
+        }
+      ]
     },
     {
       "productId": "free-ai",
@@ -635,25 +741,64 @@
       "platformIds": [
         "openai"
       ],
-      "name": "ChatGPT（含 Codex / Work）",
+      "name": "ChatGPT",
       "sourceUrl": "https://learn.chatgpt.com/docs/pricing",
       "plans": [
         "Free",
         "Go",
         "Plus",
-        "Pro $100",
-        "Pro $200",
-        "Pro $500",
-        "Business",
+        "Pro 100",
+        "Pro 200",
+        "Pro 500",
+        "Business Standard",
+        "Business Premium",
         "Edu",
-        "Enterprise"
+        "Enterprise",
+        "for Teachers"
       ],
       "freePlans": [
-        "Free"
+        "Free",
+        "for Teachers"
       ],
-      "status": "partial",
+      "status": "verified",
       "quote": "Plans at $100, $200, or $500 USD per month",
-      "remaining": "核对 Business Premium 与 Teachers；合并 openai-codex/chatgpt-work 重复产品，旧泛 Pro 需映射多档"
+      "remaining": "完成产品归并；旧活动会员条件需按已批准原文映射，不推定泛 Pro 用户所持档位",
+      "aliases": [
+        "Codex",
+        "OpenAI Codex",
+        "ChatGPT Work"
+      ],
+      "applyReady": true,
+      "existingPlanIds": {
+        "Business Premium": "chatgpt-business-premium"
+      },
+      "planSources": {
+        "Pro 100": "https://help.openai.com/en/articles/9793128-about-chatgpt-pro-tiers",
+        "Pro 200": "https://help.openai.com/en/articles/9793128-about-chatgpt-pro-tiers",
+        "Pro 500": "https://help.openai.com/en/articles/9793128-about-chatgpt-pro-tiers",
+        "Business Standard": "https://help.openai.com/en/articles/8542115-chatgpt-business-general-faq",
+        "Business Premium": "https://help.openai.com/en/articles/8542115-chatgpt-business-general-faq",
+        "for Teachers": "https://help.openai.com/en/articles/12844995-chatgpt-for-teachers"
+      },
+      "retirePlans": [
+        {
+          "id": "chatgpt-pro",
+          "reason": "旧泛 Pro 未区分额度档位，正式目录拆分 Pro 100/200/500",
+          "sourceUrl": "https://help.openai.com/en/articles/9793128-about-chatgpt-pro-tiers"
+        }
+      ],
+      "retireProducts": [
+        {
+          "id": "openai-codex",
+          "reason": "官方明确此应用使用 ChatGPT 订阅，不是独立会员产品",
+          "sourceUrl": "https://learn.chatgpt.com/docs/pricing"
+        },
+        {
+          "id": "chatgpt-work",
+          "reason": "官方明确此应用使用 ChatGPT 订阅，不是独立会员产品",
+          "sourceUrl": "https://learn.chatgpt.com/docs/pricing"
+        }
+      ]
     },
     {
       "productId": "google-ai",
@@ -683,12 +828,53 @@
       "plans": [
         "Lite",
         "Pro",
-        "Max"
+        "Max",
+        "Team Standard Seat",
+        "Team Premium Seat",
+        "Trial",
+        "Lite（Legacy V1）",
+        "Pro（Legacy V1）",
+        "Max（Legacy V1）",
+        "Lite（Legacy V2）",
+        "Pro（Legacy V2）",
+        "Max（Legacy V2）",
+        "Team Standard Seat（旧版）",
+        "Team Premium Seat（旧版）"
       ],
-      "freePlans": [],
-      "status": "partial",
-      "quote": "Lite | Pro | Max",
-      "remaining": "正文已核对；继续 Team Plan、国内版与 ZCode 归并"
+      "freePlans": [
+        "Trial"
+      ],
+      "status": "verified",
+      "quote": "Lite; Pro; Max; Standard Seat; Premium Seat; Legacy Plan V1; Legacy Plan V2",
+      "remaining": "继续核对消费端是否另有独立订阅；ZCode 使用此套餐，无独立会员",
+      "legacyPlans": [
+        "Lite（Legacy V1）",
+        "Pro（Legacy V1）",
+        "Max（Legacy V1）",
+        "Lite（Legacy V2）",
+        "Pro（Legacy V2）",
+        "Max（Legacy V2）",
+        "Team Standard Seat（旧版）",
+        "Team Premium Seat（旧版）"
+      ],
+      "applyReady": true,
+      "planSources": {
+        "Team Standard Seat": "https://docs.z.ai/devpack/teamplan",
+        "Team Premium Seat": "https://docs.z.ai/devpack/teamplan",
+        "Lite（Legacy V1）": "https://docs.z.ai/devpack/notice/usage-revision",
+        "Pro（Legacy V1）": "https://docs.z.ai/devpack/notice/usage-revision",
+        "Max（Legacy V1）": "https://docs.z.ai/devpack/notice/usage-revision",
+        "Lite（Legacy V2）": "https://docs.z.ai/devpack/notice/usage-revision",
+        "Pro（Legacy V2）": "https://docs.z.ai/devpack/notice/usage-revision",
+        "Max（Legacy V2）": "https://docs.z.ai/devpack/notice/usage-revision",
+        "Team Standard Seat（旧版）": "https://docs.z.ai/devpack/notice/usage-revision",
+        "Team Premium Seat（旧版）": "https://docs.z.ai/devpack/notice/usage-revision",
+        "Trial": "https://zcode.z.ai/en/docs/configuration"
+      },
+      "newPlanIds": {
+        "Team Standard Seat（旧版）": "z-ai-devpack-team-standard-legacy",
+        "Team Premium Seat（旧版）": "z-ai-devpack-team-premium-legacy"
+      }
     },
     {
       "productId": "bolt",
@@ -789,6 +975,694 @@
       "status": "verified",
       "applyReady": true,
       "quote": "Free; Plus; Super; Ultra"
+    },
+    {
+      "productId": "stepfun",
+      "platformIds": [
+        "stepfun"
+      ],
+      "name": "Step Plan",
+      "sourceUrl": "https://platform.stepfun.com/docs/zh/step-plan/pricing",
+      "plans": [
+        "Mini",
+        "Plus",
+        "Pro",
+        "Max"
+      ],
+      "freePlans": [],
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Mini ¥49; Plus ¥99; Pro ¥199; Max ¥699",
+      "existingPlanIds": {
+        "Mini": "stepfun-flash-mini",
+        "Plus": "stepfun-flash-plus",
+        "Pro": "stepfun-flash-pro",
+        "Max": "stepfun-flash-max"
+      }
+    },
+    {
+      "productId": "qiniu",
+      "platformIds": [
+        "qiniu"
+      ],
+      "name": "七牛云 AI Token 企业订阅",
+      "sourceUrl": "https://www.qiniu.com/ai/plan",
+      "plans": [
+        "Enterprise S",
+        "Enterprise M",
+        "Enterprise B"
+      ],
+      "freePlans": [],
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Enterprise S ¥2,999/月；Enterprise M ¥4,999/月；Enterprise B ¥9,999/月",
+      "existingPlanIds": {
+        "Enterprise S": "qiniu-2999",
+        "Enterprise M": "qiniu-4999",
+        "Enterprise B": "qiniu-9999"
+      }
+    },
+    {
+      "productId": "workbuddy-enterprise",
+      "platformIds": [
+        "workbuddy"
+      ],
+      "name": "WorkBuddy Enterprise",
+      "sourceUrl": "https://cloud.tencent.com/document/product/1831/134332",
+      "plans": [
+        "旗舰版",
+        "专享版",
+        "私有化企业版"
+      ],
+      "freePlans": [],
+      "status": "verified",
+      "applyReady": true,
+      "quote": "旗舰版；专享版；私有化企业版",
+      "newPlanIds": {
+        "旗舰版": "workbuddy-enterprise-flagship",
+        "专享版": "workbuddy-enterprise-exclusive",
+        "私有化企业版": "workbuddy-enterprise-private"
+      }
+    },
+    {
+      "productId": "stepfun-consumer",
+      "platformIds": [
+        "stepfun"
+      ],
+      "name": "阶跃 AI（StepClaw）",
+      "sourceUrl": "https://www.stepfun.com/subscription/membership-benefits-explanation",
+      "plans": [
+        "入门版",
+        "高级版",
+        "进阶版",
+        "专业版"
+      ],
+      "freePlans": [],
+      "status": "verified",
+      "applyReady": true,
+      "quote": "4 个按月正式订阅档：入门版、高级版、进阶版、专业版",
+      "newPlanIds": {
+        "入门版": "stepfun-consumer-entry",
+        "高级版": "stepfun-consumer-advanced",
+        "进阶版": "stepfun-consumer-progress",
+        "专业版": "stepfun-consumer-professional"
+      },
+      "remaining": "尝鲜周卡亦为官方会员档，收费属性尚需核对；本批只写已确认的四个月付档，继续补齐周卡"
+    },
+    {
+      "productId": "pollo-ai",
+      "platformIds": [
+        "pollo"
+      ],
+      "name": "Pollo AI",
+      "sourceUrl": "https://pollo.ai/pricing",
+      "plans": [
+        "Free",
+        "Lite",
+        "Pro",
+        "Ultra"
+      ],
+      "freePlans": [
+        "Free"
+      ],
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Free 20 credits; Lite; Pro; Ultra",
+      "retirePlans": [
+        {
+          "id": "pollo-ai-plan-4",
+          "reason": "旧抽取占位项，不是官方套餐名称；已核对官网四档",
+          "sourceUrl": "https://pollo.ai/pricing"
+        }
+      ]
+    },
+    {
+      "productId": "higgsfield",
+      "platformIds": [
+        "higgsfield"
+      ],
+      "name": "Higgsfield",
+      "sourceUrl": "https://higgsfield.ai/pricing",
+      "plans": [
+        "Free",
+        "Starter",
+        "Plus",
+        "Ultra",
+        "Team",
+        "Scale",
+        "Enterprise",
+        "Basic",
+        "Pro",
+        "B2B"
+      ],
+      "freePlans": [
+        "Free"
+      ],
+      "legacyPlans": [
+        "Basic",
+        "Pro",
+        "B2B"
+      ],
+      "status": "verified",
+      "quote": "Starter; Plus; Ultra; Team; Scale; Enterprise",
+      "legacySourceUrl": "https://higgsfield.ai/blog/how-to-get-free-unlimited-seedance-2",
+      "remaining": "主要目录和已核实 Basic/Pro/B2B 历史名称已收齐；geo 子站列出的 Ultimate/Max/Creator 为自动生成内容，继续寻找主站依据，不直接认可",
+      "applyReady": true,
+      "planSources": {
+        "Basic": "https://higgsfield.ai/creator-hub/changelog#credit-reset",
+        "Pro": "https://higgsfield.ai/blog/how-to-get-free-unlimited-seedance-2",
+        "B2B": "https://higgsfield.ai/blog/how-to-get-free-unlimited-seedance-2"
+      }
+    },
+    {
+      "productId": "adobe-firefly",
+      "platformIds": [
+        "adobe-firefly"
+      ],
+      "name": "Adobe Firefly",
+      "sourceUrl": "https://helpx.adobe.com/creative-cloud/apps/generative-ai/generative-credits-faq.html",
+      "plans": [
+        "Standard",
+        "Pro",
+        "Pro Plus",
+        "Premium",
+        "Pro for teams",
+        "Pro Plus for teams",
+        "Premium for teams",
+        "2,000 Credits",
+        "4,000 Credits",
+        "7,000 Credits",
+        "10,000 Credits",
+        "50,000 Credits",
+        "Mobile and web",
+        "Legacy（100 credits）",
+        "Generative credits add-on Legacy（100 credits）"
+      ],
+      "freePlans": [],
+      "legacyPlans": [
+        "Legacy（100 credits）",
+        "Generative credits add-on Legacy（100 credits）"
+      ],
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Firefly Standard, Pro, Pro Plus, Premium; Firefly for teams; Firefly credit add-on plans",
+      "newPlanIds": {
+        "Legacy（100 credits）": "adobe-firefly-legacy-100",
+        "Generative credits add-on Legacy（100 credits）": "adobe-firefly-generative-credits-legacy-100"
+      },
+      "retirePlans": [
+        {
+          "id": "adobe-firefly-plan-8",
+          "reason": "旧抽取的模糊占位项，已用官方明确档位及积分附加订阅替代",
+          "sourceUrl": "https://helpx.adobe.com/creative-cloud/apps/generative-ai/generative-credits-faq.html"
+        },
+        {
+          "id": "adobe-firefly-credits",
+          "reason": "旧抽取的模糊占位项，已用官方明确档位及积分附加订阅替代",
+          "sourceUrl": "https://helpx.adobe.com/creative-cloud/apps/generative-ai/generative-credits-faq.html"
+        }
+      ]
+    },
+    {
+      "productId": "adobe-creative-cloud",
+      "platformIds": [
+        "adobe-firefly"
+      ],
+      "name": "Adobe Creative Cloud",
+      "sourceUrl": "https://helpx.adobe.com/creative-cloud/apps/generative-ai/generative-credits-faq.html",
+      "plans": [
+        "Pro（个人版）",
+        "Standard（个人版）",
+        "Photography 1TB",
+        "Photography 20GB",
+        "Lightroom（个人版）",
+        "Lightroom Mobile and web",
+        "Photoshop Express",
+        "Photoshop Mobile and web",
+        "Pro for teams",
+        "Pro Plus for teams",
+        "Lightroom for teams",
+        "Photoshop（个人单应用）",
+        "Illustrator（个人单应用）",
+        "Premiere（个人单应用）",
+        "InDesign（个人单应用）",
+        "After Effects（个人单应用）",
+        "Audition（个人单应用）",
+        "Animate（个人单应用）",
+        "Dreamweaver（个人单应用）",
+        "XD（个人单应用）",
+        "InCopy（个人单应用）",
+        "Photoshop（团队单应用）",
+        "Illustrator（团队单应用）",
+        "Premiere（团队单应用）",
+        "InDesign（团队单应用）",
+        "After Effects（团队单应用）",
+        "Audition（团队单应用）",
+        "Dreamweaver（团队单应用）",
+        "Animate（团队单应用）",
+        "InCopy（团队单应用）",
+        "Photoshop Pro for teams with Adobe Stock",
+        "Illustrator Pro for teams with Adobe Stock",
+        "Premiere Pro for teams with Adobe Stock",
+        "InDesign Pro for teams with Adobe Stock",
+        "Lightroom Pro for teams with Adobe Stock",
+        "After Effects Pro for teams with Adobe Stock",
+        "Audition Pro for teams with Adobe Stock",
+        "Dreamweaver Pro for teams with Adobe Stock",
+        "Animate Pro for teams with Adobe Stock",
+        "InCopy Pro for teams with Adobe Stock",
+        "Enterprise Edition 3",
+        "Enterprise Edition 4",
+        "Enterprise Edition 4 with Premium Stock",
+        "Enterprise Edition 5",
+        "Enterprise Single App Edition 4",
+        "Enterprise Single App Edition 4 with Premium Stock",
+        "Enterprise Single App Edition 5"
+      ],
+      "freePlans": [],
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Creative Cloud for individual plans; Creative Cloud for teams plans; Creative Cloud for enterprise",
+      "existingPlanIds": {
+        "Pro（个人版）": "adobe-creative-cloud-pro"
+      },
+      "newPlanIds": {
+        "Standard（个人版）": "adobe-creative-cloud-standard",
+        "Photography 1TB": "adobe-creative-cloud-photography-1tb",
+        "Lightroom（个人版）": "adobe-creative-cloud-lightroom-individual",
+        "Lightroom Mobile and web": "adobe-creative-cloud-lightroom-mobile-web",
+        "Photoshop Express": "adobe-creative-cloud-photoshop-express",
+        "Photoshop Mobile and web": "adobe-creative-cloud-photoshop-mobile-web",
+        "Pro for teams": "adobe-creative-cloud-pro-teams",
+        "Pro Plus for teams": "adobe-creative-cloud-pro-plus-teams",
+        "Lightroom for teams": "adobe-creative-cloud-lightroom-teams",
+        "Photoshop（个人单应用）": "adobe-creative-cloud-photoshop-individual",
+        "Illustrator（个人单应用）": "adobe-creative-cloud-illustrator-individual",
+        "Premiere（个人单应用）": "adobe-creative-cloud-premiere-individual",
+        "InDesign（个人单应用）": "adobe-creative-cloud-indesign-individual",
+        "After Effects（个人单应用）": "adobe-creative-cloud-after-effects-individual",
+        "Audition（个人单应用）": "adobe-creative-cloud-audition-individual",
+        "Animate（个人单应用）": "adobe-creative-cloud-animate-individual",
+        "Dreamweaver（个人单应用）": "adobe-creative-cloud-dreamweaver-individual",
+        "XD（个人单应用）": "adobe-creative-cloud-xd-individual",
+        "InCopy（个人单应用）": "adobe-creative-cloud-incopy-individual",
+        "Photoshop（团队单应用）": "adobe-creative-cloud-photoshop-teams",
+        "Illustrator（团队单应用）": "adobe-creative-cloud-illustrator-teams",
+        "Premiere（团队单应用）": "adobe-creative-cloud-premiere-teams",
+        "InDesign（团队单应用）": "adobe-creative-cloud-indesign-teams",
+        "After Effects（团队单应用）": "adobe-creative-cloud-after-effects-teams",
+        "Audition（团队单应用）": "adobe-creative-cloud-audition-teams",
+        "Dreamweaver（团队单应用）": "adobe-creative-cloud-dreamweaver-teams",
+        "Animate（团队单应用）": "adobe-creative-cloud-animate-teams",
+        "InCopy（团队单应用）": "adobe-creative-cloud-incopy-teams",
+        "Photoshop Pro for teams with Adobe Stock": "adobe-creative-cloud-photoshop-teams-stock",
+        "Illustrator Pro for teams with Adobe Stock": "adobe-creative-cloud-illustrator-teams-stock",
+        "Premiere Pro for teams with Adobe Stock": "adobe-creative-cloud-premiere-teams-stock",
+        "InDesign Pro for teams with Adobe Stock": "adobe-creative-cloud-indesign-teams-stock",
+        "Lightroom Pro for teams with Adobe Stock": "adobe-creative-cloud-lightroom-teams-stock",
+        "After Effects Pro for teams with Adobe Stock": "adobe-creative-cloud-after-effects-teams-stock",
+        "Audition Pro for teams with Adobe Stock": "adobe-creative-cloud-audition-teams-stock",
+        "Dreamweaver Pro for teams with Adobe Stock": "adobe-creative-cloud-dreamweaver-teams-stock",
+        "Animate Pro for teams with Adobe Stock": "adobe-creative-cloud-animate-teams-stock",
+        "InCopy Pro for teams with Adobe Stock": "adobe-creative-cloud-incopy-teams-stock",
+        "Enterprise Edition 3": "adobe-creative-cloud-enterprise-edition-3",
+        "Enterprise Edition 4": "adobe-creative-cloud-enterprise-edition-4",
+        "Enterprise Edition 4 with Premium Stock": "adobe-creative-cloud-enterprise-edition-4-stock",
+        "Enterprise Edition 5": "adobe-creative-cloud-enterprise-edition-5",
+        "Enterprise Single App Edition 4": "adobe-creative-cloud-enterprise-single-edition-4",
+        "Enterprise Single App Edition 4 with Premium Stock": "adobe-creative-cloud-enterprise-single-edition-4-stock",
+        "Enterprise Single App Edition 5": "adobe-creative-cloud-enterprise-single-edition-5",
+        "Photography 20GB": "adobe-creative-cloud-photography-20gb"
+      },
+      "legacyPlans": [],
+      "remaining": "本批收齐已核对的个人、团队及企业表格；教育、Acrobat、Express、Substance、Stock 单独继续核对，不能当全厂商完成"
+    },
+    {
+      "productId": "windsurf",
+      "platformIds": [
+        "windsurf",
+        "devin"
+      ],
+      "name": "Windsurf（历史订阅）",
+      "sourceUrl": "https://devin.ai/desktop",
+      "plans": [
+        "Pro",
+        "Teams",
+        "Enterprise",
+        "Trial"
+      ],
+      "freePlans": [
+        "Trial"
+      ],
+      "legacyPlans": [
+        "Pro",
+        "Teams",
+        "Enterprise",
+        "Trial"
+      ],
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Your current plan and pricing stay exactly the same, including legacy Windsurf Enterprise plans.",
+      "planSources": {
+        "Pro": "https://devin.ai/blog/gemini-31-pro",
+        "Teams": "https://devin.ai/blog/gemini-31-pro",
+        "Enterprise": "https://devin.ai/blog/gemini-31-pro",
+        "Trial": "https://devin.ai/blog/gemini-31-pro"
+      },
+      "retirePlans": [
+        {
+          "id": "windsurf-plan-1",
+          "reason": "旧泛付费套餐占位项，真实 Pro/Teams/Enterprise 已明确列出",
+          "sourceUrl": "https://devin.ai/desktop"
+        }
+      ]
+    },
+    {
+      "productId": "magnific",
+      "platformIds": [
+        "magnific"
+      ],
+      "name": "Magnific",
+      "sourceUrl": "https://www.magnific.com/pricing",
+      "plans": [
+        "Premium",
+        "Premium+",
+        "Pro Starter",
+        "Pro",
+        "Business",
+        "Enterprise"
+      ],
+      "freePlans": [],
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Premium; Premium+; Pro Starter; Pro; Business; Enterprise",
+      "verificationNote": "浏览器切换 Pro Starter 的 4M credits 选项后标题变为 Pro；Teams 页签确认 Business 与 Enterprise"
+    },
+    {
+      "productId": "glm-coding-cn",
+      "platformIds": [
+        "zhipu"
+      ],
+      "name": "GLM Coding Plan（BigModel 国内版）",
+      "sourceUrl": "https://docs.bigmodel.cn/cn/coding-plan/overview",
+      "plans": [
+        "Lite",
+        "Pro",
+        "Max",
+        "团队标准版",
+        "团队高级版",
+        "体验套餐（5天）",
+        "Lite（历史 V1）",
+        "Pro（历史 V1）",
+        "Max（历史 V1）",
+        "Lite（历史 V2）",
+        "Pro（历史 V2）",
+        "Max（历史 V2）",
+        "团队标准版（旧版）",
+        "团队高级版（旧版）"
+      ],
+      "freePlans": [
+        "体验套餐（5天）"
+      ],
+      "legacyPlans": [
+        "Lite（历史 V1）",
+        "Pro（历史 V1）",
+        "Max（历史 V1）",
+        "Lite（历史 V2）",
+        "Pro（历史 V2）",
+        "Max（历史 V2）",
+        "团队标准版（旧版）",
+        "团队高级版（旧版）"
+      ],
+      "newPlanIds": {
+        "团队标准版": "glm-coding-cn-team-standard",
+        "团队高级版": "glm-coding-cn-team-premium",
+        "体验套餐（5天）": "glm-coding-cn-trial-5-days",
+        "团队标准版（旧版）": "glm-coding-cn-team-standard-legacy",
+        "团队高级版（旧版）": "glm-coding-cn-team-premium-legacy"
+      },
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Lite 套餐；Pro 套餐；Max 套餐；团队标准版；团队高级版",
+      "planSources": {
+        "团队标准版": "https://docs.bigmodel.cn/cn/coding-plan/team",
+        "团队高级版": "https://docs.bigmodel.cn/cn/coding-plan/team",
+        "Lite（历史 V1）": "https://docs.bigmodel.cn/cn/coding-plan/notice/usage-revision",
+        "Pro（历史 V1）": "https://docs.bigmodel.cn/cn/coding-plan/notice/usage-revision",
+        "Max（历史 V1）": "https://docs.bigmodel.cn/cn/coding-plan/notice/usage-revision",
+        "Lite（历史 V2）": "https://docs.bigmodel.cn/cn/coding-plan/notice/usage-revision",
+        "Pro（历史 V2）": "https://docs.bigmodel.cn/cn/coding-plan/notice/usage-revision",
+        "Max（历史 V2）": "https://docs.bigmodel.cn/cn/coding-plan/notice/usage-revision",
+        "团队标准版（旧版）": "https://docs.bigmodel.cn/cn/coding-plan/notice/usage-revision",
+        "团队高级版（旧版）": "https://docs.bigmodel.cn/cn/coding-plan/notice/usage-revision",
+        "体验套餐（5天）": "https://zcode.z.ai/cn/docs/configuration"
+      },
+      "retireProducts": [
+        {
+          "id": "zcode",
+          "replacementIds": [
+            "glm-coding-cn",
+            "z-ai-devpack"
+          ],
+          "reason": "ZCode 官方确认使用 BigModel 或 Z.ai Coding Plan，无独立订阅；旧占位项不能猜地区",
+          "sourceUrl": "https://zcode.z.ai/cn/docs/configuration"
+        }
+      ]
+    },
+    {
+      "productId": "minimax",
+      "platformIds": [
+        "minimax"
+      ],
+      "name": "MiniMax（国内版 M Plan / Token Plan）",
+      "sourceUrl": "https://platform.minimaxi.com/docs/m-plan/intro",
+      "plans": [
+        "M Plan Go",
+        "M Plan Explore",
+        "M Plan Build",
+        "Token Plan Plus（存量）",
+        "Token Plan Max（存量）",
+        "Token Plan Ultra（存量）"
+      ],
+      "freePlans": [],
+      "legacyPlans": [
+        "Token Plan Plus（存量）",
+        "Token Plan Max（存量）",
+        "Token Plan Ultra（存量）"
+      ],
+      "status": "verified",
+      "applyReady": true,
+      "quote": "M Plan: Go、Explore、Build；Token Plan: Plus、Max、Ultra",
+      "planSources": {
+        "Token Plan Plus（存量）": "https://platform.minimaxi.com/docs/m-plan/token-plan-notice",
+        "Token Plan Max（存量）": "https://platform.minimaxi.com/docs/m-plan/token-plan-notice",
+        "Token Plan Ultra（存量）": "https://platform.minimaxi.com/docs/m-plan/token-plan-notice"
+      },
+      "retirePlans": [
+        {
+          "id": "minimax-m-plan",
+          "reason": "旧记录只写产品家族未区分正式档位，已按官方档位展开",
+          "sourceUrl": "https://platform.minimaxi.com/docs/m-plan/token-plan-notice"
+        },
+        {
+          "id": "minimax-token-plan",
+          "reason": "旧记录只写产品家族未区分正式档位，已按官方档位展开",
+          "sourceUrl": "https://platform.minimaxi.com/docs/m-plan/token-plan-notice"
+        }
+      ],
+      "remaining": "Code 订阅已核；另查 MiniMax Design 独立会员，不能把多模态工具默认合并"
+    },
+    {
+      "productId": "member-82a8d76f-fa59-4a77-96bd-0fc254908394",
+      "platformIds": [
+        "perplexity"
+      ],
+      "name": "Perplexity",
+      "sourceUrl": "https://www.perplexity.ai/help-center/en/articles/11187416-which-perplexity-subscription-plan-is-right-for-you",
+      "plans": [
+        "Standard (Free)",
+        "Pro",
+        "Max",
+        "Education Pro",
+        "Enterprise Pro",
+        "Enterprise Max"
+      ],
+      "freePlans": [
+        "Standard (Free)"
+      ],
+      "legacyPlans": [],
+      "planSources": {
+        "Pro": "https://www.perplexity.ai/help-center/en/articles/11187416-which-perplexity-subscription-plan-is-right-for-you",
+        "Max": "https://www.perplexity.ai/help-center/en/articles/11187416-which-perplexity-subscription-plan-is-right-for-you",
+        "Education Pro": "https://www.perplexity.ai/help-center/en/articles/11187416-which-perplexity-subscription-plan-is-right-for-you",
+        "Enterprise Pro": "https://www.perplexity.ai/help-center/en/articles/11187416-which-perplexity-subscription-plan-is-right-for-you",
+        "Enterprise Max": "https://www.perplexity.ai/help-center/en/articles/11187416-which-perplexity-subscription-plan-is-right-for-you"
+      },
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Standard (Free); Pro; Max; Education Pro; Enterprise Pro; Enterprise Max",
+      "existingPlanIds": {
+        "Pro": "member-acc0361c-cd76-4745-95d0-eb86da7a555d",
+        "Max": "member-518eb7a8-9b00-411a-a988-1952187be842",
+        "Education Pro": "member-90214167-209c-4b28-9e6c-bfdb45c25e18",
+        "Enterprise Pro": "member-ad6a690b-d6af-4867-bc8c-89ce4d22a407",
+        "Enterprise Max": "member-4b38ea54-97b4-4dc5-941c-3fbf441e25a6"
+      }
+    },
+    {
+      "productId": "member-ecd9b66d-5b49-4fe9-87fd-0252cf6b42d7",
+      "platformIds": [
+        "minimax"
+      ],
+      "name": "MiniMax Code（国际版 M Plan / Token Plan）",
+      "sourceUrl": "https://platform.minimax.io/docs/m-plan/intro",
+      "plans": [
+        "M Plan Go",
+        "M Plan Explore",
+        "M Plan Build",
+        "Token Plan Plus（存量）",
+        "Token Plan Max（存量）",
+        "Token Plan Ultra（存量）"
+      ],
+      "freePlans": [],
+      "legacyPlans": [
+        "Token Plan Plus（存量）",
+        "Token Plan Max（存量）",
+        "Token Plan Ultra（存量）"
+      ],
+      "planSources": {
+        "M Plan Go": "https://platform.minimax.io/docs/m-plan/intro",
+        "M Plan Explore": "https://platform.minimax.io/docs/m-plan/intro",
+        "M Plan Build": "https://platform.minimax.io/docs/m-plan/intro",
+        "Token Plan Plus（存量）": "https://platform.minimax.io/docs/m-plan/token-plan-notice",
+        "Token Plan Max（存量）": "https://platform.minimax.io/docs/m-plan/token-plan-notice",
+        "Token Plan Ultra（存量）": "https://platform.minimax.io/docs/m-plan/token-plan-notice"
+      },
+      "status": "verified",
+      "applyReady": true,
+      "quote": "M Plan Go; M Plan Explore; M Plan Build; Token Plan Plus（存量）; Token Plan Max（存量）; Token Plan Ultra（存量）",
+      "existingPlanIds": {
+        "M Plan Go": "member-706870f6-f40a-47fa-bfb6-7230e3a3ae46",
+        "M Plan Explore": "member-70cb77ef-be68-4bf7-82d5-daff45a766c8",
+        "M Plan Build": "member-791b388d-6f69-483a-a7f9-b22c2ca75d73",
+        "Token Plan Plus（存量）": "member-f2cb16c8-71f8-423a-a878-6e55efc3c046",
+        "Token Plan Max（存量）": "member-dcbe7ca1-851d-4cc9-9161-97d7352bf577",
+        "Token Plan Ultra（存量）": "member-15069624-ae5a-4317-8bb3-ffc458279fff"
+      }
+    },
+    {
+      "productId": "hume-voice",
+      "platformIds": [
+        "hume"
+      ],
+      "name": "Hume Voice",
+      "sourceUrl": "https://www.hume.ai/pricing",
+      "plans": [
+        "Free",
+        "Starter",
+        "Creator",
+        "Pro",
+        "Scale",
+        "Business",
+        "Enterprise"
+      ],
+      "freePlans": [
+        "Free"
+      ],
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Free; Starter; Creator; Pro; Scale; Business; Enterprise"
+    },
+    {
+      "productId": "kilo-code",
+      "platformIds": [
+        "kilo"
+      ],
+      "name": "Kilo Code",
+      "sourceUrl": "https://kilo.ai/pricing",
+      "plans": [
+        "Individual (Free)",
+        "Teams",
+        "Enterprise"
+      ],
+      "freePlans": [
+        "Individual (Free)"
+      ],
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Individual $0; Teams $15/user/month; Enterprise Custom"
+    },
+    {
+      "productId": "kilo-pass",
+      "platformIds": [
+        "kilo"
+      ],
+      "name": "Kilo Pass",
+      "sourceUrl": "https://kilo.ai/pricing",
+      "plans": [
+        "Starter",
+        "Pro",
+        "Expert"
+      ],
+      "freePlans": [],
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Starter $19/mo; Pro $49/mo; Expert $199/mo"
+    },
+    {
+      "productId": "n8n-enterprise",
+      "platformIds": [
+        "n8n"
+      ],
+      "name": "n8n",
+      "sourceUrl": "https://n8n.io/pricing/",
+      "plans": [
+        "Enterprise"
+      ],
+      "freePlans": [],
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Enterprise: Hosted by n8n or Self-hosted"
+    },
+    {
+      "productId": "trae",
+      "platformIds": [
+        "trae"
+      ],
+      "name": "TRAE（国际版）",
+      "sourceUrl": "https://docs.trae.ai/ide/new-plans-and-billing?_lang=en",
+      "plans": [
+        "Free",
+        "Lite",
+        "Pro",
+        "Pro+",
+        "Ultra",
+        "Pro+（旧额度版，$90用量/月）",
+        "Ultra（旧额度版，$400用量/月）"
+      ],
+      "freePlans": [
+        "Free"
+      ],
+      "legacyPlans": [
+        "Pro+（旧额度版，$90用量/月）",
+        "Ultra（旧额度版，$400用量/月）"
+      ],
+      "newPlanIds": {
+        "Pro": "trae-pro-current",
+        "Pro+（旧额度版，$90用量/月）": "trae-pro-plus-legacy-usage",
+        "Ultra（旧额度版，$400用量/月）": "trae-ultra-legacy-usage"
+      },
+      "status": "verified",
+      "applyReady": true,
+      "quote": "TRAE offers five plans: Free, Lite, Pro, Pro+, and Ultra.",
+      "retirePlans": [
+        {
+          "id": "trae-pro",
+          "reason": "该旧目录来源对应2026年2月前请求制 Pro；当前套餐已升级为按 Token 计费，保留历史原件而不混同新 Pro",
+          "sourceUrl": "https://www.trae.ai/blog/trae_membership_0213"
+        }
+      ],
+      "remaining": "Lite 仅部分地区提供；已读当前个人计划和仍有效的旧 Pro+/Ultra；企业版 BytePlus 及国内版仍需核对"
     }
   ]
 }

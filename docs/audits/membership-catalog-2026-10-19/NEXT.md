@@ -1,27 +1,54 @@
 # 未完成事项与继续入口
 
-本次目标仍在进行中，不能因为测试通过或两批数据写入就宣布全量完成。
+目标仍在进行中。旧 pending 清零、单元测试通过或本轮数据写入都不足以宣布全量完成；必须继续 124 个厂商覆盖、旧资格映射、真实浏览器与上线验收。
 
-## 当前状态
+## 已核实当前状态（2026-10-19）
 
-- 生产会员目录 revision 32：44 产品、159 套餐、103 个 verified 套餐；仍有 56 个 pending 套餐需要逐一替换/核实。
-- 第一批 11 厂商更新 46 套餐；补千问办公企业两档到 rev31；第二批 Bolt、Suno、Lovable、World Labs Marble、Nous Portal 更新 20 套餐到 rev32。套餐 ID 保留，新增项使用确定 ID；生产 trigger 自动保存修改前后台账。
-- 本地新版界面为厂商下拉＋套餐复选，去掉组合/排除/范围控件，支持已有选择与别名保留、去重；未部署。生产代码仍是 PR104 / 2f0f117。
-- `coverage.json` 是 124 个厂商的完整清单；`research_complete` 只是该厂商已检索完的结论，不代表整个目标完成。`official-findings.json` 的 `partial` 不能直接批量批准。
-- 只读抓取证据在 `/tmp/ym-membership-research/`：`vendors`（124 首页）、`pricing`（55 个页面内发现的定价页）、`search`（39 次官方搜索）、`discovered`（61 个搜索发现的页面）；原文请按具体厂商定向读取，避免重抓全部。
-- 当前完整生产目录：`/tmp/ym-membership-wave2-live.json`。最早备份 `/tmp/ym-membership-catalog-before.json`（rev29）、会员权益 `/tmp/ym-membership-offers-before.json`、平台事实 `/tmp/ym-membership-profiles-before.json`。
+- 生产会员目录 **revision 41**：54 产品、333 套餐；313 verified、16 retired、4 pending。完整产品/套餐及根级别迁移元数据已与预备补丁逐项读回一致。
+- 4 个旧 pending：`cursor-plan-1`、`grok-supergrok-lite`、`grok-bot`、`x-plan-1`，均涉及 Cursor/Grok/X 订阅归并。
+- 厂商研究覆盖：33 research_complete、24 partial、67 unreviewed。**这比 pending 数更接近剩余工作规模，不能只清四条就宣布完成。**
+- 生产代码仍为 PR104 / 2f0f117；新界面在草稿 PR105，未合并部署。当前工作区 `/tmp/ym-hf-link-worktree`，分支 `codex/membership-catalog-complete`。
+- 主 checkout 是其他任务的估值修复，勿覆盖。node_modules 为临时 symlink，不提交。
+- 本地最近完整验证：类型检查、1418 Vitest + 11 CLI、build:web、diff --check 通过。代码新增：按厂商套餐复选、个人选择去重、旧记录提示可单独清除、跨厂商资格默认显示实际会员厂商、退休产品不重新出现在厂商下拉、目录准备工具的归并/退休守卫与回归。
 
-## 下一步
+## 生产写入方法与快照
 
-1. 继续所有 partial/unreviewed 厂商。优先处理旧目录 pending 产品、动态报价页面、国内/国际版及企业页签。Exa 免费 MCP 部分请求限流，错误已保存在 search 文件，不能当无结果；可用官网直读、Jina 或 web 官方来源回退，不新购服务。
-2. 官方发现特别注意：Cursor/Grok/X 新订阅合一且旧 Cursor 档位继续存在；OpenAI Codex/Work 使用 ChatGPT 会员，Pro 已有 $100/$200/$500，Business Premium 需单独核对；Google AI Ultra 分 5x/20x；Step Plan 与阶跃 AI/StepClaw 两个独立产品；Luma 老 FAQ 的 Plus/Pro 价格与当前页相反；MiniMax 国内/国际以及海螺不能混用。
-3. 尚未使用的现成官方页：Step Plan /step-plan（Mini/Plus/Pro/Max）、阶跃 AI membership-benefits-explanation（入门/高级/进阶/专业及周卡）、MiMo 个人版 Lite/Standard/Pro/Max 及团队版链接、Poe 五种积分额度档、七牛 Enterprise S/M/B（不能用旧按价名称臆测）、扣子最新订阅文档与团队/企业资料。
-4. `scripts/prepare-membership-catalog.mjs` 只生成预备补丁，不写生产。仅 `status=verified && applyReady` 条目会采用；未知旧套餐会报错，必须明确处理，不静默丢弃。需为中文新套餐填 newPlanIds，改名复用 existingPlanIds。生产用 expectedRevision CAS 单条更新，逐项读回。脚本尚需补自动回归与完整去重/覆盖验收。
-5. 处理旧模糊/重复目录项的明确迁移：现有权益的实际资格保持、已批准状态保持；旧访客选择可确定映射时保留，歧义不猜。当前只做名称别名和已核实数据，尚未全量处理历史占位项。
-6. 目录完成后填全 vendors 元数据和 products.platformIds（可多厂商共用同一个产品 ID），完整目录逐厂商/逐套餐测试。对无订阅厂商显示官方核对结论，不造套餐。
-7. 实际浏览器测「我的条件」选择、取消、切换厂商、刷新后持久化和控制台错误；管理员普通编辑/快速上架同样多选；模型字段校验也读统一目录。
-8. 整体代码 PR 完成后合并上线，核对远端 SHA、Worker 100% 部署标记、生产静态资源与完整运行行为。直到所有目标验收通过再 complete goal。
+- **整份目录已超过 D1 单条 SQL 100KB 限制。不要再把 JSON 内联到 wrangler execute --file。** 第11批内联写入返回 SQLITE_TOOBIG，已确认没有生效；随后改为 SQL 绑定参数原子 CAS，成功从40写到41并完整读回。
+- 后续预备补丁：`node scripts/prepare-membership-catalog.mjs <当前目录快照> docs/audits/membership-catalog-2026-10-19/official-findings.json <预备文件>`。仅 verified+applyReady 的事实被采用；未显式处理的旧套餐会报错。
+- 当前可复用私有绑定参数写入器：`node /tmp/ym-membership-apply-bound.mjs <预备文件> <私有凭证前缀>`。它使用现有 Wrangler OAuth（不输出令牌），固定只更新 membership_catalog id=1，检查 expectedRevision，保存前后快照并全量对照。API失败后先读状态，不盲目重放。若 OAuth 过期，用正常 Wrangler CLI 刷新，不输出凭据。
+- 最新完整 D1 原件：`/tmp/ym-membership-wave11-bound-after.json`（revision + data_json）。原始基线：`/tmp/ym-membership-catalog-before.json` rev29；`/tmp/ym-membership-offers-before.json`（96条会员权益）；`/tmp/ym-membership-profiles-before.json`。
+- 生产旧 API 目前只返回 revision/products/plans，**会省略根级别 productIdAliases/productReplacements**。准备工具会根据事实文件重建这些映射；最终部署新读取代码后需核验根元数据保留。完整 D1 快照优于只靠公开 API。
+- `wave-1` 至 `wave-11` 记录已入审计目录。生产触发器自动保留每次目录修改前后原件。
 
-## 工作区
+## 官方研究证据与发现
 
-主 checkout 存在其他任务的估值修复，不能覆盖。当前工作区 `/tmp/ym-hf-link-worktree`，分支 `codex/membership-catalog-complete`。node_modules 是指向主 checkout 的临时 symlink，不提交。
+- `coverage.json`：全部124厂商。`official-findings.json`：具体套餐与来源。applyReady 表示已核实的这批事实可写入，不表示厂商全部产品都核完；看 remaining 及 coverage 状态。
+- `/tmp/ym-membership-research/`：vendors（124首页）、pricing（55页面内定价入口）、search（39搜索，部分 Exa 限流）、discovered（61官方候选页）、新增 .txt 官方 Markdown。定向读取缓存，不重抓全部。限流/403/空壳不能当无会员。
+- MiniMax：国内M Plan与国际M Plan分别Go/Explore/Build；两边旧Token Plan Plus/Max/Ultra仍可按官方规则续订。分别保留国内/国际产品。还需核对 MiniMax Design 独立会员、海螺国内版。
+- ZCode不是独立订阅，官方明确使用BigModel国内或Z.ai国际GLM Coding Plan；已将旧ZCode占位产品退休，并记录**两个**候选产品，不能猜单一地区。当前个人Lite/Pro/Max、团队两档、V1/V2历史个人/历史团队及体验档已录入。相关Markdown在 bigmodel-plan/team/legacy、zai-team/usage-revision/legacy.txt。
+- OpenAI：ChatGPT共用Codex/Work，旧两个占位产品已退休；Pro100/200/500、Business Standard/Premium、Edu/Enterprise/Teachers等已录入。Teachers官网现为免费至2028年6月，旧搜索片段2027已经过时；不要在本任务顺手改其他福利。
+- Adobe：普通文本读取漏动态表格；已用浏览器读官方生成积分FAQ，录入Firefly个人/团队/积分附加订阅及CC个人/团队/企业共62个明确档位，退休2个模糊占位项。教育、Acrobat/Express/Substance/Stock及其他剩余官方表格仍需继续，**不能只核两产品就说Adobe全覆盖**。
+- Higgsfield：当前Free/Starter/Plus/Ultra/Team/Scale/Enterprise，主站原文可确认历史Basic/Pro/B2B；已保留正式名称。geo.higgsfield.ai自述AI-generated，其Ultimate/Max/Creator不能直接认可，需主站依据。
+- Magnific：个人Premium/Premium+/Pro Starter；点击4M credits选项会把Pro Starter变成正式Pro。Teams页签Business/Enterprise，共6档已核。不能漏动态选项。
+- Runway：Free/Standard/Pro/Max、Team/Enterprise、仍有效至2026-11-30的旧Unlimited，已分别录入。官方明确Max不等于Unlimited。旧Explore Mode/MCP占位项已退休。
+- Windsurf→Devin Desktop：官方明确旧计划、价格继续有效。新Devin五档与旧Windsurf Pro/Teams/Enterprise/Trial保留，双方厂商列表共用相应目录，避免丢失旧资格。
+- TRAE：当前文档五档Free/Lite/Pro/Pro+/Ultra，Lite只在12个指定国家销售，IP在其他地区时价格页会隐藏它。当前月价8/20/60/200；早期3/10/30/100资料已过时。旧Pro+/Ultra年付可保留90/400美元月用量到当前周期结束，已单列。2026年2月前请求制Pro原件退休。企业版BytePlus和国内版仍需核对。
+- 扣子：当前官方订阅目录**十档**（个人5、团队3、企业2），不能沿用1月公告的六档；旧团队/企业可续费安排单列。国际Coze仍待核。
+- Step Plan是Mini/Plus/Pro/Max，已替换旧Flash前缀；阶跃AI/StepClaw另有四个月付档。尝鲜周卡也是正式会员档，收费属性仍待核，不能因为不是月付就遗漏。
+- Qiniu：当前Enterprise S/M/B；不能只存2999/4999/9999价格。还需确认其他AI产品是否另有会员。
+- 公共定价已发现但还未充分整理：Vercel（包括v0）、Microsoft/Copilot、Google Workspace/AI、Cloudflare、AWS/各云Coding Plan、Hume之外其他API厂商、Cline、Replicas、Manus、Gamma、Leonardo、Poe、Lovart、SeaArt、Tripo、Vidu、WPS、即梦、可灵、飞书、豆包工作、Qoder等。按coverage逐个推进。
+
+## 必须继续的代码/迁移事项
+
+1. Cursor/Grok/X：新The X Subscription与旧Cursor/Grok/X目录有明确迁移关系；先读官方链接，不能仅按同名Pro/Enterprise合并。当前事实文件中的cursor/x-subscription仍未applyReady。
+2. Cursor已有已批准资格引用`cursor-teams`、`cursor-enterprise`（含Kilo的跨厂商资格）。把泛Teams拆成Standard/Premium时，必须支持明确的一对多资格映射或受控回填，不能直接退休旧ID造成原福利匹配失效。历史用户持有的泛Teams/Pro不得猜成某一档。
+3. 32条已批准旧资格仍needs_review，9条confirmed（基线快照）。目录补齐之后，依据**已批准原文**完成可确认的结构化映射；保留地区、年付、截止、回归用户等实际约束与审批状态。仓库已有`scripts/membership-backfill.ts`及其测试，按现行身份服务处理，不直接改历史版本。
+4. **新多选界面与快通约束的发布前缺口**：`mergeFastTrackFields`当前让owner.membershipRequirement整对象覆盖模型。新复选框不输入日期/年付等限制，不能因此覆盖模型从原文补的真实限制。需用“只选择套餐”的意图与完整资格区分，或等价实现；加真实约束回归，确保选择套餐后模型仍能补限制。普通编辑亦须保留已有真实约束。
+5. 个人条件含歧义旧记录时，当前代码会移到unresolvedMembers；应检查不能因未映射旧记录误判为肯定不符合，必要时保守返回unknown。清除提示按钮已可单项删除，不重置其他条件。
+6. 最终目录填全vendors元数据、所有active产品的platformIds；检查完整124厂商覆盖、无重复正式套餐、无pending/unknown收费属性、无孤立引用。不要用隐藏未核实项冒充清理完成。
+7. 对完整生产目录逐厂商/逐套餐实测「我的条件」选择、取消、跨厂商切换、刷新持久化、无重复及控制台错误；普通编辑和快通同样验证。真实浏览器扫全量尚未完成。
+8. 数据完整后再把PR105由草稿转正式、完成CI/审查、合并部署。用户已授权整个目标；无需重复要授权。核对远端SHA、Worker100%标记、静态文件、API及真实UI。检查目录版本变化是否留下受阻快通任务并恢复。
+
+## 浏览器
+
+CUA的IAB临时tab2当前在TRAE计费文档，可继续看企业版；`pvCatalogTab`是现有句柄。`adobeAx`缓存了官方Adobe FAQ完整AX，尚未整理的教育/Document Cloud表格可直接定向查看，不必重读全页。新回合先按工具要求恢复文档/确认句柄仍活跃。浏览器来源均只读，未购买或登录新服务。
