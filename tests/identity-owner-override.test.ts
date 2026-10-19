@@ -98,3 +98,22 @@ it('owner confirmation does not discard newly introduced canonical facts', async
   await expect(service.resolveIdentityTask(task.id, { requestId: 'added-fact', expectedRevision: task.revision,
     action: 'same', candidateId, entityId, actor: 'admin', ownerOverride: true, reason: '新增事实不能直接丢弃' })).rejects.toMatchObject({ status: 400 });
 });
+
+it('unknown repost targeting a rejected historical activity explains how to choose the approved main listing', async () => {
+  await approvedEntity();
+  const text = 'Campaign rejected-router grants 10 USD.';
+  const observation = await f.observation('rejected-router', text);
+  const candidate = await f.candidate('rejected-router', observation, text, auditTerms('rejected-router'));
+  const rejected = await service.resolveCandidate(candidate.candidateId, 'reject-router-intake');
+  await service.decideTask(rejected.taskId!, { requestId: 'reject-router', expectedRevision: 0, action: 'reject',
+    reasonCode: 'duplicate', reason: '与已上架主活动重复', actor: 'admin', role: 'admin' });
+  const { candidateId, task } = await unprovenTask('router-repost');
+  const decisionsBefore = f.sqlite.prepare('SELECT count(*) n FROM review_decisions').get();
+  const result = await f.call(`admin/identity/tasks/${task.id}/resolve`, { requestId: 'same-rejected-router', expectedRevision: task.revision,
+    action: 'same', candidateId, entityId: rejected.entityId, reason: '尝试关联同名旧记录' }, true);
+  expect(result.status).toBe(400);
+  expect(result.body.error).toContain('已被拒绝');
+  expect(result.body.error).toContain('已上架的主条目');
+  expect(f.sqlite.prepare('SELECT count(*) n FROM review_decisions').get()).toEqual(decisionsBefore);
+  expect(f.sqlite.prepare('SELECT state,revision FROM review_tasks WHERE id=?').get(task.id)).toMatchObject({ revision: task.revision });
+});

@@ -581,7 +581,13 @@ export class IdentityService {
   receipt.entityRevision=entity?entity.business_revision+(material?1:0):null;
   if(legacyJob){if(entity&&entity.id!==legacyJob.entityId)throw new IdentityError(409,'official review resolved a different activity');if(entity&&receipt.entityRevision!==null)builder.acknowledgeOfficialJob(legacyJob.offerId,legacyJob.originalJob,receipt.entityRevision!);}
   if(control){
-   if(!entity||receipt.taskId===control.task.id)throw new IdentityError(400,'identity remains unproven; provide scoped canonical facts or choose a verified entity');
+   if(!entity||receipt.taskId===control.task.id){
+    if(control.action==='same'&&control.entityId){
+     const selected=await this.entity(control.entityId);
+     if(selected&&!selected.current_approved_version_id)throw new IdentityError(400,'所选旧活动尚未上架或已被拒绝。请选择已上架的主条目；若本候选与已拒绝记录重复，请使用“拒绝”，类别选“重复”，并写明原记录。');
+    }
+    throw new IdentityError(400,'identity remains unproven; provide scoped canonical facts or choose a verified entity');
+   }
    if(claimReopen&&claimMemory.match){const memory=claimMemory.match;builder.require('NOT EXISTS(SELECT 1 FROM review_decisions WHERE supersedes_id=?)',[memory.decision.id]);builder.require('EXISTS(SELECT 1 FROM intake_candidates WHERE id=? AND revision=?)',[memory.proofCandidateId,memory.proofRevision]);builder.insert('review_decisions',{id:crypto.randomUUID(),candidate_id:memory.canonicalCandidateId,action:'reopen',reason_code:memory.decision.reasonCode,reason_text:control.reason??'已补齐指定事实并明确开始新的审核',basis_json:JSON.stringify({namedFactReopen:true,sourceTaskId:control.task.id,candidateId:candidate.id,entityId:entity.id}),scope_json:JSON.stringify(memory.decision.scope),reopen_policy_json:JSON.stringify({kind:'manual',missingFacts:[]}),rules_version:RULES_VERSION,evidence_refs_json:JSON.stringify([candidate.observation_id]),actor:control.actor,idempotency_key:command+':claim-reopen',supersedes_id:memory.decision.id});}
    const decisionId=crypto.randomUUID();
    builder.insert('review_decisions',{id:decisionId,entity_id:entity.id,candidate_id:candidate.id,version_id:receipt.versionId,basis_json:JSON.stringify({sourceTaskId:control.task.id,previousEntityId:control.task.entity_id,reopenedClaimDecisionId:claimReopen?claimMemory.match!.decision.id:null}),action:control.action==='same'||claimReopen?'same':'distinct',reason_code:control.action==='same'?'duplicate':'other',reason_text:control.reason??'',scope_json:JSON.stringify({kind:'claim',candidateId:candidate.id}),reopen_policy_json:JSON.stringify({kind:'manual',missingFacts:[]}),rules_version:RULES_VERSION,evidence_refs_json:JSON.stringify([candidate.observation_id]),actor:control.actor,idempotency_key:command+':manual'});
