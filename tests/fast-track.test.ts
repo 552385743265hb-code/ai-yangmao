@@ -213,3 +213,33 @@ it('vendor IDs never block fast-track: typed IDs are normalized, Chinese names o
   expect(bad.status).toBe(400);
   expect(JSON.stringify(bad.body)).toContain('厂商 ID 只能用英文字母');
 });
+
+it('owner corrections after a readiness failure use a new request revision without discarding the failed reservation', async () => {
+  const created=await call('admin/fast-track',{newPlatform:{name:'Odyssey'},url:'https://odyssey.world/preview',benefit:'Odyssey 免费试用'});
+  await ingest(`fast-track/${created.body.jobId}/claim`,{});
+  f.sqlite.exec("INSERT INTO leads(id,origin,url,status,title,resolution) VALUES(9911,'test','https://community.example/old','rejected','Historical refusal','{}')");
+  const failed=await settle(created.body.jobId,await ingest(`fast-track/${created.body.jobId}/result`,{fields:extracted,sourceText:page}));
+  expect(failed.body).toMatchObject({state:'needs_owner',error:'identity backfill reconciliation required'});
+  const reservations=f.sqlite.prepare("SELECT request_id FROM identity_commands WHERE request_id LIKE 'legacy-request:fast-track:%'").all();
+  expect(reservations).toHaveLength(1);expect(f.sqlite.prepare('SELECT count(*) n FROM offers').get()).toEqual({n:0});
+  // Simulate the historical blocker having been reconciled, then correct the owner's listing fields.
+  f.sqlite.exec('DELETE FROM leads WHERE id=9911');
+  const done=await settle(created.body.jobId,await call(`admin/fast-track/${created.body.jobId}/complete`,{fields:{title:'更正后的免费试用',requirements:['net'],tags:['daily']}}));
+  expect(done.body).toMatchObject({state:'published'});
+  expect(f.sqlite.prepare('SELECT count(*) n FROM offers').get()).toEqual({n:1});
+  expect(f.sqlite.prepare('SELECT title,requirements FROM offers').get()).toMatchObject({title:'更正后的免费试用',requirements:'["net"]'});
+  expect(f.sqlite.prepare('SELECT state FROM identity_commands WHERE request_id=?').get(reservations[0].request_id)).toEqual({state:'applied'});
+});
+it('only an administrator can correct a failed official task to tested evidence',async()=>{
+  const created=await call('admin/fast-track',{newPlatform:{name:'Odyssey'},url:'https://odyssey.world/preview',benefit:'每日登录奖励200积分，24小时有效',basis:'official'});
+  await ingest(`fast-track/${created.body.jobId}/claim`,{});
+  const partial=await ingest(`fast-track/${created.body.jobId}/result`,{fields:{...extracted,requirements:['unknown']},sourceText:page});
+  expect(partial.body.state).toBe('needs_owner');
+  const fields={requirements:['none']};
+  expect((await call(`admin/fast-track/${created.body.jobId}/complete`,{basis:'tested',fields},'fast-reviewer-token-01')).status).toBe(403);
+  expect(f.sqlite.prepare('SELECT basis FROM fast_track_jobs WHERE id=?').get(created.body.jobId)).toEqual({basis:'official'});
+  const done=await settle(created.body.jobId,await call(`admin/fast-track/${created.body.jobId}/complete`,{basis:'tested',fields}));
+  expect(done.body.state).toBe('published');
+  expect(f.sqlite.prepare('SELECT basis FROM fast_track_jobs WHERE id=?').get(created.body.jobId)).toEqual({basis:'tested'});
+  expect(JSON.parse((f.sqlite.prepare('SELECT evidence FROM offers WHERE id=?').get(done.body.offerId) as any).evidence).tier).toBe('tested');
+});

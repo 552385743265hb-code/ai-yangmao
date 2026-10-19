@@ -225,7 +225,10 @@ export async function publishFastTrack(env: Env, job: JobRow, fields: FastTrackF
       evidence: { url: job.url, tier, capturedAt: job.created_at, excerpts },
     });
     if (!parsed.success) throw new FastTrackError(400, '字段不符合上架规则：' + parsed.error.issues.map(i => `${i.path.join('.')} ${i.message}`).join('；'));
-    const adapted = await step(() => adaptLegacyOffer({ ...env, DB: identityDb }, parsed.data, { ...parsed.data, identityFacts: facts, identityRequestId: `fast-track:${job.id}` }));
+    // A failed readiness check can already reserve the legacy request. Corrected owner fields
+    // are a new payload revision; keep the old receipt and let activity identity dedupe it.
+    const requestRevision=await sha256(stableJson({offer:{...parsed.data,usdEstimate:null,usdMax:null,valuation:null},identityFacts:facts,basis:job.basis}));
+    const adapted = await step(() => adaptLegacyOffer({ ...env, DB: identityDb }, parsed.data, { ...parsed.data, identityFacts: facts, identityRequestId: `fast-track:${job.id}:${requestRevision}` }));
     if (!adapted) throw new FastTrackError(409, '身份系统未启用（IDENTITY_MODE 不是 enforce），不能快速上架');
     if (adapted.pendingResolution) { progress.pending = adapted.pendingResolution as Progress['pending']; await save(); throw new StepDeferred(); }
     if (adapted.error) throw new FastTrackError(409, String(adapted.error));
@@ -368,13 +371,14 @@ export async function submitFastTrackResult(env: Env, id: string, raw: unknown) 
 
 /** The owner fills the fields the model could not, then the job publishes immediately. */
 export async function completeFastTrack(env: Env, id: string, raw: unknown) {
-  const fields = z.object({ fields: z.record(z.string(), z.unknown()) }).parse(raw).fields, db = env.DB;
+  const input = z.object({ fields: z.record(z.string(), z.unknown()), basis: z.enum(['official','tested']).optional() }).parse(raw), fields=input.fields, db = env.DB;
   const job = await db.prepare('SELECT * FROM fast_track_jobs WHERE id=?').bind(id).first<JobRow>();
   if (!job) throw new FastTrackError(404, '没有这个快速上架任务');
   if (job.state !== 'needs_owner') throw new FastTrackError(409, '只有“需要你补充”的任务可以补字段');
   const owner = { ...JSON.parse(job.owner_fields_json), ...fields };
-  await db.prepare('UPDATE fast_track_jobs SET owner_fields_json=?, updated_at=? WHERE id=?').bind(JSON.stringify(owner), new Date().toISOString(), id).run();
-  return attemptPublish(env, { ...job, owner_fields_json: JSON.stringify(owner) });
+  const basis=input.basis??job.basis;
+  await db.prepare('UPDATE fast_track_jobs SET owner_fields_json=?, basis=?, updated_at=? WHERE id=?').bind(JSON.stringify(owner), basis, new Date().toISOString(), id).run();
+  return attemptPublish(env, { ...job, basis, owner_fields_json: JSON.stringify(owner) });
 }
 
 /** Re-queue a job (e.g. after the free models were unavailable) and start a run. */
