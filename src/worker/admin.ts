@@ -39,7 +39,7 @@ import { parseValuation } from '../shared/valuation';
 import { offerRefFromInput } from '../shared/offer-ref';
 import { sourceHealthReason, sourceUnhealthy } from '../shared/source-health';
 import type { Env } from './index';
-import { advanceFastTrack, completeFastTrack, createFastTrack, FastTrackError, fastTrackHeld, listFastTrack, retryFastTrack } from './fast-track';
+import { reconcileFastTrackJob, advanceFastTrack, completeFastTrack, createFastTrack, FastTrackError, fastTrackHeld, listFastTrack, retryFastTrack } from './fast-track';
 
 type OfferRow = typeof s.offers.$inferSelect;
 const db = (env: Env) => drizzle(env.DB, { schema: s });
@@ -137,6 +137,9 @@ admin.post('/fast-track/:id/complete', async c => {
 });
 admin.post('/fast-track/:id/advance', async c => {
   try { return c.json(await advanceFastTrack(c.env, c.req.param('id'))); } catch (error) { return fastTrackError(c, error); }
+});
+admin.post('/fast-track/:id/reconcile', async c => {
+  try { return c.json(await reconcileFastTrackJob(c.env, c.req.param('id'))); } catch (error) { return fastTrackError(c, error); }
 });
 admin.post('/fast-track/:id/retry', async c => {
   try { return c.json(await retryFastTrack(c.env, c.req.param('id'))); } catch (error) { return fastTrackError(c, error); }

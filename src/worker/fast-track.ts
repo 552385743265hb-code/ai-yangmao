@@ -10,7 +10,8 @@ import { IdentityError } from './identity/store';
 import { IdentityQueryBudgetError, withIdentityQueryBudget } from './identity/budget';
 import { learnWechatAccount } from './wechat-accounts';
 import { dispatchCollect } from './feishu';
-import { mergeFastTrackFields, missingBasicFields, missingOwnerChoices, type FastTrackFields } from '../shared/fast-track-fields';
+import { mergeFastTrackFields, missingBasicFields, fastTrackFieldIssues, type FastTrackFields } from '../shared/fast-track-fields';
+import { readMembershipCatalog, prepareMembershipFields, MembershipError } from './membership';
 import { membershipSchema } from '../shared/membership';
 import { sha256, stableJson } from '../shared/identity/normalize';
 
@@ -49,7 +50,7 @@ export const fastTrackInput = z.object({
 }).refine(v => !!v.platformId !== !!v.newPlatform, '选择已有厂商或填写新厂商，二选一');
 export type FastTrackInput = z.input<typeof fastTrackInput>;
 
-interface JobRow { id: string; platform_id: string; url: string; benefit: string; basis: 'official' | 'tested'; note: string | null; owner_fields_json: string; lead_id: number | null; identity_task_id?: string | null; state: string; lease_until: string | null; attempts: number; fields_json: string | null; progress_json: string | null; missing_json: string | null; error: string | null; offer_id: string | null; actor: string; created_at: string; updated_at: string; published_at: string | null }
+interface JobRow { id: string; platform_id: string; url: string; benefit: string; basis: 'official' | 'tested'; note: string | null; owner_fields_json: string; lead_id: number | null; identity_task_id?: string | null; state: string; lease_until: string | null; attempts: number; fields_json: string | null; progress_json: string | null; missing_json: string | null; error: string | null; offer_id: string | null; actor: string; created_at: string; updated_at: string; published_at: string | null; resolution_json?: string | null }
 interface PlatformRow { id: string; name: string; status: string; site: string | null; x_handles: string; staff_handles: string; wechat: string | null }
 
 const toOfficial = (p: PlatformRow): OfficialPlatform => ({ id: p.id, name: p.name, site: p.site, xHandles: JSON.parse(p.x_handles || '[]'), staffHandles: JSON.parse(p.staff_handles || '[]'), wechat: p.wechat });
@@ -152,8 +153,8 @@ export async function createFastTrack(env: Env, raw: unknown, actor: string): Pr
 }
 
 export async function listFastTrack(db: D1Database) {
-  const rows = await db.prepare('SELECT j.*, p.name platform_name FROM fast_track_jobs j JOIN platforms p ON p.id=j.platform_id ORDER BY j.created_at DESC LIMIT 30').all<JobRow & { platform_name: string }>();
-  return rows.results.map(r => ({ id: r.id, platformId: r.platform_id, platformName: r.platform_name, url: r.url, benefit: r.benefit, basis: r.basis, state: r.state, attempts: r.attempts, missing: r.missing_json ? JSON.parse(r.missing_json) as string[] : [], error: r.error, offerId: r.offer_id, leadId: r.lead_id, identityTaskId: r.identity_task_id ?? null, createdAt: r.created_at, publishedAt: r.published_at,
+  const rows = await db.prepare("SELECT j.*, p.name platform_name FROM fast_track_jobs j JOIN platforms p ON p.id=j.platform_id ORDER BY CASE WHEN j.state IN ('published','rejected') THEN 1 ELSE 0 END,j.created_at DESC LIMIT 100").all<JobRow & { platform_name: string }>();
+  return rows.results.map(r => ({ id: r.id, platformId: r.platform_id, platformName: r.platform_name, url: r.url, benefit: r.benefit, basis: r.basis, state: r.state, attempts: r.attempts, missing: r.missing_json ? JSON.parse(r.missing_json) as string[] : [], error: r.error, offerId: r.offer_id, leadId: r.lead_id, identityTaskId: r.identity_task_id ?? null, createdAt: r.created_at, publishedAt: r.published_at, updatedAt: r.updated_at, resolution: r.resolution_json ? JSON.parse(r.resolution_json) : null,
     // Current requirements let the membership picker show what the model read and keep the non-member ones.
     requirements: jobRequirements(r, r.platform_name) }));
 }
@@ -164,6 +165,14 @@ function jobRequirements(r: JobRow, platformName: string): string[] {
 }
 
 export async function fastTrackQueue(db: D1Database, now = new Date()) {
+  // Reconcile explicit terminal decisions before extracting: manual review can finish while a job is paused.
+  const stale = await db.prepare(`SELECT j.* FROM fast_track_jobs j LEFT JOIN leads l ON l.id=j.lead_id
+    LEFT JOIN offers o ON o.id=COALESCE(json_extract(j.progress_json,'$.offerId'),json_extract(j.progress_json,'$.receipt.canonicalOfferId'))
+    WHERE j.state='needs_owner' AND (l.status IN ('linked','rejected') OR o.review_state='approved')
+    ORDER BY j.updated_at LIMIT 3`).all<JobRow>();
+  for (const job of stale.results) {
+    if (!await reconcileFastTrack(db,job)) await db.prepare('UPDATE fast_track_jobs SET updated_at=? WHERE id=?').bind(now.toISOString(),job.id).run();
+  }
   const rows = await db.prepare("SELECT id,state FROM fast_track_jobs WHERE state='publishing' OR ((state='queued' OR (state='extracting' AND lease_until<?)) AND attempts<?) ORDER BY created_at LIMIT 5").bind(now.toISOString(), FAST_TRACK_MAX_ATTEMPTS).all<{ id: string; state: string }>();
   return rows.results.map(r => ({ id: r.id, publishing: r.state === 'publishing' }));
 }
@@ -172,8 +181,10 @@ export async function claimFastTrack(db: D1Database, id: string, now = new Date(
   const job = await db.prepare("UPDATE fast_track_jobs SET state='extracting', lease_until=?, attempts=attempts+1, updated_at=? WHERE id=? AND (state='queued' OR (state='extracting' AND lease_until<?)) AND attempts<? RETURNING *")
     .bind(new Date(now.getTime() + FAST_TRACK_LEASE_MS).toISOString(), now.toISOString(), id, now.toISOString(), FAST_TRACK_MAX_ATTEMPTS).first<JobRow>();
   if (!job) return null;
+  const terminal = await reconcileFastTrack(db, job);
+  if (terminal) return { ...terminal, id: job.id };
   const platform = await platformRow(db, job.platform_id);
-  return { id: job.id, platformId: job.platform_id, platformName: platform?.name ?? job.platform_id, url: job.url, benefit: job.benefit, note: job.note };
+  return { ownerFields: JSON.parse(job.owner_fields_json), previousFields: JSON.parse(job.fields_json ?? '{}').fields, repairFeedback: job.error ?? job.missing_json ?? undefined, membershipCatalog: await readMembershipCatalog(db), id: job.id, platformId: job.platform_id, platformName: platform?.name ?? job.platform_id, url: job.url, benefit: job.benefit, note: job.note };
 }
 
 export { mergeFastTrackFields, missingBasicFields, type FastTrackFields } from '../shared/fast-track-fields';
@@ -183,7 +194,7 @@ function terms(platformId: string, type: string): CanonicalTermsV1 {
   return canonicalTermsSchema.parse({ schemaVersion: 'terms-v1', issuerProductId: { state: 'known', value: platformId, evidenceRefs: ['benefit'] }, mechanism: { state: 'known', value: MECHANISM[type] ?? 'other', evidenceRefs: ['benefit'] }, benefitPools: [], eligibility: unknown, geography: unknown, claimChannels: unknown, costs: unknown, claimWindow: unknown, occurrenceAnchor: unknown });
 }
 
-interface Progress { pending?: { candidateId: string; requestId: string }; receipt?: IntakeReceipt; entityId?: string; offerId?: string; membership?: boolean; approved?: boolean; testedTask?: { id: string; revision: number } | null; testedTier?: boolean }
+interface Progress { pending?: { candidateId: string; requestId: string }; receipt?: IntakeReceipt; entityId?: string; offerId?: string; membership?: boolean | string; approved?: boolean; testedTask?: { id: string; revision: number } | null; testedTier?: boolean }
 /** Identity work gets its own slice of the 50-query request budget; the rest is left for job bookkeeping. */
 const IDENTITY_SLICE = 38;
 class StepDeferred extends Error {}
@@ -225,7 +236,10 @@ export async function publishFastTrack(env: Env, job: JobRow, fields: FastTrackF
       evidence: { url: job.url, tier, capturedAt: job.created_at, excerpts },
     });
     if (!parsed.success) throw new FastTrackError(400, '字段不符合上架规则：' + parsed.error.issues.map(i => `${i.path.join('.')} ${i.message}`).join('；'));
-    const adapted = await step(() => adaptLegacyOffer({ ...env, DB: identityDb }, parsed.data, { ...parsed.data, identityFacts: facts, identityRequestId: `fast-track:${job.id}` }));
+    // A failed readiness check can already reserve the legacy request. Corrected owner fields
+    // are a new payload revision; keep the old receipt and let activity identity dedupe it.
+    const requestRevision=await sha256(stableJson({offer:{...parsed.data,usdEstimate:null,usdMax:null,valuation:null},identityFacts:facts,basis:job.basis}));
+    const adapted = await step(() => adaptLegacyOffer({ ...env, DB: identityDb }, parsed.data, { ...parsed.data, identityFacts: facts, identityRequestId: `fast-track:${job.id}:${requestRevision}` }));
     if (!adapted) throw new FastTrackError(409, '身份系统未启用（IDENTITY_MODE 不是 enforce），不能快速上架');
     if (adapted.pendingResolution) { progress.pending = adapted.pendingResolution as Progress['pending']; await save(); throw new StepDeferred(); }
     if (adapted.error) throw new FastTrackError(409, String(adapted.error));
@@ -251,14 +265,15 @@ export async function publishFastTrack(env: Env, job: JobRow, fields: FastTrackF
   // The owner's catalog membership replaces the model's member: text on the draft, through the same guarded edit as the review page.
   // Without it every member perk stopped at approval: “会员资格尚未结构化确认” (2026-10-17 Higgsfield Wan 3.0).
   const membership = fields.membershipRequirement;
-  if (membership && !progress.membership) {
+  const membershipKey = membership ? (await sha256(stableJson(membership))).slice(0, 16) : null;
+  if (membership && progress.membership !== membershipKey) {
     const initial = await db.prepare("SELECT id,revision FROM review_tasks WHERE entity_id=? AND kind='initial' AND state IN ('open','checking','manual') ORDER BY created_at DESC LIMIT 1").bind(progress.entityId).first<{ id: string; revision: number }>();
     if (initial) {
       const requirements = (Array.isArray(fields.requirements) ? fields.requirements : []).filter(r => typeof r === 'string' && !r.startsWith('member:'));
-      const key = (await sha256(stableJson(membership))).slice(0, 16);
+      const key = membershipKey;
       await step(() => service.editManagedOffer(progress.offerId!, { requestId: `fast-track-membership:${job.id}:${key}`, taskId: initial.id, expectedTaskRevision: initial.revision, fields: { membershipRequirement: membership, requirements }, actor: job.actor }));
     }
-    progress.membership = true;
+    progress.membership = membershipKey!;
     await save();
   }
   if (!progress.approved) {
@@ -309,20 +324,22 @@ async function closeIdentityTask(db: D1Database, job: JobRow, offerId: string) {
     reason: `管理员已快速上架为 ${offerId}；本任务候选与之为同一活动` }).catch(error => { if (!(error instanceof IdentityError)) throw error; });
 }
 
-type PublishState = { state: 'published' | 'publishing' | 'needs_owner'; offerId?: string; missing?: string[]; error?: string; alreadyLive?: boolean };
+type PublishState = { state: 'published' | 'publishing' | 'needs_owner' | 'queued' | 'rejected'; offerId?: string | null; missing?: string[]; error?: string; alreadyLive?: boolean };
 async function attemptPublish(env: Env, job: JobRow): Promise<PublishState> {
   const db = env.DB, now = () => new Date().toISOString();
   const stored = JSON.parse(job.fields_json ?? '{}') as { fields?: FastTrackFields; sourceText?: string };
   const platform = await db.prepare('SELECT name FROM platforms WHERE id=?').bind(job.platform_id).first<{ name: string }>();
-  const fields = mergeFastTrackFields(stored.fields ?? {}, JSON.parse(job.owner_fields_json), job.benefit, platform?.name);
-  const missing = [...missingBasicFields(fields), ...missingOwnerChoices(fields)];
+  const terminal = await reconcileFastTrack(db, job);
+  if (terminal) return terminal;
+  let fields = mergeFastTrackFields(stored.fields ?? {}, JSON.parse(job.owner_fields_json), job.benefit, platform?.name);
+  const missing = fastTrackFieldIssues(fields);
   if (missing.length) {
-    await db.prepare("UPDATE fast_track_jobs SET state='needs_owner', missing_json=?, error=NULL, lease_until=NULL, updated_at=? WHERE id=?").bind(JSON.stringify(missing), now(), job.id).run();
-    return { state: 'needs_owner', missing };
+    return repairFastTrack(db, job, missing, '自动补全校验：' + missing.join('；'));
   }
   const progress: Progress = JSON.parse(job.progress_json ?? '{}');
   const save = () => db.prepare("UPDATE fast_track_jobs SET state='publishing', progress_json=?, lease_until=NULL, updated_at=? WHERE id=?").bind(JSON.stringify(progress), now(), job.id).run();
   try {
+    if (fields.membershipRequirement) fields = await prepareMembershipFields(db, {requirements: []}, fields);
     const published = await publishFastTrack(env, job, fields, stored.sourceText ?? '', progress, save);
     await db.prepare("UPDATE fast_track_jobs SET state='published', offer_id=?, progress_json=?, missing_json=NULL, error=NULL, lease_until=NULL, published_at=?, updated_at=? WHERE id=?").bind(published.offerId, JSON.stringify(progress), now(), now(), job.id).run();
     if (job.lead_id) await linkLead(db, job.lead_id, published.offerId);
@@ -333,9 +350,9 @@ async function attemptPublish(env: Env, job: JobRow): Promise<PublishState> {
     const stalled = error instanceof StepDeferred && job.state === 'publishing' && job.progress_json === JSON.stringify(progress);
     if (error instanceof StepDeferred && !stalled) { await save(); return { state: 'publishing' }; }
     if (stalled) error = new FastTrackError(409, '上架步骤没有进展，请点“重新读取”或联系开发');
-    if (!(error instanceof FastTrackError) && !(error instanceof IdentityError)) throw error;
-    await db.prepare("UPDATE fast_track_jobs SET state='needs_owner', missing_json='[]', error=?, lease_until=NULL, updated_at=? WHERE id=?").bind(error.message.slice(0, 500), now(), job.id).run();
-    return { state: 'needs_owner', error: error.message };
+    if (!(error instanceof FastTrackError) && !(error instanceof IdentityError) && !(error instanceof MembershipError)) throw error;
+    const repairable = error instanceof MembershipError || /字段不符合|会员资格|会员目录/.test(error.message);
+    return repairFastTrack(db, repairable ? job : {...job, attempts: FAST_TRACK_MAX_ATTEMPTS}, [], error.message);
   }
 }
 
@@ -368,13 +385,14 @@ export async function submitFastTrackResult(env: Env, id: string, raw: unknown) 
 
 /** The owner fills the fields the model could not, then the job publishes immediately. */
 export async function completeFastTrack(env: Env, id: string, raw: unknown) {
-  const fields = z.object({ fields: z.record(z.string(), z.unknown()) }).parse(raw).fields, db = env.DB;
+  const input = z.object({ fields: z.record(z.string(), z.unknown()), basis: z.enum(['official','tested']).optional() }).parse(raw), fields=input.fields, db = env.DB;
   const job = await db.prepare('SELECT * FROM fast_track_jobs WHERE id=?').bind(id).first<JobRow>();
   if (!job) throw new FastTrackError(404, '没有这个快速上架任务');
   if (job.state !== 'needs_owner') throw new FastTrackError(409, '只有“需要你补充”的任务可以补字段');
   const owner = { ...JSON.parse(job.owner_fields_json), ...fields };
-  await db.prepare('UPDATE fast_track_jobs SET owner_fields_json=?, updated_at=? WHERE id=?').bind(JSON.stringify(owner), new Date().toISOString(), id).run();
-  return attemptPublish(env, { ...job, owner_fields_json: JSON.stringify(owner) });
+  const basis=input.basis??job.basis;
+  await db.prepare('UPDATE fast_track_jobs SET owner_fields_json=?, basis=?, updated_at=? WHERE id=?').bind(JSON.stringify(owner), basis, new Date().toISOString(), id).run();
+  return attemptPublish(env, { ...job, basis, owner_fields_json: JSON.stringify(owner) });
 }
 
 /** Re-queue a job (e.g. after the free models were unavailable) and start a run. */
@@ -386,3 +404,43 @@ export async function retryFastTrack(env: Env, id: string) {
 }
 
 export const fastTrackHeld = (fastTrackedAt: string | null | undefined, now: Date) => !!fastTrackedAt && now.getTime() - Date.parse(fastTrackedAt) < FAST_TRACK_PUSH_HOLD_MS;
+
+async function repairFastTrack(db: D1Database, job: JobRow, missing: string[], error: string): Promise<PublishState> {
+  const state = job.attempts < FAST_TRACK_MAX_ATTEMPTS ? 'queued' : 'needs_owner';
+  await db.prepare('UPDATE fast_track_jobs SET state=?,missing_json=?,error=?,lease_until=NULL,updated_at=? WHERE id=?')
+    .bind(state, JSON.stringify(missing), error.slice(0, 500), new Date().toISOString(), job.id).run();
+  return {state, missing, error};
+}
+
+/** Only explicit provenance can reconcile a stale job; never title similarity or another vendor's lead offer. */
+async function reconcileFastTrack(db: D1Database, job: JobRow): Promise<PublishState | null> {
+  if (job.state === 'published' || job.state === 'rejected') return {state:job.state,offerId:job.offer_id};
+  const progress: Progress = JSON.parse(job.progress_json ?? '{}');
+  if (job.state === 'publishing' || (job.basis === 'tested' && progress.approved && !progress.testedTier)) return null;
+  let offerId = progress.offerId ?? progress.receipt?.canonicalOfferId;
+  if (job.lead_id) {
+    const lead = await db.prepare('SELECT status,offer_id,resolution FROM leads WHERE id=?').bind(job.lead_id).first<{status:string;offer_id:string|null;resolution:string|null}>();
+    if (lead?.status === 'rejected') {
+      const reason = JSON.parse(lead.resolution ?? '{}').reason ?? '关联线索已被管理员拒绝';
+      await db.prepare("UPDATE fast_track_jobs SET state='rejected',error=NULL,missing_json=NULL,lease_until=NULL,resolution_json=?,updated_at=? WHERE id=?")
+        .bind(JSON.stringify({action:'reject',reason,leadId:job.lead_id,origin:'existing-decision'}),new Date().toISOString(),job.id).run();
+      return {state:'rejected',offerId:null};
+    }
+    if (!offerId && lead?.status === 'linked') offerId = lead.offer_id ?? undefined;
+  }
+  if (offerId) {
+    const offer = await db.prepare("SELECT id FROM offers WHERE id=? AND platform_id=? AND review_state='approved'").bind(offerId,job.platform_id).first();
+    if (offer) {
+      if (job.identity_task_id) await closeIdentityTask(db,job,offerId);
+      await db.prepare("UPDATE fast_track_jobs SET state='published',offer_id=?,error=NULL,missing_json=NULL,lease_until=NULL,published_at=COALESCE(published_at,?),updated_at=?,resolution_json=? WHERE id=?")
+        .bind(offerId,new Date().toISOString(),new Date().toISOString(),JSON.stringify({action:'linked',reason:'已关联的同平台权益已批准，同步快速上架结果'}),job.id).run();
+      return {state:'published',offerId};
+    }
+  }
+  return null;
+}
+export async function reconcileFastTrackJob(env: Env, id: string) {
+  const job=await env.DB.prepare('SELECT * FROM fast_track_jobs WHERE id=?').bind(id).first<JobRow>();
+  if(!job) throw new FastTrackError(404,'没有这个快速上架任务');
+  return await reconcileFastTrack(env.DB,job) ?? {state:job.state,offerId:job.offer_id};
+}
