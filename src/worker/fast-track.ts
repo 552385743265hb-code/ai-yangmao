@@ -194,7 +194,7 @@ function terms(platformId: string, type: string): CanonicalTermsV1 {
   return canonicalTermsSchema.parse({ schemaVersion: 'terms-v1', issuerProductId: { state: 'known', value: platformId, evidenceRefs: ['benefit'] }, mechanism: { state: 'known', value: MECHANISM[type] ?? 'other', evidenceRefs: ['benefit'] }, benefitPools: [], eligibility: unknown, geography: unknown, claimChannels: unknown, costs: unknown, claimWindow: unknown, occurrenceAnchor: unknown });
 }
 
-interface Progress { pending?: { candidateId: string; requestId: string }; receipt?: IntakeReceipt; entityId?: string; offerId?: string; membership?: boolean; approved?: boolean; testedTask?: { id: string; revision: number } | null; testedTier?: boolean }
+interface Progress { pending?: { candidateId: string; requestId: string }; receipt?: IntakeReceipt; entityId?: string; offerId?: string; membership?: boolean | string; approved?: boolean; testedTask?: { id: string; revision: number } | null; testedTier?: boolean }
 /** Identity work gets its own slice of the 50-query request budget; the rest is left for job bookkeeping. */
 const IDENTITY_SLICE = 38;
 class StepDeferred extends Error {}
@@ -265,14 +265,15 @@ export async function publishFastTrack(env: Env, job: JobRow, fields: FastTrackF
   // The owner's catalog membership replaces the model's member: text on the draft, through the same guarded edit as the review page.
   // Without it every member perk stopped at approval: “会员资格尚未结构化确认” (2026-10-17 Higgsfield Wan 3.0).
   const membership = fields.membershipRequirement;
-  if (membership && !progress.membership) {
+  const membershipKey = membership ? (await sha256(stableJson(membership))).slice(0, 16) : null;
+  if (membership && progress.membership !== membershipKey) {
     const initial = await db.prepare("SELECT id,revision FROM review_tasks WHERE entity_id=? AND kind='initial' AND state IN ('open','checking','manual') ORDER BY created_at DESC LIMIT 1").bind(progress.entityId).first<{ id: string; revision: number }>();
     if (initial) {
       const requirements = (Array.isArray(fields.requirements) ? fields.requirements : []).filter(r => typeof r === 'string' && !r.startsWith('member:'));
-      const key = (await sha256(stableJson(membership))).slice(0, 16);
+      const key = membershipKey;
       await step(() => service.editManagedOffer(progress.offerId!, { requestId: `fast-track-membership:${job.id}:${key}`, taskId: initial.id, expectedTaskRevision: initial.revision, fields: { membershipRequirement: membership, requirements }, actor: job.actor }));
     }
-    progress.membership = true;
+    progress.membership = membershipKey!;
     await save();
   }
   if (!progress.approved) {

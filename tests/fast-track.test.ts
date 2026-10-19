@@ -303,3 +303,21 @@ it('does not reconcile a lead accidentally linked to another platform', async ()
  expect((await call(`admin/fast-track/${created.body.jobId}/reconcile`,{})).body.state).toBe('needs_owner');
  expect(done.body.state).toBe('published');
 });
+
+it('reapplies model-corrected membership after the catalog changes between edit and approval', async () => {
+  const {IdentityService}=await import('../src/worker/identity/service');
+  const {MembershipError}=await import('../src/worker/membership');
+  f.sqlite.prepare('UPDATE membership_catalog SET revision=1,data_json=? WHERE id=1').run(JSON.stringify(catalog));
+  const created=await call('admin/fast-track',{newPlatform:{name:'Odyssey'},url:'https://odyssey.world/introducing-odyssey-3',benefit:'Odyssey Pro 7 天免费使用'});
+  await ingest(`fast-track/${created.body.jobId}/claim`,{});
+  const approval=vi.spyOn(IdentityService.prototype,'decideTask').mockRejectedValueOnce(new MembershipError(409,'会员目录已更新'));
+  const paused=await settle(created.body.jobId,await ingest(`fast-track/${created.body.jobId}/result`,{fields:{...memberPerk,membershipRequirement:proMembership(1)},sourceText:page}));
+  approval.mockRestore();
+  expect(paused.body.state).toBe('queued');
+  f.sqlite.prepare('UPDATE membership_catalog SET revision=2 WHERE id=1').run();
+  await ingest(`fast-track/${created.body.jobId}/claim`,{});
+  const done=await settle(created.body.jobId,await ingest(`fast-track/${created.body.jobId}/result`,{fields:{...memberPerk,membershipRequirement:proMembership(2)},sourceText:page}));
+  expect(done.body.state).toBe('published');
+  const row=f.sqlite.prepare('SELECT membership_requirement FROM offers WHERE id=?').get(done.body.offerId) as any;
+  expect(JSON.parse(row.membership_requirement).catalogRevision).toBe(2);
+});
