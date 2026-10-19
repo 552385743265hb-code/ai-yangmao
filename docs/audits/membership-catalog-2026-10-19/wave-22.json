@@ -1,0 +1,41 @@
+{
+  "checkedAt": "2026-10-19",
+  "expectedRevision": 51,
+  "revision": 52,
+  "products": 102,
+  "plans": 531,
+  "vendors": 124,
+  "fullReadback": true,
+  "changes": [
+    {
+      "id": "google-colab-free",
+      "oldName": "Google Colab Free",
+      "name": "Google Colab Free",
+      "productId": "google-colab"
+    },
+    {
+      "id": "google-colab-pro",
+      "oldName": "Google Colab Pro",
+      "name": "Google Colab Pro",
+      "productId": "google-colab"
+    },
+    {
+      "id": "google-colab-pro-plus",
+      "oldName": "Google Colab Pro+",
+      "name": "Google Colab Pro+",
+      "productId": "google-colab"
+    },
+    {
+      "id": "google-workspace-ai-expanded-access",
+      "oldName": "Google Workspace AI Expanded Access",
+      "name": "Google Workspace AI Expanded Access",
+      "productId": "google-workspace-ai"
+    },
+    {
+      "id": "google-workspace-ai-ultra-access-legacy",
+      "oldName": "Google Workspace AI Ultra Access（存量固定期）",
+      "name": "Google Workspace AI Ultra Access（存量固定期）",
+      "productId": "google-workspace-ai"
+    }
+  ]
+}

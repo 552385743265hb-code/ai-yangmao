@@ -855,7 +855,7 @@
         "google"
       ],
       "name": "Google AI",
-      "sourceUrl": "https://one.google.com/intl/en/about/google-ai-plans/?gl=US",
+      "sourceUrl": "https://one.google.com/about/google-ai-plans/",
       "plans": [
         "Plus",
         "Pro",
@@ -863,9 +863,10 @@
         "Ultra 20x"
       ],
       "freePlans": [],
-      "status": "partial",
+      "status": "verified",
       "quote": "Google AI Plus; Google AI Pro; Google AI Ultra 5x; Google AI Ultra 20x",
-      "remaining": "核对 Workspace/Gemini 企业和教育目录；家庭分享不是重复套餐"
+      "remaining": "Workspace附加AI订阅、个人Workspace及更多旧合同仍需核对；不是厂商全量完成。",
+      "applyReady": true
     },
     {
       "productId": "z-ai-devpack",
@@ -2520,6 +2521,224 @@
       "applyReady": true,
       "quote": "Membership; Enterprise",
       "note": "Membership每月10美元会员费，调用另按量收费；与Pika创作订阅独立，企业为定制方案。"
+    },
+    {
+      "productId": "gemini-enterprise",
+      "platformIds": [
+        "gcloud"
+      ],
+      "name": "Google Gemini Enterprise",
+      "plans": [
+        "Business",
+        "Standard",
+        "Plus",
+        "Pay-as-you-go",
+        "Frontline"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://docs.cloud.google.com/gemini/enterprise/docs/editions",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Business; Standard; Plus; Pay-as-you-go; Frontline",
+      "note": "五种明确的用户许可edition；Pay-as-you-go也是该软件的正式订阅版本，不同于Agent Platform的API算力计费账户。"
+    },
+    {
+      "productId": "gemini-notebook-enterprise",
+      "platformIds": [
+        "gcloud"
+      ],
+      "name": "Google Gemini Notebook",
+      "plans": [
+        "Enterprise"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://cloud.google.com/gemini-enterprise/faq",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Enterprise",
+      "aliases": [
+        "NotebookLM Enterprise"
+      ],
+      "note": "官方FAQ明确可单独按月或按年订阅，不因为包含在某些Gemini Enterprise方案中而遗漏独立许可。"
+    },
+    {
+      "productId": "google-code-assist",
+      "platformIds": [
+        "gcloud"
+      ],
+      "name": "Google Gemini Code Assist（存量企业订阅）",
+      "plans": [
+        "Standard",
+        "Enterprise"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://docs.cloud.google.com/gemini/docs/codeassist/sunset",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Standard; Enterprise",
+      "legacyPlans": [
+        "Standard",
+        "Enterprise"
+      ],
+      "note": "2026-10-09停止新购；现有合同继续有效，不能等同于新Gemini Enterprise或直接退休。"
+    },
+    {
+      "productId": "google-developer-program",
+      "platformIds": [
+        "google",
+        "gcloud"
+      ],
+      "name": "Google Developer Program",
+      "plans": [
+        "Standard",
+        "Premium（存量年付）",
+        "Enterprise（存量）"
+      ],
+      "freePlans": [
+        "Standard"
+      ],
+      "sourceUrl": "https://developers.google.com/profile/help/faq",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Standard; Premium（存量年付）; Enterprise（存量）",
+      "legacyPlans": [
+        "Premium（存量年付）",
+        "Enterprise（存量）"
+      ],
+      "newPlanIds": {
+        "Premium（存量年付）": "google-developer-premium-legacy-annual",
+        "Enterprise（存量）": "google-developer-enterprise-legacy"
+      },
+      "note": "官方已停止新购独立Premium/Enterprise。Premium旧月付最晚2026-10-18结束故不列活动套餐；旧年付最晚2027-09-18。新个人Premium由Google AI订阅提供，不重复建新的独立Premium。"
+    },
+    {
+      "productId": "google-workspace",
+      "platformIds": [
+        "google"
+      ],
+      "name": "Google Workspace",
+      "plans": [
+        "Business Starter",
+        "Business Standard",
+        "Business Plus",
+        "Enterprise Standard",
+        "Enterprise Plus",
+        "Essentials Starter",
+        "Essentials（存量）",
+        "Enterprise Essentials",
+        "Enterprise Essentials Plus",
+        "Frontline Starter",
+        "Frontline Standard",
+        "Frontline Plus",
+        "Education Fundamentals",
+        "Education Standard",
+        "Education Plus"
+      ],
+      "freePlans": [
+        "Essentials Starter",
+        "Education Fundamentals"
+      ],
+      "sourceUrl": "https://knowledge.workspace.google.com/admin/getting-started/editions/compare-google-workspace-editions",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Business Starter; Business Standard; Business Plus; Enterprise Standard; Enterprise Plus; Essentials Starter; Essentials（存量）; Enterprise Essentials; Enterprise Essentials Plus; Frontline Starter; Frontline Standard; Frontline Plus; Education Fundamentals; Education Standard; Education Plus",
+      "planSources": {
+        "Business Starter": "https://knowledge.workspace.google.com/admin/getting-started/editions/compare-business-editions",
+        "Business Standard": "https://knowledge.workspace.google.com/admin/getting-started/editions/compare-business-editions",
+        "Business Plus": "https://knowledge.workspace.google.com/admin/getting-started/editions/compare-business-editions",
+        "Enterprise Standard": "https://knowledge.workspace.google.com/admin/getting-started/editions/compare-enterprise-editions",
+        "Enterprise Plus": "https://knowledge.workspace.google.com/admin/getting-started/editions/compare-enterprise-editions",
+        "Essentials Starter": "https://knowledge.workspace.google.com/admin/getting-started/editions/compare-essentials-editions",
+        "Essentials（存量）": "https://knowledge.workspace.google.com/admin/getting-started/editions/compare-essentials-editions",
+        "Enterprise Essentials": "https://knowledge.workspace.google.com/admin/getting-started/editions/compare-essentials-editions",
+        "Enterprise Essentials Plus": "https://knowledge.workspace.google.com/admin/getting-started/editions/compare-essentials-editions",
+        "Frontline Starter": "https://knowledge.workspace.google.com/admin/getting-started/editions/frontline-editions",
+        "Frontline Standard": "https://knowledge.workspace.google.com/admin/getting-started/editions/frontline-editions",
+        "Frontline Plus": "https://knowledge.workspace.google.com/admin/getting-started/editions/frontline-editions",
+        "Education Fundamentals": "https://knowledge.workspace.google.com/admin/getting-started/editions/compare-education-editions",
+        "Education Standard": "https://knowledge.workspace.google.com/admin/getting-started/editions/compare-education-editions",
+        "Education Plus": "https://knowledge.workspace.google.com/admin/getting-started/editions/compare-education-editions"
+      },
+      "legacyPlans": [
+        "Essentials（存量）"
+      ],
+      "newPlanIds": {
+        "Essentials（存量）": "google-workspace-essentials-legacy"
+      },
+      "note": "现行管理文档分别列Business/Enterprise/Essentials/Frontline/Education；Essentials旧版已停售但仍支持。Education Standard仍在现行管理文档列示，不能因营销页只推两档就删除。",
+      "remaining": "Individual、Nonprofits、G Suite旧版及AI附加订阅仍须核对。"
+    },
+    {
+      "productId": "google-ai-education",
+      "platformIds": [
+        "google"
+      ],
+      "name": "Google AI Pro for Education",
+      "plans": [
+        "订阅许可"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://edu.google.com/workspace-for-education/add-ons/google-workspace-with-gemini/",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Google AI Pro for Education",
+      "note": "Google AI Pro for Education为独立可购买附加许可证，不等同于个人Google AI Pro。",
+      "newPlanIds": {
+        "订阅许可": "google-ai-pro-for-education-license"
+      }
+    },
+    {
+      "productId": "google-colab",
+      "platformIds": [
+        "google",
+        "gcloud"
+      ],
+      "name": "Google Colab",
+      "plans": [
+        "Free",
+        "Pro",
+        "Pro+"
+      ],
+      "freePlans": [
+        "Free"
+      ],
+      "sourceUrl": "https://colab.research.google.com/signup",
+      "quote": "Colab Pro; Colab Pro+",
+      "note": "已在真实浏览器核对个人订阅卡片，Workspace管理文档同样列Pro/Pro+许可证。Google AI套餐内附带的Colab权益不重复建会员，Pay As You Go明示无需订阅，Colab Enterprise按runtime资源使用计费。",
+      "status": "verified",
+      "applyReady": true
+    },
+    {
+      "productId": "google-workspace-ai",
+      "platformIds": [
+        "google"
+      ],
+      "name": "Google Workspace AI",
+      "plans": [
+        "Expanded Access",
+        "Ultra Access（存量固定期）"
+      ],
+      "freePlans": [],
+      "newPlanIds": {
+        "Ultra Access（存量固定期）": "google-workspace-ai-ultra-access-legacy"
+      },
+      "legacyPlans": [
+        "Ultra Access（存量固定期）"
+      ],
+      "sourceUrl": "https://knowledge.workspace.google.com/admin/generative-ai/workspace-with-gemini/ai-expanded-access",
+      "planSources": {
+        "Ultra Access（存量固定期）": "https://knowledge.workspace.google.com/admin/generative-ai/workspace-with-gemini/ai-ultra-access"
+      },
+      "planAliases": {
+        "Ultra Access（存量固定期）": [
+          "Google AI Ultra for Business",
+          "AI Ultra Access"
+        ]
+      },
+      "quote": "AI Expanded Access; AI Ultra Access",
+      "note": "Ultra Access已停售，只有2026-05-05前固定期合同可延续至下一次续费，按合同迁移；不是个人Google AI Ultra，不能自动合并。",
+      "status": "verified",
+      "applyReady": true
     }
   ]
 }

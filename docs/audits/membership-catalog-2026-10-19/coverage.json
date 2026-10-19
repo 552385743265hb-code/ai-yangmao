@@ -28,14 +28,27 @@
       "platformId": "gcloud",
       "name": "Google Cloud",
       "site": "https://cloud.google.com",
-      "status": "unreviewed",
-      "sources": [],
-      "productIds": [],
+      "status": "partial",
+      "sources": [
+        "https://docs.cloud.google.com/gemini/enterprise/docs/editions",
+        "https://cloud.google.com/gemini-enterprise/faq",
+        "https://docs.cloud.google.com/gemini/docs/codeassist/sunset",
+        "https://developers.google.com/profile/help/faq",
+        "https://colab.research.google.com/signup"
+      ],
+      "productIds": [
+        "gemini-enterprise",
+        "gemini-notebook-enterprise",
+        "google-code-assist",
+        "google-developer-program",
+        "google-colab"
+      ],
       "homepageRead": {
         "url": "https://cloud.google.com",
         "chars": 44587,
         "error": null
-      }
+      },
+      "note": "已核个人AI、企业Gemini/Notebook、存量Code Assist/GDP和Workspace主要版本；附加AI及其他相关订阅待完成。"
     },
     {
       "platformId": "azure",
@@ -581,16 +594,27 @@
       "site": "https://ai.google.dev",
       "status": "partial",
       "sources": [
-        "https://one.google.com/intl/en/about/google-ai-plans/?gl=US"
+        "https://one.google.com/about/google-ai-plans/",
+        "https://developers.google.com/profile/help/faq",
+        "https://knowledge.workspace.google.com/admin/getting-started/editions/compare-google-workspace-editions",
+        "https://edu.google.com/workspace-for-education/add-ons/google-workspace-with-gemini/",
+        "https://colab.research.google.com/signup",
+        "https://knowledge.workspace.google.com/admin/generative-ai/workspace-with-gemini/ai-expanded-access"
       ],
       "productIds": [
-        "google-ai"
+        "google-ai",
+        "google-developer-program",
+        "google-workspace",
+        "google-ai-education",
+        "google-colab",
+        "google-workspace-ai"
       ],
       "homepageRead": {
         "url": "https://ai.google.dev",
         "chars": 6117,
         "error": null
-      }
+      },
+      "note": "已核个人AI、企业Gemini/Notebook、存量Code Assist/GDP和Workspace主要版本；附加AI及其他相关订阅待完成。"
     },
     {
       "platformId": "hume",
