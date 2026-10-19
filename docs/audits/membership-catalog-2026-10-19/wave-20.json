@@ -1,0 +1,149 @@
+{
+  "checkedAt": "2026-10-19",
+  "expectedRevision": 49,
+  "revision": 50,
+  "products": 93,
+  "plans": 495,
+  "vendors": 124,
+  "fullReadback": true,
+  "changes": [
+    {
+      "id": "pika-free",
+      "oldName": "Pika Free",
+      "name": "Pika Free",
+      "productId": "pika"
+    },
+    {
+      "id": "pika-starter",
+      "oldName": "Pika Starter",
+      "name": "Pika Starter",
+      "productId": "pika"
+    },
+    {
+      "id": "pika-creator",
+      "oldName": "Pika Creator",
+      "name": "Pika Creator",
+      "productId": "pika"
+    },
+    {
+      "id": "pika-fancy",
+      "oldName": "Pika Fancy",
+      "name": "Pika Fancy",
+      "productId": "pika"
+    },
+    {
+      "id": "pika-enterprise",
+      "oldName": "Pika Enterprise",
+      "name": "Pika Enterprise",
+      "productId": "pika"
+    },
+    {
+      "id": "meshy-free",
+      "oldName": "Meshy Free",
+      "name": "Meshy Free",
+      "productId": "meshy"
+    },
+    {
+      "id": "meshy-pro",
+      "oldName": "Meshy Pro",
+      "name": "Meshy Pro",
+      "productId": "meshy"
+    },
+    {
+      "id": "meshy-premium",
+      "oldName": "Meshy Premium",
+      "name": "Meshy Premium",
+      "productId": "meshy"
+    },
+    {
+      "id": "meshy-ultra",
+      "oldName": "Meshy Ultra",
+      "name": "Meshy Ultra",
+      "productId": "meshy"
+    },
+    {
+      "id": "meshy-studio",
+      "oldName": "Meshy Studio",
+      "name": "Meshy Studio",
+      "productId": "meshy"
+    },
+    {
+      "id": "meshy-enterprise",
+      "oldName": "Meshy Enterprise",
+      "name": "Meshy Enterprise",
+      "productId": "meshy"
+    },
+    {
+      "id": "free-ai-free",
+      "oldName": "Free.ai Free",
+      "name": "Free.ai Free",
+      "productId": "free-ai"
+    },
+    {
+      "id": "free-ai-basic",
+      "oldName": "Free.ai Basic",
+      "name": "Free.ai Basic",
+      "productId": "free-ai"
+    },
+    {
+      "id": "free-ai-starter",
+      "oldName": "Free.ai Starter",
+      "name": "Free.ai Starter",
+      "productId": "free-ai"
+    },
+    {
+      "id": "free-ai-pro",
+      "oldName": "Free.ai Pro",
+      "name": "Free.ai Pro",
+      "productId": "free-ai"
+    },
+    {
+      "id": "free-ai-business",
+      "oldName": "Free.ai Business",
+      "name": "Free.ai Business",
+      "productId": "free-ai"
+    },
+    {
+      "id": "free-ai-team",
+      "oldName": "Free.ai Team",
+      "name": "Free.ai Team",
+      "productId": "free-ai"
+    },
+    {
+      "id": "free-ai-enterprise",
+      "oldName": "Free.ai Enterprise",
+      "name": "Free.ai Enterprise",
+      "productId": "free-ai"
+    },
+    {
+      "id": "free-ai-enterprise-plus",
+      "oldName": "Free.ai Enterprise+",
+      "name": "Free.ai Enterprise+",
+      "productId": "free-ai"
+    },
+    {
+      "id": "free-ai-scale",
+      "oldName": "Free.ai Scale",
+      "name": "Free.ai Scale",
+      "productId": "free-ai"
+    },
+    {
+      "id": "free-ai-enterprise-custom",
+      "oldName": "Free.ai Enterprise（定制）",
+      "name": "Free.ai Enterprise（定制）",
+      "productId": "free-ai"
+    },
+    {
+      "id": "pika-api-club-membership",
+      "oldName": "Pika API Club Membership",
+      "name": "Pika API Club Membership",
+      "productId": "pika-api-club"
+    },
+    {
+      "id": "pika-api-club-enterprise",
+      "oldName": "Pika API Club Enterprise",
+      "name": "Pika API Club Enterprise",
+      "productId": "pika-api-club"
+    }
+  ]
+}

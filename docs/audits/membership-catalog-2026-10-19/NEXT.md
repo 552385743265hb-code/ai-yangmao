@@ -4,9 +4,9 @@
 
 ## 已核实当前状态（2026-10-19）
 
-- 生产会员目录 **revision 48**：86 产品、449 套餐；429 verified、16 retired、4 pending。完整产品/套餐及根级别迁移元数据已与预备补丁逐项读回一致。
-- 4 个旧 pending：`cursor-plan-1`、`grok-supergrok-lite`、`grok-bot`、`x-plan-1`，均涉及 Cursor/Grok/X 订阅归并。
-- 厂商研究覆盖：47 research_complete、34 partial、43 unreviewed。**这比 pending 数更接近剩余工作规模，不能只清四条就宣布完成。**
+- 生产会员目录 **revision 50**：93 产品、495 套餐；475 verified、19 retired、1 pending。完整产品/套餐及根级别迁移元数据已与预备补丁逐项读回一致。
+- 仅剩1个旧pending：`cursor-plan-1`。Grok/X三个占位项已退休并补官方具体套餐。
+- 厂商研究覆盖：50 research_complete、31 partial、43 unreviewed。**这比 pending 数更接近剩余工作规模，不能只清四条就宣布完成。**
 - 生产代码已更新为 PR106 / cc1f94632ef2（100%流量，2026-10-19实时读取）；新界面在草稿 PR105，未合并部署。当前工作区 `/tmp/ym-hf-link-worktree`，分支 `codex/membership-catalog-complete`。
 - 主 checkout 是其他任务的估值修复，勿覆盖。node_modules 为临时 symlink，不提交。
 - 本地最近完整验证：类型检查、1426 Vitest + 11 CLI、build:web、diff --check 通过。代码新增：按厂商套餐复选、个人选择去重、旧记录提示可单独清除、跨厂商资格默认显示实际会员厂商、退休产品不重新出现在厂商下拉、目录准备工具的归并/退休守卫与回归。
@@ -16,9 +16,9 @@
 - **整份目录已超过 D1 单条 SQL 100KB 限制。不要再把 JSON 内联到 wrangler execute --file。** 第11批内联写入返回 SQLITE_TOOBIG，已确认没有生效；随后改为 SQL 绑定参数原子 CAS，成功从40写到41并完整读回。
 - 后续预备补丁：`node scripts/prepare-membership-catalog.mjs <当前目录快照> docs/audits/membership-catalog-2026-10-19/official-findings.json <预备文件> docs/audits/membership-catalog-2026-10-19/coverage.json`。仅 verified+applyReady 的事实被采用；未显式处理的旧套餐会报错。
 - 当前可复用私有绑定参数写入器：`node /tmp/ym-membership-apply-bound.mjs <预备文件> <私有凭证前缀>`。它使用现有 Wrangler OAuth（不输出令牌），固定只更新 membership_catalog id=1，检查 expectedRevision，保存前后快照并全量对照。API失败后先读状态，不盲目重放。若 OAuth 过期，用正常 Wrangler CLI 刷新，不输出凭据。
-- 最新完整 D1 原件：`/tmp/ym-membership-wave18-bound-after.json`（revision + data_json）。原始基线：`/tmp/ym-membership-catalog-before.json` rev29；`/tmp/ym-membership-offers-before.json`（96条会员权益）；`/tmp/ym-membership-profiles-before.json`。
+- 最新完整 D1 原件：`/tmp/ym-membership-wave20-bound-after.json`（revision + data_json）。原始基线：`/tmp/ym-membership-catalog-before.json` rev29；`/tmp/ym-membership-offers-before.json`（96条会员权益）；`/tmp/ym-membership-profiles-before.json`。
 - 生产旧 API 目前只返回 revision/products/plans，**会省略根级别 productIdAliases/productReplacements**。准备工具会根据事实文件重建这些映射；最终部署新读取代码后需核验根元数据保留。完整 D1 快照优于只靠公开 API。
-- `wave-1` 至 `wave-18` 记录已入审计目录。生产触发器自动保留每次目录修改前后原件。
+- `wave-1` 至 `wave-20` 记录已入审计目录。生产触发器自动保留每次目录修改前后原件。
 
 ## 官方研究证据与发现
 
@@ -72,4 +72,11 @@ CUA的IAB临时tab2当前在TRAE计费文档，可继续看企业版；`pvCatalo
 
 - 本地前端+生产公开数据快照，真实浏览器逐个切换126个入口，438个已启用套餐控件全部勾选/取消/检查去重。生产目录429个唯一verified计划，Devin/Windsurf九个共享ID重复展示所以控件数438。跨厂商Copilot Pro/Qoder国际Pro选择刷新保留、单独移除互不影响，清理后为空，无控制台错误。详细凭证browser-sweep-rev48.json。
 - 验收未通过项：Cursor旧占位、Grok两个旧占位、X旧占位共四个disabled，额外Grok/X厂商入口导致126不是124。需迁移完再最终重测。资料不全的空厂商只测切换不算研究完成。
-- 浏览器membershipPreviewTab=IAB tab4，localhost:8769。私有预览服务器/tmp/ym-membership-preview.py，当前exec session92456（恢复时先查是否仍活跃），只读使用/tmp/ym-preview-{platforms,offers,meta,coverage}.json及wave18-bound-after.json；不会写生产或触发外部消息。当前本地选择已清空。
+- 浏览器membershipPreviewTab=IAB tab4，localhost:8769。私有预览服务器/tmp/ym-membership-preview.py，当前exec session92456（恢复时先查是否仍活跃），只读使用/tmp/ym-preview-{platforms,offers,meta,coverage}.json及wave20-bound-after.json；不会写生产或触发外部消息。当前本地选择已清空。
+
+## rev49/50后续进展
+
+- x-subscription共享目录10档已应用；grok独立存量7档（含Business两席位）和X独立Premium三档、Business Basic/Full Access、Organizations Full Access/政府定制已核。Grok Bot官方明确没有单独订阅；应用商店所谓Bot订阅仍归实际套餐。Grok旧Lite ID原名实际为排除Lite的占位，所以新真实Lite用了新ID。
+- 已实时读生产确认三个退休占位没有已确认资格结构引用；原已批准needs_review记录保留不改。Cursor Teams仍有confirmed历史权益引用，禁止先退休后部署。cursor事实已备一对多retirePlans，applyReady=false；待新匹配代码上线后应用。更早request-based原文明确可延续到续费，但仍需核具体旧档位。
+- 本地浏览器rev49复核：厂商入口124，无多余Grok/X。xAI24项全部可选可取消，共享订阅在xAI与Cursor间切换只计一项，无错误。凭证browser-sweep-rev49-followup.json。服务器当前session49186，预览仍固定rev49，需最终更新到最新数据再复测。
+- rev50应用Pika创作五档、独立API Club Membership/Enterprise，Meshy六档（Studio可直接订阅，1X/3X/5X为容量不是独立会员），Free.ai九档+企业定制。三个厂商research_complete。

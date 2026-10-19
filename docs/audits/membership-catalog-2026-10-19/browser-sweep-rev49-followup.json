@@ -1,0 +1,13 @@
+{
+  "checkedAt": "2026-10-19",
+  "environment": "Local frontend with production catalog snapshot revision 49",
+  "renderedVendorOptions": 124,
+  "extraLegacyVendorOptions": [],
+  "testedXaiPlanControls": 24,
+  "sharedSubscriptionCheck": "Select x-subscription-premium under xai; switch to cursor; remains checked with exactly one selected chip; removal clears it",
+  "consoleErrors": [],
+  "remainingBlockedPlanIds": [
+    "cursor-plan-1"
+  ],
+  "releaseAccepted": false
+}

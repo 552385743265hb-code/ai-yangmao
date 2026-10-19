@@ -381,24 +381,31 @@
         "xai"
       ],
       "name": "The X Subscription（Cursor / Grok / X）",
-      "sourceUrl": "https://cursor.com/help/account-and-billing/pricing",
+      "sourceUrl": "https://docs.x.ai/x-subscription/pricing",
       "plans": [
         "Free",
         "Plus",
         "Premium",
         "Super",
         "Ultra",
+        "Teams Free",
         "Teams Premium",
         "Teams Super",
         "Teams Ultra",
         "Enterprise"
       ],
       "freePlans": [
-        "Free"
+        "Free",
+        "Teams Free"
       ],
-      "status": "partial",
-      "quote": "one subscription for Grok, Cursor, and X",
-      "remaining": "补 Grok/X 官方迁移与存量档位；新旧 Ultra 不能混同"
+      "status": "verified",
+      "quote": "Free; Plus; Premium; Super; Ultra; Teams Free; Teams Premium; Teams Super; Teams Ultra; Enterprise",
+      "applyReady": true,
+      "planSources": {
+        "Teams Free": "https://docs.x.ai/x-subscription/team-plans",
+        "Enterprise": "https://cursor.com/help/account-and-billing/pricing"
+      },
+      "note": "共享订阅只建一个产品，Cursor/xAI两个厂商入口使用同一ID；旧套餐不自动迁移。"
     },
     {
       "productId": "cursor",
@@ -406,7 +413,7 @@
         "cursor"
       ],
       "name": "Cursor（存量订阅）",
-      "sourceUrl": "https://cursor.com/help/account-and-billing/pricing",
+      "sourceUrl": "https://cursor.com/docs/account/pricing/legacy-cursor-plans",
       "plans": [
         "Hobby",
         "Start（印度）",
@@ -414,7 +421,8 @@
         "Pro+",
         "Ultra",
         "Teams Standard",
-        "Teams Premium"
+        "Teams Premium",
+        "Enterprise"
       ],
       "freePlans": [
         "Hobby"
@@ -429,7 +437,34 @@
         "Teams Premium"
       ],
       "status": "verified",
-      "quote": "Legacy plans: Hobby, Start, Pro, Pro+, Ultra, Teams Standard, Teams Premium"
+      "quote": "Legacy plans: Hobby, Start, Pro, Pro+, Ultra, Teams Standard, Teams Premium",
+      "applyReady": false,
+      "existingPlanIds": {
+        "Enterprise": "cursor-enterprise"
+      },
+      "planSources": {
+        "Enterprise": "https://docs.x.ai/x-subscription/eligibility"
+      },
+      "newPlanIds": {
+        "Start（印度）": "cursor-start-india"
+      },
+      "retirePlans": [
+        {
+          "id": "cursor-plan-1",
+          "reason": "原目录未区分实际套餐的占位记录，现按官方明确列示档位录入",
+          "sourceUrl": "https://cursor.com/docs/account/pricing/legacy-cursor-plans"
+        },
+        {
+          "id": "cursor-teams",
+          "replacementIds": [
+            "cursor-teams-standard",
+            "cursor-teams-premium"
+          ],
+          "reason": "官方明确旧Teams包含Standard/Premium两种席位；用一对多映射保留历史已批准资格，不猜用户具体席位",
+          "sourceUrl": "https://cursor.com/docs/account/pricing/legacy-cursor-plans"
+        }
+      ],
+      "remaining": "等待planReplacements运行时代码上线后再应用；更早请求制合同尚须明确具体档位，不把usage legacy混同request legacy。"
     },
     {
       "productId": "workbuddy",
@@ -522,9 +557,9 @@
       "freePlans": [
         "Free"
       ],
-      "status": "partial",
+      "status": "verified",
       "quote": "Free; Starter; Creator; Fancy; Enterprise",
-      "remaining": "另查 Pika API Club 会员档位"
+      "applyReady": true
     },
     {
       "productId": "meshy",
@@ -544,9 +579,10 @@
       "freePlans": [
         "Free"
       ],
-      "status": "partial",
+      "status": "verified",
       "quote": "Free; Pro; Premium; Ultra; Studio; Enterprise",
-      "remaining": "核对 Studio 存量/团队属性及企业套餐，不将比较表名称推断为在售"
+      "applyReady": true,
+      "note": "Studio官网当前提供订阅和团队管理；1X/3X/5X调整共享积分池而非另一个会员档位；API为套餐功能，不重复建档。"
     },
     {
       "productId": "niteshift",
@@ -735,14 +771,19 @@
         "Team",
         "Enterprise",
         "Enterprise+",
-        "Scale"
+        "Scale",
+        "Enterprise（定制）"
       ],
       "freePlans": [
         "Free"
       ],
-      "status": "partial",
-      "quote": "Free; Basic; Starter; Pro; Business; Team; Enterprise; Enterprise+; Scale",
-      "remaining": "另有 VPS hosting Hatchling/Starter/Pro，需确认是否属于 AI 会员资格范围"
+      "status": "verified",
+      "quote": "Free; Basic; Starter; Pro; Business; Team; Enterprise; Enterprise+; Scale; Enterprise（定制）",
+      "applyReady": true,
+      "newPlanIds": {
+        "Enterprise（定制）": "free-ai-enterprise-custom"
+      },
+      "note": "VPS Hosting是按CPU/RAM计费的应用托管附加资源，不是AI会员档位；按消费额自动折扣级别也不重复创建会员。"
     },
     {
       "productId": "chatgpt",
@@ -2354,6 +2395,131 @@
       "applyReady": true,
       "quote": "Subscription; Perpetual License",
       "verificationNote": "官方软件授权分订阅与永久许可；1至5年属于订阅期限，不重复建立同一软件档位。云按GPU小时算力不作为新会员。"
+    },
+    {
+      "productId": "grok",
+      "platformIds": [
+        "xai"
+      ],
+      "name": "Grok（独立存量订阅）",
+      "plans": [
+        "SuperGrok Lite",
+        "SuperGrok",
+        "SuperGrok Plus",
+        "SuperGrok Heavy",
+        "Business SuperGrok",
+        "Business SuperGrok Heavy",
+        "Enterprise"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://cursor.com/help/grok-bot/plans",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "SuperGrok Lite; SuperGrok; SuperGrok Plus; SuperGrok Heavy; Business SuperGrok; Business SuperGrok Heavy; Enterprise",
+      "legacyPlans": [
+        "SuperGrok Lite",
+        "SuperGrok",
+        "SuperGrok Plus",
+        "SuperGrok Heavy",
+        "Business SuperGrok",
+        "Business SuperGrok Heavy",
+        "Enterprise"
+      ],
+      "existingPlanIds": {
+        "Enterprise": "grok-enterprise"
+      },
+      "newPlanIds": {
+        "SuperGrok Lite": "grok-supergrok-lite-verified"
+      },
+      "retirePlans": [
+        {
+          "id": "grok-supergrok-lite",
+          "reason": "该旧ID实际描述排除Lite的未知套餐，不是SuperGrok Lite本身；不以ID猜资格",
+          "sourceUrl": "https://cursor.com/help/grok-bot/plans"
+        },
+        {
+          "id": "grok-bot",
+          "reason": "官方明确Bot没有独立订阅，按真实Cursor、SuperGrok、Business席位或X订阅授权；不能将应用入口当作套餐",
+          "sourceUrl": "https://cursor.com/help/grok-bot/plans"
+        }
+      ],
+      "note": "Business席位明确两种许可证；保留独立旧订阅，不等同于新The X Subscription。"
+    },
+    {
+      "productId": "x",
+      "platformIds": [
+        "xai"
+      ],
+      "name": "X Premium（独立订阅）",
+      "plans": [
+        "Basic",
+        "Premium",
+        "Premium+"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://help.x.com/en/using-x/x-premium",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Basic; Premium; Premium+",
+      "retirePlans": [
+        {
+          "id": "x-plan-1",
+          "reason": "原记录只写X会员未说明档位；现按官方三档录入，不猜原资格",
+          "sourceUrl": "https://help.x.com/en/using-x/x-premium"
+        }
+      ]
+    },
+    {
+      "productId": "x-premium-business",
+      "platformIds": [
+        "xai"
+      ],
+      "name": "X Premium Business",
+      "plans": [
+        "Basic",
+        "Full Access"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://help.x.com/en/using-x/premium-business",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Basic; Full Access"
+    },
+    {
+      "productId": "x-premium-organizations",
+      "platformIds": [
+        "xai"
+      ],
+      "name": "X Premium Organizations",
+      "plans": [
+        "Full Access",
+        "Custom Plans for Governments"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://help.x.com/en/using-x/premium-organizations",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Full Access; Custom Plans for Governments"
+    },
+    {
+      "productId": "pika-api-club",
+      "platformIds": [
+        "pika"
+      ],
+      "name": "Pika API Club",
+      "plans": [
+        "Membership",
+        "Enterprise"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://dev.pika.art/pricing",
+      "planSources": {
+        "Enterprise": "https://dev.pika.art/enterprise"
+      },
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Membership; Enterprise",
+      "note": "Membership每月10美元会员费，调用另按量收费；与Pika创作订阅独立，企业为定制方案。"
     }
   ]
 }

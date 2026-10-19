@@ -765,16 +765,25 @@
       "site": "https://x.ai",
       "status": "partial",
       "sources": [
-        "https://cursor.com/help/account-and-billing/pricing"
+        "https://docs.x.ai/x-subscription/pricing",
+        "https://cursor.com/help/grok-bot/plans",
+        "https://help.x.com/en/using-x/x-premium",
+        "https://help.x.com/en/using-x/premium-business",
+        "https://help.x.com/en/using-x/premium-organizations"
       ],
       "productIds": [
-        "x-subscription"
+        "x-subscription",
+        "grok",
+        "x",
+        "x-premium-business",
+        "x-premium-organizations"
       ],
       "homepageRead": {
         "url": "https://x.ai",
         "chars": 0,
         "error": "HTTP Error 403: Forbidden"
-      }
+      },
+      "note": "现行共享与独立存量套餐分开；旧Cursor Teams映射须配合新代码部署。"
     },
     {
       "platformId": "unisound",
@@ -1149,7 +1158,8 @@
       "site": "https://cursor.com",
       "status": "partial",
       "sources": [
-        "https://cursor.com/help/account-and-billing/pricing"
+        "https://docs.x.ai/x-subscription/pricing",
+        "https://cursor.com/docs/account/pricing/legacy-cursor-plans"
       ],
       "productIds": [
         "x-subscription",
@@ -1159,7 +1169,8 @@
         "url": "https://cursor.com",
         "chars": 17786,
         "error": null
-      }
+      },
+      "note": "现行共享与独立存量套餐分开；旧Cursor Teams映射须配合新代码部署。"
     },
     {
       "platformId": "devin",
@@ -1221,7 +1232,7 @@
       "platformId": "free-ai",
       "name": "Free.ai",
       "site": "https://free.ai",
-      "status": "partial",
+      "status": "research_complete",
       "sources": [
         "https://free.ai/pricing/"
       ],
@@ -1509,7 +1520,7 @@
       "platformId": "meshy",
       "name": "Meshy",
       "site": "https://www.meshy.ai",
-      "status": "partial",
+      "status": "research_complete",
       "sources": [
         "https://www.meshy.ai/pricing"
       ],
@@ -1651,12 +1662,14 @@
       "platformId": "pika",
       "name": "Pika",
       "site": "https://pika.art",
-      "status": "partial",
+      "status": "research_complete",
       "sources": [
-        "https://pika.art/pricing"
+        "https://pika.art/pricing",
+        "https://dev.pika.art/pricing"
       ],
       "productIds": [
-        "pika"
+        "pika",
+        "pika-api-club"
       ],
       "homepageRead": {
         "url": "https://pika.art",
