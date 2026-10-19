@@ -14,12 +14,13 @@ const fields=mergeFastTrackFields(input.fields,input.job.ownerFields,input.job.b
 const context={...input.job,sourceText:input.sourceText};
 let tokens=0,costCny=0;
 const options={deadlineAt:Date.now()+6*60_000,dry:false,account:(t:number,c:number)=>{tokens+=t;costCny+=c;},log:console.log};
+writeFileSync('fast-track-semantic-verification.json',JSON.stringify({jobId:id,offerId:input.offerId,businessWrites:0,stage:'model-review',initialFields:Object.fromEntries(['type','modalities','audience','requirements'].map(k=>[k,fields[k]])),passed:false},null,2));
 let result:Awaited<ReturnType<typeof reviewFastTrackFields>>|undefined,lastError:unknown;
 for(const tier of ['free','paid'] as const){
  if(tier==='free'&&!modelAvailable(false)||tier==='paid'&&!paidAvailable())continue;
  try{result=await reviewFastTrackFields(fields,context,options,tier);break;}catch(e){lastError=e;}
 }
-if(!result)throw lastError??Error('No semantic review model available');
+if(!result){writeFileSync('fast-track-semantic-verification.json',JSON.stringify({jobId:id,offerId:input.offerId,businessWrites:0,stage:'model-review',tokens,costCny,error:lastError instanceof Error?lastError.message:'No semantic review model available',passed:false},null,2));throw lastError??Error('No semantic review model available');}
 const issues=[...fastTrackFieldIssues(result.fields,context),...semanticReviewIssues(result.fields,result.review,context)];
 if(result.fields.membershipRequirement)issues.push(...validateMembership(result.fields.membershipRequirement as MembershipRequirement,input.membershipCatalog));
 if(issues.length)throw Error(issues.join('; '));

@@ -60,3 +60,11 @@ it('preserves a real old-account restriction despite an unrelated all-users noti
  const result=makeSemanticReview({...wrong,type:'perk',modalities:['text']},{type:{value:'perk',quote:benefit},modalities:[{value:'text',quote:benefit}],audience:{value:'old',quote:benefit}},c,'review');
  expect(result.issues).toEqual([]);expect(result.fields.audience).toBe('old');
 });
+
+it('automatically corrects an explicit globally free task even when the reviewer calls it a perk',()=>{
+ const c={...context,benefit:'Perplexity有效付费会员在Computer使用/reverse-engineer技能的任务可免费至2026年10月31日，每人最多10000 credits'};
+ const result=makeSemanticReview(wrong,{...facts,type:{value:'perk',quote:facts.type.quote}} as any,c,'review');
+ expect(result.issues).toEqual([]);expect(result.fields.type).toBe('free');
+ expect(result.review.facts.type.value).toBe('free');expect(result.review.modelFacts?.type.value).toBe('perk');
+ expect(semanticReviewIssues(result.fields,result.review,c)).toEqual([]);
+});

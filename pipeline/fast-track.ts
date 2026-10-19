@@ -53,7 +53,7 @@ const SEMANTIC_PROMPT = `你是快速上架的独立字段核对助手。管理�
 2. modalities 只表示免费权益实际生成/处理的输出：代码、逆向工程、应用/网页搭建、文字用 text；界面/图片输入、截图、设计图层、附件不表示赠送免费生图。image/video/audio 必须有原文明确的对应生成、转写、语音能力或明确属于该模态的模型。不得凭宣传页的图片/视频附加模态。
 3. audience：new/old 指账号新老，会员要求与账号新老无关。新老会员只要订阅合资格均可参与时是 all。只有明确首次注册/首次使用才能标 new，只有明确活动前注册/老用户专享才能标 old。没有这些排他条件时用 all，不能把 subscribers 变成 old。
 4. requirements：网络版别由服务器口径统一补 net；不要移除或发明会员、实名、学生、充值等门槛。这里不修改会员结构。
-只输出 {"facts":{"type":{"value":"new|trial|free|perk|topup|gift|standing|apply","quote":"支持判断的连续原句"},"modalities":[{"value":"text|image|video|audio","quote":"支持实际输出的连续原句"}],"audience":{"value":"new|old|all|unclear","quote":"新/老排他条件的连续原句；没有排他条件可留空"}}}。quote只能引用本次管理员描述或来源正文，不翻译、不拼接、不编造。`;
+只输出一个 JSON 对象 {"facts":{"type":{"value":"new|trial|free|perk|topup|gift|standing|apply","quote":"支持判断的连续原句"},"modalities":[{"value":"text|image|video|audio","quote":"支持实际输出的连续原句"}],"audience":{"value":"new|old|all|unclear","quote":"新/老排他条件的连续原句；没有排他条件可留空"}}}。quote只能引用本次管理员描述或来源正文，不翻译、不拼接、不编造。`;
 
 /** A separate model call checks meaning before the Worker can publish. Failed quotes feed a bounded repair. */
 export async function reviewFastTrackFields(fields:Record<string,unknown>,context:SemanticContext,options:FastTrackOptions,tier:'free'|'paid') {
@@ -66,7 +66,7 @@ export async function reviewFastTrackFields(fields:Record<string,unknown>,contex
    const parsed=parseModelJson(reply.text) as {facts?:unknown};
    const facts=semanticFactsSchema.parse(parsed?.facts);
    const result=makeSemanticReview(fields,facts,context,reply.provider);
-   if(result.issues.length){feedback=result.issues.join('；');continue;}
+   if(result.issues.length){feedback=result.issues.join('；');options.log('快速上架：字段语义核对需纠正',context.platformId,reply.provider,JSON.stringify(result.review.facts),feedback);continue;}
    options.log('快速上架：字段语义核对通过',context.platformId,reply.provider,result.review.changes.map(c=>c.field).join(','));
    return result;
   }catch(error){feedback=(error as Error).message.slice(0,600);}
