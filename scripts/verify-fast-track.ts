@@ -24,16 +24,21 @@ const issues=[...fastTrackFieldIssues(result.fields,context),...semanticReviewIs
 if(result.fields.membershipRequirement)issues.push(...validateMembership(result.fields.membershipRequirement as MembershipRequirement,input.membershipCatalog));
 if(issues.length)throw Error(issues.join('; '));
 // The approved baseline is loaded after the model call and is never supplied as the answer to the model.
-let baselineCompared=false;
+const report={jobId:id,offerId:input.offerId,businessWrites:0,baselineCompared:false,tokens,costCny,review:result.review,passed:false,baseline:null as Record<string,unknown>|null,errors:[] as string[]};
+const saveReport=()=>writeFileSync('fast-track-semantic-verification.json',JSON.stringify(report,null,2));
+saveReport();
+console.log('FAST_TRACK_SEMANTIC_RESULT',JSON.stringify(result.review));
 if(input.offerId){
  const base=(process.env.API_BASE??'https://ai-yangmao.com').replace(/\/$/,'');
  const r=await fetch(`${base}/api/offers/${encodeURIComponent(input.offerId)}`,{signal:AbortSignal.timeout(30000)});
  if(!r.ok)throw Error(`Baseline read failed: ${r.status}`);
  const {offer}=await r.json() as {offer:Record<string,unknown>};
- for(const key of ['type','modalities','audience'])if(JSON.stringify(result.fields[key])!==JSON.stringify(offer[key]))throw Error(`Semantic result differs from approved baseline: ${key}`);
- if(Array.isArray(offer.requirements)&&offer.requirements.includes('net')&&!(result.fields.requirements as string[]).includes('net'))throw Error('Missing net compared with approved baseline');
- baselineCompared=true;
+ report.baseline=Object.fromEntries(['type','modalities','audience','requirements'].map(k=>[k,offer[k]]));
+ for(const key of ['type','modalities','audience'])if(JSON.stringify(result.fields[key])!==JSON.stringify(offer[key]))report.errors.push(`Semantic result differs from approved baseline: ${key}`);
+ if(Array.isArray(offer.requirements)&&offer.requirements.includes('net')&&!(result.fields.requirements as string[]).includes('net'))report.errors.push('Missing net compared with approved baseline');
+ report.baselineCompared=true;
 }
-const report={jobId:id,offerId:input.offerId,businessWrites:0,baselineCompared,tokens,costCny,review:result.review,passed:true};
-writeFileSync('fast-track-semantic-verification.json',JSON.stringify(report,null,2));
+report.passed=report.errors.length===0;
+saveReport();
+if(!report.passed)throw Error(report.errors.join('; '));
 console.log('FAST_TRACK_SEMANTIC_VERIFIED',JSON.stringify(report));

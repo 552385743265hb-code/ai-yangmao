@@ -127,7 +127,7 @@ jobs:
           OFFICIAL_REVIEW_LIMIT: ${{ inputs.official_review_limit || vars.OFFICIAL_REVIEW_LIMIT || '8' }}
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        if: ${{ inputs.fast_track_review_job != '' && inputs.fast_track_review_job != null }}
+        if: ${{ always() && inputs.fast_track_review_job != '' && inputs.fast_track_review_job != null }}
         with:
           name: fast-track-semantic-verification
           path: fast-track-semantic-verification.json
