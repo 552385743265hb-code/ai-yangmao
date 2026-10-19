@@ -43,3 +43,13 @@ it('keeps first-use trials and explicitly exclusive audiences when supported by 
  const result=makeSemanticReview({...wrong,requirements:['none']},{type:{value:'trial',quote:c.benefit},modalities:[{value:'video',quote:c.benefit}],audience:{value:'new',quote:c.benefit}},c,'review');
  expect(result.issues).toEqual([]);expect(result.fields).toMatchObject({type:'trial',audience:'new'});
 });
+
+it('rejects perk as well as trial for a globally free task with a fixed end date',()=>{
+ const c={...context,benefit:'Perplexity有效付费会员在Computer使用/reverse-engineer技能的任务可免费至2026年10月31日，每人最多10000 credits'};
+ for(const type of ['trial','perk','standing'])expect(fastTrackFieldIssues({...wrong,type},c).join(' ')).toContain('type:');
+});
+it('does not reclassify a genuine member bonus as global free access',()=>{
+ const c={...context,benefit:'Paid subscribers get 500 bonus credits, valid until October 31.',sourceText:'Paid subscribers get 500 bonus credits, valid until October 31.'};
+ const fields={...wrong,type:'perk',audience:'all',modalities:['text'],requirements:['net','member:Perplexity Pro']};
+ expect(fastTrackFieldIssues(fields,c).filter(i=>i.startsWith('type:'))).toEqual([]);
+});
