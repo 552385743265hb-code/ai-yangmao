@@ -15,7 +15,7 @@ export type SemanticFacts=z.infer<typeof semanticFactsSchema>;
 export const semanticReviewSchema=z.object({
  version:z.literal('fast-track-semantics-v1'),model:z.string().min(1).max(120),
  initialFields:z.record(z.string(),z.unknown()),reviewedFields:z.record(z.string(),z.unknown()),
- facts:semanticFactsSchema,changes:z.array(z.object({field:z.enum(SEMANTIC_KEYS),before:z.unknown(),after:z.unknown()})).max(4),
+ facts:semanticFactsSchema,modelFacts:semanticFactsSchema.optional(),changes:z.array(z.object({field:z.enum(SEMANTIC_KEYS),before:z.unknown(),after:z.unknown()})).max(4),
 }).strict();
 export type SemanticReview=z.infer<typeof semanticReviewSchema>;
 const normal=(s:string)=>s.normalize('NFKC').replace(/\s+/g,' ').trim().toLowerCase();
@@ -73,11 +73,18 @@ export function applySemanticFacts(fields:ListingFields,facts:SemanticFacts,c:Se
 }
 const same=(a:unknown,b:unknown)=>JSON.stringify(a)===JSON.stringify(b);
 export function makeSemanticReview(initial:ListingFields,facts:SemanticFacts,c:SemanticContext,model:string):{fields:ListingFields;review:SemanticReview;issues:string[]}{
+ const modelFacts=facts;
+ const excerpt=(initial.excerpts as Record<string,unknown>|undefined)?.benefit;
+ const focus=c.benefit+'\n'+(typeof excerpt==='string'?excerpt:'');
+ if(globalAccess.test(focus)&&globalFree.test(focus)&&globalWindow.test(focus)&&!personalTrial.test(focus)&&facts.type.value!=='free'){
+  const q=globalAccess.test(c.benefit)&&globalWindow.test(c.benefit)?c.benefit:typeof excerpt==='string'?excerpt:facts.type.quote;
+  facts={...facts,type:{value:'free',quote:q}};
+ }
  const fields=applySemanticFacts(initial,facts,c);
  const issues=[...semanticFactIssues(facts,c),...semanticFieldIssues(fields,c)];
  const before=semanticFields(initial),after=semanticFields(fields);
  const changes=SEMANTIC_KEYS.filter(k=>!same(before[k],after[k])).map(field=>({field,before:before[field],after:after[field]}));
- return {fields,review:{version:'fast-track-semantics-v1',model,initialFields:before,reviewedFields:after,facts,changes},issues};
+ return {fields,review:{version:'fast-track-semantics-v1',model,initialFields:before,reviewedFields:after,facts,...(!same(modelFacts,facts)?{modelFacts}:{}),changes},issues};
 }
 export function semanticReviewIssues(fields:ListingFields,raw:unknown,c:SemanticContext,owner:ListingFields={}):string[]{
  const parsed=semanticReviewSchema.safeParse(raw);
