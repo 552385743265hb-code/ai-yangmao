@@ -5,7 +5,7 @@ import { MutationBuilder,commitIdentityMutation } from './commit';
 import { IdentityError } from './store';
 export async function aggregateIdentityLead(db:D1Database,leadId:number,forceReview=false,options:{preserveRejected?:boolean}={}):Promise<{status:string;offerIds:string[];taskIds:string[];deferredIds:string[]}|null> {
  const rows=await db.prepare(`WITH RECURSIVE linked AS (
- SELECT c.id,c.state,c.revision,c.receipt_json,c.entity_id,c.task_id FROM lead_candidate_links l JOIN intake_candidates c ON c.id=l.candidate_id WHERE l.lead_id=? ORDER BY c.id LIMIT 101
+ SELECT c.id,c.state,c.revision,c.receipt_json,c.entity_id,c.task_id FROM lead_candidate_links l JOIN intake_candidates c ON c.id=l.candidate_id WHERE l.lead_id=? AND NOT (c.extraction_version='lead-closure-v1' AND coalesce(json_extract(c.receipt_json,'$.reasonCodes[0]'),'')='lead_reanalysis_requested') ORDER BY c.id LIMIT 101
  ), task_routes(candidate_id,task_id) AS (
  SELECT id,task_id FROM linked WHERE task_id IS NOT NULL
  UNION SELECT r.candidate_id,m.canonical_task_id FROM task_routes r JOIN merge_task_sources m ON m.source_task_id=r.task_id AND m.status='active'

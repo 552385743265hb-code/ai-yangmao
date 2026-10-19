@@ -24,3 +24,22 @@ export async function closeIdentityLead(db:D1Database,lead:{id:number;url:string
  builder.update('leads',{status:'rejected',resolution:JSON.stringify({...resolution,identityCandidateIds:[candidateId],identityTaskIds:[]}),offer_id:resolution.offerIds?.[0]??lead.offerId,...(options.raw!==undefined?{raw:options.raw}:{})},'id=?',[lead.id]);
  const result=await commitIdentityMutation(db,builder.plan([],{status:'closed',candidateId,decisionId}));if(result.status==='conflict')throw new IdentityError(409,'lead closure changed; nothing applied');return result.value;
 }
+
+/** Reopen observation-only closure memory for lead extraction, not for offer identity comparison. */
+export async function reopenLeadClosure(db:D1Database,input:{leadId:number;decisionId:string;expectedRevision:number;requestId:string;actor:string}) {
+ const command='lead-reanalyze:'+input.requestId,hash=await sha256(stableJson(input));
+ const row=await db.prepare(`SELECT d.candidate_id,d.scope_json,c.raw_candidate_json,c.receipt_json,c.revision,c.extraction_version
+ FROM review_decisions d JOIN intake_candidates c ON c.id=d.candidate_id
+ WHERE d.id=? AND d.action='reject' AND d.entity_id IS NULL
+ AND EXISTS(SELECT 1 FROM lead_candidate_links l WHERE l.lead_id=? AND l.candidate_id=c.id)`).bind(input.decisionId,input.leadId).first<{candidate_id:string;scope_json:string;raw_candidate_json:string;receipt_json:string;revision:number;extraction_version:string}>();
+ if(!row||row.extraction_version!=='lead-closure-v1'||JSON.parse(row.scope_json).kind!=='observation_only'||JSON.parse(row.raw_candidate_json).candidate?.legacyLeadId!==input.leadId)throw new IdentityError(409,'lead closure is not an observation-only snapshot');
+ const decisionId=crypto.randomUUID(),builder=new MutationBuilder(db,command,hash);
+ builder.require('EXISTS(SELECT 1 FROM intake_candidates WHERE id=? AND revision=?)',[row.candidate_id,input.expectedRevision]);
+ builder.require('NOT EXISTS(SELECT 1 FROM review_decisions WHERE supersedes_id=?)',[input.decisionId]);
+ builder.insert('review_decisions',{id:decisionId,candidate_id:row.candidate_id,action:'reopen',reason_code:'other',reason_text:'管理员抽查确认误关，恢复线索研判与官方补证',basis_json:JSON.stringify({leadId:input.leadId,resumeLeadReview:true}),scope_json:row.scope_json,reopen_policy_json:'{"kind":"manual","missingFacts":[]}',rules_version:RULES_VERSION,evidence_refs_json:'[]',actor:input.actor,idempotency_key:command,supersedes_id:input.decisionId});
+ // The old rejection snapshot stays immutable and linked for audit, but is not an active extraction result.
+ builder.update('intake_candidates',{decision_id:decisionId,revision:row.revision+1,receipt_json:JSON.stringify({...JSON.parse(row.receipt_json),decisionId,taskId:null,outcome:'evidence_reopen',retryable:false,reasonCodes:['lead_reanalysis_requested']})},'id=?',[row.candidate_id]);
+ builder.assertOwnership('intake_candidates',row.candidate_id);
+ const result=await commitIdentityMutation(db,builder.plan([],{decisionId}));
+ if(result.status==='conflict')throw new IdentityError(409,'lead closure changed; refresh recovery');return result.value;
+}

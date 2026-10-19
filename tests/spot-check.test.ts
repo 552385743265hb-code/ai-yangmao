@@ -8,6 +8,8 @@ import { IdentityService } from '../src/worker/identity/service';
 import { unknownIdentityTerms } from '../src/worker/identity/adapters';
 import { displayOffer } from './fixtures/identity/offer';
 import { terms, known } from './fixtures/identity/terms';
+import { closeIdentityLead } from '../src/worker/identity/lead-closure';
+import { leadReviewDue } from '../src/shared/lead-review';
 import { guessCategory } from '../src/worker/screening/spot-check';
 
 let f: ReturnType<typeof identityDb>;
@@ -226,4 +228,42 @@ it('fifteen correct confirmations stay within one fifty-statement admin request'
   let count = 0; f.inject(() => { count++; if (count > 50) throw new Error('D1 query budget'); });
   expect((await call('admin/screening/spot-check/confirm', { items })).body).toEqual({ confirmed: 15 });
   expect(count).toBeLessThanOrEqual(50);
+});
+
+it('wrong requeues a raw lead closure for extraction instead of reopening its full-page refusal snapshot as an identity card', async () => {
+  const row = f.sqlite.prepare('SELECT * FROM leads WHERE id=1').get() as any;
+  await closeIdentityLead(f.db, { id: 1, url: row.url, status: row.status, title: row.title, raw: row.raw, resolution: null, offerId: null },
+    { status: 'closed', jobId: 'raw-close', attempts: 1, inconclusive: 0, checkedAt: new Date().toISOString(), nextAttemptAt: null,
+      reason: '模型将学生福利误判为付费消费', queries: [], candidates: [] }, 'Navigation\nStudent benefit body\nRelated topics');
+  const snapshot = f.sqlite.prepare('SELECT id,raw_candidate_json FROM intake_candidates').get() as any;
+  const result = await call('admin/screening/spot-check/1/wrong', {});
+  expect(result.status).toBe(200);
+  expect(result.body.recovery).toMatchObject({ state: 'completed', taskIds: [], reanalysisRequested: true });
+  const saved = f.sqlite.prepare('SELECT status,resolution,created_at FROM leads WHERE id=1').get() as any;
+  const resolution = JSON.parse(saved.resolution);
+  expect(resolution).toMatchObject({ status: 'retry', attempts: 0, identityTaskIds: [] });
+  expect(leadReviewDue({ ...row, status: saved.status, resolution, createdAt: saved.created_at })).toBe(true);
+  expect(f.sqlite.prepare('SELECT count(*) n FROM review_tasks').get()).toEqual({ n: 0 });
+  expect(f.sqlite.prepare('SELECT raw_candidate_json FROM intake_candidates WHERE id=?').get(snapshot.id)).toEqual({ raw_candidate_json: snapshot.raw_candidate_json });
+  expect(f.sqlite.prepare("SELECT count(*) n FROM review_decisions WHERE action='reject'").get()).toEqual({ n: 1 });
+  expect(f.sqlite.prepare("SELECT count(*) n FROM review_decisions WHERE action='reopen'").get()).toEqual({ n: 1 });
+  expect(await aggregateIdentityLead(f.db, 1)).toBeNull();
+  expect(f.sqlite.prepare('SELECT resolution FROM leads WHERE id=1').get()).toEqual({ resolution: saved.resolution });
+  const replay = await call('admin/screening/spot-check/1/wrong', {});
+  expect(replay.body.recovery).toEqual(result.body.recovery);
+  expect(f.sqlite.prepare("SELECT count(*) n FROM review_decisions WHERE action='reopen'").get()).toEqual({ n: 1 });
+});
+
+it('raw snapshot recovery resumes after interruption without creating identity cards or duplicate reopen decisions', async () => {
+  const row=f.sqlite.prepare('SELECT * FROM leads WHERE id=1').get() as any;
+  await closeIdentityLead(f.db,{id:1,url:row.url,status:row.status,title:row.title,raw:row.raw,resolution:null,offerId:null},
+    {status:'closed',jobId:'raw-interruption',attempts:1,inconclusive:0,checkedAt:new Date().toISOString(),nextAttemptAt:null,reason:'误关',queries:[],candidates:[]},'Original community post body.');
+  let stopped=false;f.inject(sql=>{if(!stopped&&sql.includes('SELECT DISTINCT t.id FROM lead_candidate_links')){stopped=true;throw Error('interrupted after reopen');}});
+  expect((await call('admin/screening/spot-check/1/wrong',{})).status).toBe(500);f.inject();
+  const result=await call('admin/screening/spot-check/1/wrong',{});
+  expect(result.status).toBe(200);expect(result.body.recovery).toMatchObject({state:'completed',taskIds:[],reanalysisRequested:true});
+  const resolution=JSON.parse(String(f.sqlite.prepare('SELECT resolution FROM leads WHERE id=1').get()?.resolution));
+  expect(resolution.status).toBe('retry');expect(resolution.nextAttemptAt).toBeTruthy();
+  expect(f.sqlite.prepare('SELECT count(*) n FROM review_tasks').get()).toEqual({n:0});
+  expect(f.sqlite.prepare("SELECT count(*) n FROM review_decisions WHERE action='reopen'").get()).toEqual({n:1});
 });

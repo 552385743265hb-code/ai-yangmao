@@ -155,6 +155,28 @@ export async function exaContents(url: string, timeoutMs = 30000): Promise<Fetch
   } catch { return null; }
 }
 
+/** Only recognize Linux.do topic post boundaries; unknown formats remain available for manual review. */
+function isCommunityTopic(url:string){try{const u=new URL(url);return u.hostname==='linux.do'&&/^\/t\//.test(u.pathname);}catch{return false;}}
+function communityHtmlBody(url:string,html:string):string|null {
+  if(!isCommunityTopic(url))return null;
+  const {document}=parseHTML(html),posts=[...document.querySelectorAll('article .cooked, .topic-body .cooked')];
+  if(!posts.length)return null;
+  for(const post of posts){
+    for(const image of post.querySelectorAll('img'))image.replaceWith(document.createTextNode(`![${image.getAttribute('alt')??'image'}](${image.getAttribute('src')??''})`));
+    for(const link of post.querySelectorAll('a[href]'))link.replaceWith(document.createTextNode(`[${link.textContent??''}](${link.getAttribute('href')})`));
+  }
+  const title=document.querySelector('h1')?.textContent?.trim();
+  const body=posts.map(post=>htmlToText(post.innerHTML)).filter(Boolean).join('\n\n');
+  return body?[title,body].filter(Boolean).join('\n\n'):null;
+}
+function communityMarkdownBody(url:string,text:string):string {
+  if(!isCommunityTopic(url))return text;
+  const first=/^## post by .+$/m.exec(text);if(!first)return text;
+  const title=text.match(/^# (.+)$/m)?.[0];
+  const body=text.slice(first.index).split(/^### Related topics\s*$/m)[0].trim();
+  return [title,body].filter(Boolean).join('\n\n');
+}
+
 export async function fetchPage(url: string, opts: { timeoutMs?: number; tries?: number; minimumTextLength?: number } = {}): Promise<FetchedPage> {
   assertSafeUrl(url);
   const status=officialStatusKey(url);
@@ -174,7 +196,8 @@ export async function fetchPage(url: string, opts: { timeoutMs?: number; tries?:
   try {
     const page = await fetchTextWithUrl(url, { accept: 'text/html', ...opts });
     const html = page.text; finalUrl = page.finalUrl;
-    const full = htmlToText(html), read = readableText(html, url);
+    const topic=communityHtmlBody(url,html);
+    const full = topic??htmlToText(html), read = topic??readableText(html, url);
     // 哪个版本保留的羊毛相关内容多就用哪个；一样多时用更干净的 Readability
     if (read.length >= 800 && relevantText(read).length >= relevantText(full).length) { text = read; via = 'readability'; } else text = full;
   } catch(e) { if(e instanceof UnsafeTargetError)throw e; /* 直接抓失败就走 Jina */ }
@@ -189,7 +212,7 @@ export async function fetchPage(url: string, opts: { timeoutMs?: number; tries?:
   const declared = raw.match(/^URL Source:\s*(https?:\/\/\S+)/m)?.[1];
   const sourceVerified = declared === url && !/^Warning:.*(?:error|failed|403|404|captcha)/im.test(raw) && finalUrl === url;
   const body = raw.replace(/^[\s\S]*?Markdown Content:\n/, '');
-  return { text: body.replace(/\n\s*\n+/g, '\n').trim(), via:'jina',originalUrl:url,finalUrl,fetchedUrl:res.url||`https://r.jina.ai/${url}`,fetchMethod:'jina',truncated:false,sourceVerified };
+  return { text: communityMarkdownBody(url,body).replace(/\n\s*\n+/g, '\n').trim(), via:'jina',originalUrl:url,finalUrl,fetchedUrl:res.url||`https://r.jina.ai/${url}`,fetchMethod:'jina',truncated:false,sourceVerified };
 }
 
 // 羊毛关键词两档：
