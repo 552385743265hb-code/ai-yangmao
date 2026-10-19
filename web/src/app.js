@@ -2333,7 +2333,7 @@ async function admLeads() {
   await load(true);
 }
 /* ⚡ 快速上架：管理员担保的官方链接 + 主要权益，免费模型补其余字段，补齐即上架。 */
-const FT_STATE = { queued: '排队等模型读取', extracting: '模型读取中', publishing: '正在上架', needs_owner: '需要你补充', published: '已上架' };
+const FT_STATE = { queued: '排队等模型读取', extracting: '模型读取中', publishing: '正在上架', needs_owner: '自动补全未完成', published: '已上架', rejected: '已拒绝' };
 const SPOT_CATS = ['non_ai', 'relay_station', 'account_pool', 'personal_giveaway', 'ordinary_discount', 'paid_bundle', 'model_news_only', 'duplicate', 'expired'];
 async function loadSpotCheck(body) {
   body.textContent = '正在读取…';
@@ -2422,14 +2422,14 @@ async function loadIntakeRules(body) {
 }
 function fastTrackFormHtml(p = {}) {
   return `<form data-fast-track class="card" style="display:flex;flex-direction:column;gap:10px;max-width:640px${p.inline ? ';margin-top:8px' : ''}">
-    <p class="sub" style="margin:0"><b>⚡ 快速上架</b>：你确认是官方发布或亲测可领的权益，跳过筛查和审核直接上架。链接会登记为该厂商的官方地址；其余字段由免费模型从链接读取，读不出的再请你补。不发即时推送，次日飞书日报带上。</p>
+    <p class="sub" style="margin:0"><b>⚡ 快速上架</b>：你确认是官方发布或亲测可领的权益，跳过筛查和审核直接上架。链接会登记为该厂商的官方地址；其余字段（含会员条件）由模型读取并补全，校验失败会自动纠正重试。不发即时推送，次日飞书日报带上。</p>
     <label class="field">厂商<select name="platformId"><option value="">＋ 新厂商（在下面填写）</option>${adminPlatformOptions(p.platformId)}</select></label>
     <div class="row" data-ft-new style="gap:8px;flex-wrap:wrap"><input name="newName" placeholder="新厂商名称"><select name="newType">${Object.entries(PTYPE).map(([k, v]) => `<option value="${k}" ${k === 'new' ? 'selected' : ''}>${v.l}</option>`).join('')}</select></div>
     <label class="field">官方链接<input type="url" name="url" required placeholder="https://（官网、公众号文章、厂商 X 推文）" value="${esc(p.url || '')}"></label>
     <label class="field">主要权益<input name="benefit" required minlength="2" maxlength="500" placeholder="比如：Odyssey-3 公开研究预览，可免费试用" value="${esc(p.benefit || '')}"></label>
     <label class="field">依据<select name="basis"><option value="official">官方发布</option><option value="tested">我亲测可领</option></select></label>
     <details><summary class="small">可选：标题、日期、备注</summary><label class="field">标题<input name="title" maxlength="120" value="${esc(p.title || '')}"></label><div class="row" style="gap:8px"><label class="field">开始<input type="date" name="claimStart"></label><label class="field">截止<input type="date" name="claimEnd"></label></div><label class="field">备注（给模型的提示）<input name="note" maxlength="1000" value="${esc(p.note || '')}"></label></details>
-    <details data-ft-membership><summary class="small">可选：需要会员才能领？选择会员资格（选好后一次上架）</summary><div class="field" data-membership-editor>展开后加载会员目录…</div></details>
+    <details data-ft-membership><summary class="small">可选：手动指定会员资格（留空由模型补全）</summary><div class="field" data-membership-editor>展开后加载会员目录…</div></details>
     <button class="btn pri" type="submit">⚡ 快速上架</button><p class="small" role="status" data-ft-msg></p></form>`;
 }
 function bindFastTrackForm(form, leadId, onDone, link = {}) {
@@ -2473,14 +2473,16 @@ function fastTrackCompleteHtml(j) {
     claimEnd: '<label class="field">截止日期<input type="date" name="claimEnd"></label>',
     membershipRequirement: `<div class="field"><span>会员资格${memberText.length ? `<span class="small muted">（模型读到：${esc(memberText.join('、'))}）</span>` : ''}</span><div data-membership-editor>正在加载会员资格目录…</div></div>`,
   };
-  return `<form data-ft-complete style="display:flex;flex-direction:column;gap:8px;margin-top:6px"><p class="small">${j.missing.length ? '模型没读出这些字段，补上后立即上架：' + j.missing.map(k => esc(FIELD_L[k] || k)).join('、') : '可以修正字段后再上架，或让模型重新读取。'}</p>
+  return `<form data-ft-complete style="display:flex;flex-direction:column;gap:8px;margin-top:6px"><p class="small">${j.missing.length ? '模型多次补全仍未解决：' + j.missing.map(k => esc(FIELD_L[k] || k)).join('、') : '可以让模型重试；如有额外信息，也可手动修正。'}</p>
     ${all.filter(k => need.has(k)).map(k => field[k]).join('')}<div class="row" style="gap:8px"><button class="btn sm pri" type="submit">补齐并上架</button><button class="btn sm" type="button" data-ft-retry>让模型重新读取</button></div></form>`;
 }
 async function loadFastTrackJobs(box) {
   try {
-    const { jobs } = await adm('/fast-track');
+    let { jobs } = await adm('/fast-track');
+    const paused = jobs.filter(j => j.state === 'needs_owner');
+    if (paused.length) { await Promise.all(paused.map(j => adm(`/fast-track/${j.id}/reconcile`, {}).catch(() => null))); ({jobs} = await adm('/fast-track')); }
     box.innerHTML = jobs.length ? jobs.map(j => `<div class="card" data-ft-job="${esc(j.id)}" style="margin:6px 0"><b>${esc(j.platformName)}</b> · ${esc(j.benefit)}
-      <p class="small">${esc(FT_STATE[j.state] || j.state)}${j.offerId ? ` · <a href="/#offer-${esc(j.offerId)}" target="_blank" rel="noopener">查看条目</a>` : ''}${j.leadId ? ` · 线索 #${j.leadId}` : ''} · <a href="${esc(j.url)}" target="_blank" rel="noopener">官方链接 ↗</a>${j.error ? ` · ${esc(j.error)}` : ''}</p>
+      <p class="small">${esc(FT_STATE[j.state] || j.state)}${j.offerId ? ` · <a href="/#offer-${esc(j.offerId)}" target="_blank" rel="noopener">查看条目</a>` : ''}${j.leadId ? ` · 线索 #${j.leadId}` : ''} · <a href="${esc(j.url)}" target="_blank" rel="noopener">官方链接 ↗</a>${j.error ? ` · ${esc(j.error)}` : ''}${j.resolution?.reason ? ` · ${esc(j.resolution.reason)}` : ''}</p>
       ${j.state === 'needs_owner' ? fastTrackCompleteHtml(j) : ''}${j.state === 'publishing' ? '<button class="btn sm" type="button" data-ft-advance>继续上架</button>' : ''}</div>`).join('') : '<p class="small muted">还没有快速上架任务。</p>';
     const job = card => jobs.find(j => j.id === card.dataset.ftJob), need = card => job(card)?.missing || [];
     box.querySelectorAll('[data-ft-job]').forEach(card => {

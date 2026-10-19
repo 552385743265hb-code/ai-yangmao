@@ -34,11 +34,11 @@ it('the needs-owner panel asks for a catalog membership and submits the picked p
   expect(document.querySelector('[data-ft-complete]')!.textContent).toContain('模型读到：Higgsfield 付费订阅');
   const form = document.querySelector('[data-ft-complete]')!;
   form.dispatchEvent(new window.Event('submit', { cancelable: true })); await tick();
-  expect(posts).toEqual([]);
+  expect(posts.filter(p => !p.url.endsWith('/reconcile'))).toEqual([]);
   pick(document, window);
   form.dispatchEvent(new window.Event('submit', { cancelable: true })); await tick();
-  expect(posts[0].url).toContain('/fast-track/j1/complete');
-  expect(posts[0].body.fields.membershipRequirement).toMatchObject({ status: 'confirmed', catalogRevision: 3, evidenceUrls: [job.url], anyOf: [{ allOf: [{ productId: 'higgsfield', planIds: ['higgsfield-pro'] }] }] });
+  expect(posts.some(p => p.url.endsWith('/fast-track/j1/complete'))).toBe(true);
+  expect(posts.find(p => p.url.endsWith('/complete'))!.body.fields.membershipRequirement).toMatchObject({ status: 'confirmed', catalogRevision: 3, evidenceUrls: [job.url], anyOf: [{ allOf: [{ productId: 'higgsfield', planIds: ['higgsfield-pro'] }] }] });
 });
 
 it('the fast-track form loads the catalog only when opened and sends the picked membership with the job', async () => {

@@ -1,5 +1,5 @@
 /** Fast-track listing fields: shared by the Worker (publish gate) and the pipeline (paid fallback decision). */
-import { normalizeRequirements } from './ingest';
+import { collectedOfferIn, normalizeRequirements } from './ingest';
 
 export const BASIC_FIELDS = ['title', 'type', 'claimMethod', 'valueText', 'modalities', 'requirements', 'endKind'] as const;
 export type FastTrackFields = Record<string, unknown>;
@@ -15,13 +15,17 @@ export function mergeFastTrackFields(extracted: FastTrackFields, owner: FastTrac
   // Models often call an open-ended preview “standing”; only standing/apply offers may be (owner choices are kept).
   const recurring = fields.type === 'standing' || fields.type === 'apply';
   if (!owner.endKind && !owner.claimEnd && recurring !== (fields.endKind === 'standing')) fields.endKind = recurring ? 'standing' : 'unknown';
+  if (typeof fields.sourceTz === 'string') {
+    const offset = /^(?:UTC|GMT)\s*([+-])(\d{1,2})(?::00)?$/i.exec(fields.sourceTz.trim());
+    if (offset && Number(offset[2]) <= 14) fields.sourceTz = Number(offset[2]) === 0 ? 'UTC' : `Etc/GMT${offset[1] === '+' ? '-' : '+'}${Number(offset[2])}`;
+  }
   if (!fields.sourceTz) fields.sourceTz = owner.claimEnd || owner.claimStart ? 'Asia/Shanghai' : 'UTC';
   return fields;
 }
 
 /**
- * The model never fills a catalog membership: a member: requirement publishes only once the owner picked one
- * (or chose “no membership needed”). Worker-only, so the pipeline does not spend a paid fallback on it.
+ * Both model and owner may supply a structured membership; a bare member: label is incomplete.
+ * Pipeline and Worker share this check so model fallback can fill the catalog selection.
  */
 export function missingOwnerChoices(fields: FastTrackFields): string[] {
   const member = Array.isArray(fields.requirements) && fields.requirements.some(r => typeof r === 'string' && r.startsWith('member:'));
@@ -38,4 +42,16 @@ export function missingBasicFields(fields: FastTrackFields): string[] {
   });
   if (fields.endKind === 'date' && !fields.claimEnd) missing.push('claimEnd');
   return missing;
+}
+
+/** The model fallback must see the same schema failures as the publishing endpoint. */
+export function fastTrackFieldIssues(fields: FastTrackFields): string[] {
+  const basic = missingBasicFields(fields);
+  const parsed = collectedOfferIn.safeParse({
+    ...fields, id: 'fast-track-preflight', platformId: 'preflight',
+    valueText: String(fields.valueText ?? '').slice(0, 200),
+    evidence: {url:'https://example.com/',tier:'official',capturedAt:'2026-01-01T00:00:00Z',excerpts:{benefit:'Administrator authorized benefit'}},
+  });
+  if (Array.isArray(fields.requirements) && fields.requirements.includes('pay:金额未写明')) basic.push('requirements: 请依据原文明确是否必须先充值及充值条件，不得把按量计费当作充值门槛');
+  return [...new Set([...basic, ...missingOwnerChoices(fields), ...(!parsed.success ? parsed.error.issues.map(i => `${i.path.join('.')}: ${i.message}`) : [])])];
 }

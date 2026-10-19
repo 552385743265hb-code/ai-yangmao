@@ -92,3 +92,18 @@ it('drives a multi-request publish to completion', async () => {
   expect(await runFastTrack(options())).toMatchObject({ published: 1 });
   expect(h.advances()).toBe(3);
 });
+
+it('uses the paid fallback for schema-invalid free fields even when every basic key is present', async () => {
+ const h=harness({freeOffer:{...offer,claimMethod:'login',sourceTz:'Mars/Somewhere'}});
+ const {runFastTrack}=await import('../pipeline/fast-track');
+ expect(await runFastTrack(options())).toMatchObject({published:1});
+ expect(h.called('api.deepseek.com')).toHaveLength(1);
+ expect(h.result().fields.claimMethod).toBe('signup');
+});
+
+it('does not accept an unmapped member label as a complete free-model result', async () => {
+ const h=harness({freeOffer:{...offer,requirements:['member:Odyssey Pro']}});
+ const {runFastTrack}=await import('../pipeline/fast-track');
+ await runFastTrack(options());
+ expect(h.called('api.deepseek.com')).toHaveLength(1);
+});

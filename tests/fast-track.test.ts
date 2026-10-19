@@ -48,6 +48,7 @@ it('a new vendor plus an official URL goes live once the free model fills the ba
 it('missing basic fields wait for the owner, who completes them and publishes immediately', async () => {
   const created = await call('admin/fast-track', { platformId: 'vendor', url: 'https://vendor.example/rewards', benefit: '注册即送 10 美元额度', basis: 'tested' });
   await ingest(`fast-track/${created.body.jobId}/claim`, {});
+  f.sqlite.prepare('UPDATE fast_track_jobs SET attempts=3 WHERE id=?').run(created.body.jobId);
   const partial = await ingest(`fast-track/${created.body.jobId}/result`, { fields: { title: '注册赠额', type: 'new', modalities: ['text'], requirements: ['unknown'] }, sourceText: page });
   expect(partial.body).toMatchObject({ state: 'needs_owner' });
   expect(partial.body.missing).toEqual(expect.arrayContaining(['claimMethod', 'requirements', 'endKind']));
@@ -65,6 +66,7 @@ it('a member perk waits for the owner\'s catalog membership, then publishes with
   const created = await call('admin/fast-track', { newPlatform: { name: 'Odyssey' }, url: 'https://odyssey.world/introducing-odyssey-3', benefit: 'Odyssey-3 Pro 会员 7 天无限使用' });
   f.sqlite.prepare('UPDATE membership_catalog SET revision=1, data_json=? WHERE id=1').run(JSON.stringify(catalog));
   await ingest(`fast-track/${created.body.jobId}/claim`, {});
+  f.sqlite.prepare('UPDATE fast_track_jobs SET attempts=3 WHERE id=?').run(created.body.jobId);
   // A bare `member` used to fail the listing schema with nothing for the owner to fill.
   const waiting = await ingest(`fast-track/${created.body.jobId}/result`, { fields: memberPerk, sourceText: page, model: 'free' });
   expect(waiting.body).toMatchObject({ state: 'needs_owner', missing: ['membershipRequirement'] });
@@ -92,6 +94,7 @@ it('a stale catalog choice hands the job back with the server reason, and a corr
   f.sqlite.prepare('UPDATE membership_catalog SET revision=2, data_json=? WHERE id=1').run(JSON.stringify(catalog));
   const created = await call('admin/fast-track', { newPlatform: { name: 'Odyssey' }, url: 'https://odyssey.world/introducing-odyssey-3', benefit: 'Odyssey-3 Pro 会员 7 天无限使用', membershipRequirement: proMembership(1) });
   await ingest(`fast-track/${created.body.jobId}/claim`, {});
+  f.sqlite.prepare('UPDATE fast_track_jobs SET attempts=3 WHERE id=?').run(created.body.jobId);
   const stale = await settle(created.body.jobId, await ingest(`fast-track/${created.body.jobId}/result`, { fields: memberPerk, sourceText: page, model: 'free' }));
   expect(stale.body.state).toBe('needs_owner');
   expect(stale.body.error).toContain('会员目录');
@@ -233,6 +236,7 @@ it('owner corrections after a readiness failure use a new request revision witho
 it('only an administrator can correct a failed official task to tested evidence',async()=>{
   const created=await call('admin/fast-track',{newPlatform:{name:'Odyssey'},url:'https://odyssey.world/preview',benefit:'每日登录奖励200积分，24小时有效',basis:'official'});
   await ingest(`fast-track/${created.body.jobId}/claim`,{});
+  f.sqlite.prepare('UPDATE fast_track_jobs SET attempts=3 WHERE id=?').run(created.body.jobId);
   const partial=await ingest(`fast-track/${created.body.jobId}/result`,{fields:{...extracted,requirements:['unknown']},sourceText:page});
   expect(partial.body.state).toBe('needs_owner');
   const fields={requirements:['none']};
@@ -242,4 +246,60 @@ it('only an administrator can correct a failed official task to tested evidence'
   expect(done.body.state).toBe('published');
   expect(f.sqlite.prepare('SELECT basis FROM fast_track_jobs WHERE id=?').get(created.body.jobId)).toEqual({basis:'tested'});
   expect(JSON.parse((f.sqlite.prepare('SELECT evidence FROM offers WHERE id=?').get(done.body.offerId) as any).evidence).tier).toBe('tested');
+});
+
+it('normalizes a model UTC offset before publishing the owner-authorized job', async () => {
+  const created = await call('admin/fast-track', { platformId: 'vendor', url: 'https://vendor.example/rewards', benefit: '注册即送 10 美元额度' });
+  await ingest(`fast-track/${created.body.jobId}/claim`, {});
+  const r = await settle(created.body.jobId, await ingest(`fast-track/${created.body.jobId}/result`, { fields: {...extracted, sourceTz: 'UTC+8'}, sourceText: page }));
+  expect(r.body.state).toBe('published');
+});
+
+it('returns schema failures to the model with previous fields and repair feedback', async () => {
+  const created = await call('admin/fast-track', { platformId: 'vendor', url: 'https://vendor.example/rewards', benefit: '注册即送 10 美元额度' });
+  await ingest(`fast-track/${created.body.jobId}/claim`, {});
+  const r = await ingest(`fast-track/${created.body.jobId}/result`, { fields: {...extracted, claimMethod: 'login'}, sourceText: page });
+  expect(r.body.state).toBe('queued');
+  const next = await ingest(`fast-track/${created.body.jobId}/claim`, {});
+  expect(next.body.job.repairFeedback).toContain('claimMethod');
+  expect(next.body.job.previousFields.claimMethod).toBe('login');
+});
+
+it('reconciles an already approved progress offer before trying stale extraction again', async () => {
+  const created = await call('admin/fast-track', { platformId: 'vendor', url: 'https://vendor.example/rewards', benefit: '注册即送 10 美元额度' });
+  const id=created.body.jobId;
+  await ingest(`fast-track/${id}/claim`, {});
+  const done=await settle(id,await ingest(`fast-track/${id}/result`, {fields:extracted,sourceText:page}));
+  f.sqlite.prepare("UPDATE fast_track_jobs SET state='needs_owner',error='old error' WHERE id=?").run(id);
+  const reconciled=await call(`admin/fast-track/${id}/reconcile`,{});
+  expect(reconciled.body).toMatchObject({state:'published',offerId:done.body.offerId});
+});
+
+it('accepts model-completed verified catalog membership without a manual selector', async () => {
+ f.sqlite.prepare('UPDATE membership_catalog SET revision=1,data_json=? WHERE id=1').run(JSON.stringify(catalog));
+ const created=await call('admin/fast-track',{newPlatform:{name:'Odyssey'},url:'https://odyssey.world/introducing-odyssey-3',benefit:'Odyssey Pro 7 天免费使用'});
+ const claim=await ingest(`fast-track/${created.body.jobId}/claim`,{});
+ expect(claim.body.job.membershipCatalog.revision).toBe(1);
+ const done=await settle(created.body.jobId,await ingest(`fast-track/${created.body.jobId}/result`,{fields:{...memberPerk,membershipRequirement:proMembership(1)},sourceText:page}));
+ expect(done.body.state).toBe('published');
+});
+
+it('reconciles a rejected lead and never queues or publishes it again', async () => {
+ f.sqlite.exec("INSERT INTO leads(id,origin,url,status,title) VALUES(9001,'manual','https://vendor.example/rewards','reviewing','paid discount')");
+ const created=await call('admin/fast-track',{platformId:'vendor',url:'https://vendor.example/rewards',benefit:'低价调用',leadId:9001});
+ f.sqlite.prepare("UPDATE fast_track_jobs SET state='needs_owner' WHERE id=?").run(created.body.jobId);
+ f.sqlite.prepare("UPDATE leads SET status='rejected',resolution=? WHERE id=9001").run(JSON.stringify({reason:'仍扣积分，不是免费'}));
+ await ingest('fast-track/queue');
+ expect((await call('admin/fast-track')).body.jobs[0]).toMatchObject({state:'rejected',resolution:{reason:'仍扣积分，不是免费'}});
+ expect((await ingest(`fast-track/${created.body.jobId}/claim`,{})).status).toBe(409);
+});
+
+it('does not reconcile a lead accidentally linked to another platform', async () => {
+ const created=await call('admin/fast-track',{platformId:'vendor',url:'https://vendor.example/rewards',benefit:'免费调用'});
+ await ingest(`fast-track/${created.body.jobId}/claim`,{});
+ const done=await settle(created.body.jobId,await ingest(`fast-track/${created.body.jobId}/result`,{fields:extracted,sourceText:page}));
+ f.sqlite.exec("INSERT INTO platforms(id,name,type,status,site) VALUES('other','Other','tool','approved','https://other.example')");
+ f.sqlite.prepare("UPDATE fast_track_jobs SET state='needs_owner',platform_id='other' WHERE id=?").run(created.body.jobId);
+ expect((await call(`admin/fast-track/${created.body.jobId}/reconcile`,{})).body.state).toBe('needs_owner');
+ expect(done.body.state).toBe('published');
 });
