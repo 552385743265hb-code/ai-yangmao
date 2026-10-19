@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import {semanticReviewSchema,semanticReviewIssues,type SemanticReview} from '../shared/fast-track-semantics';
 import type { Env } from './index';
 import { collectedOfferIn } from '../shared/ingest';
 import { officialTier, wechatBiz, type OfficialPlatform } from '../shared/official-review';
@@ -325,17 +326,19 @@ async function closeIdentityTask(db: D1Database, job: JobRow, offerId: string) {
 }
 
 type PublishState = { state: 'published' | 'publishing' | 'needs_owner' | 'queued' | 'rejected'; offerId?: string | null; missing?: string[]; error?: string; alreadyLive?: boolean };
-async function attemptPublish(env: Env, job: JobRow): Promise<PublishState> {
+async function attemptPublish(env: Env, job: JobRow, requireReview=false): Promise<PublishState> {
   const db = env.DB, now = () => new Date().toISOString();
-  const stored = JSON.parse(job.fields_json ?? '{}') as { fields?: FastTrackFields; sourceText?: string };
+  const stored = JSON.parse(job.fields_json ?? '{}') as { fields?: FastTrackFields; sourceText?: string; semanticReview?: SemanticReview };
   const platform = await db.prepare('SELECT name FROM platforms WHERE id=?').bind(job.platform_id).first<{ name: string }>();
   const terminal = await reconcileFastTrack(db, job);
   if (terminal) return terminal;
   let fields = mergeFastTrackFields(stored.fields ?? {}, JSON.parse(job.owner_fields_json), job.benefit, platform?.name);
-  const missing = fastTrackFieldIssues(fields);
+  const context={platformId:job.platform_id,url:job.url,benefit:job.benefit,note:job.note,sourceText:stored.sourceText??''};
+  const missing = [...fastTrackFieldIssues(fields,context),...(stored.semanticReview?semanticReviewIssues(fields,stored.semanticReview,context,JSON.parse(job.owner_fields_json)):[])];
   if (missing.length) {
     return repairFastTrack(db, job, missing, '自动补全校验：' + missing.join('；'));
   }
+  if(requireReview&&!stored.semanticReview)return repairFastTrack(db,job,['semanticReview'],'semanticReview: 模型结果必须先完成发布前字段语义核对');
   const progress: Progress = JSON.parse(job.progress_json ?? '{}');
   const save = () => db.prepare("UPDATE fast_track_jobs SET state='publishing', progress_json=?, lease_until=NULL, updated_at=? WHERE id=?").bind(JSON.stringify(progress), now(), job.id).run();
   try {
@@ -365,7 +368,7 @@ export async function advanceFastTrack(env: Env, id: string) {
   return attemptPublish(env, job);
 }
 
-const resultInput = z.object({ fields: z.record(z.string(), z.unknown()).optional(), sourceText: z.string().max(260_000).optional(), error: z.string().max(500).optional(), model: z.string().max(120).optional() });
+const resultInput = z.object({ semanticReview:semanticReviewSchema.optional(), fields: z.record(z.string(), z.unknown()).optional(), sourceText: z.string().max(260_000).optional(), error: z.string().max(500).optional(), model: z.string().max(120).optional() });
 
 /** The pipeline agent reports extracted fields (or a model failure) for a claimed job. */
 export async function submitFastTrackResult(env: Env, id: string, raw: unknown) {
@@ -374,13 +377,14 @@ export async function submitFastTrackResult(env: Env, id: string, raw: unknown) 
   if (!job) throw new FastTrackError(404, '没有这个快速上架任务');
   if (job.state !== 'extracting') throw new FastTrackError(409, '任务不在读取中');
   if (body.error || !body.fields) {
+    if(body.fields)await db.prepare('UPDATE fast_track_jobs SET fields_json=? WHERE id=?').bind(JSON.stringify({fields:body.fields,sourceText:body.sourceText??'',model:body.model,semanticReview:body.semanticReview}),id).run();
     const exhausted = job.attempts >= FAST_TRACK_MAX_ATTEMPTS;
     await db.prepare('UPDATE fast_track_jobs SET state=?, error=?, lease_until=NULL, updated_at=? WHERE id=?').bind(exhausted ? 'needs_owner' : 'queued', body.error ?? '模型没有返回字段', now, id).run();
     return { state: exhausted ? 'needs_owner' : 'queued' };
   }
-  const updated = { ...job, fields_json: JSON.stringify({ fields: body.fields, sourceText: body.sourceText ?? '', model: body.model }) };
+  const updated = { ...job, fields_json: JSON.stringify({ fields: body.fields, sourceText: body.sourceText ?? '', model: body.model, semanticReview:body.semanticReview }) };
   await db.prepare('UPDATE fast_track_jobs SET fields_json=?, updated_at=? WHERE id=?').bind(updated.fields_json, now, id).run();
-  return attemptPublish(env, updated);
+  return attemptPublish(env, updated,true);
 }
 
 /** The owner fills the fields the model could not, then the job publishes immediately. */
@@ -443,4 +447,13 @@ export async function reconcileFastTrackJob(env: Env, id: string) {
   const job=await env.DB.prepare('SELECT * FROM fast_track_jobs WHERE id=?').bind(id).first<JobRow>();
   if(!job) throw new FastTrackError(404,'没有这个快速上架任务');
   return await reconcileFastTrack(env.DB,job) ?? {state:job.state,offerId:job.offer_id};
+}
+
+/** Read-only replay input: never reopens or republishes an already approved benefit. */
+export async function fastTrackReviewInput(db:D1Database,id:string){
+ const job=await db.prepare('SELECT * FROM fast_track_jobs WHERE id=?').bind(id).first<JobRow>();
+ if(!job)throw new FastTrackError(404,'没有这个快速上架任务');
+ const platform=await platformRow(db,job.platform_id),stored=JSON.parse(job.fields_json??'{}');
+ if(!stored.fields)throw new FastTrackError(409,'任务没有可重放的模型初稿');
+ return {job:{id:job.id,platformId:job.platform_id,platformName:platform?.name??job.platform_id,url:job.url,benefit:job.benefit,note:job.note,ownerFields:JSON.parse(job.owner_fields_json)},fields:stored.fields,sourceText:stored.sourceText??'',offerId:job.offer_id,membershipCatalog:await readMembershipCatalog(db)};
 }

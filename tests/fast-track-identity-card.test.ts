@@ -1,3 +1,4 @@
+import {makeSemanticReview} from '../src/shared/fast-track-semantics';
 import { it, expect } from 'vitest';
 import { auditFixture } from './fixtures/identity/audit';
 import { unknown } from './fixtures/identity/terms';
@@ -19,7 +20,7 @@ it('fast-track from an identity card publishes the offer and closes the task as 
 
     await f.call(`ingest/fast-track/${created.body.jobId}/claim`, {});
     const fields = { title: '学生认证免费 3 个月会员', type: 'gift', modalities: ['text'], claimMethod: 'app', requirements: ['student'], audience: 'all', valueText: '学生认证后免费领 3 个月会员', endKind: 'unknown', sourceTz: 'UTC', steps: ['完成学生认证'], excerpts: { benefit: 'Campaign students-2026 gives verified students three months of membership for free.' } };
-    let r = await f.call(`ingest/fast-track/${created.body.jobId}/result`, { fields, sourceText: text, model: 'free' });
+    let r = await f.call(`ingest/fast-track/${created.body.jobId}/result`, { fields, sourceText: text, model: 'free',semanticReview:makeSemanticReview(fields,{type:{value:'gift',quote:text},modalities:[{value:'text',quote:text}],audience:{value:'all',quote:''}},{platformId:'vendor',url:'https://vendor.example/students',benefit:'学生认证后免费领 3 个月会员',sourceText:text},'fixture-review').review });
     for (let i = 0; r.body.state === 'publishing' && i < 10; i++) r = await f.call(`ingest/fast-track/${created.body.jobId}/advance`, {});
     expect(r.body.state, JSON.stringify(r.body)).toBe('published');
 

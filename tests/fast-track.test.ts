@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import {makeSemanticReview} from '../src/shared/fast-track-semantics';
 import worker from '../src/worker/index';
 import { identityDb } from './fixtures/identity/db';
 import { mergeFastTrackFields, missingBasicFields, fastTrackHeld } from '../src/worker/fast-track';
@@ -13,7 +14,20 @@ async function call(path: string, body?: unknown, token = 'fast-admin-token-0001
   const r = await worker.fetch(new Request('https://local.test/api/' + path, { method: body === undefined ? 'GET' : 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) }), env(), {} as any);
   return { status: r.status, body: await r.json() as any };
 }
-const ingest = (path: string, body?: unknown) => call('ingest/' + path, body, 'fast-ingest-token-0001');
+const ingest = (path: string, body?: any) => {
+ if(path.endsWith('/result')&&body?.fields&&!body.error&&!body.semanticReview){
+  const job=f.sqlite.prepare('SELECT * FROM fast_track_jobs WHERE id=?').get(path.split('/')[1]) as any;
+  const fields=mergeFastTrackFields({...body.fields,audience:body.fields.audience??'all'},JSON.parse(job.owner_fields_json),job.benefit,'Odyssey');
+  if(fields.type&&Array.isArray(fields.modalities)&&fields.audience){
+   const context={platformId:job.platform_id,url:job.url,benefit:job.benefit,sourceText:body.sourceText??''};
+   const quote=body.sourceText||job.benefit;
+   const facts={type:{value:fields.type,quote},modalities:fields.modalities.map((value:string)=>({value,quote})),audience:{value:fields.audience,quote:fields.audience==='all'?'':job.benefit}} as any;
+   const reviewed=makeSemanticReview(fields,facts,context,'fixture-review');
+   body={...body,fields:{...body.fields,audience:fields.audience},semanticReview:reviewed.review};
+  }
+ }
+ return call('ingest/'+path,body,'fast-ingest-token-0001');
+};
 /** Publishing spans several requests under the per-request query budget, as the pipeline drives it. */
 async function settle(id: string, first: { status: number; body: any }) {
   let r = first, requests = 1;
@@ -320,4 +334,24 @@ it('reapplies model-corrected membership after the catalog changes between edit 
   expect(done.body.state).toBe('published');
   const row=f.sqlite.prepare('SELECT membership_requirement FROM offers WHERE id=?').get(done.body.offerId) as any;
   expect(JSON.parse(row.membership_requirement).catalogRevision).toBe(2);
+});
+
+it('does not publish model fields without the mandatory semantic review receipt',async()=>{
+ const created=await call('admin/fast-track',{platformId:'vendor',url:'https://vendor.example/rewards',benefit:'公开研究预览免费试用'});
+ await ingest(`fast-track/${created.body.jobId}/claim`,{});
+ const result=await call(`ingest/fast-track/${created.body.jobId}/result`,{fields:extracted,sourceText:page,model:'gemini'},'fast-ingest-token-0001');
+ expect(result.body).toMatchObject({state:'queued',missing:['semanticReview']});
+ expect(f.sqlite.prepare('SELECT count(*) n FROM offers').get()).toEqual({n:0});
+});
+it('exposes replay input read-only and rejects tampered reviewed fields before intake',async()=>{
+ const created=await call('admin/fast-track',{platformId:'vendor',url:'https://vendor.example/rewards',benefit:'公开研究预览免费试用'});
+ await ingest(`fast-track/${created.body.jobId}/claim`,{});
+ const context={platformId:'vendor',url:'https://vendor.example/rewards',benefit:'公开研究预览免费试用',sourceText:page};
+ const reviewed=makeSemanticReview(extracted,{type:{value:'free',quote:page},modalities:[{value:'video',quote:page}],audience:{value:'all',quote:''}},context,'review');
+ const rejected=await call(`ingest/fast-track/${created.body.jobId}/result`,{fields:{...extracted,modalities:['image']},sourceText:page,model:'gemini',semanticReview:reviewed.review},'fast-ingest-token-0001');
+ expect(rejected.body.state).toBe('queued');expect(rejected.body.error).toContain('modalities');
+ const before=f.sqlite.prepare('SELECT * FROM fast_track_jobs WHERE id=?').get(created.body.jobId);
+ const input=await ingest(`fast-track/${created.body.jobId}/review-input`);
+ expect(input.body.fields.modalities).toEqual(['image']);
+ expect(f.sqlite.prepare('SELECT * FROM fast_track_jobs WHERE id=?').get(created.body.jobId)).toEqual(before);
 });
