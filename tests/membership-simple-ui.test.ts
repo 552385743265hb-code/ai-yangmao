@@ -51,3 +51,12 @@ it('lets users remove an ambiguous old membership notice without clearing valid 
  const remove=document.querySelector('[data-remove-unresolved-member]');expect(remove).not.toBeNull();remove!.dispatchEvent(new (ctx.window as any).Event('click',{bubbles:true}));
  expect(vm.runInContext('C.unresolvedMembers',ctx)).toEqual([]);expect(vm.runInContext('C.subscriptions',ctx)).toEqual([{planId:'a-pro'}]);expect(vm.runInContext('C.phone',ctx)).toBe(true);
 });
+it('does not turn an unresolved old membership into a definite negative qualification',()=>{
+ const {ctx}=fixture();vm.runInContext(`C.unresolvedMembers=['旧版 Pro'];offer={membershipRequirement:{schemaVersion:'membership-v1',status:'confirmed',catalogRevision:1,evidenceUrls:['https://official.example/perk'],anyOf:[{allOf:[{productId:'a',scope:'plans',planIds:['a-pro'],excludePlanIds:[]}]}]}}`,ctx);
+ expect(vm.runInContext('membershipResult(offer,[])',ctx)).toBe('unknown');
+});
+it('keeps existing limits when editing concrete seats expanded from a retired aggregate',async()=>{
+ const {ctx,document,change}=fixture();vm.runInContext(`MEMBERSHIP_CATALOG={...MEMBERSHIP_CATALOG,planReplacements:{'a-pro':['a-standard','a-premium']},plans:[...MEMBERSHIP_CATALOG.plans.map(p=>p.id==='a-pro'?{...p,status:'retired'}:p),...['standard','premium'].map(n=>({...MEMBERSHIP_CATALOG.plans[0],id:'a-'+n,name:'Alpha Teams '+n,status:'verified'}))]};offer={platformId:'alpha',membershipRequirement:{schemaVersion:'membership-v1',status:'confirmed',catalogRevision:1,evidenceUrls:['https://official.example/perk'],anyOf:[{allOf:[{productId:'a',scope:'plans',planIds:['a-pro'],excludePlanIds:[],limits:{billingCycles:['annual']}}]}]}}`,ctx);
+ const r=vm.runInContext(`membershipSelectionRequirement(['a-premium'],offer.membershipRequirement,1)`,ctx);
+ expect(r.anyOf[0].allOf[0].limits).toEqual({billingCycles:['annual']});
+});

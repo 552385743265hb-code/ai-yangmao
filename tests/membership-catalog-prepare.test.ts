@@ -26,3 +26,9 @@ it('records multi-product replacements without guessing a single destination for
  const old=structuredClone(snapshot);old.products.push({...meta,id:'global',name:'Global',status:'verified'},{...meta,id:'duplicate',name:'Vendor App'});old.plans.push({...meta,id:'duplicate-stub',productId:'duplicate',name:'待核实订阅',billing:'unknown'});
  const r=prepare(old,[{...finding,retirePlans:[{id:'placeholder',reason:'占位项',sourceUrl:'https://vendor.example/pricing'}],retireProducts:[{id:'duplicate',replacementIds:['vendor','global'],reason:'应用使用国内或国际订阅',sourceUrl:'https://vendor.example/plans'}]}]);expect(r.status).toBe(0);expect(r.output.catalog.productReplacements.duplicate).toEqual(['vendor','global']);expect(r.output.catalog.productIdAliases?.duplicate).toBeUndefined();
 });
+it('records explicit aggregate replacements and refuses foreign plan targets',()=>{
+ const f={...finding,retirePlans:[{id:'placeholder',replacementIds:['vendor-pro','vendor-max'],reason:'聚合目录拆成明确档位',sourceUrl:'https://vendor.example/pricing'}]};
+ const r=prepare(snapshot,[f]);expect(r.status).toBe(0);expect(r.output.catalog.planReplacements.placeholder).toEqual(['vendor-pro','vendor-max']);expect(r.output.catalog.planIdAliases?.placeholder).toBeUndefined();
+ const old=structuredClone(snapshot);old.products.push({...meta,id:'other',name:'Other',status:'verified'});old.plans.push({...meta,id:'foreign',productId:'other',name:'Other Pro',status:'verified',billing:'paid'});
+ expect(prepare(old,[{...f,retirePlans:[{...f.retirePlans[0],replacementIds:['foreign']}]}]).status).not.toBe(0);
+});

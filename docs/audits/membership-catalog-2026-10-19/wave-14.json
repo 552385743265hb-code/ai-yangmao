@@ -1,0 +1,118 @@
+{
+  "checkedAt": "2026-10-19",
+  "expectedRevision": 43,
+  "revision": 44,
+  "products": 72,
+  "plans": 394,
+  "fullReadback": true,
+  "changes": [
+    {
+      "id": "volc-coding-plan-lite",
+      "oldName": "火山方舟 Coding Plan（个人版） Lite",
+      "name": "火山方舟 Coding Plan（个人版） Lite",
+      "productId": "volc-coding-plan"
+    },
+    {
+      "id": "volc-coding-plan-pro",
+      "oldName": "火山方舟 Coding Plan（个人版） Pro",
+      "name": "火山方舟 Coding Plan（个人版） Pro",
+      "productId": "volc-coding-plan"
+    },
+    {
+      "id": "volc-agent-plan-small",
+      "oldName": "火山方舟 Agent Plan（个人版） Small",
+      "name": "火山方舟 Agent Plan（个人版） Small",
+      "productId": "volc-agent-plan"
+    },
+    {
+      "id": "volc-agent-plan-medium",
+      "oldName": "火山方舟 Agent Plan（个人版） Medium",
+      "name": "火山方舟 Agent Plan（个人版） Medium",
+      "productId": "volc-agent-plan"
+    },
+    {
+      "id": "volc-agent-plan-large",
+      "oldName": "火山方舟 Agent Plan（个人版） Large",
+      "name": "火山方舟 Agent Plan（个人版） Large",
+      "productId": "volc-agent-plan"
+    },
+    {
+      "id": "volc-agent-plan-max",
+      "oldName": "火山方舟 Agent Plan（个人版） Max",
+      "name": "火山方舟 Agent Plan（个人版） Max",
+      "productId": "volc-agent-plan"
+    },
+    {
+      "id": "baidu-token-personal-mini-credits",
+      "oldName": "百度千帆 Token Plan（个人版） Mini（积分制）",
+      "name": "百度千帆 Token Plan（个人版） Mini（积分制）",
+      "productId": "baidu-token-personal"
+    },
+    {
+      "id": "baidu-token-personal-lite-credits",
+      "oldName": "百度千帆 Token Plan（个人版） Lite（积分制）",
+      "name": "百度千帆 Token Plan（个人版） Lite（积分制）",
+      "productId": "baidu-token-personal"
+    },
+    {
+      "id": "baidu-token-personal-pro-credits",
+      "oldName": "百度千帆 Token Plan（个人版） Pro（积分制）",
+      "name": "百度千帆 Token Plan（个人版） Pro（积分制）",
+      "productId": "baidu-token-personal"
+    },
+    {
+      "id": "baidu-token-personal-max-credits",
+      "oldName": "百度千帆 Token Plan（个人版） Max（积分制）",
+      "name": "百度千帆 Token Plan（个人版） Max（积分制）",
+      "productId": "baidu-token-personal"
+    },
+    {
+      "id": "baidu-token-personal-mini-tokens",
+      "oldName": "百度千帆 Token Plan（个人版） Mini（Token制）",
+      "name": "百度千帆 Token Plan（个人版） Mini（Token制）",
+      "productId": "baidu-token-personal"
+    },
+    {
+      "id": "baidu-token-personal-lite-tokens",
+      "oldName": "百度千帆 Token Plan（个人版） Lite（Token制）",
+      "name": "百度千帆 Token Plan（个人版） Lite（Token制）",
+      "productId": "baidu-token-personal"
+    },
+    {
+      "id": "baidu-token-personal-pro-tokens",
+      "oldName": "百度千帆 Token Plan（个人版） Pro（Token制）",
+      "name": "百度千帆 Token Plan（个人版） Pro（Token制）",
+      "productId": "baidu-token-personal"
+    },
+    {
+      "id": "baidu-token-personal-max-tokens",
+      "oldName": "百度千帆 Token Plan（个人版） Max（Token制）",
+      "name": "百度千帆 Token Plan（个人版） Max（Token制）",
+      "productId": "baidu-token-personal"
+    },
+    {
+      "id": "baidu-token-enterprise-light",
+      "oldName": "百度千帆 Token Plan（企业版） 轻享版",
+      "name": "百度千帆 Token Plan（企业版） 轻享版",
+      "productId": "baidu-token-enterprise"
+    },
+    {
+      "id": "baidu-token-enterprise-standard",
+      "oldName": "百度千帆 Token Plan（企业版） 标准版",
+      "name": "百度千帆 Token Plan（企业版） 标准版",
+      "productId": "baidu-token-enterprise"
+    },
+    {
+      "id": "baidu-token-enterprise-advanced",
+      "oldName": "百度千帆 Token Plan（企业版） 高级版",
+      "name": "百度千帆 Token Plan（企业版） 高级版",
+      "productId": "baidu-token-enterprise"
+    },
+    {
+      "id": "baidu-token-enterprise-premium",
+      "oldName": "百度千帆 Token Plan（企业版） 尊享版",
+      "name": "百度千帆 Token Plan（企业版） 尊享版",
+      "productId": "baidu-token-enterprise"
+    }
+  ]
+}

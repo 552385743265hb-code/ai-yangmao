@@ -25,11 +25,17 @@ for(const f of findings.products.filter(f=>f.status==='verified'&&f.applyReady))
   if(!plan){const suffix=slug(name),newId=f.newPlanIds?.[name]||(suffix?product.id+'-'+suffix:null);if(!newId)throw Error('Explicit plan ID required: '+full);plan={id:newId,productId:product.id,name:full,aliases:[],status:'pending',sourceUrl:f.sourceUrl,verifiedAt:null,revision:0,billing:'unknown'};if(next.plans.some(p=>p.id===plan.id))throw Error('ID collision: '+plan.id);next.plans.push(plan);}
   const before=plan.name,planBefore=JSON.stringify(plan),planRevision=plan.revision;
   Object.assign(plan,{name:full,billing:f.freePlans.includes(name)?'free':'paid',status:'verified',sourceUrl:f.planSources?.[name]||f.sourceUrl,verifiedAt:findings.checkedAt,revision:planRevision,...(f.legacyPlans?.includes(name)?{legacy:true}:{})});
-  plan.aliases=[...new Set([...plan.aliases,...(before!==full?[before]:[])])];expectedIds.push(plan.id);if(JSON.stringify(plan)!==planBefore){plan.revision++;changes.push({id:plan.id,oldName:before,name:full,productId:product.id});}
+  plan.aliases=[...new Set([...plan.aliases,...(f.planAliases?.[name]||[]),...(before!==full?[before]:[])])];expectedIds.push(plan.id);if(JSON.stringify(plan)!==planBefore){plan.revision++;changes.push({id:plan.id,oldName:before,name:full,productId:product.id});}
  }
  for(const retirement of f.retirePlans||[]){
   const p=next.plans.find(p=>p.id===retirement.id&&p.productId===product.id);
   if(!p||expectedIds.includes(p.id)||!retirement.reason||!retirement.sourceUrl?.startsWith('https://'))throw Error('Invalid explicit retirement: '+retirement.id);
+  if(retirement.replacementIds){
+   const targets=retirement.replacementIds;
+   if(!targets.length||targets.some(id=>id===p.id||!next.plans.some(t=>t.id===id&&t.productId===p.productId&&t.status==='verified')))throw Error('Replacement plans must be verified in the same product: '+p.id);
+   next.planReplacements||={};next.planReplacements[p.id]=[...new Set(targets)];
+   next.planIdAliases||={};if(targets.length===1)next.planIdAliases[p.id]=targets[0];else delete next.planIdAliases[p.id];
+  }
   if(p.status!=='retired'){Object.assign(p,{status:'retired',retiredReason:retirement.reason,retiredSourceUrl:retirement.sourceUrl,retiredAt:findings.checkedAt,revision:p.revision+1});changes.push({id:p.id,oldName:p.name,name:p.name,productId:product.id,action:'retire',reason:retirement.reason});}
  }
  for(const retirement of f.retireProducts||[]){

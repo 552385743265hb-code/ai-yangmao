@@ -6,7 +6,8 @@ function membershipResult(o, subscriptions) {
   const requirement = membershipRequirementOf(o);
   if (requirement.status === 'not_required') return 'yes';
   if (!MEMBERSHIP_CATALOG_OK) return 'unknown';
-  return YMMembership.matchMembership(requirement, subscriptions, MEMBERSHIP_CATALOG);
+  const result=YMMembership.matchMembership(requirement,subscriptions,MEMBERSHIP_CATALOG);
+  return result==='no'&&C.unresolvedMembers?.length?'unknown':result;
 }
 function migrateMembershipPreferences(previous) {
   if (!MEMBERSHIP_CATALOG_OK) return previous;
@@ -90,13 +91,16 @@ function bindSubscriptionEvents() {
   });
 }
 function membershipSelectedPlans(requirement) {
-  return [...new Set(requirement.anyOf.flatMap(g=>g.allOf.flatMap(c=>MEMBERSHIP_CATALOG.plans.filter(p=>p.productId===c.productId&&p.status==='verified'&&!c.excludePlanIds.includes(p.id)&&(c.scope==='plans'?c.planIds.includes(p.id):c.scope==='any_paid'?p.billing==='paid':true)).map(p=>p.id))))];
+  return [...new Set(requirement.anyOf.flatMap(g=>g.allOf.flatMap(c=>{
+    const selected=c.planIds.flatMap(id=>YMMembership.membershipPlanAlternatives(id,MEMBERSHIP_CATALOG)||[]),excluded=c.excludePlanIds.flatMap(id=>YMMembership.membershipPlanAlternatives(id,MEMBERSHIP_CATALOG)||[]);
+    return MEMBERSHIP_CATALOG.plans.filter(p=>p.productId===c.productId&&p.status==='verified'&&!excluded.includes(p.id)&&(c.scope==='plans'?selected.includes(p.id):c.scope==='any_paid'?p.billing==='paid':true)).map(p=>p.id);
+  })))];
 }
 function membershipSelectionRequirement(ids, original, revision) {
   const groups=new Map();
   for(const id of ids){
     const p=MEMBERSHIP_CATALOG.plans.find(p=>p.id===id&&p.status==='verified');if(!p)continue;
-    const prior=original.anyOf.flatMap(g=>g.allOf).find(c=>c.productId===p.productId&&(c.scope!=='plans'||c.planIds.includes(id))&&!c.excludePlanIds.includes(id));
+    const prior=original.anyOf.flatMap(g=>g.allOf).find(c=>c.productId===p.productId&&(c.scope!=='plans'||c.planIds.some(old=>(YMMembership.membershipPlanAlternatives(old,MEMBERSHIP_CATALOG)||[]).includes(id)))&&!c.excludePlanIds.some(old=>(YMMembership.membershipPlanAlternatives(old,MEMBERSHIP_CATALOG)||[]).includes(id)));
     const limits=prior?.limits,key=p.productId+JSON.stringify(limits||{});
     if(!groups.has(key))groups.set(key,{allOf:[{productId:p.productId,scope:'plans',planIds:[],excludePlanIds:[],...(limits?{limits:structuredClone(limits)}:{})}]});
     groups.get(key).allOf[0].planIds.push(id);

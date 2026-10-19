@@ -1,0 +1,142 @@
+{
+  "checkedAt": "2026-10-19",
+  "expectedRevision": 41,
+  "revision": 42,
+  "products": 61,
+  "plans": 355,
+  "fullReadback": true,
+  "changes": [
+    {
+      "id": "replit-starter-free",
+      "oldName": "Replit Starter (Free)",
+      "name": "Replit Starter (Free)",
+      "productId": "replit"
+    },
+    {
+      "id": "replit-core",
+      "oldName": "Replit Core",
+      "name": "Replit Core",
+      "productId": "replit"
+    },
+    {
+      "id": "replit-pro",
+      "oldName": "Replit Pro",
+      "name": "Replit Pro",
+      "productId": "replit"
+    },
+    {
+      "id": "replit-enterprise",
+      "oldName": "Replit Enterprise",
+      "name": "Replit Enterprise",
+      "productId": "replit"
+    },
+    {
+      "id": "cline-open-source-free",
+      "oldName": "Cline Open Source (Free)",
+      "name": "Cline Open Source (Free)",
+      "productId": "cline"
+    },
+    {
+      "id": "cline-enterprise",
+      "oldName": "Cline Enterprise",
+      "name": "Cline Enterprise",
+      "productId": "cline"
+    },
+    {
+      "id": "vercel-platform-hobby",
+      "oldName": "Vercel Hobby",
+      "name": "Vercel Hobby",
+      "productId": "vercel-platform"
+    },
+    {
+      "id": "vercel-platform-pro",
+      "oldName": "Vercel Pro",
+      "name": "Vercel Pro",
+      "productId": "vercel-platform"
+    },
+    {
+      "id": "vercel-platform-enterprise",
+      "oldName": "Vercel Enterprise",
+      "name": "Vercel Enterprise",
+      "productId": "vercel-platform"
+    },
+    {
+      "id": "vercel-v0-free",
+      "oldName": "Vercel v0 Free",
+      "name": "Vercel v0 Free",
+      "productId": "vercel-v0"
+    },
+    {
+      "id": "vercel-v0-plus",
+      "oldName": "Vercel v0 Plus",
+      "name": "Vercel v0 Plus",
+      "productId": "vercel-v0"
+    },
+    {
+      "id": "vercel-v0-business",
+      "oldName": "Vercel v0 Business",
+      "name": "Vercel v0 Business",
+      "productId": "vercel-v0"
+    },
+    {
+      "id": "vercel-v0-enterprise",
+      "oldName": "Vercel v0 Enterprise",
+      "name": "Vercel v0 Enterprise",
+      "productId": "vercel-v0"
+    },
+    {
+      "id": "poe-10-000-points-day",
+      "oldName": "Poe 10,000 points/day",
+      "name": "Poe 10,000 points/day",
+      "productId": "poe"
+    },
+    {
+      "id": "poe-660-000-points-month",
+      "oldName": "Poe 660,000 points/month",
+      "name": "Poe 660,000 points/month",
+      "productId": "poe"
+    },
+    {
+      "id": "poe-1-650-000-points-month",
+      "oldName": "Poe 1,650,000 points/month",
+      "name": "Poe 1,650,000 points/month",
+      "productId": "poe"
+    },
+    {
+      "id": "poe-3-300-000-points-month",
+      "oldName": "Poe 3,300,000 points/month",
+      "name": "Poe 3,300,000 points/month",
+      "productId": "poe"
+    },
+    {
+      "id": "poe-8-250-000-points-month",
+      "oldName": "Poe 8,250,000 points/month",
+      "name": "Poe 8,250,000 points/month",
+      "productId": "poe"
+    },
+    {
+      "id": "manus-free",
+      "oldName": "Manus Free",
+      "name": "Manus Free",
+      "productId": "manus"
+    },
+    {
+      "id": "manus-pro",
+      "oldName": "Manus Pro",
+      "name": "Manus Pro",
+      "productId": "manus"
+    },
+    {
+      "id": "manus-team",
+      "oldName": "Manus Team",
+      "name": "Manus Team",
+      "productId": "manus"
+    },
+    {
+      "id": "manus-cue-phone-number-subscription",
+      "oldName": "Manus Cue Phone-number subscription",
+      "name": "Manus Cue Phone-number subscription",
+      "productId": "manus-cue"
+    }
+  ]
+}

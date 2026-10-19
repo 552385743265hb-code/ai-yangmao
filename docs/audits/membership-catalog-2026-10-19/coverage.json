@@ -5,9 +5,19 @@
       "platformId": "aws",
       "name": "AWS",
       "site": "https://aws.amazon.com",
-      "status": "unreviewed",
-      "sources": [],
-      "productIds": [],
+      "status": "partial",
+      "sources": [
+        "https://aws.amazon.com/q/developer/pricing/",
+        "https://aws.amazon.com/q/business/pricing/",
+        "https://aws.amazon.com/quick/pricing/",
+        "https://aws.amazon.com/quick/quicksight/pricing/"
+      ],
+      "productIds": [
+        "aws-q-developer",
+        "aws-q-business",
+        "aws-quick",
+        "aws-quicksight"
+      ],
       "homepageRead": {
         "url": "https://aws.amazon.com",
         "chars": 9957,
@@ -44,9 +54,14 @@
       "platformId": "huaweicloud",
       "name": "华为云",
       "site": "https://www.huaweicloud.com",
-      "status": "unreviewed",
-      "sources": [],
-      "productIds": [],
+      "status": "partial",
+      "sources": [
+        "https://codearts.huaweicloud.com/pricing"
+      ],
+      "productIds": [
+        "huawei-codearts-agent-personal",
+        "huawei-codearts-agent-enterprise"
+      ],
       "homepageRead": {
         "url": "https://www.huaweicloud.com",
         "chars": 16279,
@@ -57,9 +72,15 @@
       "platformId": "volc",
       "name": "火山方舟",
       "site": "https://www.volcengine.com/product/ark",
-      "status": "unreviewed",
-      "sources": [],
-      "productIds": [],
+      "status": "partial",
+      "sources": [
+        "https://docs.volcengine.com/docs/ark/coding-plan-personal-plan-overview?lang=zh",
+        "https://docs.volcengine.com/docs/ark/agent-plan-personal-plan-overview?lang=zh"
+      ],
+      "productIds": [
+        "volc-coding-plan",
+        "volc-agent-plan"
+      ],
       "homepageRead": {
         "url": "https://www.volcengine.com/product/ark",
         "chars": 0,
@@ -70,9 +91,15 @@
       "platformId": "baidu",
       "name": "百度千帆",
       "site": "https://cloud.baidu.com",
-      "status": "unreviewed",
-      "sources": [],
-      "productIds": [],
+      "status": "partial",
+      "sources": [
+        "https://cloud.baidu.com/doc/qianfan/s/Dmrabu8b6",
+        "https://cloud.baidu.com/doc/qianfan/s/ymq8wwch2"
+      ],
+      "productIds": [
+        "baidu-token-personal",
+        "baidu-token-enterprise"
+      ],
       "homepageRead": {
         "url": "https://cloud.baidu.com",
         "chars": 4149,
@@ -109,14 +136,19 @@
       "platformId": "cerebras",
       "name": "Cerebras",
       "site": "https://www.cerebras.ai",
-      "status": "unreviewed",
-      "sources": [],
+      "status": "research_complete",
+      "sources": [
+        "https://www.cerebras.ai/pricing"
+      ],
       "productIds": [],
       "homepageRead": {
         "url": "https://www.cerebras.ai",
         "chars": 7297,
         "error": null
-      }
+      },
+      "subscriptionStatus": "none",
+      "note": "官方列示Developer自助按量推理与Enterprise服务询价，无公开的软件会员订阅档位；不把API充值/算力服务当作会员。",
+      "quote": "Self-serve pay-as-you-go with free $5 credit to start; Contact us for a quote"
     },
     {
       "platformId": "cloudflare",
@@ -295,14 +327,19 @@
       "platformId": "openrouter",
       "name": "OpenRouter",
       "site": "https://openrouter.ai",
-      "status": "unreviewed",
-      "sources": [],
+      "status": "research_complete",
+      "sources": [
+        "https://openrouter.ai/pricing"
+      ],
       "productIds": [],
       "homepageRead": {
         "url": "https://openrouter.ai",
         "chars": 3345,
         "error": null
-      }
+      },
+      "subscriptionStatus": "none",
+      "note": "Free/Standard/Business是API账户计费级别，标准和商业版按购买积分收费，无最低消费和包月会员；企业按合约用量，不虚构订阅套餐。",
+      "quote": "Standard and Business have no minimums and no lock-in. You pay only for what you use."
     },
     {
       "platformId": "ppio",
@@ -378,9 +415,15 @@
       "platformId": "vercel",
       "name": "Vercel AI Gateway",
       "site": "https://vercel.com/ai-gateway",
-      "status": "unreviewed",
-      "sources": [],
-      "productIds": [],
+      "status": "research_complete",
+      "sources": [
+        "https://vercel.com/pricing",
+        "https://v0.app/pricing"
+      ],
+      "productIds": [
+        "vercel-platform",
+        "vercel-v0"
+      ],
       "homepageRead": {
         "url": "https://vercel.com/ai-gateway",
         "chars": 33821,
@@ -463,8 +506,7 @@
       "site": "https://www.anthropic.com",
       "status": "research_complete",
       "sources": [
-        "https://claude.com/pricing",
-        "https://support.claude.com/en/articles/15424964-claude-fable-models-on-your-plan"
+        "https://claude.com/pricing"
       ],
       "productIds": [
         "claude"
@@ -567,9 +609,13 @@
       "platformId": "meta",
       "name": "Meta Llama",
       "site": "https://www.llama.com",
-      "status": "unreviewed",
-      "sources": [],
-      "productIds": [],
+      "status": "partial",
+      "sources": [
+        "https://dev.meta.ai/resources/blog/muse-code-new-plans-and-features"
+      ],
+      "productIds": [
+        "meta-muse-code"
+      ],
       "homepageRead": {
         "url": "https://dev.meta.ai/",
         "chars": 5870,
@@ -596,9 +642,7 @@
       "status": "partial",
       "sources": [
         "https://platform.minimaxi.com/docs/m-plan/intro",
-        "https://platform.minimaxi.com/docs/m-plan/token-plan-notice",
-        "https://platform.minimax.io/docs/m-plan/intro",
-        "https://platform.minimax.io/docs/m-plan/token-plan-notice"
+        "https://platform.minimax.io/docs/m-plan/intro"
       ],
       "productIds": [
         "minimax",
@@ -656,10 +700,7 @@
       "site": "https://openai.com",
       "status": "research_complete",
       "sources": [
-        "https://learn.chatgpt.com/docs/pricing",
-        "https://help.openai.com/en/articles/9793128-about-chatgpt-pro-tiers",
-        "https://help.openai.com/en/articles/8542115-chatgpt-business-general-faq",
-        "https://help.openai.com/en/articles/12844995-chatgpt-for-teachers"
+        "https://learn.chatgpt.com/docs/pricing"
       ],
       "productIds": [
         "chatgpt"
@@ -760,13 +801,7 @@
       "status": "partial",
       "sources": [
         "https://docs.z.ai/devpack/overview",
-        "https://docs.z.ai/devpack/teamplan",
-        "https://docs.z.ai/devpack/notice/usage-revision",
-        "https://zcode.z.ai/en/docs/configuration",
-        "https://docs.bigmodel.cn/cn/coding-plan/overview",
-        "https://docs.bigmodel.cn/cn/coding-plan/team",
-        "https://docs.bigmodel.cn/cn/coding-plan/notice/usage-revision",
-        "https://zcode.z.ai/cn/docs/configuration"
+        "https://docs.bigmodel.cn/cn/coding-plan/overview"
       ],
       "productIds": [
         "z-ai-devpack",
@@ -1061,9 +1096,13 @@
       "platformId": "cline",
       "name": "Cline",
       "site": "https://cline.bot",
-      "status": "unreviewed",
-      "sources": [],
-      "productIds": [],
+      "status": "research_complete",
+      "sources": [
+        "https://cline.bot/pricing"
+      ],
+      "productIds": [
+        "cline"
+      ],
       "homepageRead": {
         "url": "https://cline.bot",
         "chars": 3719,
@@ -1095,8 +1134,7 @@
       "status": "research_complete",
       "sources": [
         "https://devin.ai/pricing",
-        "https://devin.ai/desktop",
-        "https://devin.ai/blog/gemini-31-pro"
+        "https://devin.ai/desktop"
       ],
       "productIds": [
         "devin",
@@ -1212,9 +1250,7 @@
       "site": "https://higgsfield.ai",
       "status": "partial",
       "sources": [
-        "https://higgsfield.ai/pricing",
-        "https://higgsfield.ai/creator-hub/changelog#credit-reset",
-        "https://higgsfield.ai/blog/how-to-get-free-unlimited-seedance-2"
+        "https://higgsfield.ai/pricing"
       ],
       "productIds": [
         "higgsfield"
@@ -1404,9 +1440,14 @@
       "platformId": "manus",
       "name": "Manus",
       "site": "https://manus.im",
-      "status": "unreviewed",
-      "sources": [],
-      "productIds": [],
+      "status": "research_complete",
+      "sources": [
+        "https://help.manus.im/en/articles/11711111-what-is-the-current-membership-pricing-for-manus"
+      ],
+      "productIds": [
+        "manus",
+        "manus-cue"
+      ],
       "homepageRead": {
         "url": "https://manus.im",
         "chars": 795,
@@ -1594,9 +1635,13 @@
       "platformId": "poe",
       "name": "Poe",
       "site": "https://poe.com",
-      "status": "unreviewed",
-      "sources": [],
-      "productIds": [],
+      "status": "research_complete",
+      "sources": [
+        "https://poe.com/subscription_plans"
+      ],
+      "productIds": [
+        "poe"
+      ],
       "homepageRead": {
         "url": "https://poe.com",
         "chars": 0,
@@ -1625,7 +1670,7 @@
       "platformId": "replit",
       "name": "Replit",
       "site": "https://replit.com",
-      "status": "partial",
+      "status": "research_complete",
       "sources": [
         "https://replit.com/pricing"
       ],
@@ -1644,9 +1689,7 @@
       "site": "https://runwayml.com",
       "status": "research_complete",
       "sources": [
-        "https://runway.com/pricing",
-        "https://runway.com/pricing?tab=team",
-        "https://help.runwayml.com/hc/en-us/articles/52068047744019-Unlimited-plan-is-switching-to-Max"
+        "https://runway.com/pricing"
       ],
       "productIds": [
         "runway"
@@ -1766,8 +1809,7 @@
       "status": "research_complete",
       "sources": [
         "https://devin.ai/pricing",
-        "https://devin.ai/desktop",
-        "https://devin.ai/blog/gemini-31-pro"
+        "https://devin.ai/desktop"
       ],
       "productIds": [
         "devin",
@@ -1865,8 +1907,7 @@
       "site": "https://www.coze.cn",
       "status": "partial",
       "sources": [
-        "https://docs.coze.cn/coze_pro_premium_package",
-        "https://docs.coze.cn/guides_20260119_coze_premium_upgraded"
+        "https://docs.coze.cn/coze_pro_premium_package"
       ],
       "productIds": [
         "coze"
@@ -1910,8 +1951,7 @@
       "site": "https://qwenwork.cn",
       "status": "research_complete",
       "sources": [
-        "https://qwenwork.cn/pricing",
-        "https://qwenwork.cn/pricing?audience=enterprise&billing=monthly"
+        "https://qwenwork.cn/pricing"
       ],
       "productIds": [
         "qwenwork"

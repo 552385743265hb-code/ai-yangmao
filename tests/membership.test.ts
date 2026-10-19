@@ -69,3 +69,20 @@ it('recognizes exact qualified historical aliases after an official plan rename,
  const c=structuredClone(catalog);c.plans[0].name='Alpha Professional';c.plans[0].aliases=['Pro'];
  expect(migrateMemberSelections(['Alpha Pro','Pro'],c)).toEqual({subscriptions:[{planId:'ap'}],unresolved:['Pro']});
 });
+it('preserves an approved aggregate eligibility rule when a legacy Teams entry is split into concrete seats',()=>{
+ const c=structuredClone(catalog) as MembershipCatalog & {planReplacements:Record<string,string[]>};
+ c.plans.push({...c.plans[0],id:'as',name:'Alpha Teams Standard'},{...c.plans[0],id:'ax',name:'Alpha Teams Premium'});c.plans[0].status='retired';c.planReplacements={ap:['as','ax']};
+ const r=req();
+ expect(matchMembership(r,[{planId:'as'}],c)).toBe('yes');expect(matchMembership(r,[{planId:'ax'}],c)).toBe('yes');
+ expect(formatMembership(r,c)).toBe('Alpha Teams Standard / Alpha Teams Premium');
+ const onlyStandard=req();onlyStandard.anyOf[0].allOf[0].planIds=['as'];
+ expect(matchMembership(onlyStandard,[{planId:'ap'}],c)).toBe('unknown');
+ expect(matchMembership(r,[{planId:'ap'}],c)).toBe('yes');
+ const excluded=req();excluded.anyOf[0].allOf[0]={productId:'a',scope:'any_paid',planIds:[],excludePlanIds:['ap']};
+ expect(matchMembership(excluded,[{planId:'as'}],c)).toBe('no');
+});
+it('treats cyclic or broken catalog redirects as unknown rather than accepting the legacy selection',()=>{
+ const c=structuredClone(catalog) as MembershipCatalog & {planReplacements:Record<string,string[]>};c.planReplacements={ap:['ap']};
+ expect(matchMembership(req(),[{planId:'ap'}],c)).toBe('unknown');
+ c.planReplacements={ap:['missing']};expect(matchMembership(req(),[{planId:'ap'}],c)).toBe('unknown');
+});

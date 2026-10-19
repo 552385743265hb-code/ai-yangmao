@@ -576,14 +576,22 @@
       "name": "Replit",
       "sourceUrl": "https://replit.com/pricing",
       "plans": [
+        "Starter (Free)",
         "Core",
         "Pro",
         "Enterprise"
       ],
-      "freePlans": [],
-      "status": "partial",
+      "freePlans": [
+        "Starter (Free)"
+      ],
+      "status": "verified",
       "quote": "Core; Pro; Enterprise",
-      "remaining": "核对免费 Starter 与 Teams 存量是否仍在用"
+      "remaining": "当前英语官方计划目录四档已核；旧翻译的Teams不据此新造会员或推断迁移",
+      "applyReady": true,
+      "planSources": {
+        "Starter (Free)": "https://docs.replit.com/billing/plans/starter-plan",
+        "Pro": "https://docs.replit.com/billing/plans/replit-pro"
+      }
     },
     {
       "productId": "otter-ai",
@@ -1663,6 +1671,366 @@
         }
       ],
       "remaining": "Lite 仅部分地区提供；已读当前个人计划和仍有效的旧 Pro+/Ultra；企业版 BytePlus 及国内版仍需核对"
+    },
+    {
+      "productId": "cline",
+      "platformIds": [
+        "cline"
+      ],
+      "name": "Cline",
+      "sourceUrl": "https://cline.bot/pricing",
+      "plans": [
+        "Open Source (Free)",
+        "Enterprise"
+      ],
+      "freePlans": [
+        "Open Source (Free)"
+      ],
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Open Source (Free); Enterprise"
+    },
+    {
+      "productId": "vercel-platform",
+      "platformIds": [
+        "vercel"
+      ],
+      "name": "Vercel",
+      "sourceUrl": "https://vercel.com/pricing",
+      "plans": [
+        "Hobby",
+        "Pro",
+        "Enterprise"
+      ],
+      "freePlans": [
+        "Hobby"
+      ],
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Hobby; Pro; Enterprise"
+    },
+    {
+      "productId": "vercel-v0",
+      "platformIds": [
+        "vercel"
+      ],
+      "name": "Vercel v0",
+      "sourceUrl": "https://v0.app/pricing",
+      "plans": [
+        "Free",
+        "Plus",
+        "Business",
+        "Enterprise"
+      ],
+      "freePlans": [
+        "Free"
+      ],
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Free; Plus; Business; Enterprise",
+      "note": "当前官方四档；FAQ明确Ultra已终止，不把历史搜索片段当作仍在售档位。"
+    },
+    {
+      "productId": "poe",
+      "platformIds": [
+        "poe"
+      ],
+      "name": "Poe",
+      "sourceUrl": "https://poe.com/subscription_plans",
+      "plans": [
+        "10,000 points/day",
+        "660,000 points/month",
+        "1,650,000 points/month",
+        "3,300,000 points/month",
+        "8,250,000 points/month"
+      ],
+      "freePlans": [],
+      "status": "verified",
+      "applyReady": true,
+      "quote": "10,000 points/day; 660,000 points/month; 1,650,000 points/month; 3,300,000 points/month; 8,250,000 points/month"
+    },
+    {
+      "productId": "manus",
+      "platformIds": [
+        "manus"
+      ],
+      "name": "Manus",
+      "sourceUrl": "https://help.manus.im/en/articles/11711111-what-is-the-current-membership-pricing-for-manus",
+      "plans": [
+        "Free",
+        "Pro",
+        "Team"
+      ],
+      "freePlans": [
+        "Free"
+      ],
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Free; Pro; Team",
+      "planAliases": {
+        "Pro": [
+          "Basic",
+          "Plus"
+        ]
+      },
+      "note": "官方明确 Basic 与 Plus 均已改名为 Pro；可调积分额度不重复造会员身份。Cue 电话号订阅独立计费。"
+    },
+    {
+      "productId": "manus-cue",
+      "platformIds": [
+        "manus"
+      ],
+      "name": "Manus Cue",
+      "sourceUrl": "https://help.manus.im/en/articles/11711111-what-is-the-current-membership-pricing-for-manus",
+      "plans": [
+        "Phone-number subscription"
+      ],
+      "freePlans": [],
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Phone-number subscription"
+    },
+    {
+      "productId": "aws-q-developer",
+      "platformIds": [
+        "aws"
+      ],
+      "name": "Amazon Q Developer",
+      "sourceUrl": "https://aws.amazon.com/q/developer/pricing/",
+      "plans": [
+        "Free",
+        "Pro"
+      ],
+      "freePlans": [
+        "Free"
+      ],
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Free; Pro"
+    },
+    {
+      "productId": "aws-q-business",
+      "platformIds": [
+        "aws"
+      ],
+      "name": "Amazon Q Business",
+      "sourceUrl": "https://aws.amazon.com/q/business/pricing/",
+      "plans": [
+        "Lite",
+        "Pro"
+      ],
+      "freePlans": [],
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Lite; Pro"
+    },
+    {
+      "productId": "meta-muse-code",
+      "platformIds": [
+        "meta"
+      ],
+      "name": "Meta Muse Code / Model API",
+      "sourceUrl": "https://dev.meta.ai/resources/blog/muse-code-new-plans-and-features",
+      "plans": [
+        "Everyday Usage",
+        "High Usage",
+        "Power Usage"
+      ],
+      "freePlans": [],
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Everyday Usage; High Usage; Power Usage",
+      "verificationNote": "官方公告内套餐图已在浏览器读取：Everyday $5/月、High $15/月、Power $50/月；不是从模型名称推测套餐。"
+    },
+    {
+      "productId": "aws-quick",
+      "platformIds": [
+        "aws"
+      ],
+      "name": "Amazon Quick",
+      "sourceUrl": "https://aws.amazon.com/quick/pricing/",
+      "plans": [
+        "Free",
+        "Plus",
+        "Max",
+        "Professional",
+        "Enterprise"
+      ],
+      "freePlans": [
+        "Free"
+      ],
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Free, Plus, Max, Professional, Enterprise"
+    },
+    {
+      "productId": "aws-quicksight",
+      "platformIds": [
+        "aws"
+      ],
+      "name": "Amazon Quick Sight",
+      "sourceUrl": "https://aws.amazon.com/quick/quicksight/pricing/",
+      "plans": [
+        "Reader",
+        "Reader Pro",
+        "Author",
+        "Author Pro"
+      ],
+      "freePlans": [],
+      "planAliases": {
+        "Author": [
+          "Admin"
+        ],
+        "Author Pro": [
+          "Admin Pro"
+        ]
+      },
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Reader; Reader Pro; Author; Author Pro",
+      "note": "Admin/Admin Pro 为同价对应Author/Author Pro的管理角色，保留别名不重复建档。"
+    },
+    {
+      "productId": "huawei-codearts-agent-personal",
+      "platformIds": [
+        "huaweicloud"
+      ],
+      "name": "华为云码道 CodeArts 代码智能体（个人版）",
+      "plans": [
+        "体验版",
+        "标准版",
+        "高级版",
+        "旗舰版"
+      ],
+      "freePlans": [
+        "体验版"
+      ],
+      "newPlanIds": {
+        "体验版": "huawei-codearts-agent-personal-free",
+        "标准版": "huawei-codearts-agent-personal-standard",
+        "高级版": "huawei-codearts-agent-personal-advanced",
+        "旗舰版": "huawei-codearts-agent-personal-flagship"
+      },
+      "sourceUrl": "https://codearts.huaweicloud.com/pricing",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "体验版; 标准版; 高级版; 旗舰版",
+      "note": "尊享版官网明确即将上线，尚不能作为在售套餐；积分加购包不作为独立会员。",
+      "remaining": "旧体验/基础/专业版续用规则及其他华为AI产品仍需核对"
+    },
+    {
+      "productId": "huawei-codearts-agent-enterprise",
+      "platformIds": [
+        "huaweicloud"
+      ],
+      "name": "华为云码道 CodeArts 代码智能体（企业版）",
+      "plans": [
+        "专业版"
+      ],
+      "freePlans": [],
+      "newPlanIds": {
+        "专业版": "huawei-codearts-agent-enterprise-professional"
+      },
+      "sourceUrl": "https://codearts.huaweicloud.com/pricing",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "专业版",
+      "note": "尊享版官网明确即将上线，尚不能作为在售套餐；积分加购包不作为独立会员。",
+      "remaining": "旧体验/基础/专业版续用规则及其他华为AI产品仍需核对"
+    },
+    {
+      "productId": "volc-coding-plan",
+      "platformIds": [
+        "volc"
+      ],
+      "name": "火山方舟 Coding Plan（个人版）",
+      "plans": [
+        "Lite",
+        "Pro"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://docs.volcengine.com/docs/ark/coding-plan-personal-plan-overview?lang=zh",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Lite; Pro"
+    },
+    {
+      "productId": "volc-agent-plan",
+      "platformIds": [
+        "volc"
+      ],
+      "name": "火山方舟 Agent Plan（个人版）",
+      "plans": [
+        "Small",
+        "Medium",
+        "Large",
+        "Max"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://docs.volcengine.com/docs/ark/agent-plan-personal-plan-overview?lang=zh",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Small; Medium; Large; Max",
+      "note": "官方同时保留Coding Plan，两者调用范围和抵扣规则不同，不作更名合并。"
+    },
+    {
+      "productId": "baidu-token-personal",
+      "platformIds": [
+        "baidu"
+      ],
+      "name": "百度千帆 Token Plan（个人版）",
+      "plans": [
+        "Mini（积分制）",
+        "Lite（积分制）",
+        "Pro（积分制）",
+        "Max（积分制）",
+        "Mini（Token制）",
+        "Lite（Token制）",
+        "Pro（Token制）",
+        "Max（Token制）"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://cloud.baidu.com/doc/qianfan/s/Dmrabu8b6",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Mini（积分制）; Lite（积分制）; Pro（积分制）; Max（积分制）; Mini（Token制）; Lite（Token制）; Pro（Token制）; Max（Token制）",
+      "newPlanIds": {
+        "Mini（积分制）": "baidu-token-personal-mini-credits",
+        "Lite（积分制）": "baidu-token-personal-lite-credits",
+        "Pro（积分制）": "baidu-token-personal-pro-credits",
+        "Max（积分制）": "baidu-token-personal-max-credits",
+        "Mini（Token制）": "baidu-token-personal-mini-tokens",
+        "Lite（Token制）": "baidu-token-personal-lite-tokens",
+        "Pro（Token制）": "baidu-token-personal-pro-tokens",
+        "Max（Token制）": "baidu-token-personal-max-tokens"
+      },
+      "note": "官方明确两种计费模式，积分制专属活动和工具与Token制不相同；单向迁移可选，不能自动认定旧订阅已切换。",
+      "remaining": "旧Coding Plan未到期资格与百度其他AI产品待核对。"
+    },
+    {
+      "productId": "baidu-token-enterprise",
+      "platformIds": [
+        "baidu"
+      ],
+      "name": "百度千帆 Token Plan（企业版）",
+      "plans": [
+        "轻享版",
+        "标准版",
+        "高级版",
+        "尊享版"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://cloud.baidu.com/doc/qianfan/s/ymq8wwch2",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "轻享版; 标准版; 高级版; 尊享版",
+      "newPlanIds": {
+        "轻享版": "baidu-token-enterprise-light",
+        "标准版": "baidu-token-enterprise-standard",
+        "高级版": "baidu-token-enterprise-advanced",
+        "尊享版": "baidu-token-enterprise-premium"
+      },
+      "note": "四种按席位包月订阅；共享积分包为附加用量，不创建重复会员。"
     }
   ]
 }

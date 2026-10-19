@@ -1,0 +1,136 @@
+{
+  "checkedAt": "2026-10-19",
+  "expectedRevision": 42,
+  "revision": 43,
+  "products": 68,
+  "plans": 376,
+  "fullReadback": true,
+  "changes": [
+    {
+      "id": "aws-q-developer-free",
+      "oldName": "Amazon Q Developer Free",
+      "name": "Amazon Q Developer Free",
+      "productId": "aws-q-developer"
+    },
+    {
+      "id": "aws-q-developer-pro",
+      "oldName": "Amazon Q Developer Pro",
+      "name": "Amazon Q Developer Pro",
+      "productId": "aws-q-developer"
+    },
+    {
+      "id": "aws-q-business-lite",
+      "oldName": "Amazon Q Business Lite",
+      "name": "Amazon Q Business Lite",
+      "productId": "aws-q-business"
+    },
+    {
+      "id": "aws-q-business-pro",
+      "oldName": "Amazon Q Business Pro",
+      "name": "Amazon Q Business Pro",
+      "productId": "aws-q-business"
+    },
+    {
+      "id": "meta-muse-code-everyday-usage",
+      "oldName": "Meta Muse Code / Model API Everyday Usage",
+      "name": "Meta Muse Code / Model API Everyday Usage",
+      "productId": "meta-muse-code"
+    },
+    {
+      "id": "meta-muse-code-high-usage",
+      "oldName": "Meta Muse Code / Model API High Usage",
+      "name": "Meta Muse Code / Model API High Usage",
+      "productId": "meta-muse-code"
+    },
+    {
+      "id": "meta-muse-code-power-usage",
+      "oldName": "Meta Muse Code / Model API Power Usage",
+      "name": "Meta Muse Code / Model API Power Usage",
+      "productId": "meta-muse-code"
+    },
+    {
+      "id": "aws-quick-free",
+      "oldName": "Amazon Quick Free",
+      "name": "Amazon Quick Free",
+      "productId": "aws-quick"
+    },
+    {
+      "id": "aws-quick-plus",
+      "oldName": "Amazon Quick Plus",
+      "name": "Amazon Quick Plus",
+      "productId": "aws-quick"
+    },
+    {
+      "id": "aws-quick-max",
+      "oldName": "Amazon Quick Max",
+      "name": "Amazon Quick Max",
+      "productId": "aws-quick"
+    },
+    {
+      "id": "aws-quick-professional",
+      "oldName": "Amazon Quick Professional",
+      "name": "Amazon Quick Professional",
+      "productId": "aws-quick"
+    },
+    {
+      "id": "aws-quick-enterprise",
+      "oldName": "Amazon Quick Enterprise",
+      "name": "Amazon Quick Enterprise",
+      "productId": "aws-quick"
+    },
+    {
+      "id": "aws-quicksight-reader",
+      "oldName": "Amazon Quick Sight Reader",
+      "name": "Amazon Quick Sight Reader",
+      "productId": "aws-quicksight"
+    },
+    {
+      "id": "aws-quicksight-reader-pro",
+      "oldName": "Amazon Quick Sight Reader Pro",
+      "name": "Amazon Quick Sight Reader Pro",
+      "productId": "aws-quicksight"
+    },
+    {
+      "id": "aws-quicksight-author",
+      "oldName": "Amazon Quick Sight Author",
+      "name": "Amazon Quick Sight Author",
+      "productId": "aws-quicksight"
+    },
+    {
+      "id": "aws-quicksight-author-pro",
+      "oldName": "Amazon Quick Sight Author Pro",
+      "name": "Amazon Quick Sight Author Pro",
+      "productId": "aws-quicksight"
+    },
+    {
+      "id": "huawei-codearts-agent-personal-free",
+      "oldName": "华为云码道 CodeArts 代码智能体（个人版） 体验版",
+      "name": "华为云码道 CodeArts 代码智能体（个人版） 体验版",
+      "productId": "huawei-codearts-agent-personal"
+    },
+    {
+      "id": "huawei-codearts-agent-personal-standard",
+      "oldName": "华为云码道 CodeArts 代码智能体（个人版） 标准版",
+      "name": "华为云码道 CodeArts 代码智能体（个人版） 标准版",
+      "productId": "huawei-codearts-agent-personal"
+    },
+    {
+      "id": "huawei-codearts-agent-personal-advanced",
+      "oldName": "华为云码道 CodeArts 代码智能体（个人版） 高级版",
+      "name": "华为云码道 CodeArts 代码智能体（个人版） 高级版",
+      "productId": "huawei-codearts-agent-personal"
+    },
+    {
+      "id": "huawei-codearts-agent-personal-flagship",
+      "oldName": "华为云码道 CodeArts 代码智能体（个人版） 旗舰版",
+      "name": "华为云码道 CodeArts 代码智能体（个人版） 旗舰版",
+      "productId": "huawei-codearts-agent-personal"
+    },
+    {
+      "id": "huawei-codearts-agent-enterprise-professional",
+      "oldName": "华为云码道 CodeArts 代码智能体（企业版） 专业版",
+      "name": "华为云码道 CodeArts 代码智能体（企业版） 专业版",
+      "productId": "huawei-codearts-agent-enterprise"
+    }
+  ]
+}
