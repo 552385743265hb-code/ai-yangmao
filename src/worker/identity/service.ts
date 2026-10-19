@@ -460,10 +460,13 @@ export class IdentityService {
   }
   // Owner override (spec §6.5.1): an administrator's explicit "same as" an approved, active entity on the
   // candidate's own platform is authoritative even when an unverified source left no comparable history.
-  // Only for candidates with no known facts: known but conflicting or ambiguous facts keep every existing guard.
-  if(!entity&&control?.action==='same'&&control.ownerOverride&&control.entityId&&!hasKnownTerms(facts)){
+  // Legacy membership migration may leave identical partial facts on both sides while issuer/mechanism
+  // remain unknown. Accept that exact canonical match too; never discard a conflicting or added fact.
+  if(!entity&&control?.action==='same'&&control.ownerOverride&&control.entityId){
    const target=await this.entity(control.entityId),display=await readDisplay();
-   if(target?.current_approved_version_id&&display?.platformId===target.platform_id){
+   const approved=target?.current_approved_version_id?await this.db.prepare("SELECT facts_json FROM benefit_versions WHERE id=? AND entity_id=? AND state='approved'").bind(target.current_approved_version_id,target.id).first<{facts_json:string}>():null;
+   const samePartialFacts=!(productId&&mechanism)&&!claimMemory.match&&direct.length===0&&approved&&await hashTerms(facts)===await hashTerms(canonicalTermsSchema.parse(JSON.parse(approved.facts_json)));
+   if(target?.current_approved_version_id&&display?.platformId===target.platform_id&&(!hasKnownTerms(facts)||samePartialFacts)){
     entity=target;comparison={relation:'SAME',entityId:target.id,termsRelation:'EQUIVALENT',matchingVersionId:target.current_approved_version_id,evidenceRefs:[],conflicts:[],reasonCodes:['owner_confirmed_same'],retrievalComplete:true,resolverVersion:RESOLVER_VERSION,rulesVersion:RULES_VERSION};
    }
   }
