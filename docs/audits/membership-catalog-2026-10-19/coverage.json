@@ -221,14 +221,18 @@
       "platformId": "github",
       "name": "GitHub Models",
       "site": "https://github.com/marketplace/models",
-      "status": "unreviewed",
-      "sources": [],
+      "status": "research_complete",
+      "sources": [
+        "https://docs.github.com/en/github-models"
+      ],
       "productIds": [],
       "homepageRead": {
         "url": "https://github.com/marketplace/models",
         "chars": 0,
         "error": "HTTP Error 404: Not Found"
-      }
+      },
+      "subscriptionStatus": "none",
+      "note": "该登记平台为GitHub Models；官方说明2026-07-30已完全退役，且与Copilot独立。不得把Copilot套餐冒充Models订阅。Copilot全部目录在独立copilot平台核实。"
     },
     {
       "platformId": "groq",
@@ -285,9 +289,13 @@
       "platformId": "nvidia",
       "name": "NVIDIA NIM",
       "site": "https://build.nvidia.com",
-      "status": "unreviewed",
-      "sources": [],
-      "productIds": [],
+      "status": "partial",
+      "sources": [
+        "https://docs.nvidia.com/ai-enterprise/planning-resource/licensing-guide/latest/pricing.html"
+      ],
+      "productIds": [
+        "nvidia-ai-enterprise"
+      ],
       "homepageRead": {
         "url": "https://build.nvidia.com",
         "chars": 1381,
@@ -378,9 +386,13 @@
       "platformId": "sambanova",
       "name": "SambaNova",
       "site": "https://sambanova.ai",
-      "status": "unreviewed",
-      "sources": [],
-      "productIds": [],
+      "status": "research_complete",
+      "sources": [
+        "https://cloud.sambanova.ai/plans"
+      ],
+      "productIds": [
+        "sambanova-cloud"
+      ],
       "homepageRead": {
         "url": "https://sambanova.ai",
         "chars": 6693,
@@ -529,9 +541,14 @@
       "platformId": "cohere",
       "name": "Cohere",
       "site": "https://cohere.com",
-      "status": "unreviewed",
-      "sources": [],
-      "productIds": [],
+      "status": "partial",
+      "sources": [
+        "https://cohere.com/pricing"
+      ],
+      "productIds": [
+        "cohere-north",
+        "cohere-compass"
+      ],
       "homepageRead": {
         "url": "https://cohere.com",
         "chars": 8567,
@@ -1256,9 +1273,13 @@
       "platformId": "copilot",
       "name": "GitHub Copilot",
       "site": "https://github.com/features/copilot",
-      "status": "unreviewed",
-      "sources": [],
-      "productIds": [],
+      "status": "research_complete",
+      "sources": [
+        "https://docs.github.com/en/copilot/get-started/plans"
+      ],
+      "productIds": [
+        "github-copilot"
+      ],
       "homepageRead": {
         "url": "https://github.com/features/copilot",
         "chars": 67193,
@@ -1970,9 +1991,17 @@
       "platformId": "qoder",
       "name": "阿里 Qoder",
       "site": "https://qoder.cn",
-      "status": "unreviewed",
-      "sources": [],
-      "productIds": [],
+      "status": "research_complete",
+      "sources": [
+        "https://docs.qoder.com/account/pricing",
+        "https://docs.qoder.cn/product-overview/billing-description"
+      ],
+      "productIds": [
+        "qoder-global",
+        "qoder-cn-suite",
+        "qoder-cn-lingma",
+        "qoder-lingma-legacy"
+      ],
       "homepageRead": {
         "url": "https://qoder.cn",
         "chars": 8290,

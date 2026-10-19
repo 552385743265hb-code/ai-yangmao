@@ -6,7 +6,7 @@ import {spawnSync} from 'node:child_process';
 const meta={aliases:[],status:'pending',sourceUrl:'https://vendor.example/old',verifiedAt:null,revision:1};
 const snapshot={revision:7,products:[{...meta,id:'vendor',name:'Vendor'}],plans:[{...meta,id:'vendor-pro',productId:'vendor',name:'Pro',billing:'unknown'},{...meta,id:'placeholder',productId:'vendor',name:'付费套餐（档位待核实）',billing:'unknown'}]};
 const finding={productId:'vendor',platformIds:['vendor'],name:'Vendor',sourceUrl:'https://vendor.example/pricing',plans:['Pro','Max'],freePlans:[],status:'verified',applyReady:true,quote:'Pro and Max subscriptions'};
-function prepare(old:any,products:any[]){const dir=mkdtempSync(join(tmpdir(),'ym-catalog-test-'));try{writeFileSync(join(dir,'old.json'),JSON.stringify(old));writeFileSync(join(dir,'findings.json'),JSON.stringify({checkedAt:'2026-10-19',products}));const r=spawnSync(process.execPath,['scripts/prepare-membership-catalog.mjs',join(dir,'old.json'),join(dir,'findings.json'),join(dir,'out.json')],{encoding:'utf8'});return {status:r.status,error:r.stderr,output:r.status===0?JSON.parse(readFileSync(join(dir,'out.json'),'utf8')):null};}finally{rmSync(dir,{recursive:true,force:true});}}
+function prepare(old:any,products:any[],coverage?:any){const dir=mkdtempSync(join(tmpdir(),'ym-catalog-test-'));try{writeFileSync(join(dir,'old.json'),JSON.stringify(old));writeFileSync(join(dir,'findings.json'),JSON.stringify({checkedAt:'2026-10-19',products}));if(coverage)writeFileSync(join(dir,'coverage.json'),JSON.stringify(coverage));const r=spawnSync(process.execPath,['scripts/prepare-membership-catalog.mjs',join(dir,'old.json'),join(dir,'findings.json'),join(dir,'out.json'),...(coverage?[join(dir,'coverage.json')]:[])],{encoding:'utf8'});return {status:r.status,error:r.stderr,output:r.status===0?JSON.parse(readFileSync(join(dir,'out.json'),'utf8')):null};}finally{rmSync(dir,{recursive:true,force:true});}}
 it('refuses to silently discard an old catalog placeholder',()=>{const r=prepare(snapshot,[finding]);expect(r.status).not.toBe(0);expect(r.error).toContain('placeholder');});
 it('archives an explicitly superseded placeholder and preserves real plan IDs and aliases',()=>{
  const r=prepare(snapshot,[{...finding,retirePlans:[{id:'placeholder',reason:'旧抽取占位项，不是官方套餐',sourceUrl:'https://vendor.example/pricing'}]}]);expect(r.status).toBe(0);
@@ -31,4 +31,15 @@ it('records explicit aggregate replacements and refuses foreign plan targets',()
  const r=prepare(snapshot,[f]);expect(r.status).toBe(0);expect(r.output.catalog.planReplacements.placeholder).toEqual(['vendor-pro','vendor-max']);expect(r.output.catalog.planIdAliases?.placeholder).toBeUndefined();
  const old=structuredClone(snapshot);old.products.push({...meta,id:'other',name:'Other',status:'verified'});old.plans.push({...meta,id:'foreign',productId:'other',name:'Other Pro',status:'verified',billing:'paid'});
  expect(prepare(old,[{...f,retirePlans:[{...f.retirePlans[0],replacementIds:['foreign']}]}]).status).not.toBe(0);
+});
+
+it('includes all vendors and distinguishes verified absence from incomplete research',()=>{
+ const old={revision:1,products:[],plans:[]};
+ const coverage={vendors:[{platformId:'vendor',name:'Vendor',status:'partial',sources:['https://vendor.example/pricing']},{platformId:'api',name:'API',status:'research_complete',subscriptionStatus:'none',sources:['https://api.example/pricing']},{platformId:'unknown',name:'Unknown',status:'unreviewed',sources:[]}]};
+ const r=prepare(old,[finding],coverage);expect(r.status).toBe(0);
+ expect(r.output.catalog.vendors.map((v:any)=>[v.id,v.status])).toEqual([['vendor','available'],['api','none'],['unknown','unverified']]);
+ expect(r.output.catalog.vendors[2].verifiedAt).toBeNull();
+ const contradictory=structuredClone(coverage);Object.assign(contradictory.vendors[0],{status:'research_complete',subscriptionStatus:'none'});
+ expect(prepare(old,[finding],contradictory).error).toContain('has verified plans');
+ expect(prepare(old,[finding],{vendors:[coverage.vendors[1]]}).error).toContain('unlisted vendor');
 });

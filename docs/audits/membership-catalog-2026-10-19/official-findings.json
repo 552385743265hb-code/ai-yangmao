@@ -2136,6 +2136,224 @@
       "applyReady": true,
       "quote": "Free; Pro; Max; Team",
       "verificationNote": "当前Studio四档；API及Enterprise渠道仍需独立核查。"
+    },
+    {
+      "productId": "github-copilot",
+      "platformIds": [
+        "copilot"
+      ],
+      "name": "GitHub Copilot",
+      "plans": [
+        "Free",
+        "Student",
+        "Pro",
+        "Pro+",
+        "Max",
+        "Business",
+        "Enterprise",
+        "Pro（存量年付请求制）",
+        "Pro+（存量年付请求制）"
+      ],
+      "freePlans": [
+        "Free",
+        "Student"
+      ],
+      "sourceUrl": "https://docs.github.com/en/copilot/get-started/plans",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Free; Student; Pro; Pro+; Max; Business; Enterprise; Pro（存量年付请求制）; Pro+（存量年付请求制）",
+      "legacyPlans": [
+        "Pro（存量年付请求制）",
+        "Pro+（存量年付请求制）"
+      ],
+      "newPlanIds": {
+        "Pro（存量年付请求制）": "github-copilot-pro-legacy-annual",
+        "Pro+（存量年付请求制）": "github-copilot-pro-plus-legacy-annual"
+      },
+      "planSources": {
+        "Pro（存量年付请求制）": "https://docs.github.com/en/copilot/reference/copilot-billing/request-based-billing-legacy/what-changed-with-billing",
+        "Pro+（存量年付请求制）": "https://docs.github.com/en/copilot/reference/copilot-billing/request-based-billing-legacy/what-changed-with-billing"
+      },
+      "note": "旧年付可继续请求制至到期；现行套餐为AI Credits计费。Student是独立免费方案，教师和维护者获赠Pro不另造档位。"
+    },
+    {
+      "productId": "qoder-global",
+      "platformIds": [
+        "qoder"
+      ],
+      "name": "Qoder（国际版）",
+      "plans": [
+        "Free",
+        "Pro Trial",
+        "Pro",
+        "Pro+",
+        "Ultra",
+        "Teams",
+        "Enterprise"
+      ],
+      "freePlans": [
+        "Free",
+        "Pro Trial"
+      ],
+      "sourceUrl": "https://docs.qoder.com/account/pricing",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Free; Pro Trial; Pro; Pro+; Ultra; Teams; Enterprise",
+      "planSources": {
+        "Teams": "https://docs.qoder.com/account/enterprise/pricing",
+        "Enterprise": "https://docs.qoder.com/account/enterprise/pricing"
+      },
+      "note": "国际Teams与Enterprise独立隔离；IDE、Work、Wake、CLI等共用订阅，不重复建产品。Pro Trial为14天体验，不等于付费Pro。"
+    },
+    {
+      "productId": "qoder-cn-suite",
+      "platformIds": [
+        "qoder"
+      ],
+      "name": "Qoder CN（全家桶）",
+      "plans": [
+        "个人体验版 Free",
+        "个人专业版 Pro",
+        "个人高级版 Pro+",
+        "个人旗舰版 Ultra",
+        "团队版 Teams",
+        "企业标准版 Enterprise",
+        "企业专属版 Enterprise VPC"
+      ],
+      "freePlans": [
+        "个人体验版 Free"
+      ],
+      "sourceUrl": "https://docs.qoder.cn/product-overview/billing-description",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "个人体验版 Free; 个人专业版 Pro; 个人高级版 Pro+; 个人旗舰版 Ultra; 团队版 Teams; 企业标准版 Enterprise; 企业专属版 Enterprise VPC",
+      "newPlanIds": {
+        "个人体验版 Free": "qoder-cn-suite-free",
+        "个人专业版 Pro": "qoder-cn-suite-pro",
+        "个人高级版 Pro+": "qoder-cn-suite-pro-plus",
+        "个人旗舰版 Ultra": "qoder-cn-suite-ultra",
+        "团队版 Teams": "qoder-cn-suite-teams",
+        "企业标准版 Enterprise": "qoder-cn-suite-enterprise",
+        "企业专属版 Enterprise VPC": "qoder-cn-suite-enterprise-vpc"
+      },
+      "note": "一份订阅覆盖官网明确列示的国内产品入口；不与国际账号或原灵码单产品合同混合。"
+    },
+    {
+      "productId": "qoder-cn-lingma",
+      "platformIds": [
+        "qoder"
+      ],
+      "name": "Qoder CN（原灵码单产品）",
+      "plans": [
+        "企业标准版"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://docs.qoder.cn/product-overview/billing-description",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "企业标准版",
+      "newPlanIds": {
+        "企业标准版": "qoder-cn-lingma-enterprise"
+      },
+      "note": "该页签专属版购买入口为敬请期待，不当作当前可购买套餐。"
+    },
+    {
+      "productId": "qoder-lingma-legacy",
+      "platformIds": [
+        "qoder"
+      ],
+      "name": "通义灵码（2026年5月20日前存量合同）",
+      "plans": [
+        "个人基础版",
+        "个人专业版",
+        "企业标准版",
+        "企业专属版"
+      ],
+      "freePlans": [
+        "个人基础版"
+      ],
+      "sourceUrl": "https://docs.qoder.cn/product-overview/billing-description",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "个人基础版; 个人专业版; 企业标准版; 企业专属版",
+      "newPlanIds": {
+        "个人基础版": "qoder-lingma-legacy-basic",
+        "个人专业版": "qoder-lingma-legacy-pro",
+        "企业标准版": "qoder-lingma-legacy-enterprise",
+        "企业专属版": "qoder-lingma-legacy-vpc"
+      },
+      "legacyPlans": [
+        "个人基础版",
+        "个人专业版",
+        "企业标准版",
+        "企业专属版"
+      ],
+      "note": "官方存量合同参考，合同期内继续有效；原59元个人专业版即使限时免费仍保留付费档属性，不自动映射新全家桶。"
+    },
+    {
+      "productId": "sambanova-cloud",
+      "platformIds": [
+        "sambanova"
+      ],
+      "name": "SambaNova Cloud",
+      "plans": [
+        "Enterprise"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://cloud.sambanova.ai/plans",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Enterprise",
+      "verificationNote": "官方Enterprise明确subscription based pricing；Free/Developer是按用量计费账户，不列为固定订阅。"
+    },
+    {
+      "productId": "cohere-north",
+      "platformIds": [
+        "cohere"
+      ],
+      "name": "Cohere North",
+      "plans": [
+        "Enterprise (Custom)"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://cohere.com/pricing",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Enterprise (Custom)",
+      "verificationNote": "工作平台定制企业方案；API和Model Vault算力实例价格不作为会员档位。"
+    },
+    {
+      "productId": "cohere-compass",
+      "platformIds": [
+        "cohere"
+      ],
+      "name": "Cohere Compass",
+      "plans": [
+        "Enterprise (Custom)"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://cohere.com/pricing",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Enterprise (Custom)",
+      "verificationNote": "搜索工作平台定制企业方案；不是按百万token价格创建会员。"
+    },
+    {
+      "productId": "nvidia-ai-enterprise",
+      "platformIds": [
+        "nvidia"
+      ],
+      "name": "NVIDIA AI Enterprise",
+      "plans": [
+        "Subscription",
+        "Perpetual License"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://docs.nvidia.com/ai-enterprise/planning-resource/licensing-guide/latest/pricing.html",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Subscription; Perpetual License",
+      "verificationNote": "官方软件授权分订阅与永久许可；1至5年属于订阅期限，不重复建立同一软件档位。云按GPU小时算力不作为新会员。"
     }
   ]
 }

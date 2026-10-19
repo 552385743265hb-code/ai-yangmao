@@ -1,7 +1,7 @@
 /** Prepare an auditable catalog patch from reviewed official findings. Never writes production. */
 import {readFileSync,writeFileSync} from 'node:fs';
-const [snapshotPath,findingsPath,outputPath]=process.argv.slice(2);
-if(!snapshotPath||!findingsPath||!outputPath)throw Error('Usage: node scripts/prepare-membership-catalog.mjs <snapshot.json> <findings.json> <output.json>');
+const [snapshotPath,findingsPath,outputPath,coveragePath]=process.argv.slice(2);
+if(!snapshotPath||!findingsPath||!outputPath)throw Error('Usage: node scripts/prepare-membership-catalog.mjs <snapshot.json> <findings.json> <output.json> [coverage.json]');
 const old=JSON.parse(readFileSync(snapshotPath,'utf8')),findings=JSON.parse(readFileSync(findingsPath,'utf8'));
 const next=structuredClone(old),changes=[],unresolved=[];
 const normal=s=>s.normalize('NFKC').trim().toLowerCase().replace(/\s+/g,' ');
@@ -56,6 +56,21 @@ for(const f of findings.products.filter(f=>f.status==='verified'&&f.applyReady))
 const ids=new Set();for(const p of [...next.products,...next.plans]){if(ids.has(p.id))throw Error('Duplicate ID: '+p.id);ids.add(p.id);}
 for(const p of next.plans)if(!next.products.some(x=>x.id===p.productId))throw Error('Orphan plan: '+p.id);
 if(unresolved.length)throw Error(JSON.stringify({unresolved},null,2));
+if(coveragePath){
+ const coverage=JSON.parse(readFileSync(coveragePath,'utf8'));
+ if(!Array.isArray(coverage.vendors)||!coverage.vendors.length)throw Error('Vendor coverage is empty');
+ const seen=new Set();
+ next.vendors=coverage.vendors.map(v=>{
+  if(typeof v.platformId!=='string'||!v.platformId||typeof v.name!=='string'||!v.name||seen.has(v.platformId))throw Error('Invalid or duplicate vendor: '+v.platformId);
+  seen.add(v.platformId);
+  const available=next.products.some(p=>p.status==='verified'&&p.platformIds?.includes(v.platformId)&&next.plans.some(t=>t.productId===p.id&&t.status==='verified'));
+  const sourceUrl=v.sources?.find(u=>typeof u==='string'&&u.startsWith('https://'));
+  const confirmedNone=v.status==='research_complete'&&v.subscriptionStatus==='none'&&sourceUrl;
+  if(available&&confirmedNone)throw Error('Vendor claims no subscriptions but has verified plans: '+v.platformId);
+  return {id:v.platformId,name:v.name,status:available?'available':confirmedNone?'none':'unverified',...(sourceUrl?{sourceUrl}:{}),verifiedAt:available||confirmedNone?findings.checkedAt:null};
+ });
+ for(const p of next.products)for(const id of p.platformIds||[])if(!seen.has(id))throw Error('Product references an unlisted vendor: '+id);
+}
 next.revision=old.revision+1;
 writeFileSync(outputPath,JSON.stringify({expectedRevision:old.revision,catalog:next,changes},null,2)+'\n');
 console.log(JSON.stringify({expectedRevision:old.revision,products:next.products.length,plans:next.plans.length,changedPlans:changes.length,unresolved},null,2));

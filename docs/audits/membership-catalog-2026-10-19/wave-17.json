@@ -1,0 +1,41 @@
+{
+  "checkedAt": "2026-10-19",
+  "expectedRevision": 46,
+  "revision": 47,
+  "products": 86,
+  "plans": 449,
+  "vendors": 0,
+  "fullReadback": true,
+  "changes": [
+    {
+      "id": "sambanova-cloud-enterprise",
+      "oldName": "SambaNova Cloud Enterprise",
+      "name": "SambaNova Cloud Enterprise",
+      "productId": "sambanova-cloud"
+    },
+    {
+      "id": "cohere-north-enterprise-custom",
+      "oldName": "Cohere North Enterprise (Custom)",
+      "name": "Cohere North Enterprise (Custom)",
+      "productId": "cohere-north"
+    },
+    {
+      "id": "cohere-compass-enterprise-custom",
+      "oldName": "Cohere Compass Enterprise (Custom)",
+      "name": "Cohere Compass Enterprise (Custom)",
+      "productId": "cohere-compass"
+    },
+    {
+      "id": "nvidia-ai-enterprise-subscription",
+      "oldName": "NVIDIA AI Enterprise Subscription",
+      "name": "NVIDIA AI Enterprise Subscription",
+      "productId": "nvidia-ai-enterprise"
+    },
+    {
+      "id": "nvidia-ai-enterprise-perpetual-license",
+      "oldName": "NVIDIA AI Enterprise Perpetual License",
+      "name": "NVIDIA AI Enterprise Perpetual License",
+      "productId": "nvidia-ai-enterprise"
+    }
+  ]
+}
