@@ -6,7 +6,7 @@
 
 - 生产会员目录 **revision 52**：102 产品、531 套餐；511 verified、19 retired、1 pending。完整产品/套餐及根级别迁移元数据已与预备补丁逐项读回一致。
 - 仅剩1个旧pending：`cursor-plan-1`。Grok/X三个占位项已退休并补官方具体套餐。
-- 厂商研究覆盖：50 research_complete、33 partial、41 unreviewed。**这比 pending 数更接近剩余工作规模，不能只清四条就宣布完成。**
+- 厂商研究覆盖：50 research_complete、32 partial、42 unreviewed。**这比 pending 数更接近剩余工作规模，不能只清四条就宣布完成。**
 - 生产代码已更新为 PR106 / cc1f94632ef2（100%流量，2026-10-19实时读取）；新界面在草稿 PR105，未合并部署。当前工作区 `/tmp/ym-hf-link-worktree`，分支 `codex/membership-catalog-complete`。
 - 主 checkout 是其他任务的估值修复，勿覆盖。node_modules 为临时 symlink，不提交。
 - 本地最近完整验证：类型检查、1426 Vitest + 11 CLI、build:web、diff --check 通过。代码新增：按厂商套餐复选、个人选择去重、旧记录提示可单独清除、跨厂商资格默认显示实际会员厂商、退休产品不重新出现在厂商下拉、目录准备工具的归并/退休守卫与回归。
