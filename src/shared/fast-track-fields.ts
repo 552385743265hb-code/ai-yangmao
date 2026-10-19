@@ -1,4 +1,5 @@
 /** Fast-track listing fields: shared by the Worker (publish gate) and the pipeline (paid fallback decision). */
+import {semanticFieldIssues,type SemanticContext} from './fast-track-semantics';
 import { collectedOfferIn, normalizeRequirements } from './ingest';
 
 export const BASIC_FIELDS = ['title', 'type', 'claimMethod', 'valueText', 'modalities', 'requirements', 'endKind'] as const;
@@ -45,13 +46,13 @@ export function missingBasicFields(fields: FastTrackFields): string[] {
 }
 
 /** The model fallback must see the same schema failures as the publishing endpoint. */
-export function fastTrackFieldIssues(fields: FastTrackFields): string[] {
+export function fastTrackFieldIssues(fields: FastTrackFields, context?: SemanticContext): string[] {
   const basic = missingBasicFields(fields);
   const parsed = collectedOfferIn.safeParse({
-    ...fields, id: 'fast-track-preflight', platformId: 'preflight',
+    ...fields, id: 'fast-track-preflight', platformId: context?.platformId ?? 'preflight',
     valueText: String(fields.valueText ?? '').slice(0, 200),
     evidence: {url:'https://example.com/',tier:'official',capturedAt:'2026-01-01T00:00:00Z',excerpts:{benefit:'Administrator authorized benefit'}},
   });
   if (Array.isArray(fields.requirements) && fields.requirements.includes('pay:金额未写明')) basic.push('requirements: 请依据原文明确是否必须先充值及充值条件，不得把按量计费当作充值门槛');
-  return [...new Set([...basic, ...missingOwnerChoices(fields), ...(!parsed.success ? parsed.error.issues.map(i => `${i.path.join('.')}: ${i.message}`) : [])])];
+  return [...new Set([...(context ? semanticFieldIssues(fields,context) : []), ...basic, ...missingOwnerChoices(fields), ...(!parsed.success ? parsed.error.issues.map(i => `${i.path.join('.')}: ${i.message}`) : [])])];
 }

@@ -45,7 +45,7 @@ import { screeningIngestRoutes } from './screening/routes';
 import { activeOnDate, isClaimable, liveStatus, missingEvidence } from '../shared/lifecycle';
 import { admin } from './admin';
 import { feishuAdmin, runScheduled } from './feishu';
-import { advanceFastTrack, claimFastTrack, FastTrackError, fastTrackQueue, submitFastTrackResult } from './fast-track';
+import { fastTrackReviewInput, advanceFastTrack, claimFastTrack, FastTrackError, fastTrackQueue, submitFastTrackResult } from './fast-track';
 
 export interface Env {
   DB: D1Database;
@@ -796,6 +796,7 @@ const fastTrackFailure = (c: Context<{ Bindings: Env }>, error: unknown) => {
   throw error;
 };
 ingest.get('/fast-track/queue', async c => c.json({ jobs: await fastTrackQueue(c.env.DB) }));
+ingest.get('/fast-track/:id/review-input',async c=>{try{return c.json(await fastTrackReviewInput(c.env.DB,c.req.param('id')));}catch(error){return fastTrackFailure(c,error);}});
 ingest.post('/fast-track/:id/claim', async c => {
   const job = await claimFastTrack(c.env.DB, c.req.param('id'));
   return job ? c.json({ job }) : c.json({ error: '任务已被领取或已结束' }, 409);

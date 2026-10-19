@@ -44,6 +44,10 @@ on:
         description: '诊断：只用生产读取逻辑抓取这些网址并打印结果（逗号分隔），不运行采集'
         type: string
         default: ''
+      fast_track_review_job:
+        description: '诊断：重放已有快通任务的模型初稿，真实模型校正并比对已批准条目，不发布业务数据'
+        type: string
+        default: ''
 
 concurrency:
   group: collect
@@ -76,8 +80,14 @@ jobs:
           JINA_API_KEY: ${{ secrets.JINA_API_KEY }}
       - name: 运行采集管线
         if: ${{ inputs.probe_urls == '' || inputs.probe_urls == null }}
-        run: npm run collect
+        run: |
+          if [ -n "$FAST_TRACK_REVIEW_JOB" ]; then
+            npx tsx scripts/verify-fast-track.ts
+          else
+            npm run collect
+          fi
         env:
+          FAST_TRACK_REVIEW_JOB: ${{ inputs.fast_track_review_job }}
           API_BASE: ${{ secrets.API_BASE }}
           IDENTITY_MODE: ${{ vars.IDENTITY_MODE || 'off' }}
           INGEST_TOKEN: ${{ secrets.INGEST_TOKEN }}
@@ -115,3 +125,10 @@ jobs:
           LEAD_REVIEW_LIMIT: ${{ inputs.lead_review_limit || vars.LEAD_REVIEW_LIMIT || '4' }}
           LEAD_REVIEW_IDS: ${{ inputs.lead_review_ids }}
           OFFICIAL_REVIEW_LIMIT: ${{ inputs.official_review_limit || vars.OFFICIAL_REVIEW_LIMIT || '8' }}
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: ${{ inputs.fast_track_review_job != '' && inputs.fast_track_review_job != null }}
+        with:
+          name: fast-track-semantic-verification
+          path: fast-track-semantic-verification.json
+          if-no-files-found: error
