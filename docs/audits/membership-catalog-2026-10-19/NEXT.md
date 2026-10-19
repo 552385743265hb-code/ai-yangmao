@@ -9,7 +9,7 @@
 - 厂商研究覆盖：47 research_complete、34 partial、43 unreviewed。**这比 pending 数更接近剩余工作规模，不能只清四条就宣布完成。**
 - 生产代码已更新为 PR106 / cc1f94632ef2（100%流量，2026-10-19实时读取）；新界面在草稿 PR105，未合并部署。当前工作区 `/tmp/ym-hf-link-worktree`，分支 `codex/membership-catalog-complete`。
 - 主 checkout 是其他任务的估值修复，勿覆盖。node_modules 为临时 symlink，不提交。
-- 本地最近完整验证：类型检查、1424 Vitest + 11 CLI、build:web、diff --check 通过。代码新增：按厂商套餐复选、个人选择去重、旧记录提示可单独清除、跨厂商资格默认显示实际会员厂商、退休产品不重新出现在厂商下拉、目录准备工具的归并/退休守卫与回归。
+- 本地最近完整验证：类型检查、1426 Vitest + 11 CLI、build:web、diff --check 通过。代码新增：按厂商套餐复选、个人选择去重、旧记录提示可单独清除、跨厂商资格默认显示实际会员厂商、退休产品不重新出现在厂商下拉、目录准备工具的归并/退休守卫与回归。
 
 ## 生产写入方法与快照
 
@@ -43,7 +43,7 @@
 1. Cursor/Grok/X：新The X Subscription与旧Cursor/Grok/X目录有明确迁移关系；先读官方链接，不能仅按同名Pro/Enterprise合并。当前事实文件中的cursor/x-subscription仍未applyReady。
 2. Cursor已有已批准资格引用`cursor-teams`、`cursor-enterprise`（含Kilo的跨厂商资格）。把泛Teams拆成Standard/Premium时，必须支持明确的一对多资格映射或受控回填，不能直接退休旧ID造成原福利匹配失效。历史用户持有的泛Teams/Pro不得猜成某一档。
 3. 32条已批准旧资格仍needs_review，9条confirmed（基线快照）。目录补齐之后，依据**已批准原文**完成可确认的结构化映射；保留地区、年付、截止、回归用户等实际约束与审批状态。仓库已有`scripts/membership-backfill.ts`及其测试，按现行身份服务处理，不直接改历史版本。
-4. **新多选界面与快通约束的发布前缺口**：`mergeFastTrackFields`当前让owner.membershipRequirement整对象覆盖模型。新复选框不输入日期/年付等限制，不能因此覆盖模型从原文补的真实限制。需用“只选择套餐”的意图与完整资格区分，或等价实现；加真实约束回归，确保选择套餐后模型仍能补限制。普通编辑亦须保留已有真实约束。
+4. 新多选界面与快通约束覆盖缺口已在本地修复：membershipSelectionOnly区分勾选套餐与完整资格，模型输出必须覆盖相同产品/套餐集，完整限制沿用模型，受阻任务重新勾选后排队补全。API回归已验证年付/地区/日期/试用条件保留；仍须实际模型+真实条目上线前验证。旧完整资格API不带标记仍为明确覆盖。
 5. 个人条件含歧义旧记录时，当前代码会移到unresolvedMembers；应检查不能因未映射旧记录误判为肯定不符合，必要时保守返回unknown。清除提示按钮已可单项删除，不重置其他条件。
 6. 最终目录填全vendors元数据、所有active产品的platformIds；检查完整124厂商覆盖、无重复正式套餐、无pending/unknown收费属性、无孤立引用。不要用隐藏未核实项冒充清理完成。
 7. 对完整生产目录逐厂商/逐套餐实测「我的条件」选择、取消、跨厂商切换、刷新持久化、无重复及控制台错误；普通编辑和快通同样验证。真实浏览器扫全量尚未完成。
@@ -67,3 +67,9 @@ CUA的IAB临时tab2当前在TRAE计费文档，可继续看企业版；`pvCatalo
 
 - 第16-18批rev48已全量读回：Copilot七现行档+两存量年付请求制；Qoder国际/国内全家桶/原灵码单品/存量合同分开，试用不是付费Pro；SambaNova Enterprise明示订阅，Cohere North/Compass定制企业方案和NVIDIA AI Enterprise软件许可入目录。Cohere/NVIDIA仍partial。GitHub Models官网明确7月30日退役且独立于Copilot，平台github标none，不误挂Copilot目录。
 - 目录新增124厂商完整索引（生产D1已保存，旧公开API仍需新版Worker才能返回）。准备脚本第四个参数传coverage.json，每次重建索引；有已核套餐=available，已核无套餐=none，其他=unverified。拒绝矛盾无套餐声明、重复厂商、产品引用未知厂商。Cursor/Grok两个旧verified产品仍缺platformIds，待迁移补齐。
+
+## 本地浏览器验收 rev48
+
+- 本地前端+生产公开数据快照，真实浏览器逐个切换126个入口，438个已启用套餐控件全部勾选/取消/检查去重。生产目录429个唯一verified计划，Devin/Windsurf九个共享ID重复展示所以控件数438。跨厂商Copilot Pro/Qoder国际Pro选择刷新保留、单独移除互不影响，清理后为空，无控制台错误。详细凭证browser-sweep-rev48.json。
+- 验收未通过项：Cursor旧占位、Grok两个旧占位、X旧占位共四个disabled，额外Grok/X厂商入口导致126不是124。需迁移完再最终重测。资料不全的空厂商只测切换不算研究完成。
+- 浏览器membershipPreviewTab=IAB tab4，localhost:8769。私有预览服务器/tmp/ym-membership-preview.py，当前exec session92456（恢复时先查是否仍活跃），只读使用/tmp/ym-preview-{platforms,offers,meta,coverage}.json及wave18-bound-after.json；不会写生产或触发外部消息。当前本地选择已清空。

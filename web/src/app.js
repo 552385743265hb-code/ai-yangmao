@@ -2449,7 +2449,7 @@ function bindFastTrackForm(form, leadId, onDone, link = {}) {
     const body = { url: fd.url, benefit: fd.benefit.trim(), basis: fd.basis, ...(fd.platformId ? { platformId: fd.platformId } : { newPlatform: { name: fd.newName.trim(), type: fd.newType } }),
       ...Object.fromEntries(['title', 'claimStart', 'claimEnd', 'note'].filter(k => fd[k]?.trim()).map(k => [k, fd[k].trim()])), ...(leadId ? { leadId } : {}), ...link };
     if (form.membershipEditor?.touched) {
-      try { const { membershipRequirement } = membershipEditFields({ requirements: [] }, form.membershipEditor, [], false, fd.url); if (membershipRequirement.status !== 'not_required') body.membershipRequirement = membershipRequirement; }
+      try { const { membershipRequirement } = membershipEditFields({ requirements: [] }, form.membershipEditor, [], false, fd.url); if (membershipRequirement.status !== 'not_required') { body.membershipRequirement = membershipRequirement; body.membershipSelectionOnly = true; } }
       catch (err) { msg.textContent = err.message; return; }
     }
     button.disabled = true;
@@ -2504,8 +2504,8 @@ async function loadFastTrackJobs(box) {
         for (const key of ['title', 'type', 'claimMethod', 'endKind', 'claimEnd']) if (fd.get(key)) fields[key] = String(fd.get(key)).trim();
         for (const key of ['modalities', 'requirements']) if (form.querySelector(`[name="${key}"]`)) fields[key] = fd.getAll(key);
         if (form.querySelector('[data-membership-editor]')) {
-          if (!form.membershipEditor?.touched && need(card).includes('membershipRequirement')) { toast('请先选择会员资格：产品、套餐和限制'); return; }
-          if (form.membershipEditor?.touched) { try { fields.membershipRequirement = membershipEditFields(job(card), form.membershipEditor, [], false, job(card).url).membershipRequirement; } catch (err) { toast(err.message); return; } }
+          if (!form.membershipEditor?.touched && need(card).includes('membershipRequirement')) { toast('请先勾选适用的会员套餐'); return; }
+          if (form.membershipEditor?.touched) { try { fields.membershipRequirement = membershipEditFields(job(card), form.membershipEditor, [], false, job(card).url).membershipRequirement; fields.membershipSelectionOnly = true; } catch (err) { toast(err.message); return; } }
         }
         try { done(await settleFastTrack(id, await adm(`/fast-track/${id}/complete`, { fields }))); } catch (err) { toast(err.message); }
       });

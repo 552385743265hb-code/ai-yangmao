@@ -47,6 +47,7 @@ export const fastTrackInput = z.object({
   claimStart: isoDate.optional(),
   claimEnd: isoDate.optional(),
   membershipRequirement: membershipSchema.optional(),
+  membershipSelectionOnly: z.boolean().optional(),
   leadId: z.number().int().positive().optional(),
   identityTaskId: z.string().min(1).max(200).optional(),
 }).refine(v => !!v.platformId !== !!v.newPlatform, '选择已有厂商或填写新厂商，二选一');
@@ -146,7 +147,7 @@ export async function createFastTrack(env: Env, raw: unknown, actor: string): Pr
   if (input.leadId && !await db.prepare('SELECT 1 FROM leads WHERE id=?').bind(input.leadId).first()) throw new FastTrackError(404, '没有这条线索');
   if (input.identityTaskId && !await db.prepare('SELECT 1 FROM review_tasks WHERE id=?').bind(input.identityTaskId).first()) throw new FastTrackError(404, '没有这个审核任务');
   const registered = await registerOfficialAddress(db, platformId, input.url, actor);
-  const owner = Object.fromEntries(Object.entries({ title: input.title, claimStart: input.claimStart, claimEnd: input.claimEnd, membershipRequirement: input.membershipRequirement }).filter(([, v]) => v));
+  const owner = Object.fromEntries(Object.entries({ title: input.title, claimStart: input.claimStart, claimEnd: input.claimEnd, membershipRequirement: input.membershipRequirement, membershipSelectionOnly: input.membershipSelectionOnly }).filter(([, v]) => v));
   const jobId = crypto.randomUUID();
   await db.prepare("INSERT INTO fast_track_jobs(id,platform_id,url,benefit,basis,note,owner_fields_json,lead_id,identity_task_id,state,actor,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,'queued',?,?,?)")
     .bind(jobId, platformId, input.url, input.benefit, input.basis, input.note ?? null, JSON.stringify(owner), input.leadId ?? null, input.identityTaskId ?? null, actor, now, now).run();
@@ -404,8 +405,14 @@ export async function completeFastTrack(env: Env, id: string, raw: unknown) {
   if (!job) throw new FastTrackError(404, '没有这个快速上架任务');
   if (job.state !== 'needs_owner') throw new FastTrackError(409, '只有“需要你补充”的任务可以补字段');
   const owner = { ...JSON.parse(job.owner_fields_json), ...fields };
+  if(Object.hasOwn(fields,'membershipRequirement')&&!Object.hasOwn(fields,'membershipSelectionOnly'))delete owner.membershipSelectionOnly;
   const basis=input.basis??job.basis;
   await db.prepare('UPDATE fast_track_jobs SET owner_fields_json=?, basis=?, updated_at=? WHERE id=?').bind(JSON.stringify(owner), basis, new Date().toISOString(), id).run();
+  if(fields.membershipSelectionOnly === true && fields.membershipRequirement){
+    await db.prepare("UPDATE fast_track_jobs SET state='queued',attempts=0,error=NULL,missing_json=NULL,lease_until=NULL,updated_at=? WHERE id=? AND state='needs_owner'").bind(new Date().toISOString(),id).run();
+    const dispatched=await dispatchCollect(env,true).catch(()=>({ok:false}));
+    return {state:'queued',dispatched:dispatched.ok};
+  }
   return attemptPublish(env, { ...job, basis, owner_fields_json: JSON.stringify(owner) });
 }
 

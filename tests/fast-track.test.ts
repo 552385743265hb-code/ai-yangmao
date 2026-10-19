@@ -383,3 +383,38 @@ it('does not wake a catalog-blocked job on an unrelated directory edit or silent
  f.sqlite.prepare('UPDATE fast_track_jobs SET owner_fields_json=? WHERE id=?').run(JSON.stringify({membershipRequirement:proMembership(1)}),created.body.jobId);
  expect((await ingest('fast-track/queue')).body.jobs).toEqual([]);
 });
+
+it('selection-only membership preserves model eligibility limits and refuses unmatched plan output',()=>{
+ const picked=proMembership(1),limits={billingCycles:['annual'],regions:['US'],startedBefore:'2026-10-01',trial:'exclude'};
+ const modeled={...picked,anyOf:[{allOf:[{...picked.anyOf[0].allOf[0],limits}]}]};
+ const fields=mergeFastTrackFields({requirements:['member:Odyssey Pro'],membershipRequirement:modeled},{membershipRequirement:picked,membershipSelectionOnly:true},'年付会员额外赠送');
+ expect(fields.membershipRequirement).toEqual(modeled);
+ expect(fields).not.toHaveProperty('membershipSelectionOnly');
+ const unmatched=mergeFastTrackFields({requirements:['member:Odyssey Pro']},{membershipRequirement:picked,membershipSelectionOnly:true},'年付会员额外赠送');
+ expect(unmatched.membershipRequirement).toMatchObject({status:'needs_review'});
+ const wrong={...modeled,anyOf:[{allOf:[{...modeled.anyOf[0].allOf[0],planIds:['other-pro']}]}]};
+ expect(mergeFastTrackFields({membershipRequirement:wrong},{membershipRequirement:picked,membershipSelectionOnly:true},'x').membershipRequirement).toMatchObject({status:'needs_review'});
+ // Existing full-rule API corrections remain explicit overrides.
+ expect(mergeFastTrackFields({membershipRequirement:modeled},{membershipRequirement:picked},'x').membershipRequirement).toEqual(picked);
+});
+
+it('checkbox completion returns to the model and publishes only after source limits are filled',async()=>{
+ const picked=proMembership(1);
+ const created=await call('admin/fast-track',{newPlatform:{name:'Odyssey'},url:'https://odyssey.world/introducing-odyssey-3',benefit:'年付Pro会员额外免费体验',membershipRequirement:picked,membershipSelectionOnly:true});
+ const id=created.body.jobId;
+ f.sqlite.prepare('UPDATE membership_catalog SET revision=1,data_json=? WHERE id=1').run(JSON.stringify(catalog));
+ const initial=await ingest(`fast-track/${id}/claim`,{});
+ expect(initial.body.job.ownerFields.membershipSelectionOnly).toBe(true);
+ f.sqlite.prepare("UPDATE fast_track_jobs SET state='needs_owner',attempts=3 WHERE id=?").run(id);
+ const completed=await call(`admin/fast-track/${id}/complete`,{fields:{membershipRequirement:picked,membershipSelectionOnly:true}});
+ expect(completed.body.state).toBe('queued');
+ expect(f.sqlite.prepare('SELECT count(*) n FROM offers').get()).toEqual({n:0});
+ const claimed=await ingest(`fast-track/${id}/claim`,{});
+ expect(claimed.status).toBe(200);
+ const limits={billingCycles:['annual'],startedBefore:'2026-10-01',trial:'exclude'};
+ const modeled={...picked,anyOf:[{allOf:[{...picked.anyOf[0].allOf[0],limits}]}]};
+ const result=await settle(id,await ingest(`fast-track/${id}/result`,{fields:{...memberPerk,membershipRequirement:modeled},sourceText:'Pro annual subscribers who joined before October 1, 2026 receive additional free video generation. Trials are excluded.'}));
+ expect(result.body.state,JSON.stringify(result.body)).toBe('published');
+ const row=f.sqlite.prepare('SELECT membership_requirement FROM offers WHERE id=?').get(result.body.offerId) as any;
+ expect(JSON.parse(row.membership_requirement).anyOf[0].allOf[0].limits).toEqual(limits);
+});

@@ -1,0 +1,30 @@
+{
+  "checkedAt": "2026-10-19",
+  "environment": "Local built frontend with production public data and full D1 membership catalog snapshot",
+  "catalogRevision": 48,
+  "vendorIndexEntries": 124,
+  "renderedVendorOptions": 126,
+  "testedVendorSwitches": 126,
+  "testedEnabledPlanControls": 438,
+  "uniqueVerifiedPlansInSnapshot": 429,
+  "sharedPlanExplanation": "Devin/Windsurf share nine concrete plan IDs; repeated rendering does not duplicate personal selection.",
+  "checks": [
+    "Check and uncheck every enabled rendered plan; verify exactly one selected chip after check and none after uncheck",
+    "Cross-vendor selection of GitHub Copilot Pro and Qoder international Pro survives reload",
+    "Removing GitHub Copilot selection keeps Qoder selected",
+    "Cleanup leaves no test subscriptions selected"
+  ],
+  "consoleErrors": [],
+  "blockedPlanIds": [
+    "cursor-plan-1",
+    "grok-supergrok-lite",
+    "grok-bot",
+    "x-plan-1"
+  ],
+  "extraLegacyVendorOptions": [
+    "grok",
+    "x"
+  ],
+  "releaseAccepted": false,
+  "remaining": "Complete vendor research, resolve legacy mappings/disabled plans and duplicate vendor entries, then repeat against final deployed catalog. Owner editor and live fast-track still need real-item validation."
+}

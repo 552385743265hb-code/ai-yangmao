@@ -87,7 +87,7 @@ async function fillFields(job: Job, options: FastTrackOptions): Promise<Result> 
   if(tier==='free'&&!modelAvailable(false)){lastError='免费模型暂不可用';continue;}
   if(tier==='paid'&&!options.allowPaid?.())break;
   try{
-   const reply=await completeTierPrompt(PROMPT+'\n会员条件由你补全：从给定目录选择已核实产品及套餐ID，输出membershipRequirement={schemaVersion:"membership-v1",status:"confirmed",catalogRevision:目录revision,anyOf:[{allOf:[{productId,scope:"plans",planIds:[],excludePlanIds:[]}]}],evidenceUrls:[本官方链接]}。按原文准确表达或/且和限制；任一付费订阅可用scope=any_paid。不要虚构ID或把不同产品混为一谈。无需会员不要添加会员条件。不要把计费账户当作必须充值。统一限免是free，会员不等于老用户，截图/UI不等于生图。时区用IANA名称。',user,Math.min(options.deadlineAt,Date.now()+3*60_000),tier);
+   const reply=await completeTierPrompt(PROMPT+'\n会员条件由你补全：管理员membershipSelectionOnly=true表示只勾选了套餐，并未声明没有限制；保留勾选的产品/套餐ID，使用scope=plans明确输出全部所选套餐，并从原文补齐年付、地区、席位类型、订阅日期、试用和存量条件到limits。不要让勾选产生的空limits抹掉原文条件。从给定目录选择已核实产品及套餐ID，输出membershipRequirement={schemaVersion:"membership-v1",status:"confirmed",catalogRevision:目录revision,anyOf:[{allOf:[{productId,scope:"plans",planIds:[],excludePlanIds:[]}]}],evidenceUrls:[本官方链接]}。按原文准确表达或/且和限制；任一付费订阅可用scope=any_paid。不要虚构ID或把不同产品混为一谈。无需会员不要添加会员条件。不要把计费账户当作必须充值。统一限免是free，会员不等于老用户，截图/UI不等于生图。时区用IANA名称。',user,Math.min(options.deadlineAt,Date.now()+3*60_000),tier);
    options.account(reply.tokens,reply.costCny);
    const p=parseModelJson(reply.text) as {offers?:Extracted[]}|Extracted[]|null;
    const offers=Array.isArray(p)?p:Array.isArray(p?.offers)?p.offers:p&&typeof p==='object'&&'title' in p?[p as Extracted]:[];
