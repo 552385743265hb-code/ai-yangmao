@@ -68,3 +68,34 @@ it('automatically corrects an explicit globally free task even when the reviewer
  expect(result.review.facts.type.value).toBe('free');expect(result.review.modelFacts?.type.value).toBe('perk');
  expect(semanticReviewIssues(result.fields,result.review,c)).toEqual([]);
 });
+
+// Original administrator benefit and independent review facts from the real MiniMax rebuild.
+const minimaxBenefit="所有订阅用户在 MiniMax Code 中可无限量免费使用 MiniMax M3.1 Flash 模型，活动持续至 2026 年 10 月 25 日 23:59 (UTC+8)🎁  From now through October 25, 2026, 23:59 (UTC+8), all subscribers can use the M3.1 Flash model within MiniMax Code with no usage caps — use it as much as you want.";
+const minimaxInitial={"type": "free", "modalities": ["text", "code"], "audience": "old", "requirements": ["net", "member:MiniMax Code（国际版 M Plan / Token Plan） M Plan Go", "member:MiniMax Code（国际版 M Plan / Token Plan） M Plan Explore", "member:MiniMax Code（国际版 M Plan / Token Plan） M Plan Build", "member:MiniMax Code（国际版 M Plan / Token Plan） Token Plan Plus（存量）", "member:MiniMax Code（国际版 M Plan / Token Plan） Token Plan Max（存量）", "member:MiniMax Code（国际版 M Plan / Token Plan） Token Plan Ultra（存量）"]};
+const minimaxModelFacts={"type": {"value": "perk", "quote": "所有订阅用户在 MiniMax Code 中可无限量免费使用 MiniMax M3.1 Flash 模型"}, "modalities": [{"value": "text", "quote": "all subscribers can use the M3.1 Flash model within MiniMax Code with no usage caps"}], "audience": {"value": "all", "quote": "all subscribers can use the M3.1 Flash model within MiniMax Code with no usage caps"}};
+for(const chineseOnly of [false,true])it(`corrects the real MiniMax free-before-action benefit (${chineseOnly?'Chinese only':'bilingual'}) without rewriting model facts`,()=>{
+ const benefit=chineseOnly?minimaxBenefit.split('🎁')[0]:minimaxBenefit;
+ const modelFacts=chineseOnly?{...minimaxModelFacts,modalities:[{value:'text',quote:minimaxModelFacts.type.quote}],audience:{value:'all',quote:minimaxModelFacts.type.quote}}:minimaxModelFacts;
+ const c={platformId:'minimax',url:'https://agent.minimax.io/',benefit,sourceText:''};
+ const result=makeSemanticReview({...minimaxInitial,endKind:'date',claimEnd:'2026-10-25'},modelFacts as any,c,'gemini');
+ expect(result.fields).toMatchObject({type:'free',modalities:['text'],audience:'all',claimEnd:'2026-10-25'});
+ expect(result.review.modelFacts).toEqual(modelFacts);expect(result.review.facts.type.value).toBe('free');
+ expect(result.issues).toEqual([]);expect(semanticReviewIssues(result.fields,result.review,c)).toEqual([]);
+});
+for(const action of ['使用','调用','访问','体验','运行','生成'])it(`recognizes free before ${action} and a dated 持续到 window`,()=>{
+ const benefit=`所有订阅用户可免费  ${action} MiniMax M3.1 Flash 模型，活动持续到 2026 年 10 月 25 日。`;
+ const c={...context,benefit,sourceText:''};
+ const result=makeSemanticReview({...wrong,type:'perk',modalities:['text'],audience:'all'},{type:{value:'perk',quote:benefit},modalities:[{value:'text',quote:benefit}],audience:{value:'all',quote:''}},c,'review');
+ expect(result.fields.type).toBe('free');expect(result.review.modelFacts?.type.value).toBe('perk');expect(result.issues).toEqual([]);
+});
+for(const benefit of ['订阅会员领取免费积分，供调用模型，活动持续至2026年10月25日。','订阅会员额外赠送免费调用额度，活动持续到2026年10月25日。'])it('keeps extra member credits as perk despite a dated campaign',()=>{
+ const c={...context,benefit,sourceText:''};
+ const result=makeSemanticReview({...wrong,type:'perk',modalities:['text'],audience:'all'},{type:{value:'perk',quote:benefit},modalities:[{value:'text',quote:benefit}],audience:{value:'all',quote:''}},c,'review');
+ expect(result.fields.type).toBe('perk');expect(result.review.modelFacts).toBeUndefined();expect(result.issues).toEqual([]);
+});
+it('keeps a personal new-account first-activation trial with a campaign deadline',()=>{
+ const benefit='新用户首次激活后可免费使用模型7天，活动持续至2026年10月25日。';
+ const c={...context,benefit,sourceText:''};
+ const result=makeSemanticReview({...wrong,modalities:['text'],audience:'new'},{type:{value:'trial',quote:benefit},modalities:[{value:'text',quote:benefit}],audience:{value:'new',quote:benefit}},c,'review');
+ expect(result.fields.type).toBe('trial');expect(result.review.modelFacts).toBeUndefined();expect(result.issues).toEqual([]);
+});

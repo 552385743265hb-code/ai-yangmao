@@ -23,7 +23,7 @@ type Result = { catalogBlock?:CatalogBlock; semanticReview?: SemanticReview; fie
 
 const PROMPT = `你是"AI 羊毛牧场"的字段整理助手。管理员已经确认下面这条权益真实有效并决定上架，你不判断是否收录，只根据管理员描述和官方页面正文填写上架字段。
 只输出一个 JSON 对象：{"offers":[{"title":"中文标题，不超过 40 字","type":"new|trial|free|perk|topup|gift|standing|apply","modalities":["text|image|video|audio" 至少一个],"models":["官方写法的模型名"],"tags":["reset|referral|discount|daily" 可空],"claimMethod":"auto|signup|app|form|topup|member|code","requirements":["none|unknown|phone|card|net|realname|biz|student|invite|targeted|pay:充值条件|member:产品全称 套餐名"],"audience":"new|old|all|unclear","valueText":"一句中文额度描述","claimStart":"YYYY-MM-DD 或 null","claimEnd":"YYYY-MM-DD 或 null","endKind":"date|unknown|standing","creditValidity":"额度有效期或 null","sourceTz":"IANA 时区，未写明填 UTC","steps":["中文领取步骤，最多 4 步"],"excerpts":{"benefit":"正文中支持该权益的连续原文","eligibility":"…或省略","claim":"…或省略","validity":"…或省略"}}]}
-类型含义：new 注册新人礼；trial 应用尝鲜/免费试用；free 限时免费开放（公开预览、免费 Demo 等）；perk 会员福利；topup 充值赠送；gift 会员免费送；standing 常驻免费额度；apply 申请制。standing 与 apply 的 endKind 必须是 standing，其他类型不能是 standing；有截止日期才用 date。
+类型含义：new 注册新人礼；trial 个人首次使用/新用户激活后的免费试用；free 统一活动窗口内免费使用指定任务或能力（公开预览、免费 Demo 等，会员只是领取资格，不改变 free 分类）；perk 会员额外赠额或额度重置；topup 充值赠送；gift 会员免费送；standing 常驻免费额度；apply 申请制。standing 与 apply 的 endKind 必须是 standing，其他类型不能是 standing；有截止日期才用 date。
 门槛只写原文或常识能确定的；完全无门槛填 ["none"]，确实拿不准填 ["unknown"]。会员门槛写全产品与套餐名，如 "member:Higgsfield Pro 及以上套餐"，未写档位时写 "member:产品名 付费订阅"；不能只写 member 或 pay。原文摘录必须逐字取自正文，保留原语言。只输出 JSON。`;
 
 const FIELD_KEYS = ['title', 'type', 'modalities', 'models', 'tags', 'claimMethod', 'requirements', 'audience', 'valueText', 'claimStart', 'claimEnd', 'endKind', 'creditValidity', 'sourceTz', 'steps', 'excerpts', 'membershipRequirement', 'valuationFactors'] as const;
