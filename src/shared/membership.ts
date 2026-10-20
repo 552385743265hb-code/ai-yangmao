@@ -119,8 +119,10 @@ export function membershipFacts(r: MembershipRequirement) {
 export function qualifiedPlanName(plan: MembershipPlan, catalog: MembershipCatalog): string {
   const product = catalog.products.find(p => p.id === plan.productId);
   if (!product) return plan.name;
-  const escaped = product.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const containsName = new RegExp(`(^|[^\\p{L}\\p{N}])${escaped}($|[^\\p{L}\\p{N}])`, 'iu').test(plan.name);
+  const containsName = [product.name, ...(product.aliases ?? [])].filter(name => name.trim()).some(name => {
+    const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp(`(^|[^\\p{L}\\p{N}])${escaped}($|[^\\p{L}\\p{N}])`, 'iu').test(plan.name);
+  });
   return containsName ? plan.name : `${product.name} ${plan.name}`;
 }
 /** A retired aggregate can name several concrete seats; this does not mean the user owns all of them. */
