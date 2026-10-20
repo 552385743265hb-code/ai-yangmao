@@ -55,7 +55,7 @@
       "platformId": "zhipu",
       "name": "智谱 Z.ai",
       "status": "specific_gap",
-      "remaining": "ChatGLM真实只读POST /chatglm/payment-api/list_subjects 返回authorization is empty；AutoGLM当前脚本getPayProductInfo动态读取/agentpay/v1/assistant/product-info，具体正式名称不静态公开。需既有登录会话查看购买页面；不注册购买，不把AutoClaw目录混作AutoGLM。",
+      "remaining": "AutoGLM在Chrome无既有会话，登录需手机号验证码及勾选协议；未发送验证码、未接受协议或注册，不能用AutoClaw替代。",
       "sourceUrls": [
         "https://docs.z.ai/devpack/overview",
         "https://docs.bigmodel.cn/cn/coding-plan/overview",
@@ -136,12 +136,14 @@
       "platformId": "leonardo",
       "name": "Leonardo.Ai",
       "status": "specific_gap",
-      "remaining": "Apprentice/Artisan/Maestro明确旧名称线索仍存在官方非英文旧帮助页；没有找到官方英文映射/停售/继续续费条款。第三方普遍声称改名不足以自动迁移用户或双建存量。pricing本轮403，API旧四档与当前PAYG是否并存仍需当前API购买页。",
+      "remaining": "消费者Apprentice/Artisan/Maestro与Essential/Premium/Ultimate缺直接官方身份映射；API存量保留问题已由当前/docs V2 FAQ闭合。",
       "sourceUrls": [
         "https://leonardo.ai/pricing",
         "https://intercom.help/leonardo-ai/en/articles/9698289-leonardo-phoenix-leonardo-ai-s-foundational-model",
         "https://intercom.help/leonardo-ai/es/articles/8044033-uso-de-los-tokens",
-        "https://intercom.help/leonardo-ai/en/articles/13755076-how-do-i-subscribe-to-a-paid-plan-change-or-upgrade-my-subscription"
+        "https://intercom.help/leonardo-ai/en/articles/13755076-how-do-i-subscribe-to-a-paid-plan-change-or-upgrade-my-subscription",
+        "https://docs.leonardo.ai/docs/pricing-and-plans-faq",
+        "https://docs.leonardo.ai/docs/payg-guide"
       ]
     },
     {
@@ -179,7 +181,7 @@
       "platformId": "tripo",
       "name": "Tripo",
       "status": "specific_gap",
-      "remaining": "正式产品文档用Professional而实时价格页与活动用Pro，暂无官方明确同名映射，不新建Professional或自动替换Pro。周年活动提Current Pro and Advanced users，说明存在Advanced存量线索，但尚无其现存续费条款/迁移，保留gap。",
+      "remaining": "Advanced存量保留/续订与Starter在当前完整月/年卡未展示的问题仍缺现行说明；不从Pro/Professional别名推映射。",
       "sourceUrls": [
         "https://www.tripo3d.ai/pricing"
       ]

@@ -1,0 +1,141 @@
+{
+  "checkedAt": "2026-10-20",
+  "method": "Official sources and real Chrome existing session; no credential extraction, registration, orders, payments or agreement acceptance.",
+  "chatglm": {
+    "checkedAt": "2026-10-20T11:14:12.749Z",
+    "platformId": "zhipu",
+    "sourceUrl": "https://chatglm.cn/",
+    "observedUrl": "https://chatglm.cn/main/alltoolsdetail?lang=zh",
+    "method": "Chrome existing session; account menu > 升级; direct official rendered membership dialog",
+    "planNames": [
+      "免费版",
+      "VIP会员",
+      "SVIP会员"
+    ],
+    "billing": {
+      "免费版": "free",
+      "VIP会员": "paid",
+      "SVIP会员": "paid"
+    },
+    "observedCycles": [
+      "月卡",
+      "季卡",
+      "年卡"
+    ],
+    "cycleNamesSame": true,
+    "excludedCreditPacks": [
+      "5千积分包",
+      "2万积分包",
+      "14万积分包"
+    ],
+    "notes": [
+      "Billing cycles and first-purchase/renewal variants are not separate membership tiers.",
+      "Top-up credits expire one year after purchase and are not memberships.",
+      "No subscribe/order/payment/agreement action performed.",
+      "Account identifiers, balance and conversation data omitted."
+    ]
+  },
+  "leonardo": {
+    "sourceUrls": [
+      "https://docs.leonardo.ai/docs/pricing-and-plans-faq",
+      "https://docs.leonardo.ai/docs/payg-guide",
+      "https://docs.leonardo.ai/docs/legacy-faq",
+      "https://leonardo.ai/pricing?plan=api"
+    ],
+    "evidenceMethod": "沿当前官网文档导航实际读取V2正文；旧/me/docs路径404，不把搜索摘要当现行正文。",
+    "plans": [
+      "Basic",
+      "Standard",
+      "Pro",
+      "Custom"
+    ],
+    "legacyPlans": [
+      "Basic",
+      "Standard",
+      "Pro",
+      "Custom"
+    ],
+    "preserveExistingPlanIds": true,
+    "facts": [
+      "现订户主动取消迁移前，原月订阅保持；Custom原合同也保持。",
+      "PAYG无月费；当前API CUSTOM商务入口不能解释成已停售，也不另造固定月费会员。"
+    ],
+    "independentReview": true,
+    "consumerGap": "Apprentice/Artisan/Maestro与Essential/Premium/Ultimate的直接官方身份映射仍未证实。"
+  },
+  "tripo": {
+    "sourceUrl": "https://www.tripo3d.ai/pricing",
+    "evidenceMethod": "同一当前官方购买页：实际月付/年付卡与展开的选档FAQ。",
+    "monthlyAndAnnualPlans": [
+      "Free",
+      "Pro",
+      "Max",
+      "Team"
+    ],
+    "officialFAQPaidPlanNames": [
+      "Professional",
+      "Max",
+      "Team"
+    ],
+    "existingPlanId": "tripo-studio-pro",
+    "addExactAlias": "Tripo Studio Professional",
+    "createPlan": false,
+    "independentReview": true,
+    "reason": "完整购买卡和同页逐项选档FAQ只有Pro/Professional这一处对应名称不同，确认同一档；不是同价推断。",
+    "remaining": "Advanced及Starter存量政策不由本次证据推断。"
+  },
+  "sessionObstacles": {
+    "autoglm": {
+      "checkedAt": "2026-10-20T11:14:50.791Z",
+      "sourceUrl": "https://autoglm.zhipuai.cn/",
+      "method": "Real Chrome existing profile",
+      "result": "No existing AutoGLM session. Login requires phone verification code plus unchecked User Agreement/Privacy Policy acceptance; no existing one-click SSO shown.",
+      "actionsPerformed": [
+        "Opened login dialog only"
+      ],
+      "actionsNotPerformed": [
+        "No phone entered",
+        "No code sent",
+        "No agreement accepted",
+        "No login or account registration submitted"
+      ]
+    },
+    "hailuo": {
+      "checkedAt": "2026-10-20T11:15:24.768Z",
+      "sourceUrl": "https://hailuoai.com/",
+      "method": "Chrome existing profile; clicked displayed ¥42 monthly entry",
+      "result": "No logged-in session; entry opens registration prompt instead of full plan catalog.",
+      "submitted": false
+    },
+    "miaoda": {
+      "checkedAt": "2026-10-20T11:16:27.077Z",
+      "sourceUrl": "https://www.miaoda.cn/",
+      "method": "Chrome existing profile",
+      "result": "Navigation timed out, then actual URL/title and marketplace AX tree returned; visual page remained blank and no account or membership controls were available. Existing login state cannot be concluded from this failed render.",
+      "submitted": false
+    },
+    "luma": {
+      "checkedAt": "2026-10-20T11:24:05.607Z",
+      "sourceUrl": "https://lumalabs.ai/pricing",
+      "method": "Real Chrome existing profile > official Sign In link",
+      "currentPlans": [
+        "Plus",
+        "Pro",
+        "Ultra",
+        "Team",
+        "Enterprise"
+      ],
+      "result": "Official app entry led to account creation form; no existing authenticated plan/order view available. OAuth state and account data omitted.",
+      "actionsPerformed": [
+        "Viewed pricing",
+        "Opened official app sign-in entry"
+      ],
+      "actionsNotPerformed": [
+        "No identity entered",
+        "No OAuth provider selected",
+        "No terms accepted",
+        "No account created or payment performed"
+      ]
+    }
+  }
+}

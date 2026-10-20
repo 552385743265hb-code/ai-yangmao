@@ -1,0 +1,56 @@
+{
+  "checkedAt": "2026-10-20T11:28:26.792Z",
+  "url": "https://ai-yangmao.com/",
+  "catalogFrom": 63,
+  "catalogRevision": 64,
+  "products": 286,
+  "plans": 1112,
+  "verifiedPlans": 1091,
+  "retiredPlans": 21,
+  "pendingPlans": 0,
+  "vendors": 125,
+  "newPlanIds": [
+    "zhipu-chatglm-free",
+    "zhipu-chatglm-vip",
+    "zhipu-chatglm-svip"
+  ],
+  "changedPlanRows": [
+    "tripo-studio-pro",
+    "leonardo-api-basic",
+    "leonardo-api-standard",
+    "leonardo-api-pro",
+    "leonardo-api-custom",
+    "zhipu-chatglm-free",
+    "zhipu-chatglm-vip",
+    "zhipu-chatglm-svip"
+  ],
+  "oldPlanRowsPreserved": 1109,
+  "existingIdentityChanges": [],
+  "migrationRootsUnchanged": true,
+  "d1AndPublicFullReadback": true,
+  "approvedRuleRehearsal": {
+    "catalogFrom": 63,
+    "catalogTo": 64,
+    "approvedRules": 9,
+    "cases": 9801,
+    "differences": [],
+    "source": "Fresh public approved-contract API; no offer, lead, review or notification writes",
+    "alias": {
+      "exactFullNameDedupes": true,
+      "bareTierUnresolved": true,
+      "legacyBenefitStillNeedsReview": true
+    }
+  },
+  "browserProof": "browser-rev64-proof.json",
+  "runtimeCodeUnchanged": true,
+  "runtimeCommit": "40223ac0e0a6a10074a1f952875dcd386a3dfecd",
+  "workerVersion": "96ca4415-bcd2-4287-a6c5-06303a9ccaba",
+  "deploymentRequired": false,
+  "offerApprovalWrites": 0,
+  "notes": [
+    "Catalog row updated with revision CAS and before/after readback.",
+    "Three ChatGLM tiers; cycles/topups are not new membership identities.",
+    "Original API subscriptions remain selectable; no forced PAYG migration.",
+    "Tripo full alias does not approve legacy campaign qualification."
+  ]
+}

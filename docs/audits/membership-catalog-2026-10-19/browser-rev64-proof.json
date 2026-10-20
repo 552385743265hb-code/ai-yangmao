@@ -1,0 +1,161 @@
+{
+  "checkedAt": "2026-10-20T11:25:42.606Z",
+  "url": "https://ai-yangmao.com/",
+  "baselineRevision": 63,
+  "catalogRevision": 64,
+  "baselineOwned": 0,
+  "baselineOtherPreferences": [
+    {
+      "checked": false,
+      "label": "只看确定符合的旧版已批准会员条件若尚未自动匹配，会暂时隐藏；关闭筛选可按原条件查看。"
+    },
+    {
+      "checked": false,
+      "label": "可以使用海外网络"
+    },
+    {
+      "checked": false,
+      "label": "有海外手机号"
+    },
+    {
+      "checked": false,
+      "label": "有海外信用卡 / PayPal"
+    },
+    {
+      "checked": false,
+      "label": "有学生身份"
+    },
+    {
+      "checked": false,
+      "label": "有公司可做企业认证"
+    },
+    {
+      "checked": false,
+      "label": "手上有邀请码"
+    },
+    {
+      "checked": true,
+      "label": "可以完成国内实名"
+    },
+    {
+      "checked": true,
+      "label": "接受小额充值"
+    }
+  ],
+  "vendors": [
+    {
+      "id": "zhipu",
+      "controls": 31,
+      "exactCatalogMatch": true
+    },
+    {
+      "id": "leonardo",
+      "controls": 11,
+      "exactCatalogMatch": true
+    },
+    {
+      "id": "tripo",
+      "controls": 5,
+      "exactCatalogMatch": true
+    }
+  ],
+  "checks": [
+    {
+      "id": "zhipu-chatglm-free",
+      "check": true,
+      "uncheck": true,
+      "singleChip": true
+    },
+    {
+      "id": "zhipu-chatglm-vip",
+      "check": true,
+      "uncheck": true,
+      "singleChip": true
+    },
+    {
+      "id": "zhipu-chatglm-svip",
+      "check": true,
+      "uncheck": true,
+      "singleChip": true
+    },
+    {
+      "id": "leonardo-api-basic",
+      "check": true,
+      "uncheck": true,
+      "singleChip": true,
+      "legacyLabel": true
+    },
+    {
+      "id": "leonardo-api-standard",
+      "check": true,
+      "uncheck": true,
+      "singleChip": true,
+      "legacyLabel": true
+    },
+    {
+      "id": "leonardo-api-pro",
+      "check": true,
+      "uncheck": true,
+      "singleChip": true,
+      "legacyLabel": true
+    },
+    {
+      "id": "leonardo-api-custom",
+      "check": true,
+      "uncheck": true,
+      "singleChip": true,
+      "legacyLabel": true
+    },
+    {
+      "id": "tripo-studio-pro",
+      "check": true,
+      "uncheck": true,
+      "singleChip": true
+    }
+  ],
+  "finalOwned": 0,
+  "finalOtherPreferences": [
+    {
+      "checked": false,
+      "label": "只看确定符合的旧版已批准会员条件若尚未自动匹配，会暂时隐藏；关闭筛选可按原条件查看。"
+    },
+    {
+      "checked": false,
+      "label": "可以使用海外网络"
+    },
+    {
+      "checked": false,
+      "label": "有海外手机号"
+    },
+    {
+      "checked": false,
+      "label": "有海外信用卡 / PayPal"
+    },
+    {
+      "checked": false,
+      "label": "有学生身份"
+    },
+    {
+      "checked": false,
+      "label": "有公司可做企业认证"
+    },
+    {
+      "checked": false,
+      "label": "手上有邀请码"
+    },
+    {
+      "checked": true,
+      "label": "可以完成国内实名"
+    },
+    {
+      "checked": true,
+      "label": "接受小额充值"
+    }
+  ],
+  "preferencesRestored": true,
+  "vendorOptions": 125,
+  "consoleErrors": [],
+  "allChangedPlansCovered": true,
+  "uniqueVerifiedPlans": 1091,
+  "allPlansCoveredByRevision60AndDeltas": true
+}

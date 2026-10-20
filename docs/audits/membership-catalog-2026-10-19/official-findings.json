@@ -2376,10 +2376,10 @@
       "status": "verified",
       "applyReady": true,
       "quote": "Free; Pro; Max; Team",
-      "verificationNote": "当前Studio四档；API及Enterprise渠道仍需独立核查。",
+      "verificationNote": "当前价格卡Free/Pro/Max/Team和同页FAQ完成Pro/Professional命名核对；Starter保留原官方活动依据，未因本次价格卡缺少而撤销原目录身份。",
       "checkedAt": "2026-10-20",
       "coverageStatus": "partial",
-      "remaining": "正式产品文档用Professional而实时价格页与活动用Pro，暂无官方明确同名映射，不新建Professional或自动替换Pro。周年活动提Current Pro and Advanced users，说明存在Advanced存量线索，但尚无其现存续费条款/迁移，保留gap。",
+      "remaining": "Advanced存量保留/续订与Starter在当前完整月/年卡未展示的问题仍缺现行说明；不从Pro/Professional别名推映射。",
       "supplementalVerifiedPlans": [
         "Starter"
       ],
@@ -2404,7 +2404,7 @@
         {
           "sourceUrl": "https://www.tripo3d.ai/product-doc/getting-started/pricing-credits",
           "quote": "Free, Starter, Professional, Max, and Team",
-          "note": "2026-10官方文档，Professional与Pro命名冲突未解"
+          "note": "文档Formal名称Professional；现由同页实际购买卡与逐项选档FAQ确认其对应Pro，保留原ID而不建重复档。"
         },
         {
           "sourceUrl": "https://www.tripo3d.ai/pricing",
@@ -2415,6 +2415,11 @@
           "sourceUrl": "https://docs.tripo3d.ai/get-started/pricing.html",
           "quote": "pay-before-you-go product",
           "note": "API为预付按量不新建月度档"
+        },
+        {
+          "sourceUrl": "https://www.tripo3d.ai/pricing",
+          "quote": "Professional/Max/Team",
+          "note": "真实Chrome月/年购买卡均Pro/Max/Team，同页选档FAQ逐项1.Professional、2.Max、3.Team；唯一对应位置确认Pro完整别名，不是同价推断。"
         }
       ],
       "verified": true,
@@ -2422,7 +2427,11 @@
       "aliases": [],
       "newPlanIds": {},
       "existingPlanIds": {},
-      "planAliases": {}
+      "planAliases": {
+        "Pro": [
+          "Tripo Studio Professional"
+        ]
+      }
     },
     {
       "productId": "github-copilot",
@@ -4907,19 +4916,29 @@
         "leonardo"
       ],
       "name": "Leonardo API",
-      "sourceUrl": "https://intercom.help/leonardo-ai/en/articles/9698289-leonardo-phoenix-leonardo-ai-s-foundational-model",
+      "sourceUrl": "https://docs.leonardo.ai/docs/pricing-and-plans-faq",
       "freePlans": [],
       "status": "verified",
       "applyReady": true,
-      "quote": "Basic API Plan, Standard API Plan, Pro API Plan, and Custom API Plan",
+      "quote": "Your current subscription will remain unchanged until you decide to migrate to PAYG.",
       "additionalSources": [
         {
           "sourceUrl": "https://intercom.help/leonardo-ai/en/articles/9698274-how-to-get-your-invoices-for-api-subscription",
           "quote": "For our API plans, Leonardo.Ai uses Paddle"
+        },
+        {
+          "sourceUrl": "https://intercom.help/leonardo-ai/en/articles/9698289-leonardo-phoenix-leonardo-ai-s-foundational-model",
+          "quote": "Basic API Plan, Standard API Plan, Pro API Plan, and Custom API Plan",
+          "note": "既有四个API订阅档的正式名称。"
+        },
+        {
+          "sourceUrl": "https://docs.leonardo.ai/docs/payg-guide",
+          "quote": "Basic; Standard; Pro",
+          "note": "主动迁移前可继续原月订阅；PAYG无月费，不能另建会员。"
         }
       ],
-      "remaining": "官网/api HTTP403；现行月度价格/付费周期与存量迁移未闭环。目录四档可录，不能填写未经核实的价格。",
-      "coverageStatus": "partial",
+      "remaining": null,
+      "coverageStatus": "research_complete",
       "checkedAt": "2026-10-20",
       "plans": [
         "Basic",
@@ -4927,7 +4946,19 @@
         "Pro",
         "Custom"
       ],
-      "note": "官方Phoenix FAQ列明全部四个API Plan，独立API发票帮助明确称subscription；不因API按量单价而忽略正式API订阅。"
+      "note": "原Basic/Standard/Pro月订阅主动迁移前不变，Custom原合同条款也保留；四个现有身份加历史标记，ID及名称不变。新用户PAYG与当前API CUSTOM商务入口不等于另一个固定月费会员，不能称新Custom停售。",
+      "legacyPlans": [
+        "Basic",
+        "Standard",
+        "Pro",
+        "Custom"
+      ],
+      "planSources": {
+        "Basic": "https://docs.leonardo.ai/docs/pricing-and-plans-faq",
+        "Standard": "https://docs.leonardo.ai/docs/pricing-and-plans-faq",
+        "Pro": "https://docs.leonardo.ai/docs/pricing-and-plans-faq",
+        "Custom": "https://docs.leonardo.ai/docs/pricing-and-plans-faq"
+      }
     },
     {
       "productId": "microsoft-dynamics-sales",
@@ -9217,6 +9248,38 @@
         "https://liblibai-web-static.liblib.cloud/liblibai_v4_online/static/_next/static/chunks/_app-a6bc78bf86d7d235.js",
         "https://liblibai-web-static.liblib.cloud/liblibtv_online/static/_next/static/chunks/0ienz0uz_girs.js"
       ]
+    },
+    {
+      "productId": "zhipu-chatglm",
+      "platformIds": [
+        "zhipu"
+      ],
+      "name": "智谱清言 ChatGLM",
+      "aliases": [
+        "智谱清言",
+        "ChatGLM"
+      ],
+      "plans": [
+        "免费版",
+        "VIP会员",
+        "SVIP会员"
+      ],
+      "freePlans": [
+        "免费版"
+      ],
+      "newPlanIds": {
+        "免费版": "zhipu-chatglm-free",
+        "VIP会员": "zhipu-chatglm-vip",
+        "SVIP会员": "zhipu-chatglm-svip"
+      },
+      "sourceUrl": "https://chatglm.cn/",
+      "status": "verified",
+      "applyReady": true,
+      "checkedAt": "2026-10-20",
+      "coverageStatus": "research_complete",
+      "quote": "免费版; VIP会员; SVIP会员",
+      "verificationNote": "真实Chrome既有登录会话，账户升级弹窗直接读取月卡/季卡/年卡，三种周期同名档位；积分包是单独加购，不是会员；未下单、未接受协议。",
+      "remaining": null
     }
   ]
 }
