@@ -1,4 +1,4 @@
-import {afterEach,beforeEach,expect,it,vi} from 'vitest';
+import {afterEach,beforeEach,describe,expect,it,vi} from 'vitest';
 import {auditFixture,auditTerms} from './fixtures/identity/audit';
 import {displayOffer} from './fixtures/identity/offer';
 import {sha256} from '../src/shared/identity/normalize';
@@ -212,4 +212,28 @@ it('a short qualifier between the number and the unit still binds (“100 通用
  const base={platformId:'qoder',type:'standing',models:[],sourceText:text,sourceFetch:{originalUrl:sourceUrl,finalUrl:sourceUrl,fetchedUrl:sourceUrl,method:'direct' as const,sourceVerified:true,truncated:false,contentHash:await sha256(text)},evidence:{url:sourceUrl,tier:'official',capturedAt:'2026-10-19T12:00:00Z',excerpts:{benefit:text}}};
  const recipe={kind:'credits',currency:'USD',entitlementUnits:{value:100,sourceId:'benefit',quote:'每天可在 Qoder 桌面端内主动领取 100 通用 Credits'},cadence:'day',packageUnits:{catalogId:'qoder-credit-pack.packageUnits'},packagePrice:{catalogId:'qoder-credit-pack.amount'},sources:[{...sources(text)[0],url:sourceUrl}]};
  expect((await computeCollectedValuation({...base,valuationFactors:recipe},'2026-10-19T12:00:00Z')).valuation?.usdEstimate).toBeGreaterThan(0);
+});
+
+describe('daily credits that expire the same day are not accumulated (2026-10-19 owner rule)',()=>{
+ const sourceUrl='https://docs.qoder.com/zh/events/100credits';
+ const run=async(text:string,expiresDaily?:{sourceId:string;quote:string})=>{
+  const base={platformId:'qoder',type:'standing',models:[],sourceText:text,sourceFetch:{originalUrl:sourceUrl,finalUrl:sourceUrl,fetchedUrl:sourceUrl,method:'direct' as const,sourceVerified:true,truncated:false,contentHash:await sha256(text)},evidence:{url:sourceUrl,tier:'official',capturedAt:'2026-10-19T12:00:00Z',excerpts:{benefit:text}}};
+  const recipe={kind:'credits',currency:'USD',entitlementUnits:{value:100,sourceId:'benefit',quote:'每天可领取 100 积分'},cadence:'day',...(expiresDaily?{expiresDaily}:{}),packageUnits:{catalogId:'qoder-credit-pack.packageUnits'},packagePrice:{catalogId:'qoder-credit-pack.amount'},sources:[{...sources(text)[0],url:sourceUrl}]};
+  return computeCollectedValuation({...base,valuationFactors:recipe},'2026-10-19T12:00:00Z');
+ };
+ it('values one day when the source says the credits lapse the same day',async()=>{
+  const text='用户每天可领取 100 积分，积分当日有效，次日清零。';
+  const r=await run(text,{sourceId:'benefit',quote:'积分当日有效，次日清零'});
+  expect(r.valuation?.usdEstimate).toBeCloseTo(100/1500*20,2);
+  expect(r.valuation?.formula).toContain('same-day expiry');
+ });
+ it('still accumulates 30 days when credits carry over (Qoder: 30-day validity)',async()=>{
+  const r=await run('用户每天可领取 100 积分，每笔奖励自领取之日起 30 天内有效。');
+  expect(r.valuation?.usdEstimate).toBeCloseTo(40,2);
+ });
+ it('refuses an expiry claim that is not quoted from the source',async()=>{
+  const r=await run('用户每天可领取 100 积分。',{sourceId:'benefit',quote:'积分当日有效'});
+  expect(r.valuation?.usdEstimate??null).toBeNull();
+  expect(r.errors.join(' ')).toContain('Same-day credit expiry');
+ });
 });
