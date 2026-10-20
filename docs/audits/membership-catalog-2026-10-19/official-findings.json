@@ -2826,6 +2826,273 @@
       "applyReady": true,
       "quote": "Free; Beginner; Standard; Professional; Master",
       "verificationNote": "从官网Pricing链接进入真实会员页面，浏览器确认四种付费SVIP及Free；充值包和装饰箱不是会员。"
+    },
+    {
+      "productId": "tencent-token-general",
+      "platformIds": [
+        "tencent"
+      ],
+      "name": "腾讯云通用 Token Plan（个人版）",
+      "plans": [
+        "Lite",
+        "Standard",
+        "Pro",
+        "Max"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://cloud.tencent.com/document/product/1823/130060",
+      "status": "verified",
+      "applyReady": true,
+      "checkedAt": "2026-10-20",
+      "quote": "Lite; Standard; Pro; Max",
+      "note": "与Hy独立订阅，虽然共用API Key但各自扣额与有效期不同。"
+    },
+    {
+      "productId": "tencent-token-hy",
+      "platformIds": [
+        "tencent"
+      ],
+      "name": "腾讯云 Hy Token Plan（个人版）",
+      "plans": [
+        "Lite",
+        "Standard",
+        "Pro",
+        "Max"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://cloud.tencent.com/document/product/1823/130060",
+      "status": "verified",
+      "applyReady": true,
+      "checkedAt": "2026-10-20",
+      "quote": "Lite; Standard; Pro; Max"
+    },
+    {
+      "productId": "tencent-token-global",
+      "platformIds": [
+        "tencent"
+      ],
+      "name": "Tencent Cloud Token Plan（国际个人版）",
+      "plans": [
+        "Lite",
+        "Standard",
+        "Pro",
+        "Max"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://intl.cloud.tencent.com/document/product/1300/81315",
+      "status": "verified",
+      "applyReady": true,
+      "checkedAt": "2026-10-20",
+      "quote": "Lite; Standard; Pro; Max"
+    },
+    {
+      "productId": "tencent-token-enterprise",
+      "platformIds": [
+        "tencent"
+      ],
+      "name": "腾讯云 Token Plan（企业版）",
+      "plans": [
+        "专业套餐",
+        "轻享套餐"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://cloud.tencent.com/document/product/1823/131172",
+      "status": "verified",
+      "applyReady": true,
+      "checkedAt": "2026-10-20",
+      "quote": "专业套餐; 轻享套餐",
+      "newPlanIds": {
+        "专业套餐": "tencent-token-enterprise-pro",
+        "轻享套餐": "tencent-token-enterprise-lite"
+      },
+      "note": "专业/轻享是两种正式产品类型，积分池或Token池金额可调，不按每种预算造会员。"
+    },
+    {
+      "productId": "tencent-token-enterprise-global",
+      "platformIds": [
+        "tencent"
+      ],
+      "name": "Tencent Cloud Token Plan（国际企业版）",
+      "plans": [
+        "Pro",
+        "Lite"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://intl.cloud.tencent.com/pt/document/product/1300/81471",
+      "status": "verified",
+      "applyReady": true,
+      "checkedAt": "2026-10-20",
+      "quote": "Pro; Lite"
+    },
+    {
+      "productId": "tencent-coding-plan",
+      "platformIds": [
+        "tencent"
+      ],
+      "name": "腾讯云 Coding Plan",
+      "plans": [
+        "Lite",
+        "Pro"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://cloud.tencent.com/document/product/1823/130092",
+      "status": "verified",
+      "applyReady": true,
+      "checkedAt": "2026-10-20",
+      "quote": "Lite; Pro",
+      "note": "现行官方概述仍明确两档及购买入口，采用请求量计费；不因名字相近自动映射Token Plan。"
+    },
+    {
+      "productId": "aliyun-coding-plan-cn",
+      "platformIds": [
+        "aliyun"
+      ],
+      "name": "阿里云百炼 Coding Plan（国内版）",
+      "plans": [
+        "Pro"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://help.aliyun.com/zh/model-studio/coding-plan",
+      "status": "verified",
+      "applyReady": true,
+      "checkedAt": "2026-10-20",
+      "quote": "Pro",
+      "note": "Lite已停止新购/续费/升级，未把停售信息当作仍可购买的套餐；当前明确在售Pro。"
+    },
+    {
+      "productId": "aliyun-coding-plan-global",
+      "platformIds": [
+        "aliyun"
+      ],
+      "name": "Alibaba Cloud Coding Plan（国际版）",
+      "plans": [
+        "Pro"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://www.alibabacloud.com/help/en/model-studio/coding-plan",
+      "status": "verified",
+      "applyReady": true,
+      "checkedAt": "2026-10-20",
+      "quote": "Pro",
+      "note": "国际购买账号和coding-intl入口独立，不能与国内Pro合并。"
+    },
+    {
+      "productId": "xiaomi-mimo-personal",
+      "platformIds": [
+        "xiaomi-mimo"
+      ],
+      "name": "小米 MiMo Token Plan（个人版）",
+      "plans": [
+        "Lite",
+        "Standard",
+        "Pro",
+        "Max"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://platform.xiaomimimo.com/token-plan",
+      "status": "verified",
+      "applyReady": true,
+      "checkedAt": "2026-10-20",
+      "quote": "Lite; Standard; Pro; Max",
+      "note": "浏览器实读个人四档；年付额度为整年汇总，不另建额度档位。"
+    },
+    {
+      "productId": "xiaomi-mimo-team",
+      "platformIds": [
+        "xiaomi-mimo"
+      ],
+      "name": "小米 MiMo Token Plan（团队版）",
+      "plans": [
+        "Standard",
+        "Pro",
+        "Max"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://platform.xiaomimimo.com/token-plan",
+      "status": "verified",
+      "applyReady": true,
+      "checkedAt": "2026-10-20",
+      "quote": "Standard; Pro; Max",
+      "note": "已实际切换Team页签，只有三个席位档，不存在Team Lite；MiMo Claw为包含功能而非另一独立订阅。"
+    },
+    {
+      "productId": "sensenova-token-plan",
+      "platformIds": [
+        "sensenova"
+      ],
+      "name": "商汤 SenseNova Token Plan",
+      "plans": [
+        "Free（公测）"
+      ],
+      "freePlans": [
+        "Free（公测）"
+      ],
+      "sourceUrl": "https://www.sensenova.cn/token-plan",
+      "status": "verified",
+      "applyReady": true,
+      "checkedAt": "2026-10-20",
+      "quote": "Free（公测）",
+      "newPlanIds": {
+        "Free（公测）": "sensenova-token-plan-free"
+      },
+      "note": "当前Lite/Pro标即将上线，不加入可选现行套餐。"
+    },
+    {
+      "productId": "sensenova-raccoon",
+      "platformIds": [
+        "sensenova"
+      ],
+      "name": "商汤小浣熊",
+      "plans": [
+        "个人免费版",
+        "个人升级版",
+        "企业标准版",
+        "企业私有化部署"
+      ],
+      "freePlans": [
+        "个人免费版"
+      ],
+      "sourceUrl": "https://www.xiaohuanxiong.com/pricing",
+      "status": "verified",
+      "applyReady": true,
+      "checkedAt": "2026-10-20",
+      "quote": "个人免费版; 个人升级版; 企业标准版; 企业私有化部署",
+      "newPlanIds": {
+        "个人免费版": "sensenova-raccoon-free",
+        "个人升级版": "sensenova-raccoon-personal-upgrade",
+        "企业标准版": "sensenova-raccoon-enterprise",
+        "企业私有化部署": "sensenova-raccoon-private"
+      },
+      "planAliases": {
+        "个人免费版": [
+          "免费版"
+        ],
+        "企业标准版": [
+          "企业版"
+        ]
+      },
+      "note": "当前积分订阅三档及定制私有部署分别列示；加油包不另建会员。行业版本和Seko仍需核对。"
+    },
+    {
+      "productId": "cloudflare-workers",
+      "platformIds": [
+        "cloudflare"
+      ],
+      "name": "Cloudflare Workers",
+      "plans": [
+        "Free",
+        "Paid",
+        "Enterprise"
+      ],
+      "freePlans": [
+        "Free"
+      ],
+      "sourceUrl": "https://developers.cloudflare.com/workers/platform/pricing/",
+      "status": "verified",
+      "applyReady": true,
+      "checkedAt": "2026-10-20",
+      "quote": "Workers Free; Workers Paid; Workers Enterprise",
+      "note": "Workers AI官方明确使用Workers Free/Paid；Paid最低5美元/月，Enterprise按合同。Standard/Unbound/Bundled是使用量计费模型，不重复创建会员。AI Gateway预付积分不是订阅。"
     }
   ]
 }

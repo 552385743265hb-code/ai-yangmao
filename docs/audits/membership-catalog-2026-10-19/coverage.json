@@ -123,27 +123,48 @@
       "platformId": "tencent",
       "name": "腾讯云",
       "site": "https://cloud.tencent.com",
-      "status": "unreviewed",
-      "sources": [],
-      "productIds": [],
+      "status": "partial",
+      "sources": [
+        "https://cloud.tencent.com/document/product/1823/130060",
+        "https://intl.cloud.tencent.com/document/product/1300/81315",
+        "https://cloud.tencent.com/document/product/1823/131172",
+        "https://intl.cloud.tencent.com/pt/document/product/1300/81471",
+        "https://cloud.tencent.com/document/product/1823/130092"
+      ],
+      "productIds": [
+        "tencent-token-general",
+        "tencent-token-hy",
+        "tencent-token-global",
+        "tencent-token-enterprise",
+        "tencent-token-enterprise-global",
+        "tencent-coding-plan"
+      ],
       "homepageRead": {
         "url": "https://cloud.tencent.com",
         "chars": 75,
         "error": null
-      }
+      },
+      "checkedAt": "2026-10-20"
     },
     {
       "platformId": "aliyun",
       "name": "阿里云百炼",
       "site": "https://bailian.console.aliyun.com",
-      "status": "unreviewed",
-      "sources": [],
-      "productIds": [],
+      "status": "partial",
+      "sources": [
+        "https://help.aliyun.com/zh/model-studio/coding-plan",
+        "https://www.alibabacloud.com/help/en/model-studio/coding-plan"
+      ],
+      "productIds": [
+        "aliyun-coding-plan-cn",
+        "aliyun-coding-plan-global"
+      ],
       "homepageRead": {
         "url": "https://bailian.console.aliyun.com",
         "chars": 23,
         "error": null
-      }
+      },
+      "checkedAt": "2026-10-20"
     },
     {
       "platformId": "cerebras",
@@ -167,14 +188,21 @@
       "platformId": "cloudflare",
       "name": "Cloudflare Workers AI",
       "site": "https://developers.cloudflare.com/workers-ai/",
-      "status": "unreviewed",
-      "sources": [],
-      "productIds": [],
+      "status": "research_complete",
+      "sources": [
+        "https://developers.cloudflare.com/workers/platform/pricing/",
+        "https://developers.cloudflare.com/workers-ai/platform/pricing/"
+      ],
+      "productIds": [
+        "cloudflare-workers"
+      ],
       "homepageRead": {
         "url": "https://developers.cloudflare.com/workers-ai/",
         "chars": 5447,
         "error": null
-      }
+      },
+      "checkedAt": "2026-10-20",
+      "note": "Workers订阅明确控制Workers AI配额与超额计费；使用量模型和预付AI积分不重复造会员。"
     },
     {
       "platformId": "deepinfra",
@@ -752,14 +780,20 @@
       "platformId": "odyssey",
       "name": "Odyssey",
       "site": "https://odyssey.systems",
-      "status": "unreviewed",
-      "sources": [],
+      "status": "partial",
+      "sources": [
+        "https://odyssey.systems/",
+        "https://developer.odyssey.ml/",
+        "https://odyssey.systems/legal/api-terms"
+      ],
       "productIds": [],
       "homepageRead": {
         "url": "https://odyssey.systems",
         "chars": 7344,
         "error": null
-      }
+      },
+      "checkedAt": "2026-10-20",
+      "note": "官网当前研究预览与API入口可读；开发者入口只对已有账号继续并要求新用户联系申请，尚未核实账户内计费或会员档位。"
     },
     {
       "platformId": "openai",
@@ -835,14 +869,21 @@
       "platformId": "sensenova",
       "name": "商汤 SenseNova（日日新）",
       "site": "https://platform.sensenova.cn",
-      "status": "unreviewed",
-      "sources": [],
-      "productIds": [],
+      "status": "partial",
+      "sources": [
+        "https://www.sensenova.cn/token-plan",
+        "https://www.xiaohuanxiong.com/pricing"
+      ],
+      "productIds": [
+        "sensenova-token-plan",
+        "sensenova-raccoon"
+      ],
       "homepageRead": {
         "url": "https://platform.sensenova.cn",
         "chars": 24,
         "error": null
-      }
+      },
+      "checkedAt": "2026-10-20"
     },
     {
       "platformId": "doubao",
@@ -861,14 +902,20 @@
       "platformId": "xiaomi-mimo",
       "name": "小米 MiMo",
       "site": "https://mimo.mi.com",
-      "status": "unreviewed",
-      "sources": [],
-      "productIds": [],
+      "status": "research_complete",
+      "sources": [
+        "https://platform.xiaomimimo.com/token-plan"
+      ],
+      "productIds": [
+        "xiaomi-mimo-personal",
+        "xiaomi-mimo-team"
+      ],
       "homepageRead": {
         "url": "https://mimo.mi.com",
         "chars": 8130,
         "error": null
-      }
+      },
+      "checkedAt": "2026-10-20"
     },
     {
       "platformId": "zhipu",
@@ -1056,14 +1103,23 @@
       "platformId": "prime-intellect",
       "name": "Prime Intellect",
       "site": "https://www.primeintellect.ai",
-      "status": "unreviewed",
-      "sources": [],
+      "status": "research_complete",
+      "sources": [
+        "https://www.primeintellect.ai/",
+        "https://docs.primeintellect.ai/llms.txt",
+        "https://docs.primeintellect.ai/hosted-training/billing",
+        "https://docs.primeintellect.ai/traces/pricing-and-settings",
+        "https://docs.primeintellect.ai/inference/overview"
+      ],
       "productIds": [],
       "homepageRead": {
         "url": "https://www.primeintellect.ai",
         "chars": 8968,
         "error": null
-      }
+      },
+      "checkedAt": "2026-10-20",
+      "subscriptionStatus": "none",
+      "note": "已核完整产品和文档索引：训练按GPU小时、推理从个人/团队余额扣费、Traces按数据量计费，没有公开软件会员订阅档位。团队是账单归属而非Team会员。"
     },
     {
       "platformId": "reflection",
@@ -1123,14 +1179,21 @@
       "platformId": "typesafe",
       "name": "TypeSafe · Jev",
       "site": "https://typesafe.ai",
-      "status": "unreviewed",
-      "sources": [],
+      "status": "research_complete",
+      "sources": [
+        "https://typesafe.ai/",
+        "https://typesafe.ai/enterprise",
+        "https://help.typesafe.ai/articles/7771619341-how-do-i-add-credits"
+      ],
       "productIds": [],
       "homepageRead": {
         "url": "https://typesafe.ai",
         "chars": 5381,
         "error": null
-      }
+      },
+      "checkedAt": "2026-10-20",
+      "subscriptionStatus": "none",
+      "note": "公开产品为Jev API，官网按输入Token计费，帮助中心明确购买积分及自动补充余额。企业页面提供吞吐/数据要求洽谈，未公布独立固定月费或席位会员档位。"
     },
     {
       "platformId": "worldlabs",
@@ -1386,14 +1449,19 @@
       "platformId": "instinct",
       "name": "Instinct（Spear Street Technology）",
       "site": "https://instinct.com",
-      "status": "unreviewed",
-      "sources": [],
+      "status": "partial",
+      "sources": [
+        "https://instinct.com/",
+        "https://app.instinct.com/login"
+      ],
       "productIds": [],
       "homepageRead": {
         "url": "https://instinct.com",
         "chars": 507,
         "error": null
-      }
+      },
+      "checkedAt": "2026-10-20",
+      "note": "官网提供个人助理的Text Instinct入口，进入登录页；尚未取得可核实的会员目录，不据此声明没有套餐。"
     },
     {
       "platformId": "kilo",

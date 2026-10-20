@@ -43,3 +43,10 @@ it('includes all vendors and distinguishes verified absence from incomplete rese
  expect(prepare(old,[finding],contradictory).error).toContain('has verified plans');
  expect(prepare(old,[finding],{vendors:[coverage.vendors[1]]}).error).toContain('unlisted vendor');
 });
+
+it('uses each finding verification date without refreshing older verified products',()=>{
+ const r=prepare({revision:1,products:[],plans:[]},[finding,{...finding,productId:'second',platformIds:['second'],name:'Second',checkedAt:'2026-10-20'}]);
+ expect(r.status).toBe(0);
+ expect(r.output.catalog.products.find((p:any)=>p.id==='vendor').verifiedAt).toBe('2026-10-19');
+ expect(r.output.catalog.plans.find((p:any)=>p.id==='second-pro').verifiedAt).toBe('2026-10-20');
+});

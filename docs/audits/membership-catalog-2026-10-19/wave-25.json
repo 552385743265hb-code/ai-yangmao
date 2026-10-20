@@ -1,0 +1,204 @@
+{
+  "checkedAt": "2026-10-20",
+  "expectedRevision": 54,
+  "revision": 55,
+  "products": 118,
+  "plans": 582,
+  "vendors": 124,
+  "fullReadback": true,
+  "changedExistingPlans": [],
+  "changes": [
+    {
+      "id": "tencent-token-general-lite",
+      "oldName": "腾讯云通用 Token Plan（个人版） Lite",
+      "name": "腾讯云通用 Token Plan（个人版） Lite",
+      "productId": "tencent-token-general"
+    },
+    {
+      "id": "tencent-token-general-standard",
+      "oldName": "腾讯云通用 Token Plan（个人版） Standard",
+      "name": "腾讯云通用 Token Plan（个人版） Standard",
+      "productId": "tencent-token-general"
+    },
+    {
+      "id": "tencent-token-general-pro",
+      "oldName": "腾讯云通用 Token Plan（个人版） Pro",
+      "name": "腾讯云通用 Token Plan（个人版） Pro",
+      "productId": "tencent-token-general"
+    },
+    {
+      "id": "tencent-token-general-max",
+      "oldName": "腾讯云通用 Token Plan（个人版） Max",
+      "name": "腾讯云通用 Token Plan（个人版） Max",
+      "productId": "tencent-token-general"
+    },
+    {
+      "id": "tencent-token-hy-lite",
+      "oldName": "腾讯云 Hy Token Plan（个人版） Lite",
+      "name": "腾讯云 Hy Token Plan（个人版） Lite",
+      "productId": "tencent-token-hy"
+    },
+    {
+      "id": "tencent-token-hy-standard",
+      "oldName": "腾讯云 Hy Token Plan（个人版） Standard",
+      "name": "腾讯云 Hy Token Plan（个人版） Standard",
+      "productId": "tencent-token-hy"
+    },
+    {
+      "id": "tencent-token-hy-pro",
+      "oldName": "腾讯云 Hy Token Plan（个人版） Pro",
+      "name": "腾讯云 Hy Token Plan（个人版） Pro",
+      "productId": "tencent-token-hy"
+    },
+    {
+      "id": "tencent-token-hy-max",
+      "oldName": "腾讯云 Hy Token Plan（个人版） Max",
+      "name": "腾讯云 Hy Token Plan（个人版） Max",
+      "productId": "tencent-token-hy"
+    },
+    {
+      "id": "tencent-token-global-lite",
+      "oldName": "Tencent Cloud Token Plan（国际个人版） Lite",
+      "name": "Tencent Cloud Token Plan（国际个人版） Lite",
+      "productId": "tencent-token-global"
+    },
+    {
+      "id": "tencent-token-global-standard",
+      "oldName": "Tencent Cloud Token Plan（国际个人版） Standard",
+      "name": "Tencent Cloud Token Plan（国际个人版） Standard",
+      "productId": "tencent-token-global"
+    },
+    {
+      "id": "tencent-token-global-pro",
+      "oldName": "Tencent Cloud Token Plan（国际个人版） Pro",
+      "name": "Tencent Cloud Token Plan（国际个人版） Pro",
+      "productId": "tencent-token-global"
+    },
+    {
+      "id": "tencent-token-global-max",
+      "oldName": "Tencent Cloud Token Plan（国际个人版） Max",
+      "name": "Tencent Cloud Token Plan（国际个人版） Max",
+      "productId": "tencent-token-global"
+    },
+    {
+      "id": "tencent-token-enterprise-pro",
+      "oldName": "腾讯云 Token Plan（企业版） 专业套餐",
+      "name": "腾讯云 Token Plan（企业版） 专业套餐",
+      "productId": "tencent-token-enterprise"
+    },
+    {
+      "id": "tencent-token-enterprise-lite",
+      "oldName": "腾讯云 Token Plan（企业版） 轻享套餐",
+      "name": "腾讯云 Token Plan（企业版） 轻享套餐",
+      "productId": "tencent-token-enterprise"
+    },
+    {
+      "id": "tencent-token-enterprise-global-pro",
+      "oldName": "Tencent Cloud Token Plan（国际企业版） Pro",
+      "name": "Tencent Cloud Token Plan（国际企业版） Pro",
+      "productId": "tencent-token-enterprise-global"
+    },
+    {
+      "id": "tencent-token-enterprise-global-lite",
+      "oldName": "Tencent Cloud Token Plan（国际企业版） Lite",
+      "name": "Tencent Cloud Token Plan（国际企业版） Lite",
+      "productId": "tencent-token-enterprise-global"
+    },
+    {
+      "id": "tencent-coding-plan-lite",
+      "oldName": "腾讯云 Coding Plan Lite",
+      "name": "腾讯云 Coding Plan Lite",
+      "productId": "tencent-coding-plan"
+    },
+    {
+      "id": "tencent-coding-plan-pro",
+      "oldName": "腾讯云 Coding Plan Pro",
+      "name": "腾讯云 Coding Plan Pro",
+      "productId": "tencent-coding-plan"
+    },
+    {
+      "id": "aliyun-coding-plan-cn-pro",
+      "oldName": "阿里云百炼 Coding Plan（国内版） Pro",
+      "name": "阿里云百炼 Coding Plan（国内版） Pro",
+      "productId": "aliyun-coding-plan-cn"
+    },
+    {
+      "id": "aliyun-coding-plan-global-pro",
+      "oldName": "Alibaba Cloud Coding Plan（国际版） Pro",
+      "name": "Alibaba Cloud Coding Plan（国际版） Pro",
+      "productId": "aliyun-coding-plan-global"
+    },
+    {
+      "id": "xiaomi-mimo-personal-lite",
+      "oldName": "小米 MiMo Token Plan（个人版） Lite",
+      "name": "小米 MiMo Token Plan（个人版） Lite",
+      "productId": "xiaomi-mimo-personal"
+    },
+    {
+      "id": "xiaomi-mimo-personal-standard",
+      "oldName": "小米 MiMo Token Plan（个人版） Standard",
+      "name": "小米 MiMo Token Plan（个人版） Standard",
+      "productId": "xiaomi-mimo-personal"
+    },
+    {
+      "id": "xiaomi-mimo-personal-pro",
+      "oldName": "小米 MiMo Token Plan（个人版） Pro",
+      "name": "小米 MiMo Token Plan（个人版） Pro",
+      "productId": "xiaomi-mimo-personal"
+    },
+    {
+      "id": "xiaomi-mimo-personal-max",
+      "oldName": "小米 MiMo Token Plan（个人版） Max",
+      "name": "小米 MiMo Token Plan（个人版） Max",
+      "productId": "xiaomi-mimo-personal"
+    },
+    {
+      "id": "xiaomi-mimo-team-standard",
+      "oldName": "小米 MiMo Token Plan（团队版） Standard",
+      "name": "小米 MiMo Token Plan（团队版） Standard",
+      "productId": "xiaomi-mimo-team"
+    },
+    {
+      "id": "xiaomi-mimo-team-pro",
+      "oldName": "小米 MiMo Token Plan（团队版） Pro",
+      "name": "小米 MiMo Token Plan（团队版） Pro",
+      "productId": "xiaomi-mimo-team"
+    },
+    {
+      "id": "xiaomi-mimo-team-max",
+      "oldName": "小米 MiMo Token Plan（团队版） Max",
+      "name": "小米 MiMo Token Plan（团队版） Max",
+      "productId": "xiaomi-mimo-team"
+    },
+    {
+      "id": "sensenova-token-plan-free",
+      "oldName": "商汤 SenseNova Token Plan Free（公测）",
+      "name": "商汤 SenseNova Token Plan Free（公测）",
+      "productId": "sensenova-token-plan"
+    },
+    {
+      "id": "sensenova-raccoon-free",
+      "oldName": "商汤小浣熊 个人免费版",
+      "name": "商汤小浣熊 个人免费版",
+      "productId": "sensenova-raccoon"
+    },
+    {
+      "id": "sensenova-raccoon-personal-upgrade",
+      "oldName": "商汤小浣熊 个人升级版",
+      "name": "商汤小浣熊 个人升级版",
+      "productId": "sensenova-raccoon"
+    },
+    {
+      "id": "sensenova-raccoon-enterprise",
+      "oldName": "商汤小浣熊 企业标准版",
+      "name": "商汤小浣熊 企业标准版",
+      "productId": "sensenova-raccoon"
+    },
+    {
+      "id": "sensenova-raccoon-private",
+      "oldName": "商汤小浣熊 企业私有化部署",
+      "name": "商汤小浣熊 企业私有化部署",
+      "productId": "sensenova-raccoon"
+    }
+  ]
+}

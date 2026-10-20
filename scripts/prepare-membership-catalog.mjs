@@ -7,11 +7,12 @@ const next=structuredClone(old),changes=[],unresolved=[];
 const normal=s=>s.normalize('NFKC').trim().toLowerCase().replace(/\s+/g,' ');
 const slug=s=>s.normalize('NFKC').toLowerCase().replace(/\+/g,'-plus').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
 for(const f of findings.products.filter(f=>f.status==='verified'&&f.applyReady)){
+ const checkedAt=f.checkedAt??findings.checkedAt;
  if(!f.sourceUrl?.startsWith('https://')||!f.quote||!f.platformIds?.length)throw Error('Missing source or vendor: '+f.productId);
  let product=next.products.find(p=>p.id===f.productId);
  if(!product){product={id:f.productId,name:f.name,aliases:[],status:'pending',sourceUrl:f.sourceUrl,verifiedAt:null,revision:0};next.products.push(product);}
  const previousName=product.name,productBefore=JSON.stringify(product),productRevision=product.revision;
- Object.assign(product,{name:f.name,platformIds:f.platformIds,status:'verified',sourceUrl:f.sourceUrl,verifiedAt:findings.checkedAt,revision:productRevision});
+ Object.assign(product,{name:f.name,platformIds:f.platformIds,status:'verified',sourceUrl:f.sourceUrl,verifiedAt:checkedAt,revision:productRevision});
  product.aliases=[...new Set([...product.aliases,...(f.aliases||[]),...(previousName!==f.name?[previousName]:[])])];
  if(JSON.stringify(product)!==productBefore)product.revision++;
  const expectedIds=[];
@@ -24,7 +25,7 @@ for(const f of findings.products.filter(f=>f.status==='verified'&&f.applyReady))
   if(f.existingPlanIds?.[name]&&!plan)throw Error('Missing mapped existing plan: '+f.existingPlanIds[name]);
   if(!plan){const suffix=slug(name),newId=f.newPlanIds?.[name]||(suffix?product.id+'-'+suffix:null);if(!newId)throw Error('Explicit plan ID required: '+full);plan={id:newId,productId:product.id,name:full,aliases:[],status:'pending',sourceUrl:f.sourceUrl,verifiedAt:null,revision:0,billing:'unknown'};if(next.plans.some(p=>p.id===plan.id))throw Error('ID collision: '+plan.id);next.plans.push(plan);}
   const before=plan.name,planBefore=JSON.stringify(plan),planRevision=plan.revision;
-  Object.assign(plan,{name:full,billing:f.freePlans.includes(name)?'free':'paid',status:'verified',sourceUrl:f.planSources?.[name]||f.sourceUrl,verifiedAt:findings.checkedAt,revision:planRevision,...(f.legacyPlans?.includes(name)?{legacy:true}:{})});
+  Object.assign(plan,{name:full,billing:f.freePlans.includes(name)?'free':'paid',status:'verified',sourceUrl:f.planSources?.[name]||f.sourceUrl,verifiedAt:checkedAt,revision:planRevision,...(f.legacyPlans?.includes(name)?{legacy:true}:{})});
   plan.aliases=[...new Set([...plan.aliases,...(f.planAliases?.[name]||[]),...(before!==full?[before]:[])])];expectedIds.push(plan.id);if(JSON.stringify(plan)!==planBefore){plan.revision++;changes.push({id:plan.id,oldName:before,name:full,productId:product.id});}
  }
  for(const retirement of f.retirePlans||[]){
@@ -36,7 +37,7 @@ for(const f of findings.products.filter(f=>f.status==='verified'&&f.applyReady))
    next.planReplacements||={};next.planReplacements[p.id]=[...new Set(targets)];
    next.planIdAliases||={};if(targets.length===1)next.planIdAliases[p.id]=targets[0];else delete next.planIdAliases[p.id];
   }
-  if(p.status!=='retired'){Object.assign(p,{status:'retired',retiredReason:retirement.reason,retiredSourceUrl:retirement.sourceUrl,retiredAt:findings.checkedAt,revision:p.revision+1});changes.push({id:p.id,oldName:p.name,name:p.name,productId:product.id,action:'retire',reason:retirement.reason});}
+  if(p.status!=='retired'){Object.assign(p,{status:'retired',retiredReason:retirement.reason,retiredSourceUrl:retirement.sourceUrl,retiredAt:checkedAt,revision:p.revision+1});changes.push({id:p.id,oldName:p.name,name:p.name,productId:product.id,action:'retire',reason:retirement.reason});}
  }
  for(const retirement of f.retireProducts||[]){
   const duplicate=next.products.find(p=>p.id===retirement.id);
@@ -48,8 +49,8 @@ for(const f of findings.products.filter(f=>f.status==='verified'&&f.applyReady))
   next.productReplacements||={};next.productReplacements[duplicate.id]=[...new Set(replacements)];
   next.productIdAliases||={};if(replacements.length===1)next.productIdAliases[duplicate.id]=replacements[0];else delete next.productIdAliases[duplicate.id];
   for(const targetId of replacements){const target=next.products.find(p=>p.id===targetId);if(!target.aliases.includes(duplicate.name)){target.aliases.push(duplicate.name);target.revision++;}}
-  if(duplicate.status!=='retired')Object.assign(duplicate,{status:'retired',retiredReason:retirement.reason,retiredSourceUrl:retirement.sourceUrl,retiredAt:findings.checkedAt,revision:duplicate.revision+1});
-  for(const p of children)if(p.status!=='retired'){Object.assign(p,{status:'retired',retiredReason:retirement.reason,retiredSourceUrl:retirement.sourceUrl,retiredAt:findings.checkedAt,revision:p.revision+1});changes.push({id:p.id,oldName:p.name,name:p.name,productId:duplicate.id,action:'retire',reason:retirement.reason});}
+  if(duplicate.status!=='retired')Object.assign(duplicate,{status:'retired',retiredReason:retirement.reason,retiredSourceUrl:retirement.sourceUrl,retiredAt:checkedAt,revision:duplicate.revision+1});
+  for(const p of children)if(p.status!=='retired'){Object.assign(p,{status:'retired',retiredReason:retirement.reason,retiredSourceUrl:retirement.sourceUrl,retiredAt:checkedAt,revision:p.revision+1});changes.push({id:p.id,oldName:p.name,name:p.name,productId:duplicate.id,action:'retire',reason:retirement.reason});}
  }
  for(const p of next.plans.filter(p=>p.productId===product.id&&!expectedIds.includes(p.id)&&p.status!=='retired'))unresolved.push({id:p.id,name:p.name,reason:'Existing plan absent from reviewed official list; explicit mapping required'});
 }
@@ -67,7 +68,7 @@ if(coveragePath){
   const sourceUrl=v.sources?.find(u=>typeof u==='string'&&u.startsWith('https://'));
   const confirmedNone=v.status==='research_complete'&&v.subscriptionStatus==='none'&&sourceUrl;
   if(available&&confirmedNone)throw Error('Vendor claims no subscriptions but has verified plans: '+v.platformId);
-  return {id:v.platformId,name:v.name,status:available?'available':confirmedNone?'none':'unverified',...(sourceUrl?{sourceUrl}:{}),verifiedAt:available||confirmedNone?findings.checkedAt:null};
+  return {id:v.platformId,name:v.name,status:available?'available':confirmedNone?'none':'unverified',...(sourceUrl?{sourceUrl}:{}),verifiedAt:available||confirmedNone?(v.checkedAt??findings.checkedAt):null};
  });
  for(const p of next.products)for(const id of p.platformIds||[])if(!seen.has(id))throw Error('Product references an unlisted vendor: '+id);
 }

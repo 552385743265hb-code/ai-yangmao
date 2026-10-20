@@ -1,0 +1,30 @@
+{
+  "checkedAt": "2026-10-20",
+  "expectedRevision": 55,
+  "revision": 56,
+  "products": 119,
+  "plans": 585,
+  "vendors": 124,
+  "fullReadback": true,
+  "changedExistingPlans": [],
+  "changes": [
+    {
+      "id": "cloudflare-workers-free",
+      "oldName": "Cloudflare Workers Free",
+      "name": "Cloudflare Workers Free",
+      "productId": "cloudflare-workers"
+    },
+    {
+      "id": "cloudflare-workers-paid",
+      "oldName": "Cloudflare Workers Paid",
+      "name": "Cloudflare Workers Paid",
+      "productId": "cloudflare-workers"
+    },
+    {
+      "id": "cloudflare-workers-enterprise",
+      "oldName": "Cloudflare Workers Enterprise",
+      "name": "Cloudflare Workers Enterprise",
+      "productId": "cloudflare-workers"
+    }
+  ]
+}
