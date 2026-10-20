@@ -4,10 +4,10 @@
 
 ## 已核实当前状态（2026-10-20）
 
-- 生产会员目录 **revision 59**：241 产品、970 套餐；950 verified、19 retired、1 pending。完整产品/套餐及根级别迁移元数据已与预备补丁逐项读回一致。
-- 仅剩1个旧pending：`cursor-plan-1`。Grok/X三个占位项已退休并补官方具体套餐。
+- 生产会员目录 **revision 60**：242 产品、985 套餐；964 verified、21 retired、0 pending；125厂商索引。完整产品/套餐及根级别迁移元数据已与预备补丁逐项读回一致。
+- 旧pending已清零，所有active计划billing明确；Cursor旧Teams保留一对多映射，不猜个人具体席位。
 - 厂商研究覆盖：72 research_complete、53 partial、0 unreviewed。**这比 pending 数更接近剩余工作规模，不能只清四条就宣布完成。**
-- 生产代码已更新为 PR106 / cc1f94632ef2（100%流量，2026-10-19实时读取）；新界面在草稿 PR105，未合并部署。当前工作区 `/tmp/ym-hf-link-worktree`，分支 `codex/membership-catalog-complete`。
+- PR105已合并部署：b35d782d4406，Worker 6b699622-9196-4228-923e-14939c913267，100%流量；app.js和membership-core.js与该提交构建SHA256完全一致。当前工作区 `/tmp/ym-hf-link-worktree`，新发现回放词序修复分支 `codex/fast-track-free-word-order`。
 - 主 checkout 是其他任务的估值修复，勿覆盖。node_modules 为临时 symlink，不提交。
 - 本地最近完整验证：类型检查、1479 Vitest + 11 CLI（合并main及模型目录投影后）、build:web、diff --check 通过。代码新增：按厂商套餐复选、个人选择去重、旧记录提示可单独清除、跨厂商资格默认显示实际会员厂商、退休产品不重新出现在厂商下拉、目录准备工具的归并/退休守卫与回归。
 
@@ -16,9 +16,9 @@
 - **整份目录已超过 D1 单条 SQL 100KB 限制。不要再把 JSON 内联到 wrangler execute --file。** 第11批内联写入返回 SQLITE_TOOBIG，已确认没有生效；随后改为 SQL 绑定参数原子 CAS，成功从40写到41并完整读回。
 - 后续预备补丁：`node scripts/prepare-membership-catalog.mjs <当前目录快照> docs/audits/membership-catalog-2026-10-19/official-findings.json <预备文件> docs/audits/membership-catalog-2026-10-19/coverage.json`。仅 verified+applyReady 的事实被采用；未显式处理的旧套餐会报错。
 - 当前可复用私有绑定参数写入器：`node /tmp/ym-membership-apply-bound.mjs <预备文件> <私有凭证前缀>`。它使用现有 Wrangler OAuth（不输出令牌），固定只更新 membership_catalog id=1，检查 expectedRevision，保存前后快照并全量对照。API失败后先读状态，不盲目重放。若 OAuth 过期，用正常 Wrangler CLI 刷新，不输出凭据。
-- 最新完整 D1 原件：`/tmp/ym-membership-wave29-bound-after.json`（revision + data_json）。原始基线：`/tmp/ym-membership-catalog-before.json` rev29；`/tmp/ym-membership-offers-before.json`（96条会员权益）；`/tmp/ym-membership-profiles-before.json`。
+- 最新完整 D1 原件：`/tmp/ym-membership-wave30-bound-after.json`（revision + data_json）。原始基线：`/tmp/ym-membership-catalog-before.json` rev29；`/tmp/ym-membership-offers-before.json`（96条会员权益）；`/tmp/ym-membership-profiles-before.json`。
 - 生产旧 API 目前只返回 revision/products/plans，**会省略根级别 productIdAliases/productReplacements**。准备工具会根据事实文件重建这些映射；最终部署新读取代码后需核验根元数据保留。完整 D1 快照优于只靠公开 API。
-- `wave-1` 至 `wave-29` 记录已入审计目录。生产触发器自动保留每次目录修改前后原件。
+- `wave-1` 至 `wave-30` 记录已入审计目录。生产触发器自动保留每次目录修改前后原件。
 
 ## 官方研究证据与发现
 
@@ -142,3 +142,10 @@ CUA的IAB临时tab2当前在TRAE计费文档，可继续看企业版；`pvCatalo
 - 实时/api/platforms新增Command Code（10-20注册），原124目录索引遗漏了它。选择器现与PLATFORMS按ID并集，保留已核状态，未来新增厂商也可选择，不自动伪造套餐。真实回归验证新厂商切换、无重复及不改变已有订阅。
 - 官网commandcode.ai与登记@commandcodeai互链，当前Go/GOAT/Pro/Max10x/Max20x/Provider/Teams/Enterprise八档已核，Provider是月订阅+按量，不能排成纯充值。Teams与文档TeamPro同档别名；未确认正式Free或有效Ultra旧合同不猜。已与Cursor合入revision60准备补丁，尚未写入。
 - 生产revision59仍241产品970计划/124目录索引；准备补丁将为242产品985计划/125索引，964verified、21retired、无pending/活跃unknown billing。只能部署新Worker后应用。
+
+## PR105线上与实际模型回放
+
+- PR105已发布且public API完整等于revision60准备目标。125厂商、964可选计划、无待核占位/活跃unknown billing、无重复正式名称。9条当前已批准结构对950个旧owned方案+空集共8559例前后无匹配变化；未改批准业务行。
+- 真实MiniMax只读重建：run39396086094，Gemini40877tokens/0元，ownerFields={}，会员自动补国际6档且与批准资格等价；network/text/all均正确。失败不是目录或会员，而是独立review把初稿正确free改perk；validationIssues为空却与批准free不同。报告私有 `/tmp/ym-membership-minimax-rebuild.json`，公开已批准记录未改。
+- 根因：globalAccess只认“使用…限时免费”，漏“无限量免费使用”；globalWindow漏纯中文“活动持续至日期”，初始PROMPT的perk定义也不一致。最小补丁1da0d8e，加实际中英回归及赠积分/个人首次trial负例，1522+11/typecheck/build通过。必须通过PR合并部署后重跑**同一原任务**，不得放宽诊断或换基线掩盖失败。
+- CUA线上验收进行中：membershipLiveTab tab10，liveSweep变量及sweepLiveBatch(25)，已完成20/125厂商、123控件、均勾选/取消/去重，起始owned为空，其他偏好保留。继续逐批，最终验证刷新/跨厂商共享/无控制台错误并保存证据。

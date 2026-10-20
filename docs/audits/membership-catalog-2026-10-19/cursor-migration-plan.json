@@ -1,5 +1,5 @@
 {
-  "stage": "prepared-not-applied",
+  "stage": "applied-and-read-back",
   "checkedAt": "2026-10-20",
   "expectedRevision": 59,
   "targetRevision": 60,
@@ -120,5 +120,7 @@
       "name": "Command Code Enterprise",
       "productId": "command-code"
     }
-  ]
+  ],
+  "appliedRevision": 60,
+  "runtimeCommit": "b35d782d4406d048f4b71c64a4d136067634436e"
 }
