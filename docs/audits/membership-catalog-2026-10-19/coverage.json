@@ -89,7 +89,7 @@
       "remaining": "",
       "publicScopeClosed": true,
       "scope": "Current public enterprise/analytics/security software navigation reviewed in prior two Google files",
-      "knownHistoricalGaps": "只保留已指名的VirusTotal旧ProfessionalPlus/Unleashed与现行Bundle映射、Looker(original)未明旧Standard合同等个别gap；这些不否定现公开范围complete。"
+      "knownHistoricalGaps": "仅VirusTotal旧Professional Plus/Unleashed与现Bundle/GTI精确映射未证；Looker(original) Standard已由现行SLA闭合。"
     },
     {
       "platformId": "azure",
@@ -179,7 +179,11 @@
       "sources": [
         "https://cloud.baidu.com/doc/qianfan/s/Dmrabu8b6",
         "https://cloud.baidu.com/doc/qianfan/s/ymq8wwch2",
-        "https://cloud.baidu.com/doc/COMATE/s/rlnvnio4a"
+        "https://cloud.baidu.com/doc/COMATE/s/rlnvnio4a",
+        "https://cloud.baidu.com/doc/BML/s/Qkkf5ij52",
+        "https://cloud.baidu.com/doc/BML/s/0kkf6e4i9",
+        "https://cloud.baidu.com/doc/BML/s/3kkf70oqw",
+        "https://cloud.baidu.com/doc/UNIT-LLM/s/wm3dy2v8s"
       ],
       "productIds": [
         "baidu-token-personal",
@@ -192,7 +196,13 @@
         "baidu-creative-saas",
         "baidu-miaoda-enterprise",
         "baidu-dumate-enterprise",
-        "baidu-dumate-comate-joint-seat"
+        "baidu-dumate-comate-joint-seat",
+        "baidu-keyue-legacy-2024",
+        "baidu-bml-device-sdk",
+        "baidu-bml-product-line-sdk",
+        "baidu-bml-server-sdk",
+        "baidu-bml-server-api",
+        "baidu-bml-dedicated-sdk"
       ],
       "homepageRead": {
         "url": "https://cloud.baidu.com",
@@ -200,9 +210,9 @@
         "error": null
       },
       "checkedAt": "2026-10-20",
-      "note": "Token个人/企业、Comate个人/企业/私有化，以及本轮旧Coding、客悦、创作SaaS、秒哒企业标准、DuMate企业/联合席位。",
-      "remaining": "[{\"product\": \"秒哒个人当前完整会员目录\", \"reason\": \"miaoda.cn仅JS页面，Reader无价目；2025更新日志只证明历史免费/专业，不能外推现行全部档位。\", \"sources\": [\"https://www.miaoda.cn/\", \"https://cloud.baidu.com/doc/MIAODA/s/Dm8iegtoh\"]}, {\"product\": \"客悦UNIT-LLM旧专业版具体旧权益变体\", \"reason\": \"2024-12-12前后转换表为图片；当前四档已明确，不用旧截图猜新旧对应。\", \"sources\": [\"https://cloud.baidu.com/doc/UNIT-LLM/s/wm3dy2v8s\"]}, {\"product\": \"BML边缘SDK旧软件授权\", \"reason\": \"官方搜索索引出现基础/加速SDK永久授权，但当前价目正文未定位对应表；不据旧索引自动新增。\", \"sources\": [\"https://cloud.baidu.com/product-price/bml.html\"]}]",
-      "actualObstacle": "秒哒真实浏览器已加载个人空间，但匿名仅显示登录、无可读会员入口；另外旧客悦专业版转换图/BML SDK具体授权仍待证。"
+      "note": "Token/Comate/旧Coding/客悦现行和3存量/BML9种本地软件授权及已核DuMate/秒哒企业目录均保留；只剩秒哒个人匿名登录障碍。",
+      "remaining": "秒哒个人当前完整会员目录：真实匿名应用只显示登录，未取得购买目录；不凭旧更新日志造现行档。",
+      "actualObstacle": "需要既有秒哒登录会话查看会员购买目录；未注册或购买。"
     },
     {
       "platformId": "tencent",
@@ -870,7 +880,8 @@
         "google-appsheet",
         "google-appsheet-user-pass",
         "google-appsheet-external-legacy",
-        "google-chrome-enterprise"
+        "google-chrome-enterprise",
+        "google-workspace-legacy-ai-entitlements"
       ],
       "homepageRead": {
         "url": "https://ai.google.dev",
@@ -882,7 +893,7 @@
       "remaining": "",
       "publicScopeClosed": true,
       "scope": "Public Google AI/Workspace software editions + actual AI add-on migration",
-      "knownHistoricalGaps": "旧四AI附加若有未覆盖的基础edition老合同具体尚未证明统一终止；不能把术语残留当现售，也不推全用户失效。"
+      "knownHistoricalGaps": "四旧AI附加有效既有订单的存续/免附加费已由当前法律条款闭合，不再保留该泛gap。"
     },
     {
       "platformId": "hume",
@@ -906,12 +917,12 @@
       "platformId": "inception",
       "name": "Inception",
       "site": "https://www.inceptionlabs.ai",
-      "status": "partial",
+      "status": "research_complete",
       "sources": [
+        "https://chat.inceptionlabs.ai/",
         "https://www.inceptionlabs.ai/models",
         "https://www.inceptionlabs.ai/",
-        "https://www.inceptionlabs.ai/blog/introducing-mercury-3",
-        "https://chat.inceptionlabs.ai/"
+        "https://www.inceptionlabs.ai/blog/introducing-mercury-3"
       ],
       "productIds": [],
       "homepageRead": {
@@ -919,9 +930,11 @@
         "chars": 9880,
         "error": null
       },
-      "note": "API公开价格scope已读：Free是1亿Token试用，Developer按用量，Enterprise用量报价；不能作为固定软件会员。Mercury Chat是已知独立产品且访问被403/429安全检查阻断，因此厂商整体仍blocked而非从API外推Chat无订阅。",
+      "note": "真实浏览器Mercury Chat为无需登录的公开playground，侧栏明确对话仅本机保存；没有账户/升级/购买/命名会员入口。公开API为按量与试用，不创建Free/Pro会员。当前公开范围已闭环，不以先前HTTP403推断无法核实。",
       "checkedAt": "2026-10-20",
-      "remaining": "API公开价格scope已读：Free是1亿Token试用，Developer按用量，Enterprise用量报价；不能作为固定软件会员。Mercury Chat是已知独立产品且访问被403/429安全检查阻断，因此厂商整体仍blocked而非从API外推Chat无订阅。"
+      "remaining": "",
+      "publicScopeClosed": true,
+      "subscriptionStatus": "none"
     },
     {
       "platformId": "moonshot",
@@ -1065,7 +1078,8 @@
         "microsoft-365-apps-enterprise-base",
         "microsoft-agent-365",
         "microsoft-365-government",
-        "microsoft-office-365-government"
+        "microsoft-office-365-government",
+        "microsoft-power-virtual-agents-legacy"
       ],
       "homepageRead": {
         "url": "https://microsoft.ai",
@@ -1077,7 +1091,7 @@
       "remaining": "",
       "publicScopeClosed": true,
       "scope": "Public Copilot/M365/PowerPlatform/Dynamics/BI/Clipchamp software plans already enumerated; PVA naming and current rights",
-      "knownHistoricalGaps": "已知旧独立PowerVirtualAgents按chat sessions合同，未取得当前官方统一续费/终止日期。仅该具体老命名保留gap；不因此把整个厂商公开目录留partial。"
+      "knownHistoricalGaps": "PVA旧会话制许可证由现行管理文档确认；不保证当前协议结束后仍能续旧SKU，此为额外未来续购政策，不是当前持有身份未知。"
     },
     {
       "platformId": "minimax",
@@ -1453,20 +1467,27 @@
       "platformId": "qwen",
       "name": "阿里 通义千问 Qwen",
       "site": "https://qwen.ai",
-      "status": "partial",
+      "status": "research_complete",
       "sources": [
         "https://platform.qianwenai.com/docs/token-plan/overview",
         "https://docs.qwencloud.com/token-plan/overview",
         "https://qwen.ai/qwenchat",
         "https://chat.qwen.ai/",
         "https://chat.qwen.ai/pricing",
-        "https://www.qianwen.com/"
+        "https://www.qianwen.com/",
+        "https://qwen.ai/termsservice",
+        "https://qwen.ai/api/config?api.app_download_url",
+        "https://apps.apple.com/sg/app/id6757738627",
+        "https://apps.apple.com/cn/app/id6466733523"
       ],
       "productIds": [
         "qwen-token-personal",
         "qwen-token-team",
         "qwencloud-token-personal",
-        "qwencloud-token-team"
+        "qwencloud-token-team",
+        "qwen-chat-international",
+        "qwen-cn-creative",
+        "qwen-cn-work-assistant"
       ],
       "homepageRead": {
         "url": "https://qwen.ai",
@@ -1474,9 +1495,9 @@
         "error": null
       },
       "checkedAt": "2026-10-20",
-      "note": "Token Plan已录与聊天独立。公开产品介绍可证明免费使用，但不能排除近期聊天Go/Plus/Pro线索。/pricing并非公开正式价目表，仅回同一登录应用壳。",
-      "remaining": "需要已有账号的聊天订阅入口验证；直接HTTP返回安全挑战，Jina返回登录壳，当前官方公开导航无可读完整套餐。未注册或购买。",
-      "actualObstacle": "需要已有账号的聊天订阅入口验证；直接HTTP返回安全挑战，Jina返回登录壳，当前官方公开导航无可读完整套餐。未注册或购买。"
+      "note": "官网正式下载链核身份后，Apple官方当前IAP/订阅说明确认国际Chat/Studio Go/Plus/Pro、国内创作7天/标准及工作助理高级/精英/旗舰；不类推跨地区、不把单次积分包或价差当新会员。国内App工作助理不自动等同qwenwork千问办公。",
+      "remaining": "",
+      "publicScopeClosed": true
     },
     {
       "platformId": "ami-labs",
@@ -1759,7 +1780,7 @@
       "platformId": "browser-use",
       "name": "Browser Use",
       "site": "https://browser-use.com",
-      "status": "partial",
+      "status": "research_complete",
       "sources": [
         "https://browser-use.com/pricing",
         "https://browser-use.com/",
@@ -1768,17 +1789,24 @@
         "https://docs.browser-use.com/cloud/guides/billing.md",
         "https://docs.browser-use.com/cloud/guides/concurrency.md",
         "https://docs.browser-use.com/cloud/api-v2/billing/get-account-billing.md",
-        "https://cloud.browser-use.com/settings?tab=billing"
+        "https://cloud.browser-use.com/settings?tab=billing",
+        "https://github.com/browser-use/sdk/blob/6b0c96fdc01ced0cb42d3e1427ca95bf934a432e/docs/pricing.mdx",
+        "https://github.com/browser-use/sdk/blob/1ebe645b852e5155bc4dd2cc0707e63728016996/docs/cloud/guides/billing.mdx",
+        "https://docs.browser-use.com/cloud/guides/billing",
+        "https://browser-use.com/enterprise"
       ],
-      "productIds": [],
+      "productIds": [
+        "browser-use-cloud-legacy"
+      ],
       "homepageRead": {
         "url": "https://browser-use.com",
         "chars": 4706,
         "error": null
       },
-      "note": "当前新购scope已闭环：无新订阅，充值按量且并发按历史消费解锁；不是Free/Developer/Scale会员。Legacy API页仅V2/V3按量，不能当旧订阅价目。官方Billing同时明确旧订阅仍可取消续费、当前周期继续有效，因此旧订阅真实存在且未完成具体命名，整体blocked。",
+      "note": "具名旧档Business/Scaleup由官方GitHub历史表定位，现行官方legacy续费/取消/周期存续规则补足有效性。两档可作legacy软件订阅；新购仍为按量。",
       "checkedAt": "2026-10-20",
-      "remaining": "当前新购scope已闭环：无新订阅，充值按量且并发按历史消费解锁；不是Free/Developer/Scale会员。Legacy API页仅V2/V3按量，不能当旧订阅价目。官方Billing同时明确旧订阅仍可取消续费、当前周期继续有效，因此旧订阅真实存在且未完成具体命名，整体blocked。"
+      "remaining": "",
+      "publicScopeClosed": true
     },
     {
       "platformId": "cline",
@@ -2105,12 +2133,17 @@
       "platformId": "liblibtv",
       "name": "LiblibAI（含 LibTV）",
       "site": "https://www.liblib.art",
-      "status": "partial",
+      "status": "research_complete",
       "sources": [
-        "https://www.liblib.art/viphome"
+        "https://www.liblib.art/viphome",
+        "https://www.liblib.tv/",
+        "https://www.liblib.art/document/vip_agreement",
+        "https://www.xingliu.art/",
+        "https://resonate.feishu.cn/wiki/NhtCwLUtEigU4wkb92OcNcbHnfb"
       ],
       "productIds": [
-        "liblibai-creative"
+        "liblibai-creative",
+        "liblibai-team"
       ],
       "homepageRead": {
         "url": "https://www.liblib.art",
@@ -2118,8 +2151,10 @@
         "error": null
       },
       "checkedAt": "2026-10-20",
-      "note": "LibTV公开API五档及24个SKU与LiblibAI子集相同；不凭SKU相同自动合并会员。",
-      "remaining": "LibTV/LiblibAI明确跨产品许可共享条款；团队套餐真实读取接口匿名401，须已有登录会员中心核实。"
+      "note": "LiblibAI创作/团队各六档、LibTV对应五档共用核心member/SKU身份已核，仅加精确别名不重复套餐。产品活动/专属余额不据此通用。星流已于2026-10-10停运，官方明确不折算/开通Lovart，独立服务不新建当前会员。",
+      "remaining": "",
+      "publicScopeClosed": true,
+      "scope": "Current purchasable core membership identities; activity benefits continue to be verified per product/source"
     },
     {
       "platformId": "lovable",
@@ -2734,7 +2769,7 @@
       "platformId": "kling",
       "name": "可灵 AI",
       "site": "https://klingai.com",
-      "status": "partial",
+      "status": "research_complete",
       "sources": [
         "https://kling.ai/app/membership/membership-plan",
         "https://kling.ai/app/membership/team-membership-plan",
@@ -2744,7 +2779,8 @@
         "https://kling.ai/document-api/guides/get-started/quick-start",
         "https://kling.ai/document-api/apiReference/model/textToVideo",
         "https://kling.ai/document-api/apiReference/updateNotice?date=2026-02-11",
-        "https://klingai.com/dev/pricing"
+        "https://klingai.com/dev/pricing",
+        "https://s15-kling.klingai.com/kos/s101/nlav112918/kling-web/assets/js/MembershipViewV2-D23y49KS.js"
       ],
       "productIds": [
         "kling-international-personal",
@@ -2758,21 +2794,23 @@
         "error": null
       },
       "checkedAt": "2026-10-20",
-      "note": "个人/团队国内国际现行会员已核；真实浏览器读到国内API五个180天积分套餐及定制资源包，与国际同为资源计费，不造会员。",
-      "remaining": "仅旧国际Ultra与现Ultra+官方迁移或仍有效存量条款未明确。",
-      "actualObstacle": "国内API实际价目已成功加载；当前仅保留已具名旧档映射缺口。"
+      "note": "国内/国际当前个人及团队、API资源包边界均实读；当前官方FAQ补明旧Ultra存量保留且低于Ultra+，新增独立存量ID，不猜改名等价。",
+      "remaining": "",
+      "publicScopeClosed": true
     },
     {
       "platformId": "feishu",
       "name": "字节跳动 飞书 Lark",
       "site": "https://www.feishu.cn",
-      "status": "partial",
+      "status": "research_complete",
       "sources": [
         "https://www.doubao.com/product/subscriptions",
         "https://www.feishu.cn/service",
         "https://www.larksuite.com/en_us/plans",
         "https://aily.feishu.cn/hc/1u7kleqg_1cnvbb55",
-        "https://www.doubao.com/work/docs/zh-cn/articles/855635606021-team-enterprise-benefits"
+        "https://www.doubao.com/work/docs/zh-cn/articles/855635606021-team-enterprise-benefits",
+        "https://www.feishu.cn/hc/zh-CN/articles/927897012636",
+        "https://www.feishu.cn/hc/zh-CN/articles/360044088133"
       ],
       "productIds": [
         "doubao",
@@ -2793,8 +2831,9 @@
         "error": null
       },
       "checkedAt": "2026-10-20",
-      "note": "Frontline国内/国际许可和豆包共享个人订阅已核；AI Meeting Notes按份附加购买排除。",
-      "remaining": "仅旧飞书套件企业标准/专业与当前目录的具体映射或有效存量条款待核。"
+      "note": "国内/国际套件及AI/Frontline/共享豆包个人已核；新增现行官方明确支持的企业标准/专业，不强行映射商业系列，不承诺当前自助新购。",
+      "remaining": "",
+      "publicScopeClosed": true
     },
     {
       "platformId": "coze",

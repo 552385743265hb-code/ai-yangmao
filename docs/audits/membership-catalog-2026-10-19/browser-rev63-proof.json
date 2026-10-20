@@ -1,0 +1,368 @@
+{
+  "checkedAt": "2026-10-20T11:03:24.992Z",
+  "revision": 63,
+  "baselineOwned": 0,
+  "baselineOtherPreferences": [
+    {
+      "checked": false,
+      "label": "只看确定符合的旧版已批准会员条件若尚未自动匹配，会暂时隐藏；关闭筛选可按原条件查看。"
+    },
+    {
+      "checked": false,
+      "label": "可以使用海外网络"
+    },
+    {
+      "checked": false,
+      "label": "有海外手机号"
+    },
+    {
+      "checked": false,
+      "label": "有海外信用卡 / PayPal"
+    },
+    {
+      "checked": false,
+      "label": "有学生身份"
+    },
+    {
+      "checked": false,
+      "label": "有公司可做企业认证"
+    },
+    {
+      "checked": false,
+      "label": "手上有邀请码"
+    },
+    {
+      "checked": true,
+      "label": "可以完成国内实名"
+    },
+    {
+      "checked": true,
+      "label": "接受小额充值"
+    }
+  ],
+  "vendors": [
+    {
+      "vendorId": "feishu",
+      "planSetExactlyMatchesCatalog": true,
+      "controls": 27,
+      "disabled": 0
+    },
+    {
+      "vendorId": "liblibtv",
+      "planSetExactlyMatchesCatalog": true,
+      "controls": 12,
+      "disabled": 0
+    },
+    {
+      "vendorId": "kling",
+      "planSetExactlyMatchesCatalog": true,
+      "controls": 12,
+      "disabled": 0
+    },
+    {
+      "vendorId": "gcloud",
+      "planSetExactlyMatchesCatalog": true,
+      "controls": 54,
+      "disabled": 0
+    },
+    {
+      "vendorId": "browser-use",
+      "planSetExactlyMatchesCatalog": true,
+      "controls": 2,
+      "disabled": 0
+    },
+    {
+      "vendorId": "google",
+      "planSetExactlyMatchesCatalog": true,
+      "controls": 47,
+      "disabled": 0
+    },
+    {
+      "vendorId": "microsoft-ai",
+      "planSetExactlyMatchesCatalog": true,
+      "controls": 112,
+      "disabled": 0
+    },
+    {
+      "vendorId": "baidu",
+      "planSetExactlyMatchesCatalog": true,
+      "controls": 43,
+      "disabled": 0
+    },
+    {
+      "vendorId": "qwen",
+      "planSetExactlyMatchesCatalog": true,
+      "controls": 22,
+      "disabled": 0
+    }
+  ],
+  "newPlanChecks": [
+    {
+      "id": "feishu-suite-enterprise-standard",
+      "check": true,
+      "uncheck": true,
+      "singleChip": true
+    },
+    {
+      "id": "feishu-suite-enterprise-pro",
+      "check": true,
+      "uncheck": true,
+      "singleChip": true
+    },
+    {
+      "id": "liblibai-team-entry",
+      "check": true,
+      "uncheck": true,
+      "singleChip": true
+    },
+    {
+      "id": "liblibai-team-standard",
+      "check": true,
+      "uncheck": true,
+      "singleChip": true
+    },
+    {
+      "id": "liblibai-team-advanced",
+      "check": true,
+      "uncheck": true,
+      "singleChip": true
+    },
+    {
+      "id": "liblibai-team-premium",
+      "check": true,
+      "uncheck": true,
+      "singleChip": true
+    },
+    {
+      "id": "liblibai-team-luxury",
+      "check": true,
+      "uncheck": true,
+      "singleChip": true
+    },
+    {
+      "id": "liblibai-team-supreme",
+      "check": true,
+      "uncheck": true,
+      "singleChip": true
+    },
+    {
+      "id": "kling-international-personal-ultra-legacy",
+      "check": true,
+      "uncheck": true,
+      "singleChip": true
+    },
+    {
+      "id": "google-looker-original-standard",
+      "check": true,
+      "uncheck": true,
+      "singleChip": true
+    },
+    {
+      "id": "browser-use-cloud-legacy-business",
+      "check": true,
+      "uncheck": true,
+      "singleChip": true
+    },
+    {
+      "id": "browser-use-cloud-legacy-scaleup",
+      "check": true,
+      "uncheck": true,
+      "singleChip": true
+    },
+    {
+      "id": "google-workspace-legacy-ai-gemini-business",
+      "check": true,
+      "uncheck": true,
+      "singleChip": true
+    },
+    {
+      "id": "google-workspace-legacy-ai-gemini-enterprise",
+      "check": true,
+      "uncheck": true,
+      "singleChip": true
+    },
+    {
+      "id": "google-workspace-legacy-ai-meetings-messaging",
+      "check": true,
+      "uncheck": true,
+      "singleChip": true
+    },
+    {
+      "id": "google-workspace-legacy-ai-security",
+      "check": true,
+      "uncheck": true,
+      "singleChip": true
+    },
+    {
+      "id": "microsoft-pva-legacy-session-license",
+      "check": true,
+      "uncheck": true,
+      "singleChip": true
+    },
+    {
+      "id": "baidu-keyue-legacy-light-monthly",
+      "check": true,
+      "uncheck": true,
+      "singleChip": true
+    },
+    {
+      "id": "baidu-keyue-legacy-light-annual",
+      "check": true,
+      "uncheck": true,
+      "singleChip": true
+    },
+    {
+      "id": "baidu-keyue-legacy-flagship-former-standard-annual",
+      "check": true,
+      "uncheck": true,
+      "singleChip": true
+    },
+    {
+      "id": "baidu-bml-device-sdk-basic",
+      "check": true,
+      "uncheck": true,
+      "singleChip": true
+    },
+    {
+      "id": "baidu-bml-device-sdk-accelerated",
+      "check": true,
+      "uncheck": true,
+      "singleChip": true
+    },
+    {
+      "id": "baidu-bml-product-line-sdk-basic",
+      "check": true,
+      "uncheck": true,
+      "singleChip": true
+    },
+    {
+      "id": "baidu-bml-product-line-sdk-accelerated",
+      "check": true,
+      "uncheck": true,
+      "singleChip": true
+    },
+    {
+      "id": "baidu-bml-server-sdk-annual",
+      "check": true,
+      "uncheck": true,
+      "singleChip": true
+    },
+    {
+      "id": "baidu-bml-server-sdk-perpetual",
+      "check": true,
+      "uncheck": true,
+      "singleChip": true
+    },
+    {
+      "id": "baidu-bml-server-api-annual",
+      "check": true,
+      "uncheck": true,
+      "singleChip": true
+    },
+    {
+      "id": "baidu-bml-server-api-perpetual",
+      "check": true,
+      "uncheck": true,
+      "singleChip": true
+    },
+    {
+      "id": "baidu-bml-dedicated-sdk-per-device-perpetual",
+      "check": true,
+      "uncheck": true,
+      "singleChip": true
+    },
+    {
+      "id": "qwen-chat-international-go",
+      "check": true,
+      "uncheck": true,
+      "singleChip": true
+    },
+    {
+      "id": "qwen-chat-international-plus",
+      "check": true,
+      "uncheck": true,
+      "singleChip": true
+    },
+    {
+      "id": "qwen-chat-international-pro",
+      "check": true,
+      "uncheck": true,
+      "singleChip": true
+    },
+    {
+      "id": "qwen-cn-creative-seven-day",
+      "check": true,
+      "uncheck": true,
+      "singleChip": true
+    },
+    {
+      "id": "qwen-cn-creative-standard",
+      "check": true,
+      "uncheck": true,
+      "singleChip": true
+    },
+    {
+      "id": "qwen-cn-work-assistant-advanced",
+      "check": true,
+      "uncheck": true,
+      "singleChip": true
+    },
+    {
+      "id": "qwen-cn-work-assistant-elite",
+      "check": true,
+      "uncheck": true,
+      "singleChip": true
+    },
+    {
+      "id": "qwen-cn-work-assistant-flagship",
+      "check": true,
+      "uncheck": true,
+      "singleChip": true
+    }
+  ],
+  "finalOwned": 0,
+  "finalOtherPreferences": [
+    {
+      "checked": false,
+      "label": "只看确定符合的旧版已批准会员条件若尚未自动匹配，会暂时隐藏；关闭筛选可按原条件查看。"
+    },
+    {
+      "checked": false,
+      "label": "可以使用海外网络"
+    },
+    {
+      "checked": false,
+      "label": "有海外手机号"
+    },
+    {
+      "checked": false,
+      "label": "有海外信用卡 / PayPal"
+    },
+    {
+      "checked": false,
+      "label": "有学生身份"
+    },
+    {
+      "checked": false,
+      "label": "有公司可做企业认证"
+    },
+    {
+      "checked": false,
+      "label": "手上有邀请码"
+    },
+    {
+      "checked": true,
+      "label": "可以完成国内实名"
+    },
+    {
+      "checked": true,
+      "label": "接受小额充值"
+    }
+  ],
+  "preferencesRestored": true,
+  "vendorOptions": 125,
+  "consoleErrors": [],
+  "allNewPlanIdsCovered": true,
+  "uniqueVerifiedPlans": 1088,
+  "allPlansCoveredByRevision60AndDeltas": true
+}
