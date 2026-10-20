@@ -188,3 +188,12 @@ it('a reseller\'s limited-time free DeepSeek-V4.1-Flash is priced from the provi
  // Standard 30-day text use: 1M input × $0.15 + 0.2M output × $0.60 = $0.27.
  expect(result.valuation?.usdEstimate).toBeCloseTo(0.27,4);
 });
+
+it('Meshy free-tier monthly credits are priced from the verified Pro plan rate (2026-10-19 credit-pack benchmarks)',async()=>{
+ const text='Every free account receives 100 credits every month for 3D generation.',sourceUrl='https://www.meshy.ai/pricing';
+ const base={platformId:'meshy',type:'standing',models:[],sourceText:text,sourceFetch:{originalUrl:sourceUrl,finalUrl:sourceUrl,fetchedUrl:sourceUrl,method:'direct' as const,sourceVerified:true,truncated:false,contentHash:await sha256(text)},evidence:{url:sourceUrl,tier:'official',capturedAt:'2026-10-19T12:00:00Z',excerpts:{benefit:text}}};
+ const recipe={kind:'credits',currency:'USD',entitlementUnits:{value:100,sourceId:'benefit',quote:'Every free account receives 100 credits every month'},cadence:'month',packageUnits:{catalogId:'meshy-pro.packageUnits'},packagePrice:{catalogId:'meshy-pro.amount'},benchmark:'entry_plan',referencePlan:'Meshy Pro',sources:[{...sources(text)[0],url:sourceUrl}]};
+ const result=await computeCollectedValuation({...base,valuationFactors:recipe},'2026-10-19T12:00:00Z');
+ // 100 credits × ($20 / 1,000 credits) = $2.
+ expect(result.valuation?.usdEstimate).toBeCloseTo(2,4);
+});

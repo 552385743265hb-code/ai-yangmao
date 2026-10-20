@@ -142,6 +142,24 @@ export const VALUATION_PRICE_CATALOG: readonly ValuationPrice[] = [
     sources: [source('https://api-docs.deepseek.com/quick_start/pricing/', '2026-10-18T04:20:00Z',
       '1M INPUT TOKENS (CACHE MISS) OFF-PEAK $0.15 $0.66 PEAK $0.3 $1.32 1M OUTPUT TOKENS OFF-PEAK $0.6 $1.98 PEAK $1.2 $3.96',
       'same_version_official_model_price; off-peak (half of peak) is the lower applicable rate')] },
+  // 2026-10-19 credit-pack benchmarks for platforms whose free/sign-up credits kept valuing as unknown. Official pages only;
+  // an official top-up price takes priority over plan arithmetic, otherwise the lower applicable plan rate.
+  monthly('meshy-pro', 'meshy', 'Meshy Pro', 20, 'USD', true, 'monthly/credits', [
+    source('https://www.meshy.ai/pricing', '2026-10-19T03:30:00Z', 'Billed monthly, $ 20 / month Subscribe Now Privileges: 🔥 Access to the World\'s First 3D Agent NEW 1,000 monthly credits (up to 100 assets)',
+      'official_entry_monthly_package_regular_price; $10 first month is a new-user promotion'),
+  ], { packageUnits: 1_000, unit: 'credits' }),
+  monthly('vidu-standard', 'vidu', 'Vidu Standard', 8.25, 'USD', true, 'yearly-billed/monthly-equivalent/credits', [
+    source('https://www.vidu.com/pricing', '2026-10-19T03:30:00Z', '$8.25/month$10\n\nBilled yearly as $99\n\n800 credits monthly\n\n100 credits = $1.03',
+      'official_entry_plan; yearly-billed rate is the lower applicable rate and matches the page\'s own 100 credits = $1.03'),
+  ], { packageUnits: 800, unit: 'credits' }),
+  { id: 'tripo-credits-topup', platformId: 'tripo', kind: 'package', plan: 'Tripo credit top-up', amount: 10,
+    currency: 'USD', authority: 'platform', billingPeriod: 'one_off', priceType: 'regular', entryTier: true,
+    packageUnits: 1_000, unit: 'credits', specification: 'top-up/credits/smallest-pack', maxAgeDays: 30,
+    sources: [source('https://www.tripo3d.ai/pricing', '2026-10-19T03:30:00Z', '$10\n\n1000 credits', 'official_topup_benchmark; top-up price preferred over plan arithmetic')] },
+  { id: 'qoder-credit-pack', platformId: 'qoder', kind: 'package', plan: 'Qoder Credit Pack', amount: 20,
+    currency: 'USD', authority: 'platform', billingPeriod: 'one_off', priceType: 'regular', entryTier: true,
+    packageUnits: 1_500, unit: 'credits', specification: 'credit-pack/1-month-validity', maxAgeDays: 30,
+    sources: [source('https://docs.qoder.com/account/pricing', '2026-10-19T03:30:00Z', '| Price | $20 USD / 1,500 Credits |', 'official_topup_benchmark; paid subscribers can buy packs')] },
 ];
 
 export const VALUATION_FX_SNAPSHOT = {
