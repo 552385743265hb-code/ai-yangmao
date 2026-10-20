@@ -5,12 +5,14 @@
       "platformId": "aws",
       "name": "AWS",
       "site": "https://aws.amazon.com",
-      "status": "partial",
+      "status": "research_complete",
       "sources": [
         "https://aws.amazon.com/q/developer/pricing/",
         "https://aws.amazon.com/q/business/pricing/",
         "https://aws.amazon.com/quick/pricing/",
-        "https://aws.amazon.com/quick/quicksight/pricing/"
+        "https://aws.amazon.com/quick/quicksight/pricing/",
+        "https://docs.aws.amazon.com/amazonq/latest/qbusiness-ug/doc-history.html",
+        "https://aws.amazon.com/sagemaker/pricing/"
       ],
       "productIds": [
         "aws-q-developer",
@@ -22,13 +24,18 @@
         "url": "https://aws.amazon.com",
         "chars": 9957,
         "error": null
-      }
+      },
+      "checkedAt": "2026-10-20",
+      "note": "QDeveloper2、QBusiness2存量、Quick5、QuickSight4为公开固定软件许可闭环；SageMaker/UnifiedStudio/DataAgent由所用服务或credits/instance/storage按量收费，无证据另有固定软件会员。Kiro由已登记kiro单独目录管理，不再AWS重建。",
+      "remaining": "",
+      "publicScopeClosed": true,
+      "scope": "Current public Q Developer/Q Business/Quick/Quick Sight software pricing and SageMaker licensing boundary"
     },
     {
       "platformId": "gcloud",
       "name": "Google Cloud",
       "site": "https://cloud.google.com",
-      "status": "partial",
+      "status": "research_complete",
       "sources": [
         "https://docs.cloud.google.com/gemini/enterprise/docs/editions",
         "https://cloud.google.com/gemini-enterprise/faq",
@@ -44,7 +51,9 @@
         "https://docs.cloud.google.com/chronicle/docs/secops/secops-packages",
         "https://cloud.google.com/security/products/threat-intelligence",
         "https://docs.cloud.google.com/security-command-center/docs/service-tiers",
-        "https://chromeenterprise.google/pricing/"
+        "https://chromeenterprise.google/pricing/",
+        "https://cloud.google.com/security/products/security-and-identity",
+        "https://cloud.google.com/skus/other"
       ],
       "productIds": [
         "gemini-enterprise",
@@ -62,21 +71,31 @@
         "google-security-operations",
         "google-threat-intelligence",
         "google-security-command-center",
-        "google-chrome-enterprise"
+        "google-chrome-enterprise",
+        "google-virustotal-bundles",
+        "google-virustotal-threat-hunter",
+        "google-secops-standalone",
+        "google-mandiant-asm",
+        "google-mandiant-security-validation",
+        "google-unified-security"
       ],
       "homepageRead": {
         "url": "https://cloud.google.com",
         "chars": 44587,
         "error": null
       },
-      "note": "Gemini/Notebook/CodeAssist/GDP、AppSheet、Looker/Studio和安全软件公开档已核；部分旧Looker、SIEM/SOAR/Mandiant/VirusTotal与统一整包的历史目录未闭环。",
-      "checkedAt": "2026-10-20"
+      "note": "前两Google文件已覆盖真实固定软件许可、用户许可、组合与按量边界，不为不存在具体证据的私人合同保持全局partial。",
+      "checkedAt": "2026-10-20",
+      "remaining": "",
+      "publicScopeClosed": true,
+      "scope": "Current public enterprise/analytics/security software navigation reviewed in prior two Google files",
+      "knownHistoricalGaps": "只保留已指名的VirusTotal旧ProfessionalPlus/Unleashed与现行Bundle映射、Looker(original)未明旧Standard合同等个别gap；这些不否定现公开范围complete。"
     },
     {
       "platformId": "azure",
       "name": "Microsoft Azure",
       "site": "https://azure.microsoft.com",
-      "status": "partial",
+      "status": "research_complete",
       "sources": [
         "https://azure.microsoft.com/en-us/pricing/purchase-options/azure-account",
         "https://learn.microsoft.com/en-us/azure/foundry/concepts/manage-costs"
@@ -88,16 +107,22 @@
         "error": null
       },
       "checkedAt": "2026-10-20",
-      "note": "Azure账户及Foundry按量/承诺容量不是软件会员；已核类型仍不代替全AI产品目录。"
+      "note": "Azure信用账户/学生账户与Foundry服务按量/承诺用量不是软件会员；Azure托管的CopilotStudio、SecurityCopilot等真正许可证已归microsoft-ai，不按部署云重复新会员。纯资源API/GPUSKU无需无限穷尽。",
+      "remaining": "",
+      "publicScopeClosed": true,
+      "scope": "Current public Azure/Foundry AI consumption and account boundary",
+      "subscriptionStatus": "none"
     },
     {
       "platformId": "huaweicloud",
       "name": "华为云",
       "site": "https://www.huaweicloud.com",
-      "status": "partial",
+      "status": "research_complete",
       "sources": [
         "https://codearts.huaweicloud.com/pricing",
-        "https://support.huaweicloud.com/price-agentarts/agentarts_08_0003.html"
+        "https://support.huaweicloud.com/price-agentarts/agentarts_08_0003.html",
+        "https://support.huaweicloud.com/intl/zh-cn/urlredirects-modelarts/billable_items_help_info_link.html",
+        "https://support.huaweicloud.com/productdesc-metastudio/metastudio_01_0006.html"
       ],
       "productIds": [
         "huawei-codearts-agent-personal",
@@ -110,13 +135,16 @@
         "error": null
       },
       "checkedAt": "2026-10-20",
-      "note": "码道个人/企业和AgentArts已开放体验版已核；AgentArts四付费档官方明确未开放，其他ModelArts/MetaStudio等命名软件许可未尽。"
+      "note": "现已核CodeArts个人/企业、AgentArts已开放体验；另核ModelArts和MetaStudio完整公开计费表。；ModelArts公共/专属池及OBS/EVS都是算力存储；MetaStudio训练/生成/直播/交互按个数、时长、路数和资产空间计费，基础/专业等是任务资源规格而非独立软件订阅。",
+      "remaining": "",
+      "publicScopeClosed": true,
+      "scope": "现已核CodeArts个人/企业、AgentArts已开放体验；另核ModelArts和MetaStudio完整公开计费表。"
     },
     {
       "platformId": "volc",
       "name": "火山方舟",
       "site": "https://www.volcengine.com/product/ark",
-      "status": "partial",
+      "status": "research_complete",
       "sources": [
         "https://docs.volcengine.com/docs/ark/coding-plan-personal-plan-overview?lang=zh",
         "https://docs.volcengine.com/docs/ark/agent-plan-personal-plan-overview?lang=zh",
@@ -127,7 +155,10 @@
         "volc-coding-plan",
         "volc-agent-plan",
         "volc-coding-plan-enterprise",
-        "volc-agent-plan-enterprise"
+        "volc-agent-plan-enterprise",
+        "volc-image-generation-suite",
+        "volc-ai-content-assistant",
+        "volc-content-insights-agent"
       ],
       "homepageRead": {
         "url": "https://www.volcengine.com/product/ark",
@@ -135,7 +166,10 @@
         "error": null
       },
       "checkedAt": "2026-10-20",
-      "note": "Coding/Agent个人和企业四产品已核；ArkClaw为内含/按量边界不造会员，其他套件及旧合同仍需核实。"
+      "note": "方舟Coding/Agent个人及企业四产品，加本轮官方docs三套件。；",
+      "remaining": "",
+      "publicScopeClosed": true,
+      "scope": "方舟Coding/Agent个人及企业四产品，加本轮官方docs三套件。"
     },
     {
       "platformId": "baidu",
@@ -152,7 +186,13 @@
         "baidu-token-enterprise",
         "baidu-comate-personal",
         "baidu-comate-enterprise",
-        "baidu-comate-private"
+        "baidu-comate-private",
+        "baidu-coding-plan-legacy",
+        "baidu-keyue-one",
+        "baidu-creative-saas",
+        "baidu-miaoda-enterprise",
+        "baidu-dumate-enterprise",
+        "baidu-dumate-comate-joint-seat"
       ],
       "homepageRead": {
         "url": "https://cloud.baidu.com",
@@ -160,19 +200,22 @@
         "error": null
       },
       "checkedAt": "2026-10-20",
-      "note": "千帆TokenPlan两轨个人/企业及Comate现行个人/企业/私有化和旧订单变体已核；旧Coding具体档、客悦/秒哒等正式软件目录未尽。"
+      "note": "Token个人/企业、Comate个人/企业/私有化，以及本轮旧Coding、客悦、创作SaaS、秒哒企业标准、DuMate企业/联合席位。",
+      "remaining": "[{\"product\": \"秒哒个人当前完整会员目录\", \"reason\": \"miaoda.cn仅JS页面，Reader无价目；2025更新日志只证明历史免费/专业，不能外推现行全部档位。\", \"sources\": [\"https://www.miaoda.cn/\", \"https://cloud.baidu.com/doc/MIAODA/s/Dm8iegtoh\"]}, {\"product\": \"客悦UNIT-LLM旧专业版具体旧权益变体\", \"reason\": \"2024-12-12前后转换表为图片；当前四档已明确，不用旧截图猜新旧对应。\", \"sources\": [\"https://cloud.baidu.com/doc/UNIT-LLM/s/wm3dy2v8s\"]}, {\"product\": \"BML边缘SDK旧软件授权\", \"reason\": \"官方搜索索引出现基础/加速SDK永久授权，但当前价目正文未定位对应表；不据旧索引自动新增。\", \"sources\": [\"https://cloud.baidu.com/product-price/bml.html\"]}]",
+      "actualObstacle": "[{\"product\": \"秒哒个人当前完整会员目录\", \"reason\": \"miaoda.cn仅JS页面，Reader无价目；2025更新日志只证明历史免费/专业，不能外推现行全部档位。\", \"sources\": [\"https://www.miaoda.cn/\", \"https://cloud.baidu.com/doc/MIAODA/s/Dm8iegtoh\"]}, {\"product\": \"客悦UNIT-LLM旧专业版具体旧权益变体\", \"reason\": \"2024-12-12前后转换表为图片；当前四档已明确，不用旧截图猜新旧对应。\", \"sources\": [\"https://cloud.baidu.com/doc/UNIT-LLM/s/wm3dy2v8s\"]}, {\"product\": \"BML边缘SDK旧软件授权\", \"reason\": \"官方搜索索引出现基础/加速SDK永久授权，但当前价目正文未定位对应表；不据旧索引自动新增。\", \"sources\": [\"https://cloud.baidu.com/product-price/bml.html\"]}]"
     },
     {
       "platformId": "tencent",
       "name": "腾讯云",
       "site": "https://cloud.tencent.com",
-      "status": "partial",
+      "status": "research_complete",
       "sources": [
         "https://cloud.tencent.com/document/product/1823/130060",
         "https://intl.cloud.tencent.com/document/product/1300/81315",
         "https://cloud.tencent.com/document/product/1823/131172",
         "https://intl.cloud.tencent.com/pt/document/product/1300/81471",
-        "https://cloud.tencent.com/document/product/1823/130092"
+        "https://cloud.tencent.com/document/product/1823/130092",
+        "https://cloud.tencent.com/document/product/1759/139268"
       ],
       "productIds": [
         "tencent-token-general",
@@ -180,34 +223,47 @@
         "tencent-token-global",
         "tencent-token-enterprise",
         "tencent-token-enterprise-global",
-        "tencent-coding-plan"
+        "tencent-coding-plan",
+        "tencent-adp"
       ],
       "homepageRead": {
         "url": "https://cloud.tencent.com",
         "chars": 75,
         "error": null
       },
-      "checkedAt": "2026-10-20"
+      "checkedAt": "2026-10-20",
+      "note": "TokenHub国内通用/Hy/企业、国际个人/企业、Coding，以及官方AI导航相邻ADP真实软件订阅。Buddy/WorkBuddy由独立vendor已有目录承载。；",
+      "remaining": "",
+      "publicScopeClosed": true,
+      "scope": "TokenHub国内通用/Hy/企业、国际个人/企业、Coding，以及官方AI导航相邻ADP真实软件订阅。Buddy/WorkBuddy由独立vendor已有目录承载。"
     },
     {
       "platformId": "aliyun",
       "name": "阿里云百炼",
       "site": "https://bailian.console.aliyun.com",
-      "status": "partial",
+      "status": "research_complete",
       "sources": [
         "https://help.aliyun.com/zh/model-studio/coding-plan",
-        "https://www.alibabacloud.com/help/en/model-studio/coding-plan"
+        "https://www.alibabacloud.com/help/en/model-studio/coding-plan",
+        "https://help.aliyun.com/zh/aidge/quick-start",
+        "https://help.aliyun.com/zh/dms/introduction-to-dify-enterprise-edition"
       ],
       "productIds": [
         "aliyun-coding-plan-cn",
-        "aliyun-coding-plan-global"
+        "aliyun-coding-plan-global",
+        "aliyun-aidge-workbench-personal",
+        "aliyun-ims-enterprise"
       ],
       "homepageRead": {
         "url": "https://bailian.console.aliyun.com",
         "chars": 23,
         "error": null
       },
-      "checkedAt": "2026-10-20"
+      "checkedAt": "2026-10-20",
+      "note": "国内/国际Coding及有效期内旧Lite、Aidge个人工作台、IMS三档企业订阅与功能体验月包的当前公开许可目录已核。",
+      "remaining": "",
+      "publicScopeClosed": true,
+      "scope": "Current public named software licences; usage-only resources excluded"
     },
     {
       "platformId": "cerebras",
@@ -342,11 +398,14 @@
       "platformId": "hoonify-ai",
       "name": "Hoonify AI",
       "site": "https://www.hoonify.com",
-      "status": "partial",
+      "status": "research_complete",
       "sources": [
         "https://www.hoonify.com/catalog",
         "https://www.hoonify.com",
-        "https://www.hoonify.com/solutions/sovereign-ai"
+        "https://www.hoonify.com/solutions/sovereign-ai",
+        "https://www.hoonify.com/",
+        "https://www.hoonify.com/products/enterprise",
+        "https://resources.hoonify.com/platform"
       ],
       "productIds": [],
       "homepageRead": {
@@ -355,7 +414,11 @@
         "error": null
       },
       "checkedAt": "2026-10-20",
-      "note": "需核实 Sovereign AI / TurbOS 企业报价是否存在固定软件会员档位，以及登录后/存量订阅目录。"
+      "note": "公开目录已闭环：推理为按Token；Sovereign AI/Enterprise/TurbOS为私有基础设施及托管软件方案，首页出现固定订阅率描述，但没有正式公开分档名，不创建泛Enterprise/Free会员。公开询价未定价不再无限partial。",
+      "remaining": "",
+      "publicScopeClosed": true,
+      "scope": "仅以本轮识别的官方自有产品导航与正式公开价格/FAQ/条款为闭环；未公开私人合同不延续partial。出现已知独立产品的真实登录/反爬屏障或有效旧订阅具体命名缺失才blocked。",
+      "subscriptionStatus": "none"
     },
     {
       "platformId": "hf",
@@ -379,18 +442,27 @@
       "platformId": "nvidia",
       "name": "NVIDIA NIM",
       "site": "https://build.nvidia.com",
-      "status": "partial",
+      "status": "research_complete",
       "sources": [
-        "https://docs.nvidia.com/ai-enterprise/planning-resource/licensing-guide/latest/pricing.html"
+        "https://docs.nvidia.com/ai-enterprise/planning-resource/licensing-guide/latest/pricing.html",
+        "https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-software-licensing-overview-and-faq/",
+        "https://www.nvidia.com/content/dam/en-zz/Solutions/license-agreements/enterprise-software/product-specific-terms-ai-products-omniverse-16042026.pdf",
+        "https://developer.nvidia.com/nim"
       ],
       "productIds": [
-        "nvidia-ai-enterprise"
+        "nvidia-ai-enterprise",
+        "nvidia-developer-program"
       ],
       "homepageRead": {
         "url": "https://build.nvidia.com",
         "chars": 1381,
         "error": null
-      }
+      },
+      "checkedAt": "2026-10-20",
+      "note": "现有AIEnterprise订阅/永久许可加免费DeveloperProgram完成NIM准入软件范围。2026-04正式条款将旧NVIDIAEnterprise/OmniverseEnterprise统一到AIEnterprise框架，当前旧part number仍有效至订阅term结束；新购/续费转新part number，不另造两个同权益会员。",
+      "remaining": "",
+      "publicScopeClosed": true,
+      "scope": "Registered vendor NVIDIA NIM / AI Enterprise software entitlement boundary"
     },
     {
       "platformId": "novita",
@@ -525,13 +597,14 @@
       "platformId": "ucloud",
       "name": "UCloud 星图",
       "site": "https://www.ucloud.cn",
-      "status": "partial",
+      "status": "research_complete",
       "sources": [
         "https://docs.ucloud.cn/modelverse/mdToPdf/modelverse.pdf",
         "https://www.ucloud.cn",
         "https://www.ucloud.cn/site/active/astraflow",
         "https://www.ucloud.cn/site/product/FinClaw.html",
-        "https://www.ucloud-global.com/zh/blog/astraflow-xingtu-ucloud-global-llm-app-platform"
+        "https://www.ucloud-global.com/zh/blog/astraflow-xingtu-ucloud-global-llm-app-platform",
+        "https://www.ucloud.cn/"
       ],
       "productIds": [],
       "homepageRead": {
@@ -540,7 +613,11 @@
         "error": null
       },
       "checkedAt": "2026-10-20",
-      "note": "星图现行产品页/控制台固定订阅及仍有效旧套餐目录尚未核实；不能宣称全厂商无会员。；需跟进官网FinClaw立即体验按钮（JS动作）及 https://spt.ucloud.cn/30001 咨询入口；产品付费机制/会员目录未知。；公开自助API目录已闭环为按量；企业销售包年包月无正式档名/完整报价，FinClaw另留gap，因此全厂商不标complete。；公开产品页没有完整固定订阅目录；询价/登录后方案未知，保留gap；未发销售消息。"
+      "note": "公开scope闭环：星图API按量、不设最低消费；企业包年包月需销售无正式档名。FinClaw正式AI研究工作台产品页仅咨询，无公开命名许可档；不因未知私人报价持续partial，不创建泛企业会员。",
+      "remaining": "",
+      "publicScopeClosed": true,
+      "scope": "仅以本轮识别的官方自有产品导航与正式公开价格/FAQ/条款为闭环；未公开私人合同不延续partial。出现已知独立产品的真实登录/反爬屏障或有效旧订阅具体命名缺失才blocked。",
+      "subscriptionStatus": "none"
     },
     {
       "platformId": "vercel",
@@ -565,7 +642,7 @@
       "platformId": "qiniu",
       "name": "七牛云 AI",
       "site": "https://www.qiniu.com",
-      "status": "partial",
+      "status": "research_complete",
       "sources": [
         "https://www.qiniu.com/ai/plan"
       ],
@@ -577,18 +654,25 @@
         "chars": 4980,
         "error": null
       },
-      "appliedCatalogRevision": 41
+      "appliedCatalogRevision": 41,
+      "checkedAt": "2026-10-20",
+      "note": "当前官方AI订阅完整三档Enterprise S/M/B，独立订阅Key与每周配额，非按量账户充值。；页面显示B，但第三购买链接tier=Enterprise-l；保留官网公开名B，记录链接差异，不擅自造第四档L。",
+      "remaining": "",
+      "publicScopeClosed": true,
+      "scope": "当前官方AI订阅完整三档Enterprise S/M/B，独立订阅Key与每周配额，非按量账户充值。"
     },
     {
       "platformId": "tokenrhythm",
       "name": "基元律动 TokenRhythm",
       "site": "https://tokenrhythm.studio",
-      "status": "partial",
+      "status": "research_complete",
       "sources": [
         "https://tokenrhythm.studio/docs/faq",
         "https://tokenrhythm.studio",
         "https://tokenrhythm.studio/models",
-        "https://tokenrhythm.studio/docs/overview"
+        "https://tokenrhythm.studio/docs/overview",
+        "https://tokenrhythm.studio/",
+        "https://tokenrhythm.studio/account/recharge"
       ],
       "productIds": [],
       "homepageRead": {
@@ -597,13 +681,17 @@
         "error": null
       },
       "checkedAt": "2026-10-20",
-      "note": "用户中心 https://tokenrhythm.studio/account 的订阅/充值目录及仍有效旧套餐未知。体验官免费Token不是命名Free会员。"
+      "note": "公开计费已闭环为充值余额+模型调用计费，不是可证实的固定周期会员。模型页输入/输出/缓存单价，账户页公开充值活动，FAQ明确成本和余额跟随后端实际调用。充值页登录仅遮挡充值金额/账户信息，没有第二个已知命名软件订阅入口；不以未公开合同维持partial。",
+      "remaining": "",
+      "publicScopeClosed": true,
+      "scope": "仅以本轮识别的官方自有产品导航与正式公开价格/FAQ/条款为闭环；未公开私人合同不延续partial。出现已知独立产品的真实登录/反爬屏障或有效旧订阅具体命名缺失才blocked。",
+      "subscriptionStatus": "none"
     },
     {
       "platformId": "moark",
       "name": "模力方舟",
       "site": "https://ai.gitee.com",
-      "status": "partial",
+      "status": "research_complete",
       "sources": [
         "https://ai.gitee.com/docs/billing/purchase",
         "https://ai.gitee.com",
@@ -611,7 +699,8 @@
         "https://ai.gitee.com/docs/pocketclaw",
         "https://ai.gitee.com/docs/",
         "https://ai.gitee.com/docs/billing/intro",
-        "https://ai.gitee.com/docs/FAQ"
+        "https://ai.gitee.com/docs/FAQ",
+        "https://ai.gitee.com/"
       ],
       "productIds": [],
       "homepageRead": {
@@ -620,13 +709,17 @@
         "error": null
       },
       "checkedAt": "2026-10-20",
-      "note": "需核实平台登录后是否有独立Coding/Token固定周期订阅与仍有效旧会员；PocketClaw配套软件服务如有独立订阅须补。；当前公开产品/费用目录按量与资源包已闭环；组织/工作台登录后或未公开旧套餐仍未知，厂商完整性保留partial。"
+      "note": "当前公开平台自有产品和计费闭环：模型预付资源包、自定义金额扣费；机器算力租赁/微调按资源，PocketClaw为硬件+API。应用市场订阅是第三方开发者自定义收费，不属于MoArk自己的软件会员，公开没有另一个命名Coding/Token会员。",
+      "remaining": "",
+      "publicScopeClosed": true,
+      "scope": "仅以本轮识别的官方自有产品导航与正式公开价格/FAQ/条款为闭环；未公开私人合同不延续partial。出现已知独立产品的真实登录/反爬屏障或有效旧订阅具体命名缺失才blocked。",
+      "subscriptionStatus": "none"
     },
     {
       "platformId": "siliconflow",
       "name": "硅基流动",
       "site": "https://siliconflow.cn",
-      "status": "partial",
+      "status": "research_complete",
       "sources": [
         "https://www.siliconflow.cn",
         "https://www.siliconflow.com/pricing",
@@ -640,7 +733,9 @@
         "https://www.tokenplus.cn/docs/guides/recharge",
         "https://www.tokenplus.cn/docs/guides/consolidated-billing",
         "https://www.tokenplus.cn/docs/faq",
-        "https://www.tokenplus.cn/docs/changelog"
+        "https://www.tokenplus.cn/docs/changelog",
+        "https://www.siliconflow.cn/",
+        "https://www.tokenplus.cn/"
       ],
       "productIds": [],
       "homepageRead": {
@@ -649,7 +744,11 @@
         "error": "The read operation timed out"
       },
       "checkedAt": "2026-10-20",
-      "note": "国内登录控制台固定订阅及存量目录未完整核实；不能由按量产品推定整厂无会员。；结论限公开 Serverless/API 定价；登录后及未公开企业合同目录未知。；结论限公开目录，企业认证后私有报价及登录后任何订阅未知。；公开目录已证实按量，登录后或非公开企业合同未知；无证据生成Free/Pro或充值会员等级。"
+      "note": "三个公开产品范围全部闭环。国内API按量，预留实例/部署属算力与定制服务；国际API明确按实际用量无最低承诺；TokenPlus充值/统一账单/用户协议/账户管理一致为余额调用计费，实名+10元充值激活团队邀请不是会员等级。无可新增命名软件会员。",
+      "remaining": "",
+      "publicScopeClosed": true,
+      "scope": "仅以本轮识别的官方自有产品导航与正式公开价格/FAQ/条款为闭环；未公开私人合同不延续partial。出现已知独立产品的真实登录/反爬屏障或有效旧订阅具体命名缺失才blocked。",
+      "subscriptionStatus": "none"
     },
     {
       "platformId": "modelscope",
@@ -662,7 +761,8 @@
         "https://www.modelscope.cn/posts/435591",
         "https://modelscope.cn/docs/model-service/API-Inference/intro",
         "https://modelscope.cn/protocol/Terms-and-Condition",
-        "https://www.modelscope.cn/spotlight/community"
+        "https://www.modelscope.cn/spotlight/community",
+        "https://modelscope.cn/aigc"
       ],
       "productIds": [],
       "homepageRead": {
@@ -671,7 +771,9 @@
         "error": null
       },
       "checkedAt": "2026-10-20",
-      "note": "当前官方文档 https://modelscope.cn/docs/magicube/intro 与 https://modelscope.cn/docs/model-service/API-Inference/intro 为JS页，静态抓取未得正文；登录后是否存在具体付费订阅及有效旧套餐仍未知。；魔粒当前完整计费/购买规则、Civision AI创作区和登录后权益目录未能取得正式订阅证据；不造Free/Pro，不标全厂商complete。"
+      "note": "公开导航Models/Datasets/Studios/Spotlight/Skills/MCP/Civision；魔粒和API推理doc入口。",
+      "remaining": "[{\"product\": \"魔粒/Civision正式付费软件会员\", \"reason\": \"Reader可得导航但doc正文价目为空；无法证实具体公开付费订阅，不造Free/Pro；这是实际JS内容障碍而非假想私有合同。\"}]",
+      "actualObstacle": "[{\"product\": \"魔粒/Civision正式付费软件会员\", \"reason\": \"Reader可得导航但doc正文价目为空；无法证实具体公开付费订阅，不造Free/Pro；这是实际JS内容障碍而非假想私有合同。\"}]"
     },
     {
       "platformId": "anthropic",
@@ -736,7 +838,7 @@
       "platformId": "google",
       "name": "Google AI（Gemini / AI Studio）",
       "site": "https://ai.google.dev",
-      "status": "partial",
+      "status": "research_complete",
       "sources": [
         "https://one.google.com/about/google-ai-plans/",
         "https://developers.google.com/profile/help/faq",
@@ -749,7 +851,9 @@
         "https://about.appsheet.com/pricing/",
         "https://support.google.com/appsheet/answer/15657053?hl=en",
         "https://support.google.com/appsheet/answer/15197435?hl=en",
-        "https://chromeenterprise.google/pricing/"
+        "https://chromeenterprise.google/pricing/",
+        "https://knowledge.workspace.google.com/admin/generative-ai/workspace-with-gemini/gemini-ai-features-now-included-in-google-workspace-subscriptions",
+        "https://workspaceupdates.googleblog.com/2025/06/update-for-gemini-add-ons-in-admin-the-console-subscriptions-page.html"
       ],
       "productIds": [
         "google-ai",
@@ -771,8 +875,12 @@
         "chars": 6117,
         "error": null
       },
-      "note": "Workspace现行/Individual/Nonprofits、教学附加/旧GSuite与教育Premium、AI个人及Colab已核；特定旧AI附加尚未迁移合同边界保留，不作一刀切撤销。",
-      "checkedAt": "2026-10-20"
+      "note": "四个人GoogleAI档、已录Workspace17版、TeachingLearning、个人Individual/Nonprofits、旧GSuite、Expanded/UltraAccess、教育AIPro与明确固定期旧Premium均已沿公开导航覆盖。旧GeminiBusiness/Enterprise/AI Meetings/AI Security已停止新售；基础edition含全部旧能力者不再需要重复附加license。",
+      "checkedAt": "2026-10-20",
+      "remaining": "",
+      "publicScopeClosed": true,
+      "scope": "Public Google AI/Workspace software editions + actual AI add-on migration",
+      "knownHistoricalGaps": "旧四AI附加若有未覆盖的基础edition老合同具体尚未证明统一终止；不能把术语残留当现售，也不推全用户失效。"
     },
     {
       "platformId": "hume",
@@ -798,7 +906,10 @@
       "site": "https://www.inceptionlabs.ai",
       "status": "partial",
       "sources": [
-        "https://www.inceptionlabs.ai/models"
+        "https://www.inceptionlabs.ai/models",
+        "https://www.inceptionlabs.ai/",
+        "https://www.inceptionlabs.ai/blog/introducing-mercury-3",
+        "https://chat.inceptionlabs.ai/"
       ],
       "productIds": [],
       "homepageRead": {
@@ -806,7 +917,9 @@
         "chars": 9880,
         "error": null
       },
-      "note": "API页列Free/按量/Enterprise用量报价；尚需核对Mercury Chat是否有独立订阅，不能仅从API页推断全厂商无会员。"
+      "note": "API公开价格scope已读：Free是1亿Token试用，Developer按用量，Enterprise用量报价；不能作为固定软件会员。Mercury Chat是已知独立产品且访问被403/429安全检查阻断，因此厂商整体仍blocked而非从API外推Chat无订阅。",
+      "checkedAt": "2026-10-20",
+      "remaining": "API公开价格scope已读：Free是1亿Token试用，Developer按用量，Enterprise用量报价；不能作为固定软件会员。Mercury Chat是已知独立产品且访问被403/429安全检查阻断，因此厂商整体仍blocked而非从API外推Chat无订阅。"
     },
     {
       "platformId": "moonshot",
@@ -838,24 +951,35 @@
       "platformId": "meta",
       "name": "Meta Llama",
       "site": "https://www.llama.com",
-      "status": "partial",
+      "status": "research_complete",
       "sources": [
-        "https://dev.meta.ai/resources/blog/muse-code-new-plans-and-features"
+        "https://dev.meta.ai/resources/blog/muse-code-new-plans-and-features",
+        "https://www.meta.com/help/subscriptions/1021145227643680/",
+        "https://dev.meta.ai/docs/muse-code/subscriptions",
+        "https://dev.meta.ai/docs/pricing-rate-limits",
+        "https://about.fb.com/news/2026/09/introducing-meta-one-subscription-service-more-features-ai/"
       ],
       "productIds": [
-        "meta-muse-code"
+        "meta-muse-code",
+        "meta-muse",
+        "meta-one"
       ],
       "homepageRead": {
         "url": "https://dev.meta.ai/",
         "chars": 5870,
         "error": null
-      }
+      },
+      "checkedAt": "2026-10-20",
+      "note": "Muse3、Code4、MetaOne6当前具体AI软件许可已闭环；MetaModelAPI逐token/图片/音频/视频帧不当会员；Llama模型权重许可不是付费软件会员，不能把模型名字当档位。",
+      "remaining": "",
+      "publicScopeClosed": true,
+      "scope": "Public Meta AI / Muse agent / Muse Code / Meta One AI subscription navigation"
     },
     {
       "platformId": "microsoft-ai",
       "name": "Microsoft AI（Copilot）",
       "site": "https://microsoft.ai",
-      "status": "partial",
+      "status": "research_complete",
       "sources": [
         "https://www.microsoft.com/en-us/copilot/pricing/individuals",
         "https://www.microsoft.com/en-us/copilot/pricing/business",
@@ -891,7 +1015,12 @@
         "https://www.microsoft.com/en-us/microsoft-365/enterprise/microsoft-365-plans-and-pricing",
         "https://www.microsoft.com/en-us/microsoft-365/enterprise/frontline-plans-and-pricing",
         "https://www.microsoft.com/en-us/microsoft-365/enterprise/office-365-plans-and-pricing",
-        "https://www.microsoft.com/en-us/microsoft-365/enterprise/microsoft-365-apps-for-enterprise-product"
+        "https://www.microsoft.com/en-us/microsoft-365/enterprise/microsoft-365-apps-for-enterprise-product",
+        "https://learn.microsoft.com/en-us/microsoft-copilot-studio/billing-licensing",
+        "https://learn.microsoft.com/en-us/microsoft-copilot-studio/faq-billing-licensing",
+        "https://www.microsoft.com/en-us/microsoft-copilot/blog/copilot-studio/microsoft-power-virtual-agents-now-part-of-microsoft-copilot-studio/",
+        "https://www.microsoft.com/licensing/guidance/Power-Platform",
+        "https://www.microsoft.com/en-us/microsoft-365/enterprise/government-plans-and-pricing"
       ],
       "productIds": [
         "microsoft-copilot-personal",
@@ -932,7 +1061,9 @@
         "microsoft-365-frontline-base",
         "microsoft-office-365-enterprise-base",
         "microsoft-365-apps-enterprise-base",
-        "microsoft-agent-365"
+        "microsoft-agent-365",
+        "microsoft-365-government",
+        "microsoft-office-365-government"
       ],
       "homepageRead": {
         "url": "https://microsoft.ai",
@@ -940,7 +1071,11 @@
         "error": "HTTP Error 403: Forbidden"
       },
       "checkedAt": "2026-10-20",
-      "note": "M365个人/商业/企业/Copilot/教育/基础含无Teams、PowerPlatform及存量、Dynamics正式软件、TeamsRooms、Clipchamp和PowerBI已核；非营利折扣归同许可证。旧PVA/部分商业合同统一迁移仍未确认。"
+      "note": "公开导航/价目具体软件目录已由前三文件闭环。PVA于2023-11进入CopilotStudio；当前FAQ仍将PowerVirtualAgentsforOffice365作为M365内含serviceplan，不是可另买免费会员。固定Studio订阅和旧session计量不能凭品牌改名强行完全相同。 本轮补政府公开M365G3/G5/G7forGCC及OfficeG1/G3/G5，关掉此前gov核心套件缺口。",
+      "remaining": "",
+      "publicScopeClosed": true,
+      "scope": "Public Copilot/M365/PowerPlatform/Dynamics/BI/Clipchamp software plans already enumerated; PVA naming and current rights",
+      "knownHistoricalGaps": "已知旧独立PowerVirtualAgents按chat sessions合同，未取得当前官方统一续费/终止日期。仅该具体老命名保留gap；不因此把整个厂商公开目录留partial。"
     },
     {
       "platformId": "minimax",
@@ -1011,7 +1146,8 @@
       "sources": [
         "https://odyssey.systems/",
         "https://developer.odyssey.ml/",
-        "https://odyssey.systems/legal/api-terms"
+        "https://odyssey.systems/legal/api-terms",
+        "https://experience.odyssey.systems/"
       ],
       "productIds": [],
       "homepageRead": {
@@ -1020,7 +1156,8 @@
         "error": null
       },
       "checkedAt": "2026-10-20",
-      "note": "官网当前研究预览与API入口可读；开发者入口只对已有账号继续并要求新用户联系申请，尚未核实账户内计费或会员档位。"
+      "note": "官网与Experience公开研究演示可读，未公开命名软件会员。Developer官方导航却导向既有账号入口，新用户须联系申请；API条款不提供完整公开套餐。保留真实准入屏障，不创建Free或Pro。",
+      "remaining": "官网与Experience公开研究演示可读，未公开命名软件会员。Developer官方导航却导向既有账号入口，新用户须联系申请；API条款不提供完整公开套餐。保留真实准入屏障，不创建Free或Pro。"
     },
     {
       "platformId": "openai",
@@ -1067,7 +1204,7 @@
       "platformId": "xai",
       "name": "xAI",
       "site": "https://x.ai",
-      "status": "partial",
+      "status": "research_complete",
       "sources": [
         "https://docs.x.ai/x-subscription/pricing",
         "https://cursor.com/help/grok-bot/plans",
@@ -1087,7 +1224,12 @@
         "chars": 0,
         "error": "HTTP Error 403: Forbidden"
       },
-      "note": "现行共享与独立存量套餐分开；旧Cursor Teams映射须配合新代码部署。"
+      "note": "当前The X Subscription、Cursor/Grok/X独立存量资格分别保留；Cursor Teams一对多迁移已随PR105部署并读回，未猜用户席位。",
+      "checkedAt": "2026-10-20",
+      "remaining": "",
+      "publicScopeClosed": true,
+      "scope": "Current official public plans and explicitly supported legacy plans",
+      "knownHistoricalGaps": "更早request-based合同仅已知续期迁移规则；不制造未见正式档名。"
     },
     {
       "platformId": "unisound",
@@ -1117,7 +1259,11 @@
       "sources": [
         "https://www.sensenova.cn/token-plan",
         "https://www.xiaohuanxiong.com/pricing",
-        "https://seko.sensetime.com/pricing"
+        "https://seko.sensetime.com/pricing",
+        "https://xiaohuanxiong.com/solutions",
+        "https://xiaohuanxiong.com/products/fin",
+        "https://xiaohuanxiong.com/products/edu",
+        "https://xiaohuanxiong.com/products/ge"
       ],
       "productIds": [
         "sensenova-token-plan",
@@ -1130,7 +1276,9 @@
         "error": null
       },
       "checkedAt": "2026-10-20",
-      "note": "TokenPlan公测、小浣熊四档、Seko个人三档及企业已核；Seko团队和小浣熊行业命名许可待核。"
+      "note": "小浣熊行业方案公开目录已经闭环：三种行业产品+销售咨询，未列独立命名软件会员，不复制通用四档。Seko个人/企业四档已完整录入；只有已知团队标签确有额外许可线索，须保持具体gap。",
+      "remaining": "Seko团队标签未在HTTP SSR展开销售卡，客户端配置还含未知CUSTOM_XS级别；静态名称不能证明完整当前可售目录，需交互式已有会话核对。不为小浣熊私人报价继续partial。",
+      "actualObstacle": "Seko团队标签未在HTTP SSR展开销售卡，客户端配置还含未知CUSTOM_XS级别；静态名称不能证明完整当前可售目录，需交互式已有会话核对。不为小浣熊私人报价继续partial。"
     },
     {
       "platformId": "doubao",
@@ -1177,7 +1325,13 @@
       "status": "partial",
       "sources": [
         "https://docs.z.ai/devpack/overview",
-        "https://docs.bigmodel.cn/cn/coding-plan/overview"
+        "https://docs.bigmodel.cn/cn/coding-plan/overview",
+        "https://docs.bigmodel.cn/cn/coding-plan/notice/usage-revision",
+        "https://docs.z.ai/devpack/notice/usage-revision",
+        "https://docs.z.ai/devpack/transition",
+        "https://chatglm.cn/",
+        "https://chatglm.cn/pay/policy/vipservice",
+        "https://autoglm.zhipuai.cn/"
       ],
       "productIds": [
         "z-ai-devpack",
@@ -1188,16 +1342,23 @@
         "chars": 14,
         "error": null
       },
-      "appliedCatalogRevision": 41
+      "appliedCatalogRevision": 41,
+      "checkedAt": "2026-10-20",
+      "note": "BigModel/Z.ai当前及V1/V2和团队旧版已足够有官方7/30说明，旧套餐范围可以闭环，不需再猜私人合同。真正剩余是ChatGLM和AutoGLM消费订阅的实时可售目录。",
+      "remaining": "ChatGLM真实只读POST /chatglm/payment-api/list_subjects 返回authorization is empty；AutoGLM当前脚本getPayProductInfo动态读取/agentpay/v1/assistant/product-info，具体正式名称不静态公开。需既有登录会话查看购买页面；不注册购买，不把AutoClaw目录混作AutoGLM。",
+      "actualObstacle": "ChatGLM真实只读POST /chatglm/payment-api/list_subjects 返回authorization is empty；AutoGLM当前脚本getPayProductInfo动态读取/agentpay/v1/assistant/product-info，具体正式名称不静态公开。需既有登录会话查看购买页面；不注册购买，不把AutoClaw目录混作AutoGLM。"
     },
     {
       "platformId": "baichuan",
       "name": "百川智能",
       "site": "https://www.baichuan-ai.com",
-      "status": "partial",
+      "status": "research_complete",
       "sources": [
         "https://platform.baichuan-ai.com/prices",
-        "https://ying.baichuan-ai.com/chat"
+        "https://ying.baichuan-ai.com/chat",
+        "https://www.baichuan-ai.com/",
+        "https://www.baichuan-ai.com/article/user-agreement",
+        "https://policy.baichuan-ai.com/mobile/privacy/2025"
       ],
       "productIds": [],
       "homepageRead": {
@@ -1206,16 +1367,21 @@
         "error": null
       },
       "checkedAt": "2026-10-20",
-      "note": "百小应等聊天产品未取得现行正式会员目录；不能将开放平台按量结论外推整个厂商。；需要在现行百小医/百小应产品客户端检查会员、医疗付费服务是否正式软件订阅；不凭旧工具站免费价格新造Free。"
+      "note": "官方公司主页当前推广百小医；历史百小应入口也返回百小医。有限公开导航、当前协议、产品介绍未列可适用的命名软件会员，API按量另已核实。公开范围可收口为“不新增聊天套餐”，不是断言不存在私人/客户端服务。",
+      "remaining": "",
+      "publicScopeClosed": true,
+      "knownHistoricalGaps": "登录后个体医疗咨询可能有付费交易，但没有已知命名订阅线索；不因此无限保留partial，不把医疗单次服务当软件会员。",
+      "subscriptionStatus": "none"
     },
     {
       "platformId": "meituan",
       "name": "美团 LongCat",
       "site": "https://longcat.chat",
-      "status": "partial",
+      "status": "research_complete",
       "sources": [
         "https://longcat.ai/platform/docs/zh/api-pay-as-you-go",
-        "https://longcat.chat/"
+        "https://longcat.chat/",
+        "https://longcat.ai/platform/docs/token-pack"
       ],
       "productIds": [],
       "homepageRead": {
@@ -1224,18 +1390,23 @@
         "error": null
       },
       "checkedAt": "2026-10-20",
-      "note": "LongCat聊天 https://longcat.chat/pricing 仅返回聊天壳，未取得完整订阅目录，不能宣称整个美团LongCat无会员。；需登录设置/客户端确认是否现行付费套餐，并取得有效协议路径。LongCat API无固定套餐门槛和一次性Token包已在别处记录，不外推聊天。"
+      "note": "当前聊天公开导航只列聊天、下载、登录、API平台，没有公开命名会员/订阅购买入口。按量API与一次性资源包已明确分离；有限公开目录闭环为无可新增聊天套餐，不作全产品无会员断言。",
+      "remaining": "",
+      "publicScopeClosed": true,
+      "knownHistoricalGaps": "旧/docs协议入口已变更，但当前公开导航无具体旧套餐线索；不为不存在的私人合同继续partial。",
+      "subscriptionStatus": "none"
     },
     {
       "platformId": "tencent-hy",
       "name": "腾讯混元",
       "site": "https://hunyuan.tencent.com",
-      "status": "partial",
+      "status": "research_complete",
       "sources": [
         "https://cloud.tencent.com/document/product/1823/130060",
         "https://cloud.tencent.com/document/product/1823/131172",
         "https://cloud.tencent.com/document/product/1823/130055",
-        "https://yuanbao.tencent.com/"
+        "https://yuanbao.tencent.com/",
+        "https://rule.tencent.com/rule/202403110001"
       ],
       "productIds": [],
       "homepageRead": {
@@ -1244,16 +1415,21 @@
         "error": null
       },
       "checkedAt": "2026-10-20",
-      "note": "官方完整个人版目录分通用与Hy两独立系列；本通用系列39/99/299/599元/月。使用积分抵扣，非模型名称。；官方明确Hy与通用为独立套餐，可同时持有，两者共用API Key。Hy四档28/78/238/468元/月。；官方概述完整列两档。专业为自定义积分池最低5万积分500元/月；轻享为Token池最低5000万Tokens，广州100元/新加坡130元每月；规格为自定义资源量，不再拆造档位。；腾讯元宝聊天会员未在本范围取得明确官方目录，不根据混元API目录断言元宝无会员。；未取得明确无订阅的官方依据。需登录用户中心/客户端会员入口核实，不能凭API按量结论外推元宝。"
+      "note": "当前元宝公开导航与服务协议无独立命名软件会员和购买入口；公开范围已核完，不新增元宝套餐。混元/TokenHub个人与企业计划另已完整录入，不从其API按量结论外推聊天。",
+      "remaining": "",
+      "publicScopeClosed": true,
+      "knownHistoricalGaps": "未声称登录后永无付费；不存在已知具体会员/旧合同线索，不为假想私人合同继续partial。",
+      "subscriptionStatus": "none"
     },
     {
       "platformId": "stepfun",
       "name": "阶跃星辰",
       "site": "https://www.stepfun.com",
-      "status": "partial",
+      "status": "research_complete",
       "sources": [
         "https://platform.stepfun.com/docs/zh/step-plan/pricing",
-        "https://www.stepfun.com/subscription/membership-benefits-explanation"
+        "https://www.stepfun.com/subscription/membership-benefits-explanation",
+        "https://www.stepfun.com/subscription"
       ],
       "productIds": [
         "stepfun",
@@ -1264,7 +1440,11 @@
         "chars": 4,
         "error": null
       },
-      "appliedCatalogRevision": 41
+      "appliedCatalogRevision": 41,
+      "checkedAt": "2026-10-20",
+      "note": "尝鲜周卡收费属性已由当前购买页明确，和新用户7天免费160积分体验不是一回事。现行正式公开目录与API Step Plan已闭环；无具体旧合同线索，无需额外探索。",
+      "remaining": "",
+      "publicScopeClosed": true
     },
     {
       "platformId": "qwen",
@@ -1273,7 +1453,11 @@
       "status": "partial",
       "sources": [
         "https://platform.qianwenai.com/docs/token-plan/overview",
-        "https://docs.qwencloud.com/token-plan/overview"
+        "https://docs.qwencloud.com/token-plan/overview",
+        "https://qwen.ai/qwenchat",
+        "https://chat.qwen.ai/",
+        "https://chat.qwen.ai/pricing",
+        "https://www.qianwen.com/"
       ],
       "productIds": [
         "qwen-token-personal",
@@ -1287,7 +1471,9 @@
         "error": null
       },
       "checkedAt": "2026-10-20",
-      "note": "国内及国际个人/团队Token Plan完整四产品14档；聊天客户端会员入口尚待核。"
+      "note": "Token Plan已录与聊天独立。公开产品介绍可证明免费使用，但不能排除近期聊天Go/Plus/Pro线索。/pricing并非公开正式价目表，仅回同一登录应用壳。",
+      "remaining": "需要已有账号的聊天订阅入口验证；直接HTTP返回安全挑战，Jina返回登录壳，当前官方公开导航无可读完整套餐。未注册或购买。",
+      "actualObstacle": "需要已有账号的聊天订阅入口验证；直接HTTP返回安全挑战，Jina返回登录壳，当前官方公开导航无可读完整套餐。未注册或购买。"
     },
     {
       "platformId": "ami-labs",
@@ -1328,11 +1514,13 @@
       "platformId": "nous",
       "name": "Nous Research",
       "site": "https://nousresearch.com",
-      "status": "partial",
+      "status": "research_complete",
       "sources": [
         "https://portal.nousresearch.com/",
         "https://portal.nousresearch.com/business",
-        "https://portal.nousresearch.com/cloud"
+        "https://portal.nousresearch.com/cloud",
+        "https://nousresearch.com/",
+        "https://portal.nousresearch.com/manage-subscription"
       ],
       "productIds": [
         "nous-research",
@@ -1344,8 +1532,11 @@
         "error": null
       },
       "appliedCatalogRevision": 41,
-      "note": "Portal四档和Enterprise私有部署已核；Cloud按秒计算/存储不另建会员，Business中央余额是否有独立固定订阅未明确。",
-      "checkedAt": "2026-10-20"
+      "note": "公开scope闭环：Portal Free/Plus/Super/Ultra已收录，Enterprise独立部署询价档已收录；Cloud按运行秒数+存储，Business文档明确中央余额分配成员开支，并非另一个已公开固定Team订阅。无需因未知私人合同保持partial。",
+      "checkedAt": "2026-10-20",
+      "remaining": "",
+      "publicScopeClosed": true,
+      "scope": "仅以本轮识别的官方自有产品导航与正式公开价格/FAQ/条款为闭环；未公开私人合同不延续partial。出现已知独立产品的真实登录/反爬屏障或有效旧订阅具体命名缺失才blocked。"
     },
     {
       "platformId": "periodic",
@@ -1414,7 +1605,11 @@
         "https://reflection.ai/",
         "https://developers.reflection.ai/introduction",
         "https://developers.reflection.ai/llms.txt",
-        "https://developers.reflection.ai/quickstart"
+        "https://developers.reflection.ai/quickstart",
+        "https://platform.reflection.ai/",
+        "https://platform.reflection.ai/legal/terms",
+        "https://reflection.ai/legal/consumer-terms-of-service",
+        "https://reflection.ai/legal/commercial-terms-of-service"
       ],
       "productIds": [],
       "homepageRead": {
@@ -1422,7 +1617,9 @@
         "chars": 3490,
         "error": null
       },
-      "note": "已核Reflection API、Mirror代码代理及完整文档索引，未找到公开订阅价格页；尚须核对平台计费入口，不能仅凭API文档不存在价格表就断言没有套餐。"
+      "note": "当前公开导航不再有独立Mirror定价卡，不能沿旧产品名无限查；但平台登录是真屏障，Consumer条款明确有订阅或按量、价格在平台购买前展示，尚无法区分正式命名套餐，因此有具体blocked。",
+      "checkedAt": "2026-10-20",
+      "remaining": "当前公开导航不再有独立Mirror定价卡，不能沿旧产品名无限查；但平台登录是真屏障，Consumer条款明确有订阅或按量、价格在平台购买前展示，尚无法区分正式命名套餐，因此有具体blocked。"
     },
     {
       "platformId": "ssi",
@@ -1552,7 +1749,8 @@
       },
       "appliedCatalogRevision": 41,
       "checkedAt": "2026-10-20",
-      "note": "Firefly/CreativeCloud及具体教育、Express/Acrobat/Substance/Stock个人和团队、Experience公开命名档已核；泛SingleApp、Acrobat旧附加/部分企业、Stock旧地区及企业精确目录仍待核。"
+      "note": "当前公开具名目录和可换应用Single App许可已核；仅教育表含混原名映射、旧AI Assistant/Plus、Standard Enterprise旧VIP与Stock个人旧档存续仍有具体缺口。",
+      "remaining": "教育两项Single App名称映射、旧个人/企业AI Assistant与Plus关系、Standard Enterprise旧VIP、Stock个人3/25/40/750不含AI Studio旧档存续。"
     },
     {
       "platformId": "browser-use",
@@ -1560,7 +1758,14 @@
       "site": "https://browser-use.com",
       "status": "partial",
       "sources": [
-        "https://browser-use.com/pricing"
+        "https://browser-use.com/pricing",
+        "https://browser-use.com/",
+        "https://browser-use.com/pricing/legacy",
+        "https://docs.browser-use.com/llms.txt",
+        "https://docs.browser-use.com/cloud/guides/billing.md",
+        "https://docs.browser-use.com/cloud/guides/concurrency.md",
+        "https://docs.browser-use.com/cloud/api-v2/billing/get-account-billing.md",
+        "https://cloud.browser-use.com/settings?tab=billing"
       ],
       "productIds": [],
       "homepageRead": {
@@ -1568,7 +1773,9 @@
         "chars": 4706,
         "error": null
       },
-      "note": "现行官网明确 No subscription，另保留 Legacy subscriptions 管理入口，继续核对旧目录是否仍有效。"
+      "note": "当前新购scope已闭环：无新订阅，充值按量且并发按历史消费解锁；不是Free/Developer/Scale会员。Legacy API页仅V2/V3按量，不能当旧订阅价目。官方Billing同时明确旧订阅仍可取消续费、当前周期继续有效，因此旧订阅真实存在且未完成具体命名，整体blocked。",
+      "checkedAt": "2026-10-20",
+      "remaining": "当前新购scope已闭环：无新订阅，充值按量且并发按历史消费解锁；不是Free/Developer/Scale会员。Legacy API页仅V2/V3按量，不能当旧订阅价目。官方Billing同时明确旧订阅仍可取消续费、当前周期继续有效，因此旧订阅真实存在且未完成具体命名，整体blocked。"
     },
     {
       "platformId": "cline",
@@ -1591,7 +1798,7 @@
       "platformId": "cursor",
       "name": "Cursor（Anysphere）",
       "site": "https://cursor.com",
-      "status": "partial",
+      "status": "research_complete",
       "sources": [
         "https://docs.x.ai/x-subscription/pricing",
         "https://cursor.com/docs/account/pricing/legacy-cursor-plans"
@@ -1605,7 +1812,12 @@
         "chars": 17786,
         "error": null
       },
-      "note": "现行共享与独立存量套餐分开；旧Cursor Teams映射须配合新代码部署。"
+      "note": "当前The X Subscription、Cursor/Grok/X独立存量资格分别保留；Cursor Teams一对多迁移已随PR105部署并读回，未猜用户席位。",
+      "checkedAt": "2026-10-20",
+      "remaining": "",
+      "publicScopeClosed": true,
+      "scope": "Current official public plans and explicitly supported legacy plans",
+      "knownHistoricalGaps": "更早request-based合同仅已知续期迁移规则；不制造未见正式档名。"
     },
     {
       "platformId": "devin",
@@ -1738,7 +1950,10 @@
       "site": "https://higgsfield.ai",
       "status": "partial",
       "sources": [
-        "https://higgsfield.ai/pricing"
+        "https://higgsfield.ai/pricing",
+        "https://higgsfield.ai/blog/new-unlimited-more-models",
+        "https://higgsfield.ai/create/video/select?for=motion&model=seedance1_5",
+        "https://higgsfield.ai/creator-hub/changelog"
       ],
       "productIds": [
         "higgsfield"
@@ -1748,7 +1963,11 @@
         "chars": 3072,
         "error": null
       },
-      "appliedCatalogRevision": 41
+      "appliedCatalogRevision": 41,
+      "checkedAt": "2026-10-20",
+      "note": "个人、Team/Scale/Enterprise正式目录已有基线；Max存在主站正式购买页面卡片及主站订阅活动，不再仅是geo线索。API按充值余额消费。",
+      "remaining": "当前pricing HTTP403，无法给Max准确在售/存量标记。Ultimate/Creator仍只有第三方/geo或未渲染plan objects线索，没有主站可验证续费条款；B2B名称与现Team/Scale/Enterprise缺明确迁移映射。不要凭名称猜归并。",
+      "actualObstacle": "当前pricing HTTP403，无法给Max准确在售/存量标记。Ultimate/Creator仍只有第三方/geo或未渲染plan objects线索，没有主站可验证续费条款；B2B名称与现Team/Scale/Enterprise缺明确迁移映射。不要凭名称猜归并。"
     },
     {
       "platformId": "ideogram",
@@ -1777,7 +1996,8 @@
       "status": "partial",
       "sources": [
         "https://instinct.com/",
-        "https://app.instinct.com/login"
+        "https://app.instinct.com/login",
+        "https://instinct.com/terms"
       ],
       "productIds": [],
       "homepageRead": {
@@ -1786,7 +2006,8 @@
         "error": null
       },
       "checkedAt": "2026-10-20",
-      "note": "官网提供个人助理的Text Instinct入口，进入登录页；尚未取得可核实的会员目录，不据此声明没有套餐。"
+      "note": "身份已确认，官网只有Text Instinct进入登录，无公开价格表；Terms明确付费功能费用可能存在但不列套餐名。属于具体登录屏障，不能用其他同名Instinct网站价格代替。",
+      "remaining": "身份已确认，官网只有Text Instinct进入登录，无公开价格表；Terms明确付费功能费用可能存在但不列套餐名。属于具体登录屏障，不能用其他同名Instinct网站价格代替。"
     },
     {
       "platformId": "kilo",
@@ -1811,19 +2032,27 @@
       "platformId": "kiro",
       "name": "Kiro",
       "site": "https://kiro.dev",
-      "status": "partial",
+      "status": "research_complete",
       "sources": [
-        "https://kiro.dev/pricing/"
+        "https://kiro.dev/pricing/",
+        "https://kiro.dev/enterprise/",
+        "https://docs.aws.amazon.com/govcloud-us/latest/UserGuide/govcloud-kiro.html"
       ],
       "productIds": [
-        "kiro"
+        "kiro",
+        "kiro-govcloud"
       ],
       "homepageRead": {
         "url": "https://kiro.dev",
         "chars": 22111,
         "error": null
       },
-      "appliedCatalogRevision": 41
+      "appliedCatalogRevision": 41,
+      "checkedAt": "2026-10-20",
+      "note": "商用Free/Pro/Pro+/Pro Max/Power，企业使用同四付费席位而非独立Enterprise等级，GovCloud区域差异本轮已核。；",
+      "remaining": "",
+      "publicScopeClosed": true,
+      "scope": "商用Free/Pro/Pro+/Pro Max/Power，企业使用同四付费席位而非独立Enterprise等级，GovCloud区域差异本轮已核。"
     },
     {
       "platformId": "krea",
@@ -1850,7 +2079,9 @@
       "status": "partial",
       "sources": [
         "https://leonardo.ai/pricing",
-        "https://intercom.help/leonardo-ai/en/articles/9698289-leonardo-phoenix-leonardo-ai-s-foundational-model"
+        "https://intercom.help/leonardo-ai/en/articles/9698289-leonardo-phoenix-leonardo-ai-s-foundational-model",
+        "https://intercom.help/leonardo-ai/es/articles/8044033-uso-de-los-tokens",
+        "https://intercom.help/leonardo-ai/en/articles/13755076-how-do-i-subscribe-to-a-paid-plan-change-or-upgrade-my-subscription"
       ],
       "productIds": [
         "leonardo-solo",
@@ -1863,7 +2094,9 @@
         "error": "HTTP Error 403: Forbidden"
       },
       "checkedAt": "2026-10-20",
-      "note": "个人/团队和独立API Basic/Standard/Pro/Custom已核；旧Apprentice/Artisan/Maestro是否仍有效未证实。"
+      "note": "当前Solo四档、Teams三档已按官方价格基线验证；独立API四档另有官方FAQ和subscription invoice帮助证据。",
+      "remaining": "Apprentice/Artisan/Maestro明确旧名称线索仍存在官方非英文旧帮助页；没有找到官方英文映射/停售/继续续费条款。第三方普遍声称改名不足以自动迁移用户或双建存量。pricing本轮403，API旧四档与当前PAYG是否并存仍需当前API购买页。",
+      "actualObstacle": "Apprentice/Artisan/Maestro明确旧名称线索仍存在官方非英文旧帮助页；没有找到官方英文映射/停售/继续续费条款。第三方普遍声称改名不足以自动迁移用户或双建存量。pricing本轮403，API旧四档与当前PAYG是否并存仍需当前API购买页。"
     },
     {
       "platformId": "liblibtv",
@@ -1882,7 +2115,8 @@
         "error": null
       },
       "checkedAt": "2026-10-20",
-      "note": "LiblibAI创作会员六个命名等级已核；LibTV、团队及共享许可仍需核实。"
+      "note": "LibTV公开API五档及24个SKU与LiblibAI子集相同；不凭SKU相同自动合并会员。",
+      "remaining": "LibTV/LiblibAI明确跨产品许可共享条款；团队套餐真实读取接口匿名401，须已有登录会员中心核实。"
     },
     {
       "platformId": "lovable",
@@ -1935,7 +2169,10 @@
         "chars": 3295,
         "error": null
       },
-      "appliedCatalogRevision": 41
+      "appliedCatalogRevision": 41,
+      "note": "当前Agents五档沿用已核pricing，API按量可排除；旧Dream Machine五档是否仍可续费及与Agents关系有明确官方冲突，需真实订阅管理页核验。",
+      "remaining": "当前Agents五档沿用已核pricing，API按量可排除；旧Dream Machine五档是否仍可续费及与Agents关系有明确官方冲突，需真实订阅管理页核验。",
+      "checkedAt": "2026-10-20"
     },
     {
       "platformId": "magnific",
@@ -2014,7 +2251,11 @@
       "site": "https://hailuoai.com",
       "status": "partial",
       "sources": [
-        "https://hailuoai.video/doc/payment-policy.html"
+        "https://hailuoai.video/doc/payment-policy.html",
+        "https://hailuoai.com/subscribe",
+        "https://minimaxi.com/terms-of-service-v2-cn.html?show=platform%2Cagent%2Cvideo",
+        "https://platform.minimaxi.com/subscribe/coding-plan",
+        "https://hailuoai.com/"
       ],
       "productIds": [
         "hailuo-ai"
@@ -2024,7 +2265,11 @@
         "chars": 417,
         "error": null
       },
-      "appliedCatalogRevision": 41
+      "appliedCatalogRevision": 41,
+      "checkedAt": "2026-10-20",
+      "note": "国际官方付费条款明确Standard/Pro/Master/Ultra/Max与Unlimited存量停售日期，当前已有六档保留。国内官方存在独立/subscribe。",
+      "remaining": "国内/subscribe HTTP/Jina返回首页或仅导航，未取得套餐卡；国内/doc/payment-policy.html返回国际英文2025旧条款，不能作为国内套餐证据。国内/国际与MiniMax Code/Design是否共享权益未见明确；统一登录不等于会员共享。",
+      "actualObstacle": "国内/subscribe HTTP/Jina返回首页或仅导航，未取得套餐卡；国内/doc/payment-policy.html返回国际英文2025旧条款，不能作为国内套餐证据。国内/国际与MiniMax Code/Design是否共享权益未见明确；统一登录不等于会员共享。"
     },
     {
       "platformId": "niteshift",
@@ -2152,7 +2397,10 @@
         "chars": 4340,
         "error": null
       },
-      "appliedCatalogRevision": 41
+      "appliedCatalogRevision": 41,
+      "note": "Web六档维持；独立API正式档名从旧官方目录搜索索引找全，但旧文档实时404，当前API Billing匿名页未显示，不能确认仍续费或已停用。",
+      "remaining": "Web六档维持；独立API正式档名从旧官方目录搜索索引找全，但旧文档实时404，当前API Billing匿名页未显示，不能确认仍续费或已停用。",
+      "checkedAt": "2026-10-20"
     },
     {
       "platformId": "poe",
@@ -2175,9 +2423,13 @@
       "platformId": "pollo",
       "name": "Pollo AI",
       "site": "https://pollo.ai",
-      "status": "partial",
+      "status": "research_complete",
       "sources": [
-        "https://pollo.ai/pricing"
+        "https://pollo.ai/pricing",
+        "https://pollo.ai/hub/deevid-ai-vs-pollo-ai",
+        "https://pollo.ai/whats-new",
+        "https://api.pollo.ai/pricing",
+        "https://api.pollo.ai/"
       ],
       "productIds": [
         "pollo-ai"
@@ -2187,7 +2439,12 @@
         "chars": 0,
         "error": "HTTP Error 403: Forbidden"
       },
-      "appliedCatalogRevision": 41
+      "appliedCatalogRevision": 41,
+      "checkedAt": "2026-10-20",
+      "note": "仅当前公开官网导航及正式目录：既有浏览器四档结果与公开价格FAQ、官方当前对比表、Whats New/Ultra会员活动相互印证；API由官网导航直达独立api.pollo.ai，明确Top Up/PAYG。未发现具体待证的旧档线索，不推断私人合同。",
+      "remaining": "",
+      "publicScopeClosed": true,
+      "scope": "Current public Pollo Web pricing and API billing navigation"
     },
     {
       "platformId": "replit",
@@ -2263,12 +2520,14 @@
       "platformId": "tapnow",
       "name": "TapNow",
       "site": "https://www.tapnow.ai",
-      "status": "partial",
+      "status": "research_complete",
       "sources": [
-        "https://app.tapnow.ai/pricing"
+        "https://app.tapnow.ai/pricing",
+        "https://www.tapnow.ai/enterprise"
       ],
       "productIds": [
-        "tapnow"
+        "tapnow",
+        "tapnow-enterprise"
       ],
       "homepageRead": {
         "url": "https://www.tapnow.ai",
@@ -2276,7 +2535,9 @@
         "error": null
       },
       "checkedAt": "2026-10-20",
-      "note": "当前Basic/Pro/Ultimate/Max已核，Enterprise页签尚未展开，不从读取空白猜无套餐。"
+      "note": "当前公开四档个人订阅与独立Enterprise定制软件方案已核，积分滑杆不另造等级。",
+      "remaining": "",
+      "publicScopeClosed": true
     },
     {
       "platformId": "trae",
@@ -2319,7 +2580,10 @@
         "url": "https://www.tripo3d.ai",
         "chars": 0,
         "error": "HTTP Error 403: Forbidden"
-      }
+      },
+      "note": "正式产品文档用Professional而实时价格页与活动用Pro，暂无官方明确同名映射，不新建Professional或自动替换Pro。周年活动提Current Pro and Advanced users，说明存在Advanced存量线索，但尚无其现存续费条款/迁移，保留gap。",
+      "remaining": "正式产品文档用Professional而实时价格页与活动用Pro，暂无官方明确同名映射，不新建Professional或自动替换Pro。周年活动提Current Pro and Advanced users，说明存在Advanced存量线索，但尚无其现存续费条款/迁移，保留gap。",
+      "checkedAt": "2026-10-20"
     },
     {
       "platformId": "vidu",
@@ -2327,7 +2591,11 @@
       "site": "https://www.vidu.com",
       "status": "partial",
       "sources": [
-        "https://www.vidu.com/pricing"
+        "https://www.vidu.com/pricing",
+        "https://www.vidu.cn/pricing",
+        "https://www.vidu.cn/",
+        "https://platform.vidu.cn/docs/overview/pricing",
+        "https://platform.vidu.cn/pricing"
       ],
       "productIds": [
         "vidu-global"
@@ -2336,25 +2604,33 @@
         "url": "https://www.vidu.com",
         "chars": 11936,
         "error": null
-      }
+      },
+      "checkedAt": "2026-10-20",
+      "note": "国际个人四档基线有效。国内正式官网/pricing确认存在订阅、增购积分与取消管理，API官方现行完整定价为五档一年期充值包和商务定制。",
+      "remaining": "国内/pricing实际返回not-found卡而未列会员卡；首页明确个人/企业，但企业订阅名称与国内个人档名仍不可核。API可确认为充值，不因企业并发需求另造月度会员。",
+      "actualObstacle": "国内/pricing实际返回not-found卡而未列会员卡；首页明确个人/企业，但企业订阅名称与国内个人档名仍不可核。API可确认为充值，不因企业并发需求另造月度会员。"
     },
     {
       "platformId": "lingxi",
       "name": "WPS 灵犀",
       "site": "https://www.lingxi.cn",
-      "status": "partial",
+      "status": "research_complete",
       "sources": [
         "https://www.lingxi.cn/docs",
         "https://vip.wps.cn/price",
         "https://365.wps.cn/price",
-        "https://365.wps.cn/ai_price"
+        "https://365.wps.cn/ai_price",
+        "https://www.wps.com/buy/",
+        "https://www.wps.ai/",
+        "https://365.wps.com/"
       ],
       "productIds": [
         "wps-lingxi",
         "wps-office-ai-personal",
         "wps365-business",
         "wps365-smart",
-        "wps365-ai-package"
+        "wps365-ai-package",
+        "wps-office-international"
       ],
       "homepageRead": {
         "url": "https://www.lingxi.cn",
@@ -2362,7 +2638,9 @@
         "error": null
       },
       "checkedAt": "2026-10-20",
-      "note": "灵犀四档、WPS个人3档、365商业4/智能2/年度AI许可3档已核。独立WPSAI存量和国际产品仍待官方证据；与灵犀不同订阅不合并。"
+      "note": "国际当前官网购买页完整三档，WPS AI页面导向同一Office订阅体系，国际365公开官网为企业咨询/产品演示，没有更多公开命名档。国内当前官方完整三卡仅注册用户/超级/大会员，旧vip_ai和超级Pro仅兼容映射，没有具体仍售或仍续旧合同证据，故不为其无限partial。",
+      "remaining": "",
+      "publicScopeClosed": true
     },
     {
       "platformId": "windsurf",
@@ -2388,7 +2666,7 @@
       "platformId": "workbuddy",
       "name": "WorkBuddy",
       "site": "https://www.workbuddy.cn",
-      "status": "partial",
+      "status": "research_complete",
       "sources": [
         "https://www.workbuddy.cn/docs/workbuddy/Pricing",
         "https://cloud.tencent.com/document/product/1831/134332"
@@ -2402,7 +2680,12 @@
         "chars": 26,
         "error": null
       },
-      "appliedCatalogRevision": 41
+      "appliedCatalogRevision": 41,
+      "checkedAt": "2026-10-20",
+      "note": "Buddy AI国内个人体验/标准/高级/旗舰共享会员，以及Enterprise旗舰/专享/私有化；官网导航没有第三个独立软件订阅系列。；7月1前个人专业版自动转标准，不新增重复档。存量价格保护/赠分有效期写计划说明，不将CodeBuddy/WorkBuddy分别订阅。",
+      "remaining": "",
+      "publicScopeClosed": true,
+      "scope": "Buddy AI国内个人体验/标准/高级/旗舰共享会员，以及Enterprise旗舰/专享/私有化；官网导航没有第三个独立软件订阅系列。"
     },
     {
       "platformId": "n8n",
@@ -2452,7 +2735,12 @@
         "https://kling.ai/app/membership/membership-plan",
         "https://kling.ai/app/membership/team-membership-plan",
         "https://klingai.com/app/membership/membership-plan",
-        "https://klingai.com/app/membership/team-membership-plan"
+        "https://klingai.com/app/membership/team-membership-plan",
+        "https://kling.ai/dev/pricing",
+        "https://kling.ai/document-api/guides/get-started/quick-start",
+        "https://kling.ai/document-api/apiReference/model/textToVideo",
+        "https://kling.ai/document-api/apiReference/updateNotice?date=2026-02-11",
+        "https://klingai.com/dev/pricing"
       ],
       "productIds": [
         "kling-international-personal",
@@ -2466,7 +2754,9 @@
         "error": null
       },
       "checkedAt": "2026-10-20",
-      "note": "真实浏览器核对国际个人五档/团队、国内个人四档/团队，非会员和新客7天试用不造会员；API独立资源目录和旧档迁移仍需核实。"
+      "note": "当前个人/团队会员名称以2026-10-20真实浏览器基线完整核验；国际API全部公开导航/定价可闭环为预付视频与图片资源包，非月付会员。未知私有定制合同不作为公开范围gap。",
+      "remaining": "国内API价格页标题写灵活订阅方案，但HTTP未返回实际资源包卡，因此国内API不能仅凭国际结构推断闭环。旧国际Ultra与现Ultra+没有官方迁移/存续规则，不自动合并、也不凭媒体造旧会员。",
+      "actualObstacle": "国内API价格页标题写灵活订阅方案，但HTTP未返回实际资源包卡，因此国内API不能仅凭国际结构推断闭环。旧国际Ultra与现Ultra+没有官方迁移/存续规则，不自动合并、也不凭媒体造旧会员。"
     },
     {
       "platformId": "feishu",
@@ -2489,7 +2779,9 @@
         "doubao-work-seats",
         "doubao-enterprise-usage",
         "feishu-aily-legacy",
-        "feishu-meeting-notes-legacy"
+        "feishu-meeting-notes-legacy",
+        "lark-frontline",
+        "feishu-frontline"
       ],
       "homepageRead": {
         "url": "https://www.larksuite.com/ja_jp/?from_site=feishu",
@@ -2497,7 +2789,8 @@
         "error": null
       },
       "checkedAt": "2026-10-20",
-      "note": "国内/国际套件、个人共享及存量AI、企业席位/用量和专用存量已核；旧套件企业标准/专业、Lark Frontline和独立AI尚待核。"
+      "note": "Frontline国内/国际许可和豆包共享个人订阅已核；AI Meeting Notes按份附加购买排除。",
+      "remaining": "仅旧飞书套件企业标准/专业与当前目录的具体映射或有效存量条款待核。"
     },
     {
       "platformId": "coze",
@@ -2526,12 +2819,14 @@
       "platformId": "doubao-work",
       "name": "豆包工作",
       "site": "https://www.doubao.com/work",
-      "status": "partial",
+      "status": "research_complete",
       "sources": [
         "https://www.doubao.com/work/docs/zh-cn/articles/855635606021-team-enterprise-benefits",
-        "https://aily.feishu.cn/hc/1u7kleqg_1cnvbb55"
+        "https://aily.feishu.cn/hc/1u7kleqg_1cnvbb55",
+        "https://www.doubao.com/work/pricing"
       ],
       "productIds": [
+        "doubao",
         "doubao-work-seats",
         "doubao-enterprise-usage"
       ],
@@ -2541,7 +2836,9 @@
         "error": null
       },
       "checkedAt": "2026-10-20",
-      "note": "组织团队/企业席位与对应企业用量三档已核；独立个人版与豆包个人会员是否同一订阅仍须官方明确证据。"
+      "note": "个人购买链接直达统一豆包订阅且SKU相同；组织席位与企业用量分开，复用豆包个人三档。",
+      "remaining": "",
+      "publicScopeClosed": true
     },
     {
       "platformId": "qoder",
@@ -2600,5 +2897,6 @@
       "checkedAt": "2026-10-20",
       "note": "平台记录xHandles=@commandcodeai；官网直接链接同X账号，官方GitHub组织验证域名。不采用SEO同名站。已核现行正式订阅及免费/按量边界。"
     }
-  ]
+  ],
+  "scopeDefinition": "Current official public product navigation, named software subscription/licence lists, and specifically evidenced legacy plans. Known historical mapping gaps are recorded separately; research_complete is not a claim about undisclosed private contracts."
 }

@@ -1,0 +1,746 @@
+{
+  "checkedAt": "2026-10-20",
+  "expectedRevision": 60,
+  "revision": 61,
+  "products": 270,
+  "plans": 1065,
+  "vendors": 125,
+  "verifiedPlans": 1044,
+  "pendingPlans": 0,
+  "newPlans": 80,
+  "fullReadback": true,
+  "publicApiExactReadback": true,
+  "runtimeCommit": "77c5818f9545696e1e0dbd9403222c63f0199106",
+  "runtimeVersionId": "6e7b1cbc-7ce7-47f9-83e1-8a3bc5a62dbe",
+  "runtimeCodeUnchanged": true,
+  "historicalMatchRehearsal": {
+    "approvedRules": 9,
+    "cases": 8685,
+    "differences": []
+  },
+  "migrationMetadataUnchanged": true,
+  "allOldPlanIdsPreserved": true,
+  "independentReview": "No evidenced P1/P2; old identities/ownership and entitlement boundaries retained",
+  "changes": [
+    {
+      "id": "pixverse-basic",
+      "oldName": "PixVerse Basic",
+      "name": "PixVerse Basic",
+      "productId": "pixverse"
+    },
+    {
+      "id": "pixverse-standard",
+      "oldName": "PixVerse Standard",
+      "name": "PixVerse Standard",
+      "productId": "pixverse"
+    },
+    {
+      "id": "pixverse-pro",
+      "oldName": "PixVerse Pro",
+      "name": "PixVerse Pro",
+      "productId": "pixverse"
+    },
+    {
+      "id": "pixverse-premium",
+      "oldName": "PixVerse Premium",
+      "name": "PixVerse Premium",
+      "productId": "pixverse"
+    },
+    {
+      "id": "pixverse-ultra",
+      "oldName": "PixVerse Ultra",
+      "name": "PixVerse Ultra",
+      "productId": "pixverse"
+    },
+    {
+      "id": "pixverse-team-ultra",
+      "oldName": "PixVerse Team Ultra",
+      "name": "PixVerse Team Ultra",
+      "productId": "pixverse"
+    },
+    {
+      "id": "luma-ai-plus",
+      "oldName": "Luma Agents Plus",
+      "name": "Luma Agents Plus",
+      "productId": "luma-ai"
+    },
+    {
+      "id": "luma-ai-pro",
+      "oldName": "Luma Agents Pro",
+      "name": "Luma Agents Pro",
+      "productId": "luma-ai"
+    },
+    {
+      "id": "luma-ai-ultra",
+      "oldName": "Luma Agents Ultra",
+      "name": "Luma Agents Ultra",
+      "productId": "luma-ai"
+    },
+    {
+      "id": "luma-ai-team",
+      "oldName": "Luma Agents Team",
+      "name": "Luma Agents Team",
+      "productId": "luma-ai"
+    },
+    {
+      "id": "luma-ai-enterprise",
+      "oldName": "Luma Agents Enterprise",
+      "name": "Luma Agents Enterprise",
+      "productId": "luma-ai"
+    },
+    {
+      "id": "stepfun-consumer-entry",
+      "oldName": "阶跃 AI（StepClaw） 入门版",
+      "name": "阶跃 AI（StepClaw） 入门版",
+      "productId": "stepfun-consumer"
+    },
+    {
+      "id": "stepfun-consumer-advanced",
+      "oldName": "阶跃 AI（StepClaw） 高级版",
+      "name": "阶跃 AI（StepClaw） 高级版",
+      "productId": "stepfun-consumer"
+    },
+    {
+      "id": "stepfun-consumer-progress",
+      "oldName": "阶跃 AI（StepClaw） 进阶版",
+      "name": "阶跃 AI（StepClaw） 进阶版",
+      "productId": "stepfun-consumer"
+    },
+    {
+      "id": "stepfun-consumer-professional",
+      "oldName": "阶跃 AI（StepClaw） 专业版",
+      "name": "阶跃 AI（StepClaw） 专业版",
+      "productId": "stepfun-consumer"
+    },
+    {
+      "id": "stepfun-consumer-weekly-trial",
+      "oldName": "阶跃 AI（StepClaw） 尝鲜周卡",
+      "name": "阶跃 AI（StepClaw） 尝鲜周卡",
+      "productId": "stepfun-consumer"
+    },
+    {
+      "id": "pollo-ai-free",
+      "oldName": "Pollo AI Free",
+      "name": "Pollo AI Free",
+      "productId": "pollo-ai"
+    },
+    {
+      "id": "pollo-ai-lite",
+      "oldName": "Pollo AI Lite",
+      "name": "Pollo AI Lite",
+      "productId": "pollo-ai"
+    },
+    {
+      "id": "pollo-ai-pro",
+      "oldName": "Pollo AI Pro",
+      "name": "Pollo AI Pro",
+      "productId": "pollo-ai"
+    },
+    {
+      "id": "pollo-ai-ultra",
+      "oldName": "Pollo AI Ultra",
+      "name": "Pollo AI Ultra",
+      "productId": "pollo-ai"
+    },
+    {
+      "id": "aws-q-business-lite",
+      "oldName": "Amazon Q Business Lite",
+      "name": "Amazon Q Business Lite",
+      "productId": "aws-q-business"
+    },
+    {
+      "id": "aws-q-business-pro",
+      "oldName": "Amazon Q Business Pro",
+      "name": "Amazon Q Business Pro",
+      "productId": "aws-q-business"
+    },
+    {
+      "id": "meta-muse-code-everyday-usage",
+      "oldName": "Meta Muse Code / Model API Everyday Usage",
+      "name": "Meta Muse Code Everyday Usage",
+      "productId": "meta-muse-code"
+    },
+    {
+      "id": "meta-muse-code-high-usage",
+      "oldName": "Meta Muse Code / Model API High Usage",
+      "name": "Meta Muse Code High Usage",
+      "productId": "meta-muse-code"
+    },
+    {
+      "id": "meta-muse-code-power-usage",
+      "oldName": "Meta Muse Code / Model API Power Usage",
+      "name": "Meta Muse Code Power Usage",
+      "productId": "meta-muse-code"
+    },
+    {
+      "id": "meta-muse-code-maximum-usage",
+      "oldName": "Meta Muse Code Maximum Usage",
+      "name": "Meta Muse Code Maximum Usage",
+      "productId": "meta-muse-code"
+    },
+    {
+      "id": "tripo-studio-free",
+      "oldName": "Tripo Studio Free",
+      "name": "Tripo Studio Free",
+      "productId": "tripo-studio"
+    },
+    {
+      "id": "tripo-studio-pro",
+      "oldName": "Tripo Studio Pro",
+      "name": "Tripo Studio Pro",
+      "productId": "tripo-studio"
+    },
+    {
+      "id": "tripo-studio-max",
+      "oldName": "Tripo Studio Max",
+      "name": "Tripo Studio Max",
+      "productId": "tripo-studio"
+    },
+    {
+      "id": "tripo-studio-team",
+      "oldName": "Tripo Studio Team",
+      "name": "Tripo Studio Team",
+      "productId": "tripo-studio"
+    },
+    {
+      "id": "tripo-studio-starter",
+      "oldName": "Tripo Studio Starter",
+      "name": "Tripo Studio Starter",
+      "productId": "tripo-studio"
+    },
+    {
+      "id": "adobe-acrobat-reader",
+      "oldName": "Adobe Acrobat Reader",
+      "name": "Adobe Acrobat Reader",
+      "productId": "adobe-acrobat"
+    },
+    {
+      "id": "adobe-acrobat-standard-individual",
+      "oldName": "Adobe Acrobat Standard Individual",
+      "name": "Adobe Acrobat Standard Individual",
+      "productId": "adobe-acrobat"
+    },
+    {
+      "id": "adobe-acrobat-pro-individual",
+      "oldName": "Adobe Acrobat Pro Individual",
+      "name": "Adobe Acrobat Pro Individual",
+      "productId": "adobe-acrobat"
+    },
+    {
+      "id": "adobe-acrobat-studio-individual",
+      "oldName": "Adobe Acrobat Studio Individual",
+      "name": "Adobe Acrobat Studio Individual",
+      "productId": "adobe-acrobat"
+    },
+    {
+      "id": "adobe-acrobat-ai-assistant-plus",
+      "oldName": "Adobe Acrobat AI Assistant Plus",
+      "name": "Adobe Acrobat AI Assistant Plus",
+      "productId": "adobe-acrobat"
+    },
+    {
+      "id": "adobe-acrobat-standard-teams",
+      "oldName": "Adobe Acrobat Standard Teams",
+      "name": "Adobe Acrobat Standard Teams",
+      "productId": "adobe-acrobat"
+    },
+    {
+      "id": "adobe-acrobat-pro-teams",
+      "oldName": "Adobe Acrobat Pro Teams",
+      "name": "Adobe Acrobat Pro Teams",
+      "productId": "adobe-acrobat"
+    },
+    {
+      "id": "adobe-acrobat-studio-teams",
+      "oldName": "Adobe Acrobat Studio Teams",
+      "name": "Adobe Acrobat Studio Teams",
+      "productId": "adobe-acrobat"
+    },
+    {
+      "id": "adobe-acrobat-pro-enterprise",
+      "oldName": "Adobe Acrobat Pro Enterprise",
+      "name": "Adobe Acrobat Pro Enterprise",
+      "productId": "adobe-acrobat"
+    },
+    {
+      "id": "adobe-acrobat-ai-assistant-teams",
+      "oldName": "Adobe Acrobat AI Assistant for teams",
+      "name": "Adobe Acrobat AI Assistant for teams",
+      "productId": "adobe-acrobat"
+    },
+    {
+      "id": "adobe-stock-10-stock-credits",
+      "oldName": "Adobe Stock 10 Stock credits",
+      "name": "Adobe Stock 10 Stock credits",
+      "productId": "adobe-stock"
+    },
+    {
+      "id": "adobe-stock-10-stock-credits-plus-ai-studio",
+      "oldName": "Adobe Stock 10 Stock credits + AI Studio",
+      "name": "Adobe Stock 10 Stock credits + AI Studio",
+      "productId": "adobe-stock"
+    },
+    {
+      "id": "adobe-stock-40-stock-credits-plus-ai-studio",
+      "oldName": "Adobe Stock 40 Stock credits + AI Studio",
+      "name": "Adobe Stock 40 Stock credits + AI Studio",
+      "productId": "adobe-stock"
+    },
+    {
+      "id": "adobe-stock-unlimited-stock-plus-ai-studio",
+      "oldName": "Adobe Stock Unlimited Stock + AI Studio",
+      "name": "Adobe Stock Unlimited Stock + AI Studio",
+      "productId": "adobe-stock"
+    },
+    {
+      "id": "adobe-stock-25-stock-credits-plus-ai-studio",
+      "oldName": "Adobe Stock 25 Stock credits + AI Studio",
+      "name": "Adobe Stock 25 Stock credits + AI Studio",
+      "productId": "adobe-stock"
+    },
+    {
+      "id": "adobe-stock-750-stock-credits-plus-ai-studio",
+      "oldName": "Adobe Stock 750 Stock credits + AI Studio",
+      "name": "Adobe Stock 750 Stock credits + AI Studio",
+      "productId": "adobe-stock"
+    },
+    {
+      "id": "lark-frontline-frontline",
+      "oldName": "Lark Frontline",
+      "name": "Lark Frontline",
+      "productId": "lark-frontline"
+    },
+    {
+      "id": "feishu-frontline-license",
+      "oldName": "飞书 一线版",
+      "name": "飞书 一线版",
+      "productId": "feishu-frontline"
+    },
+    {
+      "id": "tapnow-enterprise-enterprise",
+      "oldName": "TapNow Enterprise",
+      "name": "TapNow Enterprise",
+      "productId": "tapnow-enterprise"
+    },
+    {
+      "id": "google-virustotal-bundles-basic-bundle",
+      "oldName": "VirusTotal Basic Bundle",
+      "name": "VirusTotal Basic Bundle",
+      "productId": "google-virustotal-bundles"
+    },
+    {
+      "id": "google-virustotal-bundles-professional-bundle",
+      "oldName": "VirusTotal Professional Bundle",
+      "name": "VirusTotal Professional Bundle",
+      "productId": "google-virustotal-bundles"
+    },
+    {
+      "id": "google-virustotal-bundles-enterprise-bundle",
+      "oldName": "VirusTotal Enterprise Bundle",
+      "name": "VirusTotal Enterprise Bundle",
+      "productId": "google-virustotal-bundles"
+    },
+    {
+      "id": "google-virustotal-bundles-starter-bundle",
+      "oldName": "VirusTotal Starter Bundle",
+      "name": "VirusTotal Starter Bundle",
+      "productId": "google-virustotal-bundles"
+    },
+    {
+      "id": "google-virustotal-bundles-duet",
+      "oldName": "VirusTotal Duet",
+      "name": "VirusTotal Duet",
+      "productId": "google-virustotal-bundles"
+    },
+    {
+      "id": "google-virustotal-threat-hunter-threat-hunter-pro",
+      "oldName": "VirusTotal Threat Hunter Pro",
+      "name": "VirusTotal Threat Hunter Pro",
+      "productId": "google-virustotal-threat-hunter"
+    },
+    {
+      "id": "google-secops-standalone-siem",
+      "oldName": "Google SecOps SIEM",
+      "name": "Google SecOps SIEM",
+      "productId": "google-secops-standalone"
+    },
+    {
+      "id": "google-secops-standalone-soar",
+      "oldName": "Google SecOps SOAR",
+      "name": "Google SecOps SOAR",
+      "productId": "google-secops-standalone"
+    },
+    {
+      "id": "google-mandiant-asm-self-assessment",
+      "oldName": "Mandiant Attack Surface Management Self-assessment",
+      "name": "Mandiant Attack Surface Management Self-assessment",
+      "productId": "google-mandiant-asm"
+    },
+    {
+      "id": "google-mandiant-security-validation-saas-module",
+      "oldName": "Mandiant Security Validation SaaS module",
+      "name": "Mandiant Security Validation SaaS module",
+      "productId": "google-mandiant-security-validation"
+    },
+    {
+      "id": "google-unified-security-unified-security",
+      "oldName": "Google Unified Security",
+      "name": "Google Unified Security",
+      "productId": "google-unified-security"
+    },
+    {
+      "id": "wps-office-international-wps-standard",
+      "oldName": "WPS Office 国际版 WPS Standard",
+      "name": "WPS Office 国际版 WPS Standard",
+      "productId": "wps-office-international"
+    },
+    {
+      "id": "wps-office-international-wps-pro-plus",
+      "oldName": "WPS Office 国际版 WPS Pro+",
+      "name": "WPS Office 国际版 WPS Pro+",
+      "productId": "wps-office-international"
+    },
+    {
+      "id": "wps-office-international-wps-pro-plus-sharing-plan",
+      "oldName": "WPS Office 国际版 WPS Pro+ Sharing Plan",
+      "name": "WPS Office 国际版 WPS Pro+ Sharing Plan",
+      "productId": "wps-office-international"
+    },
+    {
+      "id": "meta-muse-free",
+      "oldName": "Meta Muse Free",
+      "name": "Meta Muse Free",
+      "productId": "meta-muse"
+    },
+    {
+      "id": "meta-muse-power",
+      "oldName": "Meta Muse Power",
+      "name": "Meta Muse Power",
+      "productId": "meta-muse"
+    },
+    {
+      "id": "meta-muse-maximum",
+      "oldName": "Meta Muse Maximum",
+      "name": "Meta Muse Maximum",
+      "productId": "meta-muse"
+    },
+    {
+      "id": "meta-one-core",
+      "oldName": "Meta One Core",
+      "name": "Meta One Core",
+      "productId": "meta-one"
+    },
+    {
+      "id": "meta-one-premium",
+      "oldName": "Meta One Premium",
+      "name": "Meta One Premium",
+      "productId": "meta-one"
+    },
+    {
+      "id": "meta-one-essential",
+      "oldName": "Meta One Essential",
+      "name": "Meta One Essential",
+      "productId": "meta-one"
+    },
+    {
+      "id": "meta-one-advanced",
+      "oldName": "Meta One Advanced",
+      "name": "Meta One Advanced",
+      "productId": "meta-one"
+    },
+    {
+      "id": "meta-one-expert",
+      "oldName": "Meta One Expert",
+      "name": "Meta One Expert",
+      "productId": "meta-one"
+    },
+    {
+      "id": "meta-one-max",
+      "oldName": "Meta One Max",
+      "name": "Meta One Max",
+      "productId": "meta-one"
+    },
+    {
+      "id": "nvidia-developer-program-free-membership",
+      "oldName": "NVIDIA Developer Program Free membership",
+      "name": "NVIDIA Developer Program Free membership",
+      "productId": "nvidia-developer-program"
+    },
+    {
+      "id": "microsoft-365-government-g3",
+      "oldName": "Microsoft 365 Government G3",
+      "name": "Microsoft 365 Government G3",
+      "productId": "microsoft-365-government"
+    },
+    {
+      "id": "microsoft-365-government-g5",
+      "oldName": "Microsoft 365 Government G5",
+      "name": "Microsoft 365 Government G5",
+      "productId": "microsoft-365-government"
+    },
+    {
+      "id": "microsoft-365-government-g7-for-gcc",
+      "oldName": "Microsoft 365 Government G7 for GCC",
+      "name": "Microsoft 365 Government G7 for GCC",
+      "productId": "microsoft-365-government"
+    },
+    {
+      "id": "microsoft-office-365-government-g1",
+      "oldName": "Office 365 Government G1",
+      "name": "Office 365 Government G1",
+      "productId": "microsoft-office-365-government"
+    },
+    {
+      "id": "microsoft-office-365-government-g3",
+      "oldName": "Office 365 Government G3",
+      "name": "Office 365 Government G3",
+      "productId": "microsoft-office-365-government"
+    },
+    {
+      "id": "microsoft-office-365-government-g5",
+      "oldName": "Office 365 Government G5",
+      "name": "Office 365 Government G5",
+      "productId": "microsoft-office-365-government"
+    },
+    {
+      "id": "volc-image-generation-suite-apaas",
+      "oldName": "火山引擎图像生成大模型套件 Apaas套餐",
+      "name": "火山引擎图像生成大模型套件 Apaas套餐",
+      "productId": "volc-image-generation-suite"
+    },
+    {
+      "id": "volc-image-generation-suite-professional",
+      "oldName": "火山引擎图像生成大模型套件 专业版",
+      "name": "火山引擎图像生成大模型套件 专业版",
+      "productId": "volc-image-generation-suite"
+    },
+    {
+      "id": "volc-image-generation-suite-standard-annual",
+      "oldName": "火山引擎图像生成大模型套件 标准版",
+      "name": "火山引擎图像生成大模型套件 标准版",
+      "productId": "volc-image-generation-suite"
+    },
+    {
+      "id": "volc-image-generation-suite-standard-monthly",
+      "oldName": "火山引擎图像生成大模型套件 标准版-包月套餐",
+      "name": "火山引擎图像生成大模型套件 标准版-包月套餐",
+      "productId": "volc-image-generation-suite"
+    },
+    {
+      "id": "volc-image-generation-suite-flagship",
+      "oldName": "火山引擎图像生成大模型套件 旗舰版",
+      "name": "火山引擎图像生成大模型套件 旗舰版",
+      "productId": "volc-image-generation-suite"
+    },
+    {
+      "id": "volc-image-generation-suite-advanced",
+      "oldName": "火山引擎图像生成大模型套件 高级版",
+      "name": "火山引擎图像生成大模型套件 高级版",
+      "productId": "volc-image-generation-suite"
+    },
+    {
+      "id": "volc-ai-content-assistant-basic",
+      "oldName": "火山引擎AI内容助手 AI内容助手基础版",
+      "name": "火山引擎AI内容助手 AI内容助手基础版",
+      "productId": "volc-ai-content-assistant"
+    },
+    {
+      "id": "volc-ai-content-assistant-flagship",
+      "oldName": "火山引擎AI内容助手 AI内容助手旗舰版",
+      "name": "火山引擎AI内容助手 AI内容助手旗舰版",
+      "productId": "volc-ai-content-assistant"
+    },
+    {
+      "id": "volc-content-insights-agent-basic",
+      "oldName": "火山引擎内容洞察Agent 内容洞察 Agent -基础版",
+      "name": "火山引擎内容洞察Agent 内容洞察 Agent -基础版",
+      "productId": "volc-content-insights-agent"
+    },
+    {
+      "id": "volc-content-insights-agent-standard",
+      "oldName": "火山引擎内容洞察Agent 内容洞察 Agent -标准版",
+      "name": "火山引擎内容洞察Agent 内容洞察 Agent -标准版",
+      "productId": "volc-content-insights-agent"
+    },
+    {
+      "id": "baidu-coding-plan-legacy-lite",
+      "oldName": "百度千帆Coding Plan（旧版） Lite",
+      "name": "百度千帆Coding Plan（旧版） Lite",
+      "productId": "baidu-coding-plan-legacy"
+    },
+    {
+      "id": "baidu-coding-plan-legacy-pro",
+      "oldName": "百度千帆Coding Plan（旧版） Pro",
+      "name": "百度千帆Coding Plan（旧版） Pro",
+      "productId": "baidu-coding-plan-legacy"
+    },
+    {
+      "id": "baidu-keyue-one-enterprise-free",
+      "oldName": "百度客悦ONE智能客服 企业免费版",
+      "name": "百度客悦ONE智能客服 企业免费版",
+      "productId": "baidu-keyue-one"
+    },
+    {
+      "id": "baidu-keyue-one-lite",
+      "oldName": "百度客悦ONE智能客服 轻量版",
+      "name": "百度客悦ONE智能客服 轻量版",
+      "productId": "baidu-keyue-one"
+    },
+    {
+      "id": "baidu-keyue-one-standard",
+      "oldName": "百度客悦ONE智能客服 标准版",
+      "name": "百度客悦ONE智能客服 标准版",
+      "productId": "baidu-keyue-one"
+    },
+    {
+      "id": "baidu-keyue-one-flagship",
+      "oldName": "百度客悦ONE智能客服 旗舰版",
+      "name": "百度客悦ONE智能客服 旗舰版",
+      "productId": "baidu-keyue-one"
+    },
+    {
+      "id": "baidu-creative-saas-professional",
+      "oldName": "百度智能创作平台SaaS 创作专业会员",
+      "name": "百度智能创作平台SaaS 创作专业会员",
+      "productId": "baidu-creative-saas"
+    },
+    {
+      "id": "baidu-creative-saas-flagship",
+      "oldName": "百度智能创作平台SaaS 创作旗舰会员",
+      "name": "百度智能创作平台SaaS 创作旗舰会员",
+      "productId": "baidu-creative-saas"
+    },
+    {
+      "id": "baidu-miaoda-enterprise-standard",
+      "oldName": "百度秒哒（企业版） 企业标准版",
+      "name": "百度秒哒（企业版） 企业标准版",
+      "productId": "baidu-miaoda-enterprise"
+    },
+    {
+      "id": "tencent-adp-experience",
+      "oldName": "腾讯云智能体开发平台ADP 体验版",
+      "name": "腾讯云智能体开发平台ADP 体验版",
+      "productId": "tencent-adp"
+    },
+    {
+      "id": "tencent-adp-advanced",
+      "oldName": "腾讯云智能体开发平台ADP 进阶版",
+      "name": "腾讯云智能体开发平台ADP 进阶版",
+      "productId": "tencent-adp"
+    },
+    {
+      "id": "tencent-adp-enterprise-standard",
+      "oldName": "腾讯云智能体开发平台ADP 企业标准版",
+      "name": "腾讯云智能体开发平台ADP 企业标准版",
+      "productId": "tencent-adp"
+    },
+    {
+      "id": "tencent-adp-legacy-free",
+      "oldName": "腾讯云智能体开发平台ADP 免费版（旧版）",
+      "name": "腾讯云智能体开发平台ADP 免费版（旧版）",
+      "productId": "tencent-adp"
+    },
+    {
+      "id": "tencent-adp-legacy-skill-plan",
+      "oldName": "腾讯云智能体开发平台ADP Skill Plan版（旧版）",
+      "name": "腾讯云智能体开发平台ADP Skill Plan版（旧版）",
+      "productId": "tencent-adp"
+    },
+    {
+      "id": "tencent-adp-legacy-professional",
+      "oldName": "腾讯云智能体开发平台ADP 专业版（旧版）",
+      "name": "腾讯云智能体开发平台ADP 专业版（旧版）",
+      "productId": "tencent-adp"
+    },
+    {
+      "id": "tencent-adp-legacy-enterprise",
+      "oldName": "腾讯云智能体开发平台ADP 企业版（旧版）",
+      "name": "腾讯云智能体开发平台ADP 企业版（旧版）",
+      "productId": "tencent-adp"
+    },
+    {
+      "id": "aliyun-aidge-workbench-personal-free",
+      "oldName": "阿里云Aidge企业工作台（个人订阅） 免费版-Free",
+      "name": "阿里云Aidge企业工作台（个人订阅） 免费版-Free",
+      "productId": "aliyun-aidge-workbench-personal"
+    },
+    {
+      "id": "aliyun-aidge-workbench-personal-standard",
+      "oldName": "阿里云Aidge企业工作台（个人订阅） 标准版-Standard",
+      "name": "阿里云Aidge企业工作台（个人订阅） 标准版-Standard",
+      "productId": "aliyun-aidge-workbench-personal"
+    },
+    {
+      "id": "aliyun-aidge-workbench-personal-professional",
+      "oldName": "阿里云Aidge企业工作台（个人订阅） 专业版-Professional",
+      "name": "阿里云Aidge企业工作台（个人订阅） 专业版-Professional",
+      "productId": "aliyun-aidge-workbench-personal"
+    },
+    {
+      "id": "aliyun-aidge-workbench-personal-ultimate",
+      "oldName": "阿里云Aidge企业工作台（个人订阅） 旗舰版-Ultimate",
+      "name": "阿里云Aidge企业工作台（个人订阅） 旗舰版-Ultimate",
+      "productId": "aliyun-aidge-workbench-personal"
+    },
+    {
+      "id": "kiro-govcloud-pro",
+      "oldName": "Kiro（AWS GovCloud US） Pro",
+      "name": "Kiro（AWS GovCloud US） Pro",
+      "productId": "kiro-govcloud"
+    },
+    {
+      "id": "kiro-govcloud-pro-plus",
+      "oldName": "Kiro（AWS GovCloud US） Pro+",
+      "name": "Kiro（AWS GovCloud US） Pro+",
+      "productId": "kiro-govcloud"
+    },
+    {
+      "id": "kiro-govcloud-pro-max",
+      "oldName": "Kiro（AWS GovCloud US） Pro Max",
+      "name": "Kiro（AWS GovCloud US） Pro Max",
+      "productId": "kiro-govcloud"
+    },
+    {
+      "id": "kiro-govcloud-power",
+      "oldName": "Kiro（AWS GovCloud US） Power",
+      "name": "Kiro（AWS GovCloud US） Power",
+      "productId": "kiro-govcloud"
+    },
+    {
+      "id": "baidu-dumate-enterprise-seat",
+      "oldName": "百度办公搭子DuMate 企业坐席",
+      "name": "百度办公搭子DuMate 企业坐席",
+      "productId": "baidu-dumate-enterprise"
+    },
+    {
+      "id": "baidu-dumate-comate-joint-seat-seat",
+      "oldName": "百度DuMate与Comate 联合席位",
+      "name": "百度DuMate与Comate 联合席位",
+      "productId": "baidu-dumate-comate-joint-seat"
+    },
+    {
+      "id": "aliyun-ims-enterprise-entry",
+      "oldName": "阿里云智能媒体服务 IMS 入门版",
+      "name": "阿里云智能媒体服务 IMS 入门版",
+      "productId": "aliyun-ims-enterprise"
+    },
+    {
+      "id": "aliyun-ims-enterprise-standard",
+      "oldName": "阿里云智能媒体服务 IMS 标准版",
+      "name": "阿里云智能媒体服务 IMS 标准版",
+      "productId": "aliyun-ims-enterprise"
+    },
+    {
+      "id": "aliyun-ims-enterprise-flagship",
+      "oldName": "阿里云智能媒体服务 IMS 旗舰版",
+      "name": "阿里云智能媒体服务 IMS 旗舰版",
+      "productId": "aliyun-ims-enterprise"
+    },
+    {
+      "id": "aliyun-ims-enterprise-monthly-experience",
+      "oldName": "阿里云智能媒体服务 IMS 功能体验月包",
+      "name": "阿里云智能媒体服务 IMS 功能体验月包",
+      "productId": "aliyun-ims-enterprise"
+    }
+  ]
+}
