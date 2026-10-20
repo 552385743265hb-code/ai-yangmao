@@ -1,48 +1,45 @@
 # 会员目录继续入口
 
-目标仍在进行中。界面已全量验收；官方目录仍有明确资料缺口，不能把 pending 清零或可选套餐全部测试通过写成“无遗漏”。
+目标仍在进行中。目录和界面已逐批生产验收，但仍有具体官方资料缺口，不能把 pending 清零写成“无遗漏”。此前已发布的 AIHOT 修复不再处理。
 
 ## 当前生产状态（2026-10-20）
 
-- D1 / 公开 API：revision **62**，272 产品、1072 套餐，**1051 verified / 21 retired / 0 pending**，125 厂商。全量数据与预备补丁完全一致。
-- 本轮两批新增 87 套餐。保留全部旧 ID、原批准资格和根级别迁移映射。正式名称归一后无重复、verified 无未知收费属性、无孤立或缺厂商产品。
-- 公开官方范围：105 research_complete、20 partial。research_complete 仅指记录的当前公开范围；具体旧档映射缺口另见 coverage.knownHistoricalGaps / source-closures，不能宣称未公开合同都不存在。
-- 运行代码：PR105 + PR114 已合并并部署，当前 Worker **6e7b1cbc-7ce7-47f9-83e1-8a3bc5a62dbe**，tag **77c5818f9545**。此前已发布修复未重做；本轮另发现初次加载竞态，最小修复与回归见PR115。上述运行版本为本审计提交前已核实状态，发布后以PR合并/Cloudflare读回为准。
-- 工作区 `/tmp/ym-hf-link-worktree`，分支 `codex/membership-catalog-live-acceptance`。主 checkout 属于其他工作，勿覆盖。node_modules 是临时 symlink，不提交。
+- D1 与公开 API：revision **63**，285 产品、1109 套餐，**1088 verified / 21 retired / 0 pending**，125 厂商。全量读回与预备补丁一致。
+- 本批新增37套餐；5个已有个人套餐只补全明确的LibTV别名。1072条旧套餐的ID、名称、状态、所属产品、收费属性及历史属性均未改变，根级迁移映射保留。
+- 公开范围：111 research_complete、14 partial。范围定义和具名历史问题见coverage与research-gaps；research_complete不表示已审计全部私人合同。
+- PR116已合并，代码提交 **40223ac0e0a6a10074a1f952875dcd386a3dfecd**。Worker **96ca4415-bcd2-4287-a6c5-06303a9ccaba**，tag **40223ac0e0a6**，Cloudflare读回100%流量；app.js与membership-core.js线上和构建哈希一致。
+- 本次目录、来源与验收凭证后续以资料PR保存。该PR仅修改docs，不需再次部署相同运行代码；以`catalog-rev63-release.json`核对当次运行版本。
+- 工作区`/tmp/ym-hf-link-worktree`。主checkout属于其他工作，勿覆盖。临时node_modules symlink不提交。
 
-## 已完成的真实验收
+## 已完成的验收
 
-- `browser-rev60-proof.json`：生产浏览器逐个切换125厂商，对1005个显示控件逐个勾选/取消，覆盖全部964个不同verified套餐；无禁用或控制台错误。
-- 同一X Subscription在xAI/ Cursor两个厂商下保持勾选，只保存一份。Copilot Pro + Qoder国际Pro刷新后保留，删除一个不影响另一个。
-- 全部测试选择已清除，九项其他个人偏好与测试前完全一致。
-- `browser-rev61-proof.json`：生产更新后重新遍历125厂商，逐厂商实际显示ID集合与公开API完全一致；80个新增套餐逐个勾选/取消通过。基线+增量覆盖全部1044个可选套餐，控制台零错误。
-- 真实9条已批准结构化资格 × 965种持有情况 = **8685次匹配**，rev60→61结果零变化。旧需求仅缺映射不重审福利。
-- 当前完整验证：141文件1526 Vitest + 11 CLI，类型检查/构建通过；新加载回归在旧代码上两路由均先红，再绿。独立复查无P1/P2。PR114 Node24 CI通过，新提交CI另行核对。本机Node26，勿声称本机Node24通过。
-- `minimax-fresh-rebuild-2026-10-20.json`：真实MiniMax原请求重建，只输入原始请求与现行目录，不传保存/批准答案；模型补齐六档资格，分类free、模态text、对象all、截止日/时区正确。40588 tokens，¥0，业务写入0；原任务/已上架条目前后哈希不变。
+- `browser-rev60-proof.json`逐个遍历125厂商，勾选/取消1005个显示控件，覆盖964个不同套餐；rev61/62分别增量验收80/7个。X跨厂商共享订阅去重，多厂商保存/刷新/单独删除均已实测。
+- `browser-rev63-proof.json`：9个受影响厂商全部实际ID集合与API一致，37个新增套餐逐个勾选/取消且仅一个选中卡片；累计覆盖全部1088个verified套餐。125厂商选项均在，控制台零错误，测试选择清除，九项其他偏好保持原样。
+- 真实9条已批准结构化资格×1052种原持有情况＝9468次匹配，rev62→63零变化。未重新批准或修改福利条款。
+- 全套141文件1529 Vitest + 11 CLI、类型检查、前端构建通过；PR116 Node24 CI通过。完整别名识别的三项回归先红再绿，独立复查无P1/P2。本机Node26，不能声称本机Node24通过。
+- PR115已发布的初次加载竞态回归与6000ms延迟真实数据预览见`membership-loading-preview-proof.json`。本批没有重做该修复。
+- `minimax-fresh-rebuild-2026-10-20.json`：真实原请求重建，未输入保存/批准答案；模型补齐六档资格及分类/模态/对象/日期，40588 tokens，¥0，业务写入0。
 
-- `browser-rev62-proof.json`：新增Seko团队三档、国内Vidu四档均选择/取消通过；ModelScope已核无公开固定会员，正确显示空目录。累计覆盖1051个不同verified套餐。
-- 初次加载竞态：过早打开条件面板时旧代码留下不可用提示。修复先保留加载容器，成功/失败后局部刷新会员区；其他偏好DOM/已选资格保留，不重开已关闭的面板。`membership-loading-preview-proof.json`用真实生产GET响应、平台响应延迟6000ms证实无需重开即出现目录。
+## 本批明确边界
 
-## 本批官方研究
+- Qwen通过官方下载安装链、应用商店及同一法律主体核实8个具体套餐，国内创作/工作助理与国际Chat/Studio分开，不混作API Token Plan。
+- Liblib团队真实页面有入门、标准、进阶、高级、豪华、至尊6档。LibTV与Liblib核心会员通过同一所有者/会员读取与购买SKU链核实，共用原有身份；只添加已实际销售的5档完整别名，不新增重复产品。
+- 核心身份共享不等于跨产品余额、活动、加赠额度互通。LibTV没有证实入门档，不能合成该别名。星流与Lovart官方明确两套独立体系，星流停服/退款不自动开通Lovart会员。
+- Kling当前FAQ明确Ultra已停售但原订阅者保留权益；独立记录存量Ultra，不能合并为Ultra+。
+- 飞书旧企业两档有当前支持文档；不擅自标停售或映射到商业版。Google四项旧AI附加权益、Looker原Standard、PVA旧会话许可、Browser Use旧两档、客悦旧合同及BML本地软件授权分别有具体依据。
+- 研究原件及父任务决定见`specific-legacy-closures-2026-10-20.json`；当前可应用事实见`official-findings.json`。历史报告内的旧提议不覆盖父任务最终决定。
 
-- `source-closures-2026-10-20.json` 收录九组来源结果与父任务修正；`official-findings.json` 是可应用事实；`coverage.json` 是厂商范围和实际缺口。
-- 新增含Google安全软件、Meta Muse/Meta One/Code、政府M365、火山软件套件、腾讯ADP、Aidge、IMS、百度客服/创作/旧Coding/DuMate、Kiro GovCloud、国际WPS、Frontline、Adobe及Tripo Starter等；豆包工作个人三档复用同一订阅ID。
-- IMS三档和功能体验月包有独立软件功能授权及有效期，节省计划只承载账单。依赖基准订阅、仅补充容量的加油包排除。体验月包20元，每账号每月一次，按调用耗尽/期满停服，不能写无限量。
-- 未应用：Higgsfield Max仅旧活动/搜索索引，缺当前购买/续费证据；Luma旧Dream Machine与Agents有官方冲突；PixVerse API旧页面已404；Lark AI Meeting Notes按份购买不作为周期订阅；LibTV与LiblibAI同SKU尚不足以自动判共享许可。
+## 剩余具体缺口
 
-## 必须继续的缺口
-
-1. Seko团队、国内Vidu、魔粒/Civision、Higgsfield当前购买卡、可灵国内API已由真实浏览器补核。海螺国内subscribe重定向首页、价格入口不展示匿名完整目录；秒哒个人空间匿名仅登录，无会员入口。这些是实际准入障碍，不再重复HTTP空壳调查。
-2. 实际登录/准入障碍：ChatGLM / AutoGLM、Qwen聊天、Reflection、Instinct、Odyssey、Mercury Chat、Browser Use旧订阅、Liblib团队。只能使用已有可用会话；不注册/购买，不猜Free/Pro。
-3. 具体旧档映射：Adobe教育Single App及旧AI Assistant/Standard Enterprise/Stock、Leonardo旧Apprentice/Artisan/Maestro、Tripo Advanced/Pro命名、PixVerse API、PPIO旧DeepSeek等。保留已批准资格，不凭同名/金额猜等价。
-4. 当前105家公开范围完成中仍有少量已具名历史gap（Google/VirusTotal/Looker、Microsoft PVA、Cursor旧请求合同）。有确定事实再补，不以私人合同无穷假设扩大范围。
-5. 32条已批准旧会员needs_review只影响自动个人匹配，不是待重新审批的福利。需要确定等价原文才能做受控版本迁移；不能为清零而改批准历史。
-6. 本轮资料及新发现的加载竞态修复见PR115。核对其CI、合并SHA、Worker版本/100%流量、静态文件与线上面板后记录结果；原来已发布修复不再应用。本文只证明提交时快照，不能用这条待办反推后来尚未发布。
+1. 真正登录/准入障碍：秒哒个人、ChatGLM/AutoGLM、Reflection、Instinct、Odyssey、海螺国内。已实际访问，匿名只到登录/首页，或价格接口要求授权。未注册、购买、接受新协议；已有登录会话的问题已向用户提出，等待答复，不重复问。
+2. 明确旧档映射/保留条款：PPIO旧DeepSeek包、Adobe若干教育/AI Assistant/Stock旧档、Higgsfield Max/B2B、Leonardo旧三档与API订阅、Luma Dream Machine旧五档、PixVerse旧API档、Tripo Advanced/Pro与Professional。不要凭同价、同额度、第三方报道或重定向猜映射。
+3. Tripo本次定向客户端访问403，正式文档没有SKU绑定；Advanced功能FAQ没有现行续订保留条款。Luma完整现行条款没有旧五档迁移或并存关系，需已有账号Order/View Plans或迁移通知。公开范围已穷尽，不重复泛搜。
+4. Google/VirusTotal Professional Plus、Unleashed与现Bundle/GTI的精确映射仍未证实。PVA当前协议后续购政策、Cursor更早合同的未来迁移不应扩张成猜测的新套餐。
+5. 32条已批准旧会员needs_review只影响自动个人匹配，不是待重新审批的福利；保留原批准原文，只有确定等价依据才做受控迁移。
 
 ## 私有快照与安全运维
 
-- 最新D1完整原件 `/tmp/ym-membership-wave32-bound-after.json`；公开API `/tmp/ym-membership-api-rev62.json`；预备文件 `/tmp/ym-membership-wave32.json`。原件与内部业务快照不提交。
-- 生产目录超过D1单条SQL100KB，不要内联JSON到Wrangler SQL。准备：`node scripts/prepare-membership-catalog.mjs <当前完整快照> <official-findings.json> <预备文件> <coverage.json>`。
-- 写入：`node /tmp/ym-membership-apply-bound.mjs <预备文件> <私有凭证前缀>`。固定catalog id1，CAS检查revision，绑定参数写入并逐项读回；未知结果先读revision，不能盲目重放。OAuth过期时用正常只读Wrangler刷新，不输出凭据。
-- wave1–32是对应批次快照；不能用旧波次推断今天线上。当前公开目录读取保留根级别别名、replacement及vendors元数据。
-- 浏览器：CUA IAB tab10，句柄 `membershipLiveTab`，已标记handoff；后续回合按要求恢复文档。截图 `/tmp/ym-membership-rev61-live.png`；无测试选择残留。
+- D1完整原件`/tmp/ym-membership-wave33-bound-after.json`，公开API`/tmp/ym-membership-api-rev63.json`，预备文件`/tmp/ym-membership-wave33.json`。内部原件不提交。
+- 准备：`node scripts/prepare-membership-catalog.mjs <当前完整快照> <official-findings.json> <预备文件> <coverage.json>`。所有新增事实先预演、查重、检查旧ID与迁移根、真实规则对照。
+- 超过100KB的目录不能内联进Wrangler SQL；使用参数绑定与revision CAS，只写membership_catalog id=1，写前/后备份、全量读回。版本变化必须重做预演，不能强制覆盖。
+- 不动主checkout、不带node_modules、凭据或内部业务快照入Git。PR仅docs时先比较运行树，不为资料提交重复部署。

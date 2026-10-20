@@ -1,0 +1,1780 @@
+{
+  "checkedAt": "2026-10-20",
+  "parentDecisions": [
+    "Four Workspace legacy rights are free/legacy because current legal text cancels additional fee; no open public free plan or base-edition inference.",
+    "Feishu enterprise Standard/Pro are supported names; no end-of-sale proof, so not arbitrarily marked legacy or aliased to business editions.",
+    "Keyue old rights retain original expiry and one-month renewal grace; no assertion about any user current ownership.",
+    "BML actual software activations are separate from hardware/quantity discounts; annual product-line body overrides ambiguous heading without inferring perpetual offer.",
+    "Mercury Chat was read through actual browser, no messages sent; public scope has no fixed membership catalogue.",
+    "Qwen app identities traced through official downloads and matching legal entities; consumer subscriptions separated from API Token Plans, resource packs, qwenwork and each other unless licence sharing is proven.",
+    "LiblibAI/LibTV core member identity is verified by the same canonical member getter/owner and SKU/purchase services, beyond common account inference. Alias the five actually sold TV levels to existing core IDs; do not duplicate contract SKUs or infer that per-product benefit selectors/balances are interchangeable.",
+    "Kling current published FAQ expressly keeps Ultra as a different legacy tier below Ultra+. Add the legacy identity; never alias it to Ultra+."
+  ],
+  "reports": {
+    "global": {
+      "checkedAt": "2026-10-20",
+      "findings": [
+        {
+          "id": "looker-original-standard",
+          "status": "closed",
+          "decision": "add-verified-legacy-plan",
+          "productId": "google-looker-original",
+          "addPlans": [
+            "Standard"
+          ],
+          "applyReady": true,
+          "conclusion": "现行可访问的Looker(original)托管SLA明确列Standard档，独立于Advanced/Elite。该文件仍是当前SLA，不是只在历史副本中出现；此前漏核表格导致gap。",
+          "evidence": [
+            {
+              "url": "https://cloud.google.com/terms/looker/legal/customers/sla",
+              "quote": "Standard; Advanced or Elite",
+              "section": "Looker (original) Platform SLO table; Standard 99.5%; Advanced/Elite 99.9%",
+              "checkedAt": "2026-10-20",
+              "method": "official-full-page-or-pdf-text"
+            },
+            {
+              "url": "https://cloud.google.com/terms/tssg/looker",
+              "quote": "Looker (original) Services",
+              "section": "Current guide defines original Services separately from Google Cloud core",
+              "checkedAt": "2026-10-20",
+              "method": "official-full-page-or-pdf-text"
+            }
+          ],
+          "limitations": "证明仍受当前标准服务条款覆盖；不宣称所有地区可新购，不将Cloud core Standard当此原版自动等价。无需继续为未知私有合同泛挂partial。"
+        },
+        {
+          "id": "workspace-old-four-ai-addons",
+          "status": "closed",
+          "decision": "retain-free-grandfathered-entitlements-no-new-sales",
+          "productId": "google-workspace-legacy-ai-entitlements",
+          "plans": [
+            "Gemini Business–Legacy",
+            "Gemini Enterprise–Legacy",
+            "AI Meetings and Messaging",
+            "AI Security"
+          ],
+          "applyReady": true,
+          "conclusion": "当前Workspace服务摘要法律条款2026-07-16版明确：2025-01-15后停售；所有已存在online/offline订单继续享有原附加功能，2025-02-01起无额外费用。条款不限定于基础edition已经含全功能，所以“未覆盖基础edition存续/收费未知”的此前gap可撤销。",
+          "evidence": [
+            {
+              "url": "https://workspace.google.com/terms/user_features/",
+              "quote": "continued access and use; no additional cost starting on 1 February 2025",
+              "section": "Workspace Add-Ons > Gemini in Workspace Add-Ons; paragraph immediately before four legacy definitions",
+              "checkedAt": "2026-10-20",
+              "method": "official-full-page-or-pdf-text"
+            },
+            {
+              "url": "https://workspaceupdates.googleblog.com/2025/06/update-for-gemini-add-ons-in-admin-the-console-subscriptions-page.html",
+              "quote": "This change will apply to customers whose Workspace edition now includes all functionality",
+              "section": "Removal of add-on subscription references from Admin console",
+              "checkedAt": "2026-10-20",
+              "method": "official-full-page-or-pdf-text"
+            }
+          ],
+          "catalogTreatment": "仅既有订单的存量资格，不是任何新用户可领的免费会员。基础edition已经包含同样权益时合并/隐藏重复选择；其他受旧订单保护用户仍可保留旧license资格。免费指无附加费，不降低基础Workspace订阅要求。",
+          "limitations": "已内含客户的Adminconsole引用被移除与全体既有订单的法律保护是不同层次；不能把前者条件外推成后者不适用。GeminiEnterprise–Legacy与Cloud GeminiEnterprise不同产品。"
+        },
+        {
+          "id": "pva-session-legacy",
+          "status": "closed-current-legacy-recognition",
+          "decision": "recognize-active-session-license; do-not-claim-renewable-or-all-ended",
+          "productId": "microsoft-power-virtual-agents-legacy",
+          "plans": [
+            "Legacy session-based license"
+          ],
+          "applyReady": true,
+          "conclusion": "Microsoft当前专门管理文档明确legacy PowerVirtualAgents license的session计量：2023-12-01开放购买，2024-01-01起不再可购；仍文档化旧容量在租户池化及按agent查看消费。足以将其识别为已有session许可证，不因品牌改名自动改成当前Credits订阅，也不把停售当用户全部失效。",
+          "evidence": [
+            {
+              "url": "https://learn.microsoft.com/en-us/microsoft-copilot-studio/requirements-sessions-management",
+              "quote": "legacy Power Virtual Agents license; no longer available for purchase starting on January 1, 2024",
+              "section": "Note at top; billed session definition and capacity pooling",
+              "checkedAt": "2026-10-20",
+              "method": "official-full-page-or-pdf-text"
+            },
+            {
+              "url": "https://learn.microsoft.com/en-us/microsoft-copilot-studio/billing-licensing",
+              "quote": "Copilot Credits",
+              "section": "Current standalone credit pack subscription and usage billing",
+              "checkedAt": "2026-10-20",
+              "method": "official-full-page-or-pdf-text"
+            }
+          ],
+          "renewalFinding": "未找到当前官方公开的统一额外续费权或全用户终止日。正常active agreement是否到期由现有协议决定；不把这种逐客户期限当成全厂商研究未完成。若录入只限定实际仍活跃session许可证，不能承诺可续旧SKU。",
+          "catalogTreatment": "可作为legacy session资格的明确子集记录；短名是描述性Legacy session-based license，正式全名保留Power Virtual Agents，不应把描述性标签当微软新SKU名称。",
+          "actualPolicyGap": "若任务要求证明“旧session SKU能在现合同结束后再次续订”，该单一政策仍无官方证据，不作肯定结论。"
+        },
+        {
+          "id": "virustotal-professionalplus-unleashed",
+          "status": "actual-specific-mapping-gap",
+          "decision": "preserve-historical-names-do-not-force-equivalence",
+          "applyReady": false,
+          "knownNames": [
+            "Professional Plus",
+            "Duet",
+            "Unleashed"
+          ],
+          "conclusion": "旧官方2024PDF真实列ProfessionalPlus/Duet/Unleashed三套软件包。当前2026-10-13OtherEligibleServices目录列Basic/Professional/Enterprise/StarterBundle和Duet等SKU。两者没有公开明确一对一改名/续费迁移映射。不能把旧ProfessionalPlus=EnterpriseBundle或Unleashed=Duet/GTIEnterprisePlus凭额度相近强行合并。",
+          "evidence": [
+            {
+              "url": "https://assets.virustotal.com/vt-packages-explainer-unleashed.pdf",
+              "quote": "PROFESSIONAL PLUS; DUET; UNLEASHED",
+              "section": "PDF page 2 (zero-based 1), VT ENTERPRISE Pricing Overview table",
+              "checkedAt": "2026-10-20",
+              "method": "official-full-page-or-pdf-text"
+            },
+            {
+              "url": "https://cloud.google.com/skus/other",
+              "quote": "VirusTotal Enterprise Bundle; VirusTotal Duet",
+              "section": "VirusTotal catalogue rows, last updated 2026-10-13",
+              "checkedAt": "2026-10-20",
+              "method": "official-full-page-or-pdf-text"
+            },
+            {
+              "url": "https://blog.virustotal.com/2024/05/virustotals-mission-continues-sharing.html",
+              "quote": "evolving the existing VirusTotal Enterprise platform",
+              "section": "GTI launch relationship does not say automatic license equivalence",
+              "checkedAt": "2026-10-20",
+              "method": "official-full-page-or-pdf-text"
+            },
+            {
+              "url": "https://gtidocs.virustotal.com/changelog",
+              "quote": "Google Threat Intelligence and VirusTotal Enterprise",
+              "section": "2026-10-13 release note still addresses both product populations",
+              "checkedAt": "2026-10-20",
+              "method": "official-full-page-or-pdf-text"
+            }
+          ],
+          "closedSubset": "ProfessionalPlus/Unleashed的历史真实性和Duet同时存在已闭合；当前正式Bundle目录也已闭合。仅两旧名称的续费/现SKU对应保持具名gap，不再把未知私人合同无限外推。",
+          "limitations": "旧PDF额度/旧价不作现价；当前SKU文档的列名也不证明所有历史订阅统一失效或各渠道可新购。"
+        }
+      ],
+      "summary": {
+        "closed": [
+          "Looker(original) Standard current SLA support",
+          "All four Workspace legacy AI add-ons existing-order continuation and zero additional fee",
+          "PVA legacy session-license existence, purchase cutoff, consumption management"
+        ],
+        "remainingConcretePolicyQuestions": [
+          "VirusTotal ProfessionalPlus/Unleashed exact mapping or published universal renewal/end rules",
+          "PVA old session SKU positive renewal entitlement after current agreement ends"
+        ]
+      },
+      "catalogAmendments": [
+        {
+          "productId": "google-looker-original",
+          "mergeMode": "append-legacy-plan",
+          "plans": [
+            "Standard"
+          ],
+          "legacyPlans": [
+            "Standard"
+          ],
+          "sourceUrl": "https://cloud.google.com/terms/looker/legal/customers/sla",
+          "status": "verified",
+          "applyReady": true
+        },
+        {
+          "productId": "google-workspace-legacy-ai-entitlements",
+          "mergeMode": "new-legacy-entitlement-family-only-where-not-duplicated-by-base",
+          "name": "Google Workspace",
+          "plans": [
+            "Gemini Business–Legacy",
+            "Gemini Enterprise–Legacy",
+            "AI Meetings and Messaging",
+            "AI Security"
+          ],
+          "legacyPlans": [
+            "Gemini Business–Legacy",
+            "Gemini Enterprise–Legacy",
+            "AI Meetings and Messaging",
+            "AI Security"
+          ],
+          "freePlans": [],
+          "sourceUrl": "https://workspace.google.com/terms/user_features/",
+          "status": "verified",
+          "applyReady": true,
+          "verificationNote": "无额外费的既有订单资格，不是新用户独立免费计划。"
+        }
+      ],
+      "scope": "Only the four named legacy gaps; no shared files or production writes"
+    },
+    "api": {
+      "checkedAt": "2026-10-20",
+      "products": [
+        {
+          "productId": "browser-use-cloud-legacy",
+          "platformIds": [
+            "browser-use"
+          ],
+          "name": "Browser Use Cloud（存量订阅）",
+          "plans": [
+            "Business",
+            "Scaleup"
+          ],
+          "freePlans": [],
+          "legacyPlans": [
+            "Business",
+            "Scaleup"
+          ],
+          "sourceUrl": "https://github.com/browser-use/sdk/blob/6b0c96fdc01ced0cb42d3e1427ca95bf934a432e/docs/pricing.mdx",
+          "checkedAt": "2026-10-20",
+          "status": "verified",
+          "applyReady": true,
+          "quote": "Business | Scaleup",
+          "newPlanIds": {
+            "Business": "browser-use-cloud-legacy-business",
+            "Scaleup": "browser-use-cloud-legacy-scaleup"
+          },
+          "planSources": {
+            "Business": "https://github.com/browser-use/sdk/blob/6b0c96fdc01ced0cb42d3e1427ca95bf934a432e/docs/pricing.mdx",
+            "Scaleup": "https://github.com/browser-use/sdk/blob/6b0c96fdc01ced0cb42d3e1427ca95bf934a432e/docs/pricing.mdx"
+          },
+          "verificationNote": "官方SDK仓库不可变历史提交6b0c96f（2026-02-21）docs/pricing.mdx第134-157行明确两档正式订阅名Business/Scaleup；不仅预付credits，还区分Profiles、Active skills、Team members及支持权限。2026-02-24提交e9f5023删除重复定价但非停售声明。现行官方Billing保留legacy monthly plan，明确取消仅停止续费、当前周期仍有效，且既有客户可保留legacy allowances/pricing；现行价格页亦保留Existing subscribers管理入口。故按存量订阅列两档，不当作新购。",
+          "remaining": "",
+          "evidenceUrls": [
+            "https://github.com/browser-use/sdk/blob/6b0c96fdc01ced0cb42d3e1427ca95bf934a432e/docs/pricing.mdx",
+            "https://github.com/browser-use/sdk/blob/1ebe645b852e5155bc4dd2cc0707e63728016996/docs/cloud/guides/billing.mdx",
+            "https://docs.browser-use.com/cloud/guides/billing",
+            "https://browser-use.com/pricing",
+            "https://browser-use.com/pricing/legacy"
+          ],
+          "historicalPriceOnly": {
+            "Business": "$500/month or $4800/year in the historical table",
+            "Scaleup": "$2500/month or $24000/year in the historical table"
+          },
+          "currentPriceNote": "历史金额只定位旧档，不承诺2026-10-20每一份存量合同的实际账单。",
+          "sourceExcerpts": [
+            {
+              "url": "https://github.com/browser-use/sdk/blob/6b0c96fdc01ced0cb42d3e1427ca95bf934a432e/docs/pricing.mdx",
+              "lines": "134-149",
+              "quote": "Plan Comparison: Pay As You Go | Business | Scaleup; Profiles; Active skills; Team members"
+            },
+            {
+              "url": "https://github.com/browser-use/sdk/blob/1ebe645b852e5155bc4dd2cc0707e63728016996/docs/cloud/guides/billing.mdx",
+              "quote": "Existing customers can retain legacy allowances and pricing."
+            },
+            {
+              "url": "https://docs.browser-use.com/cloud/guides/billing",
+              "quote": "Cancellation stops renewal; access continues until the current period ends."
+            }
+          ]
+        }
+      ],
+      "vendors": [
+        {
+          "platformId": "browser-use",
+          "status": "research_complete",
+          "checkedAt": "2026-10-20",
+          "conclusion": "具名旧档Business/Scaleup由官方GitHub历史表定位，现行官方legacy续费/取消/周期存续规则补足有效性。两档可作legacy软件订阅；新购仍为按量。",
+          "sources": [
+            "https://github.com/browser-use/sdk/blob/6b0c96fdc01ced0cb42d3e1427ca95bf934a432e/docs/pricing.mdx",
+            "https://github.com/browser-use/sdk/blob/1ebe645b852e5155bc4dd2cc0707e63728016996/docs/cloud/guides/billing.mdx",
+            "https://docs.browser-use.com/cloud/guides/billing",
+            "https://browser-use.com/pricing",
+            "https://browser-use.com/pricing/legacy",
+            "https://browser-use.com/enterprise"
+          ],
+          "remaining": [],
+          "excluded": [
+            "Pay As You Go不是固定会员，注册credits不生成Free档",
+            "Browserbase Developer/Startup/Scale不属于Browser Use",
+            "Box/Bux为官方声明retired的另一产品，不从其历史价格补Cloud会员",
+            "Enterprise历史表有custom pricing，但当前正式Enterprise页明确同样pay-per-use/no commitment，协议添加并发/SLA/信用池，不将它另造固定软件订阅档。"
+          ],
+          "currentEnterpriseEvidence": {
+            "url": "https://browser-use.com/enterprise",
+            "quote": "Start on pay per use. An enterprise agreement adds the terms your procurement team needs."
+          }
+        },
+        {
+          "platformId": "ppio",
+          "status": "blocked",
+          "checkedAt": "2026-10-20",
+          "candidateProduct": "DeepSeek-畅享",
+          "candidatePlans": [
+            "Lite",
+            "Pro",
+            "Max"
+          ],
+          "applyReady": false,
+          "conclusion": "当前公开resource-pack-specs列id1、1month cycle-based及三档，但仅证明规格记录仍在。已读当前token-plan JS显示只筛企业Token Plan和加量包；官方完整docs llms索引、当前模型服务协议及定向官方公告检索，未取得点名DeepSeek-畅享旧订单续用/停售/续费的现行规则，不能入verified。",
+          "sources": [
+            "https://api-server.ppio.com/v1/product/resource-pack-specs/list",
+            "https://ppio.com/token-plan",
+            "https://ppio.com/_next/static/chunks/50798-20d1f5f61681cf85.js",
+            "https://ppio.com/docs/llms.txt",
+            "https://ppio.com/legal/model-terms-of-service"
+          ],
+          "evidence": [
+            {
+              "url": "https://ppio.com/legal/model-terms-of-service",
+              "quote": "部分服务的开通可能需要签订单独的服务协议（电子或纸质形式）"
+            },
+            {
+              "url": "https://ppio.com/legal/model-terms-of-service",
+              "quote": "我们有权根据运营安排调整、终止部分或全部服务，但应提前至少3天通知您"
+            }
+          ],
+          "remaining": [
+            "缺少点名DeepSeek-畅享的现行订单有效期/停售保留条款或旧账号合同账单证明。通用服务条款不保证这个具体套餐仍有效；公开规格不能替代。"
+          ],
+          "excluded": [
+            "搜索到的2025 vLLM博客“畅享DeepSeek”是普通动词，不是DeepSeek-畅享套餐证据",
+            "docs索引中GPU实例续费是算力，不用于大模型旧订阅"
+          ]
+        },
+        {
+          "platformId": "pixverse",
+          "status": "blocked",
+          "checkedAt": "2026-10-20",
+          "candidateProduct": "PixVerse API subscriptions",
+          "candidatePlans": [],
+          "applyReady": false,
+          "conclusion": "找到实时可读的新官方API价目/Billing/FAQ/Changelog和完整llms索引；旧Subscribe API plans链接实时404，不采用搜索缓存。新官方价目只列模型/能力Credits，并称plans可能影响effective cost；未公布旧API订阅迁移、取消或续费细则。不能据此断言旧订阅灭失，也不能把consumer-app档复制给API。",
+          "sources": [
+            "https://docs.platform.pixverse.ai/llms.txt",
+            "https://docs.platform.pixverse.ai/pixverse-api-pricing-2394995m0",
+            "https://docs.platform.pixverse.ai/billing-and-usage-2394984m0",
+            "https://docs.platform.pixverse.ai/faq-2394993m0",
+            "https://docs.platform.pixverse.ai/changelog-2394996m0",
+            "https://docs.platform.pixverse.ai/subscribe-api-plans-882969m0",
+            "https://platform.pixverse.ai/billing"
+          ],
+          "evidence": [
+            {
+              "url": "https://docs.platform.pixverse.ai/pixverse-api-pricing-2394995m0",
+              "quote": "Plans, volume agreements, promotions, and free allowances may change your effective cost."
+            },
+            {
+              "url": "https://docs.platform.pixverse.ai/billing-and-usage-2394984m0",
+              "quote": "Keep API Credits separate from PixVerse consumer-app subscriptions."
+            }
+          ],
+          "remaining": [
+            "当前API Billing需登录；缺少点名旧API订阅的在用档名及迁移/续费规则。新完整公开文档索引只有用量账单和能力价格，不包含subscription迁移/取消页。"
+          ],
+          "notAcceptedEvidence": [
+            {
+              "url": "https://docs.platform.pixverse.ai/subscribe-api-plans-882969m0",
+              "reason": "live404；搜索缓存虽含Cancel plan/Upgrade not supported，不作为本轮现行证据。"
+            }
+          ]
+        }
+      ],
+      "summary": {
+        "verifiedLegacyPlans": {
+          "browser-use": [
+            "Business",
+            "Scaleup"
+          ]
+        },
+        "blocked": [
+          "ppio DeepSeek-畅享具体续用规则",
+          "PixVerse API旧订阅具体续用规则"
+        ]
+      },
+      "evidenceFiles": [
+        "/tmp/ym-browser-official-legacy-pricing.mdx",
+        "/tmp/ym-browser-official-current-billing.mdx",
+        "/tmp/ym-browser-billing-history.txt",
+        "/tmp/ym-legacy-ppio-doc-index.txt",
+        "/tmp/ym-ppio-public-packs.json",
+        "/tmp/ym-legacy-pix-current-pricing.txt",
+        "/tmp/ym-legacy-pix-current-billing.txt",
+        "/tmp/ym-legacy-pix-current-faq.txt",
+        "/tmp/ym-legacy-pix-current-changelog.txt"
+      ]
+    },
+    "baidu": {
+      "schemaVersion": "baidu-specific-legacy-research-v1",
+      "checkedAt": "2026-10-20",
+      "readOnly": true,
+      "repoChanges": false,
+      "productionWrites": false,
+      "cuaUsed": false,
+      "registrationOrPurchase": false,
+      "scope": [
+        "Keyue UNIT-LLM official image conversion",
+        "BML named SDK local license proof"
+      ],
+      "keyue": {
+        "sourceUrl": "https://cloud.baidu.com/doc/UNIT-LLM/s/wm3dy2v8s",
+        "documentDate": "2024-11-15",
+        "effectiveDate": "2024-12-12",
+        "images": [
+          {
+            "url": "https://bce.bdstatic.com/doc/bce-doc/UNIT-LLM/image_0fa8cbd.png",
+            "file": "/tmp/ym-keyue-0fa8cbd.png",
+            "sha256": "3d9e74eebd257b57c2b0c6ffaf7597f38eff7eba3d939b8a11419c717480a918",
+            "inspection": "Actual image pixels read visually; not inferred from alt text or search snippet."
+          },
+          {
+            "url": "https://bce.bdstatic.com/doc/bce-doc/UNIT-LLM/image_375ce19.png",
+            "file": "/tmp/ym-keyue-375ce19.png",
+            "sha256": "bbb0380f9265348afbe266eb62c1c925ec5f921cfdb191dffd4fbbf4b13f596a",
+            "inspection": "Actual image pixels read visually; not inferred from alt text or search snippet."
+          }
+        ],
+        "umbrellaName": "客悦智能客服专业版",
+        "importantDistinction": "专业版是该旧服务/文档产品标题；图片具体购买层级是试用、轻量、标准、旗舰，不应凭标题造一个新专业版套餐。",
+        "postChangePublishedImage": {
+          "plans": [
+            "试用版",
+            "轻量版",
+            "标准版",
+            "旗舰版"
+          ],
+          "trial": {
+            "costCny": 0,
+            "days": 14,
+            "accountLifetimeClaims": 1,
+            "conversations": 3000,
+            "bots": 2,
+            "qps": 1
+          },
+          "light": {
+            "firstPurchaseMonthlyCny": 159,
+            "regularMonthlyCny": 1599,
+            "regularAnnualCny": 15999,
+            "monthlyConversations": 10000,
+            "annualConversations": 120000,
+            "bots": 3,
+            "tableFiles": 1,
+            "qps": 3
+          },
+          "standard": {
+            "price": "sales quote",
+            "annualConversations": 600000,
+            "bots": 20,
+            "tableFiles": 5,
+            "qps": 5
+          },
+          "flagship": {
+            "price": "sales quote",
+            "annualConversations": 3600000,
+            "bots": 100,
+            "tableFiles": 50,
+            "qps": 20
+          }
+        },
+        "conversionImageObservedFacts": [
+          {
+            "originalPlan": "轻量版（月）",
+            "priorTerms": {
+              "tokensPerMonth": 15000000,
+              "bots": 3,
+              "combinedKnowledgeSources": 50,
+              "tableFiles": 100,
+              "qps": 3
+            },
+            "newCustomerPostChange": {
+              "displayName": "轻量版（月）",
+              "conversationsPerMonth": 10000,
+              "bots": 3,
+              "documentKnowledge": 100,
+              "webKnowledge": 10,
+              "videoFiles": 1,
+              "videoFeature": "限时体验",
+              "tableFiles": 1,
+              "qps": 3
+            },
+            "preChangeCustomerPostChange": {
+              "displayName": "轻量版（月）",
+              "conversationsPerMonth": 15000,
+              "bots": 3,
+              "documentKnowledge": 100,
+              "webKnowledge": 10,
+              "videoFiles": 1,
+              "videoFeature": "限时体验",
+              "tableFiles": 100,
+              "qps": 3
+            }
+          },
+          {
+            "originalPlan": "轻量版（年）",
+            "priorTerms": {
+              "tokensPerYear": 200000000,
+              "bots": 3,
+              "combinedKnowledgeSources": 50,
+              "tableFiles": 100,
+              "qps": 3
+            },
+            "newCustomerPostChange": {
+              "displayName": "轻量版（年）",
+              "conversationsPerYear": 120000,
+              "bots": 3,
+              "documentKnowledge": 100,
+              "webKnowledge": 10,
+              "videoFiles": 1,
+              "videoFeature": "限时体验",
+              "tableFiles": 1,
+              "qps": 3
+            },
+            "preChangeCustomerPostChange": {
+              "displayName": "轻量版（年）",
+              "conversationsPerYear": 200000,
+              "bots": 3,
+              "documentKnowledge": 100,
+              "webKnowledge": 10,
+              "videoFiles": 1,
+              "videoFeature": "限时体验",
+              "tableFiles": 100,
+              "qps": 3
+            }
+          },
+          {
+            "originalPlan": "标准版（年）",
+            "priorTerms": {
+              "tokensPerYear": 1000000000,
+              "bots": "unlimited",
+              "combinedKnowledgeSources": 5000,
+              "tableFiles": 300,
+              "qps": 10
+            },
+            "explicitRename": "旗舰版",
+            "newCustomerPostChange": {
+              "displayName": "旗舰版",
+              "conversationsPerYear": 3600000,
+              "bots": 100,
+              "documentKnowledge": 5000,
+              "webKnowledge": 500,
+              "videoFiles": 100,
+              "tableFiles": 50,
+              "qps": 20
+            },
+            "preChangeCustomerPostChange": {
+              "displayName": "旗舰版",
+              "conversationsPerYear": 10000000,
+              "bots": "unlimited",
+              "documentKnowledge": 5000,
+              "webKnowledge": 500,
+              "videoFiles": 100,
+              "tableFiles": 300,
+              "qps": 20
+            }
+          }
+        ],
+        "continuityConditionsFromBody": {
+          "remainingTerm": "Original remaining expiry time is retained, not a new lifetime grant.",
+          "remainingUsageConversion": "Remaining tokens converted to conversations at 1000:1 with rounding up.",
+          "renewalGrace": "Renew within one month after expiry to retain existing platform functions; interruption beyond that loses platform benefits and data.",
+          "noCurrentOwnershipInference": "Evidence establishes conditional historical contract terms, not that any particular old user still holds a valid license now."
+        },
+        "relationToCurrentFourPlans": {
+          "currentSourceUrl": "https://cloud.baidu.com/product-s/keyue_home/price",
+          "currentNames": [
+            "企业免费版",
+            "轻量版",
+            "标准版",
+            "旗舰版"
+          ],
+          "conclusions": [
+            "Current enterprise free tier is not the old one-time 14-day trial; do not alias them.",
+            "Old standard annual explicitly renamed flagship in 2024, not the current standard.",
+            "Same light/flagship name does not establish entitlement equality: grandfathered conversations, bot counts and tables differ.",
+            "No source maps pre-2024 old standard to the current 2026 standard or proves grandfathered flagship equals new flagship."
+          ],
+          "safeRepresentation": "Keep old light monthly/annual and renamed grandfathered flagship entitlement variants as historical IDs or plan plus billingCycles/legacy/cutoff restrictions. Preserve source refs and original date qualification; do not relabel generic current memberships or automatically claim active ownership.",
+          "remainingGap": "Current public price does not restate historic grandfathered entitlement table; original notice supplies the conditional history, so no forced equivalence mapping is justified."
+        }
+      },
+      "bml": {
+        "searchOnlyGapResolved": true,
+        "classification": "Real deployable AI software license activated by serial number and bound hardware/package, not compute, API usage or prepaid resource credits.",
+        "officialDocumentationReachableNow": true,
+        "purchaseFlowNotTested": true,
+        "sources": [
+          {
+            "url": "https://cloud.baidu.com/doc/BML/s/Qkkf5ij52",
+            "title": "通用小型设备部署价格说明",
+            "documentDate": "2021-01-28",
+            "localReaderFile": "/tmp/ym-bml-device-official.txt"
+          },
+          {
+            "url": "https://cloud.baidu.com/doc/BML/s/0kkf6e4i9",
+            "title": "服务器部署价格说明",
+            "documentDate": "2021-06-24",
+            "localReaderFile": "/tmp/ym-bml-server-official.txt"
+          },
+          {
+            "url": "https://intl.cloud.baidu.com/zh/doc/BML/s/Qkkf5ij52-intl",
+            "title": "International mirrored device deployment price documentation",
+            "documentDate": "2025-08-21"
+          }
+        ],
+        "deviceSdk": {
+          "officialVariants": [
+            "基础版SDK",
+            "加速版SDK"
+          ],
+          "perDevicePermanentLicense": {
+            "quantityBrackets": [
+              {
+                "quantity": "1–10",
+                "basicCnyPerDevice": 300,
+                "acceleratedCnyPerDevice": 2000
+              },
+              {
+                "quantity": "11–100",
+                "basicCnyPerDevice": 250,
+                "acceleratedCnyPerDevice": 1500
+              },
+              {
+                "quantity": "101+",
+                "basicCnyPerDevice": 200,
+                "acceleratedCnyPerDevice": 1000
+              }
+            ],
+            "pricingMethod": "Progressive volume brackets; quantity brackets are not separate named membership tiers."
+          },
+          "perProductLineLicense": {
+            "basicAnnualCny": 100000,
+            "acceleratedAnnualCny": 300000,
+            "activationCap": 10000,
+            "binding": "Mobile app package name; separate iOS and Android package authorizations count as two product lines.",
+            "titleBodyConflict": "Section heading says permanent purchase, but actual sentence prices annual authorizations. Annual licensing is explicit; do not infer a priced perpetual product-line offer from heading alone."
+          },
+          "testLicense": {
+            "perPublishedModelTestSerials": 2,
+            "months": 3
+          }
+        },
+        "serverDeployment": {
+          "officialVariants": [
+            "本地服务器SDK",
+            "本地服务器API"
+          ],
+          "annualCnyPerModelPerDevice": 10000,
+          "perpetualCnyPerModelPerDevice": 50000,
+          "trial": "Application review grants one month trial.",
+          "compatibility": "Script-tuned visual models support SDK and API; NLP models support API.",
+          "notCloudApiUsage": "Here API is a deployable local model interface and licensed software delivery, not paid hosted token access."
+        },
+        "suggestedDirectoryScope": {
+          "namesProven": [
+            "基础版SDK（设备永久授权）",
+            "加速版SDK（设备永久授权）",
+            "基础版SDK（产品线年授权）",
+            "加速版SDK（产品线年授权）",
+            "本地服务器SDK（年授权）",
+            "本地服务器SDK（永久授权）",
+            "本地服务器API（年授权）",
+            "本地服务器API（永久授权）"
+          ],
+          "representationNote": "Qualified names combine the exact official software name with explicit license granularity/term; do not split volume discounts as extra plans. Could use separate license products plus terms rather than eight flat tiers.",
+          "publicEvidenceStatus": "Supported by currently reachable official body, not an unsupported search-only inference. Document ages are explicit; no private purchasing claim or guarantee of fulfillment."
+        }
+      },
+      "miaoda": {
+        "newRequestsMade": false,
+        "reason": "Parent already verified actual anonymous browser is login-only; known gap retained without repeated attempts or speculative membership names."
+      },
+      "noChangesToPriorReport": true
+    },
+    "cn": {
+      "checkedAt": "2026-10-20",
+      "items": [
+        {
+          "scope": "feishu-enterprise-standard-pro",
+          "status": "verified-supported-names-unmapped",
+          "sources": [
+            "https://www.feishu.cn/hc/zh-CN/articles/927897012636",
+            "https://www.feishu.cn/hc/zh-CN/articles/360044088133",
+            "https://www.feishu.cn/service"
+          ],
+          "sourceExcerpts": [
+            "飞书各版本的管理员角色上限如下表所示，如需咨询或升级版本，请联系客服或客户成功经理。",
+            "基础版 | 商业标准版 | 商业专业版 | 商业旗舰版 | 企业标准版 | 企业专业版 | 企业旗舰版",
+            "商业旗舰版、企业专业版和企业旗舰版支持基于组织架构设置水印，配置透明水印以及自定义水印内容及样式。"
+          ],
+          "evidenceDates": {
+            "管理员类型和角色介绍": "2025-11-10",
+            "管理员快速上手飞书管理后台": "2026-09-02"
+          },
+          "conclusion": "官方现行帮助文档仍明确按企业标准/企业专业提供权限支持，且与商业标准/商业专业/商业旗舰并列，因此不是同名别名或可推定的一对一迁移。当前销售页只公开五档，不能据此宣布这两个命名许可证已失效。",
+          "preciseGap": "未发现官方“企业标准→商业X”或“企业专业→企业旗舰”等迁移映射，也未读到其停售/自动续费规则。缺口只限销售/续订与映射，不影响认定两个名字仍获现行帮助文档支持。",
+          "applicableChanges": [
+            {
+              "type": "support-evidence",
+              "productId": "feishu-suite",
+              "plans": [
+                "企业标准版",
+                "企业专业版"
+              ],
+              "availability": "documented-supported-license",
+              "applyReady": true,
+              "instruction": "可作为仍有官方支持口径的独立许可名称收录；不要标为当前自助可新购，不要自动映射商业系列；是否单列存量产品由现有合同建模选择。"
+            }
+          ]
+        },
+        {
+          "scope": "libtv-liblibai-shared-license",
+          "status": "gap",
+          "sources": [
+            "https://www.liblib.art/activities/468ad794ccc7408d81757fd91be003ec",
+            "https://www.liblib.art/activities/7a354f41ead34f719eb49576e5292d00",
+            "https://www.liblib.art/activities/4b7ea7f1dbbf41669d9e05cd25a3fa77",
+            "https://api2.liblib.art/api/www/member/packages?packageType=TRAIN&sourceFrom=libtv"
+          ],
+          "sourceExcerpts": [
+            "“哩布哩布AI”指…“LiblibAI”及其关联平台“LibTV”“星流”等客户端应用程序和官方网站",
+            "3.3.1 如无特别说明，哩布哩布AI各关联平台均使用统一的哩布哩布AI账号服务…如关联平台的用户协议及平台规则与本协议不一致的，优先适用关联平台的用户协议及平台规则。",
+            "为了在哩布哩布AI各关联平台中提供一致的服务体验…同步各关联平台中的账号和内容。",
+            "我们向您提供的服务可能包括免费服务或付费服务，具体以平台页面展示为准。"
+          ],
+          "conclusion": "新取得官方统一用户协议/隐私政策，明确统一账号、内容同步及平台规则优先，但没有会员权益或订阅积分跨LibTV/LiblibAI通用承诺。LibTV创作许可协议是作者授权作品/Skill给平台及第三方，亦不是会员使用许可。当前共24个SKU ID的共享数据仍只能作为共享目录证据。",
+          "preciseGap": "需会员购买协议、明确FAQ或官方答复直接说明“已购LiblibAI会员可在LibTV使用/额度共用”。现有协议不能支持自动合并；不把统一账号等同统一会员，不把作品创作许可等同订阅许可。",
+          "applicableChanges": []
+        },
+        {
+          "scope": "qwen-consumer-subscriptions",
+          "status": "subscription-existence-verified-names-gap",
+          "sources": [
+            "https://qwen.ai/termsservice"
+          ],
+          "sourceExcerpts": [
+            "This Service Agreement applies to your use of Qwen, Qwenstudio, and other Services provided by Qwen for individual users",
+            "VI. Subscriptions, Plans, and Fees",
+            "Plans and Allowances. This service offers subscription plans in different tiers (“plans”), with each plan providing different features and benefits, as well as a usage allowance for each subscription period",
+            "The specific details are subject to the information displayed on the page at the time of purchase and the in-app description.",
+            "If you subscribe through the website, you may manage your subscription through the Subscription Management page in your account settings"
+          ],
+          "conclusion": "当前官方Qwen消费服务协议已直接确认分档付费订阅、周期续费和账号设置内Subscription Management入口。此前free-to-use产品介绍不能作为无订阅结论。协议范围明确individual Qwen/Qwenstudio，非Token Plan API。",
+          "preciseGap": "在当前官方可公开检索公告/协议未找到Go/Plus/Pro三档名称或价格表。协议把具体档位指向购买页和in-app描述；需要既有登录账号打开Subscription Management或应用商店官方IAP当前目录。不重抓登录壳，不注册购买，也不把社区Go/Plus/Pro线索当正式依据。",
+          "applicableChanges": [
+            {
+              "type": "coverage-evidence",
+              "platformId": "qwen",
+              "applyReady": true,
+              "note": "把“尚不确定有无聊天订阅”更新为“官方消费协议明确存在分档付费订阅，具体正式档名待已登录购买目录核对”。"
+            }
+          ]
+        }
+      ],
+      "products": [],
+      "evidenceDirectory": "/tmp/ym-cn-specific-legacy-evidence"
+    },
+    "adobe": {
+      "checkedAt": "2026-10-20",
+      "scope": "Adobe remaining specific legacy and education mapping only",
+      "products": [],
+      "applyReady": false,
+      "findings": [
+        {
+          "item": "Education: Creative Cloud All Apps - Single App / Creative Cloud Student Teacher Edition - Single App",
+          "status": "specific_mapping_gap",
+          "sourceUrls": [
+            "https://helpx.adobe.com/creative-cloud/apps/generative-ai/generative-credits-faq.html",
+            "https://helpx.adobe.com/business/enterprise/products-entitlements/special-programs-plans/single-app.html",
+            "https://www.adobe.com/education/students/creativecloud.html"
+          ],
+          "evidence": "两原名在教育250积分表确实存在；enterprise ETLA Single App是一张可改分配应用的许可。当前学生官方页只把单应用意向引至普通价格页。",
+          "decision": "不能将教育两原名等同ETLA Single App或普通个人单应用，也不按应用复制教育新档。",
+          "remaining": "缺官方映射/迁移文件将这两精确原名对应当前可购买或可续用许可。",
+          "applyReady": false
+        },
+        {
+          "item": "AI Assistant for Acrobat Individual vs AI Assistant Plus",
+          "status": "specific_equivalence_gap",
+          "sourceUrls": [
+            "https://helpx.adobe.com/acrobat/desktop/use-acrobat-ai/ai-assistant-plus-acrobat.html",
+            "https://www.adobe.com/uk/acrobat.html",
+            "https://www.adobe.com/cc-shared/assets/pdf/legal/servicetou/adobe-generative-ai-product-specific-terms-en-us-20260423.pdf"
+          ],
+          "evidence": "Plus专项页2026-08-18明确在Plans/Add-ons购买；当前UK页既有Pro+Plus主入口，又有学生AI Assistant附加入口；2026条款仍使用AI Assistant for Acrobat Add-on Subscription名称。",
+          "decision": "证明旧命名仍用于现行条款，不能证明是独立于Plus的新档或已整体改名；不自动别名归并，不增加重复个人档。",
+          "remaining": "缺旧个人add-on转Plus的官方迁移或产品ID等价说明。",
+          "applyReady": false
+        },
+        {
+          "item": "AI Assistant for Acrobat Enterprise vs Plus enterprise options",
+          "status": "specific_equivalence_gap",
+          "sourceUrls": [
+            "https://helpx.adobe.com/acrobat/desktop/use-acrobat-ai/ai-assistant-plus-acrobat.html",
+            "https://helpx.adobe.com/acrobat/desktop/use-acrobat-ai/understand-usage-policies/ai-usage-policy-limitations.html"
+          ],
+          "evidence": "Plus专项页企业选项联系Adobe；现行2026用量政策区分Individual/Teams/Enterprise AI Assistant。",
+          "decision": "企业AI功能/合同存在不等于公开两个Plus/旧附加层；不得复制两档。",
+          "remaining": "缺企业旧附加与Plus的正式等价/改名声明。",
+          "applyReady": false
+        },
+        {
+          "item": "Acrobat Standard for enterprise old VIP",
+          "status": "specific_renewal_gap",
+          "sourceUrls": [
+            "https://www.adobe.com/uk/acrobat/business/pricing-plans.html",
+            "https://business.adobe.com/uk/products/acrobat-business.html",
+            "https://helpx.adobe.com/uk/acrobat/desktop/get-started/access-the-app/install-acrobat-enterprise.html"
+          ],
+          "evidence": "当前购买导航企业产品比较突出Studio/Pro/Express；Standard企业安装器仍提供，但安装可用不证明旧VIP许可可续费。",
+          "decision": "不根据旧2021介绍或安装页判有效；当前经销商有renewal商品及2026涨价说明，但用户限定官方，未用它们确认。",
+          "remaining": "Acrobat Standard for enterprise旧VIP的当前官方续费/停售/迁移声明未找到；只保留这一精确档，不扩展到所有企业合同。",
+          "applyReady": false
+        },
+        {
+          "item": "Adobe Stock 3 standard assets/month",
+          "status": "specific_renewal_gap",
+          "sourceUrls": [
+            "https://helpx.adobe.com/ca/stock/web/help/subscription-plans-credit-packs.html",
+            "https://stock.adobe.com/uk/plans",
+            "https://stock.adobe.com/tm/plans"
+          ],
+          "evidence": "帮助文档含旧数量档介绍；现行UK/TM购买卡已直接证实的新AI Studio档在前报告收录。未发现旧档明确续用/自动迁移声明。",
+          "decision": "不能把同数量AI Studio新档、Teams档或旧缓存当旧个人档续存证据；不新增。",
+          "remaining": "该精确旧个人档是否仍可续费、已停售但保留、或已自动迁移，公开官方证据仍缺。",
+          "applyReady": false
+        },
+        {
+          "item": "Adobe Stock 25 Stock credits/month without AI Studio",
+          "status": "specific_renewal_gap",
+          "sourceUrls": [
+            "https://helpx.adobe.com/ca/stock/web/help/subscription-plans-credit-packs.html",
+            "https://stock.adobe.com/uk/plans",
+            "https://stock.adobe.com/tm/plans"
+          ],
+          "evidence": "帮助文档含旧数量档介绍；现行UK/TM购买卡已直接证实的新AI Studio档在前报告收录。未发现旧档明确续用/自动迁移声明。",
+          "decision": "不能把同数量AI Studio新档、Teams档或旧缓存当旧个人档续存证据；不新增。",
+          "remaining": "该精确旧个人档是否仍可续费、已停售但保留、或已自动迁移，公开官方证据仍缺。",
+          "applyReady": false
+        },
+        {
+          "item": "Adobe Stock 40 standard assets/month Individual without AI Studio",
+          "status": "specific_renewal_gap",
+          "sourceUrls": [
+            "https://helpx.adobe.com/ca/stock/web/help/subscription-plans-credit-packs.html",
+            "https://stock.adobe.com/uk/plans",
+            "https://stock.adobe.com/tm/plans"
+          ],
+          "evidence": "帮助文档含旧数量档介绍；现行UK/TM购买卡已直接证实的新AI Studio档在前报告收录。未发现旧档明确续用/自动迁移声明。",
+          "decision": "不能把同数量AI Studio新档、Teams档或旧缓存当旧个人档续存证据；不新增。",
+          "remaining": "该精确旧个人档是否仍可续费、已停售但保留、或已自动迁移，公开官方证据仍缺。",
+          "applyReady": false
+        },
+        {
+          "item": "Adobe Stock 750 standard assets/month Individual without AI Studio",
+          "status": "specific_renewal_gap",
+          "sourceUrls": [
+            "https://helpx.adobe.com/ca/stock/web/help/subscription-plans-credit-packs.html",
+            "https://stock.adobe.com/uk/plans",
+            "https://stock.adobe.com/tm/plans"
+          ],
+          "evidence": "帮助文档含旧数量档介绍；现行UK/TM购买卡已直接证实的新AI Studio档在前报告收录。未发现旧档明确续用/自动迁移声明。",
+          "decision": "不能把同数量AI Studio新档、Teams档或旧缓存当旧个人档续存证据；不新增。",
+          "remaining": "该精确旧个人档是否仍可续费、已停售但保留、或已自动迁移，公开官方证据仍缺。",
+          "applyReady": false
+        }
+      ],
+      "conclusion": {
+        "newApplyReadyPlans": 0,
+        "boundedUnresolvedItems": 8,
+        "status": "public_evidence_exhausted_for_this_bounded_pass",
+        "recommendation": "保留这些具体旧档与映射为unresolved；当前公开目录已核事实照常应用。不把查不到旧档视为停售，也不因未知私有合同继续扩大partial。",
+        "notProven": [
+          "未证整体停售",
+          "未证个人/企业旧AI Assistant均等于Plus",
+          "未证教育Single App等于普通个人单应用"
+        ]
+      }
+    },
+    "creative": {
+      "checkedAt": "2026-10-20",
+      "scope": "仅指定四组具体旧名/许可关系；实际HTTP/web读取，不创建或更改当前会员。",
+      "applyReadyChanges": [],
+      "items": [
+        {
+          "platformId": "kling",
+          "relationship": "Ultra -> Ultra+",
+          "status": "partial",
+          "applyReady": false,
+          "conclusion": "未取得官方改名、迁移或续订映射。当前真实浏览器Ultra+基线保留；本轮实际读到官方博客仍列Ultra月费及next renewal，2026-09-30发布也明确Ultra Yearly，但不据此自动创建独立旧Ultra或推断Ultra=Ultra+。",
+          "sources": [
+            {
+              "sourceUrl": "https://kling.ai/blog/kling-video-3-0-credit-cost-guide?tab=all",
+              "quote": "Ultra; next monthly renewal: $159.99",
+              "method": "web.open full page",
+              "fact": "官方表格仍用Ultra并写下次续费；正文同时要求以当前membership页为准，没有Ultra+映射"
+            },
+            {
+              "sourceUrl": "https://kling.ai/blog/kling40-kling-visual-realism-creative-control-introducing-storytelling",
+              "quote": "Ultra Yearly subscribers starting September 28",
+              "method": "web.open full page",
+              "fact": "2026-09-30发布正式产品公告仍称Ultra Yearly；只证明官方继续使用此称呼，不证明两个名称独立许可"
+            }
+          ],
+          "actualBlocker": "公开官方资料未解释Ultra/Ultra+关系；需要会员管理中原订阅名称与续订条款，或官方明确改名公告。不是推定登录失效。"
+        },
+        {
+          "platformId": "tripo",
+          "relationship": "Professional / Pro; Advanced存量",
+          "status": "partial",
+          "applyReady": false,
+          "conclusion": "Professional与Pro当前两官方目录用语不一致，没有直接等同或分档证据；不双建Professional。Advanced在实时正式8K Texture FAQ中仍有功能说明，但FAQ明确把最新套餐交给pricing或产品UI，不能用博客证明当前续订。",
+          "sources": [
+            {
+              "sourceUrl": "https://www.tripo3d.ai/pricing",
+              "quote": "Free; Pro; Max; Team",
+              "method": "此前本轮系列实际HTTP完整价格卡",
+              "fact": "实际购买卡用Pro"
+            },
+            {
+              "sourceUrl": "https://www.tripo3d.ai/product-doc/getting-started/pricing-credits",
+              "quote": "Free, Starter, Professional, Max, and Team",
+              "method": "官方搜索缓存；实时HTTP403",
+              "fact": "2026-10文档用Professional，不能靠相同3000额度/20美元猜同档"
+            },
+            {
+              "sourceUrl": "https://www.tripo3d.ai/blog/tripo-8k-texture",
+              "quote": "Advanced, Max, and Team support unlimited 8K generation and export.",
+              "method": "web.open full page",
+              "fact": "当前完整FAQ仍列Advanced；同句后要求check live pricing page or product UI，未给续费/迁移"
+            },
+            {
+              "sourceUrl": "https://www.tripo3d.ai/blog/tripo-turns-1-general-plan",
+              "fact": "旧周年活动提Current Pro and Advanced users，仅为旧档线索，不当当前续费凭证"
+            }
+          ],
+          "actualBlocker": "需官方旧档迁移帮助或Studio当前订阅管理；不能由Advanced拥有8K功能等同Max，也不能将Professional缩写Pro当已验证映射。"
+        },
+        {
+          "platformId": "luma",
+          "relationship": "Dream Machine旧Free/Lite/Plus/Unlimited/Enterprise 与 Agents Plus/Pro/Ultra/Team/Enterprise",
+          "status": "partial",
+          "applyReady": false,
+          "conclusion": "新发现：旧Dream Machine账号管理帮助内推荐购买链接实际HTTP302/跟随后最终到当前/pricing（200），显示Agents五档，故公开购买入口已导向新目录；这仍不能证明旧5档用户权益被自动迁移，也不能证明独立许可继续并行。保留旧目录不可应用，不做自动归并。",
+          "sources": [
+            {
+              "sourceUrl": "https://lumalabs.ai/learning-hub/account-management-web",
+              "quote": "Change of plans? → Go to your Account → View Plans",
+              "method": "web.open full page",
+              "fact": "账号帮助写Account/View Plans、账号不支持合并，未写DreamMachine与Agents会员转换"
+            },
+            {
+              "sourceUrl": "https://lumalabs.ai/learning-hub/dream-machine-support-pricing-information",
+              "method": "Python urllib HTTP request status/final URL verified",
+              "fact": "正式账号管理帮助的subscription链接最终200 https://lumalabs.ai/pricing；实际HTML可读Plus/Pro/Ultra/Team/Enterprise及Luma Agents文字",
+              "finalUrl": "https://lumalabs.ai/pricing",
+              "evidencePath": "/tmp/ym-luma-support-pricing.txt"
+            },
+            {
+              "sourceUrl": "https://lumalabs.ai/llm-info",
+              "quote": "Dream Machine or Ray2, which are deprecated",
+              "fact": "2026-07-13官方说明是模型/品牌叙述，不能推定旧订阅合同终止"
+            },
+            {
+              "sourceUrl": "https://docs.agents.lumalabs.ai/guides/faq/",
+              "quote": "Dream Machine remains the consumer-facing product",
+              "fact": "当前API FAQ品牌口径冲突，不是独立收费许可条款"
+            },
+            {
+              "sourceUrl": "https://lumalabs.ai/learning-hub/payments-subscriptions",
+              "fact": "2026-01-25旧五档与更早generation->credits迁移，没有Agents五档具体对应"
+            }
+          ],
+          "actualBlocker": "dream-machine.lumalabs.ai匿名HTTP为空应用壳，未取得原订阅管理；公开购买链接重定向只能确认新购入口，不足以把同名Plus/Enterprise跨产品合并。"
+        },
+        {
+          "platformId": "leonardo",
+          "relationship": "Apprentice/Artisan/Maestro -> Essential/Premium/Ultimate",
+          "status": "partial",
+          "applyReady": false,
+          "conclusion": "未找到官方一一改名/续订条款。英文官方当前FAQ确认现四档，西语旧帮助仍出现Artisan/Maestro；相同额度、价格与第三方改名断言均不足自动迁移或新建旧会员。",
+          "sources": [
+            {
+              "sourceUrl": "https://intercom.help/leonardo-ai/en/articles/9698289-leonardo-phoenix-leonardo-ai-s-foundational-model",
+              "quote": "Free plan, Essential plan, Premium plan, and Ultimate plan",
+              "fact": "当前英文FAQ现名，不含formerly或对应映射"
+            },
+            {
+              "sourceUrl": "https://intercom.help/leonardo-ai/es/articles/8044033-uso-de-los-tokens",
+              "quote": "Artisan y Maestro",
+              "fact": "旧西语帮助仅确认曾用名，不确认仍在售/可续订"
+            },
+            {
+              "sourceUrl": "https://intercom.help/leonardo-ai/en/articles/7051613-frequently-asked-questions",
+              "fact": "官方FAQ要求到web app Premium Plans查询当前定价，没有旧名映射"
+            },
+            {
+              "sourceUrl": "https://app.leonardo.ai/buy",
+              "method": "web.click from official FAQ link",
+              "finalUrl": "https://app.leonardo.ai/auth/login?callbackUrl=https://app.leonardo.ai/buy",
+              "quote": "Sign up or Login with",
+              "fact": "实际登录屏障，未注册/登录/购买"
+            }
+          ],
+          "actualBlocker": "官方指定/buy购买目录实时重定向登录，精确障碍已证；无公开官方改名条款，不自行将旧三档标为存量有效。"
+        }
+      ]
+    },
+    "bml-special-hardware": {
+      "schemaVersion": "bml-special-hardware-research-v1",
+      "checkedAt": "2026-10-20",
+      "readOnly": true,
+      "sourceUrl": "https://cloud.baidu.com/doc/BML/s/3kkf70oqw",
+      "sourceTitle": "专项适配硬件部署价格说明",
+      "documentDate": "2021-01-27",
+      "bodyVerifiedVia": "Current official document body lines 514–539 and direct Jina Reader; no community source",
+      "rawCache": "/tmp/ym-bml-special-hardware-official.txt",
+      "classification": {
+        "additionalSoftwareLicenseFamily": true,
+        "recommendedFamily": "BML专项适配硬件专用SDK",
+        "recommendedPlan": "按设备永久授权",
+        "distinctFromGeneralDeviceSdk": true,
+        "hardwareBoardTierExpansion": false,
+        "reason": "Official process selects a dedicated SDK at model publication and supplies a dedicated activation serial; an independent SDK authorization price table is present. This is a software activation license bundled through a hardware solution, not just purchase of a physical board. No equivalence to generic basic/accelerated SDK is stated."
+      },
+      "shortOriginalLabels": [
+        "专用SDK",
+        "专用序列号",
+        "按设备购买永久授权",
+        "单笔订单阶梯计费"
+      ],
+      "officialFacts": {
+        "supportedTasks": [
+          "BML脚本调参图像分类",
+          "物体检测"
+        ],
+        "procedureSummary": [
+          "Train the model for the specialized hardware.",
+          "Select that hardware-specific SDK when publishing the model; obtain the solution through the AI marketplace.",
+          "Receive hardware and the dedicated SDK activation serial, integrate it, then perform offline inference."
+        ],
+        "licensing": "Per-device perpetual software authorization",
+        "priceBrackets": [
+          {
+            "quantity": "1–100",
+            "cnyPerDevice": 300
+          },
+          {
+            "quantity": "101–1000",
+            "cnyPerDevice": 280
+          },
+          {
+            "quantity": "1001+",
+            "cnyPerDevice": 240
+          }
+        ],
+        "pricingMethod": "Single-order volume price, not cumulative progressive pricing. Official example: one order of 200 licenses costs 200×280; two orders of 100 each cost 2×100×300.",
+        "differenceFromGenericDeviceFamily": "Generic device SDK price uses cumulative progressive brackets and separates basic/accelerated software. This page has its own single-order table and dedicated serial, so do not silently alias it to generic basic SDK just because both start at 300 CNY."
+      },
+      "catalogRecommendation": {
+        "baseFourFamilies": "No objection to general-device basic/accelerated perpetual, product-line basic/accelerated annual, local-server SDK annual/perpetual, local-server API annual/perpetual: eight identities.",
+        "addFifthFamily": {
+          "name": "BML专项适配硬件专用SDK",
+          "plans": [
+            "按设备永久授权"
+          ],
+          "freePlans": [],
+          "applyReady": true,
+          "sourceUrl": "https://cloud.baidu.com/doc/BML/s/3kkf70oqw"
+        },
+        "totalFamilies": 5,
+        "totalPaidIdentities": 9,
+        "doNotCreate": [
+          "One plan per quantity bracket",
+          "Separate unproven EdgeBoard/Jetson chip editions from this generic license table",
+          "An annual specialized-hardware plan absent from the document",
+          "Hardware procurement itself as a software membership"
+        ],
+        "safetyLimits": "Dedicated SDK is restricted to its supported hardware/model solution; no claim that generic SDK authorizations transfer. Exact hardware model is a compatibility attribute unless another formal price doc establishes a separate license."
+      },
+      "currentEvidenceLimits": [
+        "Document is still published in the official pricing sidebar but carries a 2021 update date. No live checkout, activation or purchase was performed.",
+        "No current停售 statement or entitlement-equivalence migration was observed in this page; do not infer present ownership or portability."
+      ],
+      "keyueReview": {
+        "agreeWithThreeGrandfatheredIdentities": true,
+        "identities": [
+          "轻量版（月，2024-12-12前存量）",
+          "轻量版（年，2024-12-12前存量）",
+          "旗舰版（原标准年版，2024-12-12前存量）"
+        ],
+        "sourceUrl": "https://cloud.baidu.com/doc/UNIT-LLM/s/wm3dy2v8s",
+        "basis": "The previously inspected official conversion image has three old purchase rows with different surviving entitlement quantities; old standard annual is explicitly renamed flagship.",
+        "mandatoryConditions": [
+          "Original pre-cutoff purchase classification retained.",
+          "Original remaining expiry retained; not perpetual.",
+          "Preservation depends on renewal within one month after expiry under the original notice.",
+          "Do not automatically alias to current light/standard/flagship or assert any user presently holds it."
+        ],
+        "noAdditionalObjection": true
+      },
+      "writes": {
+        "repo": false,
+        "D1": false,
+        "CUA": false,
+        "registrationPurchase": false
+      }
+    },
+    "qwen-official-iap": {
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "identity": {
+        "officialHomepage": "https://qwen.ai/qwenchat",
+        "downloadConfiguration": "https://qwen.ai/api/config?api.app_download_url",
+        "configurationDiscoverySource": "https://g.alicdn.com/qwenweb/qwen-ai-fe/0.0.85/js/p_layout.js",
+        "officialIosLink": "https://apps.apple.com/us/app/qwen-asisten-ai-alibaba/id6757738627",
+        "appleAppId": "6757738627",
+        "googleLink": "https://play.google.com/store/apps/details?id=com.tongyi.intl",
+        "androidPackage": "com.tongyi.intl",
+        "developer": "NTH POWER GLOBAL TECH SINGAPORE PTE. LTD",
+        "companyMatchSource": "https://qwen.ai/termsservice",
+        "notes": "不猜appID。官网下载配置的同一个ID在公开新加坡/英国区展示官方内购目录。Google官方页面核对同开发者及feedback@qwen.com，但没有发布具体订阅档清单，因此档名依据Apple官方现行页面。"
+      },
+      "sources": [
+        "https://qwen.ai/api/config?api.app_download_url",
+        "https://apps.apple.com/sg/app/id6757738627",
+        "https://apps.apple.com/gb/app/id6757738627",
+        "https://apps.apple.com/id/app/id6757738627",
+        "https://play.google.com/store/apps/details?id=com.tongyi.intl",
+        "https://qwen.ai/termsservice"
+      ],
+      "products": [
+        {
+          "productId": "qwen-chat-international",
+          "platformIds": [
+            "qwen"
+          ],
+          "name": "Qwen 国际聊天 / Qwen Studio",
+          "plans": [
+            "Go",
+            "Plus",
+            "Pro"
+          ],
+          "freePlans": [],
+          "legacyPlans": [],
+          "sourceUrl": "https://apps.apple.com/sg/app/id6757738627",
+          "checkedAt": "2026-10-20",
+          "status": "verified",
+          "applyReady": true,
+          "quote": "Qwen Go; Qwen Plus; Qwen Pro",
+          "planSources": {
+            "Go": "https://apps.apple.com/sg/app/id6757738627",
+            "Plus": "https://apps.apple.com/sg/app/id6757738627",
+            "Pro": "https://apps.apple.com/sg/app/id6757738627"
+          },
+          "planAliases": {
+            "Go": [
+              "Qwen Go"
+            ],
+            "Plus": [
+              "Qwen Plus"
+            ],
+            "Pro": [
+              "Qwen Pro"
+            ]
+          },
+          "sourceExcerpts": [
+            "[Qwen Premium Plans] Start free, upgrade when you need more. Go; Plus; Pro.",
+            "Subscription Plans Go, Plus, and Pro are live",
+            "In-App Purchases: Qwen Go S$5.99; Qwen Plus S$29.00; Qwen Pro S$137.98",
+            "UK In-App Purchases: Qwen Go £3.99; Qwen Plus £18.99; Qwen Pro £87.99"
+          ],
+          "verificationNote": "沿qwen.ai官网当前公开下载配置获取iOS应用ID6757738627及Google包com.tongyi.intl。Apple开发者NTH POWER GLOBAL TECH SINGAPORE PTE. LTD与Qwen官方消费协议主体相同；应用说明直接链接qwen.ai协议、隐私、用量政策及feedback@qwen.com。新加坡和英国Apple官方当前IAP均列三档，官方应用介绍给出400/2000/10500 monthly credits，更新说明明确Subscription Plans，故是订阅而不是一次性积分包。Qwen协议范围同时涵盖Qwen和Qwenstudio，因此归为一个国际消费产品，与API Token Plan独立。",
+          "newPlanIds": {
+            "Go": "qwen-chat-international-go",
+            "Plus": "qwen-chat-international-plus",
+            "Pro": "qwen-chat-international-pro"
+          },
+          "availabilityNotes": "正式当前三档已核，公开目录可闭环。官网iOS下载URL指美国区，但该地区URL本次404；同一应用ID新加坡/英国/印尼公开可用，不据此承诺美国或中国大陆购买资格。IAP列表价格未标计费周期，不将其当已核月费；周期额度为monthly不等于所有支付SKU都月付。免费下载安装/Start free不证明正式命名Free会员，不造Free。",
+          "remaining": ""
+        }
+      ],
+      "coverageUpdate": {
+        "platformId": "qwen",
+        "scope": "international consumer Chat/Studio",
+        "status": "research_complete",
+        "productIds": [
+          "qwen-chat-international"
+        ],
+        "note": "Go/Plus/Pro当前官方订阅名称已由官网指向的Apple官方应用IAP及订阅介绍核实，解除国际聊天具名目录gap。国内千问不同地区与应用不据此类推；Token Plan四产品已录不重复。"
+      },
+      "evidenceDirectory": "/tmp/ym-qwen-iap-evidence",
+      "actions": "仅公开HTTP及官网脚本/配置阅读；无安装、登录、注册、购买或生产写入。"
+    },
+    "qwen-cn-official-iap": {
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "identity": {
+        "officialHomepage": "https://www.qianwen.com",
+        "officialMobileSite": "https://m.qianwen.com",
+        "downloadDiscoverySource": "https://g.alicdn.com/tongyi-fe/tongyi-next-assets/1.0.14/js/p_index.js",
+        "officialIosLink": "https://itunes.apple.com/cn/app/id6466733523?mt=8",
+        "canonicalApplePage": "https://apps.apple.com/cn/app/id6466733523",
+        "appleAppId": "6466733523",
+        "appName": "千问 - 阿里AI助手",
+        "developer": "Shanghai Zhixin Puhui Technology Co., Ltd.",
+        "seller": "上海智信普惠科技有限公司",
+        "membershipTerms": "https://terms.alicdn.com/legal-agreement/terms/c_end_product_protocol/20260728154300619/20260728154300619.html",
+        "identityNote": "国内m.qianwen.com当前HTML直接载入p_index.js，其iOS分支字面跳转上述itunes链接；App提供者与页面会员协议主体上海智信普惠科技有限公司完全一致。不猜ID。"
+      },
+      "products": [
+        {
+          "platformIds": [
+            "qwen"
+          ],
+          "freePlans": [],
+          "legacyPlans": [],
+          "sourceUrl": "https://apps.apple.com/cn/app/id6466733523",
+          "checkedAt": "2026-10-20",
+          "status": "verified",
+          "applyReady": true,
+          "productId": "qwen-cn-creative",
+          "name": "千问国内 App 创作会员",
+          "plans": [
+            "7天会员",
+            "标准会员"
+          ],
+          "quote": "创作会员-7天会员; 千问创作-标准会员",
+          "planAliases": {
+            "7天会员": [
+              "创作会员-7天会员"
+            ],
+            "标准会员": [
+              "千问创作-标准会员"
+            ]
+          },
+          "sourceExcerpts": [
+            "创作会员-7天会员 ¥10.00",
+            "千问创作-标准会员-连续包月 ¥58.00",
+            "千问创作-标准会员-连续包月 ¥48.00"
+          ],
+          "verificationNote": "官网m.qianwen.com实际下载脚本直接指向Apple id6466733523，官方IAP确认创作会员7天及标准连续包月；同名标准会员两价格是两个付费SKU，未证明不同权限等级，合并同一档。创作积分200/500和视频生成额度10个明确为一次性额度资源，不列会员。",
+          "newPlanIds": {
+            "7天会员": "qwen-cn-creative-seven-day",
+            "标准会员": "qwen-cn-creative-standard"
+          },
+          "availabilityNotes": "官方IAP列名不承诺每地区/Android/web完全相同销售范围；7天会员没有官方明示与标准会员等价，保持其独立具名档。",
+          "remaining": ""
+        },
+        {
+          "platformIds": [
+            "qwen"
+          ],
+          "freePlans": [],
+          "legacyPlans": [],
+          "sourceUrl": "https://apps.apple.com/cn/app/id6466733523",
+          "checkedAt": "2026-10-20",
+          "status": "verified",
+          "applyReady": true,
+          "productId": "qwen-cn-work-assistant",
+          "name": "千问国内 App 工作助理",
+          "plans": [
+            "高级套餐",
+            "精英套餐",
+            "旗舰套餐"
+          ],
+          "quote": "工作助理·高级套餐; 工作助理·精英套餐; 工作助理·旗舰套餐",
+          "planAliases": {
+            "高级套餐": [
+              "工作助理· 高级套餐· 连续包月"
+            ],
+            "精英套餐": [
+              "工作助理· 精英套餐· 连续包月"
+            ],
+            "旗舰套餐": [
+              "工作助理· 旗舰套餐· 连续包月"
+            ]
+          },
+          "sourceExcerpts": [
+            "工作助理· 高级套餐· 连续包月 ¥19.00",
+            "工作助理· 精英套餐· 连续包月 ¥49.00",
+            "工作助理· 旗舰套餐· 连续包月 ¥128.00"
+          ],
+          "verificationNote": "Apple官方国内千问应用IAP当前明列工作助理三个按月订阅等级；高级同名同价出现两次不重复。该产品是国内千问App内工作助理，不是另一个已核千问办公QwenWork桌面平台，也不是API Token Plan。",
+          "newPlanIds": {
+            "高级套餐": "qwen-cn-work-assistant-advanced",
+            "精英套餐": "qwen-cn-work-assistant-elite",
+            "旗舰套餐": "qwen-cn-work-assistant-flagship"
+          },
+          "availabilityNotes": "没有直接许可共享条款将工作助理与创作会员互相覆盖，暂分两个产品族，不按同一App账号自动归并。",
+          "remaining": ""
+        }
+      ],
+      "excludedIap": [
+        "创作积分200 ¥20.00",
+        "创作积分500 ¥50.00",
+        "视频生成额度10个 ¥26.00"
+      ],
+      "subscriptionEvidence": {
+        "source": "https://apps.apple.com/cn/app/id6466733523",
+        "excerpts": [
+          "【自动续费规则】订阅会员服务会通过AppStore账户直接支付",
+          "在订阅服务到期前24小时，系统将按订购类型进行自动续订和扣除相应费用"
+        ],
+        "termsSource": "https://terms.alicdn.com/legal-agreement/terms/c_end_product_protocol/20260728154300619/20260728154300619.html",
+        "termsExcerpts": [
+          "生效日期：2026年08月07日",
+          "千问专业会员会设置不同档次的会员套餐…具体套餐类型、名称、价格及可享受的权益额度以千问APP/官网会员订阅服务页面实时展示的信息为准。"
+        ],
+        "note": "协议的专业会员是总称，不新造第六档；Apple明确按月IAP与自动续费规则一起证实订阅属性。7天会员为官方具名时限会员，不误作积分包。"
+      },
+      "coverageUpdate": {
+        "platformId": "qwen",
+        "scope": "mainland consumer app public directory",
+        "status": "research_complete_public_scope",
+        "productIds": [
+          "qwen-cn-creative",
+          "qwen-cn-work-assistant"
+        ],
+        "note": "国内公开IAP实际存在具名会员，解除此前未发现具名套餐的结论；国际Go/Plus/Pro不类推国内。仅核官网正式链+Apple公开列明项目，不承诺Apple清单等同全部Android/web售卖目录，也不为没有具体线索的私人合同继续partial。"
+      },
+      "evidenceDirectory": "/tmp/ym-qwen-cn-iap-evidence",
+      "actions": "仅读公开官网、客户端脚本、Apple页面和已链接会员协议；未安装、登录、购买、注册或写入生产。"
+    },
+    "liblib-membership-sharing": {
+      "checkedAt": "2026-10-20",
+      "status": "sharing-license-gap",
+      "applyReady": false,
+      "scope": "LiblibAI / LibTV / 星流会员权益跨产品通用关系，仅官方会员协议/订阅FAQ",
+      "currentMembershipAgreement": {
+        "url": "https://www.liblib.art/document/vip_agreement",
+        "title": "LiblibAI会员协议 / LiblibAI VIP会员服务协议",
+        "printedVersion": "2023-10-24",
+        "currentPurchaseLinkVerified": true,
+        "currentPurchaseComponent": "https://liblibai-web-static.liblib.cloud/liblibai_v4_online/static/_next/static/chunks/3122-9e8eefa016ca3dea.js",
+        "purchaseSource": "https://www.liblib.art/viphome",
+        "currentLinkExcerpt": "agreements:[{label:\"《LiblibAI会员协议》\",href:\"https://www.liblib.art/document/vip_agreement\"}]",
+        "excerpts": [
+          "LiblibAI VIP会员权益，包括模型训练、云端储存等，具体以LiblibAI平台上VIP特权页面说明或LiblibAI实际提供为准。",
+          "本协议项下的会员权益名称与页面说明不一致的，不影响您所实际享受的会员权益内容。"
+        ],
+        "finding": "正文没有LibTV或星流跨平台会员/积分通用条款；正文的LibTV仅存在网站公共导航，不是协议内容。当前购买仍链接此文，不能因打印2023日期就断言协议失效，但不能把缺少跨平台文字解释为通用。"
+      },
+      "xingliuMembershipAgreement": {
+        "url": "https://www.liblib.art/activities/xingliu-member?hideHeader=1",
+        "title": "星流VIP会员服务协议 / 星流会员付费协议",
+        "printedVersion": "2025-02-11",
+        "excerpts": [
+          "星流VIP会员服务是由星流向您提供的专享的会员权益",
+          "具体会员权益以星流向您展示的介绍页面的说明或星流实际提供为准",
+          "单月购买会员的算力有效期为1个月；连续包月购买会员的算力有效期为1个月；单年购买会员的算力为按月下发，按月过期。"
+        ],
+        "finding": "会员条款只明确星流的专享服务和算力周期，不承诺同LiblibAI/LibTV会员通用；也没有找到明确不通用句，故不能判定互斥或共享。旧基础/专业名称不用于覆盖现行价格目录。"
+      },
+      "officialSubscriptionFaq": {
+        "url": "https://www.liblib.art/viphome",
+        "finding": "公开FAQ已核积分有效期、退款、消耗顺序、补充值、会员保护期和免积分卡，没有明确跨产品会员共享声明；通用积分这个类别名不自动证明跨产品许可证共享。",
+        "relatedHelpLink": "https://liblibai.feishu.cn/wiki/Iabaw1NvAivY82kV0XocHKFkn00",
+        "linkContext": "当前购买组件加速通道“查看详情”，不是已核跨产品会员共享帮助页。"
+      },
+      "establishedBoundaries": [
+        {
+          "url": "https://www.liblib.art/apis",
+          "excerpt": "API积分和LiblibAI的生图/会员的积分通用吗？不通用，分别是两套会员和积分体系。",
+          "scope": "仅API积分体系与站内生图/会员积分不通用；这不回答LibTV客户端/星流会员共享。"
+        }
+      ],
+      "existingRuntimeCatalogEvidence": {
+        "source": "https://api2.liblib.art/api/www/member/packages?packageType=TRAIN&sourceFrom=libtv",
+        "note": "此前已核LibTV 24个SKU ID为LiblibAI目录子集；父任务当前匿名UI个人与团队会员实读已证实同组件、同名档位。本报告不再要求登录以核目录，但共享许可证仍需明确官方条款。"
+      },
+      "conclusion": "尚未取得任何官方会员条款直接说明LiblibAI↔LibTV↔星流的会员权益/订阅额度可跨产品通用或明确不通用。当前证据可支持共用购买目录，不能支持自动合并权利范围。",
+      "preciseGap": "需要一条当前官方订阅FAQ、会员页面提示或会员协议，直接点名已购LiblibAI会员在LibTV可使用哪些权益/积分，以及星流是否独立。父任务可沿匿名会员组件帮助中心/实际协议链接继续；不发送咨询、不注册、不购买。",
+      "catalogChanges": [],
+      "evidenceDirectory": "/tmp/ym-liblib-sharing-evidence",
+      "excludedEvidence": "本轮没有用统一账号协议、作者作品授权或第三方教程作共享证明。"
+    },
+    "liblib-license-identity": {
+      "checkedAt": "2026-10-20",
+      "status": "shared-member-entity-verified-benefit-scope-not-equivalent",
+      "applyReady": false,
+      "requestedScope": "只读当前官方前端/公开套餐数据，比较许可实体、实际购买链、协议与产品限定字段；没有读浏览器状态，没有请求认证接口。",
+      "establishedIdentity": {
+        "sameGlobalMemberEntity": true,
+        "sameAccountGetter": {
+          "endpoint": "https://api2.liblib.art/api/www/member/account",
+          "method": "GET",
+          "requestArguments": "{isApp:isNative()}",
+          "noProductParameterInThisGetter": true,
+          "commonResponseStore": "vipInfoStore.vipInfo",
+          "commonOwnerKey": "memberId + \":\" + (teamId ?? \"personal\")",
+          "libSource": "https://liblibai-web-static.liblib.cloud/liblibai_v4_online/static/_next/static/chunks/_app-a6bc78bf86d7d235.js",
+          "tvSource": "https://liblibai-web-static.liblib.cloud/liblibtv_online/static/_next/static/chunks/0ienz0uz_girs.js",
+          "note": "两端syncVipInfo均仅传isApp，读取同member/account到vipInfo；个人与团队用memberId/teamId定owner，不另按产品建owner。未调用此需身份接口。"
+        },
+        "sameCatalogEntity": {
+          "endpoint": "https://api2.liblib.art/api/www/member/packages",
+          "method": "GET",
+          "packageTypes": [
+            "TRAIN",
+            "TEAM"
+          ],
+          "tvCatalogSelector": "sourceFrom=libtv",
+          "priorPublicCatalogSnapshot": {
+            "libCount": 27,
+            "tvCount": 24,
+            "sharedIds": 24,
+            "tvRecordsByteEquivalentAsParsedJson": true,
+            "tvDifference": "仅缺LiblibAI入门档三种周期SKU",
+            "comparedFieldsInclude": [
+              "packageType",
+              "packageLevel",
+              "accountLevel",
+              "source",
+              "purchaseConfig",
+              "appleSkuId",
+              "googleSkuId",
+              "oldMemberId"
+            ]
+          },
+          "note": "当前父任务真实匿名UI已另外确认个人及团队5/6档的子集关系；本轮只复用此前公开SKU读取，不试认证接口。"
+        },
+        "samePurchaseServices": {
+          "personal": "POST /api/www/member/purchase",
+          "team": "POST /api/www/teams/purchase",
+          "perPackagePurchaseInfo": "POST /api/www/member/package/purchase-info",
+          "serviceAddedArgument": "isNewAgreement:true",
+          "note": "两端编译自同@liblibaix/services-ts/vip服务。没有调用购买或报价接口。"
+        },
+        "sameAgreement": {
+          "url": "https://www.liblib.art/document/vip_agreement",
+          "libActualPurchaseComponent": "https://liblibai-web-static.liblib.cloud/liblibai_v4_online/static/_next/static/chunks/3122-9e8eefa016ca3dea.js",
+          "excerpt": "agreements:[{label:\"《LiblibAI会员协议》\",href:\"https://www.liblib.art/document/vip_agreement\"}]",
+          "tvAgreementLink": "父任务可用同实际会员组件核对href；此前公开LibTV initial chunks未包含懒载完整purchase footer，不能凭共享组件库断言每个TV购买footer当前字面链接均已覆盖。"
+        }
+      },
+      "materialProductScoping": [
+        {
+          "kind": "actual-entitlement-query-selector",
+          "endpoint": "GET /api/www/commerce/activity/benefit",
+          "libLogic": "productTypes:\"2\"",
+          "tvLogic": "isTV ? {productTypes:\"3\"} : {productTypes:\"2\"}",
+          "tvStoreSource": "https://liblibai-web-static.liblib.cloud/liblibtv_online/static/_next/static/chunks/0ienz0uz_girs.js",
+          "libStoreSource": "https://liblibai-web-static.liblib.cloud/liblibai_v4_online/static/_next/static/chunks/_app-a6bc78bf86d7d235.js",
+          "excerpt": "syncUserBenefits:async()=>{...let t=a.isTV?{productTypes:\"3\"}:{productTypes:\"2\"},n=await fetchUserBenefits(t)...}",
+          "implication": "不是仅埋点。接口返回userBenefits与rateLimitBenefitStatus并用于免费/免积分/优惠/速率权益UI；实际权益读取明确按产品过滤。不能声称无产品资格字段。"
+        },
+        {
+          "kind": "purchase-and-package-source-field",
+          "fields": [
+            "sourceFrom:isTV?\"libtv\":undefined",
+            "target",
+            "packageId",
+            "purchasePeriod",
+            "purchaseType"
+          ],
+          "source": "当前3122-9e8eefa016ca3dea.js member package purchase-info参数构造",
+          "implication": "sourceFrom存在于目录及购买相关参数，不能未验证就认定只用于归因而完全不影响许可/发放。"
+        },
+        {
+          "kind": "separate-product-restricted-balance",
+          "commonEntityFields": [
+            "attr.usablePower",
+            "attr.totalPower",
+            "attr.usedPower",
+            "attr.libtvUsablePower",
+            "attr.libtvTotalPower",
+            "attr.exPowerSummary.usablePower",
+            "attr.rechargeUsablePower",
+            "attr.freeUsablePower"
+          ],
+          "tvModelSpendFormula": "(attr.totalPower-attr.usedPower)+attr.libtvUsablePower",
+          "implication": "共一个会员owner，但明确区分通用会员余额、TV专属余额、模型卡、充值、免费；全额跨产品共用不能从owner相同推导。"
+        },
+        {
+          "kind": "explicit-header-review",
+          "libDeclaredHeaders": [
+            "token",
+            "webid"
+          ],
+          "tvDeclaredHeaders": [
+            "token",
+            "webid",
+            "x-language",
+            "X-Log-ID"
+          ],
+          "result": "在这条通用HTTP服务wrapper中未见显式产品资格header，但这不能抹去业务查询中已经存在的productTypes/sourceFrom。没有读取任何真实token值。"
+        }
+      ],
+      "conclusion": {
+        "canAssert": "LiblibAI与LibTV使用同一个member/subscription实体服务和owner模型，并有相同SKU和购买后台。这是官方运行代码支持的实体同一性，强于同账号推断。",
+        "cannotAssert": "同一许可证的全部权益、免费/促销/模型/TV专属积分能跨产品无差别共用；实际前端存在按产品读取权益和余额的代码。",
+        "mergerRecommendation": "若目录合并的语义仅为共一个可购买member实体，可由父任务把共同SKU作为同一合同SKU建引用并保留产品范围；若合并将意味着两端权益完全共享/自动资格通用，证据尚不足，不建议无条件合并。",
+        "remainingPrecisely": "需官方会员规则或真实订阅实体契约说明sourceFrom是否仅归因、productTypes如何映射会员常规权益与活动权益、libtvUsablePower的可用范围。当前公开源码不能证明服务端不按这些字段限制。"
+      },
+      "catalogChanges": [],
+      "evidenceDirectories": [
+        "/tmp/ym-liblib-license-identity-evidence",
+        "/tmp/ym-cn-creative-evidence/libtv-js",
+        "/tmp/ym-liblib-sharing-evidence/js"
+      ],
+      "actions": "本轮无认证接口请求、浏览器操作、隐藏状态读取或写入。"
+    },
+    "xingliu-current-license": {
+      "checkedAt": "2026-10-20",
+      "status": "current-product-retired-verified",
+      "applyReady": true,
+      "currentEntry": {
+        "url": "https://www.xingliu.art/",
+        "httpRedirect": false,
+        "pageTitle": "星流 - 新一代设计Agent",
+        "officialDisplayedNotice": [
+          "星流已停止运营",
+          "星流已于北京时间2026年10月10日24:00停止运营，网站及全部服务不再可用。新功能与产品能力在Lovart.art持续更新，欢迎前往使用。"
+        ],
+        "liveFrontendSource": "https://xla-web-static.xingliu.art/xingliu_prd/static/_next/static/chunks/app/(web)/%5Blang%5D/layout-ebe1ab3ba415fe73.js",
+        "interpretation": "当前域名仍有旧UI框架，但实际当前前端明确停止运营并引导Lovart.art；不是合并成LiblibAI会员，也不是单纯首页暂时抓取失败。"
+      },
+      "membershipEntityEvidence": {
+        "currentPublicCode": "https://xla-web-static.xingliu.art/xingliu_prd/static/_next/static/chunks/1522-9b29929d663c3113.js",
+        "routeMappingExcerpt": "/api/www/member, /api/www/power, /api/www/order/orderList → replace(\"/api/www\",\"/api/www/lovart\")",
+        "memberEndpointNamespace": "/api/www/lovart/member/account",
+        "contrastedWithLiblibAiLibTV": "LiblibAI与LibTV会员实体使用/api/www/member/account，不做该/lovart重写",
+        "interpretation": "现有星流/设计Agent代码服务族有独立lovart命名空间，不能因账号统一就把旧星流会员并入LiblibAI/LibTV的TRAIN member实体。未请求任何认证接口。"
+      },
+      "separateAgreement": {
+        "url": "https://www.liblib.art/activities/xingliu-member?hideHeader=1",
+        "title": "星流VIP会员服务协议",
+        "version": "2025-02-11",
+        "excerpts": [
+          "星流VIP会员服务是由星流向您提供的专享的会员权益",
+          "目前包括基础版VIP会员、专业版VIP会员"
+        ],
+        "interpretation": "证明历史独立星流会员合同；不因旧协议仍在线而新增已经停运的当前或存量目录。原目录无独立星流verified产品，无需退休操作。"
+      },
+      "officialMigration": {
+        "url": "https://resonate.feishu.cn/wiki/NhtCwLUtEigU4wkb92OcNcbHnfb",
+        "title": "星流停运与资产迁移FAQ",
+        "effectiveDate": "2026-09-07",
+        "scope": "所有持有星流正式版/Beta版账号的用户",
+        "excerpts": [
+          "会员权益与积分不随资产迁移，可正常使用至到期或停运日，详见“四、会员权益与退款说明”。",
+          "星流（含Beta版）将于2026年10月10日24:00正式停止运营，届时网站及全部服务将不再可用。",
+          "迁入的旧Project可以正常打开画布，但历史对话不会显示在Lovart.art中。"
+        ],
+        "confirmedRelationship": "资产迁移到Lovart.art不等于会员/积分迁移。现有可读原文直接否定“权益随资产自动迁移”。",
+        "unreadSection": "本次HTTP读取止于第三节，第四节“会员权益与退款说明”未返回正文。父任务可在已能打开的匿名Feishu wiki UI读取，不重复静态代理。",
+        "planMapping": "没有读到星流基础/专业直接映射Lovart某个正式订阅档。未取得第四节前，不声称绝无额外迁移补偿或具体Lovart资格。"
+      },
+      "catalogDecision": {
+        "products": [],
+        "newCurrentMemberships": [],
+        "mergeIntoLiblibAi": false,
+        "newLovartMembershipQualification": null,
+        "publicScopeConclusion": "星流本体当前目录已闭环为停止运营，无可新增现行或仍在服务的旧星流会员。若第四节有确定Lovart套餐补偿，另以该具体新资格处理；不重建已停运星流档。"
+      },
+      "remainingPrecisely": "仅第四节是否额外给予Lovart具体正式档位/退款方案尚未读到，不影响星流已停运及会员积分不随资产迁移的已证实结论。",
+      "evidenceDirectory": "/tmp/ym-xingliu-license-evidence",
+      "actions": "公开主页、当前前端代码、公开协议与官方迁移wiki仅读；未改共享repo/D1/CUA/生产。"
+    },
+    "creative-license-identity": {
+      "checkedAt": "2026-10-20",
+      "scope": "只读当前官方公共前端及官方移动应用Apple目录；不从价格/额度相同推断身份。",
+      "items": [
+        {
+          "platformId": "kling",
+          "status": "verified",
+          "applyReady": true,
+          "conclusion": "明确不同license级别：Ultra+高于Ultra。Ultra停止新订阅，但已有Ultra保留权益及原优先级；应新增Ultra（存量），不得把Ultra自动迁移为Ultra+。",
+          "action": {
+            "productId": "kling-international-personal",
+            "addPlans": [
+              "Ultra（存量）"
+            ],
+            "legacyPlans": [
+              "Ultra（存量）"
+            ],
+            "newPlanIds": {
+              "Ultra（存量）": "kling-international-personal-ultra-legacy"
+            },
+            "doNotMergeWith": "Ultra+"
+          },
+          "sourceUrl": "https://kling.ai/app/membership/membership-plan",
+          "sourceChain": [
+            {
+              "url": "https://kling.ai/app/membership/membership-plan",
+              "method": "直接HTTP200 HTML",
+              "fact": "实际script src加载index-eC6ueyg0.js",
+              "evidencePath": "/tmp/ym-id-kling-membership.html"
+            },
+            {
+              "url": "https://s15-kling.klingai.com/kos/s101/nlav112918/kling-web/assets/js/index-eC6ueyg0.js",
+              "method": "直接HTTP200 JS",
+              "fact": "当前bundle的真实模块依赖列MembershipViewV2-D23y49KS.js",
+              "evidencePath": "/tmp/ym-kling-index.js"
+            },
+            {
+              "url": "https://s15-kling.klingai.com/kos/s101/nlav112918/kling-web/assets/js/MembershipViewV2-D23y49KS.js",
+              "method": "直接HTTP200 JS",
+              "sha256": "d74ea179e0aef9262237bd6ea7f178e5b7280cb36649b23af45a8cc9747adc69",
+              "evidencePath": "/tmp/ym-kling-MembershipViewV2-D23y49KS.js",
+              "byteOffset": 23521,
+              "faqTitle": "What happens to my Subscription benefits if I switch plans after subscribing?",
+              "quote": "Ultra is no longer available for new subscriptions. Existing Ultra subscribers retain their benefits and original priority.",
+              "bindingFacts": [
+                "同一当前FAQ给出明确级别顺序Ultra+高于Ultra，然后Premier、Pro、Standard。",
+                "组件购买分组同时保留membershipType枚举sssvip和s4vip；本结论依明确官方FAQ，不靠这两个code猜显示名。",
+                "FAQ选择器对v40_store_promotion_with_s4vip_launch使用新版qs对应语言正文，普通l旧FAQ保留旧四级顺序，证明发布逻辑区分新旧级别。"
+              ]
+            }
+          ],
+          "remaining": "旧Ultra具体历史积分/促销、续订价格不在身份结论内，不填写或推定；旧权益已明确保留，不需为这些差异阻止存量目录。"
+        },
+        {
+          "platformId": "leonardo",
+          "status": "partial",
+          "applyReady": false,
+          "conclusion": "官方Apple当前IAP明确Essential/Premium/Ultimate及年付同名项；2024-07-17旧更新说明确有Apprentice/Artisan/Maestro。但公开HTML未给旧product slug/商品ID与新displayName绑定，也没有本产品formerly改名说明，不能推出一一映射。",
+          "sourceChain": [
+            {
+              "url": "https://intercom.help/leonardo-ai/en/articles/7051613-frequently-asked-questions",
+              "method": "实际web读+点击官方Download iOS链接",
+              "fact": "官方下载链直接进入id1662773014，非搜索自称官网"
+            },
+            {
+              "url": "https://apps.apple.com/us/app/leonardo-ai-image-generator/id1662773014",
+              "method": "实际web完整读和直接HTTP HTML",
+              "evidencePath": "/tmp/ym-leonardo-apple.html",
+              "seller": "Leonardo Interactive Pty Ltd",
+              "currentIAP": [
+                "Essential",
+                "Premium",
+                "Ultimate",
+                "Essential (yearly)",
+                "Premium (yearly)",
+                "Ultimate (yearly)"
+              ],
+              "oldReleaseNoteDate": "2024-07-17",
+              "oldReleaseNames": [
+                "Apprentice",
+                "Artisan",
+                "Maestro"
+              ],
+              "fact": "旧更新说明和当前IAP列在同App页，但不构成旧套餐商品身份一一绑定；匹配到的formerly均属于推荐的Magnific/Freepik，不属于Leonardo。"
+            }
+          ],
+          "actualBoundary": "公开Apple HTML IAP只有leadingText/trailingText，未暴露可将旧SKU关联新显示名的订阅product ID；productId 1662773014是App ID，不能用作会员SKU。官方app.leonardo.ai根页HTTP429，未取得公共网页商品枚举；不重刷登录、不注册。",
+          "remaining": "需要官方前端SKU旧slug->新displayName，或明确迁移/改名公告；当前移动六项仅补强现三档，月年不拆会员。"
+        }
+      ],
+      "summary": {
+        "applyReadyChanges": [
+          "新增Kling Ultra（存量），保留Ultra+独立当前档"
+        ],
+        "notEstablished": [
+          "Leonardo三个旧名到新名的官方一一映射"
+        ]
+      }
+    },
+    "creative-final-boundaries": {
+      "checkedAt": "2026-10-20",
+      "scope": "仅已有官方页面所引用客户端、订阅帮助和条款定向收口，无泛搜/登录/购买/CUA。",
+      "applyReadyChanges": [],
+      "items": [
+        {
+          "platformId": "tripo",
+          "status": "partial",
+          "applyReady": false,
+          "findings": [
+            "直接HTTP/pricing与其直接链接Studio均403，无法读取官方前端SKU绑定。",
+            "官方Product Doc本轮通过Jina实际读到：引言仍列Starter、Professional，但表格只列Free/Professional/Max/Team，Starter表格已不见；旧抓取与当前表格差异不能当SKU证据。",
+            "Professional表格仍无productId、planType、SKU、formerly或Pro别名字段；相同价格/额度不采用。",
+            "Advanced在已实读8K Texture FAQ仍有功能权益文字，但明确要求最新计划以pricing/产品UI为准；无现行保留、续订或迁移条款。"
+          ],
+          "sources": [
+            {
+              "url": "https://www.tripo3d.ai/pricing",
+              "result": "HTTP403，本轮直接请求"
+            },
+            {
+              "url": "https://studio.tripo3d.ai/",
+              "result": "从正式pricing页面现成产品链接，本轮HTTP403"
+            },
+            {
+              "url": "https://www.tripo3d.ai/product-doc/getting-started/pricing-credits",
+              "method": "本轮实际Jina HTTP200读取",
+              "evidencePath": "/tmp/ym-tripo-doc-current.txt",
+              "quote": "Tripo Studio offers Free, Starter, Professional, Max, and Team plans."
+            },
+            {
+              "url": "https://www.tripo3d.ai/blog/tripo-8k-texture",
+              "evidencePath": "/tmp/ym-research-creative-specific-legacy.json",
+              "note": "先前实读完整官方FAQ，Advanced功能文字并非续费保留条款"
+            }
+          ],
+          "remaining": "公共可读范围没有明确Pro/Professional同SKU绑定或Advanced现行存量保留条款。已具体定位403客户端障碍，不重复抓取。"
+        },
+        {
+          "platformId": "luma",
+          "status": "partial",
+          "applyReady": false,
+          "findings": [
+            "本轮从旧Account management Web帮助直接链接到terms-of-use，实际重定向/legal/terms-of-service并读完可见条款正文（63909字符）。",
+            "当前条款按Platform/API和适用Order规定Subscription Term，不出现Dream Machine名称或迁移字样；没有旧五档与Agents五档对应或双许可并行说明。",
+            "旧帮助的推荐订阅链接仍重定向当前Agents价格页；它仅明确公共购买入口，不能推出旧合同终止或自动迁移。",
+            "旧账号管理帮助把具体换套餐操作交给Account/View Plans，匿名Dream Machine应用壳无计划数据。"
+          ],
+          "sources": [
+            {
+              "url": "https://lumalabs.ai/learning-hub/account-management-web",
+              "method": "本轮HTTP200完整HTML",
+              "evidencePath": "/tmp/ym-luma-help-current.txt",
+              "quote": "Change of plans? → Go to your Account → View Plans"
+            },
+            {
+              "url": "https://lumalabs.ai/learning-hub/terms-of-use",
+              "finalUrl": "https://lumalabs.ai/legal/terms-of-service",
+              "method": "本轮从help实际href访问并跟随HTTP重定向，完整可见正文",
+              "evidencePath": "/tmp/ym-luma-linked-terms.txt",
+              "fact": "无Dream Machine名称、无migration词、无旧新档位对应；许可由适用Order与Subscription Term决定"
+            },
+            {
+              "url": "https://lumalabs.ai/learning-hub/dream-machine-support-pricing-information",
+              "finalUrl": "https://lumalabs.ai/pricing",
+              "method": "前次已实际HTTP200及最终URL核实",
+              "evidencePath": "/tmp/ym-luma-support-pricing.txt"
+            },
+            {
+              "url": "https://lumalabs.ai/learning-hub/payments-subscriptions",
+              "evidencePath": "/tmp/ym-creative-luma-dream.txt",
+              "note": "旧五档/更早generation转credits，只支持旧目录曾存在，不支持Agents迁移"
+            }
+          ],
+          "remaining": "现行公开购买/订阅帮助与完整产品条款未披露旧合同迁移或仍并行。需要现有订阅账户Order/View Plans或正式迁移通知；只读公开范围已穷尽，停止无进展重复。"
+        }
+      ]
+    }
+  },
+  "browserReadbacks": [
+    {
+      "platformId": "inception",
+      "url": "https://chat.inceptionlabs.ai/",
+      "quote": "Heads up: chats here are saved locally in your browser, not on our servers.",
+      "accountOrUpgradeUiPresent": false,
+      "chatMessagesSent": 0
+    },
+    {
+      "platformId": "reflection",
+      "url": "https://platform.reflection.ai/login",
+      "observed": "Email/Google/GitHub sign in only; current billing still inaccessible without an existing account",
+      "loginAttempted": false
+    },
+    {
+      "platformId": "liblibtv",
+      "sourceUrl": "https://www.liblib.art/viphome",
+      "teamPlans": [
+        "入门版",
+        "标准版",
+        "进阶版",
+        "高级版",
+        "豪华版",
+        "至尊版"
+      ],
+      "sourceFrom": "Actual anonymous browser; first card has entry/standard tabs",
+      "notNewTier": "Enterprise procurement opens only dedicated sales contact, not a separately evidenced licence",
+      "crossPlatformSharingNotAssumed": true
+    },
+    {
+      "platformId": "liblibtv",
+      "sourceUrl": "https://resonate.feishu.cn/wiki/NhtCwLUtEigU4wkb92OcNcbHnfb",
+      "section": "四、会员权益与退款说明 / 4.2",
+      "officialEffectiveDate": "2026-09-07",
+      "shutdownDate": "2026-10-10",
+      "quote": "星流会员与 Lovart.art 会员是两套完全独立的体系，不互通、不折算、不自动开通。",
+      "decision": "All Starflow memberships end at expiry or shutdown, whichever earlier. No current Starflow plan or Lovart alias added; late unperformed paid term refundable, not a replacement subscription."
+    }
+  ]
+}

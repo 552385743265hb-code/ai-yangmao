@@ -1,1812 +1,202 @@
 {
   "checkedAt": "2026-10-20",
-  "note": "研究记录；不等于已核实可选目录，不自动归并未知或仍需登录的产品。",
+  "note": "Current unresolved index after specific legacy closures. Prior dated reports remain evidence snapshots, not the current gap list. research_complete is limited to recorded public scope; named historical questions remain separate.",
   "products": [
     {
-      "researchFile": "ym-research-api-vendors.json",
-      "productId": "hoonify-ai",
-      "platformIds": [
-        "hoonify-ai"
-      ],
-      "name": "Hoonify AI",
-      "status": "gap",
-      "sourceUrl": "https://www.hoonify.com/catalog",
-      "remaining": "需核实 Sovereign AI / TurbOS 企业报价是否存在固定软件会员档位，以及登录后/存量订阅目录。",
-      "verificationNote": "公开模型目录按百万 Token 定价；首页将 Sovereign AI 描述为 one flat subscription rate，但未公开具体订阅档名或完整目录；$10 注册额度不算 Free 会员。",
-      "evidenceUrls": [
-        "https://www.hoonify.com/catalog",
-        "https://www.hoonify.com",
-        "https://www.hoonify.com/solutions/sovereign-ai"
+      "platformId": "baidu",
+      "name": "百度千帆",
+      "status": "specific_gap",
+      "remaining": "秒哒个人当前完整会员目录：真实匿名应用只显示登录，未取得购买目录；不凭旧更新日志造现行档。",
+      "sourceUrls": [
+        "https://cloud.baidu.com/doc/qianfan/s/Dmrabu8b6",
+        "https://cloud.baidu.com/doc/qianfan/s/ymq8wwch2",
+        "https://cloud.baidu.com/doc/COMATE/s/rlnvnio4a",
+        "https://cloud.baidu.com/doc/BML/s/Qkkf5ij52",
+        "https://cloud.baidu.com/doc/BML/s/0kkf6e4i9",
+        "https://cloud.baidu.com/doc/BML/s/3kkf70oqw",
+        "https://cloud.baidu.com/doc/UNIT-LLM/s/wm3dy2v8s"
       ]
     },
     {
-      "researchFile": "ym-research-api-vendors.json",
-      "productId": "ppio-token-plan",
-      "platformIds": [
-        "ppio"
-      ],
-      "name": "PPIO 企业 Token Plan",
-      "status": "partial",
-      "sourceUrl": "https://ppio.com/token-plan",
-      "remaining": "已确认三档官方名称与当前订阅机制；需浏览器/公开方案API复核当前三档是否改名或新增，不能仅据8月发布文宣称10月完整覆盖。暂未核到仍有效旧订阅。",
-      "verificationNote": "官方 2026-08-06 发布文明确三档 Basic ¥1520/月、Pro ¥4560/月、Max ¥13300/月。2026-10-20 当前产品页 FAQ 仍明确订阅包有效期1个月、余量不结转及200个团队席位，故属固定周期 Token Plan。加量包为3个月抵扣资源包，不另作会员；GPU及按量API不纳入。当前页面方案卡需JS/API加载，基础HTML只读到FAQ，没有三档名。",
-      "evidenceUrls": [
+      "platformId": "ppio",
+      "name": "PPIO 派欧云",
+      "status": "specific_gap",
+      "remaining": "当前官网脚本和同源公开价目API闭环企业Basic/Pro/Max三个正式档（1598/4798/13998元月）；API另有DeepSeek旧包但当前购买入口未展示，存量有效性未证实。",
+      "sourceUrls": [
         "https://ppio.com/token-plan",
-        "https://blog.ppio.com/ppioshang-xian-qi-ye-token-plan-zhu-liu-qi-jian-mo-xing-zui-di-6zhe-jie-ru-zhi-chi-200xi-wei/",
-        "https://ppio.com/pricing?tokenplan=1"
-      ]
-    },
-    {
-      "researchFile": "ym-research-api-vendors.json",
-      "productId": "ucloud-astraflow",
-      "platformIds": [
-        "ucloud"
-      ],
-      "name": "UCloud AstraFlow 星图",
-      "status": "gap",
-      "sourceUrl": "https://docs.ucloud.cn/modelverse/mdToPdf/modelverse.pdf",
-      "remaining": "星图现行产品页/控制台固定订阅及仍有效旧套餐目录尚未核实；不能宣称全厂商无会员。",
-      "verificationNote": "官方模型服务计费文档列按图及Token后付费，属于模型用量；官网当前星图入口宣传单Key接入200+模型，没有公开具体固定订阅档名。GPU云主机月费为基础设施规格，不能转为AI会员。",
-      "evidenceUrls": [
-        "https://www.ucloud.cn",
-        "https://docs.ucloud.cn/modelverse/mdToPdf/modelverse.pdf",
-        "https://www.ucloud-global.com/zh/blog/astraflow-xingtu-ucloud-global-llm-app-platform"
-      ]
-    },
-    {
-      "researchFile": "ym-research-api-vendors.json",
-      "productId": "ucloud-finclaw",
-      "platformIds": [
-        "ucloud"
-      ],
-      "name": "UCloud FinClaw",
-      "status": "gap",
-      "sourceUrl": "https://www.ucloud.cn",
-      "remaining": "需跟进官网FinClaw立即体验按钮（JS动作）及 https://spt.ucloud.cn/30001 咨询入口；产品付费机制/会员目录未知。",
-      "verificationNote": "当前UCloud官网列 FinClaw 创新型AI智研伙伴，AI数据聚合/公告解析/研报提炼/自动化监控；没有公开具体会员档名。",
-      "evidenceUrls": [
-        "https://www.ucloud.cn"
-      ]
-    },
-    {
-      "researchFile": "ym-research-api-vendors.json",
-      "productId": "tokenrhythm",
-      "platformIds": [
-        "tokenrhythm"
-      ],
-      "name": "基元律动 TokenRhythm",
-      "status": "gap",
-      "sourceUrl": "https://tokenrhythm.studio/docs/faq",
-      "remaining": "用户中心 https://tokenrhythm.studio/account 的订阅/充值目录及仍有效旧套餐未知。体验官免费Token不是命名Free会员。",
-      "verificationNote": "官方模型页按输入/输出/缓存价格展示且写充值用户；FAQ将用量/成本/余额以后端调用记录为准，用户中心查看。公开文档菜单未列固定订阅，不能由此推定登录后无套餐。",
-      "evidenceUrls": [
-        "https://tokenrhythm.studio",
-        "https://tokenrhythm.studio/models",
-        "https://tokenrhythm.studio/docs/overview",
-        "https://tokenrhythm.studio/docs/faq"
-      ]
-    },
-    {
-      "researchFile": "ym-research-api-vendors.json",
-      "productId": "moark",
-      "platformIds": [
-        "moark"
-      ],
-      "name": "模力方舟 MoArk / Gitee AI",
-      "status": "gap",
-      "sourceUrl": "https://ai.gitee.com/docs/billing/purchase",
-      "remaining": "需核实平台登录后是否有独立Coding/Token固定周期订阅与仍有效旧会员；PocketClaw配套软件服务如有独立订阅须补。",
-      "verificationNote": "官方计费文档明确模型资源包为预付模型调用服务、支持自定义金额、按调用扣费；全模型/厂商算力资源包不属于固定软件会员。应用市场订阅策略是第三方开发者收费能力，不能把BiuBiu/SmartSage套餐映射为MoArk会员。PocketClaw首页¥698为硬件预售，不作会员。",
-      "evidenceUrls": [
-        "https://ai.gitee.com",
-        "https://ai.gitee.com/docs/billing/purchase",
-        "https://ai.gitee.com/docs/appstore/price",
-        "https://ai.gitee.com/docs/pocketclaw"
-      ]
-    },
-    {
-      "researchFile": "ym-research-api-vendors.json",
-      "productId": "siliconflow-cn",
-      "platformIds": [
-        "siliconflow"
-      ],
-      "name": "硅基流动（国内）",
-      "status": "gap",
-      "sourceUrl": "https://www.siliconflow.cn",
-      "remaining": "国内登录控制台固定订阅及存量目录未完整核实；不能由按量产品推定整厂无会员。",
-      "verificationNote": "当前官网明确大模型API按量计费，预留实例和私有化部署是算力/服务方案，不把模型Pro标记当会员。官网另链TokenPlus，已独立核查。",
-      "evidenceUrls": [
-        "https://www.siliconflow.cn",
-        "https://cloud.siliconflow.cn"
-      ]
-    },
-    {
-      "researchFile": "ym-research-api-vendors.json",
-      "productId": "siliconflow-international",
-      "platformIds": [
-        "siliconflow"
-      ],
-      "name": "SiliconFlow（国际）",
-      "status": "verified-usage-only",
-      "sourceUrl": "https://www.siliconflow.com/pricing",
-      "remaining": "结论限公开 Serverless/API 定价；登录后及未公开企业合同目录未知。",
-      "verificationNote": "官方定价FAQ明确按实际用量、无最低承诺；每月消费上限是预算控制，$1 free credits是启动赠金。公开产品目录还列预留GPU/专用部署，其为算力。未见公开命名固定软件订阅。",
-      "evidenceUrls": [
-        "https://www.siliconflow.com/pricing",
-        "https://www.siliconflow.com/products"
-      ]
-    },
-    {
-      "researchFile": "ym-research-api-vendors.json",
-      "productId": "siliconflow-tokenplus",
-      "platformIds": [
-        "siliconflow"
-      ],
-      "name": "TokenPlus 词元优选",
-      "status": "verified-usage-only",
-      "sourceUrl": "https://www.tokenplus.cn/docs/terms",
-      "remaining": "结论限公开目录，企业认证后私有报价及登录后任何订阅未知。",
-      "verificationNote": "硅基流动官网直接链接 www.tokenplus.cn。当前首页写充值后按实际调用量计费；用户协议12.1明确预充值与按量计费结合。开发者/企业团队是使用场景分类而非命名订阅档位。",
-      "evidenceUrls": [
-        "https://www.siliconflow.cn",
-        "https://www.tokenplus.cn",
-        "https://www.tokenplus.cn/docs/terms"
-      ]
-    },
-    {
-      "researchFile": "ym-research-api-vendors.json",
-      "productId": "modelscope",
-      "platformIds": [
-        "modelscope"
-      ],
-      "name": "ModelScope 魔搭社区",
-      "status": "gap",
-      "sourceUrl": "https://modelscope.cn/docs/magicube/intro",
-      "remaining": "当前官方文档 https://modelscope.cn/docs/magicube/intro 与 https://modelscope.cn/docs/model-service/API-Inference/intro 为JS页，静态抓取未得正文；登录后是否存在具体付费订阅及有效旧套餐仍未知。",
-      "verificationNote": "官网是模型/数据集/创空间社区；官方魔粒体系于2026-08-10引入全站积分，可抵API-Inference/训练推理，通过登录与贡献获取。魔粒积分、免费API试用及模型名称不作固定软件会员。旧2024免费2000调用公告不能当2026会员目录。",
-      "evidenceUrls": [
-        "https://modelscope.cn",
-        "https://modelscope.cn/docs/magicube/intro",
-        "https://www.modelscope.cn/posts/435591",
-        "https://modelscope.cn/docs/model-service/API-Inference/intro"
-      ]
-    },
-    {
-      "researchFile": "ym-research-api-supplement.json",
-      "productId": "sakana-fugu",
-      "platformIds": [
-        "sakana"
-      ],
-      "name": "Sakana Fugu",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://sakana.ai/fugu/",
-      "remaining": "未发现有效旧订阅；Sakana Chat、Namazu、Marlin按独立产品核验。",
-      "verificationNote": "当前官方Pricing与FAQ一致列三档月订阅：Standard $20/月，Pro $100/月（Standard 10倍），Max $200/月（Standard 20倍）。Fugu/Fugu Ultra/Fugu Max/Fugu Cyber是模型名称，不能作为会员档；另行按量Token Plan不作会员。",
-      "evidenceUrls": [
-        "https://sakana.ai/fugu/"
-      ]
-    },
-    {
-      "researchFile": "ym-research-api-supplement.json",
-      "productId": "sakana-marlin",
-      "platformIds": [
-        "sakana"
-      ],
-      "name": "Sakana Marlin",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://sakana.ai/marlin/",
-      "remaining": "未发现仍有效旧套餐；企业报价无公开金额。",
-      "verificationNote": "官方Pricing列Pro ¥150000/月含2000 credits、Team ¥400000/月含6000 credits、Enterprise定制报价；FAQ说明可修改/取消subscription。PAYG为另行按需购买积分，未纳入固定软件会员。服务面向业务实体，非一般消费者。",
-      "evidenceUrls": [
-        "https://sakana.ai/marlin/"
-      ]
-    },
-    {
-      "researchFile": "ym-research-api-supplement.json",
-      "productId": "replicas",
-      "platformIds": [
-        "replicas"
-      ],
-      "name": "Replicas",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://replicas.dev/pricing",
-      "remaining": "搜索缓存曾出现Developer $120/席、Team $300/席旧价，但当前官方文档已改为金额式订阅；没有仍有效旧套餐证据，不列legacy。",
-      "verificationNote": "从现有platform快照取得注册账号@connortbot；replicas.dev官网直接链接该账号Replicas V1原帖，身份一致。当前pricing与billing docs一致：Developer $50/月含$50 usage，Team $200+/月以$100步进含等额usage，Enterprise custom；席位不影响账单。$100无时限免费试用为一次性试用，未伪造Free会员。small/large/ultra为工作区规格。",
-      "evidenceUrls": [
-        "https://replicas.dev",
-        "https://replicas.dev/pricing",
-        "https://docs.replicas.dev/admin/billing",
-        "https://replicas.dev/terms"
-      ]
-    },
-    {
-      "researchFile": "ym-research-api-supplement.json",
-      "productId": "nous-research",
-      "platformIds": [
-        "nous"
-      ],
-      "name": "Nous Portal",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://portal.nousresearch.com/manage-subscription",
-      "remaining": "Business与Enterprise独立部署方案尚无固定自助档位目录，单独保留记录；未发现仍有效旧Portal套餐。",
-      "verificationNote": "当前官方Manage Subscription列Free $0、Plus $20/月、Super $100/月、Ultra $200/月。Cloud公开页重复同一Portal目录；因此只保留一套Portal会员，不把Cloud另建同名会员。",
-      "evidenceUrls": [
-        "https://portal.nousresearch.com/manage-subscription"
-      ]
-    },
-    {
-      "researchFile": "ym-research-api-supplement.json",
-      "productId": "nous-hermes-cloud",
-      "platformIds": [
-        "nous"
-      ],
-      "name": "Hermes Cloud",
-      "status": "verified-usage-only",
-      "applyReady": false,
-      "sourceUrl": "https://portal.nousresearch.com/cloud",
-      "remaining": "登录后实例尺寸/价格不作会员；没有独立Cloud订阅档证据。",
-      "verificationNote": "当前官方FAQ说明专用云实例按实际运行秒数与存储每日结算；停止仅收存储，推理/工具另收费。部署须至少$2信用余额或active subscription。这不是Cloud特有固定会员档；页尾展示的Free/Plus/Super/Ultra属于Nous Portal。",
-      "evidenceUrls": [
-        "https://portal.nousresearch.com/cloud"
-      ]
-    },
-    {
-      "researchFile": "ym-research-api-supplement.json",
-      "productId": "nous-hermes-enterprise",
-      "platformIds": [
-        "nous"
-      ],
-      "name": "Hermes Enterprise",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://portal.nousresearch.com/business",
-      "remaining": "Business self-service为中央余额和成员花费上限机制，未公开固定月费或正式细分档位；Enterprise合同具体计费周期需询价。",
-      "verificationNote": "官方Business页面独立Enterprise卡明确Contact us，私有云/本地受控部署，带SSO、SLA与定制入门；作为正式企业软件方案列Enterprise，不推定金额或结算周期。",
-      "evidenceUrls": [
-        "https://portal.nousresearch.com/business"
-      ]
-    },
-    {
-      "researchFile": "ym-research-api-supplement.json",
-      "productId": "nous-hermes-business",
-      "platformIds": [
-        "nous"
-      ],
-      "name": "Hermes Business",
-      "status": "gap",
-      "applyReady": false,
-      "sourceUrl": "https://portal.nousresearch.com/business",
-      "remaining": "未公开Business固定会员价格或分档；create-team入口可能需登录，不能假造Team/Pro。",
-      "verificationNote": "公开FAQ描述每团队一个中央余额，成员按管理员设置的spend caps消费；区别于客户基础设施上的Enterprise。",
-      "evidenceUrls": [
-        "https://portal.nousresearch.com/business"
-      ]
-    },
-    {
-      "researchFile": "ym-research-api-supplement.json",
-      "productId": "inception-mercury-chat",
-      "platformIds": [
-        "inception"
-      ],
-      "name": "Mercury Chat",
-      "status": "gap",
-      "applyReady": false,
-      "sourceUrl": "https://chat.inceptionlabs.ai/",
-      "remaining": "Chat页面读取遭403/429 Vercel安全检查；未取得公开会员目录或登录后订阅证据，不能判断无会员，也不能创建Free/Pro。",
-      "verificationNote": "官网与2026-10-19 Mercury3发布文直接链接Mercury Chat，产品身份确认。官网API模型价格及1亿新用户API tokens属于API渠道，不能替代Chat订阅事实。",
-      "evidenceUrls": [
-        "https://www.inceptionlabs.ai",
-        "https://www.inceptionlabs.ai/blog/introducing-mercury-3",
-        "https://chat.inceptionlabs.ai/"
-      ]
-    },
-    {
-      "researchFile": "ym-research-api-supplement.json",
-      "productId": "sakana-chat",
-      "platformIds": [
-        "sakana"
-      ],
-      "name": "Sakana Chat",
-      "status": "verified-free-service",
-      "applyReady": false,
-      "sourceUrl": "https://chat.sakana.ai/faq",
-      "remaining": "没有正式命名Free会员档；不自造档名。",
-      "verificationNote": "官方FAQ明确当前免费，并称未来改计费会预先通知；访客可发消息，注册可保存历史/提高限额，当前限日本。",
-      "evidenceUrls": [
-        "https://chat.sakana.ai/faq"
-      ]
-    },
-    {
-      "researchFile": "ym-research-api-supplement.json",
-      "productId": "sakana-namazu",
-      "platformIds": [
-        "sakana"
-      ],
-      "name": "Sakana Namazu",
-      "status": "verified-usage-only",
-      "applyReady": false,
-      "sourceUrl": "https://sakana.ai/namazu/",
-      "remaining": "Enterprise法人咨询无公开固定会员目录；不假造。",
-      "verificationNote": "官方定价明确无月费，仅按文本/图像token、搜索和代码执行计费；模型不是会员档。",
-      "evidenceUrls": [
-        "https://sakana.ai/namazu/"
-      ]
-    },
-    {
-      "researchFile": "ym-research-api-followup.json",
-      "productId": "ppio-token-plan",
-      "platformIds": [
-        "ppio"
-      ],
-      "name": "PPIO 企业 Token Plan",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://ppio.com/token-plan",
-      "remaining": "名称/周期/现价已闭环；厂商还有DeepSeek-畅享旧规格见独立待核项，不能称全厂商存量目录完整。",
-      "verificationNote": "当前官网HTML实际引用50798-20d1f5f61681cf85.js：固定三张显示名Enterprise Basic/Pro/Max，标注连续包月；其E函数从公开API只覆盖price/quota/tier，不覆盖显示name。公开GET资源规格API取回id4企业Token Plan，cycle-based、有效期1 month，底层tier Lite/Pro/Max；前端价格除1e4，当前1598/4798/13998元/月。套餐融合Token额度16亿/48亿/140亿。8月发布价1520/4560/13300已过时，不能继续当现价。加量套餐包id5有效3个月按扣减，为资源补充非会员。",
-      "evidenceUrls": [
-        "https://ppio.com/token-plan",
-        "https://ppio.com/_next/static/chunks/50798-20d1f5f61681cf85.js",
-        "https://ppio.com/_next/static/chunks/2226-f91168b7765cd5e4.js",
         "https://api-server.ppio.com/v1/product/resource-pack-specs/list"
       ]
     },
     {
-      "researchFile": "ym-research-api-followup.json",
-      "productId": "ucloud-astraflow",
-      "platformIds": [
-        "ucloud"
-      ],
-      "name": "UCloud AstraFlow 星图",
-      "status": "verified-usage-only",
-      "applyReady": false,
-      "sourceUrl": "https://www.ucloud.cn/site/active/astraflow",
-      "remaining": "公开自助API目录已闭环为按量；企业销售包年包月无正式档名/完整报价，FinClaw另留gap，因此全厂商不标complete。",
-      "verificationNote": "从官网当前导航RSC取得星图精确入口并直接读取完整HTML。产品导航、模型价格、接入步骤与FAQ均已读取。FAQ明确按Token用量、无最低消费、支持日结/月结；企业客户可销售专属折扣和包年包月方案但无公开命名档位。桌面客户端是集成OpenCode/ClaudeCode/Codex的本地工作台，不把模型名或基础设施规格作会员。",
-      "evidenceUrls": [
-        "https://www.ucloud.cn",
-        "https://www.ucloud.cn/site/active/astraflow",
-        "https://docs.ucloud.cn/modelverse/mdToPdf/modelverse.pdf"
+      "platformId": "minimax",
+      "name": "MiniMax",
+      "status": "specific_gap",
+      "remaining": "国内/国际M Plan及存量Token Plan、独立Design国内/国际三档均已核；海螺国内当前动态价格仍待核。",
+      "sourceUrls": [
+        "https://platform.minimaxi.com/docs/m-plan/intro",
+        "https://platform.minimax.io/docs/m-plan/intro",
+        "https://design.minimaxi.com/media-plan/subscribe",
+        "https://design.minimax.io/media-plan/subscribe"
       ]
     },
     {
-      "researchFile": "ym-research-api-followup.json",
-      "productId": "ucloud-finclaw",
-      "platformIds": [
-        "ucloud"
-      ],
-      "name": "UCloud FinClaw",
-      "status": "gap",
-      "applyReady": false,
-      "sourceUrl": "https://www.ucloud.cn/site/product/FinClaw.html",
-      "remaining": "公开产品页没有完整固定订阅目录；询价/登录后方案未知，保留gap；未发销售消息。",
-      "verificationNote": "从当前官网RSC导航解析精确链接FinClaw.html，产品正文描述AI工作台、研报/公告处理、监控、Docker本地沙盒及云端资源，只有立即咨询入口，无具体会员价格/正式分档。产品页侧重企业部署与支持，不能把功能段落当会员。",
-      "evidenceUrls": [
-        "https://www.ucloud.cn",
-        "https://www.ucloud.cn/site/product/FinClaw.html"
+      "platformId": "odyssey",
+      "name": "Odyssey",
+      "status": "specific_gap",
+      "remaining": "官网与Experience公开研究演示可读，未公开命名软件会员。Developer官方导航却导向既有账号入口，新用户须联系申请；API条款不提供完整公开套餐。保留真实准入屏障，不创建Free或Pro。",
+      "sourceUrls": [
+        "https://odyssey.systems/",
+        "https://developer.odyssey.ml/",
+        "https://odyssey.systems/legal/api-terms",
+        "https://experience.odyssey.systems/"
       ]
     },
     {
-      "researchFile": "ym-research-api-followup.json",
-      "productId": "moark",
-      "platformIds": [
-        "moark"
-      ],
-      "name": "模力方舟 MoArk / Gitee AI",
-      "status": "verified-usage-only",
-      "applyReady": false,
-      "sourceUrl": "https://ai.gitee.com/docs/billing/purchase",
-      "remaining": "当前公开产品/费用目录按量与资源包已闭环；组织/工作台登录后或未公开旧套餐仍未知，厂商完整性保留partial。",
-      "verificationNote": "从当前文档导航展开费用与账单，资源包介绍、购买说明、平台FAQ、应用市场收费策略、PocketClaw硬件指南已读取。API计费点为模型资源包与微调，资源包自定义金额；算力包周期属于机器租赁；应用订阅策略是第三方开发者变现能力；PocketClaw成本结构为硬件+API，不是公开固定软件会员。未发现正式平台Coding/Token固定订阅目录。",
-      "evidenceUrls": [
-        "https://ai.gitee.com",
-        "https://ai.gitee.com/docs/",
-        "https://ai.gitee.com/docs/billing/intro",
-        "https://ai.gitee.com/docs/billing/purchase",
-        "https://ai.gitee.com/docs/FAQ",
-        "https://ai.gitee.com/docs/appstore/price",
-        "https://ai.gitee.com/docs/pocketclaw"
+      "platformId": "zhipu",
+      "name": "智谱 Z.ai",
+      "status": "specific_gap",
+      "remaining": "ChatGLM真实只读POST /chatglm/payment-api/list_subjects 返回authorization is empty；AutoGLM当前脚本getPayProductInfo动态读取/agentpay/v1/assistant/product-info，具体正式名称不静态公开。需既有登录会话查看购买页面；不注册购买，不把AutoClaw目录混作AutoGLM。",
+      "sourceUrls": [
+        "https://docs.z.ai/devpack/overview",
+        "https://docs.bigmodel.cn/cn/coding-plan/overview",
+        "https://docs.bigmodel.cn/cn/coding-plan/notice/usage-revision",
+        "https://docs.z.ai/devpack/notice/usage-revision",
+        "https://docs.z.ai/devpack/transition",
+        "https://chatglm.cn/",
+        "https://chatglm.cn/pay/policy/vipservice",
+        "https://autoglm.zhipuai.cn/"
       ]
     },
     {
-      "researchFile": "ym-research-api-followup.json",
-      "productId": "siliconflow-tokenplus",
-      "platformIds": [
-        "siliconflow"
-      ],
-      "name": "TokenPlus 词元优选",
-      "status": "verified-usage-only",
-      "applyReady": false,
-      "sourceUrl": "https://www.tokenplus.cn/docs/terms",
-      "remaining": "公开目录已证实按量，登录后或非公开企业合同未知；无证据生成Free/Pro或充值会员等级。",
-      "verificationNote": "官网直链身份、首页、功能总览、账户管理、价格、充值、统一账单、FAQ、用户协议与更新日志已读取。费用管理导航只有充值/统一账单；充值支持10元快捷或自定义金额，按实际模型调用扣费，单笔充值10元激活团队邀请；个人/团队是账户使用方式而非订阅档位。月度账单是用量结算，并非固定月订阅。当前公开产品/费用目录未公布独立正式订阅。",
-      "evidenceUrls": [
-        "https://www.siliconflow.cn",
-        "https://www.tokenplus.cn",
-        "https://www.tokenplus.cn/docs/guides/overview",
-        "https://www.tokenplus.cn/docs/guides/account-management",
-        "https://www.tokenplus.cn/docs/guides/channel-model-prices",
-        "https://www.tokenplus.cn/docs/guides/recharge",
-        "https://www.tokenplus.cn/docs/guides/consolidated-billing",
-        "https://www.tokenplus.cn/docs/faq",
-        "https://www.tokenplus.cn/docs/terms",
-        "https://www.tokenplus.cn/docs/changelog"
+      "platformId": "reflection",
+      "name": "Reflection AI",
+      "status": "specific_gap",
+      "remaining": "当前公开导航不再有独立Mirror定价卡，不能沿旧产品名无限查；但平台登录是真屏障，Consumer条款明确有订阅或按量、价格在平台购买前展示，尚无法区分正式命名套餐，因此有具体blocked。",
+      "sourceUrls": [
+        "https://reflection.ai/",
+        "https://developers.reflection.ai/introduction",
+        "https://developers.reflection.ai/llms.txt",
+        "https://developers.reflection.ai/quickstart",
+        "https://platform.reflection.ai/",
+        "https://platform.reflection.ai/legal/terms",
+        "https://reflection.ai/legal/consumer-terms-of-service",
+        "https://reflection.ai/legal/commercial-terms-of-service"
       ]
     },
     {
-      "researchFile": "ym-research-api-followup.json",
-      "productId": "modelscope",
-      "platformIds": [
-        "modelscope"
-      ],
-      "name": "ModelScope 魔搭社区",
-      "status": "gap",
-      "applyReady": false,
-      "sourceUrl": "https://modelscope.cn/docs/magicube/intro",
-      "remaining": "魔粒当前完整计费/购买规则、Civision AI创作区和登录后权益目录未能取得正式订阅证据；不造Free/Pro，不标全厂商complete。",
-      "verificationNote": "已读当前首页/模型数据集创空间导航，官方魔粒体系发布及API-Inference入口、Terms入口。Jina可读当前平台导航但magicube/intro正文和Terms仍为客户端动态内容；不能用抓取失败当无会员结论。官方社区推荐将魔粒文章标为魔搭社区编辑部，积分体系不转换成会员档名。",
-      "evidenceUrls": [
-        "https://modelscope.cn",
-        "https://modelscope.cn/docs/magicube/intro",
-        "https://modelscope.cn/docs/model-service/API-Inference/intro",
-        "https://modelscope.cn/protocol/Terms-and-Condition",
-        "https://www.modelscope.cn/posts/435591",
-        "https://www.modelscope.cn/spotlight/community"
+      "platformId": "adobe-firefly",
+      "name": "Adobe Firefly",
+      "status": "specific_gap",
+      "remaining": "教育两项Single App名称映射、旧个人/企业AI Assistant与Plus关系、Standard Enterprise旧VIP、Stock个人3/25/40/750不含AI Studio旧档存续。",
+      "sourceUrls": [
+        "https://helpx.adobe.com/creative-cloud/apps/generative-ai/generative-credits-faq.html",
+        "https://www.adobe.com/express/pricing",
+        "https://www.adobe.com/products/substance3d/plans.html",
+        "https://www.adobe.com/acrobat/pricing.html",
+        "https://stock.adobe.com/uk/plans",
+        "https://stock.adobe.com/ca/teams",
+        "https://business.adobe.com/products/marketo/pricing.html",
+        "https://business.adobe.com/products/workfront/pricing.html",
+        "https://business.adobe.com/products/experience-manager/assets/pricing.html",
+        "https://business.adobe.com/products/journey-optimizer/pricing.html",
+        "https://business.adobe.com/products/adobe-analytics/pricing.html",
+        "https://helpx.adobe.com/tw/legal/product-descriptions/customer-journey-analytics.html",
+        "https://business.adobe.com/products/learning-manager/pricing.html",
+        "https://helpx.adobe.com/ie/legal/product-descriptions/adobe-target.html",
+        "https://helpx.adobe.com/legal/product-descriptions/real-time-customer-data-platform-b2b-edition-prime-and-ultimate-packages.html",
+        "https://helpx.adobe.com/ca/legal/product-descriptions/real-time-customer-data-platform-b2c-edition-prime-and-ultimate-packages.html",
+        "https://helpx.adobe.com/au/legal/product-descriptions/real-time-customer-data-platform-b2p-edition-prime-and-ultimate-packages.html",
+        "https://business.adobe.com/products/commerce/pricing.html"
       ]
     },
     {
-      "researchFile": "ym-research-api-followup.json",
-      "productId": "ppio-deepseek-changxiang-legacy-candidate",
-      "platformIds": [
-        "ppio"
-      ],
-      "name": "PPIO DeepSeek-畅享（公开API存量候选）",
-      "status": "gap",
-      "applyReady": false,
-      "sourceUrl": "https://api-server.ppio.com/v1/product/resource-pack-specs/list",
-      "remaining": "需现有官方入口/续费规则证明旧订阅仍有效；API保留规格本身不能证明在售或可续费，暂不入会员目录。",
-      "verificationNote": "当前公开API返回id1 DeepSeek-畅享，billingCycle cycle-based、1 month；Lite/Pro/Max的discountPrice/1e4为39/68/117元。当前企业页面M函数明确仅filter企业Token Plan与企业加量套餐包，故此旧规格未展示。"
-    },
-    {
-      "researchFile": "ym-research-cn-chat.json",
-      "productId": "moonshot-api",
-      "platformIds": [
-        "moonshot"
-      ],
-      "name": "Kimi API 开放平台",
-      "status": "verified-no-subscription",
-      "sourceUrl": "https://platform.moonshot.cn/docs/pricing/chat",
-      "remaining": "本结论仅覆盖开放平台按量API账户，Kimi聊天会员另列。",
-      "verificationNote": "官方模型推理定价明确Input/Output均实行按量计费，充值等级是速率限制等级，非软件会员。Kimi K3、K2.7 Code等为模型名。"
-    },
-    {
-      "researchFile": "ym-research-cn-chat.json",
-      "productId": "qwen-chat",
-      "platformIds": [
-        "qwen"
-      ],
-      "name": "千问 / Qwen 聊天",
-      "status": "gap",
-      "sourceUrl": "https://www.qianwen.com",
-      "remaining": "国内千问客户端及国际 https://chat.qwen.ai 聊天订阅入口尚需确认；国际Token Plan已另在qwencloud-token-plan完整核实。",
-      "verificationNote": "官网可读正文是助理申请/体验入口，没有会员完整目录；不能以此推断不存在订阅。"
-    },
-    {
-      "researchFile": "ym-research-cn-chat.json",
-      "productId": "tencent-hy-api",
-      "platformIds": [
-        "tencent-hy"
-      ],
-      "name": "腾讯混元 / TokenHub 按量 API",
-      "status": "verified-no-subscription",
-      "sourceUrl": "https://cloud.tencent.com/document/product/1823/130055",
-      "remaining": "腾讯元宝聊天会员未在本范围取得明确官方目录，不根据混元API目录断言元宝无会员。",
-      "verificationNote": "官方模型价格列按Token后付费；旧混元平台将停止新购并迁移TokenHub，已买服务仍可用。这些模型服务不等于会员；订阅Token Plan另列。"
-    },
-    {
-      "researchFile": "ym-research-cn-chat.json",
-      "productId": "longcat-api",
-      "platformIds": [
-        "meituan"
-      ],
-      "name": "LongCat 开放平台",
-      "status": "verified-no-subscription",
-      "sourceUrl": "https://longcat.ai/platform/docs/zh/api-pay-as-you-go",
-      "remaining": "LongCat聊天 https://longcat.chat/pricing 仅返回聊天壳，未取得完整订阅目录，不能宣称整个美团LongCat无会员。",
-      "verificationNote": "官方明确按实际Token计费，无固定套餐门槛，无需保底承诺。Token资源包是一次性固定额度、30天有效，与充值余额独立，不当订阅会员。"
-    },
-    {
-      "researchFile": "ym-research-cn-chat.json",
-      "productId": "baichuan-api",
-      "platformIds": [
-        "baichuan"
-      ],
-      "name": "百川开放平台",
-      "status": "verified-no-subscription",
-      "sourceUrl": "https://platform.baichuan-ai.com/prices",
-      "remaining": "百小应等聊天产品未取得现行正式会员目录；不能将开放平台按量结论外推整个厂商。",
-      "verificationNote": "官方完整价格页明确按照实际数据量（千tokens）收费；Baichuan-M3-Plus等是模型计费项，不是Plus会员。"
-    },
-    {
-      "researchFile": "ym-research-cn-creative.json",
-      "productId": "minimax-design-cn",
-      "platformIds": [
-        "minimax"
-      ],
-      "name": "MiniMax Design 国内版",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://design.minimaxi.com/media-plan/subscribe",
-      "remaining": "未找到明确仍有效旧Design套餐；不把官网新用户赠3000积分视为Free正式套餐。与海螺、MPlan不自动合并。",
-      "verificationNote": "官方完整价格页三档。月费65/499/1399元，年费624/4788/13428元；积分单购不是会员。官网企业通道是项目制作、私有部署和销售服务，并未公开独立命名会员。",
-      "sourceExcerpts": [
-        "订阅会员",
-        "对比套餐 | Starter | Plus | Pro 热门",
-        "月度积分 | 10,000 | 87,000 | 270,000"
-      ]
-    },
-    {
-      "researchFile": "ym-research-cn-creative.json",
-      "productId": "minimax-design-international",
-      "platformIds": [
-        "minimax"
-      ],
-      "name": "MiniMax Design 国际版",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://design.minimax.io/media-plan/subscribe",
-      "remaining": "未找到明确仍有效旧Design套餐；免费起步文案不等于正式Free档。与国内独立计价，不凭同品牌合并。",
-      "verificationNote": "官方完整三档；月费10.5/76/215美元，年费100.8/729.6/2064美元。企业销售为定制制作服务，未公开独立订阅名称。",
-      "sourceExcerpts": [
-        "MiniMax Design Membership",
-        "Compare plans | Starter | Plus | Pro Popular",
-        "Monthly Credits | 10,000 | 87,000 | 270,000"
-      ]
-    },
-    {
-      "researchFile": "ym-research-cn-creative.json",
-      "productId": "tapnow",
-      "platformIds": [
-        "tapnow"
-      ],
-      "name": "TapNow",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://app.tapnow.ai/pricing",
-      "remaining": "价格页有Enterprise标签但正文未展开其报价及具体命名，另留gap；未证实仍有效旧套餐或正式Free档。",
-      "verificationNote": "官方当前四张订阅卡完整列名。Pro、Ultimate、Max有积分量滑杆，不凭表格残留Unlimited字符串创建旧会员；卡片均自带最多100团队成员。充值、无限卡活动非另一个会员等级。",
-      "sourceExcerpts": [
-        "Select your plan",
-        "Basic — For getting started",
-        "Pro — MOST POPULAR",
-        "Ultimate — For high-volume production",
-        "Max — BEST VALUE",
-        "Up to 100 team members"
-      ]
-    },
-    {
-      "researchFile": "ym-research-cn-creative.json",
-      "productId": "tapnow-enterprise",
-      "platformIds": [
-        "tapnow"
-      ],
-      "name": "TapNow 企业方案",
-      "status": "gap",
-      "applyReady": false,
-      "sourceUrl": "https://app.tapnow.ai/pricing",
-      "remaining": "需浏览器展开Enterprise标签核对完整正式名称及合同方案；入口已精确定位。",
-      "verificationNote": "官方定价页提供Enterprise标签，当前HTTP正文仅见四档卡片，不能把标签猜成独立完整套餐。",
-      "sourceExcerpts": [
-        "Enterprise Enterprise"
-      ]
-    },
-    {
-      "researchFile": "ym-research-cn-creative.json",
-      "productId": "liblibai-creative",
-      "platformIds": [
-        "liblib"
-      ],
-      "name": "LiblibAI 创作会员",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://www.liblib.art/viphome",
-      "remaining": "团队会员另列gap；当前目录未给仍有效旧训练会员合同依据。不要依据同公司和共用登录合并LibTV。",
-      "verificationNote": "当前完整创作会员目录六个命名等级；高级版与至尊版可调积分量，表格展示9种额度，非9个命名等级。单独积分超市、模型专享积分均非会员。免费登录赠分不是已确认正式Free套餐名。",
-      "sourceExcerpts": [
-        "创作会员",
-        "每月生成数量 | 入门版 0.7k | 标准版 1.5k | 进阶版 4.6k | 高级版 11.7k | 高级版 16.3k | 豪华版 32.8k | 至尊版 50.5k | 至尊版 66k | 至尊版 92k",
-        "高级版会员可通过滑杆选择。"
-      ]
-    },
-    {
-      "researchFile": "ym-research-cn-creative.json",
-      "productId": "liblibai-team",
-      "platformIds": [
-        "liblib"
-      ],
-      "name": "LiblibAI 团队会员",
-      "status": "gap",
-      "applyReady": false,
-      "sourceUrl": "https://www.liblib.art/viphome",
-      "remaining": "需浏览器点击团队会员，核对其正式命名、席位和是否独立多档；不将企业采购自动视为新会员。",
-      "verificationNote": "官方当前目录明确有团队会员切换入口，但带tab=team的HTTP阅读仍返回创作会员卡。",
-      "sourceExcerpts": [
-        "创作会员",
-        "团队会员",
-        "企业采购"
-      ]
-    },
-    {
-      "researchFile": "ym-research-cn-creative.json",
-      "productId": "libtv",
-      "platformIds": [
-        "liblib"
-      ],
-      "name": "LibTV",
-      "status": "gap",
-      "applyReady": false,
-      "sourceUrl": "https://www.liblib.tv/",
-      "remaining": "需通过会员中心弹窗核对LibTV完整卡片及与LiblibAI会员/积分的明确共享条款；/viphome本身404。原始SSR/公开脚本已存证。",
-      "verificationNote": "官方SSR仅能确认会员中心及团队功能存在；官方JS/SSR有LiblibAI身份守卫，但没有完整共享订阅条款。LiblibAI的六档不能直接复制成LibTV独立会员，也不能自动合并。",
-      "sourceExcerpts": [
-        "会员中心",
-        "您已经是LiblibAI会员了，不能继续加入团队会员",
-        "升级团队版解锁更多协作能力"
-      ]
-    },
-    {
-      "researchFile": "ym-research-cn-creative.json",
-      "productId": "hailuo-cn",
-      "platformIds": [
-        "hailuo"
-      ],
-      "name": "海螺视频 国内版",
-      "status": "partial",
-      "applyReady": false,
-      "sourceUrl": "https://hailuoai.com/",
-      "remaining": "FAQ仍引用Hailuo01/02且可能滞后于首页H3，五档名称有官方原文但当前购买卡未展开。建议浏览器会员弹窗复核是否新增第六档及存量Unlimited合同；暂不凭旧国际语言包或媒体保留旧国内Unlimited。",
-      "verificationNote": "当前官方首页HTTP SSR内完整video_faq_answer_1原文明确五档；Jina正文省略了FAQ，故从同URL公开SSR提取完整文本，文件hailuo-cn-plans-original.txt。与国际海螺六档不同；单次贝壳购买不列会员。",
-      "sourceExcerpts": [
-        "我们提供五种会员套餐：基础、标准、大师、至臻、尊享，以及贝壳按需购买，满足不同创作需求。",
-        "如果您不是付费用户，仅购买贝壳并不会享有会员权益（包括快速通道和无水印等）"
-      ]
-    },
-    {
-      "researchFile": "ym-research-cn-remaining.json",
-      "productId": "trae-cn",
-      "platformIds": [
-        "trae"
-      ],
-      "name": "TRAE 国内个人版",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://docs.trae.cn/ide_plans-and-billing",
-      "remaining": "国内官网地域403，但官方文档完整可读；旧速通迁移前是否仍可持有原名需要控制台确认，不据迁移赠分说明推定。",
-      "verificationNote": "当前官方完整四付费档+免费模式。Lite/Pro/Pro+/Ultra单月49/99/239/699元。Express为官方明确继续服务的存量套餐；不把原速通Pro/Pro+/Ultra重造仍可续费旧档。",
-      "sourceExcerpts": [
-        "套餐总览：会员 Lite | 会员 Pro | 会员 Pro+ | 会员 Ultra",
-        "如果原“优速通 Express”套餐仍在有效期内，系统会自动将其切换为新的“会员 Express”套餐。该套餐不再开放购买，并将在所有存量套餐到期后下架。"
-      ]
-    },
-    {
-      "researchFile": "ym-research-cn-remaining.json",
-      "productId": "trae-cn-enterprise",
-      "platformIds": [
-        "trae"
-      ],
-      "name": "TRAE 国内企业版",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://docs.trae.cn/enterprise_billing-overview-for-trae-enterprise",
-      "remaining": "未找到官方明确仍有效旧企业合同档；不把Work专属账号赠送权益列作套餐。",
-      "verificationNote": "团队149元/席/月1席起；旗舰259元/席/月3席起。教育版为销售报价的独立许可，1席起，并非团队版折扣。教育版专属来源https://docs.trae.cn/enterprise_education-edition。",
-      "sourceExcerpts": [
-        "TRAE 企业版提供团队版和旗舰版两种套餐",
-        "TRAE 教育版面向院校、教育主管单位及教育与科研机构",
-        "教育版不支持升级到团队版或旗舰版。"
-      ]
-    },
-    {
-      "researchFile": "ym-research-cn-remaining.json",
-      "productId": "trae-byteplus-enterprise",
-      "platformIds": [
-        "trae"
-      ],
-      "name": "TRAE BytePlus 企业版",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://docs.byteplus.com/en/docs/trae/trae-enterprise-plans",
-      "remaining": "未取得仍有效旧企业合同目录；当前官方页无其他命名等级。",
-      "verificationNote": "当前BytePlus官方完整目录仅Teams，40美元/席/月，1席起；不沿用国内旗舰/教育档，也不重复已有国际个人套餐。",
-      "sourceExcerpts": [
-        "Currently, TRAE Enterprise offers the Teams plan. Details are as follows:",
-        "Monthly price 40 USD/seat/month",
-        "Minimum number of seats 1"
-      ]
-    },
-    {
-      "researchFile": "ym-research-cn-remaining.json",
-      "productId": "coze-international",
-      "platformIds": [
-        "coze"
-      ],
-      "name": "Coze 国际版",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://www.coze.com/premium",
-      "remaining": "无官方明确仍有效旧国际订阅名称；不复制国内12档。",
-      "verificationNote": "官方现行价格页和完整订阅帮助双源确认四档，付费9/19/39美元/月，团队协作人数为各档权益而非另一个Team会员。积分/Coze Tokens按量资源另行购买不列套餐。帮助https://docs.coze.com/guides/subscription明确取消后保留至当前账期结束。",
-      "sourceExcerpts": [
-        "Free 0 USD / month 10 credits/day",
-        "Premium Lite",
-        "Premium",
-        "Premium Plus 39 USD / month 1000 credits/day",
-        "Coze subscription services include Premium Lite, Premium, and Premium Plus."
-      ]
-    },
-    {
-      "researchFile": "ym-research-cn-remaining.json",
-      "productId": "chatglm",
-      "platformIds": [
-        "bigmodel"
-      ],
-      "name": "智谱清言 / ChatGLM",
-      "status": "partial",
-      "applyReady": false,
-      "sourceUrl": "https://chatglm.cn/",
-      "remaining": "需登录会员页复核VIP/SVIP是否均当前在售以及企业或旧合同说明；仅官方发布脚本中的静态卡名称，不作为完整在售目录。",
-      "verificationNote": "官网当前公开主脚本https://chatglm.cn/main.c6ea4223.js的完整订阅卡数组明确免费/VIP/SVIP。付费协议https://chatglm.cn/pay/policy/vipservice确认会员与积分包为不同服务。匿名list_subjects只读目录请求返回authorization is empty，不能以此断言无会员。",
-      "sourceExcerpts": [
-        "title:\"免费版\",price:\"0\",desc:\"体验清言丰富的AI能力\",buttonText:\"无需订阅\"",
-        "Aw(\"vip\",\"VIP会员\",Aa.value.vip||[])",
-        "Aw(\"svip\",\"SVIP会员\",Aa.value.svip||[])"
-      ]
-    },
-    {
-      "researchFile": "ym-research-cn-remaining.json",
-      "productId": "autoglm",
-      "platformIds": [
-        "bigmodel"
-      ],
-      "name": "AutoGLM",
-      "status": "gap",
-      "applyReady": false,
-      "sourceUrl": "https://autoglm.zhipuai.cn/",
-      "remaining": "需登录官网充值/订阅弹窗完整目录；AutoClaw是另一产品，不能用AutoClaw的Lite/Base/Pro/Max替代AutoGLM，也不重复Coding Plan。",
-      "verificationNote": "公开官网脚本https://autoglm.zhipuai.cn/assets/index-pkH3_VD6.js确认有订阅会员、加油包两种不同付费商品，具体产品名由product-info动态返回；没有读取账户或凭据。BigModel旧AutoGLM-OpenClaw活动2026-04-10已关闭，不当存量会员。",
-      "sourceExcerpts": [
-        "订阅会员套餐：有效期为一个自然月，到期后剩余积分会过期。",
-        "购买会员权益开通或积分包购买后，通常不支持退款。"
-      ]
-    },
-    {
-      "researchFile": "ym-research-cn-remaining.json",
-      "productId": "seko",
-      "platformIds": [
-        "sensetime"
-      ],
-      "name": "Seko 个人版与企业定制",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://seko.sensetime.com/pricing",
-      "remaining": "团队版标签另需核实，见独立gap；免费登录积分未确认正式免费会员名；没有明确仍有效旧合同证据。",
-      "verificationNote": "官方价格页HTTP SSR完整四张卡；Jina只显示前三张，企业会员已从同源SSR正文提取。个人积分商品不是会员。",
-      "sourceExcerpts": [
-        "订阅 Seko 畅享更多权益",
-        "标准会员 — 适合首次探索AI视频创作",
-        "高级会员 — 适合高频内容创作",
-        "至尊会员 — 适合专业级大规模制作",
-        "企业会员 — 适合更大规模与精细化管理的企业团队 — 定制报价"
-      ]
-    },
-    {
-      "researchFile": "ym-research-cn-remaining.json",
-      "productId": "seko-team",
-      "platformIds": [
-        "sensetime"
-      ],
-      "name": "Seko 团队版",
-      "status": "gap",
-      "applyReady": false,
-      "sourceUrl": "https://seko.sensetime.com/pricing",
-      "remaining": "需浏览器点团队版。候选团队标准/高级/至尊，另有CUSTOM_XS代码，完整层级不能猜；未默认并入企业定制。",
-      "verificationNote": "当前SSR语言配置包含团队标准/高级/至尊等名称和团队续费说明，但这只是客户端配置，并未取得当前完整团队销售卡，不能作为正式在售目录。",
-      "sourceExcerpts": [
-        "团队版",
-        "planLevels: CUSTOM_S — 团队至尊会员; CUSTOM_A — 团队高级会员; CUSTOM_B — 团队标准会员"
-      ]
-    },
-    {
-      "researchFile": "ym-research-cn-remaining.json",
-      "productId": "raccoon-fin",
-      "platformIds": [
-        "raccoon"
-      ],
-      "name": "商汤小浣熊 · 金融版",
-      "status": "verified-product-gap",
-      "applyReady": false,
-      "sourceUrl": "https://xiaohuanxiong.com/products/fin",
-      "remaining": "行业产品名称不等于订阅等级；需销售合同/公开许可目录才能确认可选择档位，不能复制通用小浣熊四档或自造行业定制会员。",
-      "verificationNote": "当前官方行业产品页确认独立行业方案，页面指向企业咨询/立即体验通用工作台，没有列行业专属命名会员或许可证档位。",
-      "sourceExcerpts": [
-        "商汤小浣熊 · 金融版"
-      ]
-    },
-    {
-      "researchFile": "ym-research-cn-remaining.json",
-      "productId": "raccoon-edu",
-      "platformIds": [
-        "raccoon"
-      ],
-      "name": "商汤小浣熊 · 教育版",
-      "status": "verified-product-gap",
-      "applyReady": false,
-      "sourceUrl": "https://xiaohuanxiong.com/products/edu",
-      "remaining": "行业产品名称不等于订阅等级；需销售合同/公开许可目录才能确认可选择档位，不能复制通用小浣熊四档或自造行业定制会员。",
-      "verificationNote": "当前官方行业产品页确认独立行业方案，页面指向企业咨询/立即体验通用工作台，没有列行业专属命名会员或许可证档位。",
-      "sourceExcerpts": [
-        "商汤小浣熊 · 教育版"
-      ]
-    },
-    {
-      "researchFile": "ym-research-cn-remaining.json",
-      "productId": "raccoon-ge",
-      "platformIds": [
-        "raccoon"
-      ],
-      "name": "商汤小浣熊 · 政数版",
-      "status": "verified-product-gap",
-      "applyReady": false,
-      "sourceUrl": "https://xiaohuanxiong.com/products/ge",
-      "remaining": "行业产品名称不等于订阅等级；需销售合同/公开许可目录才能确认可选择档位，不能复制通用小浣熊四档或自造行业定制会员。",
-      "verificationNote": "当前官方行业产品页确认独立行业方案，页面指向企业咨询/立即体验通用工作台，没有列行业专属命名会员或许可证档位。",
-      "sourceExcerpts": [
-        "商汤小浣熊 · 政数版"
-      ]
-    },
-    {
-      "researchFile": "ym-research-cn-consumer.json",
-      "productId": "qwen-chat-cn",
-      "platformIds": [
-        "qwen"
-      ],
-      "name": "千问 国内聊天",
-      "status": "gap",
-      "applyReady": false,
-      "sourceUrl": "https://www.qianwen.com",
-      "remaining": "需当前登录设置/会员页目录。未取得无付费会员的官方声明，不标无会员，也不自造Free。",
-      "verificationNote": "首页公开正文只有GO限量免费体验、工作助理和输入法等入口，没有完整聊天会员目录；不能把Token Plan、千问办公或Qwen3.8-Max模型名移作聊天会员。",
-      "sourceExcerpts": [
-        "千问GO来了！你的个人专属助理，限量免费体验，立即申请"
-      ]
-    },
-    {
-      "researchFile": "ym-research-cn-consumer.json",
-      "productId": "qwen-chat-international",
-      "platformIds": [
-        "qwen"
-      ],
-      "name": "Qwen / Qwen Studio 国际聊天",
-      "status": "partial",
-      "applyReady": false,
-      "sourceUrl": "https://qwen.ai/qwenchat",
-      "remaining": "需登录Chat设置/订阅页面或其官方公开套餐API；聊天不可与已核国际Token Plan合并。",
-      "verificationNote": "官方产品介绍明确可免费使用，但free to use不等于全产品没有付费档。当前chat.qwen.ai登录壳与直接HTTP安全挑战未给完整会员入口；近期新增订阅线索未能取得官方当前目录，不能凭旧免费声明结案。",
-      "sourceExcerpts": [
-        "Qwen is an AI assistant for everyone, powered by the Qwen series models. It’s free to use, open to all"
-      ]
-    },
-    {
-      "researchFile": "ym-research-cn-consumer.json",
-      "productId": "tencent-yuanbao",
-      "platformIds": [
-        "tencent-hy"
-      ],
-      "name": "腾讯元宝",
-      "status": "gap",
-      "applyReady": false,
-      "sourceUrl": "https://yuanbao.tencent.com/",
-      "remaining": "未取得明确无订阅的官方依据。需登录用户中心/客户端会员入口核实，不能凭API按量结论外推元宝。",
-      "verificationNote": "官网导航、登录壳、当前公开主脚本及用户协议https://rule.tencent.com/rule/202403110001均未提供正式命名订阅目录。协议里免费的内容授权不等于免费套餐声明。",
-      "sourceExcerpts": [
-        "元宝用户服务协议",
-        "本服务的内容和功能可能会根据您所使用的终端型号、操作系统等的不同而有所不同或变化。"
-      ]
-    },
-    {
-      "researchFile": "ym-research-cn-consumer.json",
-      "productId": "baichuan-chat",
-      "platformIds": [
-        "baichuan"
-      ],
-      "name": "百川聊天 / 百小应 / 百小医",
-      "status": "gap",
-      "applyReady": false,
-      "sourceUrl": "https://ying.baichuan-ai.com/chat",
-      "remaining": "需要在现行百小医/百小应产品客户端检查会员、医疗付费服务是否正式软件订阅；不凭旧工具站免费价格新造Free。",
-      "verificationNote": "百川官网当前推广百小医，同一历史百小应网页入口现在返回百小医。身份变更、登录或挑战页都不证明无会员；百川API模型计费不等于聊天会员。官方当前用户协议https://www.baichuan-ai.com/article/user-agreement未列命名档位。",
-      "sourceExcerpts": [
-        "百川官网：百小医 你的AI家庭医生",
-        "百小应隐私政策：本产品包括网页https://ying.baichuan-ai.com/chat"
-      ]
-    },
-    {
-      "researchFile": "ym-research-cn-consumer.json",
-      "productId": "longcat-chat",
-      "platformIds": [
-        "meituan"
-      ],
-      "name": "LongCat 聊天",
-      "status": "gap",
-      "applyReady": false,
-      "sourceUrl": "https://longcat.chat/",
-      "remaining": "需登录设置/客户端确认是否现行付费套餐，并取得有效协议路径。LongCat API无固定套餐门槛和一次性Token包已在别处记录，不外推聊天。",
-      "verificationNote": "当前公开主页和其公开脚本仅确认聊天功能与每日体验计数；未见正式会员档名。官方服务协议搜索索引说明账号与API边界，但旧/docs入口已404；不能据抓取失败判断无订阅。",
-      "sourceExcerpts": [
-        "Start New Chat; Download App; Log In; API Platform",
-        "每日体验次数：{count}"
-      ]
-    },
-    {
-      "researchFile": "ym-research-cn-consumer.json",
-      "productId": "wps-office-ai-personal",
-      "platformIds": [
-        "wps"
-      ],
-      "name": "WPS Office 国内个人会员",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://vip.wps.cn/price",
-      "remaining": "旧WPS AI会员和超级会员Pro仅在通用脚本sku映射出现，当前价格完整卡不包含；尚无官方明确仍有效旧合同或续费说明，暂不作为legacyPlan。",
-      "verificationNote": "当前官方价格页三张完整卡，付费128/268元每年。名称以该页当前公开price脚本https://personal-act.wpscdn.cn/operations-fe/vip-v3/js/s-1.aa60d0a98a992a06ac69.js核实。注册用户为官方实际命名基础档，可免费用部分AI；超级和大会员均有AI权益，非仅普通办公产品。与灵犀四档保持独立。",
-      "sourceExcerpts": [
-        "选择适合你的会员方案",
-        "key:\"register\",title:\"注册用户\"",
-        "key:\"vip_pro\",title:\"WPS超级会员\"",
-        "key:\"vip_365\",title:\"WPS大会员\"",
-        "isPurchasable: \"vip_365\" === this.card.key || \"vip_pro\" === this.card.key"
-      ]
-    },
-    {
-      "researchFile": "ym-research-cn-consumer.json",
-      "productId": "wps-ai-standalone",
-      "platformIds": [
-        "wps"
-      ],
-      "name": "WPS AI 独立会员（待核）",
-      "status": "gap",
-      "applyReady": false,
-      "sourceUrl": "https://ai.wps.cn/",
-      "remaining": "需WPS AI入口中的当前购买页/客户端合同核实独立AI会员是否在售及旧合同继续生效情况。",
-      "verificationNote": "公共sku映射证明名称被支持，但当前完整官方个人价格卡仅注册用户/超级/大会员，不能把映射当现行独立在售或仍有效旧套餐。2024社区用户讨论不用于当前目录。",
-      "sourceExcerpts": [
-        "当前会员公共脚本映射vip_ai:\"WPS AI会员\""
-      ]
-    },
-    {
-      "researchFile": "ym-research-cn-consumer.json",
-      "productId": "wps365-smart",
-      "platformIds": [
-        "wps"
-      ],
-      "name": "WPS 365 国内智能版",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://365.wps.cn/price",
-      "remaining": "当前HTML默认商业标签，智能页定价由公开当前脚本核实；无已证实旧合同。",
-      "verificationNote": "官方价目页导航完整列智能版两档；当前公开价格数据脚本https://qn.cache.wpscdn.cn/encs/plus/be8bc29.js列实际套餐对象、year价格和询价入口。非将商业版改名。",
-      "sourceExcerpts": [
-        "当前官网导航：WPS 365 智能高级版；WPS 365 智能旗舰版",
-        "name:\"wps365_smart_advanced\",name_zh:\"WPS 365 智能高级版\",pricing_price:\"1199\"",
-        "name:\"wps365_smart_flagship\",name_zh:\"WPS 365 智能旗舰版\",pricing_price:\"2399\""
-      ]
-    },
-    {
-      "researchFile": "ym-research-cn-consumer.json",
-      "productId": "wps365-ai-package",
-      "platformIds": [
-        "wps"
-      ],
-      "name": "WPS 365 AI 智点年度方案",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://365.wps.cn/ai_price",
-      "remaining": "需要更多智点或定制方案是咨询选项，不另造第四会员；与WPS灵犀、WPS365席位档分别记录。",
-      "verificationNote": "年度方案除了共享智点，还授予WPS Comate/企业AI知识库/专家/Skill/连接器等权限，高级与旗舰额外Studio、API Hub、Data Hub和安全管理；因此不是只充余额的单次资源包，按有功能授权的AI年度许可记录。",
-      "sourceExcerpts": [
-        "WPS 365 AI 智点基础包 ¥9800/年",
-        "WPS 365 AI 智点高级包 ¥9.8万/年",
-        "WPS 365 AI 智点旗舰包 联系销售",
-        "企业购买WPS 365 AI 智点基础包、高级包或旗舰包后，可获得对应的智点及AI使用权益。"
-      ]
-    },
-    {
-      "researchFile": "ym-research-creative-supplement.json",
-      "productId": "pixverse",
-      "platformIds": [
-        "pixverse"
-      ],
-      "name": "PixVerse",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://app.pixverse.ai/subscribe",
-      "remaining": "独立API订阅目录尚未核完：官方Subscribe API plans明确存在API memberships、Subscribe和Enterprise Custom Plans；Billing匿名HTTP落地营销页，未读到具体自助档名。不能宣称只有API充值或无API订阅。",
-      "additionalSources": [
-        {
-          "sourceUrl": "https://docs.platform.pixverse.ai/subscribe-api-plans-882969m0",
-          "quote": "API memberships are separate from PixVerse Web"
-        },
-        {
-          "sourceUrl": "https://platform.pixverse.ai/billing",
-          "observation": "匿名HTTP仅营销内容，未显示Billing目录"
-        },
-        {
-          "sourceUrl": "https://docs.platform.pixverse.ai/pixverse-api-pricing-2394995m0",
-          "observation": "模型按Credits/second或request计费，不能由此推断没有订阅"
-        }
-      ]
-    },
-    {
-      "researchFile": "ym-research-creative-supplement.json",
-      "productId": "luma-ai",
-      "platformIds": [
-        "luma"
-      ],
-      "name": "Luma Agents",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://lumalabs.ai/pricing",
-      "remaining": "Agents目录维持原五档；独立Dream Machine官方帮助页仍列Free/Lite/Plus/Unlimited/Enterprise，但页面2026-01-25更新，当前Agents迁移关系未完全说明，不能将Plus或Enterprise跨产品合并。"
-    },
-    {
-      "researchFile": "ym-research-creative-supplement.json",
-      "productId": "oiioii",
-      "platformIds": [
-        "oiioii"
-      ],
-      "name": "OiiOii",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://www.oiioii.ai/price",
-      "remaining": "中文/zh/price仅抽取个人四档季付及FAQ，不能据此确认独立国内账号和企业合同月度周期；旧名称迁移尚无官方完整说明。",
-      "verificationNote": "英文price明确个人四档与团队四档及企业定制标签；Enterprise是正式企业栏目，价格与合同周期需咨询。中文本地化页面仍用BASE/STAR/PRO/APEX并以美元展示，不拆为新产品。"
-    },
-    {
-      "researchFile": "ym-research-creative-supplement.json",
-      "productId": "pollo-ai",
-      "platformIds": [
-        "pollo"
-      ],
-      "name": "Pollo AI",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://pollo.ai/pricing",
-      "remaining": "API官方明确充值按量，不增API套餐；Web当前四档沿用。完整旧迁移/企业订阅声明未找到，不能仅凭搜索无结果结案。",
-      "additionalSources": [
-        {
-          "sourceUrl": "https://api.pollo.ai/pricing",
-          "quote": "Top Up; Add funds to your account"
-        },
-        {
-          "sourceUrl": "https://api.pollo.ai/",
-          "quote": "Pay-as-you-go."
-        }
-      ]
-    },
-    {
-      "researchFile": "ym-research-creative-supplement.json",
-      "productId": "higgsfield",
-      "platformIds": [
-        "higgsfield"
-      ],
+      "platformId": "higgsfield",
       "name": "Higgsfield",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://higgsfield.ai/pricing",
-      "remaining": "当前主pricing被HTTP403挡住；官方/create/video/select搜索索引可见Max正式价格卡，说明Max不只geo内容，建议补Max；Ultimate/Creator及原Basic/Pro/B2B续费有效性/迁移仍无闭环。API console未取得独立正式订阅目录，不能宣称无。",
-      "additionalSources": [
-        {
-          "sourceUrl": "https://higgsfield.ai/creator-hub/help-center/plans/how-do-higgsfield-plans-work",
-          "quote": "business (Team, Scale, and Enterprise)"
-        },
-        {
-          "sourceUrl": "https://higgsfield.ai/create/video/select?for=motion&model=seedance1_5",
-          "quote": "Max; $79$59 per month, billed annually",
-          "observation": "主站正式应用选模页公开索引，非geo文章；需主pricing再核当前在售"
-        }
-      ],
-      "supplementalVerifiedPlans": [
-        "Max"
+      "status": "specific_gap",
+      "remaining": "Max/B2B具体旧合同当前续订或迁移映射仍缺官方说明；Ultimate/Creator仅geo生成信息不作为真实会员。",
+      "sourceUrls": [
+        "https://higgsfield.ai/pricing",
+        "https://higgsfield.ai/blog/new-unlimited-more-models",
+        "https://higgsfield.ai/create/video/select?for=motion&model=seedance1_5",
+        "https://higgsfield.ai/creator-hub/changelog"
       ]
     },
     {
-      "researchFile": "ym-research-creative-supplement.json",
-      "productId": "leonardo-solo",
-      "platformIds": [
-        "leonardo"
-      ],
+      "platformId": "instinct",
+      "name": "Instinct（Spear Street Technology）",
+      "status": "specific_gap",
+      "remaining": "身份已确认，官网只有Text Instinct进入登录，无公开价格表；Terms明确付费功能费用可能存在但不列套餐名。属于具体登录屏障，不能用其他同名Instinct网站价格代替。",
+      "sourceUrls": [
+        "https://instinct.com/",
+        "https://app.instinct.com/login",
+        "https://instinct.com/terms"
+      ]
+    },
+    {
+      "platformId": "leonardo",
       "name": "Leonardo.Ai",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://leonardo.ai/pricing",
-      "remaining": "当前四档不变；尚无可靠英文官方迁移条款证明Apprentice/Artisan/Maestro仍有效或已自动改名，不能沿用旧翻译创建存量档。另有独立API订阅四档须补。",
-      "verificationNote": "当前英文价格页；不根据未更新译文推断Apprentice/Artisan/Maestro仍在售或自动对应。"
-    },
-    {
-      "researchFile": "ym-research-creative-supplement.json",
-      "productId": "leonardo-teams",
-      "platformIds": [
-        "leonardo"
-      ],
-      "name": "Leonardo.Ai for Teams",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://leonardo.ai/pricing",
-      "remaining": "当前Teams Starter/Growth/Custom沿用；独立API订阅须另列，旧名称迁移未闭环。",
-      "verificationNote": "官网明确Starter/Growth及custom plan。API按量和充值是独立计费，不重复建订阅。"
-    },
-    {
-      "researchFile": "ym-research-creative-supplement.json",
-      "productId": "tripo-studio",
-      "platformIds": [
-        "tripo"
-      ],
-      "name": "Tripo Studio",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://www.tripo3d.ai/pricing",
-      "remaining": "2026年10月官方Pricing & Credits文档列Free/Starter/Professional/Max/Team，Starter $5/月；当前/pricing实际仍列Free/Pro/Max/Team。Starter可作为官方已声明档位补录，但Professional是否Pro同名或待发布改名没有明确对应，禁止双建Pro/Professional。企业API明确预付按量，不建充值档；Studio Enterprise合同是否独立月度订阅仍需确认。",
-      "verificationNote": "当前Studio四档；API及Enterprise渠道仍需独立核查。",
-      "additionalSources": [
-        {
-          "sourceUrl": "https://www.tripo3d.ai/product-doc/getting-started/pricing-credits",
-          "quote": "Tripo Studio offers Free, Starter, Professional, Max, and Team plans."
-        },
-        {
-          "sourceUrl": "https://docs.tripo3d.ai/get-started/pricing.html",
-          "quote": "pay-before-you-go product"
-        },
-        {
-          "sourceUrl": "https://docs.tripo3d.ai/other/support-faq.html",
-          "observation": "enterprise API仅volume discounts，不证明独立月度会员"
-        }
-      ],
-      "supplementalVerifiedPlans": [
-        "Starter"
+      "status": "specific_gap",
+      "remaining": "Apprentice/Artisan/Maestro明确旧名称线索仍存在官方非英文旧帮助页；没有找到官方英文映射/停售/继续续费条款。第三方普遍声称改名不足以自动迁移用户或双建存量。pricing本轮403，API旧四档与当前PAYG是否并存仍需当前API购买页。",
+      "sourceUrls": [
+        "https://leonardo.ai/pricing",
+        "https://intercom.help/leonardo-ai/en/articles/9698289-leonardo-phoenix-leonardo-ai-s-foundational-model",
+        "https://intercom.help/leonardo-ai/es/articles/8044033-uso-de-los-tokens",
+        "https://intercom.help/leonardo-ai/en/articles/13755076-how-do-i-subscribe-to-a-paid-plan-change-or-upgrade-my-subscription"
       ]
     },
     {
-      "researchFile": "ym-research-creative-supplement.json",
-      "productId": "vidu-global",
-      "platformIds": [
-        "vidu"
-      ],
-      "name": "Vidu（国际版）",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://www.vidu.com/pricing",
-      "remaining": "国内www.vidu.cn/pricing HTTP仅页脚且提示隐藏shadow DOM，未读实际会员；国内首页明确个人版和企业版。国内API五个充值包有效期一年属预付积分，不作订阅档；企业月度方案未取得合同，国际团队/企业及旧迁移亦待补。",
-      "verificationNote": "真实浏览器读动态卡片；Ultimate可调整积分数量，同一档位不按积分滑块重复建套餐。国内版与企业/API入口继续核对。",
-      "additionalSources": [
-        {
-          "sourceUrl": "https://www.vidu.cn/",
-          "quote": "个人版助力独立创作，企业版赋能团队高效协同"
-        },
-        {
-          "sourceUrl": "https://www.vidu.cn/pricing",
-          "observation": "HTTP/Jina仅页脚，shadow DOM hidden"
-        },
-        {
-          "sourceUrl": "https://platform.vidu.cn/docs/overview/pricing",
-          "observation": "API充值500/1000/2000/5000/20000元，有效期一年；按量积分，不作会员档"
-        }
+      "platformId": "luma",
+      "name": "Luma AI",
+      "status": "specific_gap",
+      "remaining": "当前Agents五档沿用已核pricing，API按量可排除；旧Dream Machine五档是否仍可续费及与Agents关系有明确官方冲突，需真实订阅管理页核验。",
+      "sourceUrls": [
+        "https://lumalabs.ai/pricing"
       ]
     },
     {
-      "researchFile": "ym-research-creative-supplement.json",
-      "productId": "leonardo-api",
-      "platformIds": [
-        "leonardo"
-      ],
-      "name": "Leonardo API",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://intercom.help/leonardo-ai/en/articles/9698289-leonardo-phoenix-leonardo-ai-s-foundational-model",
-      "remaining": "官网/api HTTP403；现行月度价格/付费周期与存量迁移未闭环。目录四档可录，不能填写未经核实的价格。",
-      "verificationNote": "官方Phoenix FAQ列明全部四个API Plan，独立API发票帮助明确称subscription；不因API按量单价而忽略正式API订阅。",
-      "additionalSources": [
-        {
-          "sourceUrl": "https://intercom.help/leonardo-ai/en/articles/9698274-how-to-get-your-invoices-for-api-subscription",
-          "quote": "For our API plans, Leonardo.Ai uses Paddle"
-        }
+      "platformId": "hailuo",
+      "name": "MiniMax 海螺 AI",
+      "status": "specific_gap",
+      "remaining": "国内/subscribe HTTP/Jina返回首页或仅导航，未取得套餐卡；国内/doc/payment-policy.html返回国际英文2025旧条款，不能作为国内套餐证据。国内/国际与MiniMax Code/Design是否共享权益未见明确；统一登录不等于会员共享。",
+      "sourceUrls": [
+        "https://hailuoai.video/doc/payment-policy.html",
+        "https://hailuoai.com/subscribe",
+        "https://minimaxi.com/terms-of-service-v2-cn.html?show=platform%2Cagent%2Cvideo",
+        "https://platform.minimaxi.com/subscribe/coding-plan",
+        "https://hailuoai.com/"
       ]
     },
     {
-      "researchFile": "ym-research-creative-supplement.json",
-      "productId": "luma-dream-machine",
-      "platformIds": [
-        "luma"
-      ],
-      "name": "Luma Dream Machine",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://lumalabs.ai/learning-hub/payments-subscriptions",
-      "remaining": "需核查当前Dream Machine登录后订阅与Agents迁移是否仍并行；官方旧帮助页可作为明确存量目录依据，但不足全厂商闭环。",
-      "verificationNote": "官方帮助页2026-01-25更新，Web/iOS为同档不同价格，不新增iOS档；API credits独立，旧generations系统已迁至相应credits，不凭空造旧Standard/Premier。"
+      "platformId": "pixverse",
+      "name": "PixVerse",
+      "status": "specific_gap",
+      "remaining": "Web六档维持；独立API正式档名从旧官方目录搜索索引找全，但旧文档实时404，当前API Billing匿名页未显示，不能确认仍续费或已停用。",
+      "sourceUrls": [
+        "https://app.pixverse.ai/subscribe"
+      ]
     },
     {
-      "researchFile": "ym-research-cloud-supplement.json",
-      "productId": "baidu-comate-personal",
-      "platformIds": [
-        "baidu"
-      ],
-      "name": "百度文心快码 Comate（个人版）",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://cloud.baidu.com/doc/COMATE/s/rlnvnio4a",
-      "remaining": "旧变体依据 https://cloud.baidu.com/doc/COMATE/s/smqhi5zsj；不自动把新个人专业版映射为存量订单。",
-      "verificationNote": "官方2026-10-01价格文档明确标准免费、专业70元/月、旗舰280元/月；可月季年订阅，积分包是加量。官方调整公告说明7月1日前个人专业版订单未来各订阅周期额外赠10%高级模型额度，保留存量变体。"
+      "platformId": "tripo",
+      "name": "Tripo",
+      "status": "specific_gap",
+      "remaining": "正式产品文档用Professional而实时价格页与活动用Pro，暂无官方明确同名映射，不新建Professional或自动替换Pro。周年活动提Current Pro and Advanced users，说明存在Advanced存量线索，但尚无其现存续费条款/迁移，保留gap。",
+      "sourceUrls": [
+        "https://www.tripo3d.ai/pricing"
+      ]
+    }
+  ],
+  "historicalQuestions": [
+    {
+      "platformId": "gcloud",
+      "remaining": "仅VirusTotal旧Professional Plus/Unleashed与现Bundle/GTI精确映射未证；Looker(original) Standard已由现行SLA闭合。"
     },
     {
-      "researchFile": "ym-research-cloud-supplement.json",
-      "productId": "huawei-agentarts",
-      "platformIds": [
-        "huaweicloud"
-      ],
-      "name": "华为云智果 AgentArts",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://support.huaweicloud.com/price-agentarts/agentarts_08_0003.html",
-      "remaining": "未来四付费档开放需另核；不能将每月CU表或按需包强制当当前可购。",
-      "verificationNote": "官方计费项当前直接HTML标2026-09-24：体验版一次性20CU、2成员、1GB知识库，超出CU按需收费；正式命名免费体验档。团队标准/高级、企业专业/旗舰虽列规格，但同页明确未开放，须工单咨询，故未加入在售会员。"
+      "platformId": "microsoft-ai",
+      "remaining": "PVA旧会话制许可证由现行管理文档确认；不保证当前协议结束后仍能续旧SKU，此为额外未来续购政策，不是当前持有身份未知。"
     },
     {
-      "researchFile": "ym-research-cloud-supplement.json",
-      "productId": "huawei-agentarts-unreleased",
-      "platformIds": [
-        "huaweicloud"
-      ],
-      "name": "华为云智果 AgentArts（未开放付费档）",
-      "status": "gap",
-      "applyReady": false,
-      "sourceUrl": "https://support.huaweicloud.com/price-agentarts/agentarts_08_0003.html",
-      "remaining": "正式候选四档只作未开放记录，不生成available会员。",
-      "verificationNote": "当前直接HTML明确团队标准版、团队高级版、企业专业版、企业旗舰版未开放。搜索旧快照与web正文抽取可能漏该警告。"
-    },
-    {
-      "researchFile": "ym-research-cloud-supplement.json",
-      "productId": "baidu-keyue-digital-employee-candidate",
-      "platformIds": [
-        "baidu"
-      ],
-      "name": "百度智能云客悦数字员工产品顾问",
-      "status": "gap",
-      "applyReady": false,
-      "sourceUrl": "https://cloud.baidu.com/discover/portal-employee-download.html",
-      "remaining": "待从客悦现行计费/订购文档确认，不凭SEO导读页直接发布会员。",
-      "verificationNote": "官方discover页FAQ列试用版/个人版/专业版/企业版，试用14天、个人39元/月（首购9.9）、专业599元/月、企业询价。已循产品文档到 https://cloud.baidu.com/doc/ky/index.html，但discover页为能力导读且目前标题改数字员工app下载安装，需计费主文档核准正式方案身份。"
-    },
-    {
-      "researchFile": "ym-research-google-supplement.json",
-      "productId": "google-workspace-supplement",
-      "platformIds": [
-        "google"
-      ],
-      "name": "Google Workspace",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://knowledge.workspace.google.com/admin/getting-started/editions/choose-your-google-workspace-edition",
-      "remaining": "Individual新购流程可能按地区导向Business Standard，未据只读营销页确定全部地区新购资格；现存正式订阅本身明确。",
-      "verificationNote": "两项为正式不同功能/适用人群软件方案。非营利Business Standard/Plus等折扣合并到现有同名plan，不另造等级。Individual当前帮助仍明确是订阅，即使营销入口展示Business Standard，也不能据此推断已全部结束。"
-    },
-    {
-      "researchFile": "ym-research-google-supplement.json",
-      "productId": "google-workspace-gsuite-legacy",
-      "platformIds": [
-        "google"
-      ],
-      "name": "G Suite",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://support.google.com/a/answer/2855120?hl=en",
-      "remaining": "这些旧套件不因此自动取得现代Workspace付费Gemini全部权限；个人非商业legacy free资格仍按官方条款，具体账户仍须资格核对。",
-      "verificationNote": "官方现行全文明确不能新注册但持有用户可继续订阅和相关服务，不能在旧edition之间互换。不能凭G Suite改名Workspace就删除这些真实存量许可。"
-    },
-    {
-      "researchFile": "ym-research-google-supplement.json",
-      "productId": "google-gemini-education-premium-legacy",
-      "platformIds": [
-        "google"
-      ],
-      "name": "Google Workspace",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://knowledge.workspace.google.com/admin/getting-started/editions/google-workspace-for-education-pricing-and-licensing",
-      "remaining": "仅仍未到指定续费日的Annual/Fixed-term合同；不是可新购或可继续无限续旧版。",
-      "verificationNote": "2025-08-28停止新售，固定期存量于2026-02-01起的下一次续费转Google AI Pro for Education；Flexible已2026-03-04起迁移。不把仍未到续期固定合同提前失效。Gemini Education只是改名AIPro，不另造双选。"
-    },
-    {
-      "researchFile": "ym-research-google-supplement.json",
-      "productId": "google-appsheet",
-      "platformIds": [
-        "google",
-        "gcloud"
-      ],
-      "name": "Google AppSheet",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://about.appsheet.com/pricing/",
-      "remaining": "试用/10测试用户原型模式不作可生产永久Free。Enterprise Standard已升级Plus，无重复等级。",
-      "verificationNote": "四项真实软件订阅，PublisherPro按公开应用许可；Gemini app creation官方帮助列这些付费账户。Workspace内含Core和独立Core是同一许可不重建。"
-    },
-    {
-      "researchFile": "ym-research-google-supplement.json",
-      "productId": "google-appsheet-external-legacy",
-      "platformIds": [
-        "google",
-        "gcloud"
-      ],
-      "name": "Google AppSheet",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://support.google.com/appsheet/answer/15197435?hl=en",
-      "remaining": "仅仍在既有合同剩余期限内；不得把EnterpriseStandard External再建一个重复旧等级。",
-      "verificationNote": "2025-04-10后不再新售；旧EnterpriseStandard External自动升此档，保留至既有commitment剩余期限，之后使用UserPass。"
-    },
-    {
-      "researchFile": "ym-research-google-supplement.json",
-      "productId": "google-looker-original",
-      "platformIds": [
-        "gcloud"
-      ],
-      "name": "Google Looker (original)",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://cloud.google.com/terms/looker/legal/customers/sla",
-      "remaining": "原始Looker其他合同版本、旧Standard名称和新购资格未穷尽，不能标整个Looker历史目录complete。",
-      "verificationNote": "原始Looker托管部署SLA明确支持两版本，当前hosting文档仍列Elite付费能力；不能只核Cloud core就删旧原版。"
-    },
-    {
-      "researchFile": "ym-research-google-supplement.json",
-      "productId": "google-data-studio",
-      "platformIds": [
-        "gcloud"
-      ],
-      "name": "Google Data Studio",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://cloud.google.com/data-studio",
-      "remaining": "历史whole-organization/MAU商业合同模式未全量确认，属于合同计费而非已证明不同功能档。",
-      "verificationNote": "Data Studio（此前Looker Studio）当前免费与按用户/项目Pro订阅。旧Looker Studio Pro只改名不重建。"
-    },
-    {
-      "researchFile": "ym-research-google-supplement.json",
-      "productId": "google-security-operations",
-      "platformIds": [
-        "gcloud"
-      ],
-      "name": "Google Security Operations",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://docs.cloud.google.com/chronicle/docs/secops/secops-packages",
-      "remaining": "旧独立SIEM/SOAR商业合同和Unified Security整包尚未确认全部档名；不从统一三档推断旧单产品全停。",
-      "verificationNote": "三档完整安全软件订阅，Enterprise以上含Gemini。虽然有摄入计量，但官方明确固定订阅与计量组件，不等于纯API资源。"
-    },
-    {
-      "researchFile": "ym-research-google-supplement.json",
-      "productId": "google-threat-intelligence",
-      "platformIds": [
-        "gcloud"
-      ],
-      "name": "Google Threat Intelligence",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://cloud.google.com/security/products/threat-intelligence",
-      "remaining": "旧Mandiant/独立VirusTotal合同尚未逐项穷尽；本范围是当前Google Threat Intelligence产品价目闭环。",
-      "verificationNote": "官方当前完整价格表四项年度固定软件订阅，另售API次数包不建等级。提供Gemini情报/代码分析，OEM实际分发权不同。"
-    },
-    {
-      "researchFile": "ym-research-google-supplement.json",
-      "productId": "google-security-command-center",
-      "platformIds": [
-        "gcloud"
-      ],
-      "name": "Google Security Command Center",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://docs.cloud.google.com/security-command-center/docs/service-tiers",
-      "remaining": "Standard-legacy部署变体不是另售用户会员；Enterprise仅按现有合同和官方迁移时间，不能作为无期限现售。",
-      "verificationNote": "Standard无额外费；Premium可购固定价软件订阅（另有PAYG不建会员）；Enterprise已deprecated但直到2027-05-21才关闭并迁移Premium，仍有效存量不能提前删。"
-    },
-    {
-      "researchFile": "ym-research-adobe-supplement.json",
-      "productId": "adobe-creative-cloud-education",
-      "platformIds": [
-        "adobe-firefly"
-      ],
-      "name": "Adobe Creative Cloud Education",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://helpx.adobe.com/creative-cloud/apps/generative-ai/generative-credits-faq.html",
-      "remaining": "Single App表格未展开具体应用SKU，不可推定每一个桌面应用均可售；Shared Device License basic install token是安装授权，不单建用户会员。"
-    },
-    {
-      "researchFile": "ym-research-adobe-supplement.json",
-      "productId": "adobe-substance-3d",
-      "platformIds": [
-        "adobe-firefly"
-      ],
-      "name": "Adobe Substance 3D",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://www.adobe.com/products/substance3d/plans.html",
-      "remaining": "Texturing在当前主价格页隐藏，但官网FAQ仍确认个人续订；不推定它停止续费。Enterprise授权已由官方安装说明核实，合同子档未公开。"
-    },
-    {
-      "researchFile": "ym-research-adobe-supplement.json",
-      "productId": "adobe-acrobat",
-      "platformIds": [
-        "adobe-firefly"
-      ],
-      "name": "Adobe Acrobat",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://www.adobe.com/acrobat/pricing.html",
-      "remaining": "FAQ将teams、VIP/Marketplace、ETLA列为采购渠道。教育学生/教职工的Studio为独立许可；不因采购渠道重复建档。Enterprise Standard/Pro及旧AI Assistant附加订阅还需目录级核清，不能宣称Acrobat全覆盖。"
-    },
-    {
-      "researchFile": "ym-research-adobe-supplement.json",
-      "productId": "adobe-stock",
-      "platformIds": [
-        "adobe-firefly"
-      ],
-      "name": "Adobe Stock",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://stock.adobe.com/uk/plans",
-      "remaining": "已实读UK当前4个个人档及企业类别。Teams具体SKU尚未成功读取；旧3/25/40/750档官方帮助文档仍提及，但现行续费/适用地区未完成核清，先保留候选，不作为已验证可应用档位。"
-    },
-    {
-      "researchFile": "ym-research-adobe-supplement.json",
-      "productId": "adobe-podcast",
-      "platformIds": [
-        "adobe-firefly"
-      ],
-      "name": "Adobe Podcast",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://podcast.adobe.com/en/plans",
-      "remaining": "现行付费入口归Firefly Pro。旧Express Premium绑定Podcast Premium是否仍存量有效需另证。"
-    },
-    {
-      "researchFile": "ym-research-adobe-supplement.json",
-      "productId": "adobe-firefly-creative-production",
-      "platformIds": [
-        "adobe-firefly"
-      ],
-      "name": "Adobe Firefly Creative Production",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://helpx.adobe.com/firefly/web/work-with-enterprise-features/creative-production/creative-production-overview.html",
-      "remaining": "公开官方未提供合同子档；不把API、池积分、workflow功能拆作会员。"
-    },
-    {
-      "researchFile": "ym-research-adobe-refined.json",
-      "productId": "adobe-stock-teams",
-      "platformIds": [
-        "adobe-firefly"
-      ],
-      "name": "Adobe Stock Teams",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://stock.adobe.com/ca/teams",
-      "remaining": "本轮实际读到加拿大英语官方页3个正式周期订阅，UK Teams多次HTTP失败；不推定全球一致。CC teams Pro Edition内含无限Stock沿原CC许可证。500 credits等为一次性包排除。"
-    },
-    {
-      "researchFile": "ym-research-adobe-refined.json",
-      "productId": "adobe-workfront",
-      "platformIds": [
-        "adobe-firefly"
-      ],
-      "name": "Adobe Workfront",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://business.adobe.com/products/workfront/pricing.html",
-      "remaining": "Planning/Fusion为正式附加产品，但没有本轮已核的独立公开tier；不把功能项当套餐。"
-    },
-    {
-      "researchFile": "ym-research-adobe-refined.json",
-      "productId": "adobe-aem-assets",
-      "platformIds": [
-        "adobe-firefly"
-      ],
-      "name": "Adobe Experience Manager Assets",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://business.adobe.com/products/experience-manager/assets/pricing.html",
-      "remaining": "Power/Collaborator/Limited是席位角色，不另造会员。"
-    },
-    {
-      "researchFile": "ym-research-adobe-refined.json",
-      "productId": "adobe-journey-optimizer",
-      "platformIds": [
-        "adobe-firefly"
-      ],
-      "name": "Adobe Journey Optimizer",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://business.adobe.com/products/journey-optimizer/pricing.html",
-      "remaining": "B2B Edition独立产品公开tier本轮未核全。"
-    },
-    {
-      "researchFile": "ym-research-adobe-refined.json",
-      "productId": "adobe-analytics",
-      "platformIds": [
-        "adobe-firefly"
-      ],
-      "name": "Adobe Analytics",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://business.adobe.com/products/adobe-analytics/pricing.html",
-      "remaining": "官方表述such as而非穷尽；旧Foundation存在文档线索，未确认完整续订目录。"
-    },
-    {
-      "researchFile": "ym-research-adobe-refined.json",
-      "productId": "adobe-customer-journey-analytics",
-      "platformIds": [
-        "adobe-firefly"
-      ],
-      "name": "Adobe Customer Journey Analytics",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://helpx.adobe.com/tw/legal/product-descriptions/customer-journey-analytics.html",
-      "remaining": "2026-09-25生效产品说明核明4档；B2B add-on是附加产品，不当第五个基础档；额外行数、query、storage等按量不造会员。"
-    },
-    {
-      "researchFile": "ym-research-adobe-refined.json",
-      "productId": "adobe-learning-manager",
-      "platformIds": [
-        "adobe-firefly"
-      ],
-      "name": "Adobe Learning Manager",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://business.adobe.com/products/learning-manager/pricing.html",
-      "remaining": "AI credit consumption为高级AI计费，不单建积分会员。"
-    },
-    {
-      "researchFile": "ym-research-adobe-refined.json",
-      "productId": "adobe-real-time-cdp-b2b",
-      "platformIds": [
-        "adobe-firefly"
-      ],
-      "name": "Adobe Real-Time CDP B2B",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://helpx.adobe.com/legal/product-descriptions/real-time-customer-data-platform-b2b-edition-prime-and-ultimate-packages.html",
-      "remaining": "官方主价格页只列B2C/B2B/B2P为edition，法律产品说明进一步明确每版Prime/Ultimate；不得只建一个模糊B2C/B2B/B2P占位。"
-    },
-    {
-      "researchFile": "ym-research-adobe-refined.json",
-      "productId": "adobe-real-time-cdp-b2c",
-      "platformIds": [
-        "adobe-firefly"
-      ],
-      "name": "Adobe Real-Time CDP B2C",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://helpx.adobe.com/ca/legal/product-descriptions/real-time-customer-data-platform-b2c-edition-prime-and-ultimate-packages.html",
-      "remaining": "官方主价格页只列B2C/B2B/B2P为edition，法律产品说明进一步明确每版Prime/Ultimate；不得只建一个模糊B2C/B2B/B2P占位。"
-    },
-    {
-      "researchFile": "ym-research-adobe-refined.json",
-      "productId": "adobe-real-time-cdp-b2p",
-      "platformIds": [
-        "adobe-firefly"
-      ],
-      "name": "Adobe Real-Time CDP B2P",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://helpx.adobe.com/au/legal/product-descriptions/real-time-customer-data-platform-b2p-edition-prime-and-ultimate-packages.html",
-      "remaining": "官方主价格页只列B2C/B2B/B2P为edition，法律产品说明进一步明确每版Prime/Ultimate；不得只建一个模糊B2C/B2B/B2P占位。"
-    },
-    {
-      "researchFile": "ym-research-adobe-refined.json",
-      "productId": "adobe-commerce",
-      "platformIds": [
-        "adobe-firefly"
-      ],
-      "name": "Adobe Commerce",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://business.adobe.com/products/commerce/pricing.html",
-      "remaining": "仅公开3个具体产品方案；站内add-on for certain tiers未公布tier正式名，不展开假想子档。"
-    },
-    {
-      "researchFile": "ym-research-microsoft-supplement.json",
-      "productId": "microsoft-dynamics-customer-insights",
-      "platformIds": [
-        "microsoft-ai"
-      ],
-      "name": "Dynamics 365",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://www.microsoft.com/en-us/dynamics-365/products/customer-insights/pricing",
-      "remaining": "旧独立Marketing/Customer Insights并不自动取得新组合权益；官方仍规定其使用及迁移，单独列存量。",
-      "verificationNote": "当前租户软件订阅。Attach需要合资格Dynamics基础采购，非单纯额外用量。"
-    },
-    {
-      "researchFile": "ym-research-microsoft-supplement.json",
-      "productId": "microsoft-dynamics-customer-insights-legacy",
-      "platformIds": [
-        "microsoft-ai"
-      ],
-      "name": "Dynamics 365",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://learn.microsoft.com/en-us/dynamics365/customer-insights/journeys/license-setup",
-      "remaining": "具体客户合同续订截止和旧active contacts附加SKU需逐合同确认，不声称永远可续。",
-      "verificationNote": "官方现行许可说明仍明确旧独立许可证持有人及各自权益；新组合权益不自动转移。仅存量适用。"
-    },
-    {
-      "researchFile": "ym-research-microsoft-supplement.json",
-      "productId": "microsoft-dynamics-human-resources",
-      "platformIds": [
-        "microsoft-ai"
-      ],
-      "name": "Dynamics 365",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://www.microsoft.com/en-us/dynamics-365/products/human-resources/pricing",
-      "remaining": "HR Recruiting add-on当前独立采购状态未确认；自助许可不等于完整HR或Microsoft 365 Copilot。",
-      "verificationNote": "当前HR完整与自助软件许可；AI招聘附加应用有官方预览，但未确认独立付费SKU，不伪造套餐。"
-    },
-    {
-      "researchFile": "ym-research-microsoft-supplement.json",
-      "productId": "microsoft-dynamics-additional-software-licenses",
-      "platformIds": [
-        "microsoft-ai"
-      ],
-      "name": "Dynamics 365",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://www.microsoft.com/licensing/guidance/Dynamics-365",
-      "remaining": "base/attach是同能力采购价格关系，不额外制造每个attach等级；Commerce e-Commerce交易档及纯容量均不录入。",
-      "verificationNote": "官方完整许可指南按名称确认设备/轻量用户及功能附加许可证；这些是软件使用权，不是API计量。不同许可不自动享有同一Copilot权限。"
-    },
-    {
-      "researchFile": "ym-research-microsoft-supplement.json",
-      "productId": "microsoft-power-bi",
-      "platformIds": [
-        "microsoft-ai"
-      ],
-      "name": "Microsoft Power BI",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://www.microsoft.com/en-us/power-platform/products/power-bi/pricing",
-      "remaining": "Premium per-capacity旧P SKU为容量资源，转移至非会员说明，不在此冒充个人订阅。",
-      "verificationNote": "用户软件许可；PPU有高级AI。Pro/PPU单独均不足以用Copilot，另需启用的组织Fabric F2+或Premium P1+容量。"
-    },
-    {
-      "researchFile": "ym-research-microsoft-supplement.json",
-      "productId": "microsoft-clipchamp-personal",
-      "platformIds": [
-        "microsoft-ai"
-      ],
-      "name": "Microsoft Clipchamp",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://support.microsoft.com/en-us/clipchamp/what-are-the-clipchamp-paid-plans-and-how-do-they-work",
-      "remaining": "新个人付费购买页当前导向M365；只确认独立Premium存量，不宣称仍可新购。Creator/Business/Business Platinum已retired，不列存量。",
-      "verificationNote": "Free含AI剪辑/字幕/语音；Premium个人独立存量订阅有现行官方管理说明。M365内含权益不重复建立M365的Clipchamp订阅ID。"
-    },
-    {
-      "researchFile": "ym-research-microsoft-supplement.json",
-      "productId": "microsoft-clipchamp-work",
-      "platformIds": [
-        "microsoft-ai"
-      ],
-      "name": "Microsoft Clipchamp",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://support.microsoft.com/en-us/clipchamp/what-are-the-clipchamp-paid-plans-and-how-do-they-work",
-      "remaining": "教育版通过合资格M365 A3/A5等内含Standard；未确认单独教育优惠SKU，不制造。",
-      "verificationNote": "两种正式独立商业订阅；Premium亦为符合条件商业客户附加许可证，含若干M365内不等于独立许可证不复存在。"
-    },
-    {
-      "researchFile": "ym-research-microsoft-supplement.json",
-      "productId": "microsoft-teams-rooms",
-      "platformIds": [
-        "microsoft-ai"
-      ],
-      "name": "Microsoft Teams Rooms",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://www.microsoft.com/en-us/microsoft-teams/microsoft-teams-rooms/compare-rooms-plans",
-      "remaining": "旧Teams Rooms Standard/Premium合同尚未查到当前统一存量条款，不从新价目缺席断言所有旧合同失效。",
-      "verificationNote": "Basic是须认证设备且限25间的免费许可；Pro是按会议室软件订阅，含AI音视频和智能管理，不是Azure基础设施。"
-    },
-    {
-      "researchFile": "ym-research-microsoft-supplement.json",
-      "productId": "microsoft-365-education",
-      "platformIds": [
-        "microsoft-ai"
-      ],
-      "name": "Microsoft 365 Education",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://www.microsoft.com/en-us/education/products/microsoft-365",
-      "remaining": "A1设备许可与Office365 A1免费教育资格不同；不标A1免费。最新Copilot前置表出现A2，但本教育正式主目录未列独立采购条款，暂不新增A2。",
-      "verificationNote": "教育正式软件许可；Study and Learn内含于A1/A3/A5。完整商业级Copilot仍另需附加许可，不能把教育基础等级叫Copilot等级。A1需按具体设备/租户许可核对。"
-    },
-    {
-      "researchFile": "ym-research-microsoft-supplement.json",
-      "productId": "microsoft-office-365-education",
-      "platformIds": [
-        "microsoft-ai"
-      ],
-      "name": "Office 365",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://www.microsoft.com/en-us/education/products/office",
-      "remaining": "不把A1资格直接当完整Copilot权益，也不把学生/教职员折扣重复为功能等级。",
-      "verificationNote": "当前官网分别列学生和教职员价目；A1为合资格教育机构免费捐赠，A3/A5为付费软件许可。不同于Microsoft365教育套餐；全功能Copilot另需合资格附加许可。"
-    },
-    {
-      "researchFile": "ym-research-microsoft-supplement.json",
-      "productId": "microsoft-power-apps-per-app",
-      "platformIds": [
-        "microsoft-ai"
-      ],
-      "name": "Microsoft Power Apps",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://www.microsoft.com/en-us/licensing/news/power-app-per-app-end-of-sale",
-      "remaining": "必须保留渠道条件；不能把CSP的准入套给MPSA。",
-      "verificationNote": "明确按渠道：现有Enterprise可继续用并在协议结束后续订；现有MPSA可用至协议结束，之后60天迁移；新旧CSP可购买/使用/续订。不是全部停售失效。"
-    },
-    {
-      "researchFile": "ym-research-microsoft-supplement.json",
-      "productId": "microsoft-power-automate-per-flow-legacy",
-      "platformIds": [
-        "microsoft-ai"
-      ],
-      "name": "Microsoft Power Automate",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://learn.microsoft.com/en-us/power-platform/admin/power-automate-licensing/faqs",
-      "remaining": "不宣称可续费或统一到期；按实际合同结束，不从移出价目推断全部旧许可已失效。",
-      "verificationNote": "当前官方FAQ确认2024-02-01移出价目，但既有per-flow继续工作；不能再购买/叠加，并建议到期替换Process而非续订。仅现有未结束许可。"
-    },
-    {
-      "researchFile": "ym-research-microsoft-supplement.json",
-      "productId": "microsoft-power-automate-user-legacy",
-      "platformIds": [
-        "microsoft-ai"
-      ],
-      "name": "Microsoft Power Automate",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://learn.microsoft.com/en-us/power-platform/admin/power-automate-licensing/deep-dive-on-specific-license",
-      "remaining": "P1/P2须实际合同仍活跃；此条件不代表2026可购买或续订。普通旧per-user没有attendedRPA，不能与曾含attendedRPA且改名Premium的SKU混淆。",
-      "verificationNote": "官方2026-10-17更新全文确认已购Per-user仍可使用但应替换Premium而非续订。P1/P2仅2021-01-01前启动且仍未到期的活跃合同继续支持至合同结束，2020-12-31后不可新购或自动续订。不能推断所有旧合同现在失效。"
-    },
-    {
-      "researchFile": "ym-research-m365-base.json",
-      "productId": "microsoft-office-365-enterprise-base",
-      "platformIds": [
-        "microsoft-ai"
-      ],
-      "name": "Office 365",
-      "status": "verified",
-      "applyReady": true,
-      "sourceUrl": "https://www.microsoft.com/en-us/microsoft-365/enterprise/office-365-plans-and-pricing",
-      "remaining": "未在现行完整表中确认独立Office365 F3 noTeams SKU，不因其他Office E版有该变体就猜造。",
-      "verificationNote": "Office365与Microsoft365套件权限不同，保留独立。E1/E3/E5含Teams/不含Teams均在当前价格页。F3在当前官方许可表仍列独立产品且为M365F3组成，不仅是虚构别名。基础Office套件不等于完整Copilot。"
+      "platformId": "cursor",
+      "remaining": "更早request-based合同仅已知续期迁移规则；不制造未见正式档名。"
     }
   ]
 }
