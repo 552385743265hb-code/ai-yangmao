@@ -1,0 +1,134 @@
+{
+  "checkedAt": "2026-10-20",
+  "expectedRevision": 59,
+  "revision": 60,
+  "products": 242,
+  "plans": 985,
+  "vendors": 125,
+  "verifiedPlans": 964,
+  "pendingPlans": 0,
+  "fullReadback": true,
+  "publicApiExactReadback": true,
+  "runtimeCommit": "b35d782d4406d048f4b71c64a4d136067634436e",
+  "runtimeVersionId": "6b699622-9196-4228-923e-14939c913267",
+  "runtimeTrafficPercentage": 100,
+  "historicalMatchRehearsal": {
+    "approvedRules": 9,
+    "cases": 8559,
+    "differences": []
+  },
+  "changes": [
+    {
+      "id": "cursor-hobby",
+      "oldName": "Cursor（存量订阅） Hobby",
+      "name": "Cursor（存量订阅） Hobby",
+      "productId": "cursor"
+    },
+    {
+      "id": "cursor-start-india",
+      "oldName": "Cursor（存量订阅） Start（印度）",
+      "name": "Cursor（存量订阅） Start（印度）",
+      "productId": "cursor"
+    },
+    {
+      "id": "cursor-pro",
+      "oldName": "Cursor（存量订阅） Pro",
+      "name": "Cursor（存量订阅） Pro",
+      "productId": "cursor"
+    },
+    {
+      "id": "cursor-pro-plus",
+      "oldName": "Cursor（存量订阅） Pro+",
+      "name": "Cursor（存量订阅） Pro+",
+      "productId": "cursor"
+    },
+    {
+      "id": "cursor-ultra",
+      "oldName": "Cursor（存量订阅） Ultra",
+      "name": "Cursor（存量订阅） Ultra",
+      "productId": "cursor"
+    },
+    {
+      "id": "cursor-teams-standard",
+      "oldName": "Cursor（存量订阅） Teams Standard",
+      "name": "Cursor（存量订阅） Teams Standard",
+      "productId": "cursor"
+    },
+    {
+      "id": "cursor-teams-premium",
+      "oldName": "Cursor（存量订阅） Teams Premium",
+      "name": "Cursor（存量订阅） Teams Premium",
+      "productId": "cursor"
+    },
+    {
+      "id": "cursor-enterprise",
+      "oldName": "Enterprise",
+      "name": "Cursor（存量订阅） Enterprise",
+      "productId": "cursor"
+    },
+    {
+      "id": "cursor-plan-1",
+      "oldName": "会员（具体档位待核实）",
+      "name": "会员（具体档位待核实）",
+      "productId": "cursor",
+      "action": "retire",
+      "reason": "原目录未区分实际套餐的占位记录，现按官方明确列示档位录入"
+    },
+    {
+      "id": "cursor-teams",
+      "oldName": "Teams",
+      "name": "Teams",
+      "productId": "cursor",
+      "action": "retire",
+      "reason": "官方明确旧Teams包含Standard/Premium两种席位；用一对多映射保留历史已批准资格，不猜用户具体席位"
+    },
+    {
+      "id": "command-code-go",
+      "oldName": "Command Code Go",
+      "name": "Command Code Go",
+      "productId": "command-code"
+    },
+    {
+      "id": "command-code-goat",
+      "oldName": "Command Code GOAT",
+      "name": "Command Code GOAT",
+      "productId": "command-code"
+    },
+    {
+      "id": "command-code-pro",
+      "oldName": "Command Code Pro",
+      "name": "Command Code Pro",
+      "productId": "command-code"
+    },
+    {
+      "id": "command-code-max-10",
+      "oldName": "Command Code Max 10×",
+      "name": "Command Code Max 10×",
+      "productId": "command-code"
+    },
+    {
+      "id": "command-code-max-20",
+      "oldName": "Command Code Max 20×",
+      "name": "Command Code Max 20×",
+      "productId": "command-code"
+    },
+    {
+      "id": "command-code-provider",
+      "oldName": "Command Code Provider",
+      "name": "Command Code Provider",
+      "productId": "command-code"
+    },
+    {
+      "id": "command-code-teams",
+      "oldName": "Command Code Teams",
+      "name": "Command Code Teams",
+      "productId": "command-code"
+    },
+    {
+      "id": "command-code-enterprise",
+      "oldName": "Command Code Enterprise",
+      "name": "Command Code Enterprise",
+      "productId": "command-code"
+    }
+  ]
+}
