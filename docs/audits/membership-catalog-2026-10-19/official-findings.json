@@ -7317,6 +7317,51 @@
       "status": "verified",
       "applyReady": true,
       "checkedAt": "2026-10-20"
+    },
+    {
+      "productId": "command-code",
+      "platformIds": [
+        "command-code"
+      ],
+      "name": "Command Code",
+      "plans": [
+        "Go",
+        "GOAT",
+        "Pro",
+        "Max 10×",
+        "Max 20×",
+        "Provider",
+        "Teams",
+        "Enterprise"
+      ],
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://commandcode.ai/pricing",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Go; GOAT; Pro; Max 10×; Max 20×; Provider; Teams; Enterprise",
+      "planSources": {
+        "Go": "https://commandcode.ai/docs/plans/go",
+        "GOAT": "https://commandcode.ai/docs/plans/goat",
+        "Provider": "https://commandcode.ai/provider",
+        "Teams": "https://commandcode.ai/docs/resources/pricing-limits"
+      },
+      "sourceExcerpts": [
+        "Go $1/month; GOAT $10/month",
+        "Pro $20/mo; Max 10× $100/mo; Max 20× $200/mo",
+        "Teams $40/month; Enterprise Custom",
+        "Provider $15/month for Provider API access, then pay as you go. No credits to burn down.",
+        "Team Pro | $40",
+        "Usage with no subscription (free or balance-only) and custom Enterprise pools have no rolling window caps"
+      ],
+      "remaining": "仅非档位金额不一致：GOAT定价页80美元额度、limits表70美元，不能据此拆套餐或承诺额度。limits优惠描述孤立出现Ultra但无当前购买卡或明确旧合同，未建立Ultra存量档。没有官方明确仍有效旧套餐。Free账户不造正式会员；MiniMax/SpaceBunny限免活动非会员，未对权益审核写入。",
+      "planAliases": {
+        "Teams": [
+          "Team Pro"
+        ]
+      },
+      "note": "官方价格页完整八档，Go/GOAT/Pro/Max 10×/Max 20×/Teams/Enterprise为开发与团队订阅；Provider是固定15美元/月API准入订阅，调用另按量，不是纯充值账户。当前官方limits表称同价同团队档为Team Pro，销售页称Teams，仅作别名不重复建档。注册免费/余额账户存在，但官方完整现行价格目录未给正式命名Free会员卡，因此freePlans为空；免费模型促销不是免费会员。官网首页直接链接@CommandCodeAI，与实时平台记录账号一致，官方GitHub组织亦验证域名commandcode.ai。无需D1查询即可识别官方身份。"
     }
   ]
 }

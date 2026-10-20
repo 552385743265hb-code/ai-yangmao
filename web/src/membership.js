@@ -43,6 +43,10 @@ let ownedMembershipVendor = '';
 function membershipVendors() {
   const known = MEMBERSHIP_CATALOG.vendors || (typeof PLATFORMS === 'undefined' ? [] : PLATFORMS);
   const vendors = known.map(p => ({...p, status:p.status === 'none' ? 'none' : p.status === 'available' ? 'available' : 'unverified'}));
+  // Platform admission can precede the next membership-directory revision.
+  for(const p of typeof PLATFORMS==='undefined'?[]:PLATFORMS){
+    if(!vendors.some(v=>v.id===p.id))vendors.push({...p,status:'unverified'});
+  }
   // Compatibility for existing catalogs; new directory products have explicit platformIds.
   for (const p of MEMBERSHIP_CATALOG.products) {
     if (p.status !== 'retired' && !p.platformIds?.length && !vendors.some(v => v.id === p.id)) vendors.push({id:p.id,name:p.name,status:'unverified'});

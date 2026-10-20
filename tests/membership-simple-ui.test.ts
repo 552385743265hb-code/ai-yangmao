@@ -180,3 +180,12 @@ it('saves the 39-product Microsoft vendor selection and matches only selected me
  expect(core.matchMembership(saved,[{planId:plans[0].id}],(ctx as any).largeCatalog)).toBe('yes');
  expect(core.matchMembership(saved,[{planId:'b-pro'}],(ctx as any).largeCatalog)).toBe('no');
 });
+it('includes newly admitted Command Code beside catalog vendors without changing saved subscriptions',async()=>{
+ const {ctx,document,change}=fixture();vm.runInContext(`PLATFORMS=[{id:'alpha',name:'Live Alpha'},{id:'api',name:'Live API'},{id:'command-code',name:'Command Code'}];C.subscriptions=[{planId:'a-pro',billingCycle:'annual'}];document.querySelector('#owned').innerHTML=subscriptionControls();bindSubscriptionEvents()`,ctx);
+ const vendors=vm.runInContext('membershipVendors()',ctx);
+ expect(vendors.map((v:any)=>v.id)).toEqual(['alpha','beta','api','command-code']);expect(vendors.find((v:any)=>v.id==='alpha')).toMatchObject({name:'Alpha',status:'available'});expect(vendors.find((v:any)=>v.id==='api')).toMatchObject({name:'API Vendor',status:'none'});expect(vendors.find((v:any)=>v.id==='command-code')).toMatchObject({name:'Command Code',status:'unverified'});
+ change('[data-owned-vendor]','command-code');expect(document.querySelector('[data-owned-subscriptions]')!.textContent).toContain('目录尚待补齐');expect(document.querySelector('[data-owned-plan]')).toBeNull();
+ expect(vm.runInContext('C.subscriptions',ctx)).toEqual([{planId:'a-pro',billingCycle:'annual'}]);
+ await vm.runInContext(`mountMembershipEditor(document.querySelector('form'),{requirements:[]})`,ctx);change('[data-member-vendor]','command-code');expect(document.querySelector('[data-membership-editor]')!.textContent).toContain('目录尚待补齐');expect(document.querySelector('[data-member-plan]')).toBeNull();
+ expect(vm.runInContext('C.subscriptions',ctx)).toEqual([{planId:'a-pro',billingCycle:'annual'}]);
+});

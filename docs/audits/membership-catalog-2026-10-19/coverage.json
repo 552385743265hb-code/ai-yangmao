@@ -2581,6 +2581,24 @@
         "error": null
       },
       "appliedCatalogRevision": 41
+    },
+    {
+      "platformId": "command-code",
+      "name": "Command Code",
+      "site": "https://commandcode.ai/",
+      "sources": [
+        "https://commandcode.ai/",
+        "https://commandcode.ai/pricing",
+        "https://commandcode.ai/docs/resources/pricing-limits",
+        "https://commandcode.ai/provider",
+        "https://github.com/CommandCodeAI"
+      ],
+      "productIds": [
+        "command-code"
+      ],
+      "status": "research_complete",
+      "checkedAt": "2026-10-20",
+      "note": "平台记录xHandles=@commandcodeai；官网直接链接同X账号，官方GitHub组织验证域名。不采用SEO同名站。已核现行正式订阅及免费/按量边界。"
     }
   ]
 }

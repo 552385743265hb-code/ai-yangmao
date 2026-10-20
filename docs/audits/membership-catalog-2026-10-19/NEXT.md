@@ -1,12 +1,12 @@
 # 未完成事项与继续入口
 
-目标仍在进行中。旧 pending 清零、单元测试通过或本轮数据写入都不足以宣布全量完成；必须继续 124 个厂商覆盖、旧资格映射、真实浏览器与上线验收。
+目标仍在进行中。旧 pending 清零、单元测试通过或本轮数据写入都不足以宣布全量完成；必须继续当前 125 个厂商覆盖、旧资格映射、真实浏览器与上线验收。
 
 ## 已核实当前状态（2026-10-20）
 
 - 生产会员目录 **revision 59**：241 产品、970 套餐；950 verified、19 retired、1 pending。完整产品/套餐及根级别迁移元数据已与预备补丁逐项读回一致。
 - 仅剩1个旧pending：`cursor-plan-1`。Grok/X三个占位项已退休并补官方具体套餐。
-- 厂商研究覆盖：71 research_complete、53 partial、0 unreviewed。**这比 pending 数更接近剩余工作规模，不能只清四条就宣布完成。**
+- 厂商研究覆盖：72 research_complete、53 partial、0 unreviewed。**这比 pending 数更接近剩余工作规模，不能只清四条就宣布完成。**
 - 生产代码已更新为 PR106 / cc1f94632ef2（100%流量，2026-10-19实时读取）；新界面在草稿 PR105，未合并部署。当前工作区 `/tmp/ym-hf-link-worktree`，分支 `codex/membership-catalog-complete`。
 - 主 checkout 是其他任务的估值修复，勿覆盖。node_modules 为临时 symlink，不提交。
 - 本地最近完整验证：类型检查、1479 Vitest + 11 CLI（合并main及模型目录投影后）、build:web、diff --check 通过。代码新增：按厂商套餐复选、个人选择去重、旧记录提示可单独清除、跨厂商资格默认显示实际会员厂商、退休产品不重新出现在厂商下拉、目录准备工具的归并/退休守卫与回归。
@@ -136,3 +136,9 @@ CUA的IAB临时tab2当前在TRAE计费文档，可继续看企业版；`pvCatalo
 - 新增默认关闭的fast_track_rebuild只读诊断：只给同一fillFields原始job/catalog，清空ownerFields，不传保存/批准答案，返回真实完整字段与会员并在模型后对比。共享月预算仍受控，业务写为0。待main合并后对真实MiniMax b521745f执行。
 - Cursor官方现行与Enterprise已于10-20再核：新旧不等价不能合并；Teams旧总称对应Standard/Premium一对多。cursor-migration-plan.json仅准备，不是已应用；必须在新Worker部署验证之后将D1 59写到60。
 - 9个旧unreviewed厂商的已读资料已归入partial和sources，所有124厂商均有研究，但53家仍有具体子产品/存量/登录资料缺口，不能宣布无遗漏。
+
+## 实时第125家厂商
+
+- 实时/api/platforms新增Command Code（10-20注册），原124目录索引遗漏了它。选择器现与PLATFORMS按ID并集，保留已核状态，未来新增厂商也可选择，不自动伪造套餐。真实回归验证新厂商切换、无重复及不改变已有订阅。
+- 官网commandcode.ai与登记@commandcodeai互链，当前Go/GOAT/Pro/Max10x/Max20x/Provider/Teams/Enterprise八档已核，Provider是月订阅+按量，不能排成纯充值。Teams与文档TeamPro同档别名；未确认正式Free或有效Ultra旧合同不猜。已与Cursor合入revision60准备补丁，尚未写入。
+- 生产revision59仍241产品970计划/124目录索引；准备补丁将为242产品985计划/125索引，964verified、21retired、无pending/活跃unknown billing。只能部署新Worker后应用。

@@ -3,8 +3,9 @@
   "checkedAt": "2026-10-20",
   "expectedRevision": 59,
   "targetRevision": 60,
-  "products": 241,
-  "plans": 977,
+  "products": 242,
+  "plans": 985,
+  "vendors": 125,
   "prerequisite": "Deploy and verify Worker support for planReplacements before applying.",
   "changes": [
     {
@@ -70,6 +71,54 @@
       "productId": "cursor",
       "action": "retire",
       "reason": "官方明确旧Teams包含Standard/Premium两种席位；用一对多映射保留历史已批准资格，不猜用户具体席位"
+    },
+    {
+      "id": "command-code-go",
+      "oldName": "Command Code Go",
+      "name": "Command Code Go",
+      "productId": "command-code"
+    },
+    {
+      "id": "command-code-goat",
+      "oldName": "Command Code GOAT",
+      "name": "Command Code GOAT",
+      "productId": "command-code"
+    },
+    {
+      "id": "command-code-pro",
+      "oldName": "Command Code Pro",
+      "name": "Command Code Pro",
+      "productId": "command-code"
+    },
+    {
+      "id": "command-code-max-10",
+      "oldName": "Command Code Max 10×",
+      "name": "Command Code Max 10×",
+      "productId": "command-code"
+    },
+    {
+      "id": "command-code-max-20",
+      "oldName": "Command Code Max 20×",
+      "name": "Command Code Max 20×",
+      "productId": "command-code"
+    },
+    {
+      "id": "command-code-provider",
+      "oldName": "Command Code Provider",
+      "name": "Command Code Provider",
+      "productId": "command-code"
+    },
+    {
+      "id": "command-code-teams",
+      "oldName": "Command Code Teams",
+      "name": "Command Code Teams",
+      "productId": "command-code"
+    },
+    {
+      "id": "command-code-enterprise",
+      "oldName": "Command Code Enterprise",
+      "name": "Command Code Enterprise",
+      "productId": "command-code"
     }
   ]
 }
