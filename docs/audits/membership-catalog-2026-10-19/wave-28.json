@@ -1,0 +1,516 @@
+{
+  "checkedAt": "2026-10-20",
+  "expectedRevision": 57,
+  "revision": 58,
+  "products": 170,
+  "plans": 754,
+  "vendors": 124,
+  "fullReadback": true,
+  "changedExistingPlans": [
+    {
+      "id": "ideogram-free",
+      "fields": [
+        "verifiedAt",
+        "revision"
+      ]
+    },
+    {
+      "id": "ideogram-plus",
+      "fields": [
+        "verifiedAt",
+        "revision"
+      ]
+    },
+    {
+      "id": "ideogram-pro",
+      "fields": [
+        "verifiedAt",
+        "revision"
+      ]
+    },
+    {
+      "id": "ideogram-team",
+      "fields": [
+        "verifiedAt",
+        "revision"
+      ]
+    },
+    {
+      "id": "ideogram-enterprise",
+      "fields": [
+        "verifiedAt",
+        "revision"
+      ]
+    }
+  ],
+  "changes": [
+    {
+      "id": "oiioii-base",
+      "oldName": "OiiOii BASE",
+      "name": "OiiOii BASE",
+      "productId": "oiioii"
+    },
+    {
+      "id": "oiioii-star",
+      "oldName": "OiiOii STAR",
+      "name": "OiiOii STAR",
+      "productId": "oiioii"
+    },
+    {
+      "id": "oiioii-pro",
+      "oldName": "OiiOii PRO",
+      "name": "OiiOii PRO",
+      "productId": "oiioii"
+    },
+    {
+      "id": "oiioii-apex",
+      "oldName": "OiiOii APEX",
+      "name": "OiiOii APEX",
+      "productId": "oiioii"
+    },
+    {
+      "id": "oiioii-team-lite",
+      "oldName": "OiiOii TEAM LITE",
+      "name": "OiiOii TEAM LITE",
+      "productId": "oiioii"
+    },
+    {
+      "id": "oiioii-team-plus",
+      "oldName": "OiiOii TEAM PLUS",
+      "name": "OiiOii TEAM PLUS",
+      "productId": "oiioii"
+    },
+    {
+      "id": "oiioii-team-pro",
+      "oldName": "OiiOii TEAM PRO",
+      "name": "OiiOii TEAM PRO",
+      "productId": "oiioii"
+    },
+    {
+      "id": "oiioii-team-max",
+      "oldName": "OiiOii TEAM MAX",
+      "name": "OiiOii TEAM MAX",
+      "productId": "oiioii"
+    },
+    {
+      "id": "oiioii-enterprise",
+      "oldName": "OiiOii Enterprise",
+      "name": "OiiOii Enterprise",
+      "productId": "oiioii"
+    },
+    {
+      "id": "ideogram-free",
+      "oldName": "Ideogram Free",
+      "name": "Ideogram Free",
+      "productId": "ideogram"
+    },
+    {
+      "id": "ideogram-plus",
+      "oldName": "Ideogram Plus",
+      "name": "Ideogram Plus",
+      "productId": "ideogram"
+    },
+    {
+      "id": "ideogram-pro",
+      "oldName": "Ideogram Pro",
+      "name": "Ideogram Pro",
+      "productId": "ideogram"
+    },
+    {
+      "id": "ideogram-team",
+      "oldName": "Ideogram Team",
+      "name": "Ideogram Team",
+      "productId": "ideogram"
+    },
+    {
+      "id": "ideogram-enterprise",
+      "oldName": "Ideogram Enterprise",
+      "name": "Ideogram Enterprise",
+      "productId": "ideogram"
+    },
+    {
+      "id": "ideogram-basic-legacy",
+      "oldName": "Ideogram Basic（存量）",
+      "name": "Ideogram Basic（存量）",
+      "productId": "ideogram"
+    },
+    {
+      "id": "minimax-design-cn-starter",
+      "oldName": "MiniMax Design 国内版 Starter",
+      "name": "MiniMax Design 国内版 Starter",
+      "productId": "minimax-design-cn"
+    },
+    {
+      "id": "minimax-design-cn-plus",
+      "oldName": "MiniMax Design 国内版 Plus",
+      "name": "MiniMax Design 国内版 Plus",
+      "productId": "minimax-design-cn"
+    },
+    {
+      "id": "minimax-design-cn-pro",
+      "oldName": "MiniMax Design 国内版 Pro",
+      "name": "MiniMax Design 国内版 Pro",
+      "productId": "minimax-design-cn"
+    },
+    {
+      "id": "minimax-design-international-starter",
+      "oldName": "MiniMax Design 国际版 Starter",
+      "name": "MiniMax Design 国际版 Starter",
+      "productId": "minimax-design-international"
+    },
+    {
+      "id": "minimax-design-international-plus",
+      "oldName": "MiniMax Design 国际版 Plus",
+      "name": "MiniMax Design 国际版 Plus",
+      "productId": "minimax-design-international"
+    },
+    {
+      "id": "minimax-design-international-pro",
+      "oldName": "MiniMax Design 国际版 Pro",
+      "name": "MiniMax Design 国际版 Pro",
+      "productId": "minimax-design-international"
+    },
+    {
+      "id": "tapnow-basic",
+      "oldName": "TapNow Basic",
+      "name": "TapNow Basic",
+      "productId": "tapnow"
+    },
+    {
+      "id": "tapnow-pro",
+      "oldName": "TapNow Pro",
+      "name": "TapNow Pro",
+      "productId": "tapnow"
+    },
+    {
+      "id": "tapnow-ultimate",
+      "oldName": "TapNow Ultimate",
+      "name": "TapNow Ultimate",
+      "productId": "tapnow"
+    },
+    {
+      "id": "tapnow-max",
+      "oldName": "TapNow Max",
+      "name": "TapNow Max",
+      "productId": "tapnow"
+    },
+    {
+      "id": "liblibai-creative-entry",
+      "oldName": "LiblibAI 创作会员 入门版",
+      "name": "LiblibAI 创作会员 入门版",
+      "productId": "liblibai-creative"
+    },
+    {
+      "id": "liblibai-creative-standard",
+      "oldName": "LiblibAI 创作会员 标准版",
+      "name": "LiblibAI 创作会员 标准版",
+      "productId": "liblibai-creative"
+    },
+    {
+      "id": "liblibai-creative-advanced",
+      "oldName": "LiblibAI 创作会员 进阶版",
+      "name": "LiblibAI 创作会员 进阶版",
+      "productId": "liblibai-creative"
+    },
+    {
+      "id": "liblibai-creative-high",
+      "oldName": "LiblibAI 创作会员 高级版",
+      "name": "LiblibAI 创作会员 高级版",
+      "productId": "liblibai-creative"
+    },
+    {
+      "id": "liblibai-creative-deluxe",
+      "oldName": "LiblibAI 创作会员 豪华版",
+      "name": "LiblibAI 创作会员 豪华版",
+      "productId": "liblibai-creative"
+    },
+    {
+      "id": "liblibai-creative-supreme",
+      "oldName": "LiblibAI 创作会员 至尊版",
+      "name": "LiblibAI 创作会员 至尊版",
+      "productId": "liblibai-creative"
+    },
+    {
+      "id": "trae-cn-free",
+      "oldName": "TRAE 国内个人版 Free",
+      "name": "TRAE 国内个人版 Free",
+      "productId": "trae-cn"
+    },
+    {
+      "id": "trae-cn-lite",
+      "oldName": "TRAE 国内个人版 会员 Lite",
+      "name": "TRAE 国内个人版 会员 Lite",
+      "productId": "trae-cn"
+    },
+    {
+      "id": "trae-cn-pro",
+      "oldName": "TRAE 国内个人版 会员 Pro",
+      "name": "TRAE 国内个人版 会员 Pro",
+      "productId": "trae-cn"
+    },
+    {
+      "id": "trae-cn-pro-plus",
+      "oldName": "TRAE 国内个人版 会员 Pro+",
+      "name": "TRAE 国内个人版 会员 Pro+",
+      "productId": "trae-cn"
+    },
+    {
+      "id": "trae-cn-ultra",
+      "oldName": "TRAE 国内个人版 会员 Ultra",
+      "name": "TRAE 国内个人版 会员 Ultra",
+      "productId": "trae-cn"
+    },
+    {
+      "id": "trae-cn-express",
+      "oldName": "TRAE 国内个人版 会员 Express（存量）",
+      "name": "TRAE 国内个人版 会员 Express（存量）",
+      "productId": "trae-cn"
+    },
+    {
+      "id": "trae-cn-enterprise-team",
+      "oldName": "TRAE 国内企业版 团队版",
+      "name": "TRAE 国内企业版 团队版",
+      "productId": "trae-cn-enterprise"
+    },
+    {
+      "id": "trae-cn-enterprise-flagship",
+      "oldName": "TRAE 国内企业版 旗舰版",
+      "name": "TRAE 国内企业版 旗舰版",
+      "productId": "trae-cn-enterprise"
+    },
+    {
+      "id": "trae-cn-enterprise-education",
+      "oldName": "TRAE 国内企业版 教育版",
+      "name": "TRAE 国内企业版 教育版",
+      "productId": "trae-cn-enterprise"
+    },
+    {
+      "id": "trae-byteplus-enterprise-teams",
+      "oldName": "TRAE BytePlus 企业版 Teams",
+      "name": "TRAE BytePlus 企业版 Teams",
+      "productId": "trae-byteplus-enterprise"
+    },
+    {
+      "id": "coze-international-free",
+      "oldName": "Coze 国际版 Free",
+      "name": "Coze 国际版 Free",
+      "productId": "coze-international"
+    },
+    {
+      "id": "coze-international-premium-lite",
+      "oldName": "Coze 国际版 Premium Lite",
+      "name": "Coze 国际版 Premium Lite",
+      "productId": "coze-international"
+    },
+    {
+      "id": "coze-international-premium",
+      "oldName": "Coze 国际版 Premium",
+      "name": "Coze 国际版 Premium",
+      "productId": "coze-international"
+    },
+    {
+      "id": "coze-international-premium-plus",
+      "oldName": "Coze 国际版 Premium Plus",
+      "name": "Coze 国际版 Premium Plus",
+      "productId": "coze-international"
+    },
+    {
+      "id": "seko-standard",
+      "oldName": "Seko 个人版与企业定制 标准会员",
+      "name": "Seko 个人版与企业定制 标准会员",
+      "productId": "seko"
+    },
+    {
+      "id": "seko-advanced",
+      "oldName": "Seko 个人版与企业定制 高级会员",
+      "name": "Seko 个人版与企业定制 高级会员",
+      "productId": "seko"
+    },
+    {
+      "id": "seko-supreme",
+      "oldName": "Seko 个人版与企业定制 至尊会员",
+      "name": "Seko 个人版与企业定制 至尊会员",
+      "productId": "seko"
+    },
+    {
+      "id": "seko-enterprise",
+      "oldName": "Seko 个人版与企业定制 企业会员",
+      "name": "Seko 个人版与企业定制 企业会员",
+      "productId": "seko"
+    },
+    {
+      "id": "wps-office-ai-personal-free",
+      "oldName": "WPS Office 国内个人会员 注册用户",
+      "name": "WPS Office 国内个人会员 注册用户",
+      "productId": "wps-office-ai-personal"
+    },
+    {
+      "id": "wps-office-ai-personal-super",
+      "oldName": "WPS Office 国内个人会员 WPS超级会员",
+      "name": "WPS Office 国内个人会员 WPS超级会员",
+      "productId": "wps-office-ai-personal"
+    },
+    {
+      "id": "wps-office-ai-personal-grand",
+      "oldName": "WPS Office 国内个人会员 WPS大会员",
+      "name": "WPS Office 国内个人会员 WPS大会员",
+      "productId": "wps-office-ai-personal"
+    },
+    {
+      "id": "wps365-business-free",
+      "oldName": "WPS 365 国内商业版 体验版",
+      "name": "WPS 365 国内商业版 体验版",
+      "productId": "wps365-business"
+    },
+    {
+      "id": "wps365-business-collaboration",
+      "oldName": "WPS 365 国内商业版 商业协作版",
+      "name": "WPS 365 国内商业版 商业协作版",
+      "productId": "wps365-business"
+    },
+    {
+      "id": "wps365-business-advanced",
+      "oldName": "WPS 365 国内商业版 商业高级版",
+      "name": "WPS 365 国内商业版 商业高级版",
+      "productId": "wps365-business"
+    },
+    {
+      "id": "wps365-business-flagship",
+      "oldName": "WPS 365 国内商业版 商业旗舰版",
+      "name": "WPS 365 国内商业版 商业旗舰版",
+      "productId": "wps365-business"
+    },
+    {
+      "id": "wps365-smart-advanced",
+      "oldName": "WPS 365（智能版） 智能高级版",
+      "name": "WPS 365（智能版） 智能高级版",
+      "productId": "wps365-smart"
+    },
+    {
+      "id": "wps365-smart-flagship",
+      "oldName": "WPS 365（智能版） 智能旗舰版",
+      "name": "WPS 365（智能版） 智能旗舰版",
+      "productId": "wps365-smart"
+    },
+    {
+      "id": "wps365-ai-package-basic",
+      "oldName": "WPS 365 AI 智点年度许可 基础包",
+      "name": "WPS 365 AI 智点年度许可 基础包",
+      "productId": "wps365-ai-package"
+    },
+    {
+      "id": "wps365-ai-package-advanced",
+      "oldName": "WPS 365 AI 智点年度许可 高级包",
+      "name": "WPS 365 AI 智点年度许可 高级包",
+      "productId": "wps365-ai-package"
+    },
+    {
+      "id": "wps365-ai-package-flagship",
+      "oldName": "WPS 365 AI 智点年度许可 旗舰包",
+      "name": "WPS 365 AI 智点年度许可 旗舰包",
+      "productId": "wps365-ai-package"
+    },
+    {
+      "id": "ppio-token-plan-enterprise-basic",
+      "oldName": "PPIO 企业 Token Plan Enterprise Basic",
+      "name": "PPIO 企业 Token Plan Enterprise Basic",
+      "productId": "ppio-token-plan"
+    },
+    {
+      "id": "ppio-token-plan-enterprise-pro",
+      "oldName": "PPIO 企业 Token Plan Enterprise Pro",
+      "name": "PPIO 企业 Token Plan Enterprise Pro",
+      "productId": "ppio-token-plan"
+    },
+    {
+      "id": "ppio-token-plan-enterprise-max",
+      "oldName": "PPIO 企业 Token Plan Enterprise Max",
+      "name": "PPIO 企业 Token Plan Enterprise Max",
+      "productId": "ppio-token-plan"
+    },
+    {
+      "id": "jimeng-membership-basic",
+      "oldName": "即梦 基础会员",
+      "name": "即梦 基础会员",
+      "productId": "jimeng-membership"
+    },
+    {
+      "id": "jimeng-membership-standard",
+      "oldName": "即梦 标准会员",
+      "name": "即梦 标准会员",
+      "productId": "jimeng-membership"
+    },
+    {
+      "id": "jimeng-membership-advanced",
+      "oldName": "即梦 高级会员",
+      "name": "即梦 高级会员",
+      "productId": "jimeng-membership"
+    },
+    {
+      "id": "jimeng-membership-super",
+      "oldName": "即梦 超级会员",
+      "name": "即梦 超级会员",
+      "productId": "jimeng-membership"
+    },
+    {
+      "id": "kling-international-personal-basic",
+      "oldName": "Kling AI（国际个人版） Basic",
+      "name": "Kling AI（国际个人版） Basic",
+      "productId": "kling-international-personal"
+    },
+    {
+      "id": "kling-international-personal-standard",
+      "oldName": "Kling AI（国际个人版） Standard",
+      "name": "Kling AI（国际个人版） Standard",
+      "productId": "kling-international-personal"
+    },
+    {
+      "id": "kling-international-personal-pro",
+      "oldName": "Kling AI（国际个人版） Pro",
+      "name": "Kling AI（国际个人版） Pro",
+      "productId": "kling-international-personal"
+    },
+    {
+      "id": "kling-international-personal-premier",
+      "oldName": "Kling AI（国际个人版） Premier",
+      "name": "Kling AI（国际个人版） Premier",
+      "productId": "kling-international-personal"
+    },
+    {
+      "id": "kling-international-personal-ultra-plus",
+      "oldName": "Kling AI（国际个人版） Ultra+",
+      "name": "Kling AI（国际个人版） Ultra+",
+      "productId": "kling-international-personal"
+    },
+    {
+      "id": "kling-international-team-team-plan",
+      "oldName": "Kling AI（国际团队版） Team Plan",
+      "name": "Kling AI（国际团队版） Team Plan",
+      "productId": "kling-international-team"
+    },
+    {
+      "id": "leonardo-api-basic",
+      "oldName": "Leonardo API Basic",
+      "name": "Leonardo API Basic",
+      "productId": "leonardo-api"
+    },
+    {
+      "id": "leonardo-api-standard",
+      "oldName": "Leonardo API Standard",
+      "name": "Leonardo API Standard",
+      "productId": "leonardo-api"
+    },
+    {
+      "id": "leonardo-api-pro",
+      "oldName": "Leonardo API Pro",
+      "name": "Leonardo API Pro",
+      "productId": "leonardo-api"
+    },
+    {
+      "id": "leonardo-api-custom",
+      "oldName": "Leonardo API Custom",
+      "name": "Leonardo API Custom",
+      "productId": "leonardo-api"
+    }
+  ]
+}
