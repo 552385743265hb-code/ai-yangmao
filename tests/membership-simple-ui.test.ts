@@ -60,3 +60,42 @@ it('keeps existing limits when editing concrete seats expanded from a retired ag
  const r=vm.runInContext(`membershipSelectionRequirement(['a-premium'],offer.membershipRequirement,1)`,ctx);
  expect(r.anyOf[0].allOf[0].limits).toEqual({billingCycles:['annual']});
 });
+const clause=(productId:string,planIds:string[],limits?:object)=>({productId,scope:'plans',planIds,excludePlanIds:[],...(limits?{limits}:{})});
+const requirement=(anyOf:any[])=>({schemaVersion:'membership-v1',status:'confirmed',catalogRevision:1,evidenceUrls:['https://official.example/perk'],anyOf});
+it('narrows a seat choice while retaining its required usage product and original restrictions',async()=>{
+ const {ctx,document,change}=fixture();
+ const seat=clause('a',['a-pro','a-max'],{billingCycles:['annual']});
+ const original=requirement([{allOf:[seat,clause('b',['b-pro'])]}]);
+ (ctx as any).offer={platformId:'alpha',membershipRequirement:original};
+ await vm.runInContext(`mountMembershipEditor(document.querySelector('form'),offer)`,ctx);
+ change('[data-member-plan="a-pro"]',undefined,false);
+ const saved=vm.runInContext(`membershipEditFields(offer,document.querySelector('form').membershipEditor,[],false,'')`,ctx).membershipRequirement;
+ expect(saved?.anyOf).toEqual([{allOf:[clause('a',['a-max'],{billingCycles:['annual']}),clause('b',['b-pro'])]}]);
+ expect(core.matchMembership(saved,[{planId:'a-max',billingCycle:'annual'}],catalog)).toBe('no');
+});
+it('retains every restriction branch for a plan occurring more than once',()=>{
+ const {ctx}=fixture();(ctx as any).original=requirement([{allOf:[clause('a',['a-pro','a-max'],{billingCycles:['annual']})]},{allOf:[clause('a',['a-pro'],{regions:['US']})]}]);
+ const saved=vm.runInContext(`membershipSelectionRequirement(['a-pro'],original,1)`,ctx);
+ expect(saved.anyOf).toEqual([{allOf:[clause('a',['a-pro'],{billingCycles:['annual']})]},{allOf:[clause('a',['a-pro'],{regions:['US']})]}]);
+});
+it('blocks removal of an entire required product rather than accepting the other product alone',async()=>{
+ const {ctx,document,change}=fixture();const original=requirement([{allOf:[clause('a',['a-pro']),clause('b',['b-pro'])]}]);(ctx as any).offer={platformId:'alpha',membershipRequirement:original};
+ expect(()=>vm.runInContext(`membershipSelectionRequirement(['b-pro'],offer.membershipRequirement,1)`,ctx)).toThrow();
+ await vm.runInContext(`mountMembershipEditor(document.querySelector('form'),offer)`,ctx);
+ change('[data-member-plan="a-pro"]',undefined,false);
+ expect(vm.runInContext(`document.querySelector('form').membershipEditor.requirement`,ctx)).toEqual(original);
+ expect(document.querySelector('[data-member-plan="a-pro"]')!.hasAttribute('checked')).toBe(true);
+ expect(document.querySelector('.warn-note')).not.toBeNull();
+});
+it('preserves excluded plans when narrowing an existing clause',()=>{
+ const {ctx}=fixture();(ctx as any).original=requirement([{allOf:[{...clause('a',['a-pro','a-max']),excludePlanIds:['a-pro']}]}]);
+ expect(vm.runInContext(`membershipSelectionRequirement(['a-max'],original,1).anyOf[0].allOf[0].excludePlanIds`,ctx)).toEqual(['a-pro']);
+});
+it('blocks ambiguous additions to restriction branches rather than choosing the first restriction',()=>{
+ const {ctx}=fixture();(ctx as any).original=requirement([{allOf:[clause('a',['a-pro'],{billingCycles:['annual']})]},{allOf:[clause('a',['a-pro'],{regions:['US']})]}]);
+ expect(()=>vm.runInContext(`membershipSelectionRequirement(['a-pro','a-max'],original,1)`,ctx)).toThrow();
+});
+it('does not confirm an unresolved requirement just because a plan was selected',()=>{
+ const {ctx}=fixture();(ctx as any).original={...requirement([{allOf:[clause('a',['a-pro','a-max'])]}]),status:'needs_review'};
+ expect(vm.runInContext(`membershipSelectionRequirement(['a-pro'],original,1).status`,ctx)).toBe('needs_review');
+});

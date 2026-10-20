@@ -97,15 +97,37 @@ function membershipSelectedPlans(requirement) {
   })))];
 }
 function membershipSelectionRequirement(ids, original, revision) {
-  const groups=new Map();
-  for(const id of ids){
-    const p=MEMBERSHIP_CATALOG.plans.find(p=>p.id===id&&p.status==='verified');if(!p)continue;
-    const prior=original.anyOf.flatMap(g=>g.allOf).find(c=>c.productId===p.productId&&(c.scope!=='plans'||c.planIds.some(old=>(YMMembership.membershipPlanAlternatives(old,MEMBERSHIP_CATALOG)||[]).includes(id)))&&!c.excludePlanIds.some(old=>(YMMembership.membershipPlanAlternatives(old,MEMBERSHIP_CATALOG)||[]).includes(id)));
-    const limits=prior?.limits,key=p.productId+JSON.stringify(limits||{});
-    if(!groups.has(key))groups.set(key,{allOf:[{productId:p.productId,scope:'plans',planIds:[],excludePlanIds:[],...(limits?{limits:structuredClone(limits)}:{})}]});
-    groups.get(key).allOf[0].planIds.push(id);
+  const selected=[...new Set(ids)].filter(id=>MEMBERSHIP_CATALOG.plans.some(p=>p.id===id&&p.status==='verified'));
+  if(!selected.length){
+    if(original.anyOf.some(g=>g.allOf.length>1))throw new Error('联合资格不能移除全部必需套餐，请按官方条款重新核对。');
+    return {...original,status:'not_required',catalogRevision:revision,anyOf:[]};
   }
-  return {...original,status:groups.size?'confirmed':'not_required',catalogRevision:revision,anyOf:[...groups.values()]};
+  const priorIds=membershipSelectedPlans(original),added=selected.filter(id=>!priorIds.includes(id));
+  // Keep the original OR branches and every AND clause. A flat checkbox list
+  // cannot determine a new clause's restrictions or its place in a joint rule.
+  const anyOf=original.anyOf.map(group=>({ ...structuredClone(group),allOf:group.allOf.map(clause=>{
+    const applicable=membershipSelectedPlans({anyOf:[{allOf:[clause]}]});
+    const planIds=selected.filter(id=>applicable.includes(id));
+    if(group.allOf.length===1){
+      for(const id of added){
+        const plan=MEMBERSHIP_CATALOG.plans.find(p=>p.id===id);
+        const peers=original.anyOf.flatMap(g=>g.allOf).filter(c=>c.productId===plan.productId);
+        if(plan.productId===clause.productId&&peers.length===1&&!clause.excludePlanIds.some(old=>(YMMembership.membershipPlanAlternatives(old,MEMBERSHIP_CATALOG)||[]).includes(id)))planIds.push(id);
+      }
+    }
+    return {...structuredClone(clause),scope:'plans',planIds};
+  })}));
+  if(anyOf.some(g=>g.allOf.length>1&&g.allOf.some(c=>!c.planIds.length)))throw new Error('联合资格中的必需产品不能取消全部套餐，请按官方条款重新核对。');
+  const retained=anyOf.filter(g=>g.allOf.every(c=>c.planIds.length));
+  for(const id of added){
+    if(retained.some(g=>g.allOf.some(c=>c.planIds.includes(id))))continue;
+    const plan=MEMBERSHIP_CATALOG.plans.find(p=>p.id===id);
+    if(original.anyOf.some(g=>g.allOf.length>1)||original.anyOf.some(g=>g.allOf.some(c=>c.productId===plan.productId)))throw new Error('此套餐的联合资格或限制尚不明确，请按官方条款重新核对。');
+    let group=retained.find(g=>g.allOf.length===1&&g.allOf[0].productId===plan.productId);
+    if(!group){group={allOf:[{productId:plan.productId,scope:'plans',planIds:[],excludePlanIds:[]}]};retained.push(group);}
+    group.allOf[0].planIds.push(id);
+  }
+  return {...original,status:original.status==='needs_review'?'needs_review':'confirmed',catalogRevision:revision,anyOf:retained};
 }
 function membershipEditorMarkup(state) {
   const vendors=membershipVendors();if(!vendors.some(v=>v.id===state.vendorId))state.vendorId=vendors[0]?.id||'';
@@ -135,13 +157,16 @@ async function mountMembershipEditor(form, original) {
     state.vendorId=product?.platformIds?.[0]||product?.id||state.vendorId;
   }
   const redraw=()=>{const open=host.querySelector('[data-membership-detail="catalog"]')?.open;host.innerHTML=membershipEditorMarkup(state);host.querySelector('[data-membership-detail="catalog"]').open=!!open;renderMembershipCatalog(host.querySelector('[data-membership-catalog]'),redraw);};
-  const update=()=>{state.touched=true;state.requirement=membershipSelectionRequirement(state.selectedPlanIds,state.original,state.catalogRevision);redraw();};
+  const update=()=>{
+    try{state.requirement=membershipSelectionRequirement(state.selectedPlanIds,state.original,state.catalogRevision);state.touched=true;state.error='';}
+    catch(error){state.error=error.message;state.selectedPlanIds=membershipSelectedPlans(state.requirement);}
+    redraw();
+  };
   redraw();
   host.addEventListener('change',e=>{
     const input=e.target;if(input.closest('[data-membership-catalog]'))return;
     if(input.matches('[data-member-vendor]')){state.vendorId=input.value;redraw();return;}
     if(!input.matches('[data-member-plan]'))return;
-    if(state.original.anyOf.some(g=>g.allOf.length>1)){state.error='此旧条款含跨产品联合资格，需先按官方条款核对映射。';redraw();return;}
     const id=input.dataset.memberPlan;
     if(input.checked)state.selectedPlanIds=[...new Set([...state.selectedPlanIds,id])];
     else state.selectedPlanIds=state.selectedPlanIds.filter(x=>x!==id);

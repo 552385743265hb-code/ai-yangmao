@@ -1,3 +1,4 @@
+import {missingOwnerChoices} from '../src/shared/fast-track-fields';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import {makeSemanticReview} from '../src/shared/fast-track-semantics';
 import worker from '../src/worker/index';
@@ -399,7 +400,7 @@ it('selection-only membership preserves model eligibility limits and refuses unm
 });
 
 it('checkbox completion returns to the model and publishes only after source limits are filled',async()=>{
- const picked=proMembership(1);
+ const picked={...proMembership(1),status:'needs_review',evidenceUrls:[]};
  const created=await call('admin/fast-track',{newPlatform:{name:'Odyssey'},url:'https://odyssey.world/introducing-odyssey-3',benefit:'年付Pro会员额外免费体验',membershipRequirement:picked,membershipSelectionOnly:true});
  const id=created.body.jobId;
  f.sqlite.prepare('UPDATE membership_catalog SET revision=1,data_json=? WHERE id=1').run(JSON.stringify(catalog));
@@ -412,9 +413,24 @@ it('checkbox completion returns to the model and publishes only after source lim
  const claimed=await ingest(`fast-track/${id}/claim`,{});
  expect(claimed.status).toBe(200);
  const limits={billingCycles:['annual'],startedBefore:'2026-10-01',trial:'exclude'};
- const modeled={...picked,anyOf:[{allOf:[{...picked.anyOf[0].allOf[0],limits}]}]};
+ const modeled={...proMembership(1),anyOf:[{allOf:[{...picked.anyOf[0].allOf[0],limits}]}]};
  const result=await settle(id,await ingest(`fast-track/${id}/result`,{fields:{...memberPerk,membershipRequirement:modeled},sourceText:'Pro annual subscribers who joined before October 1, 2026 receive additional free video generation. Trials are excluded.'}));
  expect(result.body.state,JSON.stringify(result.body)).toBe('published');
  const row=f.sqlite.prepare('SELECT membership_requirement FROM offers WHERE id=?').get(result.body.offerId) as any;
  expect(JSON.parse(row.membership_requirement).anyOf[0].allOf[0].limits).toEqual(limits);
+});
+
+it('selection-only unresolved identities can receive the model complete rule without auto-confirming absent or different output',()=>{
+ const confirmed=proMembership(1),picked={...confirmed,status:'needs_review',evidenceUrls:[]};
+ const modeled={...confirmed,anyOf:[{allOf:[{...confirmed.anyOf[0].allOf[0],limits:{billingCycles:['annual'],trial:'exclude'}}]}]};
+ const owner={membershipRequirement:picked,membershipSelectionOnly:true};
+ const completed=mergeFastTrackFields({membershipRequirement:modeled},owner,'x');
+ expect(completed.membershipRequirement).toEqual(modeled);
+ expect(missingOwnerChoices(completed)).toEqual([]);
+ expect(mergeFastTrackFields({},owner,'x').membershipRequirement).toEqual(picked);
+ const wrong={...modeled,anyOf:[{allOf:[{...modeled.anyOf[0].allOf[0],planIds:['different-plan']}]}]};
+ expect(mergeFastTrackFields({membershipRequirement:wrong},owner,'x').membershipRequirement).toEqual(picked);
+ expect(mergeFastTrackFields({membershipRequirement:modeled},{membershipRequirement:picked},'x').membershipRequirement).toEqual(picked);
+ const empty={...picked,anyOf:[]};
+ expect(mergeFastTrackFields({membershipRequirement:{...empty,status:'confirmed'}},{membershipRequirement:empty,membershipSelectionOnly:true},'x').membershipRequirement).toMatchObject({status:'needs_review'});
 });

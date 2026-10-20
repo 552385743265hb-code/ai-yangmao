@@ -54,14 +54,19 @@
       "platformId": "azure",
       "name": "Microsoft Azure",
       "site": "https://azure.microsoft.com",
-      "status": "unreviewed",
-      "sources": [],
+      "status": "partial",
+      "sources": [
+        "https://azure.microsoft.com/en-us/pricing/purchase-options/azure-account",
+        "https://learn.microsoft.com/en-us/azure/foundry/concepts/manage-costs"
+      ],
       "productIds": [],
       "homepageRead": {
         "url": "https://azure.microsoft.com/en-us",
         "chars": 14868,
         "error": null
-      }
+      },
+      "checkedAt": "2026-10-20",
+      "note": "Azure账户及Foundry按量/承诺容量不是软件会员；已核类型仍不代替全AI产品目录。"
     },
     {
       "platformId": "huaweicloud",
@@ -413,15 +418,22 @@
     {
       "platformId": "replicas",
       "name": "Replicas",
-      "site": null,
-      "status": "unreviewed",
-      "sources": [],
-      "productIds": [],
+      "site": "https://replicas.dev",
+      "status": "research_complete",
+      "sources": [
+        "https://replicas.dev/pricing",
+        "https://docs.replicas.dev/admin/billing"
+      ],
+      "productIds": [
+        "replicas"
+      ],
       "homepageRead": {
         "url": null,
         "chars": 0,
         "error": "No registered official homepage; discover from platform sources"
-      }
+      },
+      "checkedAt": "2026-10-20",
+      "note": "官网与注册官方X身份闭环；当前定价与billing一致Developer/Team/Enterprise三档，未发现旧按席价继续有效依据。"
     },
     {
       "platformId": "sambanova",
@@ -682,14 +694,27 @@
       "platformId": "moonshot",
       "name": "Kimi 开放平台（月之暗面）",
       "site": "https://platform.moonshot.cn",
-      "status": "unreviewed",
-      "sources": [],
-      "productIds": [],
+      "status": "research_complete",
+      "sources": [
+        "https://www.kimi.com/help/membership/membership-overview",
+        "https://www.kimi.ai/help/membership/membership-overview",
+        "https://www.kimi.com/help/kimi-business/kimi-business",
+        "https://www.kimi.ai/help/kimi-business/kimi-business",
+        "https://platform.moonshot.cn/docs/pricing/chat"
+      ],
+      "productIds": [
+        "kimi-cn",
+        "kimi-international",
+        "kimi-business-cn",
+        "kimi-business-international"
+      ],
       "homepageRead": {
         "url": "https://platform.kimi.com/",
         "chars": 3516,
         "error": null
-      }
+      },
+      "checkedAt": "2026-10-20",
+      "note": "已逐项核国内/国际个人现行与可续费存量、Business企业及API按量；Kimi Code/Work共用个人会员，不再建重复产品。"
     },
     {
       "platformId": "meta",
@@ -712,14 +737,36 @@
       "platformId": "microsoft-ai",
       "name": "Microsoft AI（Copilot）",
       "site": "https://microsoft.ai",
-      "status": "unreviewed",
-      "sources": [],
-      "productIds": [],
+      "status": "partial",
+      "sources": [
+        "https://www.microsoft.com/en-us/copilot/pricing/individuals",
+        "https://www.microsoft.com/en-us/copilot/pricing/business",
+        "https://www.microsoft.com/en-us/copilot/pricing/enterprise",
+        "https://learn.microsoft.com/en-us/copilot/microsoft-365/microsoft-365-copilot-licensing",
+        "https://www.microsoft.com/en-us/microsoft-teams/premium",
+        "https://www.microsoft.com/en-us/power-platform/products/power-apps/pricing",
+        "https://www.microsoft.com/en-us/power-platform/products/power-automate/pricing",
+        "https://www.microsoft.com/en-us/copilot/products/copilot-studio",
+        "https://support.microsoft.com/en-us/microsoft-365-copilot/about-microsoft-copilot-pro"
+      ],
+      "productIds": [
+        "microsoft-copilot-personal",
+        "microsoft-copilot-free",
+        "microsoft-copilot-business",
+        "microsoft-copilot-enterprise",
+        "microsoft-365-enterprise",
+        "microsoft-teams-premium",
+        "microsoft-power-apps",
+        "microsoft-power-automate",
+        "microsoft-copilot-studio"
+      ],
       "homepageRead": {
         "url": "https://microsoft.ai",
         "chars": 0,
         "error": "HTTP Error 403: Forbidden"
-      }
+      },
+      "checkedAt": "2026-10-20",
+      "note": "现行个人/商业/企业Copilot、TeamsPremium、PowerApps/Automate和Studio固定月包已核；其他正式AI软件许可仍在补核。"
     },
     {
       "platformId": "minimax",
@@ -817,14 +864,24 @@
       "platformId": "sakana",
       "name": "Sakana AI（Fugu）",
       "site": "https://sakana.ai",
-      "status": "unreviewed",
-      "sources": [],
-      "productIds": [],
+      "status": "research_complete",
+      "sources": [
+        "https://sakana.ai/fugu/",
+        "https://sakana.ai/marlin/",
+        "https://chat.sakana.ai/faq",
+        "https://sakana.ai/namazu/"
+      ],
+      "productIds": [
+        "sakana-fugu",
+        "sakana-marlin"
+      ],
       "homepageRead": {
         "url": "https://sakana.ai",
         "chars": 5231,
         "error": null
-      }
+      },
+      "checkedAt": "2026-10-20",
+      "note": "Fugu三档、Marlin三档正式订阅已核；Sakana Chat官方明确当前免费无命名档，Namazu明确无月费按量，不造额外会员。"
     },
     {
       "platformId": "xai",
@@ -856,14 +913,21 @@
       "platformId": "unisound",
       "name": "云知声 Unisound（Token Hub）",
       "site": "https://maas.unisound.com/",
-      "status": "unreviewed",
-      "sources": [],
-      "productIds": [],
+      "status": "research_complete",
+      "sources": [
+        "https://maas.unisound.com/token-plan",
+        "https://maas.unisound.com/docs/token-plan/upgrade-notice"
+      ],
+      "productIds": [
+        "unisound-token-plan"
+      ],
       "homepageRead": {
         "url": "https://maas.unisound.com/",
         "chars": 2165,
         "error": null
-      }
+      },
+      "checkedAt": "2026-10-20",
+      "note": "当前Standard/Plus/Max和有效期内旧Lite/Standard/Pro/Max已核，升级文明确旧档停止续费但到期前继续。"
     },
     {
       "platformId": "sensenova",
@@ -889,14 +953,20 @@
       "platformId": "doubao",
       "name": "字节跳动 豆包 Doubao",
       "site": "https://www.doubao.com",
-      "status": "unreviewed",
-      "sources": [],
-      "productIds": [],
+      "status": "research_complete",
+      "sources": [
+        "https://www.doubao.com/product/subscriptions"
+      ],
+      "productIds": [
+        "doubao"
+      ],
       "homepageRead": {
         "url": "https://www.doubao.com",
         "chars": 0,
         "error": "HTTP Error 503: Service Unavailable"
-      }
+      },
+      "checkedAt": "2026-10-20",
+      "note": "个人订阅三档已核，官方明确与飞书个人AI额度共享，使用同一计划ID；组织席位归独立豆包工作入口。"
     },
     {
       "platformId": "xiaomi-mimo",
@@ -1000,14 +1070,24 @@
       "platformId": "qwen",
       "name": "阿里 通义千问 Qwen",
       "site": "https://qwen.ai",
-      "status": "unreviewed",
-      "sources": [],
-      "productIds": [],
+      "status": "partial",
+      "sources": [
+        "https://platform.qianwenai.com/docs/token-plan/overview",
+        "https://docs.qwencloud.com/token-plan/overview"
+      ],
+      "productIds": [
+        "qwen-token-personal",
+        "qwen-token-team",
+        "qwencloud-token-personal",
+        "qwencloud-token-team"
+      ],
       "homepageRead": {
         "url": "https://qwen.ai",
         "chars": 4,
         "error": null
-      }
+      },
+      "checkedAt": "2026-10-20",
+      "note": "国内及国际个人/团队Token Plan完整四产品14档；聊天客户端会员入口尚待核。"
     },
     {
       "platformId": "ami-labs",
@@ -1050,10 +1130,13 @@
       "site": "https://nousresearch.com",
       "status": "partial",
       "sources": [
-        "https://portal.nousresearch.com/"
+        "https://portal.nousresearch.com/",
+        "https://portal.nousresearch.com/business",
+        "https://portal.nousresearch.com/cloud"
       ],
       "productIds": [
-        "nous-research"
+        "nous-research",
+        "nous-hermes-enterprise"
       ],
       "homepageRead": {
         "url": "https://nousresearch.com",
@@ -1061,7 +1144,8 @@
         "error": null
       },
       "appliedCatalogRevision": 41,
-      "note": "Portal 四档已写入；另查 Hermes Cloud 是否独立订阅"
+      "note": "Portal四档和Enterprise私有部署已核；Cloud按秒计算/存储不另建会员，Business中央余额是否有独立固定订阅未明确。",
+      "checkedAt": "2026-10-20"
     },
     {
       "platformId": "periodic",
@@ -1991,14 +2075,20 @@
       "platformId": "lingxi",
       "name": "WPS 灵犀",
       "site": "https://www.lingxi.cn",
-      "status": "unreviewed",
-      "sources": [],
-      "productIds": [],
+      "status": "partial",
+      "sources": [
+        "https://www.lingxi.cn/docs"
+      ],
+      "productIds": [
+        "wps-lingxi"
+      ],
       "homepageRead": {
         "url": "https://www.lingxi.cn",
         "chars": 2482,
         "error": null
-      }
+      },
+      "checkedAt": "2026-10-20",
+      "note": "灵犀体验/标准/进阶/旗舰四档已核；WPS其他AI/365及企业AI许可需继续核对。"
     },
     {
       "platformId": "windsurf",
@@ -2090,14 +2180,32 @@
       "platformId": "feishu",
       "name": "字节跳动 飞书 Lark",
       "site": "https://www.feishu.cn",
-      "status": "unreviewed",
-      "sources": [],
-      "productIds": [],
+      "status": "partial",
+      "sources": [
+        "https://www.doubao.com/product/subscriptions",
+        "https://www.feishu.cn/service",
+        "https://www.larksuite.com/en_us/plans",
+        "https://aily.feishu.cn/hc/1u7kleqg_1cnvbb55",
+        "https://www.doubao.com/work/docs/zh-cn/articles/855635606021-team-enterprise-benefits"
+      ],
+      "productIds": [
+        "doubao",
+        "feishu-suite",
+        "lark-suite",
+        "feishu-ai-personal-legacy",
+        "feishu-ai-business",
+        "doubao-work-seats",
+        "doubao-enterprise-usage",
+        "feishu-aily-legacy",
+        "feishu-meeting-notes-legacy"
+      ],
       "homepageRead": {
         "url": "https://www.larksuite.com/ja_jp/?from_site=feishu",
         "chars": 25,
         "error": null
-      }
+      },
+      "checkedAt": "2026-10-20",
+      "note": "国内/国际套件、个人共享及存量AI、企业席位/用量和专用存量已核；旧套件企业标准/专业、Lark Frontline和独立AI尚待核。"
     },
     {
       "platformId": "coze",
@@ -2121,14 +2229,22 @@
       "platformId": "doubao-work",
       "name": "豆包工作",
       "site": "https://www.doubao.com/work",
-      "status": "unreviewed",
-      "sources": [],
-      "productIds": [],
+      "status": "partial",
+      "sources": [
+        "https://www.doubao.com/work/docs/zh-cn/articles/855635606021-team-enterprise-benefits",
+        "https://aily.feishu.cn/hc/1u7kleqg_1cnvbb55"
+      ],
+      "productIds": [
+        "doubao-work-seats",
+        "doubao-enterprise-usage"
+      ],
       "homepageRead": {
         "url": "https://www.doubao.com/work",
         "chars": 18,
         "error": null
-      }
+      },
+      "checkedAt": "2026-10-20",
+      "note": "组织团队/企业席位与对应企业用量三档已核；独立个人版与豆包个人会员是否同一订阅仍须官方明确证据。"
     },
     {
       "platformId": "qoder",

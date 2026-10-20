@@ -3093,6 +3093,966 @@
       "checkedAt": "2026-10-20",
       "quote": "Workers Free; Workers Paid; Workers Enterprise",
       "note": "Workers AI官方明确使用Workers Free/Paid；Paid最低5美元/月，Enterprise按合同。Standard/Unbound/Bundled是使用量计费模型，不重复创建会员。AI Gateway预付积分不是订阅。"
+    },
+    {
+      "productId": "doubao",
+      "platformIds": [
+        "doubao",
+        "feishu"
+      ],
+      "name": "豆包订阅",
+      "plans": [
+        "标准",
+        "加强",
+        "高级"
+      ],
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://www.doubao.com/product/subscriptions",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "quote": "标准; 加强; 高级",
+      "remaining": "",
+      "planSources": {
+        "标准": "https://lf3-cdn-tos.draftstatic.com/obj/ies-hotsoon-draft/doubao_student_offer_terms/97228e4f-70c0-4d04-963e-39fb313255f4.html",
+        "加强": "https://lf3-cdn-tos.draftstatic.com/obj/ies-hotsoon-draft/doubao_student_offer_terms/97228e4f-70c0-4d04-963e-39fb313255f4.html",
+        "高级": "https://lf3-cdn-tos.draftstatic.com/obj/ies-hotsoon-draft/doubao_student_offer_terms/97228e4f-70c0-4d04-963e-39fb313255f4.html"
+      },
+      "newPlanIds": {
+        "标准": "doubao-standard",
+        "加强": "doubao-enhanced",
+        "高级": "doubao-advanced"
+      },
+      "evidenceUrls": [
+        "https://aily.feishu.cn/hc/1u7kleqg_1cnvbb55"
+      ],
+      "applyReady": true,
+      "note": "官方《关于豆包订阅》明确仅标准、加强、高级三档；飞书官方交叉核验连续月费68/200/500元。豆包和飞书AI个人功能共享权益，不再为豆包工作伙伴重复创建个人订阅。99元创作额度包为一次性资源包，学生专属权益不是独立档位。"
+    },
+    {
+      "productId": "kimi-cn",
+      "platformIds": [
+        "moonshot"
+      ],
+      "name": "Kimi 国内会员",
+      "plans": [
+        "Go",
+        "Plus",
+        "Pro",
+        "Max",
+        "Ultra",
+        "Andante",
+        "Moderato",
+        "Allegretto",
+        "Allegro"
+      ],
+      "freePlans": [],
+      "legacyPlans": [
+        "Andante",
+        "Moderato",
+        "Allegretto",
+        "Allegro"
+      ],
+      "sourceUrl": "https://www.kimi.com/help/membership/membership-overview",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "quote": "Go; Plus; Pro; Max; Ultra; Andante; Moderato; Allegretto; Allegro",
+      "remaining": "",
+      "applyReady": true,
+      "note": "官方完整现行说明及表格：月费49/99/199/699/1399元。旧套餐名称、权益、自动续费不变，可继续续费；Kimi Code共享会员额度，不能另造Coding套餐。旧Adagio免费档未在当前完整会员页确认，不凭过时媒体补入。"
+    },
+    {
+      "productId": "kimi-international",
+      "platformIds": [
+        "moonshot"
+      ],
+      "name": "Kimi 国际会员",
+      "plans": [
+        "Plus",
+        "Pro",
+        "Max",
+        "Ultra",
+        "Moderato",
+        "Allegretto",
+        "Allegro",
+        "Vivace"
+      ],
+      "freePlans": [],
+      "legacyPlans": [
+        "Moderato",
+        "Allegretto",
+        "Allegro",
+        "Vivace"
+      ],
+      "sourceUrl": "https://www.kimi.ai/help/membership/membership-overview",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "quote": "Plus; Pro; Max; Ultra; Moderato; Allegretto; Allegro; Vivace",
+      "remaining": "",
+      "applyReady": true,
+      "note": "国际月费19/39/99/199美元。官方明确四个旧套餐可继续使用与续费；和国内名称/价格/资格分别记录。"
+    },
+    {
+      "productId": "unisound-token-plan",
+      "platformIds": [
+        "unisound"
+      ],
+      "name": "云知声 Token Hub Token Plan",
+      "plans": [
+        "Standard",
+        "Plus",
+        "Max",
+        "Lite（旧版至到期）",
+        "Standard（旧版至到期）",
+        "Pro（旧版至到期）",
+        "Max（旧版至到期）"
+      ],
+      "freePlans": [],
+      "legacyPlans": [
+        "Lite（旧版至到期）",
+        "Standard（旧版至到期）",
+        "Pro（旧版至到期）",
+        "Max（旧版至到期）"
+      ],
+      "sourceUrl": "https://maas.unisound.com/token-plan",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "quote": "Standard; Plus; Max; Lite（旧版至到期）; Standard（旧版至到期）; Pro（旧版至到期）; Max（旧版至到期）",
+      "remaining": "",
+      "planSources": {
+        "Lite（旧版至到期）": "https://maas.unisound.com/docs/token-plan/upgrade-notice",
+        "Standard（旧版至到期）": "https://maas.unisound.com/docs/token-plan/upgrade-notice",
+        "Pro（旧版至到期）": "https://maas.unisound.com/docs/token-plan/upgrade-notice",
+        "Max（旧版至到期）": "https://maas.unisound.com/docs/token-plan/upgrade-notice"
+      },
+      "newPlanIds": {
+        "Standard": "unisound-token-plan-standard",
+        "Plus": "unisound-token-plan-plus",
+        "Max": "unisound-token-plan-max",
+        "Lite（旧版至到期）": "unisound-token-plan-legacy-lite",
+        "Standard（旧版至到期）": "unisound-token-plan-legacy-standard",
+        "Pro（旧版至到期）": "unisound-token-plan-legacy-pro",
+        "Max（旧版至到期）": "unisound-token-plan-legacy-max"
+      },
+      "applyReady": true,
+      "note": "官方当前销售页完整三档，158/690/1180元，200M/1B/2B Credits。官方升级公告明确新三档一次性按需购买、无自动续费；旧四档停止新购/续费/升级，但有效期内继续可用。不是按量API账户或模型资源包。"
+    },
+    {
+      "productId": "kimi-business-cn",
+      "platformIds": [
+        "moonshot"
+      ],
+      "name": "Kimi（国内企业版）",
+      "plans": [
+        "Business"
+      ],
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://www.kimi.com/help/kimi-business/kimi-business",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "quote": "Business",
+      "remaining": "",
+      "sourceExcerpts": [
+        "Kimi Business 采用年度订阅制，2 座起售、单次购买上限 150 座",
+        "价格 | ¥4,200/座/年（约合 ¥350/座/月）",
+        "企业专属服务：支持企业线下签约，提供专属技术支持"
+      ],
+      "applyReady": true,
+      "note": "当前正式年度企业席位订阅，¥4200/座/年，2座起售，单次上限150座。20人以上仍是分笔购买同一Business产品，不是Team/Enterprise第二档；线下签约是企业服务而非官方另列旧合同等级。未发现官方明确仍有效的另一个旧企业套餐。"
+    },
+    {
+      "productId": "kimi-business-international",
+      "platformIds": [
+        "moonshot"
+      ],
+      "name": "Kimi（国际企业版）",
+      "plans": [
+        "Business"
+      ],
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://www.kimi.ai/help/kimi-business/kimi-business",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "quote": "Business",
+      "remaining": "",
+      "sourceExcerpts": [
+        "Kimi Business offers annual subscriptions starting from 2 seats (up to 150 seats per purchase)",
+        "Price | $600/seat/year (approx. $50/seat/month)",
+        "20+ | Place separate online orders"
+      ],
+      "applyReady": true,
+      "note": "当前正式年度企业席位订阅，$600/seat/year，2席起、单次150席上限；不把个人Pro/Max或20+分笔订单猜成Team或更高企业档。支持线下合同的销售联系不证明旧合同套餐。"
+    },
+    {
+      "productId": "qwen-token-personal",
+      "platformIds": [
+        "qwen"
+      ],
+      "name": "千问AI Token Plan个人版",
+      "plans": [
+        "Lite",
+        "Essential",
+        "Standard",
+        "Pro"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://platform.qianwenai.com/docs/token-plan/overview",
+      "quote": "Lite; Essential; Standard; Pro",
+      "note": "官方个人四档；与团队版可同时持有且独立计费。加油包不另建会员。",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true
+    },
+    {
+      "productId": "qwen-token-team",
+      "platformIds": [
+        "qwen"
+      ],
+      "name": "千问AI Token Plan团队版",
+      "plans": [
+        "标准席位 Standard",
+        "高级席位 Pro",
+        "尊享席位 Max"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://platform.qianwenai.com/docs/token-plan/overview",
+      "quote": "标准席位 Standard; 高级席位 Pro; 尊享席位 Max",
+      "note": "官方团队三种席位；与个人版独立订阅。共享用量包是附加容量。",
+      "newPlanIds": {
+        "标准席位 Standard": "qwen-token-team-standard",
+        "高级席位 Pro": "qwen-token-team-pro",
+        "尊享席位 Max": "qwen-token-team-max"
+      },
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true
+    },
+    {
+      "productId": "qwencloud-token-personal",
+      "platformIds": [
+        "qwen"
+      ],
+      "name": "QwenCloud Token Plan（国际版）个人版",
+      "plans": [
+        "Lite",
+        "Essential",
+        "Standard",
+        "Pro"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://docs.qwencloud.com/token-plan/overview",
+      "quote": "Lite; Essential; Standard; Pro",
+      "note": "官方个人四档；与团队版可同时持有且独立计费。加油包不另建会员。",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true
+    },
+    {
+      "productId": "qwencloud-token-team",
+      "platformIds": [
+        "qwen"
+      ],
+      "name": "QwenCloud Token Plan（国际版）团队版",
+      "plans": [
+        "Standard seat",
+        "Pro seat",
+        "Max seat"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://docs.qwencloud.com/token-plan/overview",
+      "quote": "Standard seat; Pro seat; Max seat",
+      "note": "官方团队三种席位；与个人版独立订阅。共享用量包是附加容量。",
+      "newPlanIds": {
+        "Standard seat": "qwencloud-token-team-standard",
+        "Pro seat": "qwencloud-token-team-pro",
+        "Max seat": "qwencloud-token-team-max"
+      },
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true
+    },
+    {
+      "productId": "wps-lingxi",
+      "platformIds": [
+        "lingxi"
+      ],
+      "name": "WPS 灵犀",
+      "plans": [
+        "体验版",
+        "标准版",
+        "进阶版",
+        "旗舰版"
+      ],
+      "freePlans": [
+        "体验版"
+      ],
+      "sourceUrl": "https://www.lingxi.cn/docs",
+      "quote": "体验版; 标准版; 进阶版; 旗舰版",
+      "note": "官方定价完整四档；Pro/Max是模型模式而非会员。单月与连续包月不重复，智点加量包不作独立会员。WPS其他AI/365企业许可另待核。",
+      "newPlanIds": {
+        "体验版": "wps-lingxi-free",
+        "标准版": "wps-lingxi-standard",
+        "进阶版": "wps-lingxi-advanced",
+        "旗舰版": "wps-lingxi-flagship"
+      },
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true
+    },
+    {
+      "productId": "feishu-suite",
+      "platformIds": [
+        "feishu"
+      ],
+      "name": "飞书套件",
+      "plans": [
+        "免费版",
+        "商业标准版",
+        "商业专业版",
+        "商业旗舰版",
+        "企业旗舰版"
+      ],
+      "freePlans": [
+        "免费版"
+      ],
+      "sourceUrl": "https://www.feishu.cn/service",
+      "quote": "免费版; 商业标准版; 商业专业版; 商业旗舰版; 企业旗舰版",
+      "note": "当前公开价目五档。帮助中心另提企业标准/专业，但未核到是否仍可续用的完整旧合同目录，保持研究未完。独立AI订阅分列。",
+      "newPlanIds": {
+        "免费版": "feishu-suite-free",
+        "商业标准版": "feishu-suite-business-standard",
+        "商业专业版": "feishu-suite-business-pro",
+        "商业旗舰版": "feishu-suite-business-flagship",
+        "企业旗舰版": "feishu-suite-enterprise-flagship"
+      },
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true
+    },
+    {
+      "productId": "lark-suite",
+      "platformIds": [
+        "feishu"
+      ],
+      "name": "Lark（国际套件）",
+      "plans": [
+        "Starter",
+        "Basic",
+        "Pro",
+        "Enterprise"
+      ],
+      "freePlans": [
+        "Starter"
+      ],
+      "sourceUrl": "https://www.larksuite.com/en_us/plans",
+      "quote": "Starter; Basic; Pro; Enterprise",
+      "note": "当前四档。Basic地区有限；Frontline另有销售入口，需确认是否独立正式许可。",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true
+    },
+    {
+      "productId": "feishu-ai-personal-legacy",
+      "platformIds": [
+        "feishu"
+      ],
+      "name": "飞书（存量个人订阅）",
+      "plans": [
+        "AI 会员",
+        "AI 会员 Plus"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://aily.feishu.cn/hc/1u7kleqg_1cnvbb55",
+      "quote": "AI 会员; AI 会员 Plus",
+      "note": "官方明确历史身份在订单周期和连续订阅状态保持不变。新个人用户升级购买豆包订阅，不再重复建三档。",
+      "newPlanIds": {
+        "AI 会员": "feishu-ai-personal-legacy-ai-member",
+        "AI 会员 Plus": "feishu-ai-personal-legacy-ai-member-plus"
+      },
+      "legacyPlans": [
+        "AI 会员",
+        "AI 会员 Plus"
+      ],
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true
+    },
+    {
+      "productId": "feishu-ai-business",
+      "platformIds": [
+        "feishu"
+      ],
+      "name": "飞书 AI",
+      "plans": [
+        "基础版"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://aily.feishu.cn/hc/1u7kleqg_1cnvbb55",
+      "quote": "基础版",
+      "note": "独立企业AI版本，月付990元/年付9900元；年/月是同一正式基础版，不拆档。",
+      "newPlanIds": {
+        "基础版": "feishu-ai-business-basic"
+      },
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true
+    },
+    {
+      "productId": "doubao-work-seats",
+      "platformIds": [
+        "doubao-work",
+        "feishu"
+      ],
+      "name": "豆包（组织席位）",
+      "plans": [
+        "团队订阅",
+        "企业订阅"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://www.doubao.com/work/docs/zh-cn/articles/855635606021-team-enterprise-benefits",
+      "quote": "团队订阅; 企业订阅",
+      "note": "团队席位自带2000点/月；企业席位不含点数，必须搭配独立企业用量套餐。官方明确覆盖豆包工作、飞书AI/aily等，双方共用ID。",
+      "newPlanIds": {
+        "团队订阅": "doubao-work-seats-team",
+        "企业订阅": "doubao-work-seats-enterprise"
+      },
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true
+    },
+    {
+      "productId": "doubao-enterprise-usage",
+      "platformIds": [
+        "doubao-work",
+        "feishu"
+      ],
+      "name": "豆包企业用量套餐",
+      "plans": [
+        "200 万点",
+        "600 万点",
+        "2000 万点"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://aily.feishu.cn/hc/1u7kleqg_1cnvbb55",
+      "quote": "200 万点; 600 万点; 2000 万点",
+      "note": "官方有正式年度许可和功能级别；原AI企业/企业Plus/旗舰改名，沿用别名，不重复建档。可搭配团队或企业席位，单纯团队月/年附加用量不另建会员。",
+      "newPlanIds": {
+        "200 万点": "doubao-enterprise-usage-2m",
+        "600 万点": "doubao-enterprise-usage-6m",
+        "2000 万点": "doubao-enterprise-usage-20m"
+      },
+      "planAliases": {
+        "200 万点": [
+          "飞书 AI 企业版"
+        ],
+        "600 万点": [
+          "飞书 AI 企业版 Plus"
+        ],
+        "2000 万点": [
+          "飞书 AI 旗舰版"
+        ]
+      },
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true
+    },
+    {
+      "productId": "feishu-aily-legacy",
+      "platformIds": [
+        "feishu"
+      ],
+      "name": "飞书 aily（存量专用订阅）",
+      "plans": [
+        "企业版",
+        "旗舰版"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://aily.feishu.cn/hc/1u7kleqg_1cnvbb55",
+      "quote": "企业版; 旗舰版",
+      "note": "官方明确既有aily企业/旗舰的专用额度在有效期内继续可用；未将其自动迁移成新的通用用量身份。",
+      "newPlanIds": {
+        "企业版": "feishu-aily-legacy-enterprise",
+        "旗舰版": "feishu-aily-legacy-flagship"
+      },
+      "legacyPlans": [
+        "企业版",
+        "旗舰版"
+      ],
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true
+    },
+    {
+      "productId": "feishu-meeting-notes-legacy",
+      "platformIds": [
+        "feishu"
+      ],
+      "name": "飞书智能会议纪要（存量订阅）",
+      "plans": [
+        "企业版"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://aily.feishu.cn/hc/1u7kleqg_1cnvbb55",
+      "quote": "企业版",
+      "note": "官方明确既有智能会议纪要企业版专用额度在有效期内继续可用，不等于新的企业通用额度。",
+      "newPlanIds": {
+        "企业版": "feishu-meeting-notes-legacy-enterprise"
+      },
+      "legacyPlans": [
+        "企业版"
+      ],
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true
+    },
+    {
+      "productId": "microsoft-copilot-personal",
+      "platformIds": [
+        "microsoft-ai"
+      ],
+      "name": "Microsoft 365（个人订阅）",
+      "plans": [
+        "Personal",
+        "Family",
+        "Premium",
+        "Pro"
+      ],
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://www.microsoft.com/en-us/copilot/pricing/individuals",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "quote": "Personal; Family; Premium; Pro",
+      "remaining": "个人现行四档已确认。旧 Microsoft Copilot Pro 已由官方明确于2026-08-01结束支持，移入历史说明。",
+      "planSources": {},
+      "applyReady": true,
+      "fullPlanNames": {
+        "Personal": "Microsoft 365 Personal",
+        "Family": "Microsoft 365 Family",
+        "Premium": "Microsoft 365 Premium",
+        "Pro": "Microsoft 365 Pro"
+      },
+      "officialSource": "https://www.microsoft.com/en-us/copilot/pricing/individuals",
+      "evidence": [
+        {
+          "url": "https://www.microsoft.com/en-us/copilot/pricing/individuals",
+          "type": "official-pricing-or-licensing",
+          "checkedAt": "2026-10-20",
+          "planNames": [
+            "Microsoft 365 Personal",
+            "Microsoft 365 Family",
+            "Microsoft 365 Premium",
+            "Microsoft 365 Pro"
+          ]
+        }
+      ],
+      "note": "个人页当前四档付费订阅均含 Copilot；Family/Premium/Pro AI 仅订阅持有人，不能当家庭所有人同享。Microsoft 365 Pro 是价目页真实订阅，不能与旧 Copilot Pro 混淆。"
+    },
+    {
+      "productId": "microsoft-copilot-free",
+      "platformIds": [
+        "microsoft-ai"
+      ],
+      "name": "Microsoft Copilot",
+      "plans": [
+        "Free"
+      ],
+      "freePlans": [
+        "Free"
+      ],
+      "legacyPlans": [],
+      "sourceUrl": "https://www.microsoft.com/en-us/copilot/pricing/individuals",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "quote": "Free",
+      "remaining": "",
+      "planSources": {},
+      "applyReady": true,
+      "fullPlanNames": {
+        "Free": "Microsoft Copilot (Free)"
+      },
+      "officialSource": "https://www.microsoft.com/en-us/copilot/pricing/individuals",
+      "evidence": [
+        {
+          "url": "https://www.microsoft.com/en-us/copilot/pricing/individuals",
+          "type": "official-pricing-or-licensing",
+          "checkedAt": "2026-10-20",
+          "planNames": [
+            "Microsoft Copilot (Free)"
+          ]
+        }
+      ],
+      "note": "官方个人价格页FAQ明确提供有限免费版；独立于M365付费订阅。"
+    },
+    {
+      "productId": "microsoft-copilot-business",
+      "platformIds": [
+        "microsoft-ai"
+      ],
+      "name": "Microsoft 365（商业 Copilot）",
+      "plans": [
+        "Copilot Business (add-on)",
+        "Business Standard with Copilot",
+        "Business Premium with Copilot",
+        "Business Standard with Copilot (no Teams)",
+        "Business Premium with Copilot (no Teams)"
+      ],
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://www.microsoft.com/en-us/copilot/pricing/business",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "quote": "Copilot Business (add-on); Business Standard with Copilot; Business Premium with Copilot; Business Standard with Copilot (no Teams); Business Premium with Copilot (no Teams)",
+      "remaining": "Business Basic & Copilot Business 见官方 2026 合作伙伴销售材料，当前主页未列；应补核直售/渠道的现行组合包SKU，不应当不存在。",
+      "planSources": {},
+      "applyReady": true,
+      "fullPlanNames": {
+        "Copilot Business (add-on)": "Microsoft 365 Copilot Business (add-on)",
+        "Business Standard with Copilot": "Microsoft 365 Business Standard with Copilot",
+        "Business Premium with Copilot": "Microsoft 365 Business Premium with Copilot",
+        "Business Standard with Copilot (no Teams)": "Microsoft 365 Business Standard with Copilot (no Teams)",
+        "Business Premium with Copilot (no Teams)": "Microsoft 365 Business Premium with Copilot (no Teams)"
+      },
+      "officialSource": "https://www.microsoft.com/en-us/copilot/pricing/business",
+      "evidence": [
+        {
+          "url": "https://www.microsoft.com/en-us/copilot/pricing/business",
+          "type": "official-pricing-or-licensing",
+          "checkedAt": "2026-10-20",
+          "planNames": [
+            "Microsoft 365 Copilot Business (add-on)",
+            "Microsoft 365 Business Standard with Copilot",
+            "Microsoft 365 Business Premium with Copilot",
+            "Microsoft 365 Business Standard with Copilot (no Teams)",
+            "Microsoft 365 Business Premium with Copilot (no Teams)"
+          ]
+        },
+        {
+          "url": "https://www.microsoft.com/en-us/copilot/pricing/business-without-teams",
+          "type": "official-pricing",
+          "checkedAt": "2026-10-20",
+          "planNames": [
+            "Microsoft 365 Business Standard with Copilot (no Teams)",
+            "Microsoft 365 Business Premium with Copilot (no Teams)"
+          ]
+        }
+      ],
+      "note": "已读含 Teams 和不含 Teams 两页；年付/月付不是不同会员。Copilot Business 限 300 席；另有基础许可证前置。高级代理能力可额外按量计费。"
+    },
+    {
+      "productId": "microsoft-copilot-enterprise",
+      "platformIds": [
+        "microsoft-ai"
+      ],
+      "name": "Microsoft 365 Copilot",
+      "plans": [
+        "Add-on"
+      ],
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://www.microsoft.com/en-us/copilot/pricing/enterprise",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "quote": "Add-on",
+      "remaining": "教育和政府具体采购 SKU 的地区命名/价目仍须渠道目录；A2 在最新许可文档列出，但教育介绍页只列 A1/A3/A5，不合并推测。",
+      "planSources": {},
+      "applyReady": true,
+      "fullPlanNames": {
+        "Add-on": "Microsoft 365 Copilot (add-on)"
+      },
+      "officialSource": "https://www.microsoft.com/en-us/copilot/pricing/enterprise",
+      "evidence": [
+        {
+          "url": "https://www.microsoft.com/en-us/copilot/pricing/enterprise",
+          "type": "official-pricing-or-licensing",
+          "checkedAt": "2026-10-20",
+          "planNames": [
+            "Microsoft 365 Copilot (add-on)"
+          ]
+        }
+      ],
+      "note": "独立附加软件许可证；教育/政府基础A/G及E3/E5资格并不自动授予该完整Copilot许可。"
+    },
+    {
+      "productId": "microsoft-365-enterprise",
+      "platformIds": [
+        "microsoft-ai"
+      ],
+      "name": "Microsoft 365（企业套件）",
+      "plans": [
+        "E7"
+      ],
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://learn.microsoft.com/en-us/copilot/microsoft-365/microsoft-365-copilot-licensing",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "quote": "E7",
+      "remaining": "教育和政府具体采购 SKU 的地区命名/价目仍须渠道目录；A2 在最新许可文档列出，但教育介绍页只列 A1/A3/A5，不合并推测。",
+      "planSources": {},
+      "applyReady": true,
+      "fullPlanNames": {
+        "E7": "Microsoft 365 E7"
+      },
+      "officialSource": "https://learn.microsoft.com/en-us/copilot/microsoft-365/microsoft-365-copilot-licensing",
+      "evidence": [
+        {
+          "url": "https://learn.microsoft.com/en-us/copilot/microsoft-365/microsoft-365-copilot-licensing",
+          "type": "official-licensing",
+          "checkedAt": "2026-10-20",
+          "planNames": [
+            "Microsoft 365 E7"
+          ],
+          "summary": "许可正文明确E7包含Microsoft Copilot。"
+        }
+      ],
+      "note": "E7为现行独立企业软件套件，官方许可文档明确包含Copilot。"
+    },
+    {
+      "productId": "microsoft-teams-premium",
+      "platformIds": [
+        "microsoft-ai"
+      ],
+      "name": "Microsoft Teams",
+      "plans": [
+        "Premium"
+      ],
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://www.microsoft.com/en-us/microsoft-teams/premium",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "quote": "Premium",
+      "remaining": "未逐项复核政府云 Teams Premium 现行 SKU 与基础 Teams 版本的 AI 功能组合。",
+      "applyReady": true,
+      "fullPlanNames": {
+        "Premium": "Microsoft Teams Premium"
+      },
+      "officialSource": "https://www.microsoft.com/en-us/microsoft-teams/premium",
+      "evidence": [
+        {
+          "url": "https://www.microsoft.com/en-us/microsoft-teams/premium",
+          "type": "official-pricing-or-licensing",
+          "checkedAt": "2026-10-20",
+          "planNames": [
+            "Microsoft Teams Premium"
+          ]
+        }
+      ],
+      "note": "独立Teams附加软件许可证，含智能回顾；基础Teams许可另需。"
+    },
+    {
+      "productId": "microsoft-power-apps",
+      "platformIds": [
+        "microsoft-ai"
+      ],
+      "name": "Microsoft Power Apps",
+      "plans": [
+        "Developer Plan",
+        "Premium"
+      ],
+      "freePlans": [
+        "Developer Plan"
+      ],
+      "legacyPlans": [],
+      "sourceUrl": "https://www.microsoft.com/en-us/power-platform/products/power-apps/pricing",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "quote": "Developer Plan; Premium",
+      "remaining": "已确认当前两档；旧Power Apps per app及per user存量许可待逐项核实续费条款，保留在非应用说明中。",
+      "planSources": {},
+      "applyReady": true,
+      "fullPlanNames": {
+        "Developer Plan": "Power Apps Developer Plan",
+        "Premium": "Power Apps Premium"
+      },
+      "officialSource": "https://www.microsoft.com/en-us/power-platform/products/power-apps/pricing",
+      "evidence": [
+        {
+          "url": "https://www.microsoft.com/en-us/power-platform/products/power-apps/pricing",
+          "type": "official-pricing-or-licensing",
+          "checkedAt": "2026-10-20",
+          "planNames": [
+            "Power Apps Developer Plan",
+            "Power Apps Premium"
+          ]
+        }
+      ],
+      "note": "正式定价列Developer Plan与Premium；2000席为Premium数量折扣。PAYG及存储不录入会员。"
+    },
+    {
+      "productId": "microsoft-power-automate",
+      "platformIds": [
+        "microsoft-ai"
+      ],
+      "name": "Microsoft Power Automate",
+      "plans": [
+        "Premium",
+        "Process",
+        "Hosted Process"
+      ],
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://www.microsoft.com/en-us/power-platform/products/power-automate/pricing",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "quote": "Premium; Process; Hosted Process",
+      "remaining": "旧Hosted RPA/Unattended RPA附加许可证仍列于官方AI Builder权益表，但现行续费条件未逐项核实；不将其作为已确认存量档录入。",
+      "planSources": {},
+      "applyReady": true,
+      "fullPlanNames": {
+        "Premium": "Power Automate Premium",
+        "Process": "Power Automate Process",
+        "Hosted Process": "Power Automate Hosted Process"
+      },
+      "officialSource": "https://www.microsoft.com/en-us/power-platform/products/power-automate/pricing",
+      "evidence": [
+        {
+          "url": "https://www.microsoft.com/en-us/power-platform/products/power-automate/pricing",
+          "type": "official-pricing-or-licensing",
+          "checkedAt": "2026-10-20",
+          "planNames": [
+            "Power Automate Premium",
+            "Power Automate Process",
+            "Power Automate Hosted Process"
+          ]
+        }
+      ],
+      "note": "正式定价三项软件席位/流程许可证；Process Mining add-on为附加容量另记，免费试用不作永久会员。"
+    },
+    {
+      "productId": "microsoft-copilot-studio",
+      "platformIds": [
+        "microsoft-ai"
+      ],
+      "name": "Microsoft Copilot Studio",
+      "plans": [
+        "Copilot Credit pack subscription"
+      ],
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://www.microsoft.com/en-us/copilot/products/copilot-studio",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "quote": "Copilot Credit pack subscription",
+      "remaining": "旧Power Virtual Agents存量SKU未穷尽；固定包的机器化正式SKU名称还需产品条款/商务目录核对。",
+      "planSources": {},
+      "applyReady": true,
+      "fullPlanNames": {
+        "Copilot Credit pack subscription": "Microsoft Copilot Studio Copilot Credit pack subscription"
+      },
+      "officialSource": "https://www.microsoft.com/en-us/copilot/products/copilot-studio",
+      "evidence": [
+        {
+          "url": "https://www.microsoft.com/en-us/copilot/products/copilot-studio",
+          "type": "official-pricing-or-licensing",
+          "checkedAt": "2026-10-20",
+          "planNames": [
+            "Microsoft Copilot Studio Copilot Credit pack subscription"
+          ],
+          "summary": "官方页写Copilot Studio is sold as tenant-wide Copilot Credit packs，monthly subscription；固定月包。"
+        }
+      ],
+      "note": "官方产品页明确固定租户月订阅包（25000 Copilot Credits/包/月）；这里仅保留固定订阅，不包括按量或Credit预购。它是固定容量软件订阅，若项目严格排除所有容量包则跳过此项。"
+    },
+    {
+      "productId": "sakana-fugu",
+      "platformIds": [
+        "sakana"
+      ],
+      "name": "Sakana Fugu",
+      "plans": [
+        "Standard Plan",
+        "Pro Plan",
+        "Max Plan"
+      ],
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://sakana.ai/fugu/",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Standard Plan | Pro Plan | Max Plan",
+      "remaining": "未发现有效旧订阅；Sakana Chat、Namazu、Marlin按独立产品核验。",
+      "evidenceUrls": [
+        "https://sakana.ai/fugu/"
+      ],
+      "note": "当前官方Pricing与FAQ一致列三档月订阅：Standard $20/月，Pro $100/月（Standard 10倍），Max $200/月（Standard 20倍）。Fugu/Fugu Ultra/Fugu Max/Fugu Cyber是模型名称，不能作为会员档；另行按量Token Plan不作会员。"
+    },
+    {
+      "productId": "sakana-marlin",
+      "platformIds": [
+        "sakana"
+      ],
+      "name": "Sakana Marlin",
+      "plans": [
+        "Pro",
+        "Team",
+        "Enterprise"
+      ],
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://sakana.ai/marlin/",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Pro | Team | Enterprise",
+      "remaining": "未发现仍有效旧套餐；企业报价无公开金额。",
+      "evidenceUrls": [
+        "https://sakana.ai/marlin/"
+      ],
+      "note": "官方Pricing列Pro ¥150000/月含2000 credits、Team ¥400000/月含6000 credits、Enterprise定制报价；FAQ说明可修改/取消subscription。PAYG为另行按需购买积分，未纳入固定软件会员。服务面向业务实体，非一般消费者。"
+    },
+    {
+      "productId": "replicas",
+      "platformIds": [
+        "replicas"
+      ],
+      "name": "Replicas",
+      "plans": [
+        "Developer",
+        "Team",
+        "Enterprise"
+      ],
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://replicas.dev/pricing",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Developer | Team | Enterprise",
+      "remaining": "搜索缓存曾出现Developer $120/席、Team $300/席旧价，但当前官方文档已改为金额式订阅；没有仍有效旧套餐证据，不列legacy。",
+      "evidenceUrls": [
+        "https://replicas.dev",
+        "https://replicas.dev/pricing",
+        "https://docs.replicas.dev/admin/billing",
+        "https://replicas.dev/terms"
+      ],
+      "note": "从现有platform快照取得注册账号@connortbot；replicas.dev官网直接链接该账号Replicas V1原帖，身份一致。当前pricing与billing docs一致：Developer $50/月含$50 usage，Team $200+/月以$100步进含等额usage，Enterprise custom；席位不影响账单。$100无时限免费试用为一次性试用，未伪造Free会员。small/large/ultra为工作区规格。"
+    },
+    {
+      "productId": "nous-hermes-enterprise",
+      "platformIds": [
+        "nous"
+      ],
+      "name": "Hermes（企业私有部署）",
+      "plans": [
+        "Enterprise"
+      ],
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://portal.nousresearch.com/business",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Enterprise",
+      "remaining": "Business self-service为中央余额和成员花费上限机制，未公开固定月费或正式细分档位；Enterprise合同具体计费周期需询价。",
+      "evidenceUrls": [
+        "https://portal.nousresearch.com/business"
+      ],
+      "note": "官方Business页面独立Enterprise卡明确Contact us，私有云/本地受控部署，带SSO、SLA与定制入门；作为正式企业软件方案列Enterprise，不推定金额或结算周期。"
     }
   ]
 }

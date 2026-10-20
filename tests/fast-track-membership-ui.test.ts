@@ -37,7 +37,8 @@ it('the needs-owner panel asks for a catalog membership and submits the picked p
   pick(document, window);
   form.dispatchEvent(new window.Event('submit', { cancelable: true })); await tick();
   expect(posts.some(p => p.url.endsWith('/fast-track/j1/complete'))).toBe(true);
-  expect(posts.find(p => p.url.endsWith('/complete'))!.body.fields.membershipRequirement).toMatchObject({ status: 'confirmed', catalogRevision: 3, evidenceUrls: [job.url], anyOf: [{ allOf: [{ productId: 'higgsfield', planIds: ['higgsfield-pro'] }] }] });
+  expect(posts.find(p => p.url.endsWith('/complete'))!.body.fields.membershipSelectionOnly).toBe(true);
+  expect(posts.find(p => p.url.endsWith('/complete'))!.body.fields.membershipRequirement).toMatchObject({ status: 'needs_review', catalogRevision: 3, evidenceUrls: [], anyOf: [{ allOf: [{ productId: 'higgsfield', planIds: ['higgsfield-pro'] }] }] });
 });
 
 it('the fast-track form loads the catalog only when opened and sends the picked membership with the job', async () => {

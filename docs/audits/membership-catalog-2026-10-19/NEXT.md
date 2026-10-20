@@ -4,12 +4,12 @@
 
 ## 已核实当前状态（2026-10-19）
 
-- 生产会员目录 **revision 56**：119 产品、585 套餐；565 verified、19 retired、1 pending。完整产品/套餐及根级别迁移元数据已与预备补丁逐项读回一致。
+- 生产会员目录 **revision 57**：151 产品、681 套餐；661 verified、19 retired、1 pending。完整产品/套餐及根级别迁移元数据已与预备补丁逐项读回一致。
 - 仅剩1个旧pending：`cursor-plan-1`。Grok/X三个占位项已退休并补官方具体套餐。
-- 厂商研究覆盖：60 research_complete、39 partial、25 unreviewed。**这比 pending 数更接近剩余工作规模，不能只清四条就宣布完成。**
+- 厂商研究覆盖：65 research_complete、45 partial、14 unreviewed。**这比 pending 数更接近剩余工作规模，不能只清四条就宣布完成。**
 - 生产代码已更新为 PR106 / cc1f94632ef2（100%流量，2026-10-19实时读取）；新界面在草稿 PR105，未合并部署。当前工作区 `/tmp/ym-hf-link-worktree`，分支 `codex/membership-catalog-complete`。
 - 主 checkout 是其他任务的估值修复，勿覆盖。node_modules 为临时 symlink，不提交。
-- 本地最近完整验证：类型检查、1426 Vitest + 11 CLI、build:web、diff --check 通过。代码新增：按厂商套餐复选、个人选择去重、旧记录提示可单独清除、跨厂商资格默认显示实际会员厂商、退休产品不重新出现在厂商下拉、目录准备工具的归并/退休守卫与回归。
+- 本地最近完整验证：类型检查、1434 Vitest + 11 CLI、build:web、diff --check 通过。代码新增：按厂商套餐复选、个人选择去重、旧记录提示可单独清除、跨厂商资格默认显示实际会员厂商、退休产品不重新出现在厂商下拉、目录准备工具的归并/退休守卫与回归。
 
 ## 生产写入方法与快照
 
@@ -18,7 +18,7 @@
 - 当前可复用私有绑定参数写入器：`node /tmp/ym-membership-apply-bound.mjs <预备文件> <私有凭证前缀>`。它使用现有 Wrangler OAuth（不输出令牌），固定只更新 membership_catalog id=1，检查 expectedRevision，保存前后快照并全量对照。API失败后先读状态，不盲目重放。若 OAuth 过期，用正常 Wrangler CLI 刷新，不输出凭据。
 - 最新完整 D1 原件：`/tmp/ym-membership-wave26-bound-after.json`（revision + data_json）。原始基线：`/tmp/ym-membership-catalog-before.json` rev29；`/tmp/ym-membership-offers-before.json`（96条会员权益）；`/tmp/ym-membership-profiles-before.json`。
 - 生产旧 API 目前只返回 revision/products/plans，**会省略根级别 productIdAliases/productReplacements**。准备工具会根据事实文件重建这些映射；最终部署新读取代码后需核验根元数据保留。完整 D1 快照优于只靠公开 API。
-- `wave-1` 至 `wave-26` 记录已入审计目录。生产触发器自动保留每次目录修改前后原件。
+- `wave-1` 至 `wave-27` 记录已入审计目录。生产触发器自动保留每次目录修改前后原件。
 
 ## 官方研究证据与发现
 
@@ -104,3 +104,12 @@ CUA的IAB临时tab2当前在TRAE计费文档，可继续看企业版；`pvCatalo
 - 准备工具现在支持每条finding.checkedAt和vendor.checkedAt；新增20日事实不会刷新19日的旧产品/套餐核验时间。先失败后修复的日期回归8项已通过；发布前仍需全部检查。
 - 第26批rev56新增Cloudflare Workers Free/Paid/Enterprise（Workers AI官方明确依赖Workers方案），Standard/Unbound/Bundled只是计费模型。TypeSafe Jev API帮助中心明确购买积分/自动充值，Prime训练/推理/Traces计费均按量，无公开固定软件会员档，标研究完成none。Instinct与Odyssey保留partial：实际入口需账号但未取得套餐，不能推断无会员。
 - 研究缓存typesafe-home-current.txt、typesafe-enterprise-current.txt、prime-docs-index.txt、prime-training-billing.txt、prime-traces-pricing.txt、prime-inference-current.txt、instinct-home-current.txt、odyssey-developer-current.txt。
+
+## rev57与真实限制保留（2026-10-20）
+
+- 第27批增加32产品96套餐，Kimi国内/国际/企业、千问国内/国际个人/团队、云知声现行与存量、豆包/飞书共享个人与独立组织席位/用量、灵犀、微软当前九类软件以及Sakana/Replicas/Hermes企业；所有旧plan逐项零变化。官方对子产品是否共享有明确证据才复用ID。
+- 已修复普通编辑不能收窄AND联合资格、以及同plan多OR限制丢失：保留原结构和每个limits/exclusions；取消必需产品全部plan或歧义新增会安全回显，不自动弱化资格。未核实旧规则不因勾选自动confirmed。
+- 快通selectionOnly的needs_review身份仍可交模型补完整资格；旧实现只接受confirmed身份会永久覆盖模型，这个联动已一并修复。135测试文件1434项和11 CLI、typecheck、build:web、diff-check已通过，未部署。
+- 实时单SELECT一致只读快照 `/tmp/ym-membership-live-snapshot.json`：41条approved会员、32needs_review/9confirmed、0提案/0活跃审核、目录57，完整已批准事实/证据均保留，未写任何历史。候选报告 `/tmp/ym-membership-backfill-candidates.json`，名称等价6条但完整结构迁移尚未批准执行；原facts eligibility=unknown本身不能替代逐条证据评估。
+- 新研究私有产物：`/tmp/ym-research-{cn-creative,cn-remaining,cn-consumer,microsoft-supplement,google-supplement,adobe-supplement,creative-supplement,api-followup,cloud-supplement}.json`。仍需父任务逐项核实/归并后写入，不能批量盲导。
+- 浏览器已实读即梦四付费周期：基础/标准/高级/超级，超级只在自动续订页签，积分滑杆不新增档。可灵国际当前Basic免费+Standard/Pro/Premier/Ultra+，Business为独立Team Plan（月/年同档），各workspace不共享资格；尚未应用。国内从快手IR官方链接进入，重定向klingai.com/app，继续读当前价格。

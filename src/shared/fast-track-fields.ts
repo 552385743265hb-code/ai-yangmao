@@ -14,10 +14,10 @@ export function mergeFastTrackFields(extracted: FastTrackFields, owner: FastTrac
   if (owner.membershipSelectionOnly === true && owner.membershipRequirement) {
     const selected = membershipSchema.safeParse(owner.membershipRequirement);
     const modeled = membershipSchema.safeParse(extracted.membershipRequirement);
-    if (selected.success && selected.data.status === 'confirmed') {
+    if (selected.success && ['confirmed','needs_review'].includes(selected.data.status)) {
       const choices = (r: MembershipRequirement) => {
         const clauses = r.anyOf.flatMap(g => g.allOf);
-        if (clauses.some(c => c.scope !== 'plans' || c.excludePlanIds.length)) return null;
+        if (!clauses.length || clauses.some(c => c.scope !== 'plans' || !c.planIds.length || c.excludePlanIds.length)) return null;
         return JSON.stringify([...new Set(clauses.flatMap(c => c.planIds.map(id => JSON.stringify([c.productId,id]))))].sort());
       };
       const picked = choices(selected.data);
