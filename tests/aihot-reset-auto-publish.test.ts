@@ -15,6 +15,40 @@ async function finish(candidateId:string){let result:any;for(let i=0;i<12;i++){r
 it('Day13 source-only context becomes a single dated reset without inferred paid tiers',async()=>{
  const offer=buildAiHotReset(await input());expect(offer).toMatchObject({platformId:'openai',sourceId:'aihot-resets',claimStart:'2026-10-17',claimEnd:'2026-10-17',publishedAt:'2026-10-17T16:20:57.000Z',requirements:['net'],audience:'unclear',tags:['reset']});expect(offer.identityFacts?.occurrenceAnchor).toMatchObject({state:'known'});
 });
+it.each([
+ "Day 15/ Nevermind, we're still cooking... and reset. Enjoy.",
+ "Day 15/ Nevermind, we're still cooking...\nand reset. Enjoy.",
+])('publishes a numbered reset with a conversational preamble: %s',async body=>{
+ const link='https://x.com/thsottiaux/status/2112432076767289678';
+ f.sqlite.prepare('UPDATE leads SET url=? WHERE id=1').run(link);
+ const p=await input('@thsottiaux\n2026-10-20T06:33:48.000Z\n'+body,link);
+ const result=await prepareAiHotReset(env(),p),done=await finish(result.candidateId!);
+ expect(done.outcome).toBe('published');
+ const offer=f.sqlite.prepare('SELECT title,claim_start,claim_end,published_at,requirements,membership_requirement,evidence FROM offers').get()!;
+ expect(offer).toMatchObject({title:'Tibo Day 15 Codex 使用额度重置',claim_start:'2026-10-19',claim_end:'2026-10-19',published_at:'2026-10-20T06:33:48.000Z',requirements:'["net"]',membership_requirement:null});
+ expect(JSON.parse(String(offer.evidence)).excerpts.benefit).toBe(body);
+ expect((await prepareAiHotReset(env(),p)).offerId).toBe(done.offerId);
+ expect(f.sqlite.prepare('SELECT count(*) n FROM offers').get()).toEqual({n:1});
+ expect(f.sqlite.prepare('SELECT status,offer_id FROM leads WHERE id=1').get()).toEqual({status:'linked',offer_id:done.offerId});
+});
+it.each([
+ 'Day 15/ No additional usage allowance has been granted and there will be a reset.',
+ 'Day 15/ Reset for everyone was discussed at length but has unfortunately been cancelled.',
+ 'Day 15/ Reset for everyone will be distributed to all our users every day for a week.',
+ 'Day 15/ We might, after a long discussion and quite a lot of testing, reset limits.',
+ 'Day 15/ No... reset today.',
+ 'Day 15/ No. Reset today.',
+ "Day 15/ Still working on the rollout.\nYesterday's reset should have landed by now.",
+ 'Day 15/ Still working on the rollout and checking the previous reset.',
+ 'Day 15/ Still working on the rollout.\nAny updates on the reset?',
+ 'Day 15/ Still working on the rollout.\nChecking on the reset propagation.',
+])('keeps a long cancelled, uncertain or recurring announcement in review: %s',async body=>{
+ await expect(prepareAiHotReset(env(),await input(text.replace('Day 13/ Le limit reset',body)))).rejects.toThrow();
+ expect(f.sqlite.prepare('SELECT count(*) n FROM intake_candidates').get()).toEqual({n:0});
+});
+it('does not mistake an unrelated question before an affirmative reset for a progress query',async()=>{
+ expect(buildAiHotReset(await input(text.replace('Day 13/ Le limit reset','Day 13/ Ready? And reset. Enjoy.'))).title).toBe('Tibo Day 13 Codex 使用额度重置');
+});
 it('automatically publishes using versioned identity approval, reconciles the lead, and survives replay',async()=>{
  const a=await prepareAiHotReset(env(),await input());expect(a.candidateId).toBeTruthy();const done=await finish(a.candidateId!);expect(done.outcome).toBe('published');
  expect(f.sqlite.prepare('SELECT review_state FROM offers').get()).toEqual({review_state:'approved'});
