@@ -179,3 +179,12 @@ it('Haina keeps a validated real maximum and explicit first-30-day release when 
  Object.assign(input.valuationFactors,{kind:'apply',currency:'USD',maximum:{value:100,sourceId:'benefit',quote:maximum},first30Maximum:{value:40,sourceId:'benefit',quote:release}});
  const result=await computeCollectedValuation(input);expect(result.valuation).toMatchObject({status:'priced',usdEstimate:null,usdMax:100,inputs:{first30Max:40,usageCostReference:30.483572}});
 });
+
+it('a reseller\'s limited-time free DeepSeek-V4.1-Flash is priced from the provider catalog entry (2026-10-18)',async()=>{
+ const text='WorkBuddy 国际版限时免费使用 DeepSeek-V4.1-Flash，活动期间调用不扣积分。',sourceUrl='https://www.workbuddy.ai/changelog';
+ const base={platformId:'workbuddy',type:'free',models:['DeepSeek-V4.1-Flash'],sourceText:text,sourceFetch:{originalUrl:sourceUrl,finalUrl:sourceUrl,fetchedUrl:sourceUrl,method:'direct' as const,sourceVerified:true,truncated:false,contentHash:await sha256(text)},evidence:{url:sourceUrl,tier:'official',capturedAt:'2026-10-18T12:00:00Z',excerpts:{benefit:text}}};
+ const recipe={kind:'scenario',sources:[{...sources(text)[0],url:sourceUrl}],components:[{scenario:'text',models:[{id:'DeepSeek-V4.1-Flash',currency:'USD',inputPrice:{catalogId:'deepseek-v4.1-flash.inputPrice'},outputPrice:{catalogId:'deepseek-v4.1-flash.outputPrice'},tokenPriceUnits:{catalogId:'deepseek-v4.1-flash.tokenPriceUnits'}}]}]};
+ const result=await computeCollectedValuation({...base,valuationFactors:recipe},'2026-10-18T12:00:00Z');
+ // Standard 30-day text use: 1M input × $0.15 + 0.2M output × $0.60 = $0.27.
+ expect(result.valuation?.usdEstimate).toBeCloseTo(0.27,4);
+});
