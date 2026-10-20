@@ -2,23 +2,23 @@
 
 目标仍在进行中。旧 pending 清零、单元测试通过或本轮数据写入都不足以宣布全量完成；必须继续 124 个厂商覆盖、旧资格映射、真实浏览器与上线验收。
 
-## 已核实当前状态（2026-10-19）
+## 已核实当前状态（2026-10-20）
 
-- 生产会员目录 **revision 58**：170 产品、754 套餐；734 verified、19 retired、1 pending。完整产品/套餐及根级别迁移元数据已与预备补丁逐项读回一致。
+- 生产会员目录 **revision 59**：241 产品、970 套餐；950 verified、19 retired、1 pending。完整产品/套餐及根级别迁移元数据已与预备补丁逐项读回一致。
 - 仅剩1个旧pending：`cursor-plan-1`。Grok/X三个占位项已退休并补官方具体套餐。
-- 厂商研究覆盖：70 research_complete、45 partial、9 unreviewed。**这比 pending 数更接近剩余工作规模，不能只清四条就宣布完成。**
+- 厂商研究覆盖：71 research_complete、44 partial、9 unreviewed。**这比 pending 数更接近剩余工作规模，不能只清四条就宣布完成。**
 - 生产代码已更新为 PR106 / cc1f94632ef2（100%流量，2026-10-19实时读取）；新界面在草稿 PR105，未合并部署。当前工作区 `/tmp/ym-hf-link-worktree`，分支 `codex/membership-catalog-complete`。
 - 主 checkout 是其他任务的估值修复，勿覆盖。node_modules 为临时 symlink，不提交。
-- 本地最近完整验证：类型检查、1442 Vitest + 11 CLI、build:web、diff --check 通过。代码新增：按厂商套餐复选、个人选择去重、旧记录提示可单独清除、跨厂商资格默认显示实际会员厂商、退休产品不重新出现在厂商下拉、目录准备工具的归并/退休守卫与回归。
+- 本地最近完整验证：类型检查、1479 Vitest + 11 CLI（合并main及模型目录投影后）、build:web、diff --check 通过。代码新增：按厂商套餐复选、个人选择去重、旧记录提示可单独清除、跨厂商资格默认显示实际会员厂商、退休产品不重新出现在厂商下拉、目录准备工具的归并/退休守卫与回归。
 
 ## 生产写入方法与快照
 
 - **整份目录已超过 D1 单条 SQL 100KB 限制。不要再把 JSON 内联到 wrangler execute --file。** 第11批内联写入返回 SQLITE_TOOBIG，已确认没有生效；随后改为 SQL 绑定参数原子 CAS，成功从40写到41并完整读回。
 - 后续预备补丁：`node scripts/prepare-membership-catalog.mjs <当前目录快照> docs/audits/membership-catalog-2026-10-19/official-findings.json <预备文件> docs/audits/membership-catalog-2026-10-19/coverage.json`。仅 verified+applyReady 的事实被采用；未显式处理的旧套餐会报错。
 - 当前可复用私有绑定参数写入器：`node /tmp/ym-membership-apply-bound.mjs <预备文件> <私有凭证前缀>`。它使用现有 Wrangler OAuth（不输出令牌），固定只更新 membership_catalog id=1，检查 expectedRevision，保存前后快照并全量对照。API失败后先读状态，不盲目重放。若 OAuth 过期，用正常 Wrangler CLI 刷新，不输出凭据。
-- 最新完整 D1 原件：`/tmp/ym-membership-wave26-bound-after.json`（revision + data_json）。原始基线：`/tmp/ym-membership-catalog-before.json` rev29；`/tmp/ym-membership-offers-before.json`（96条会员权益）；`/tmp/ym-membership-profiles-before.json`。
+- 最新完整 D1 原件：`/tmp/ym-membership-wave29-bound-after.json`（revision + data_json）。原始基线：`/tmp/ym-membership-catalog-before.json` rev29；`/tmp/ym-membership-offers-before.json`（96条会员权益）；`/tmp/ym-membership-profiles-before.json`。
 - 生产旧 API 目前只返回 revision/products/plans，**会省略根级别 productIdAliases/productReplacements**。准备工具会根据事实文件重建这些映射；最终部署新读取代码后需核验根元数据保留。完整 D1 快照优于只靠公开 API。
-- `wave-1` 至 `wave-28` 记录已入审计目录。生产触发器自动保留每次目录修改前后原件。
+- `wave-1` 至 `wave-29` 记录已入审计目录。生产触发器自动保留每次目录修改前后原件。
 
 ## 官方研究证据与发现
 
@@ -119,3 +119,12 @@ CUA的IAB临时tab2当前在TRAE计费文档，可继续看企业版；`pvCatalo
 - 新增国内/国际MiniMaxDesign、TapNow、Liblib创作、TRAE国内/企业/BytePlus、Coze国际、Seko、WPS个人/365、即梦、可灵国际个人/团队、Leonardo API、OiiOii完整九档和Ideogram旧Basic。新增19产品73套餐；已有5个Ideogram只更新实际复核日期，没有改福利资格。
 - 独立复查发现并修复3项：普通编辑与快通mode分离（普通确认、快通只选身份）；退休排除plan解析当前ID；快通队列返回完整已有会员结构且表单预选保留。又补marker+空选服务端保护：让模型补，不能覆盖成无需会员。全套1442+11、类型/构建检查通过。
 - 当前main已到7462a7e（PR110后台卡片工作区），本分支尚未合并这批main提交；发布前须合并解决app.js并重新验证，不能覆盖别的任务。
+
+## rev59与发布前检查（2026-10-20）
+
+- 生产新增71产品216计划：微软软件许可/普通M365和真实nonprofit归并目标、Google Workspace补项/AppSheet/Looker/安全软件、Adobe具体教育/Acrobat/Express/Stock/Experience、火山企业/Comate/AgentArts体验及可灵国内。已有30项只更新实际复核日期。全量verified正式名称无重复，唯一未知billing/缺platformIds均在待迁移Cursor。
+- main的PR106/110与估值变更已合入ca6934d，冲突仅fasttrack提示词，保留会员selectionOnly和valuationPrompt两者。合并后1475+11/typecheck/build全绿。独立复查无P1/P2。新增prompt按产品嵌套全部verified套餐、保留aliases/billing/legacy，去审计重复，旧快照字节-64.9%，未过滤跨厂商身份。
+- 本机Node26；尝试npm exec Node24未提供实际24二进制，嵌套npm exec污染子进程参数导致seed-profiles调用EUSAGE，非业务测试失败。后续以GitHub check的setup-node24为权威CI，不宣称本地24已验收。
+- 最新30快速上架记录全为published（包括MiniMax M3.1 Flash b521745f、Perplexity 5bcf9a33），不能用空队列代替真实模型重放。完整实时资格快照仍41会员approved；32原始needs_review需逐条等价判断，不允许仅因目录缺项重审/撤下。
+- research-gaps.json保留已发现未闭环子产品；9 unreviewed厂商实际上已有私有研究资料，可按来源更新partial，但不能伪造成全量完成或无会员。
+- 待执行：提交/推送PR105、Node24 CI、合并部署、核对marker/SHA/static/API，再应用Cursor一对多退休补丁，然后全量真实浏览器验收。

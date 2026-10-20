@@ -34,21 +34,43 @@
         "https://cloud.google.com/gemini-enterprise/faq",
         "https://docs.cloud.google.com/gemini/docs/codeassist/sunset",
         "https://developers.google.com/profile/help/faq",
-        "https://colab.research.google.com/signup"
+        "https://colab.research.google.com/signup",
+        "https://about.appsheet.com/pricing/",
+        "https://support.google.com/appsheet/answer/15657053?hl=en",
+        "https://support.google.com/appsheet/answer/15197435?hl=en",
+        "https://cloud.google.com/looker/pricing",
+        "https://cloud.google.com/terms/looker/legal/customers/sla",
+        "https://cloud.google.com/data-studio",
+        "https://docs.cloud.google.com/chronicle/docs/secops/secops-packages",
+        "https://cloud.google.com/security/products/threat-intelligence",
+        "https://docs.cloud.google.com/security-command-center/docs/service-tiers",
+        "https://chromeenterprise.google/pricing/"
       ],
       "productIds": [
         "gemini-enterprise",
         "gemini-notebook-enterprise",
         "google-code-assist",
         "google-developer-program",
-        "google-colab"
+        "google-colab",
+        "google-appsheet",
+        "google-appsheet-user-pass",
+        "google-appsheet-external-legacy",
+        "google-looker-core",
+        "google-looker-user-licenses",
+        "google-looker-original",
+        "google-data-studio",
+        "google-security-operations",
+        "google-threat-intelligence",
+        "google-security-command-center",
+        "google-chrome-enterprise"
       ],
       "homepageRead": {
         "url": "https://cloud.google.com",
         "chars": 44587,
         "error": null
       },
-      "note": "已核个人AI、企业Gemini/Notebook、存量Code Assist/GDP和Workspace主要版本；附加AI及其他相关订阅待完成。"
+      "note": "Gemini/Notebook/CodeAssist/GDP、AppSheet、Looker/Studio和安全软件公开档已核；部分旧Looker、SIEM/SOAR/Mandiant/VirusTotal与统一整包的历史目录未闭环。",
+      "checkedAt": "2026-10-20"
     },
     {
       "platformId": "azure",
@@ -74,17 +96,21 @@
       "site": "https://www.huaweicloud.com",
       "status": "partial",
       "sources": [
-        "https://codearts.huaweicloud.com/pricing"
+        "https://codearts.huaweicloud.com/pricing",
+        "https://support.huaweicloud.com/price-agentarts/agentarts_08_0003.html"
       ],
       "productIds": [
         "huawei-codearts-agent-personal",
-        "huawei-codearts-agent-enterprise"
+        "huawei-codearts-agent-enterprise",
+        "huawei-agentarts"
       ],
       "homepageRead": {
         "url": "https://www.huaweicloud.com",
         "chars": 16279,
         "error": null
-      }
+      },
+      "checkedAt": "2026-10-20",
+      "note": "码道个人/企业和AgentArts已开放体验版已核；AgentArts四付费档官方明确未开放，其他ModelArts/MetaStudio等命名软件许可未尽。"
     },
     {
       "platformId": "volc",
@@ -93,17 +119,23 @@
       "status": "partial",
       "sources": [
         "https://docs.volcengine.com/docs/ark/coding-plan-personal-plan-overview?lang=zh",
-        "https://docs.volcengine.com/docs/ark/agent-plan-personal-plan-overview?lang=zh"
+        "https://docs.volcengine.com/docs/ark/agent-plan-personal-plan-overview?lang=zh",
+        "https://docs.volcengine.com/docs/ark/coding-plan-enterprise-plan-overview?lang=zh",
+        "https://docs.volcengine.com/docs/ark/agent-plan-enterprise-plan-overview?lang=zh"
       ],
       "productIds": [
         "volc-coding-plan",
-        "volc-agent-plan"
+        "volc-agent-plan",
+        "volc-coding-plan-enterprise",
+        "volc-agent-plan-enterprise"
       ],
       "homepageRead": {
         "url": "https://www.volcengine.com/product/ark",
         "chars": 0,
         "error": null
-      }
+      },
+      "checkedAt": "2026-10-20",
+      "note": "Coding/Agent个人和企业四产品已核；ArkClaw为内含/按量边界不造会员，其他套件及旧合同仍需核实。"
     },
     {
       "platformId": "baidu",
@@ -112,17 +144,23 @@
       "status": "partial",
       "sources": [
         "https://cloud.baidu.com/doc/qianfan/s/Dmrabu8b6",
-        "https://cloud.baidu.com/doc/qianfan/s/ymq8wwch2"
+        "https://cloud.baidu.com/doc/qianfan/s/ymq8wwch2",
+        "https://cloud.baidu.com/doc/COMATE/s/rlnvnio4a"
       ],
       "productIds": [
         "baidu-token-personal",
-        "baidu-token-enterprise"
+        "baidu-token-enterprise",
+        "baidu-comate-personal",
+        "baidu-comate-enterprise",
+        "baidu-comate-private"
       ],
       "homepageRead": {
         "url": "https://cloud.baidu.com",
         "chars": 4149,
         "error": null
-      }
+      },
+      "checkedAt": "2026-10-20",
+      "note": "千帆TokenPlan两轨个人/企业及Comate现行个人/企业/私有化和旧订单变体已核；旧Coding具体档、客悦/秒哒等正式软件目录未尽。"
     },
     {
       "platformId": "tencent",
@@ -601,9 +639,10 @@
       "platformId": "cohere",
       "name": "Cohere",
       "site": "https://cohere.com",
-      "status": "partial",
+      "status": "research_complete",
       "sources": [
-        "https://cohere.com/pricing"
+        "https://cohere.com/pricing",
+        "https://cohere.com/products"
       ],
       "productIds": [
         "cohere-north",
@@ -613,7 +652,9 @@
         "url": "https://cohere.com",
         "chars": 8567,
         "error": null
-      }
+      },
+      "checkedAt": "2026-10-20",
+      "note": "已按当前官网完整Products/Pricing导航核North和Compass；其他为模型/API或ModelVault实例计算，不额外造会员。"
     },
     {
       "platformId": "deepseek",
@@ -646,7 +687,13 @@
         "https://knowledge.workspace.google.com/admin/getting-started/editions/compare-google-workspace-editions",
         "https://edu.google.com/workspace-for-education/add-ons/google-workspace-with-gemini/",
         "https://colab.research.google.com/signup",
-        "https://knowledge.workspace.google.com/admin/generative-ai/workspace-with-gemini/ai-expanded-access"
+        "https://knowledge.workspace.google.com/admin/generative-ai/workspace-with-gemini/ai-expanded-access",
+        "https://support.google.com/a/answer/2855120?hl=en",
+        "https://knowledge.workspace.google.com/admin/getting-started/editions/google-workspace-for-education-pricing-and-licensing",
+        "https://about.appsheet.com/pricing/",
+        "https://support.google.com/appsheet/answer/15657053?hl=en",
+        "https://support.google.com/appsheet/answer/15197435?hl=en",
+        "https://chromeenterprise.google/pricing/"
       ],
       "productIds": [
         "google-ai",
@@ -654,14 +701,22 @@
         "google-workspace",
         "google-ai-education",
         "google-colab",
-        "google-workspace-ai"
+        "google-workspace-ai",
+        "google-workspace-gsuite-legacy",
+        "google-workspace-teaching-learning",
+        "google-gemini-education-premium-legacy",
+        "google-appsheet",
+        "google-appsheet-user-pass",
+        "google-appsheet-external-legacy",
+        "google-chrome-enterprise"
       ],
       "homepageRead": {
         "url": "https://ai.google.dev",
         "chars": 6117,
         "error": null
       },
-      "note": "已核个人AI、企业Gemini/Notebook、存量Code Assist/GDP和Workspace主要版本；附加AI及其他相关订阅待完成。"
+      "note": "Workspace现行/Individual/Nonprofits、教学附加/旧GSuite与教育Premium、AI个人及Colab已核；特定旧AI附加尚未迁移合同边界保留，不作一刀切撤销。",
+      "checkedAt": "2026-10-20"
     },
     {
       "platformId": "hume",
@@ -754,7 +809,33 @@
         "https://www.microsoft.com/en-us/power-platform/products/power-apps/pricing",
         "https://www.microsoft.com/en-us/power-platform/products/power-automate/pricing",
         "https://www.microsoft.com/en-us/copilot/products/copilot-studio",
-        "https://support.microsoft.com/en-us/microsoft-365-copilot/about-microsoft-copilot-pro"
+        "https://support.microsoft.com/en-us/microsoft-365-copilot/about-microsoft-copilot-pro",
+        "https://www.microsoft.com/en-us/dynamics-365/products/sales/pricing",
+        "https://www.microsoft.com/en-us/dynamics-365/products/customer-service/pricing",
+        "https://www.microsoft.com/en-us/dynamics-365/products/contact-center/pricing",
+        "https://www.microsoft.com/en-us/dynamics-365/products/field-service/pricing",
+        "https://www.microsoft.com/en-us/dynamics-365/products/finance/pricing",
+        "https://www.microsoft.com/en-us/dynamics-365/products/supply-chain-management/pricing",
+        "https://www.microsoft.com/en-us/dynamics-365/products/customer-insights/pricing",
+        "https://learn.microsoft.com/en-us/dynamics365/customer-insights/journeys/license-setup",
+        "https://www.microsoft.com/en-us/dynamics-365/products/business-central/pricing",
+        "https://www.microsoft.com/en-us/dynamics-365/products/project-operations/pricing",
+        "https://www.microsoft.com/en-us/dynamics-365/products/commerce/pricing",
+        "https://www.microsoft.com/en-us/dynamics-365/products/human-resources/pricing",
+        "https://www.microsoft.com/licensing/guidance/Dynamics-365",
+        "https://www.microsoft.com/en-us/power-platform/products/power-bi/pricing",
+        "https://support.microsoft.com/en-us/clipchamp/what-are-the-clipchamp-paid-plans-and-how-do-they-work",
+        "https://www.microsoft.com/en-us/microsoft-teams/microsoft-teams-rooms/compare-rooms-plans",
+        "https://www.microsoft.com/en-us/education/products/microsoft-365",
+        "https://www.microsoft.com/en-us/education/products/office",
+        "https://www.microsoft.com/en-us/licensing/news/power-app-per-app-end-of-sale",
+        "https://learn.microsoft.com/en-us/power-platform/admin/power-automate-licensing/faqs",
+        "https://learn.microsoft.com/en-us/power-platform/admin/power-automate-licensing/deep-dive-on-specific-license",
+        "https://www.microsoft.com/en-us/microsoft-365/business/with-teams-plans-and-pricing",
+        "https://www.microsoft.com/en-us/microsoft-365/enterprise/microsoft-365-plans-and-pricing",
+        "https://www.microsoft.com/en-us/microsoft-365/enterprise/frontline-plans-and-pricing",
+        "https://www.microsoft.com/en-us/microsoft-365/enterprise/office-365-plans-and-pricing",
+        "https://www.microsoft.com/en-us/microsoft-365/enterprise/microsoft-365-apps-for-enterprise-product"
       ],
       "productIds": [
         "microsoft-copilot-personal",
@@ -765,7 +846,37 @@
         "microsoft-teams-premium",
         "microsoft-power-apps",
         "microsoft-power-automate",
-        "microsoft-copilot-studio"
+        "microsoft-copilot-studio",
+        "microsoft-dynamics-sales",
+        "microsoft-relationship-sales",
+        "microsoft-dynamics-customer-service",
+        "microsoft-dynamics-contact-center",
+        "microsoft-dynamics-field-service",
+        "microsoft-dynamics-finance",
+        "microsoft-dynamics-supply-chain-management",
+        "microsoft-dynamics-intelligent-order-management",
+        "microsoft-dynamics-customer-insights",
+        "microsoft-dynamics-customer-insights-legacy",
+        "microsoft-dynamics-business-central",
+        "microsoft-dynamics-project-operations",
+        "microsoft-dynamics-commerce",
+        "microsoft-dynamics-human-resources",
+        "microsoft-dynamics-additional-software-licenses",
+        "microsoft-power-bi",
+        "microsoft-clipchamp-personal",
+        "microsoft-clipchamp-work",
+        "microsoft-teams-rooms",
+        "microsoft-365-education",
+        "microsoft-office-365-education",
+        "microsoft-power-apps-per-app",
+        "microsoft-power-automate-per-flow-legacy",
+        "microsoft-power-automate-user-legacy",
+        "microsoft-365-business-base",
+        "microsoft-365-enterprise-base",
+        "microsoft-365-frontline-base",
+        "microsoft-office-365-enterprise-base",
+        "microsoft-365-apps-enterprise-base",
+        "microsoft-agent-365"
       ],
       "homepageRead": {
         "url": "https://microsoft.ai",
@@ -773,7 +884,7 @@
         "error": "HTTP Error 403: Forbidden"
       },
       "checkedAt": "2026-10-20",
-      "note": "现行个人/商业/企业Copilot、TeamsPremium、PowerApps/Automate和Studio固定月包已核；其他正式AI软件许可仍在补核。"
+      "note": "M365个人/商业/企业/Copilot/教育/基础含无Teams、PowerPlatform及存量、Dynamics正式软件、TeamsRooms、Clipchamp和PowerBI已核；非营利折扣归同许可证。旧PVA/部分商业合同统一迁移仍未确认。"
     },
     {
       "platformId": "minimax",
@@ -1319,18 +1430,56 @@
       "site": "https://firefly.adobe.com",
       "status": "partial",
       "sources": [
-        "https://helpx.adobe.com/creative-cloud/apps/generative-ai/generative-credits-faq.html"
+        "https://helpx.adobe.com/creative-cloud/apps/generative-ai/generative-credits-faq.html",
+        "https://www.adobe.com/express/pricing",
+        "https://www.adobe.com/products/substance3d/plans.html",
+        "https://www.adobe.com/acrobat/pricing.html",
+        "https://stock.adobe.com/uk/plans",
+        "https://stock.adobe.com/ca/teams",
+        "https://business.adobe.com/products/marketo/pricing.html",
+        "https://business.adobe.com/products/workfront/pricing.html",
+        "https://business.adobe.com/products/experience-manager/assets/pricing.html",
+        "https://business.adobe.com/products/journey-optimizer/pricing.html",
+        "https://business.adobe.com/products/adobe-analytics/pricing.html",
+        "https://helpx.adobe.com/tw/legal/product-descriptions/customer-journey-analytics.html",
+        "https://business.adobe.com/products/learning-manager/pricing.html",
+        "https://helpx.adobe.com/ie/legal/product-descriptions/adobe-target.html",
+        "https://helpx.adobe.com/legal/product-descriptions/real-time-customer-data-platform-b2b-edition-prime-and-ultimate-packages.html",
+        "https://helpx.adobe.com/ca/legal/product-descriptions/real-time-customer-data-platform-b2c-edition-prime-and-ultimate-packages.html",
+        "https://helpx.adobe.com/au/legal/product-descriptions/real-time-customer-data-platform-b2p-edition-prime-and-ultimate-packages.html",
+        "https://business.adobe.com/products/commerce/pricing.html"
       ],
       "productIds": [
         "adobe-firefly",
-        "adobe-creative-cloud"
+        "adobe-creative-cloud",
+        "adobe-creative-cloud-education",
+        "adobe-firefly-education",
+        "adobe-express",
+        "adobe-substance-3d",
+        "adobe-acrobat",
+        "adobe-stock",
+        "adobe-stock-teams",
+        "adobe-marketo-engage",
+        "adobe-workfront",
+        "adobe-aem-assets",
+        "adobe-journey-optimizer",
+        "adobe-analytics",
+        "adobe-customer-journey-analytics",
+        "adobe-learning-manager",
+        "adobe-target",
+        "adobe-real-time-cdp-b2b",
+        "adobe-real-time-cdp-b2c",
+        "adobe-real-time-cdp-b2p",
+        "adobe-commerce"
       ],
       "homepageRead": {
         "url": "https://firefly.adobe.com",
         "chars": 276,
         "error": null
       },
-      "appliedCatalogRevision": 41
+      "appliedCatalogRevision": 41,
+      "checkedAt": "2026-10-20",
+      "note": "Firefly/CreativeCloud及具体教育、Express/Acrobat/Substance/Stock个人和团队、Experience公开命名档已核；泛SingleApp、Acrobat旧附加/部分企业、Stock旧地区及企业精确目录仍待核。"
     },
     {
       "platformId": "browser-use",
@@ -2228,11 +2377,15 @@
       "status": "partial",
       "sources": [
         "https://kling.ai/app/membership/membership-plan",
-        "https://kling.ai/app/membership/team-membership-plan"
+        "https://kling.ai/app/membership/team-membership-plan",
+        "https://klingai.com/app/membership/membership-plan",
+        "https://klingai.com/app/membership/team-membership-plan"
       ],
       "productIds": [
         "kling-international-personal",
-        "kling-international-team"
+        "kling-international-team",
+        "kling-cn-personal",
+        "kling-cn-team"
       ],
       "homepageRead": {
         "url": "https://kling.ai/",
@@ -2240,7 +2393,7 @@
         "error": null
       },
       "checkedAt": "2026-10-20",
-      "note": "当前国际个人五档、团队TeamPlan完整核对；国内站已从快手官方IR链接进入，当前动态会员及API/旧档仍待核。"
+      "note": "真实浏览器核对国际个人五档/团队、国内个人四档/团队，非会员和新客7天试用不造会员；API独立资源目录和旧档迁移仍需核实。"
     },
     {
       "platformId": "feishu",

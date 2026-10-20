@@ -1216,9 +1216,12 @@
         "50,000 Credits",
         "Mobile and web",
         "Legacy（100 credits）",
-        "Generative credits add-on Legacy（100 credits）"
+        "Generative credits add-on Legacy（100 credits）",
+        "Free"
       ],
-      "freePlans": [],
+      "freePlans": [
+        "Free"
+      ],
       "legacyPlans": [
         "Legacy（100 credits）",
         "Generative credits add-on Legacy（100 credits）"
@@ -1241,7 +1244,11 @@
           "reason": "旧抽取的模糊占位项，已用官方明确档位及积分附加订阅替代",
           "sourceUrl": "https://helpx.adobe.com/creative-cloud/apps/generative-ai/generative-credits-faq.html"
         }
-      ]
+      ],
+      "planSources": {
+        "Free": "https://helpx.adobe.com/creative-cloud/apps/generative-ai/generative-credits-faq.html"
+      },
+      "checkedAt": "2026-10-20"
     },
     {
       "productId": "adobe-creative-cloud",
@@ -2654,11 +2661,14 @@
         "Frontline Plus",
         "Education Fundamentals",
         "Education Standard",
-        "Education Plus"
+        "Education Plus",
+        "Individual",
+        "for Nonprofits"
       ],
       "freePlans": [
         "Essentials Starter",
-        "Education Fundamentals"
+        "Education Fundamentals",
+        "for Nonprofits"
       ],
       "sourceUrl": "https://knowledge.workspace.google.com/admin/getting-started/editions/compare-google-workspace-editions",
       "status": "verified",
@@ -2679,7 +2689,9 @@
         "Frontline Plus": "https://knowledge.workspace.google.com/admin/getting-started/editions/frontline-editions",
         "Education Fundamentals": "https://knowledge.workspace.google.com/admin/getting-started/editions/compare-education-editions",
         "Education Standard": "https://knowledge.workspace.google.com/admin/getting-started/editions/compare-education-editions",
-        "Education Plus": "https://knowledge.workspace.google.com/admin/getting-started/editions/compare-education-editions"
+        "Education Plus": "https://knowledge.workspace.google.com/admin/getting-started/editions/compare-education-editions",
+        "Individual": "https://knowledge.workspace.google.com/admin/getting-started/editions/choose-your-google-workspace-edition",
+        "for Nonprofits": "https://knowledge.workspace.google.com/admin/getting-started/editions/choose-your-google-workspace-edition"
       },
       "legacyPlans": [
         "Essentials（存量）"
@@ -2687,8 +2699,9 @@
       "newPlanIds": {
         "Essentials（存量）": "google-workspace-essentials-legacy"
       },
-      "note": "现行管理文档分别列Business/Enterprise/Essentials/Frontline/Education；Essentials旧版已停售但仍支持。Education Standard仍在现行管理文档列示，不能因营销页只推两档就删除。",
-      "remaining": "Individual、Nonprofits、G Suite旧版及AI附加订阅仍须核对。"
+      "note": "现行完整套件补Individual与正式for Nonprofits；非营利Business Standard/Plus折扣沿用现有同名计划，不制造双选。",
+      "remaining": "Individual、Nonprofits、G Suite旧版及AI附加订阅仍须核对。",
+      "checkedAt": "2026-10-20"
     },
     {
       "productId": "google-ai-education",
@@ -4623,6 +4636,2684 @@
         "Custom"
       ],
       "note": "官方Phoenix FAQ列明全部四个API Plan，独立API发票帮助明确称subscription；不因API按量单价而忽略正式API订阅。"
+    },
+    {
+      "productId": "microsoft-dynamics-sales",
+      "platformIds": [
+        "microsoft-ai"
+      ],
+      "name": "Dynamics 365",
+      "plans": [
+        "Sales Professional",
+        "Sales Enterprise Edition",
+        "Sales Premium"
+      ],
+      "fullPlanNames": {
+        "Sales Professional": "Dynamics 365 Sales Professional",
+        "Sales Enterprise Edition": "Dynamics 365 Sales Enterprise Edition",
+        "Sales Premium": "Dynamics 365 Sales Premium"
+      },
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://www.microsoft.com/en-us/dynamics-365/products/sales/pricing",
+      "officialSource": "https://www.microsoft.com/en-us/dynamics-365/products/sales/pricing",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Sales Professional; Sales Enterprise Edition; Sales Premium",
+      "remaining": "",
+      "evidence": [
+        {
+          "url": "https://www.microsoft.com/en-us/dynamics-365/products/sales/pricing",
+          "checkedAt": "2026-10-20",
+          "quote": "Sales Professional; Sales Enterprise Edition; Sales Premium",
+          "type": "official-full-page"
+        }
+      ],
+      "note": "现售软件席位。Professional本身不含Enterprise/Premium的完整Copilot；代理使用需Copilot Credits。",
+      "newPlanIds": {
+        "Sales Professional": "microsoft-dynamics-sales-sales-professional",
+        "Sales Enterprise Edition": "microsoft-dynamics-sales-sales-enterprise-edition",
+        "Sales Premium": "microsoft-dynamics-sales-sales-premium"
+      }
+    },
+    {
+      "productId": "microsoft-relationship-sales",
+      "platformIds": [
+        "microsoft-ai"
+      ],
+      "name": "Microsoft",
+      "plans": [
+        "Relationship Sales"
+      ],
+      "fullPlanNames": {
+        "Relationship Sales": "Microsoft Relationship Sales"
+      },
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://www.microsoft.com/en-us/dynamics-365/products/sales/pricing",
+      "officialSource": "https://www.microsoft.com/en-us/dynamics-365/products/sales/pricing",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Microsoft Relationship Sales",
+      "remaining": "",
+      "evidence": [
+        {
+          "url": "https://www.microsoft.com/en-us/dynamics-365/products/sales/pricing",
+          "checkedAt": "2026-10-20",
+          "quote": "Microsoft Relationship Sales",
+          "type": "official-full-page"
+        }
+      ],
+      "note": "正式套件含Sales Enterprise与LinkedIn Sales Navigator Advanced Plus；不是新的LinkedIn个人等级。",
+      "newPlanIds": {
+        "Relationship Sales": "microsoft-relationship-sales-relationship-sales"
+      }
+    },
+    {
+      "productId": "microsoft-dynamics-customer-service",
+      "platformIds": [
+        "microsoft-ai"
+      ],
+      "name": "Dynamics 365",
+      "plans": [
+        "Customer Service Professional",
+        "Customer Service Enterprise",
+        "Customer Service Premium"
+      ],
+      "fullPlanNames": {
+        "Customer Service Professional": "Dynamics 365 Customer Service Professional",
+        "Customer Service Enterprise": "Dynamics 365 Customer Service Enterprise",
+        "Customer Service Premium": "Dynamics 365 Customer Service Premium"
+      },
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://www.microsoft.com/en-us/dynamics-365/products/customer-service/pricing",
+      "officialSource": "https://www.microsoft.com/en-us/dynamics-365/products/customer-service/pricing",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Customer Service Professional; Customer Service Enterprise; Customer Service Premium",
+      "remaining": "",
+      "evidence": [
+        {
+          "url": "https://www.microsoft.com/en-us/dynamics-365/products/customer-service/pricing",
+          "checkedAt": "2026-10-20",
+          "quote": "Customer Service Professional; Customer Service Enterprise; Customer Service Premium",
+          "type": "official-full-page"
+        }
+      ],
+      "note": "软件用户许可；Enterprise/Premium提供AI/Copilot，Professional不能据同family推定全部AI权益。",
+      "newPlanIds": {
+        "Customer Service Professional": "microsoft-dynamics-customer-service-customer-service-professional",
+        "Customer Service Enterprise": "microsoft-dynamics-customer-service-customer-service-enterprise",
+        "Customer Service Premium": "microsoft-dynamics-customer-service-customer-service-premium"
+      }
+    },
+    {
+      "productId": "microsoft-dynamics-contact-center",
+      "platformIds": [
+        "microsoft-ai"
+      ],
+      "name": "Dynamics 365",
+      "plans": [
+        "Contact Center",
+        "Contact Center Digital",
+        "Contact Center Voice"
+      ],
+      "fullPlanNames": {
+        "Contact Center": "Dynamics 365 Contact Center",
+        "Contact Center Digital": "Dynamics 365 Contact Center Digital",
+        "Contact Center Voice": "Dynamics 365 Contact Center Voice"
+      },
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://www.microsoft.com/en-us/dynamics-365/products/contact-center/pricing",
+      "officialSource": "https://www.microsoft.com/en-us/dynamics-365/products/contact-center/pricing",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Contact Center; Contact Center Digital; Contact Center Voice",
+      "remaining": "",
+      "evidence": [
+        {
+          "url": "https://www.microsoft.com/en-us/dynamics-365/products/contact-center/pricing",
+          "checkedAt": "2026-10-20",
+          "quote": "Contact Center; Contact Center Digital; Contact Center Voice",
+          "type": "official-full-page"
+        }
+      ],
+      "note": "独立用户许可；含代表Copilot体验，代理所需Credits另计。",
+      "newPlanIds": {
+        "Contact Center": "microsoft-dynamics-contact-center-contact-center",
+        "Contact Center Digital": "microsoft-dynamics-contact-center-contact-center-digital",
+        "Contact Center Voice": "microsoft-dynamics-contact-center-contact-center-voice"
+      }
+    },
+    {
+      "productId": "microsoft-dynamics-field-service",
+      "platformIds": [
+        "microsoft-ai"
+      ],
+      "name": "Dynamics 365",
+      "plans": [
+        "Field Service",
+        "Field Service Contractor"
+      ],
+      "fullPlanNames": {
+        "Field Service": "Dynamics 365 Field Service",
+        "Field Service Contractor": "Dynamics 365 Field Service Contractor"
+      },
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://www.microsoft.com/en-us/dynamics-365/products/field-service/pricing",
+      "officialSource": "https://www.microsoft.com/en-us/dynamics-365/products/field-service/pricing",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Field Service; Field Service Contractor",
+      "remaining": "",
+      "evidence": [
+        {
+          "url": "https://www.microsoft.com/en-us/dynamics-365/products/field-service/pricing",
+          "checkedAt": "2026-10-20",
+          "quote": "Field Service; Field Service Contractor",
+          "type": "official-full-page"
+        }
+      ],
+      "note": "当前两项席位；主Field Service含Copilot，Contractor有功能限制。",
+      "newPlanIds": {
+        "Field Service": "microsoft-dynamics-field-service-field-service",
+        "Field Service Contractor": "microsoft-dynamics-field-service-field-service-contractor"
+      }
+    },
+    {
+      "productId": "microsoft-dynamics-finance",
+      "platformIds": [
+        "microsoft-ai"
+      ],
+      "name": "Dynamics 365",
+      "plans": [
+        "Finance",
+        "Finance Premium"
+      ],
+      "fullPlanNames": {
+        "Finance": "Dynamics 365 Finance",
+        "Finance Premium": "Dynamics 365 Finance Premium"
+      },
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://www.microsoft.com/en-us/dynamics-365/products/finance/pricing",
+      "officialSource": "https://www.microsoft.com/en-us/dynamics-365/products/finance/pricing",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Dynamics 365 Finance Premium",
+      "remaining": "",
+      "evidence": [
+        {
+          "url": "https://www.microsoft.com/en-us/dynamics-365/products/finance/pricing",
+          "checkedAt": "2026-10-20",
+          "quote": "Dynamics 365 Finance Premium",
+          "type": "official-full-page"
+        }
+      ],
+      "note": "官方价格/许可确认两档；常规AI能力两档有，Premium含代理额度。页面的市场不可用占位不当作全球停售。",
+      "newPlanIds": {
+        "Finance": "microsoft-dynamics-finance-finance",
+        "Finance Premium": "microsoft-dynamics-finance-finance-premium"
+      }
+    },
+    {
+      "productId": "microsoft-dynamics-supply-chain-management",
+      "platformIds": [
+        "microsoft-ai"
+      ],
+      "name": "Dynamics 365",
+      "plans": [
+        "Supply Chain Management",
+        "Supply Chain Management Premium"
+      ],
+      "fullPlanNames": {
+        "Supply Chain Management": "Dynamics 365 Supply Chain Management",
+        "Supply Chain Management Premium": "Dynamics 365 Supply Chain Management Premium"
+      },
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://www.microsoft.com/en-us/dynamics-365/products/supply-chain-management/pricing",
+      "officialSource": "https://www.microsoft.com/en-us/dynamics-365/products/supply-chain-management/pricing",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Supply Chain Management; Supply Chain Management Premium",
+      "remaining": "",
+      "evidence": [
+        {
+          "url": "https://www.microsoft.com/en-us/dynamics-365/products/supply-chain-management/pricing",
+          "checkedAt": "2026-10-20",
+          "quote": "Supply Chain Management; Supply Chain Management Premium",
+          "type": "official-full-page"
+        }
+      ],
+      "note": "正式两档软件用户许可；均有AI/ML，Premium含更高规划能力和代理额度。",
+      "newPlanIds": {
+        "Supply Chain Management": "microsoft-dynamics-supply-chain-management-supply-chain-management",
+        "Supply Chain Management Premium": "microsoft-dynamics-supply-chain-management-supply-chain-management-premium"
+      }
+    },
+    {
+      "productId": "microsoft-dynamics-intelligent-order-management",
+      "platformIds": [
+        "microsoft-ai"
+      ],
+      "name": "Dynamics 365",
+      "plans": [
+        "Intelligent Order Management"
+      ],
+      "fullPlanNames": {
+        "Intelligent Order Management": "Dynamics 365 Intelligent Order Management"
+      },
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://www.microsoft.com/en-us/dynamics-365/products/supply-chain-management/pricing",
+      "officialSource": "https://www.microsoft.com/en-us/dynamics-365/products/supply-chain-management/pricing",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Dynamics 365 Intelligent Order Management",
+      "remaining": "",
+      "evidence": [
+        {
+          "url": "https://www.microsoft.com/en-us/dynamics-365/products/supply-chain-management/pricing",
+          "checkedAt": "2026-10-20",
+          "quote": "Dynamics 365 Intelligent Order Management",
+          "type": "official-full-page"
+        }
+      ],
+      "note": "按租户的软件订阅；虽带订单数量额度，仍是完整订单管理应用，区别于单卖Copilot Credits。",
+      "newPlanIds": {
+        "Intelligent Order Management": "microsoft-dynamics-intelligent-order-management-intelligent-order-management"
+      }
+    },
+    {
+      "productId": "microsoft-dynamics-customer-insights",
+      "platformIds": [
+        "microsoft-ai"
+      ],
+      "name": "Dynamics 365",
+      "plans": [
+        "Customer Insights",
+        "Customer Insights Attach"
+      ],
+      "fullPlanNames": {
+        "Customer Insights": "Dynamics 365 Customer Insights",
+        "Customer Insights Attach": "Dynamics 365 Customer Insights Attach"
+      },
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://www.microsoft.com/en-us/dynamics-365/products/customer-insights/pricing",
+      "officialSource": "https://www.microsoft.com/en-us/dynamics-365/products/customer-insights/pricing",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Customer Insights; Customer Insights Attach",
+      "remaining": "旧独立Marketing/Customer Insights并不自动取得新组合权益；官方仍规定其使用及迁移，单独列存量。",
+      "evidence": [
+        {
+          "url": "https://www.microsoft.com/en-us/dynamics-365/products/customer-insights/pricing",
+          "checkedAt": "2026-10-20",
+          "quote": "Customer Insights; Customer Insights Attach",
+          "type": "official-full-page"
+        },
+        {
+          "url": "https://learn.microsoft.com/en-us/dynamics365/copilot/ai-get-started",
+          "checkedAt": "2026-10-20",
+          "quote": "all Copilot and AI capabilities available in model-driven apps",
+          "type": "official-full-page"
+        }
+      ],
+      "note": "当前租户软件订阅。Attach需要合资格Dynamics基础采购，非单纯额外用量。",
+      "newPlanIds": {
+        "Customer Insights": "microsoft-dynamics-customer-insights-customer-insights",
+        "Customer Insights Attach": "microsoft-dynamics-customer-insights-customer-insights-attach"
+      }
+    },
+    {
+      "productId": "microsoft-dynamics-customer-insights-legacy",
+      "platformIds": [
+        "microsoft-ai"
+      ],
+      "name": "Dynamics 365",
+      "plans": [
+        "Marketing (standalone)",
+        "Customer Insights (standalone)"
+      ],
+      "fullPlanNames": {
+        "Marketing (standalone)": "Dynamics 365 Marketing (standalone)",
+        "Customer Insights (standalone)": "Dynamics 365 Customer Insights (standalone)"
+      },
+      "freePlans": [],
+      "legacyPlans": [
+        "Marketing (standalone)",
+        "Customer Insights (standalone)"
+      ],
+      "sourceUrl": "https://learn.microsoft.com/en-us/dynamics365/customer-insights/journeys/license-setup",
+      "officialSource": "https://learn.microsoft.com/en-us/dynamics365/customer-insights/journeys/license-setup",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Dynamics 365 Marketing (standalone); Dynamics 365 Customer Insights (standalone)",
+      "remaining": "具体客户合同续订截止和旧active contacts附加SKU需逐合同确认，不声称永远可续。",
+      "evidence": [
+        {
+          "url": "https://learn.microsoft.com/en-us/dynamics365/customer-insights/journeys/license-setup",
+          "checkedAt": "2026-10-20",
+          "quote": "Dynamics 365 Marketing (standalone); Dynamics 365 Customer Insights (standalone)",
+          "type": "official-full-page"
+        }
+      ],
+      "note": "官方现行许可说明仍明确旧独立许可证持有人及各自权益；新组合权益不自动转移。仅存量适用。",
+      "newPlanIds": {
+        "Marketing (standalone)": "microsoft-dynamics-customer-insights-legacy-marketing-standalone",
+        "Customer Insights (standalone)": "microsoft-dynamics-customer-insights-legacy-customer-insights-standalone"
+      }
+    },
+    {
+      "productId": "microsoft-dynamics-business-central",
+      "platformIds": [
+        "microsoft-ai"
+      ],
+      "name": "Dynamics 365",
+      "plans": [
+        "Business Central Essentials",
+        "Business Central Premium",
+        "Business Central Team Members"
+      ],
+      "fullPlanNames": {
+        "Business Central Essentials": "Dynamics 365 Business Central Essentials",
+        "Business Central Premium": "Dynamics 365 Business Central Premium",
+        "Business Central Team Members": "Dynamics 365 Business Central Team Members"
+      },
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://www.microsoft.com/en-us/dynamics-365/products/business-central/pricing",
+      "officialSource": "https://www.microsoft.com/en-us/dynamics-365/products/business-central/pricing",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Business Central Essentials; Business Central Premium; Business Central Team Members",
+      "remaining": "",
+      "evidence": [
+        {
+          "url": "https://www.microsoft.com/en-us/dynamics-365/products/business-central/pricing",
+          "checkedAt": "2026-10-20",
+          "quote": "Business Central Essentials; Business Central Premium; Business Central Team Members",
+          "type": "official-full-page"
+        }
+      ],
+      "note": "Essentials明确含Copilot，Premium包含Essentials；Team Members为有限读/编辑许可，不应宣称相同AI权限。",
+      "newPlanIds": {
+        "Business Central Essentials": "microsoft-dynamics-business-central-business-central-essentials",
+        "Business Central Premium": "microsoft-dynamics-business-central-business-central-premium",
+        "Business Central Team Members": "microsoft-dynamics-business-central-business-central-team-members"
+      }
+    },
+    {
+      "productId": "microsoft-dynamics-project-operations",
+      "platformIds": [
+        "microsoft-ai"
+      ],
+      "name": "Dynamics 365",
+      "plans": [
+        "Project Operations"
+      ],
+      "fullPlanNames": {
+        "Project Operations": "Dynamics 365 Project Operations"
+      },
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://www.microsoft.com/en-us/dynamics-365/products/project-operations/pricing",
+      "officialSource": "https://www.microsoft.com/en-us/dynamics-365/products/project-operations/pricing",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Dynamics 365 Project Operations",
+      "remaining": "",
+      "evidence": [
+        {
+          "url": "https://www.microsoft.com/en-us/dynamics-365/products/project-operations/pricing",
+          "checkedAt": "2026-10-20",
+          "quote": "Dynamics 365 Project Operations",
+          "type": "official-full-page"
+        }
+      ],
+      "note": "应用用户许可提供预制代理访问，但运行所需Credits不包含，须另购。",
+      "newPlanIds": {
+        "Project Operations": "microsoft-dynamics-project-operations-project-operations"
+      }
+    },
+    {
+      "productId": "microsoft-dynamics-commerce",
+      "platformIds": [
+        "microsoft-ai"
+      ],
+      "name": "Dynamics 365",
+      "plans": [
+        "Commerce",
+        "Commerce e-Commerce add on",
+        "Commerce headless add on"
+      ],
+      "fullPlanNames": {
+        "Commerce": "Dynamics 365 Commerce",
+        "Commerce e-Commerce add on": "Dynamics 365 Commerce e-Commerce add on",
+        "Commerce headless add on": "Dynamics 365 Commerce headless add on"
+      },
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://www.microsoft.com/en-us/dynamics-365/products/commerce/pricing",
+      "officialSource": "https://www.microsoft.com/en-us/dynamics-365/products/commerce/pricing",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Dynamics 365 Commerce; e-Commerce add on; headless add on",
+      "remaining": "",
+      "evidence": [
+        {
+          "url": "https://www.microsoft.com/en-us/dynamics-365/products/commerce/pricing",
+          "checkedAt": "2026-10-20",
+          "quote": "Dynamics 365 Commerce; e-Commerce add on; headless add on",
+          "type": "official-full-page"
+        },
+        {
+          "url": "https://learn.microsoft.com/en-us/dynamics365/commerce/copilot-product-insights",
+          "checkedAt": "2026-10-20",
+          "quote": "Microsoft Copilot-generated product insights",
+          "type": "official-full-page"
+        }
+      ],
+      "note": "当前软件用户/租户附加订阅；Commerce具Copilot。Scale Unit、交易超额包为资源容量不建会员。",
+      "newPlanIds": {
+        "Commerce": "microsoft-dynamics-commerce-commerce",
+        "Commerce e-Commerce add on": "microsoft-dynamics-commerce-commerce-e-commerce-add-on",
+        "Commerce headless add on": "microsoft-dynamics-commerce-commerce-headless-add-on"
+      }
+    },
+    {
+      "productId": "microsoft-dynamics-human-resources",
+      "platformIds": [
+        "microsoft-ai"
+      ],
+      "name": "Dynamics 365",
+      "plans": [
+        "Human Resources",
+        "Human Resources Self Service"
+      ],
+      "fullPlanNames": {
+        "Human Resources": "Dynamics 365 Human Resources",
+        "Human Resources Self Service": "Dynamics 365 Human Resources Self Service"
+      },
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://www.microsoft.com/en-us/dynamics-365/products/human-resources/pricing",
+      "officialSource": "https://www.microsoft.com/en-us/dynamics-365/products/human-resources/pricing",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Human Resources; Human Resources Self Service",
+      "remaining": "HR Recruiting add-on当前独立采购状态未确认；自助许可不等于完整HR或Microsoft 365 Copilot。",
+      "evidence": [
+        {
+          "url": "https://www.microsoft.com/en-us/dynamics-365/products/human-resources/pricing",
+          "checkedAt": "2026-10-20",
+          "quote": "Human Resources; Human Resources Self Service",
+          "type": "official-full-page"
+        }
+      ],
+      "note": "当前HR完整与自助软件许可；AI招聘附加应用有官方预览，但未确认独立付费SKU，不伪造套餐。",
+      "newPlanIds": {
+        "Human Resources": "microsoft-dynamics-human-resources-human-resources",
+        "Human Resources Self Service": "microsoft-dynamics-human-resources-human-resources-self-service"
+      }
+    },
+    {
+      "productId": "microsoft-dynamics-additional-software-licenses",
+      "platformIds": [
+        "microsoft-ai"
+      ],
+      "name": "Dynamics 365",
+      "plans": [
+        "Sales Device",
+        "Sales Insights",
+        "Customer Service Device",
+        "Contact Center Digital Add-on",
+        "Contact Center Voice Add-on",
+        "Contact Center Add-on (Digital + Voice)",
+        "Field Service Device",
+        "Field Service Resource Scheduling Optimization",
+        "Team Members",
+        "Operations – Activity",
+        "Operations – Device"
+      ],
+      "fullPlanNames": {
+        "Sales Device": "Dynamics 365 Sales Device",
+        "Sales Insights": "Dynamics 365 Sales Insights",
+        "Customer Service Device": "Dynamics 365 Customer Service Device",
+        "Contact Center Digital Add-on": "Dynamics 365 Contact Center Digital Add-on",
+        "Contact Center Voice Add-on": "Dynamics 365 Contact Center Voice Add-on",
+        "Contact Center Add-on (Digital + Voice)": "Dynamics 365 Contact Center Add-on (Digital + Voice)",
+        "Field Service Device": "Dynamics 365 Field Service Device",
+        "Field Service Resource Scheduling Optimization": "Dynamics 365 Field Service Resource Scheduling Optimization",
+        "Team Members": "Dynamics 365 Team Members",
+        "Operations – Activity": "Dynamics 365 Operations – Activity",
+        "Operations – Device": "Dynamics 365 Operations – Device"
+      },
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://www.microsoft.com/licensing/guidance/Dynamics-365",
+      "officialSource": "https://www.microsoft.com/licensing/guidance/Dynamics-365",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Sales Insights; Customer Service Device; Field Service Device; Team Members; Operations – Activity; Operations – Device",
+      "remaining": "base/attach是同能力采购价格关系，不额外制造每个attach等级；Commerce e-Commerce交易档及纯容量均不录入。",
+      "evidence": [
+        {
+          "url": "https://www.microsoft.com/licensing/guidance/Dynamics-365",
+          "checkedAt": "2026-10-20",
+          "quote": "Sales Insights; Customer Service Device; Field Service Device; Team Members; Operations – Activity; Operations – Device",
+          "type": "official-full-page"
+        }
+      ],
+      "note": "官方完整许可指南按名称确认设备/轻量用户及功能附加许可证；这些是软件使用权，不是API计量。不同许可不自动享有同一Copilot权限。",
+      "newPlanIds": {
+        "Sales Device": "microsoft-dynamics-additional-software-licenses-sales-device",
+        "Sales Insights": "microsoft-dynamics-additional-software-licenses-sales-insights",
+        "Customer Service Device": "microsoft-dynamics-additional-software-licenses-customer-service-device",
+        "Contact Center Digital Add-on": "microsoft-dynamics-additional-software-licenses-contact-center-digital-add-on",
+        "Contact Center Voice Add-on": "microsoft-dynamics-additional-software-licenses-contact-center-voice-add-on",
+        "Contact Center Add-on (Digital + Voice)": "microsoft-dynamics-additional-software-licenses-contact-center-add-on-digital-plus-voice",
+        "Field Service Device": "microsoft-dynamics-additional-software-licenses-field-service-device",
+        "Field Service Resource Scheduling Optimization": "microsoft-dynamics-additional-software-licenses-field-service-resource-scheduling-optimization",
+        "Team Members": "microsoft-dynamics-additional-software-licenses-team-members",
+        "Operations – Activity": "microsoft-dynamics-additional-software-licenses-operations-activity",
+        "Operations – Device": "microsoft-dynamics-additional-software-licenses-operations-device"
+      }
+    },
+    {
+      "productId": "microsoft-power-bi",
+      "platformIds": [
+        "microsoft-ai"
+      ],
+      "name": "Microsoft Power BI",
+      "plans": [
+        "Free account",
+        "Pro",
+        "Premium Per User"
+      ],
+      "fullPlanNames": {
+        "Free account": "Microsoft Power BI Free account",
+        "Pro": "Microsoft Power BI Pro",
+        "Premium Per User": "Microsoft Power BI Premium Per User"
+      },
+      "freePlans": [
+        "Free account"
+      ],
+      "legacyPlans": [],
+      "sourceUrl": "https://www.microsoft.com/en-us/power-platform/products/power-bi/pricing",
+      "officialSource": "https://www.microsoft.com/en-us/power-platform/products/power-bi/pricing",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Free account; Power BI Pro; Power BI Premium Per User",
+      "remaining": "Premium per-capacity旧P SKU为容量资源，转移至非会员说明，不在此冒充个人订阅。",
+      "evidence": [
+        {
+          "url": "https://www.microsoft.com/en-us/power-platform/products/power-bi/pricing",
+          "checkedAt": "2026-10-20",
+          "quote": "Free account; Power BI Pro; Power BI Premium Per User",
+          "type": "official-full-page"
+        },
+        {
+          "url": "https://learn.microsoft.com/en-us/power-bi/create-reports/copilot-introduction",
+          "checkedAt": "2026-10-20",
+          "quote": "A Power BI Pro or Premium Per User (PPU) license alone isn’t sufficient",
+          "type": "official-full-page"
+        }
+      ],
+      "note": "用户软件许可；PPU有高级AI。Pro/PPU单独均不足以用Copilot，另需启用的组织Fabric F2+或Premium P1+容量。",
+      "newPlanIds": {
+        "Free account": "microsoft-power-bi-free-account",
+        "Pro": "microsoft-power-bi-pro",
+        "Premium Per User": "microsoft-power-bi-premium-per-user"
+      }
+    },
+    {
+      "productId": "microsoft-clipchamp-personal",
+      "platformIds": [
+        "microsoft-ai"
+      ],
+      "name": "Microsoft Clipchamp",
+      "plans": [
+        "Free",
+        "Premium (standalone, existing subscribers)"
+      ],
+      "fullPlanNames": {
+        "Free": "Microsoft Clipchamp Free",
+        "Premium (standalone, existing subscribers)": "Microsoft Clipchamp Premium"
+      },
+      "freePlans": [
+        "Free"
+      ],
+      "legacyPlans": [
+        "Premium (standalone, existing subscribers)"
+      ],
+      "sourceUrl": "https://support.microsoft.com/en-us/clipchamp/what-are-the-clipchamp-paid-plans-and-how-do-they-work",
+      "officialSource": "https://support.microsoft.com/en-us/clipchamp/what-are-the-clipchamp-paid-plans-and-how-do-they-work",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Free plan; existing standalone Clipchamp Premium subscription",
+      "remaining": "新个人付费购买页当前导向M365；只确认独立Premium存量，不宣称仍可新购。Creator/Business/Business Platinum已retired，不列存量。",
+      "evidence": [
+        {
+          "url": "https://support.microsoft.com/en-us/clipchamp/what-are-the-clipchamp-paid-plans-and-how-do-they-work",
+          "checkedAt": "2026-10-20",
+          "quote": "Free plan; existing standalone Clipchamp Premium subscription",
+          "type": "official-full-page"
+        },
+        {
+          "url": "https://support.microsoft.com/en-us/clipchamp/how-to-purchase-and-manage-a-clipchamp-personal-subscription",
+          "checkedAt": "2026-10-20",
+          "quote": "If you already have a standalone Clipchamp Premium subscription",
+          "type": "official-full-page"
+        },
+        {
+          "url": "https://clipchamp.com/en/pricing/",
+          "checkedAt": "2026-10-20",
+          "quote": "AI video editing tools; AI audio editing tools",
+          "type": "official-full-page"
+        }
+      ],
+      "note": "Free含AI剪辑/字幕/语音；Premium个人独立存量订阅有现行官方管理说明。M365内含权益不重复建立M365的Clipchamp订阅ID。",
+      "newPlanIds": {
+        "Free": "microsoft-clipchamp-personal-free",
+        "Premium (standalone, existing subscribers)": "microsoft-clipchamp-personal-premium-standalone-existing-subscribers"
+      }
+    },
+    {
+      "productId": "microsoft-clipchamp-work",
+      "platformIds": [
+        "microsoft-ai"
+      ],
+      "name": "Microsoft Clipchamp",
+      "plans": [
+        "Standard",
+        "Premium"
+      ],
+      "fullPlanNames": {
+        "Standard": "Microsoft Clipchamp Standard",
+        "Premium": "Microsoft Clipchamp Premium"
+      },
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://support.microsoft.com/en-us/clipchamp/what-are-the-clipchamp-paid-plans-and-how-do-they-work",
+      "officialSource": "https://support.microsoft.com/en-us/clipchamp/what-are-the-clipchamp-paid-plans-and-how-do-they-work",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Clipchamp Standard; Clipchamp Premium; standalone subscription for business customers",
+      "remaining": "教育版通过合资格M365 A3/A5等内含Standard；未确认单独教育优惠SKU，不制造。",
+      "evidence": [
+        {
+          "url": "https://support.microsoft.com/en-us/clipchamp/what-are-the-clipchamp-paid-plans-and-how-do-they-work",
+          "checkedAt": "2026-10-20",
+          "quote": "Clipchamp Standard; Clipchamp Premium; standalone subscription for business customers",
+          "type": "official-full-page"
+        },
+        {
+          "url": "https://learn.microsoft.com/en-us/office365/servicedescriptions/windows-365-service-description/microsoft-clipchamp-service-description",
+          "checkedAt": "2026-10-20",
+          "quote": "Both standard and premium are also available as stand-alone subscriptions.",
+          "type": "official-full-page"
+        }
+      ],
+      "note": "两种正式独立商业订阅；Premium亦为符合条件商业客户附加许可证，含若干M365内不等于独立许可证不复存在。",
+      "newPlanIds": {
+        "Standard": "microsoft-clipchamp-work-standard",
+        "Premium": "microsoft-clipchamp-work-premium"
+      }
+    },
+    {
+      "productId": "microsoft-teams-rooms",
+      "platformIds": [
+        "microsoft-ai"
+      ],
+      "name": "Microsoft Teams Rooms",
+      "plans": [
+        "Basic",
+        "Pro"
+      ],
+      "fullPlanNames": {
+        "Basic": "Microsoft Teams Rooms Basic",
+        "Pro": "Microsoft Teams Rooms Pro"
+      },
+      "freePlans": [
+        "Basic"
+      ],
+      "legacyPlans": [],
+      "sourceUrl": "https://www.microsoft.com/en-us/microsoft-teams/microsoft-teams-rooms/compare-rooms-plans",
+      "officialSource": "https://www.microsoft.com/en-us/microsoft-teams/microsoft-teams-rooms/compare-rooms-plans",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Microsoft Teams Rooms Basic; Microsoft Teams Rooms Pro",
+      "remaining": "旧Teams Rooms Standard/Premium合同尚未查到当前统一存量条款，不从新价目缺席断言所有旧合同失效。",
+      "evidence": [
+        {
+          "url": "https://www.microsoft.com/en-us/microsoft-teams/microsoft-teams-rooms/compare-rooms-plans",
+          "checkedAt": "2026-10-20",
+          "quote": "Microsoft Teams Rooms Basic; Microsoft Teams Rooms Pro",
+          "type": "official-full-page"
+        }
+      ],
+      "note": "Basic是须认证设备且限25间的免费许可；Pro是按会议室软件订阅，含AI音视频和智能管理，不是Azure基础设施。",
+      "newPlanIds": {
+        "Basic": "microsoft-teams-rooms-basic",
+        "Pro": "microsoft-teams-rooms-pro"
+      }
+    },
+    {
+      "productId": "microsoft-365-education",
+      "platformIds": [
+        "microsoft-ai"
+      ],
+      "name": "Microsoft 365 Education",
+      "plans": [
+        "A1",
+        "A3",
+        "A5"
+      ],
+      "fullPlanNames": {
+        "A1": "Microsoft 365 Education A1",
+        "A3": "Microsoft 365 Education A3",
+        "A5": "Microsoft 365 Education A5"
+      },
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://www.microsoft.com/en-us/education/products/microsoft-365",
+      "officialSource": "https://www.microsoft.com/en-us/education/products/microsoft-365",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Microsoft 365 A1; Microsoft 365 A3; Microsoft 365 A5",
+      "remaining": "A1设备许可与Office365 A1免费教育资格不同；不标A1免费。最新Copilot前置表出现A2，但本教育正式主目录未列独立采购条款，暂不新增A2。",
+      "evidence": [
+        {
+          "url": "https://www.microsoft.com/en-us/education/products/microsoft-365",
+          "checkedAt": "2026-10-20",
+          "quote": "Microsoft 365 A1; Microsoft 365 A3; Microsoft 365 A5",
+          "type": "official-full-page"
+        },
+        {
+          "url": "https://support.microsoft.com/en-us/education/copilot/support-resources-study-learn-agent",
+          "checkedAt": "2026-10-20",
+          "quote": "Study and Learn is included with Microsoft 365 Education A1, A3, and A5 licenses",
+          "type": "official-full-page"
+        }
+      ],
+      "note": "教育正式软件许可；Study and Learn内含于A1/A3/A5。完整商业级Copilot仍另需附加许可，不能把教育基础等级叫Copilot等级。A1需按具体设备/租户许可核对。",
+      "newPlanIds": {
+        "A1": "microsoft-365-education-a1",
+        "A3": "microsoft-365-education-a3",
+        "A5": "microsoft-365-education-a5"
+      }
+    },
+    {
+      "productId": "microsoft-office-365-education",
+      "platformIds": [
+        "microsoft-ai"
+      ],
+      "name": "Office 365",
+      "plans": [
+        "A1",
+        "A3",
+        "A5"
+      ],
+      "fullPlanNames": {
+        "A1": "Office 365 A1",
+        "A3": "Office 365 A3",
+        "A5": "Office 365 A5"
+      },
+      "freePlans": [
+        "A1"
+      ],
+      "legacyPlans": [],
+      "sourceUrl": "https://www.microsoft.com/en-us/education/products/office",
+      "officialSource": "https://www.microsoft.com/en-us/education/products/office",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Office 365 A1; Office 365 A3; Office 365 A5",
+      "remaining": "不把A1资格直接当完整Copilot权益，也不把学生/教职员折扣重复为功能等级。",
+      "evidence": [
+        {
+          "url": "https://www.microsoft.com/en-us/education/products/office",
+          "checkedAt": "2026-10-20",
+          "quote": "Office 365 A1; Office 365 A3; Office 365 A5",
+          "type": "official-full-page"
+        },
+        {
+          "url": "https://learn.microsoft.com/en-us/copilot/microsoft-365/microsoft-365-copilot-licensing",
+          "checkedAt": "2026-10-20",
+          "summary": "教育附加Copilot许可列Office365 A1/A3/A5为基础前置。",
+          "type": "official-full-page"
+        }
+      ],
+      "note": "当前官网分别列学生和教职员价目；A1为合资格教育机构免费捐赠，A3/A5为付费软件许可。不同于Microsoft365教育套餐；全功能Copilot另需合资格附加许可。",
+      "newPlanIds": {
+        "A1": "microsoft-office-365-education-a1",
+        "A3": "microsoft-office-365-education-a3",
+        "A5": "microsoft-office-365-education-a5"
+      }
+    },
+    {
+      "productId": "microsoft-power-apps-per-app",
+      "platformIds": [
+        "microsoft-ai"
+      ],
+      "name": "Microsoft Power Apps",
+      "plans": [
+        "per app"
+      ],
+      "fullPlanNames": {
+        "per app": "Power Apps per app"
+      },
+      "freePlans": [],
+      "legacyPlans": [
+        "per app"
+      ],
+      "sourceUrl": "https://www.microsoft.com/en-us/licensing/news/power-app-per-app-end-of-sale",
+      "officialSource": "https://www.microsoft.com/en-us/licensing/news/power-app-per-app-end-of-sale",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "continue to purchase, use, and renew their Power Apps per app subscription",
+      "remaining": "必须保留渠道条件；不能把CSP的准入套给MPSA。",
+      "evidence": [
+        {
+          "url": "https://www.microsoft.com/en-us/licensing/news/power-app-per-app-end-of-sale",
+          "checkedAt": "2026-10-20",
+          "quote": "continue to purchase, use, and renew their Power Apps per app subscription",
+          "type": "official-full-page"
+        }
+      ],
+      "note": "明确按渠道：现有Enterprise可继续用并在协议结束后续订；现有MPSA可用至协议结束，之后60天迁移；新旧CSP可购买/使用/续订。不是全部停售失效。",
+      "newPlanIds": {
+        "per app": "microsoft-power-apps-per-app-per-app"
+      }
+    },
+    {
+      "productId": "microsoft-power-automate-per-flow-legacy",
+      "platformIds": [
+        "microsoft-ai"
+      ],
+      "name": "Microsoft Power Automate",
+      "plans": [
+        "per-flow"
+      ],
+      "fullPlanNames": {
+        "per-flow": "Power Automate per-flow plan"
+      },
+      "freePlans": [],
+      "legacyPlans": [
+        "per-flow"
+      ],
+      "sourceUrl": "https://learn.microsoft.com/en-us/power-platform/admin/power-automate-licensing/faqs",
+      "officialSource": "https://learn.microsoft.com/en-us/power-platform/admin/power-automate-licensing/faqs",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Existing per-flow licenses continue to work",
+      "remaining": "不宣称可续费或统一到期；按实际合同结束，不从移出价目推断全部旧许可已失效。",
+      "evidence": [
+        {
+          "url": "https://learn.microsoft.com/en-us/power-platform/admin/power-automate-licensing/faqs",
+          "checkedAt": "2026-10-20",
+          "quote": "Existing per-flow licenses continue to work",
+          "type": "official-full-page"
+        }
+      ],
+      "note": "当前官方FAQ确认2024-02-01移出价目，但既有per-flow继续工作；不能再购买/叠加，并建议到期替换Process而非续订。仅现有未结束许可。",
+      "newPlanIds": {
+        "per-flow": "microsoft-power-automate-per-flow-legacy-per-flow"
+      }
+    },
+    {
+      "productId": "microsoft-power-automate-user-legacy",
+      "platformIds": [
+        "microsoft-ai"
+      ],
+      "name": "Microsoft Power Automate",
+      "plans": [
+        "Per-user plan",
+        "P1",
+        "P2"
+      ],
+      "fullPlanNames": {
+        "Per-user plan": "Power Automate Per-user plan",
+        "P1": "Power Automate P1",
+        "P2": "Power Automate P2"
+      },
+      "freePlans": [],
+      "legacyPlans": [
+        "Per-user plan",
+        "P1",
+        "P2"
+      ],
+      "sourceUrl": "https://learn.microsoft.com/en-us/power-platform/admin/power-automate-licensing/deep-dive-on-specific-license",
+      "officialSource": "https://learn.microsoft.com/en-us/power-platform/admin/power-automate-licensing/deep-dive-on-specific-license",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Power Automate Per-user plan; P1 and P2 plans",
+      "remaining": "P1/P2须实际合同仍活跃；此条件不代表2026可购买或续订。普通旧per-user没有attendedRPA，不能与曾含attendedRPA且改名Premium的SKU混淆。",
+      "evidence": [
+        {
+          "url": "https://learn.microsoft.com/en-us/power-platform/admin/power-automate-licensing/deep-dive-on-specific-license",
+          "checkedAt": "2026-10-20",
+          "quote": "Power Automate Per-user plan; P1 and P2 plans",
+          "type": "official-full-page"
+        }
+      ],
+      "note": "官方2026-10-17更新全文确认已购Per-user仍可使用但应替换Premium而非续订。P1/P2仅2021-01-01前启动且仍未到期的活跃合同继续支持至合同结束，2020-12-31后不可新购或自动续订。不能推断所有旧合同现在失效。",
+      "newPlanIds": {
+        "Per-user plan": "microsoft-power-automate-user-legacy-per-user-plan",
+        "P1": "microsoft-power-automate-user-legacy-p1",
+        "P2": "microsoft-power-automate-user-legacy-p2"
+      }
+    },
+    {
+      "productId": "microsoft-365-business-base",
+      "platformIds": [
+        "microsoft-ai"
+      ],
+      "name": "Microsoft 365",
+      "plans": [
+        "Business Basic",
+        "Business Standard",
+        "Business Premium",
+        "Business Basic (no Teams)",
+        "Business Standard (no Teams)",
+        "Business Premium (no Teams)",
+        "Apps for business"
+      ],
+      "fullPlanNames": {
+        "Business Basic": "Microsoft 365 Business Basic",
+        "Business Standard": "Microsoft 365 Business Standard",
+        "Business Premium": "Microsoft 365 Business Premium",
+        "Business Basic (no Teams)": "Microsoft 365 Business Basic (no Teams)",
+        "Business Standard (no Teams)": "Microsoft 365 Business Standard (no Teams)",
+        "Business Premium (no Teams)": "Microsoft 365 Business Premium (no Teams)",
+        "Apps for business": "Microsoft 365 Apps for business"
+      },
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://www.microsoft.com/en-us/microsoft-365/business/with-teams-plans-and-pricing",
+      "officialSource": "https://www.microsoft.com/en-us/microsoft-365/business/with-teams-plans-and-pricing",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Business Basic; Business Standard; Business Premium; Business Basic (no Teams); Business Standard (no Teams); Business Premium (no Teams); Apps for business",
+      "remaining": "",
+      "evidence": [
+        {
+          "url": "https://www.microsoft.com/en-us/microsoft-365/business/with-teams-plans-and-pricing",
+          "checkedAt": "2026-10-20",
+          "quote": "Microsoft 365 Business Basic; Microsoft 365 Business Standard; Microsoft 365 Business Premium",
+          "type": "official-current-full-price-or-license-page"
+        },
+        {
+          "url": "https://www.microsoft.com/en-us/microsoft-365/business/no-teams-plans-and-pricing",
+          "checkedAt": "2026-10-20",
+          "quote": "Business Basic (no Teams); Business Standard (no Teams); Business Premium (no Teams); Apps for business",
+          "type": "official-current-full-pricing"
+        }
+      ],
+      "planSources": {
+        "Business Basic": "https://www.microsoft.com/en-us/microsoft-365/business/with-teams-plans-and-pricing",
+        "Business Standard": "https://www.microsoft.com/en-us/microsoft-365/business/with-teams-plans-and-pricing",
+        "Business Premium": "https://www.microsoft.com/en-us/microsoft-365/business/with-teams-plans-and-pricing",
+        "Business Basic (no Teams)": "https://www.microsoft.com/en-us/microsoft-365/business/no-teams-plans-and-pricing",
+        "Business Standard (no Teams)": "https://www.microsoft.com/en-us/microsoft-365/business/no-teams-plans-and-pricing",
+        "Business Premium (no Teams)": "https://www.microsoft.com/en-us/microsoft-365/business/no-teams-plans-and-pricing",
+        "Apps for business": "https://www.microsoft.com/en-us/microsoft-365/business/no-teams-plans-and-pricing"
+      },
+      "note": "普通基础软件许可，与with Copilot组合SKU不同。含Teams/noTeams的权利实际不同，保留独立档。仅受限CopilotChat/基础智能能力，不自动具有完整工作数据Copilot。年/月付和非营利价格不是新档。",
+      "newPlanIds": {
+        "Business Basic": "microsoft-365-business-base-business-basic",
+        "Business Standard": "microsoft-365-business-base-business-standard",
+        "Business Premium": "microsoft-365-business-base-business-premium",
+        "Business Basic (no Teams)": "microsoft-365-business-base-business-basic-no-teams",
+        "Business Standard (no Teams)": "microsoft-365-business-base-business-standard-no-teams",
+        "Business Premium (no Teams)": "microsoft-365-business-base-business-premium-no-teams",
+        "Apps for business": "microsoft-365-business-base-apps-for-business"
+      }
+    },
+    {
+      "productId": "microsoft-365-enterprise-base",
+      "platformIds": [
+        "microsoft-ai"
+      ],
+      "name": "Microsoft 365",
+      "plans": [
+        "E3",
+        "E5",
+        "E3 (no Teams)",
+        "E5 (no Teams)",
+        "E7 (No Teams)"
+      ],
+      "fullPlanNames": {
+        "E3": "Microsoft 365 E3",
+        "E5": "Microsoft 365 E5",
+        "E3 (no Teams)": "Microsoft 365 E3 (no Teams)",
+        "E5 (no Teams)": "Microsoft 365 E5 (no Teams)",
+        "E7 (No Teams)": "Microsoft 365 E7 (No Teams)"
+      },
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://www.microsoft.com/en-us/microsoft-365/enterprise/microsoft-365-plans-and-pricing",
+      "officialSource": "https://www.microsoft.com/en-us/microsoft-365/enterprise/microsoft-365-plans-and-pricing",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "E3; E5; E3 (no Teams); E5 (no Teams); E7 (No Teams)",
+      "remaining": "",
+      "evidence": [
+        {
+          "url": "https://www.microsoft.com/en-us/microsoft-365/enterprise/microsoft-365-plans-and-pricing",
+          "checkedAt": "2026-10-20",
+          "quote": "E3; E5; E3 (no Teams); E5 (no Teams); E7 (No Teams)",
+          "type": "official-current-full-price-or-license-page"
+        }
+      ],
+      "note": "企业基础E3/E5只含相应基础AI/安全权益，完整生产力Copilot是附加许可；E7及E7NoTeams包含Copilot。E7含Teams已在初版，不重复；E7NoTeams是实际不同权限SKU。",
+      "newPlanIds": {
+        "E3": "microsoft-365-enterprise-base-e3",
+        "E5": "microsoft-365-enterprise-base-e5",
+        "E3 (no Teams)": "microsoft-365-enterprise-base-e3-no-teams",
+        "E5 (no Teams)": "microsoft-365-enterprise-base-e5-no-teams",
+        "E7 (No Teams)": "microsoft-365-enterprise-base-e7-no-teams"
+      }
+    },
+    {
+      "productId": "microsoft-365-frontline-base",
+      "platformIds": [
+        "microsoft-ai"
+      ],
+      "name": "Microsoft 365",
+      "plans": [
+        "F1",
+        "F3",
+        "F1 (no Teams)",
+        "F3 (no Teams)"
+      ],
+      "fullPlanNames": {
+        "F1": "Microsoft 365 F1",
+        "F3": "Microsoft 365 F3",
+        "F1 (no Teams)": "Microsoft 365 F1 (no Teams)",
+        "F3 (no Teams)": "Microsoft 365 F3 (no Teams)"
+      },
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://www.microsoft.com/en-us/microsoft-365/enterprise/frontline-plans-and-pricing",
+      "officialSource": "https://www.microsoft.com/en-us/microsoft-365/enterprise/frontline-plans-and-pricing",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "F1; F3; F1 (no Teams); F3 (no Teams)",
+      "remaining": "",
+      "evidence": [
+        {
+          "url": "https://www.microsoft.com/en-us/microsoft-365/enterprise/frontline-plans-and-pricing",
+          "checkedAt": "2026-10-20",
+          "quote": "F1; F3; F1 (no Teams); F3 (no Teams)",
+          "type": "official-current-full-price-or-license-page"
+        },
+        {
+          "url": "https://learn.microsoft.com/en-us/microsoft-365/frontline/switch-from-enterprise-to-frontline",
+          "checkedAt": "2026-10-20",
+          "quote": "Microsoft 365 F3 (with Teams); Microsoft 365 F3 (no Teams); Microsoft 365 F1 (with Teams); Microsoft 365 F1 (no Teams)",
+          "type": "official-comparison-license-table"
+        }
+      ],
+      "note": "F1为有限/只读办公权利，F3有更多工作流能力；含Teams与不含Teams是实际独立软件SKU。不能由合资格基础许可推断已购完整Copilot。",
+      "newPlanIds": {
+        "F1": "microsoft-365-frontline-base-f1",
+        "F3": "microsoft-365-frontline-base-f3",
+        "F1 (no Teams)": "microsoft-365-frontline-base-f1-no-teams",
+        "F3 (no Teams)": "microsoft-365-frontline-base-f3-no-teams"
+      }
+    },
+    {
+      "productId": "microsoft-office-365-enterprise-base",
+      "platformIds": [
+        "microsoft-ai"
+      ],
+      "name": "Office 365",
+      "plans": [
+        "E1",
+        "E3",
+        "E5",
+        "E1 (no Teams)",
+        "E3 (no Teams)",
+        "E5 (no Teams)",
+        "F3"
+      ],
+      "fullPlanNames": {
+        "E1": "Office 365 E1",
+        "E3": "Office 365 E3",
+        "E5": "Office 365 E5",
+        "E1 (no Teams)": "Office 365 E1 (no Teams)",
+        "E3 (no Teams)": "Office 365 E3 (no Teams)",
+        "E5 (no Teams)": "Office 365 E5 (no Teams)",
+        "F3": "Office 365 F3"
+      },
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://www.microsoft.com/en-us/microsoft-365/enterprise/office-365-plans-and-pricing",
+      "officialSource": "https://www.microsoft.com/en-us/microsoft-365/enterprise/office-365-plans-and-pricing",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "E1; E3; E5; E1 (no Teams); E3 (no Teams); E5 (no Teams); F3",
+      "remaining": "未在现行完整表中确认独立Office365 F3 noTeams SKU，不因其他Office E版有该变体就猜造。",
+      "evidence": [
+        {
+          "url": "https://www.microsoft.com/en-us/microsoft-365/enterprise/office-365-plans-and-pricing",
+          "checkedAt": "2026-10-20",
+          "quote": "Office 365 E1; Office 365 E3; Office 365 E5; no Teams",
+          "type": "official-current-full-price-or-license-page"
+        },
+        {
+          "url": "https://learn.microsoft.com/en-us/office365/servicedescriptions/office-365-platform-service-description/office-365-plan-options",
+          "checkedAt": "2026-10-20",
+          "quote": "Office 365 F3",
+          "type": "official-current-license-table"
+        }
+      ],
+      "planSources": {
+        "F3": "https://learn.microsoft.com/en-us/office365/servicedescriptions/office-365-platform-service-description/office-365-plan-options"
+      },
+      "note": "Office365与Microsoft365套件权限不同，保留独立。E1/E3/E5含Teams/不含Teams均在当前价格页。F3在当前官方许可表仍列独立产品且为M365F3组成，不仅是虚构别名。基础Office套件不等于完整Copilot。",
+      "newPlanIds": {
+        "E1": "microsoft-office-365-enterprise-base-e1",
+        "E3": "microsoft-office-365-enterprise-base-e3",
+        "E5": "microsoft-office-365-enterprise-base-e5",
+        "E1 (no Teams)": "microsoft-office-365-enterprise-base-e1-no-teams",
+        "E3 (no Teams)": "microsoft-office-365-enterprise-base-e3-no-teams",
+        "E5 (no Teams)": "microsoft-office-365-enterprise-base-e5-no-teams",
+        "F3": "microsoft-office-365-enterprise-base-f3"
+      }
+    },
+    {
+      "productId": "microsoft-365-apps-enterprise-base",
+      "platformIds": [
+        "microsoft-ai"
+      ],
+      "name": "Microsoft 365",
+      "plans": [
+        "Apps for enterprise"
+      ],
+      "fullPlanNames": {
+        "Apps for enterprise": "Microsoft 365 Apps for enterprise"
+      },
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://www.microsoft.com/en-us/microsoft-365/enterprise/microsoft-365-apps-for-enterprise-product",
+      "officialSource": "https://www.microsoft.com/en-us/microsoft-365/enterprise/microsoft-365-apps-for-enterprise-product",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Apps for enterprise",
+      "remaining": "",
+      "evidence": [
+        {
+          "url": "https://www.microsoft.com/en-us/microsoft-365/enterprise/microsoft-365-apps-for-enterprise-product",
+          "checkedAt": "2026-10-20",
+          "quote": "Apps for enterprise",
+          "type": "official-current-full-price-or-license-page"
+        }
+      ],
+      "note": "当前独立办公软件用户订阅；是完整Copilot可用基础条件之一，购买本身不授予完整工作数据Copilot。",
+      "newPlanIds": {
+        "Apps for enterprise": "microsoft-365-apps-enterprise-base-apps-for-enterprise"
+      }
+    },
+    {
+      "productId": "microsoft-agent-365",
+      "platformIds": [
+        "microsoft-ai"
+      ],
+      "name": "Microsoft",
+      "plans": [
+        "Agent 365"
+      ],
+      "fullPlanNames": {
+        "Agent 365": "Microsoft Agent 365"
+      },
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://www.microsoft.com/en-us/microsoft-365/enterprise/microsoft-365-plans-and-pricing",
+      "officialSource": "https://www.microsoft.com/en-us/microsoft-365/enterprise/microsoft-365-plans-and-pricing",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Agent 365",
+      "remaining": "",
+      "evidence": [
+        {
+          "url": "https://www.microsoft.com/en-us/microsoft-365/enterprise/microsoft-365-plans-and-pricing",
+          "checkedAt": "2026-10-20",
+          "quote": "Agent 365",
+          "type": "official-current-full-price-or-license-page"
+        }
+      ],
+      "note": "当前企业价格页Additional services明确列Standalone软件用户年订阅，用于管理M365和第三方agents；虽被E7包含，仍可独立购买，不是计量资源。",
+      "newPlanIds": {
+        "Agent 365": "microsoft-agent-365-agent-365"
+      }
+    },
+    {
+      "productId": "volc-coding-plan-enterprise",
+      "platformIds": [
+        "volc"
+      ],
+      "name": "火山方舟 Coding Plan（企业版）",
+      "plans": [
+        "Team Lite",
+        "Team Pro"
+      ],
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://docs.volcengine.com/docs/ark/coding-plan-enterprise-plan-overview?lang=zh",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Team Lite | Team Pro",
+      "remaining": "",
+      "note": "官方2026-10-19概览明确两档，120/600元每席位月、2席起售，按请求额度；个人版同档名不是同一会员。文档同时给新购和手动/自动续费，未被Agent Plan取消。",
+      "newPlanIds": {
+        "Team Lite": "volc-coding-plan-enterprise-team-lite",
+        "Team Pro": "volc-coding-plan-enterprise-team-pro"
+      }
+    },
+    {
+      "productId": "volc-agent-plan-enterprise",
+      "platformIds": [
+        "volc"
+      ],
+      "name": "火山方舟 Agent Plan（企业版）",
+      "plans": [
+        "Team Small",
+        "Team Medium",
+        "Team Large",
+        "Team Max"
+      ],
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://docs.volcengine.com/docs/ark/agent-plan-enterprise-plan-overview?lang=zh",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Team Small | Team Medium | Team Large | Team Max",
+      "remaining": "",
+      "note": "官方当前概览明确四档，按包月/席位提供AFP和多模态Harness，2席起售；Team Small/Medium不含视频。与Coding企业版并存，不能因升级措辞将其合并。",
+      "newPlanIds": {
+        "Team Small": "volc-agent-plan-enterprise-team-small",
+        "Team Medium": "volc-agent-plan-enterprise-team-medium",
+        "Team Large": "volc-agent-plan-enterprise-team-large",
+        "Team Max": "volc-agent-plan-enterprise-team-max"
+      }
+    },
+    {
+      "productId": "baidu-comate-personal",
+      "platformIds": [
+        "baidu"
+      ],
+      "name": "百度文心快码 Comate（个人版）",
+      "plans": [
+        "个人标准版",
+        "个人专业版",
+        "个人旗舰版",
+        "个人专业版（2026年7月1日前订单）"
+      ],
+      "freePlans": [
+        "个人标准版"
+      ],
+      "legacyPlans": [
+        "个人专业版（2026年7月1日前订单）"
+      ],
+      "sourceUrl": "https://cloud.baidu.com/doc/COMATE/s/rlnvnio4a",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "个人标准版 | 个人专业版 | 个人旗舰版 | 个人专业版（2026年7月1日前订单）",
+      "remaining": "旧变体依据 https://cloud.baidu.com/doc/COMATE/s/smqhi5zsj；不自动把新个人专业版映射为存量订单。",
+      "note": "官方2026-10-01价格文档明确标准免费、专业70元/月、旗舰280元/月；可月季年订阅，积分包是加量。官方调整公告说明7月1日前个人专业版订单未来各订阅周期额外赠10%高级模型额度，保留存量变体。",
+      "newPlanIds": {
+        "个人标准版": "baidu-comate-personal-plan-b9be6a8030",
+        "个人专业版": "baidu-comate-personal-plan-a967a92597",
+        "个人旗舰版": "baidu-comate-personal-plan-277c274cc1",
+        "个人专业版（2026年7月1日前订单）": "baidu-comate-personal-2026-7-1"
+      }
+    },
+    {
+      "productId": "baidu-comate-enterprise",
+      "platformIds": [
+        "baidu"
+      ],
+      "name": "百度文心快码 Comate（企业版）",
+      "plans": [
+        "企业专业版",
+        "企业旗舰版",
+        "企业专属版"
+      ],
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://cloud.baidu.com/doc/COMATE/s/rlnvnio4a",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "企业专业版 | 企业旗舰版 | 企业专属版",
+      "remaining": "",
+      "note": "官方现行价格表：企业专业150元/人/月，旗舰358元/人/月，专属2500元/人/年；专属100人起购。额度增量包不另作软件会员。",
+      "newPlanIds": {
+        "企业专业版": "baidu-comate-enterprise-plan-b5c6512ba2",
+        "企业旗舰版": "baidu-comate-enterprise-plan-93a2340904",
+        "企业专属版": "baidu-comate-enterprise-plan-43ec86731c"
+      }
+    },
+    {
+      "productId": "baidu-comate-private",
+      "platformIds": [
+        "baidu"
+      ],
+      "name": "百度文心快码 Comate（私有化版）",
+      "plans": [
+        "私有化版"
+      ],
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://cloud.baidu.com/doc/COMATE/s/rlnvnio4a",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "私有化版",
+      "remaining": "",
+      "note": "官方定价文档有独立私有化版，预约演示后按企业需求个性化报价；无公开固定金额。",
+      "newPlanIds": {
+        "私有化版": "baidu-comate-private-plan-2ef67766ee"
+      }
+    },
+    {
+      "productId": "huawei-agentarts",
+      "platformIds": [
+        "huaweicloud"
+      ],
+      "name": "华为云智果 AgentArts",
+      "plans": [
+        "体验版"
+      ],
+      "freePlans": [
+        "体验版"
+      ],
+      "legacyPlans": [],
+      "sourceUrl": "https://support.huaweicloud.com/price-agentarts/agentarts_08_0003.html",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "体验版",
+      "remaining": "未来四付费档开放需另核；不能将每月CU表或按需包强制当当前可购。",
+      "note": "官方计费项当前直接HTML标2026-09-24：体验版一次性20CU、2成员、1GB知识库，超出CU按需收费；正式命名免费体验档。团队标准/高级、企业专业/旗舰虽列规格，但同页明确未开放，须工单咨询，故未加入在售会员。",
+      "newPlanIds": {
+        "体验版": "huawei-agentarts-plan-0bfb3ec3c5"
+      }
+    },
+    {
+      "productId": "google-workspace-gsuite-legacy",
+      "platformIds": [
+        "google"
+      ],
+      "name": "G Suite",
+      "plans": [
+        "Basic",
+        "Business",
+        "legacy free edition"
+      ],
+      "freePlans": [
+        "legacy free edition"
+      ],
+      "legacyPlans": [
+        "Basic",
+        "Business",
+        "legacy free edition"
+      ],
+      "fullPlanNames": {
+        "Basic": "G Suite Basic",
+        "Business": "G Suite Business",
+        "legacy free edition": "G Suite legacy free edition"
+      },
+      "sourceUrl": "https://support.google.com/a/answer/2855120?hl=en",
+      "officialSource": "https://support.google.com/a/answer/2855120?hl=en",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "G Suite Basic; G Suite Business; legacy free edition",
+      "remaining": "这些旧套件不因此自动取得现代Workspace付费Gemini全部权限；个人非商业legacy free资格仍按官方条款，具体账户仍须资格核对。",
+      "evidence": [
+        {
+          "url": "https://support.google.com/a/answer/2855120?hl=en",
+          "checkedAt": "2026-10-20",
+          "quote": "G Suite Basic; G Suite Business; legacy free edition",
+          "type": "official-full-page"
+        }
+      ],
+      "note": "官方现行全文明确不能新注册但持有用户可继续订阅和相关服务，不能在旧edition之间互换。不能凭G Suite改名Workspace就删除这些真实存量许可。",
+      "newPlanIds": {
+        "Basic": "google-workspace-gsuite-legacy-basic",
+        "Business": "google-workspace-gsuite-legacy-business",
+        "legacy free edition": "google-workspace-gsuite-legacy-legacy-free-edition"
+      }
+    },
+    {
+      "productId": "google-workspace-teaching-learning",
+      "platformIds": [
+        "google"
+      ],
+      "name": "Google Workspace for Education",
+      "plans": [
+        "Teaching and Learning add-on"
+      ],
+      "freePlans": [],
+      "legacyPlans": [],
+      "fullPlanNames": {
+        "Teaching and Learning add-on": "Google Workspace for Education Teaching and Learning add-on"
+      },
+      "sourceUrl": "https://knowledge.workspace.google.com/admin/getting-started/editions/google-workspace-for-education-pricing-and-licensing",
+      "officialSource": "https://knowledge.workspace.google.com/admin/getting-started/editions/google-workspace-for-education-pricing-and-licensing",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Teaching and Learning add-on",
+      "remaining": "",
+      "evidence": [
+        {
+          "url": "https://knowledge.workspace.google.com/admin/getting-started/editions/google-workspace-for-education-pricing-and-licensing",
+          "checkedAt": "2026-10-20",
+          "quote": "Teaching and Learning add-on",
+          "type": "official-full-page"
+        }
+      ],
+      "note": "现行独立付费教育附加软件许可；年/月付同档不重复，国家折扣不另建。旧称Teaching and Learning Upgrade按同一功能许可合并。",
+      "newPlanIds": {
+        "Teaching and Learning add-on": "google-workspace-teaching-learning-teaching-and-learning-add-on"
+      }
+    },
+    {
+      "productId": "google-gemini-education-premium-legacy",
+      "platformIds": [
+        "google"
+      ],
+      "name": "Google Workspace",
+      "plans": [
+        "Gemini Education Premium"
+      ],
+      "freePlans": [],
+      "legacyPlans": [
+        "Gemini Education Premium"
+      ],
+      "fullPlanNames": {
+        "Gemini Education Premium": "Google Workspace Gemini Education Premium"
+      },
+      "sourceUrl": "https://knowledge.workspace.google.com/admin/getting-started/editions/google-workspace-for-education-pricing-and-licensing",
+      "officialSource": "https://knowledge.workspace.google.com/admin/getting-started/editions/google-workspace-for-education-pricing-and-licensing",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Gemini Education Premium",
+      "remaining": "仅仍未到指定续费日的Annual/Fixed-term合同；不是可新购或可继续无限续旧版。",
+      "evidence": [
+        {
+          "url": "https://knowledge.workspace.google.com/admin/getting-started/editions/google-workspace-for-education-pricing-and-licensing",
+          "checkedAt": "2026-10-20",
+          "quote": "Gemini Education Premium",
+          "type": "official-full-page"
+        }
+      ],
+      "note": "2025-08-28停止新售，固定期存量于2026-02-01起的下一次续费转Google AI Pro for Education；Flexible已2026-03-04起迁移。不把仍未到续期固定合同提前失效。Gemini Education只是改名AIPro，不另造双选。",
+      "newPlanIds": {
+        "Gemini Education Premium": "google-gemini-education-premium-legacy-gemini-education-premium"
+      }
+    },
+    {
+      "productId": "google-appsheet",
+      "platformIds": [
+        "google",
+        "gcloud"
+      ],
+      "name": "Google AppSheet",
+      "plans": [
+        "Starter",
+        "Core",
+        "Enterprise Plus",
+        "Publisher Pro"
+      ],
+      "freePlans": [],
+      "legacyPlans": [],
+      "fullPlanNames": {
+        "Starter": "Google AppSheet Starter",
+        "Core": "Google AppSheet Core",
+        "Enterprise Plus": "Google AppSheet Enterprise Plus",
+        "Publisher Pro": "Google AppSheet Publisher Pro"
+      },
+      "sourceUrl": "https://about.appsheet.com/pricing/",
+      "officialSource": "https://about.appsheet.com/pricing/",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Starter; Core; Enterprise Plus; Publisher Pro",
+      "remaining": "试用/10测试用户原型模式不作可生产永久Free。Enterprise Standard已升级Plus，无重复等级。",
+      "evidence": [
+        {
+          "url": "https://about.appsheet.com/pricing/",
+          "checkedAt": "2026-10-20",
+          "quote": "Starter; Core; Enterprise Plus; Publisher Pro",
+          "type": "official-full-page"
+        },
+        {
+          "url": "https://support.google.com/appsheet/answer/10105400?hl=en",
+          "checkedAt": "2026-10-20",
+          "quote": "Gemini for App Creation is available to all AppSheet paid accounts",
+          "type": "official-full-page"
+        }
+      ],
+      "note": "四项真实软件订阅，PublisherPro按公开应用许可；Gemini app creation官方帮助列这些付费账户。Workspace内含Core和独立Core是同一许可不重建。",
+      "newPlanIds": {
+        "Starter": "google-appsheet-starter",
+        "Core": "google-appsheet-core",
+        "Enterprise Plus": "google-appsheet-enterprise-plus",
+        "Publisher Pro": "google-appsheet-publisher-pro"
+      }
+    },
+    {
+      "productId": "google-appsheet-user-pass",
+      "platformIds": [
+        "google",
+        "gcloud"
+      ],
+      "name": "Google AppSheet",
+      "plans": [
+        "User Pass"
+      ],
+      "freePlans": [],
+      "legacyPlans": [],
+      "fullPlanNames": {
+        "User Pass": "Google AppSheet User Pass"
+      },
+      "sourceUrl": "https://support.google.com/appsheet/answer/15657053?hl=en",
+      "officialSource": "https://support.google.com/appsheet/answer/15657053?hl=en",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "AppSheet User Pass",
+      "remaining": "",
+      "evidence": [
+        {
+          "url": "https://support.google.com/appsheet/answer/15657053?hl=en",
+          "checkedAt": "2026-10-20",
+          "quote": "AppSheet User Pass",
+          "type": "official-full-page"
+        }
+      ],
+      "note": "独立池化软件访问许可证：每用户/每应用消费后获当月无限访问，最短一年采购承诺；不是按token算力资源。权限不等同于直接EnterprisePlus全功能席位。",
+      "newPlanIds": {
+        "User Pass": "google-appsheet-user-pass-user-pass"
+      }
+    },
+    {
+      "productId": "google-appsheet-external-legacy",
+      "platformIds": [
+        "google",
+        "gcloud"
+      ],
+      "name": "Google AppSheet",
+      "plans": [
+        "Enterprise Plus External User"
+      ],
+      "freePlans": [],
+      "legacyPlans": [
+        "Enterprise Plus External User"
+      ],
+      "fullPlanNames": {
+        "Enterprise Plus External User": "Google AppSheet Enterprise Plus External User"
+      },
+      "sourceUrl": "https://support.google.com/appsheet/answer/15197435?hl=en",
+      "officialSource": "https://support.google.com/appsheet/answer/15197435?hl=en",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "AppSheet Enterprise Plus External User",
+      "remaining": "仅仍在既有合同剩余期限内；不得把EnterpriseStandard External再建一个重复旧等级。",
+      "evidence": [
+        {
+          "url": "https://support.google.com/appsheet/answer/15197435?hl=en",
+          "checkedAt": "2026-10-20",
+          "quote": "AppSheet Enterprise Plus External User",
+          "type": "official-full-page"
+        }
+      ],
+      "note": "2025-04-10后不再新售；旧EnterpriseStandard External自动升此档，保留至既有commitment剩余期限，之后使用UserPass。",
+      "newPlanIds": {
+        "Enterprise Plus External User": "google-appsheet-external-legacy-enterprise-plus-external-user"
+      }
+    },
+    {
+      "productId": "google-looker-core",
+      "platformIds": [
+        "gcloud"
+      ],
+      "name": "Google Looker (Google Cloud core)",
+      "plans": [
+        "Standard",
+        "Enterprise",
+        "Embed"
+      ],
+      "freePlans": [],
+      "legacyPlans": [],
+      "fullPlanNames": {
+        "Standard": "Google Looker (Google Cloud core) Standard",
+        "Enterprise": "Google Looker (Google Cloud core) Enterprise",
+        "Embed": "Google Looker (Google Cloud core) Embed"
+      },
+      "sourceUrl": "https://cloud.google.com/looker/pricing",
+      "officialSource": "https://cloud.google.com/looker/pricing",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Standard; Enterprise; Embed",
+      "remaining": "",
+      "evidence": [
+        {
+          "url": "https://cloud.google.com/looker/pricing",
+          "checkedAt": "2026-10-20",
+          "quote": "Standard; Enterprise; Embed",
+          "type": "official-full-page"
+        }
+      ],
+      "note": "三档完整BI平台软件订阅，1/2/3年期限不另建档；具对话分析配额。数据token超额是计量资源不建会员。",
+      "newPlanIds": {
+        "Standard": "google-looker-core-standard",
+        "Enterprise": "google-looker-core-enterprise",
+        "Embed": "google-looker-core-embed"
+      }
+    },
+    {
+      "productId": "google-looker-user-licenses",
+      "platformIds": [
+        "gcloud"
+      ],
+      "name": "Google Looker",
+      "plans": [
+        "Developer User",
+        "Standard User",
+        "Viewer User"
+      ],
+      "freePlans": [],
+      "legacyPlans": [],
+      "fullPlanNames": {
+        "Developer User": "Google Looker Developer User",
+        "Standard User": "Google Looker Standard User",
+        "Viewer User": "Google Looker Viewer User"
+      },
+      "sourceUrl": "https://cloud.google.com/looker/pricing",
+      "officialSource": "https://cloud.google.com/looker/pricing",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Developer User; Standard User; Viewer User",
+      "remaining": "",
+      "evidence": [
+        {
+          "url": "https://cloud.google.com/looker/pricing",
+          "checkedAt": "2026-10-20",
+          "quote": "Developer User; Standard User; Viewer User",
+          "type": "official-full-page"
+        }
+      ],
+      "note": "平台内明确单独用户许可证类型；角色权限实际不同，不把它们误称平台edition。",
+      "newPlanIds": {
+        "Developer User": "google-looker-user-licenses-developer-user",
+        "Standard User": "google-looker-user-licenses-standard-user",
+        "Viewer User": "google-looker-user-licenses-viewer-user"
+      }
+    },
+    {
+      "productId": "google-looker-original",
+      "platformIds": [
+        "gcloud"
+      ],
+      "name": "Google Looker (original)",
+      "plans": [
+        "Advanced",
+        "Elite"
+      ],
+      "freePlans": [],
+      "legacyPlans": [
+        "Advanced",
+        "Elite"
+      ],
+      "fullPlanNames": {
+        "Advanced": "Google Looker (original) Advanced",
+        "Elite": "Google Looker (original) Elite"
+      },
+      "sourceUrl": "https://cloud.google.com/terms/looker/legal/customers/sla",
+      "officialSource": "https://cloud.google.com/terms/looker/legal/customers/sla",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Advanced or Elite",
+      "remaining": "原始Looker其他合同版本、旧Standard名称和新购资格未穷尽，不能标整个Looker历史目录complete。",
+      "evidence": [
+        {
+          "url": "https://cloud.google.com/terms/looker/legal/customers/sla",
+          "checkedAt": "2026-10-20",
+          "quote": "Advanced or Elite",
+          "type": "official-full-page"
+        },
+        {
+          "url": "https://docs.cloud.google.com/looker/docs/choosing-hosting-option",
+          "checkedAt": "2026-10-20",
+          "quote": "Elite version of Looker (original)",
+          "type": "official-full-page"
+        }
+      ],
+      "note": "原始Looker托管部署SLA明确支持两版本，当前hosting文档仍列Elite付费能力；不能只核Cloud core就删旧原版。",
+      "newPlanIds": {
+        "Advanced": "google-looker-original-advanced",
+        "Elite": "google-looker-original-elite"
+      }
+    },
+    {
+      "productId": "google-data-studio",
+      "platformIds": [
+        "gcloud"
+      ],
+      "name": "Google Data Studio",
+      "plans": [
+        "Free",
+        "Pro"
+      ],
+      "freePlans": [
+        "Free"
+      ],
+      "legacyPlans": [],
+      "fullPlanNames": {
+        "Free": "Google Data Studio Free",
+        "Pro": "Google Data Studio Pro"
+      },
+      "sourceUrl": "https://cloud.google.com/data-studio",
+      "officialSource": "https://cloud.google.com/data-studio",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Data Studio; Data Studio Pro",
+      "remaining": "历史whole-organization/MAU商业合同模式未全量确认，属于合同计费而非已证明不同功能档。",
+      "evidence": [
+        {
+          "url": "https://cloud.google.com/data-studio",
+          "checkedAt": "2026-10-20",
+          "quote": "Data Studio; Data Studio Pro",
+          "type": "official-full-page"
+        },
+        {
+          "url": "https://docs.cloud.google.com/data-studio/pro-subscription-overview",
+          "checkedAt": "2026-10-20",
+          "quote": "individual user licenses",
+          "type": "official-full-page"
+        }
+      ],
+      "note": "Data Studio（此前Looker Studio）当前免费与按用户/项目Pro订阅。旧Looker Studio Pro只改名不重建。",
+      "newPlanIds": {
+        "Free": "google-data-studio-free",
+        "Pro": "google-data-studio-pro"
+      }
+    },
+    {
+      "productId": "google-security-operations",
+      "platformIds": [
+        "gcloud"
+      ],
+      "name": "Google Security Operations",
+      "plans": [
+        "Standard",
+        "Enterprise",
+        "Enterprise Plus"
+      ],
+      "freePlans": [],
+      "legacyPlans": [],
+      "fullPlanNames": {
+        "Standard": "Google Security Operations Standard",
+        "Enterprise": "Google Security Operations Enterprise",
+        "Enterprise Plus": "Google Security Operations Enterprise Plus"
+      },
+      "sourceUrl": "https://docs.cloud.google.com/chronicle/docs/secops/secops-packages",
+      "officialSource": "https://docs.cloud.google.com/chronicle/docs/secops/secops-packages",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Standard; Enterprise; Enterprise Plus",
+      "remaining": "旧独立SIEM/SOAR商业合同和Unified Security整包尚未确认全部档名；不从统一三档推断旧单产品全停。",
+      "evidence": [
+        {
+          "url": "https://docs.cloud.google.com/chronicle/docs/secops/secops-packages",
+          "checkedAt": "2026-10-20",
+          "quote": "Standard; Enterprise; Enterprise Plus",
+          "type": "official-full-page"
+        },
+        {
+          "url": "https://docs.cloud.google.com/chronicle/docs/onboard/understand-billing",
+          "checkedAt": "2026-10-20",
+          "quote": "subscription-based billing model that includes a subscription and a metering component",
+          "type": "official-full-page"
+        }
+      ],
+      "note": "三档完整安全软件订阅，Enterprise以上含Gemini。虽然有摄入计量，但官方明确固定订阅与计量组件，不等于纯API资源。",
+      "newPlanIds": {
+        "Standard": "google-security-operations-standard",
+        "Enterprise": "google-security-operations-enterprise",
+        "Enterprise Plus": "google-security-operations-enterprise-plus"
+      }
+    },
+    {
+      "productId": "google-threat-intelligence",
+      "platformIds": [
+        "gcloud"
+      ],
+      "name": "Google Threat Intelligence",
+      "plans": [
+        "Standard",
+        "Enterprise",
+        "Enterprise+",
+        "OEM"
+      ],
+      "freePlans": [],
+      "legacyPlans": [],
+      "fullPlanNames": {
+        "Standard": "Google Threat Intelligence Standard",
+        "Enterprise": "Google Threat Intelligence Enterprise",
+        "Enterprise+": "Google Threat Intelligence Enterprise+",
+        "OEM": "Google Threat Intelligence OEM"
+      },
+      "sourceUrl": "https://cloud.google.com/security/products/threat-intelligence",
+      "officialSource": "https://cloud.google.com/security/products/threat-intelligence",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Standard; Enterprise; Enterprise+; OEM",
+      "remaining": "旧Mandiant/独立VirusTotal合同尚未逐项穷尽；本范围是当前Google Threat Intelligence产品价目闭环。",
+      "evidence": [
+        {
+          "url": "https://cloud.google.com/security/products/threat-intelligence",
+          "checkedAt": "2026-10-20",
+          "quote": "Standard; Enterprise; Enterprise+; OEM",
+          "type": "official-full-page"
+        }
+      ],
+      "note": "官方当前完整价格表四项年度固定软件订阅，另售API次数包不建等级。提供Gemini情报/代码分析，OEM实际分发权不同。",
+      "newPlanIds": {
+        "Standard": "google-threat-intelligence-standard",
+        "Enterprise": "google-threat-intelligence-enterprise",
+        "Enterprise+": "google-threat-intelligence-enterprise-plus",
+        "OEM": "google-threat-intelligence-oem"
+      }
+    },
+    {
+      "productId": "google-security-command-center",
+      "platformIds": [
+        "gcloud"
+      ],
+      "name": "Google Security Command Center",
+      "plans": [
+        "Standard",
+        "Premium",
+        "Enterprise"
+      ],
+      "freePlans": [
+        "Standard"
+      ],
+      "legacyPlans": [
+        "Enterprise"
+      ],
+      "fullPlanNames": {
+        "Standard": "Google Security Command Center Standard",
+        "Premium": "Google Security Command Center Premium",
+        "Enterprise": "Google Security Command Center Enterprise"
+      },
+      "sourceUrl": "https://docs.cloud.google.com/security-command-center/docs/service-tiers",
+      "officialSource": "https://docs.cloud.google.com/security-command-center/docs/service-tiers",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Standard; Premium; Enterprise",
+      "remaining": "Standard-legacy部署变体不是另售用户会员；Enterprise仅按现有合同和官方迁移时间，不能作为无期限现售。",
+      "evidence": [
+        {
+          "url": "https://docs.cloud.google.com/security-command-center/docs/service-tiers",
+          "checkedAt": "2026-10-20",
+          "quote": "Standard; Premium; Enterprise",
+          "type": "official-full-page"
+        },
+        {
+          "url": "https://cloud.google.com/security-command-center/pricing",
+          "checkedAt": "2026-10-20",
+          "quote": "fixed-price subscription",
+          "type": "official-full-page"
+        }
+      ],
+      "note": "Standard无额外费；Premium可购固定价软件订阅（另有PAYG不建会员）；Enterprise已deprecated但直到2027-05-21才关闭并迁移Premium，仍有效存量不能提前删。",
+      "newPlanIds": {
+        "Standard": "google-security-command-center-standard",
+        "Premium": "google-security-command-center-premium",
+        "Enterprise": "google-security-command-center-enterprise"
+      }
+    },
+    {
+      "productId": "google-chrome-enterprise",
+      "platformIds": [
+        "google",
+        "gcloud"
+      ],
+      "name": "Google Chrome Enterprise",
+      "plans": [
+        "Core",
+        "Premium"
+      ],
+      "freePlans": [
+        "Core"
+      ],
+      "legacyPlans": [],
+      "fullPlanNames": {
+        "Core": "Google Chrome Enterprise Core",
+        "Premium": "Google Chrome Enterprise Premium"
+      },
+      "sourceUrl": "https://chromeenterprise.google/pricing/",
+      "officialSource": "https://chromeenterprise.google/pricing/",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Chrome Enterprise Core; Chrome Enterprise Premium",
+      "remaining": "",
+      "evidence": [
+        {
+          "url": "https://chromeenterprise.google/pricing/",
+          "checkedAt": "2026-10-20",
+          "quote": "Chrome Enterprise Core; Chrome Enterprise Premium",
+          "type": "official-full-page"
+        }
+      ],
+      "note": "免费Core与付费Premium是正式浏览器管理/安全软件方案；当前价目明确GenAI助手、AI管理策略及ShadowAI治理。不把免费Chrome消费浏览器另造会员。",
+      "newPlanIds": {
+        "Core": "google-chrome-enterprise-core",
+        "Premium": "google-chrome-enterprise-premium"
+      }
+    },
+    {
+      "productId": "adobe-creative-cloud-education",
+      "platformIds": [
+        "adobe-firefly"
+      ],
+      "name": "Adobe Creative Cloud Education",
+      "plans": [
+        "HED Pro Plus for Enterprise",
+        "HED Pro for Enterprise",
+        "HED All Apps for Enterprise",
+        "Student Teacher All Apps",
+        "K-12 All Apps"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://helpx.adobe.com/creative-cloud/apps/generative-ai/generative-credits-faq.html",
+      "quote": "Higher Education Creative Cloud Pro Plus for Enterprise",
+      "status": "verified",
+      "applyReady": true,
+      "remaining": "Single App表格未展开具体应用SKU，不可推定每一个桌面应用均可售；Shared Device License basic install token是安装授权，不单建用户会员。",
+      "officialPlanNames": {
+        "HED Pro Plus for Enterprise": "Higher Education Creative Cloud Pro Plus for Enterprise",
+        "HED Pro for Enterprise": "Higher Education Creative Cloud Pro for Enterprise",
+        "HED All Apps for Enterprise": "Higher Education Creative Cloud All Apps for Enterprise",
+        "Student Teacher All Apps": "Student Teacher Edition Creative Cloud All Apps",
+        "K-12 All Apps": "K-12 Creative Cloud All Apps",
+        "All Apps Single App（教育）": "Creative Cloud All Apps - Single App",
+        "Student Teacher Single App": "Creative Cloud Student Teacher Edition - Single App",
+        "Shared Device Access": "Creative Cloud Shared Device Access"
+      },
+      "note": "仅录具体已核教育许可；Shared Device Access只是被分配访问身份，两个泛Single App原表类别待明确具体SKU。",
+      "checkedAt": "2026-10-20",
+      "newPlanIds": {
+        "HED Pro Plus for Enterprise": "adobe-creative-cloud-education-hed-pro-plus-for-enterprise",
+        "HED Pro for Enterprise": "adobe-creative-cloud-education-hed-pro-for-enterprise",
+        "HED All Apps for Enterprise": "adobe-creative-cloud-education-hed-all-apps-for-enterprise",
+        "Student Teacher All Apps": "adobe-creative-cloud-education-student-teacher-all-apps",
+        "K-12 All Apps": "adobe-creative-cloud-education-k-12-all-apps"
+      }
+    },
+    {
+      "productId": "adobe-firefly-education",
+      "platformIds": [
+        "adobe-firefly"
+      ],
+      "name": "Adobe Firefly Education",
+      "plans": [
+        "2,000 credits for Education",
+        "7,000 credits for Education",
+        "50,000 credits for Education"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://helpx.adobe.com/creative-cloud/apps/generative-ai/generative-credits-faq.html",
+      "quote": "Firefly 2,000 credits",
+      "status": "verified",
+      "applyReady": true,
+      "remaining": "",
+      "note": "教育专属周期积分许可；不是一次性点数包，不拆faculty/staff和students为两套。",
+      "checkedAt": "2026-10-20",
+      "newPlanIds": {
+        "2,000 credits for Education": "adobe-firefly-education-2-000-credits-for-education",
+        "7,000 credits for Education": "adobe-firefly-education-7-000-credits-for-education",
+        "50,000 credits for Education": "adobe-firefly-education-50-000-credits-for-education"
+      }
+    },
+    {
+      "productId": "adobe-express",
+      "platformIds": [
+        "adobe-firefly"
+      ],
+      "name": "Adobe Express",
+      "plans": [
+        "Free",
+        "Premium",
+        "Teams",
+        "Enterprise",
+        "Express & Firefly Enterprise",
+        "K-12 Education",
+        "Higher Education"
+      ],
+      "freePlans": [
+        "Free",
+        "K-12 Education"
+      ],
+      "sourceUrl": "https://www.adobe.com/express/pricing",
+      "quote": "Adobe Express Free",
+      "status": "verified",
+      "applyReady": true,
+      "remaining": "",
+      "sharedLicenseNotes": "FAQ教育Express Premium与本产品教育档同一许可证，只录一份。Express & Firefly enterprise site/seat licence共一套餐，不按部署方式拆档。Firefly Pro、Creative Cloud Pro、Acrobat Studio所含Express权益继承原许可证，不重复建立Express版。",
+      "checkedAt": "2026-10-20",
+      "note": "",
+      "planAliases": {
+        "Teams": [
+          "Adobe Express Premium for teams"
+        ],
+        "K-12 Education": [
+          "K-12 Express Premium"
+        ],
+        "Higher Education": [
+          "Higher Education Express Premium"
+        ]
+      },
+      "newPlanIds": {
+        "Free": "adobe-express-free",
+        "Premium": "adobe-express-premium",
+        "Teams": "adobe-express-teams",
+        "Enterprise": "adobe-express-enterprise",
+        "Express & Firefly Enterprise": "adobe-express-express-firefly-enterprise",
+        "K-12 Education": "adobe-express-k-12-education",
+        "Higher Education": "adobe-express-higher-education"
+      }
+    },
+    {
+      "productId": "adobe-substance-3d",
+      "platformIds": [
+        "adobe-firefly"
+      ],
+      "name": "Adobe Substance 3D",
+      "plans": [
+        "Collection Individual",
+        "Collection Teams",
+        "Collection Students & Teachers",
+        "Texturing Individual",
+        "Collection Enterprise"
+      ],
+      "freePlans": [
+        "Collection Students & Teachers"
+      ],
+      "sourceUrl": "https://www.adobe.com/products/substance3d/plans.html",
+      "quote": "Collection for individuals; Collection for teams",
+      "status": "verified",
+      "applyReady": true,
+      "remaining": "Texturing在当前主价格页隐藏，但官网FAQ仍确认个人续订；不推定它停止续费。Enterprise授权已由官方安装说明核实，合同子档未公开。",
+      "planSources": {
+        "Texturing Individual": "https://helpx.adobe.com/substance-3d/pricing-change.html",
+        "Collection Enterprise": "https://helpx.adobe.com/substance-3d-assets/desktop/installation-for-adobe-enterprise-users.html"
+      },
+      "sharedLicenseNotes": "Collection内含Painter/Sampler/Designer/Stager/Modeler及Assets并非独立订阅；不重复建档。",
+      "checkedAt": "2026-10-20",
+      "note": "",
+      "newPlanIds": {
+        "Collection Individual": "adobe-substance-3d-collection-individual",
+        "Collection Teams": "adobe-substance-3d-collection-teams",
+        "Collection Students & Teachers": "adobe-substance-3d-collection-students-teachers",
+        "Texturing Individual": "adobe-substance-3d-texturing-individual",
+        "Collection Enterprise": "adobe-substance-3d-collection-enterprise"
+      }
+    },
+    {
+      "productId": "adobe-acrobat",
+      "platformIds": [
+        "adobe-firefly"
+      ],
+      "name": "Adobe Acrobat",
+      "plans": [
+        "Reader",
+        "Standard Individual",
+        "Pro Individual",
+        "Studio Individual",
+        "Express Individual",
+        "AI Assistant Plus",
+        "Standard Teams",
+        "Pro Teams",
+        "Studio Teams",
+        "Express Teams",
+        "Studio Enterprise",
+        "Studio HED Student",
+        "Studio Faculty and Staff",
+        "Express Enterprise",
+        "Express EDU-HED Student"
+      ],
+      "freePlans": [
+        "Reader"
+      ],
+      "sourceUrl": "https://www.adobe.com/acrobat/pricing.html",
+      "quote": "Acrobat Standard; Acrobat Pro; Acrobat Studio",
+      "status": "verified",
+      "applyReady": true,
+      "remaining": "FAQ将teams、VIP/Marketplace、ETLA列为采购渠道。教育学生/教职工的Studio为独立许可；不因采购渠道重复建档。Enterprise Standard/Pro及旧AI Assistant附加订阅还需目录级核清，不能宣称Acrobat全覆盖。",
+      "planSources": {
+        "Express Individual": "https://www.adobe.com/acrobat/acrobat-express.html",
+        "Express Teams": "https://www.adobe.com/acrobat/acrobat-express.html",
+        "AI Assistant Plus": "https://helpx.adobe.com/creative-cloud/apps/generative-ai/generative-credits-faq.html",
+        "Studio Enterprise": "https://helpx.adobe.com/creative-cloud/apps/generative-ai/generative-credits-faq.html",
+        "Studio HED Student": "https://helpx.adobe.com/creative-cloud/apps/generative-ai/generative-credits-faq.html",
+        "Studio Faculty and Staff": "https://helpx.adobe.com/creative-cloud/apps/generative-ai/generative-credits-faq.html",
+        "Express Enterprise": "https://helpx.adobe.com/creative-cloud/apps/generative-ai/generative-credits-faq.html",
+        "Express EDU-HED Student": "https://helpx.adobe.com/creative-cloud/apps/generative-ai/generative-credits-faq.html"
+      },
+      "sharedLicenseNotes": "Acrobat Pro作为Creative Cloud单应用或Studio内含时沿用各自原始许可，不重复制造产品内含会员。HED Student与Faculty and Staff不按teams/enterprise/VIP/ETLA再拆四份。",
+      "checkedAt": "2026-10-20",
+      "note": "",
+      "newPlanIds": {
+        "Reader": "adobe-acrobat-reader",
+        "Standard Individual": "adobe-acrobat-standard-individual",
+        "Pro Individual": "adobe-acrobat-pro-individual",
+        "Studio Individual": "adobe-acrobat-studio-individual",
+        "Express Individual": "adobe-acrobat-express-individual",
+        "AI Assistant Plus": "adobe-acrobat-ai-assistant-plus",
+        "Standard Teams": "adobe-acrobat-standard-teams",
+        "Pro Teams": "adobe-acrobat-pro-teams",
+        "Studio Teams": "adobe-acrobat-studio-teams",
+        "Express Teams": "adobe-acrobat-express-teams",
+        "Studio Enterprise": "adobe-acrobat-studio-enterprise",
+        "Studio HED Student": "adobe-acrobat-studio-hed-student",
+        "Studio Faculty and Staff": "adobe-acrobat-studio-faculty-and-staff",
+        "Express Enterprise": "adobe-acrobat-express-enterprise",
+        "Express EDU-HED Student": "adobe-acrobat-express-edu-hed-student"
+      }
+    },
+    {
+      "productId": "adobe-stock",
+      "platformIds": [
+        "adobe-firefly"
+      ],
+      "name": "Adobe Stock",
+      "plans": [
+        "10 Stock credits",
+        "10 Stock credits + AI Studio",
+        "40 Stock credits + AI Studio",
+        "Unlimited Stock + AI Studio"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://stock.adobe.com/uk/plans",
+      "quote": "10 Stock credits/mo; Unlimited Stock",
+      "status": "verified",
+      "applyReady": true,
+      "remaining": "已实读UK当前4个个人档及企业类别。Teams具体SKU尚未成功读取；旧3/25/40/750档官方帮助文档仍提及，但现行续费/适用地区未完成核清，先保留候选，不作为已验证可应用档位。",
+      "planSources": {
+        "Teams": "https://stock.adobe.com/uk/teams"
+      },
+      "applyReadyPlans": [
+        "10 Stock credits",
+        "10 Stock credits + AI Studio",
+        "40 Stock credits + AI Studio",
+        "Unlimited Stock + AI Studio",
+        "Enterprise"
+      ],
+      "pendingPlans": [
+        "3 assets（旧/地区待核）",
+        "25 Stock credits（旧/地区待核）",
+        "40 assets（不含AI Studio，旧/地区待核）",
+        "750 assets（旧/地区待核）"
+      ],
+      "sharedLicenseNotes": "订阅每月Stock credits是周期权益，需作为具体档位；5/16/40/80/150 credits一次性包不录。CC Pro Plus内含Stock不另造Stock会员。",
+      "checkedAt": "2026-10-20",
+      "note": "",
+      "newPlanIds": {
+        "10 Stock credits": "adobe-stock-10-stock-credits",
+        "10 Stock credits + AI Studio": "adobe-stock-10-stock-credits-plus-ai-studio",
+        "40 Stock credits + AI Studio": "adobe-stock-40-stock-credits-plus-ai-studio",
+        "Unlimited Stock + AI Studio": "adobe-stock-unlimited-stock-plus-ai-studio"
+      }
+    },
+    {
+      "productId": "adobe-stock-teams",
+      "platformIds": [
+        "adobe-firefly"
+      ],
+      "name": "Adobe Stock Teams",
+      "plans": [
+        "10 standard assets a month",
+        "40 standard assets or 6 videos a month",
+        "750 standard assets or 25 videos a month"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://stock.adobe.com/ca/teams",
+      "quote": "10 standard assets a month",
+      "status": "verified",
+      "applyReady": true,
+      "coverageStatus": "public_tiers_verified_for_ca",
+      "prices": {
+        "10 standard assets a month": "CAD 38.99/mo",
+        "40 standard assets or 6 videos a month": "CAD 104.99/mo",
+        "750 standard assets or 25 videos a month": "CAD 261.99/mo"
+      },
+      "remaining": "本轮实际读到加拿大英语官方页3个正式周期订阅，UK Teams多次HTTP失败；不推定全球一致。CC teams Pro Edition内含无限Stock沿原CC许可证。500 credits等为一次性包排除。",
+      "checkedAt": "2026-10-20",
+      "note": "",
+      "newPlanIds": {
+        "10 standard assets a month": "adobe-stock-teams-10-standard-assets-a-month",
+        "40 standard assets or 6 videos a month": "adobe-stock-teams-40-standard-assets-or-6-videos-a-month",
+        "750 standard assets or 25 videos a month": "adobe-stock-teams-750-standard-assets-or-25-videos-a-month"
+      }
+    },
+    {
+      "productId": "adobe-marketo-engage",
+      "platformIds": [
+        "adobe-firefly"
+      ],
+      "name": "Adobe Marketo Engage",
+      "plans": [
+        "Growth",
+        "Select",
+        "Prime",
+        "Ultimate"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://business.adobe.com/products/marketo/pricing.html",
+      "quote": "Growth; Select; Prime; Ultimate",
+      "status": "verified",
+      "applyReady": true,
+      "coverageStatus": "public_tiers_verified",
+      "remaining": "",
+      "priceDisclosure": "custom_quote",
+      "checkedAt": "2026-10-20",
+      "note": "",
+      "newPlanIds": {
+        "Growth": "adobe-marketo-engage-growth",
+        "Select": "adobe-marketo-engage-select",
+        "Prime": "adobe-marketo-engage-prime",
+        "Ultimate": "adobe-marketo-engage-ultimate"
+      }
+    },
+    {
+      "productId": "adobe-workfront",
+      "platformIds": [
+        "adobe-firefly"
+      ],
+      "name": "Adobe Workfront",
+      "plans": [
+        "Select",
+        "Prime",
+        "Ultimate"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://business.adobe.com/products/workfront/pricing.html",
+      "quote": "Select, Prime, and Ultimate",
+      "status": "verified",
+      "applyReady": true,
+      "coverageStatus": "partial",
+      "remaining": "Planning/Fusion为正式附加产品，但没有本轮已核的独立公开tier；不把功能项当套餐。",
+      "priceDisclosure": "custom_quote",
+      "checkedAt": "2026-10-20",
+      "note": "",
+      "newPlanIds": {
+        "Select": "adobe-workfront-select",
+        "Prime": "adobe-workfront-prime",
+        "Ultimate": "adobe-workfront-ultimate"
+      }
+    },
+    {
+      "productId": "adobe-aem-assets",
+      "platformIds": [
+        "adobe-firefly"
+      ],
+      "name": "Adobe Experience Manager Assets",
+      "plans": [
+        "Prime",
+        "Ultimate"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://business.adobe.com/products/experience-manager/assets/pricing.html",
+      "quote": "Prime; Ultimate",
+      "status": "verified",
+      "applyReady": true,
+      "coverageStatus": "partial",
+      "remaining": "Power/Collaborator/Limited是席位角色，不另造会员。",
+      "priceDisclosure": "custom_quote",
+      "checkedAt": "2026-10-20",
+      "note": "",
+      "newPlanIds": {
+        "Prime": "adobe-aem-assets-prime",
+        "Ultimate": "adobe-aem-assets-ultimate"
+      }
+    },
+    {
+      "productId": "adobe-journey-optimizer",
+      "platformIds": [
+        "adobe-firefly"
+      ],
+      "name": "Adobe Journey Optimizer",
+      "plans": [
+        "Select",
+        "Prime",
+        "Ultimate"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://business.adobe.com/products/journey-optimizer/pricing.html",
+      "quote": "Select; Prime; Ultimate",
+      "status": "verified",
+      "applyReady": true,
+      "coverageStatus": "partial",
+      "remaining": "B2B Edition独立产品公开tier本轮未核全。",
+      "priceDisclosure": "custom_quote",
+      "checkedAt": "2026-10-20",
+      "note": "",
+      "newPlanIds": {
+        "Select": "adobe-journey-optimizer-select",
+        "Prime": "adobe-journey-optimizer-prime",
+        "Ultimate": "adobe-journey-optimizer-ultimate"
+      }
+    },
+    {
+      "productId": "adobe-analytics",
+      "platformIds": [
+        "adobe-firefly"
+      ],
+      "name": "Adobe Analytics",
+      "plans": [
+        "Select",
+        "Prime",
+        "Ultimate"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://business.adobe.com/products/adobe-analytics/pricing.html",
+      "quote": "Available in flexible packages such as Select, Prime, and Ultimate",
+      "status": "verified",
+      "applyReady": true,
+      "coverageStatus": "partial",
+      "remaining": "官方表述such as而非穷尽；旧Foundation存在文档线索，未确认完整续订目录。",
+      "priceDisclosure": "custom_quote",
+      "checkedAt": "2026-10-20",
+      "note": "",
+      "newPlanIds": {
+        "Select": "adobe-analytics-select",
+        "Prime": "adobe-analytics-prime",
+        "Ultimate": "adobe-analytics-ultimate"
+      }
+    },
+    {
+      "productId": "adobe-customer-journey-analytics",
+      "platformIds": [
+        "adobe-firefly"
+      ],
+      "name": "Adobe Customer Journey Analytics",
+      "plans": [
+        "Foundation",
+        "Select",
+        "Prime",
+        "Ultimate"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://helpx.adobe.com/tw/legal/product-descriptions/customer-journey-analytics.html",
+      "quote": "Customer Journey Analytics – Foundation",
+      "status": "verified",
+      "applyReady": true,
+      "coverageStatus": "partial",
+      "remaining": "2026-09-25生效产品说明核明4档；B2B add-on是附加产品，不当第五个基础档；额外行数、query、storage等按量不造会员。",
+      "priceDisclosure": "custom_quote",
+      "checkedAt": "2026-10-20",
+      "note": "",
+      "newPlanIds": {
+        "Foundation": "adobe-customer-journey-analytics-foundation",
+        "Select": "adobe-customer-journey-analytics-select",
+        "Prime": "adobe-customer-journey-analytics-prime",
+        "Ultimate": "adobe-customer-journey-analytics-ultimate"
+      }
+    },
+    {
+      "productId": "adobe-learning-manager",
+      "platformIds": [
+        "adobe-firefly"
+      ],
+      "name": "Adobe Learning Manager",
+      "plans": [
+        "Prime",
+        "Ultimate"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://business.adobe.com/products/learning-manager/pricing.html",
+      "quote": "With two packages - Prime and Ultimate",
+      "status": "verified",
+      "applyReady": true,
+      "coverageStatus": "partial",
+      "remaining": "AI credit consumption为高级AI计费，不单建积分会员。",
+      "priceDisclosure": "custom_quote",
+      "checkedAt": "2026-10-20",
+      "note": "",
+      "newPlanIds": {
+        "Prime": "adobe-learning-manager-prime",
+        "Ultimate": "adobe-learning-manager-ultimate"
+      }
+    },
+    {
+      "productId": "adobe-target",
+      "platformIds": [
+        "adobe-firefly"
+      ],
+      "name": "Adobe Target",
+      "plans": [
+        "Standard",
+        "Premium"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://helpx.adobe.com/ie/legal/product-descriptions/adobe-target.html",
+      "quote": "Adobe Target Standard; Adobe Target Premium",
+      "status": "verified",
+      "applyReady": true,
+      "coverageStatus": "public_tiers_verified",
+      "remaining": "",
+      "priceDisclosure": "custom_quote",
+      "checkedAt": "2026-10-20",
+      "note": "",
+      "newPlanIds": {
+        "Standard": "adobe-target-standard",
+        "Premium": "adobe-target-premium"
+      }
+    },
+    {
+      "productId": "adobe-real-time-cdp-b2b",
+      "platformIds": [
+        "adobe-firefly"
+      ],
+      "name": "Adobe Real-Time CDP B2B",
+      "plans": [
+        "Prime",
+        "Ultimate"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://helpx.adobe.com/legal/product-descriptions/real-time-customer-data-platform-b2b-edition-prime-and-ultimate-packages.html",
+      "quote": "Real-Time Customer Data Platform Prime (B2B Edition)",
+      "status": "verified",
+      "applyReady": true,
+      "coverageStatus": "partial",
+      "remaining": "官方主价格页只列B2C/B2B/B2P为edition，法律产品说明进一步明确每版Prime/Ultimate；不得只建一个模糊B2C/B2B/B2P占位。",
+      "priceDisclosure": "custom_quote",
+      "checkedAt": "2026-10-20",
+      "note": "",
+      "newPlanIds": {
+        "Prime": "adobe-real-time-cdp-b2b-prime",
+        "Ultimate": "adobe-real-time-cdp-b2b-ultimate"
+      }
+    },
+    {
+      "productId": "adobe-real-time-cdp-b2c",
+      "platformIds": [
+        "adobe-firefly"
+      ],
+      "name": "Adobe Real-Time CDP B2C",
+      "plans": [
+        "Prime",
+        "Ultimate"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://helpx.adobe.com/ca/legal/product-descriptions/real-time-customer-data-platform-b2c-edition-prime-and-ultimate-packages.html",
+      "quote": "Real-Time Customer Data Platform Prime (B2C Edition)",
+      "status": "verified",
+      "applyReady": true,
+      "coverageStatus": "partial",
+      "remaining": "官方主价格页只列B2C/B2B/B2P为edition，法律产品说明进一步明确每版Prime/Ultimate；不得只建一个模糊B2C/B2B/B2P占位。",
+      "priceDisclosure": "custom_quote",
+      "checkedAt": "2026-10-20",
+      "note": "",
+      "newPlanIds": {
+        "Prime": "adobe-real-time-cdp-b2c-prime",
+        "Ultimate": "adobe-real-time-cdp-b2c-ultimate"
+      }
+    },
+    {
+      "productId": "adobe-real-time-cdp-b2p",
+      "platformIds": [
+        "adobe-firefly"
+      ],
+      "name": "Adobe Real-Time CDP B2P",
+      "plans": [
+        "Prime",
+        "Ultimate"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://helpx.adobe.com/au/legal/product-descriptions/real-time-customer-data-platform-b2p-edition-prime-and-ultimate-packages.html",
+      "quote": "Real-Time Customer Data Platform Prime (B2P Edition)",
+      "status": "verified",
+      "applyReady": true,
+      "coverageStatus": "partial",
+      "remaining": "官方主价格页只列B2C/B2B/B2P为edition，法律产品说明进一步明确每版Prime/Ultimate；不得只建一个模糊B2C/B2B/B2P占位。",
+      "priceDisclosure": "custom_quote",
+      "checkedAt": "2026-10-20",
+      "note": "",
+      "newPlanIds": {
+        "Prime": "adobe-real-time-cdp-b2p-prime",
+        "Ultimate": "adobe-real-time-cdp-b2p-ultimate"
+      }
+    },
+    {
+      "productId": "adobe-commerce",
+      "platformIds": [
+        "adobe-firefly"
+      ],
+      "name": "Adobe Commerce",
+      "plans": [
+        "Adobe Commerce as a Cloud Service (SaaS)",
+        "Adobe Commerce on Cloud (PaaS)",
+        "Adobe Commerce Optimizer"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://business.adobe.com/products/commerce/pricing.html",
+      "quote": "Adobe Commerce Optimizer",
+      "status": "verified",
+      "applyReady": true,
+      "coverageStatus": "partial",
+      "remaining": "仅公开3个具体产品方案；站内add-on for certain tiers未公布tier正式名，不展开假想子档。",
+      "priceDisclosure": "custom_quote",
+      "checkedAt": "2026-10-20",
+      "note": "",
+      "newPlanIds": {
+        "Adobe Commerce as a Cloud Service (SaaS)": "adobe-commerce-adobe-commerce-as-a-cloud-service-saas",
+        "Adobe Commerce on Cloud (PaaS)": "adobe-commerce-adobe-commerce-on-cloud-paas",
+        "Adobe Commerce Optimizer": "adobe-commerce-adobe-commerce-optimizer"
+      }
+    },
+    {
+      "productId": "kling-cn-personal",
+      "platformIds": [
+        "kling"
+      ],
+      "name": "可灵 AI（国内个人版）",
+      "plans": [
+        "黄金会员",
+        "铂金会员",
+        "钻石会员",
+        "黑金会员"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://klingai.com/app/membership/membership-plan",
+      "quote": "黄金会员; 铂金会员; 钻石会员; 黑金会员",
+      "newPlanIds": {
+        "黄金会员": "kling-cn-personal-gold",
+        "铂金会员": "kling-cn-personal-platinum",
+        "钻石会员": "kling-cn-personal-diamond",
+        "黑金会员": "kling-cn-personal-black-gold"
+      },
+      "note": "2026-10-20真实浏览器从快手IR中文版入口进入klingai.com核实，非kling.ai国际站翻译。个人四档在月/季/12月相同，7天新客试用不是新会员；团队1/6/12个月同一正式团队会员。空间权益与灵感值独立不互转。",
+      "status": "verified",
+      "applyReady": true,
+      "checkedAt": "2026-10-20"
+    },
+    {
+      "productId": "kling-cn-team",
+      "platformIds": [
+        "kling"
+      ],
+      "name": "可灵 AI（国内团队版）",
+      "plans": [
+        "团队会员"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://klingai.com/app/membership/team-membership-plan",
+      "quote": "团队会员",
+      "newPlanIds": {
+        "团队会员": "kling-cn-team-team"
+      },
+      "note": "2026-10-20真实浏览器从快手IR中文版入口进入klingai.com核实，非kling.ai国际站翻译。个人四档在月/季/12月相同，7天新客试用不是新会员；团队1/6/12个月同一正式团队会员。空间权益与灵感值独立不互转。",
+      "status": "verified",
+      "applyReady": true,
+      "checkedAt": "2026-10-20"
     }
   ]
 }

@@ -113,6 +113,20 @@ it('does not accept an unmapped member label as a complete free-model result', a
  await runFastTrack(options());
  expect(h.called('api.deepseek.com')).toHaveLength(2);
 });
+it('sends the grouped cross-vendor catalog only in the prompt alongside valuation instructions',async()=>{
+ const product=(id:string)=>({id,name:id,aliases:['alias-'+id],platformIds:[id],status:'verified',sourceUrl:'https://audit.example/'+id,verifiedAt:'2026-10-20',revision:1});
+ const catalog={revision:7,products:[product('issuer'),product('other-vendor')],plans:[{...product('other-pro'),productId:'other-vendor',billing:'paid'}]};
+ const h=harness({jobOverride:{membershipCatalog:catalog}});
+ const {runFastTrack}=await import('../pipeline/fast-track');
+ expect(await runFastTrack(options())).toMatchObject({published:1});
+ const body=JSON.parse(String(h.called('generativelanguage')[0][1]?.body));
+ const prompt=body.contents[0].parts[0].text as string;
+ const marker='会员目录（plans 按所属 product 分组，全部为已核实项）：';
+ const projected=JSON.parse(prompt.slice(prompt.indexOf(marker)+marker.length));
+ expect(projected).toMatchObject({revision:7,products:[{id:'issuer',plans:[]},{id:'other-vendor',plans:[{id:'other-pro',billing:'paid'}]}]});
+ expect(JSON.stringify(projected)).not.toContain('audit.example');
+ expect(JSON.stringify(body)).toContain('valuationFactors');
+});
 
 it('repairs the real Perplexity four-field mistake in a separate model call before submitting a publish result',async()=>{
  const text='Ask Computer to reverse-engineer an app and it inspects how the app works without its source code, then builds a working version. Tasks that use /reverse-engineer are free through October 31, up to 10,000 credits per user.';
