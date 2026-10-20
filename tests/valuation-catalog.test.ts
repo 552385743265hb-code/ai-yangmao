@@ -56,7 +56,8 @@ describe('frozen V2 reusable price facts', () => {
     const later = getValuationFactCatalog('2026-10-17');
     expect(later['chatgpt-plus.amount'].value).toBe(20);
     expect(later).not.toHaveProperty('ecb-2026-10-09.CNY');
-    expect(getValuationFactCatalog('2026-11-11')).toEqual({});
+    // Every price has a 30-day life; the newest entry (DeepSeek-V4.1-Flash) was checked 2026-10-18.
+    expect(getValuationFactCatalog('2026-11-18')).toEqual({});
     expect(getValuationFactCatalog('2026-10-08')).toEqual({});
     expect(lookupValuationPrice('chatgpt-plus', '2026-11-11')).toBeNull();
     expect(valuationPriceFacts(packagePrice('chatgpt-plus'), '2026-11-11')).toEqual({});
@@ -98,7 +99,7 @@ describe('frozen V2 reusable price facts', () => {
     expect(getValuationCatalogPrompt(now)).not.toContain('"amount":');
     expect(getValuationCatalogPrompt(now)).not.toContain('"packageUnits":');
     expect(getValuationCatalogPrompt(now)).not.toContain('0.149429');
-    expect(JSON.parse(getValuationCatalogPrompt('2026-11-11'))).toEqual({ prices: [], fx: null });
+    expect(JSON.parse(getValuationCatalogPrompt('2026-11-18'))).toEqual({ prices: [], fx: null });
   });
 });
 

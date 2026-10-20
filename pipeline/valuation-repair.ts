@@ -46,3 +46,31 @@ export function applyFactorRepairs(offers:Extracted[],issues:FactorRepairIssue[]
   }
   return next;
 }
+
+/**
+ * Snap each factor quote/excerpt to the exact page span it matches when only whitespace differs, so binding checks
+ * see verbatim page text. Text that is not on the page is left untouched (and still fails binding).
+ */
+export function snapFactorQuotes(factors:unknown,page:string):unknown {
+  // Collapse whitespace runs to one space while remembering each kept character's page index.
+  let flat='';const at:number[]=[];
+  for(let i=0;i<page.length;i++){const space=/\s/.test(page[i]);if(space&&flat.endsWith(' '))continue;flat+=space?' ':page[i];at.push(i);}
+  const snap=(text:string)=>{
+    if(page.includes(text))return text;
+    const needle=text.replace(/\s+/g,' ').trim(),hit=needle?flat.indexOf(needle):-1;
+    return hit<0?text:page.slice(at[hit],at[hit+needle.length-1]+1);
+  };
+  const walk=(v:unknown):unknown=>Array.isArray(v)?v.map(walk):v&&typeof v==='object'?Object.fromEntries(Object.entries(v).map(([k,x])=>[k,(k==='quote'||k==='excerpt')&&typeof x==='string'?snap(x):walk(x)])):v;
+  return walk(factors);
+}
+
+/** Deterministic factor tidy before preflight: lift a component-level coverageDays to the recipe, then snap quotes. */
+export function normalizeFactors(factors:unknown,page:string):unknown {
+  if(factors&&typeof factors==='object'&&!Array.isArray(factors)){
+    const f={...(factors as Record<string,unknown>)},components=Array.isArray(f.components)?f.components as Record<string,unknown>[]:[];
+    const days=components.map(c=>c&&typeof c==='object'?c.coverageDays:undefined).filter(Boolean);
+    if(days.length===1&&f.coverageDays===undefined){f.coverageDays=days[0];f.components=components.map(c=>{const {coverageDays:_d,...rest}=c;return rest;});}
+    factors=f;
+  }
+  return snapFactorQuotes(factors,page);
+}

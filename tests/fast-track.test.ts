@@ -4,6 +4,7 @@ import worker from '../src/worker/index';
 import { identityDb } from './fixtures/identity/db';
 import { mergeFastTrackFields, missingBasicFields, fastTrackHeld } from '../src/worker/fast-track';
 import { fastTrackFields, similarity } from '../pipeline/fast-track';
+import { sha256 } from '../src/shared/identity/normalize';
 
 let f: ReturnType<typeof identityDb>;
 beforeEach(() => { f = identityDb(); });
@@ -57,6 +58,27 @@ it('a new vendor plus an official URL goes live once the free model fills the ba
   expect(offer.fast_tracked_at).toBeTruthy();
   expect(f.sqlite.prepare('SELECT status,offer_id FROM leads WHERE id=6260').get()).toEqual({ status: 'linked', offer_id: result.body.offerId });
   expect((await call('admin/fast-track')).body.jobs[0]).toMatchObject({ state: 'published', offerId: result.body.offerId });
+});
+
+it('fast-track passes the model\'s valuation factors to V2, which prices the listing at publish (2026-10-18: 19 of 20 went live unvalued)', async () => {
+  // USD must be explicit for direct_usd (a bare $ is not trusted as US dollars).
+  const text = 'Every new account gets a one-time USD 10 credit to try Odyssey-3 in the browser.';
+  const created = await call('admin/fast-track', { newPlatform: { name: 'Odyssey' }, url: 'https://odyssey.world/introducing-odyssey-3', benefit: '新账号注册送 $10 额度' });
+  await ingest(`fast-track/${created.body.jobId}/claim`, {});
+  const factors = { kind: 'direct_usd', amount: { value: 10, sourceId: 'benefit', quote: 'Every new account gets a one-time USD 10 credit' }, period: 'one_time', sources: [{ id: 'benefit', url: 'https://odyssey.world/introducing-odyssey-3', checkedAt: '2026-10-18', excerpt: text, priceBasis: '注册赠金' }] };
+  const url = 'https://odyssey.world/introducing-odyssey-3', sourceFetch = { originalUrl: url, finalUrl: url, fetchedUrl: url, method: 'direct', sourceVerified: true, truncated: false, contentHash: await sha256(text) };
+  const result = await settle(created.body.jobId, await ingest(`fast-track/${created.body.jobId}/result`, { fields: { ...extracted, type: 'new', valueText: '注册送 $10', excerpts: { benefit: text }, valuationFactors: factors, sourceFetch }, sourceText: text, model: 'free' }));
+  expect(result.body).toMatchObject({ state: 'published' });
+  const offer = f.sqlite.prepare('SELECT usd_estimate, valuation FROM offers WHERE id=?').get(result.body.offerId) as any;
+  expect(offer.usd_estimate).toBe(10);
+  expect(JSON.parse(offer.valuation)).toMatchObject({ version: 'v2', method: 'face_value' });
+});
+
+it('malformed valuation inputs never block a fast-track listing', async () => {
+  const created = await call('admin/fast-track', { newPlatform: { name: 'Odyssey' }, url: 'https://odyssey.world/introducing-odyssey-3', benefit: 'Odyssey-3 公开研究预览，可免费试用' });
+  await ingest(`fast-track/${created.body.jobId}/claim`, {});
+  const result = await settle(created.body.jobId, await ingest(`fast-track/${created.body.jobId}/result`, { fields: { ...extracted, valuationSources: [{ nonsense: true }] }, sourceText: page, model: 'free' }));
+  expect(result.body).toMatchObject({ state: 'published' });
 });
 
 it('missing basic fields wait for the owner, who completes them and publishes immediately', async () => {
