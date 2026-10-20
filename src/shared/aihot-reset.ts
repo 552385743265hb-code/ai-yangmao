@@ -7,6 +7,8 @@ import type {CanonicalTermsV1} from './identity/types';
 export const AIHOT_RESET_SOURCE='aihot-resets';
 export const AIHOT_RESET_URL='https://aihot.news/api/v1/codex-resets';
 export const AIHOT_RESET_ACTOR='policy:aihot-codex-reset-v1';
+/** An expected policy handoff, distinct from malformed evidence or a broken template. */
+export class AiHotResetReviewRequired extends Error {}
 export const aiHotResetInput=z.object({url:z.url(),sourceText:z.string().min(1).max(20000),sourceFetch:sourceFetchSchema,capturedAt:z.iso.datetime({offset:true})}).strict();
 export type AiHotResetInput=z.infer<typeof aiHotResetInput>;
 const day=(date:Date)=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/Los_Angeles',year:'numeric',month:'2-digit',day:'2-digit'}).format(date);
@@ -19,11 +21,18 @@ export function buildAiHotReset(input:AiHotResetInput):OfferIn {
  const timestamp=Date.parse(lines[1]);
  if(!Number.isFinite(timestamp)||Math.abs(timestamp-at)>60000)throw Error('发布时间与原帖 ID 不符');
  const body=lines.slice(2).join('\n').trim();
- const numbered=/\bday\s*(\d+)\s*\/[^\n]{0,30}\breset\b/i.exec(body);
+ // Employee announcements can include conversational text and line breaks before the reset.
+ const numbered=/\bday\s*(\d+)\s*\/[\s\S]*?\breset\b/i.exec(body);
  const banked=/\b(?:loading|issuing|giving|granting|adding)\b[\s\S]{0,180}\bbanked reset\b/i.test(body);
- if(!numbered&&!banked&&!/\bglobal reset\b/i.test(body))throw Error('只有进度、计划或未知重置形式，保留常规审核');
- if(/\b(?:no|not|never|cancelled|canceled|won't|might|may)\b.{0,40}\breset\b|\breset\b.{0,30}\b(?:every|daily|twice|two times|week|next week)\b|\b(?:every|daily|twice)\b.{0,30}\breset\b/i.test(body))throw Error('非确定单次重置，保留常规审核');
- if(/\breset\b[^.!?\n]{0,100}\b(?:not|never|no|cannot|won't|isn't|cancel\w*|might|may)\b/i.test(body))throw Error('已取消或不确定重置，保留常规审核');
+ if(!numbered&&!banked&&!/\bglobal reset\b/i.test(body))throw new AiHotResetReviewRequired('只有进度、计划或未知重置形式，保留常规审核');
+ // Check the whole sentence so admitting longer announcements cannot hide a distant denial.
+ const statements=body.replace(/\.{2,}|…+/g,' ').replace(/\s+/g,' ');
+ const nearbyUncertain=/\b(?:no|not|never|cancelled|canceled|won['’]t|might|may)\b.{0,40}\breset\b|\breset\b.{0,30}\b(?:every|daily|twice|two times|week|next week)\b|\b(?:every|daily|twice)\b.{0,30}\breset\b/i.test(body);
+ if(nearbyUncertain||/\b(?:no|not|never|cancelled|canceled|won['’]t|might|may)\b[^.!?]*\breset\b|\breset\b[^.!?]*\b(?:every|daily|twice|two times|week|next week)\b|\b(?:every|daily|twice)\b[^.!?]*\breset\b/i.test(statements))throw new AiHotResetReviewRequired('非确定单次重置，保留常规审核');
+ if(/\breset\b[^.!?]*\b(?:not|never|no|cannot|won['’]t|isn['’]t|cancel\w*|might|may)\b/i.test(statements))throw new AiHotResetReviewRequired('已取消或不确定重置，保留常规审核');
+ if(/\b(?:yesterday|previous|last|earlier|prior)\b[^.!?]*\breset\b|\breset\b[^.!?]*\b(?:yesterday|previously|last night)\b/i.test(statements))throw new AiHotResetReviewRequired('提及既往重置，需核对是否为同轮次进度');
+ const resetStatements=(statements.match(/[^.!?]+[.!?]?/g)??[]).filter(sentence=>/\breset\b/i.test(sentence));
+ if(resetStatements.some(sentence=>sentence.endsWith('?')||/\b(?:any updates?|updates? on|status of|checking on|waiting for|awaiting|propagat\w*|rollout|rolling out|in progress)\b/i.test(sentence)))throw new AiHotResetReviewRequired('只有重置进度或提问，保留常规审核');
  const schedule=body.replace(/\bsee you(?: again)? tomorrow\b/gi,'');
  const tomorrow=/(?:reset|land(?:ing)?|arriv(?:e|ing)|be there|available)[^.!?\n]{0,60}\btomorrow\b|\btomorrow\b[^.!?\n]{0,60}(?:reset|land(?:ing)?|arriv(?:e|ing))/i.test(schedule);
  const date=new Date(timestamp);if(tomorrow)date.setUTCDate(date.getUTCDate()+1);

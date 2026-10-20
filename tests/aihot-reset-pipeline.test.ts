@@ -21,6 +21,17 @@ it('failed official fetching is reported and never clears the lead or sends publ
  vi.mocked(fetchPage).mockRejectedValue(Error('official source unavailable'));
  expect(await publishAiHotResets(source,[lead],{dry:false,log:()=>{}})).toMatchObject({failed:1,published:0});expect(vi.mocked(api).mock.calls.map(c=>c[0])).toEqual(['/aihot-resets/pending']);
 });
+it('records the actual review reason and official URL instead of hiding every fallback as progress',async()=>{
+ vi.mocked(fetchPage).mockResolvedValueOnce({...await fetchPage(url),text:'@thsottiaux\n2026-10-17T16:20:57.000Z\nLanding sometime today by EOD PST'});
+ const messages:unknown[][]=[];
+ const result=await publishAiHotResets(source,[lead],{dry:false,log:(...args)=>messages.push(args)});
+ expect(result).toMatchObject({published:0,manual:1,failed:0,manualReasons:[{subject:url,reason:expect.stringContaining('只有进度、计划或未知重置形式')}]});
+ expect(messages.flat().join(' ')).toContain('只有进度、计划或未知重置形式');
+});
+it('reports broken author or timestamp validation as a failure requiring retry',async()=>{
+ vi.mocked(fetchPage).mockResolvedValueOnce({...await fetchPage(url),text:'@wrong-author\n2026-10-17T16:20:57.000Z\nDay 13/ Le limit reset'});
+ expect(await publishAiHotResets(source,[lead],{dry:false,log:()=>{}})).toMatchObject({published:0,manual:0,failed:1,errors:[expect.stringContaining('原帖作者不符')]});
+});
 it('budget continuation reopens the same persisted candidate, never creates an unversioned approval',async()=>{
  responses=[{outcome:'received',candidateId:'c1'},{outcome:'retry'},{outcome:'resume',candidateId:'c1'},{outcome:'published',candidateId:'c1',offerId:'o1'}];
  expect(await publishAiHotResets(source,[lead],{dry:false,log:()=>{}})).toMatchObject({published:1});expect(vi.mocked(api).mock.calls.map(c=>c[0])).toEqual(['/aihot-resets/pending','/aihot-resets','/aihot-resets/c1/advance','/aihot-resets','/aihot-resets/c1/advance']);

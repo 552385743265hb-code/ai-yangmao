@@ -43,7 +43,7 @@ async function screeningProfiles(): Promise<PlatformProfile[]> {
 const LEAD_LIMIT = Number(process.env.LEAD_LIMIT ?? 50);
 const onlyList = (process.env.ONLY_SOURCES ?? '').split(',').map(s => s.trim()).filter(Boolean);
 const only = onlyList.length ? onlyList : null; // 留空 = 全部信源
-const stats = { leadsTriaged: 0, leadOffers: 0, costCny: 0, deferred: 0, backlogDeferred: 0, rereadUnchanged: 0, unchangedPages: 0, leadsLinkedByUrl: 0, systemicErrors: 0, sources: 0, fetchedSources: 0, ok: 0, failed: 0, changed: 0, leads: 0, offers: 0, pending: 0, extractSkipped: 0, verificationChecked: 0, verificationFailed: 0, verificationDeferred: 0, tokens: 0, coverageDegraded: false, errors: [] as string[] };
+const stats = { leadsTriaged: 0, leadOffers: 0, costCny: 0, deferred: 0, backlogDeferred: 0, rereadUnchanged: 0, unchangedPages: 0, leadsLinkedByUrl: 0, systemicErrors: 0, sources: 0, fetchedSources: 0, ok: 0, failed: 0, changed: 0, leads: 0, offers: 0, pending: 0, extractSkipped: 0, verificationChecked: 0, verificationFailed: 0, verificationDeferred: 0, tokens: 0, coverageDegraded: false, errors: [] as string[],aihotResets:{published:0,manual:0,failed:0,manualReasons:[] as {subject:string;reason:string}[]} };
 /** 本轮系统性错误（某个环节整体失败），区别于单个信源、条目或线索的错误；后者在健康页逐条列出。 */
 const systemic = (message: string) => { stats.errors.push(message); stats.systemicErrors++; };
 const fetchedSourceIds=new Set<string>();
@@ -239,6 +239,7 @@ async function runSource(src: Source) {
     if (src.kind === 'aihot') {
       const publishReset=async(leads:LeadIn[],resume:boolean)=>{
         const reset=await publishAiHotResets(src,leads,{dry:DRY,log,resume,canContinue:()=>Date.now()<deadline});
+        stats.aihotResets.published+=reset.published;stats.aihotResets.manual+=reset.manual;stats.aihotResets.failed+=reset.failed;stats.aihotResets.manualReasons.push(...reset.manualReasons);
         if(reset.published||reset.manual||reset.failed)log('AIHOT 重置自动上架',reset);
         if(reset.failed){src.deferThisRun=true;stats.deferred+=reset.failed;stats.errors.push(...reset.errors);}
       };
