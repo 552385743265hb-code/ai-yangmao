@@ -69,6 +69,20 @@ it('recognizes exact qualified historical aliases after an official plan rename,
  const c=structuredClone(catalog);c.plans[0].name='Alpha Professional';c.plans[0].aliases=['Pro'];
  expect(migrateMemberSelections(['Alpha Pro','Pro'],c)).toEqual({subscriptions:[{planId:'ap'}],unresolved:['Pro']});
 });
+it('maps an exact plan alias qualified by a verified product alias to its existing identity',()=>{
+ const c=structuredClone(catalog);c.products[0].aliases=['Legacy Studio'];c.plans[0].aliases=['Legacy Studio Pro'];
+ expect(migrateMemberSelections(['Legacy Studio Pro','Alpha Pro','Pro','Legacy Studio Free'],c)).toEqual({subscriptions:[{planId:'ap'}],unresolved:['Pro','Legacy Studio Free']});
+ const proposal=migrateLegacyMembership(['member:Legacy Studio Pro'],c);
+ expect(proposal).toMatchObject({status:'needs_review',evidenceUrls:[],anyOf:[{allOf:[{productId:'a',planIds:['ap']}]}]});
+});
+it('keeps a full alias unresolved when two verified products claim the same identity name',()=>{
+ const c=structuredClone(catalog);for(const p of c.products)p.aliases=['Legacy Studio'];for(const p of c.plans.filter(p=>p.billing==='paid'))p.aliases=['Legacy Studio Pro'];
+ expect(migrateMemberSelections(['Legacy Studio Pro'],c)).toEqual({subscriptions:[],unresolved:['Legacy Studio Pro']});
+});
+it('does not turn blank product aliases into a namespace for a bare tier name',()=>{
+ const c=structuredClone(catalog);c.products[0].aliases=['',' '];c.plans[0].aliases=['Pro'];
+ expect(migrateMemberSelections(['Pro'],c)).toEqual({subscriptions:[],unresolved:['Pro']});
+});
 it('preserves an approved aggregate eligibility rule when a legacy Teams entry is split into concrete seats',()=>{
  const c=structuredClone(catalog) as MembershipCatalog & {planReplacements:Record<string,string[]>};
  c.plans.push({...c.plans[0],id:'as',name:'Alpha Teams Standard'},{...c.plans[0],id:'ax',name:'Alpha Teams Premium'});c.plans[0].status='retired';c.planReplacements={ap:['as','ax']};
