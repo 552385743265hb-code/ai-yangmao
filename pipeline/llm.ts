@@ -7,7 +7,7 @@ import { jsonrepair } from 'jsonrepair';
 import { norm } from './lib';
 import {collectValuationSources,valuationSourcesPrompt,type ValuationSourceCache} from './valuation-sources';
 const valuationSourceCache:ValuationSourceCache=new Map();
-import {valuationRepairIssues,applyFactorRepairs} from './valuation-repair';
+import {valuationRepairIssues,applyFactorRepairs,normalizeFactors} from './valuation-repair';
 import { getValuationCatalogPrompt } from '../src/shared/valuation-catalog';
 import { BudgetExhaustedError, BudgetLedgerError, MODEL_OUTPUT_LIMIT, type ModelPrice, type ModelReservation } from './budget';
 
@@ -37,6 +37,22 @@ export interface Extracted {
   excerpts: { benefit?: string; eligibility?: string; claim?: string; validity?: string };
 }
 
+/** One-shot repair instructions for factors that failed preflight; shared by collection and fast-track. */
+export const FACTOR_REPAIR_RULES = '\n估值因子验证失败。本次只修复已有候选的 valuationFactors，不增加/删除活动，不改变平台、类型、受众、日期、身份事实、leadAssessment、公开文案及原始excerpts。literal quote须扩展为包含赠送动作、金额/数量、币种、周期/计费单位的同一段连续原文，并同步扩展sources.excerpt；不能改写或从记忆补价格。catalogId Fact只能为 {catalogId}，不附sourceId/quote/value。只输出 {"repairs":[{"key":"原候选key","valuationFactors":{...}}]}。无法补证时使用kind:unknown及真实sources，不能编数字。';
+/** Valuation-factor instructions shared by main extraction and fast-track: the model reads factors, the server computes dollars. */
+export const VALUATION_FACTOR_RULES = `- usdEstimate / usdMax：一律 null。不要计算最终美元，也不要输出 valuation；自动估值由服务器使用下方 valuationFactors 计算。不得重新估算或覆盖已有管理员 valuation。
+- valuationFactors：只抽当前原文明示的数量、单位、周期和参考类型，不能写模型记忆价格或最终金额。Fact 数字必须为 {value:原文的规范数值,sourceId:"benefit",quote:"包含数字与单位的连续逐字原文"}，原文明示10万可写value:100000、1M可写value:1000000，程序验证明确单位缩放，quote仍逐字保留；不得从计算或记忆补数。受控价格才可用 {catalogId:"下方目录中的真实ID"}。sources 固定为 [{id:"benefit",url:"当前来源URL",checkedAt:"当前日期YYYY-MM-DD",excerpt:"连续原文逐字摘录",priceBasis:"此原文支撑的数量或价格"}]。所有 literal Fact 的quote必须是excerpt子串，价格quote必须包含货币与计费单位；价格在另一个网站时不可伪装为本页。参考套餐/月付入门价格不由你猜：从目录选择明确匹配当前平台、套餐及计费周期的 catalogId；目录无匹配则unknown。
+  - 已明示USD固定赠金：{kind:"direct_usd",amount:Fact,period:"one_time",sources}；真实赠额上限可加maximum:Fact。只有明确写USD美元才用，不能看到$就猜币种。
+  - 会员/重置等套餐参考：{kind:"plan",currency:"USD"或"CNY"或"INR",price:Fact,billingPeriod:"month"或"year",months?:Fact,numerator?:Fact,denominator?:Fact,multiplier?:Fact,benchmark:"entry_plan"或"plan_fraction"或"plan_multiplier",referencePlan:"明确套餐名",sources}。重置卡明确按每张月费/4参考时 numerator可省略、denominator只能用受控{ruleId:"plan_fraction_quarter"}约定，不能假装原文写了4。ChatGPT额外重置由服务端选择Plus $20/4，不需要你编4。其他未授权分数保持unknown。
+  - 积分：{kind:"credits",currency:"USD"或"CNY"或"INR",entitlementUnits:Fact,cadence:"once"或"day"或"month",monthlyCap?:Fact,packageUnits:Fact,packagePrice:Fact,benchmark?:"entry_plan",referencePlan?:"目录中套餐全名",sources}。每日额度只填每日原数字，程序按覆盖天数汇总并按monthlyCap封顶，不计算一个正文中没有的新数值。目录已核实本平台同单位积分的普通月付入门档时可用entry_plan作暂定价格参照，不宣称已证明跨套餐互换；未知平台/单位/规格无匹配才unknown。cadence必须原文明示日/月/一次性。 entitlementUnits是免费获赠数量；packageUnits和packagePrice是另一个付费参考套餐的额度和价格，绝不能拿免费版数量或“无需购买”当套餐分母或0元单价。选择目录ID为P的积分套餐时，packageUnits:{catalogId:"P.packageUnits"}、packagePrice:{catalogId:"P.amount"}；实际ID须逐字使用目录factIds。referencePlan只是套餐名称字符串，不是Fact，不能放对象。
+  - 每日积分若原文写明当日/24小时内失效或不跨日累计（如“当日有效”“24小时内有效”“次日清零”），credits 加 expiresDaily:{sourceId:"benefit",quote:"写明失效规则的连续逐字原文"}，服务器只按一天计值；原文写可跨日保留或有多日有效期时不要加。
+  - 申请最高额：{kind:"apply",maximum?:Fact,first30Maximum?:Fact,sources}；未明确首30天发放量则不要补。
+  - 一次性固定 Token 赠额必须用 {kind:"token_grant",scenario:"text"或"coding",totalTokens:Fact,models:[{id:"活动原文明示的实际模型",currency:"USD"或"CNY"或"INR",inputPrice:Fact,outputPrice:Fact,tokenPriceUnits:Fact}],sources,currency:"USD"或"CNY"或"INR",fx?:同下方格式}。totalTokens 保留原文完整赠额，程序按 text 输入输出5:1、coding 10:1 拆分全额计算；不是标准月用量，不因7天有效等领取后期限缩小赠额，不写caps、coverageDays、usageMultiplier或benchmark。不自己拆分/算金额。价格必须匹配同版本实际模型；活动只写平台或通用Token池、没有实际模型时必须unknown，不能因平台名自动选择U2 Flash、GLM或其他替代模型。个案管理员批准的替代模型留给完整人工估值，不由此自动抽取接口套用。
+  - scenario 只用于周期刷新、无限量或非固定一次性赠额的明示同模型免费调用：{kind:"scenario",components:[{scenario:"text"或"coding"或"image"或"video"或"stt"或"tts",models:[{id:"原文明示模型",currency:"USD"或"CNY"或"INR",inputPrice:Fact,outputPrice:Fact,tokenPriceUnits:Fact}],caps?:{totalTokens:Fact,quantity:Fact,dailyQuantity:Fact}}],sources}。价格使用同版本model目录Fact，inputPrice/outputPrice/tokenPriceUnits三项必须一起选同一个目录price ID，保留其原始每千或每百万计费单位。输入输出各按对应单价；unlimited不填虚构cap，标准用量由程序计算。覆盖时间明示时可加coverageDays:Fact，所有缺价保持null，不代表$0。
+  - 所有购买价格必须写目录或价格原文的currency，不能把CNY/INR当USD。非美元还须fx:{currency:"CNY"或"INR",usdRate:{catalogId:"当前ECB目录ID"},date:"ECB实际数据日"}；scenario的fx放对应component里。原文价格/币种/单位不匹配则unknown。
+  - 缺数量/匹配价格/支持方式：{kind:"unknown",reason:"供内部审核看的具体缺口",sources}；公测无匹配价格可加beta:true。不能把unknown当0。
+  原文数量与价格可能不同句，excerpt可用覆盖两者的一段连续原文。不能将计算、来源缺口或审核待办写进公开title/valueText/steps/creditValidity。
+`;
 const PROMPT = `你是"AI 羊毛牧场"的信息抽取器。下面是某个 AI 平台官方页面里和额度、赠送相关的文字。
 只抽取本文实际出现的"用户可以免费拿到的 AI 额度或权益"，包括：免费额度/免费层（包括只按速率限制、不按用量收费的免费调用）、注册赠送、新用户代金券（没写金额也要输出）、每日登录送积分、首次使用某个应用或客户端赠送、邀请奖励、实名认证礼、限时免费开放、AI 产品的免费试用、首月实付不超过 $1 的近免费体验、会员额外额度或额度重置、会员免费送、需要申请的 credits。平台要点用于约束和补充已出现的活动，不是活动池；不输出仅在要点中出现、本文未提到的其他福利。
 OpenRouter 官方账号的 Try it、上线公告可能把免费信息放在链接卡片和 :free 模型落地页。原帖没写 credits/赠金数量不是拒绝依据：须补读同平台官方模型页或模型 API，输入与输出价格均为0的变体是免费调用权益。只缺证据时保留 unresolved；不可用原帖的沉默证明落地页收费。免费层与免费路由共享预算时沿用既有 OpenRouter 免费层条目，把新增官方模型名填 models，不重复建福利，也不因未写截止猜为限时试用。
@@ -77,18 +93,7 @@ OpenRouter 官方账号的 Try it、上线公告可能把免费信息放在链�
   - phone/card/net 要有相应资格证据；不凭英文页面、海外品牌或域名就推断需要海外网络。AWS这个按量计费案例保留card，不自动添net或pay。
 - audience：new / old / all / unclear（原文没写清楚就用 unclear）
 - valueText：有具体数量和单位时必须写出（如"每天1000次请求""新用户2000万tokens"），数字从原文来。没有具体数量时只描述原文明示的权益及实际限制，不编数值、不输出“官方未写明具体额度：”等核验报告前缀。原文写了可用模型、速率限制或客户端范围时一并写清。
-- usdEstimate / usdMax：一律 null。不要计算最终美元，也不要输出 valuation；自动估值由服务器使用下方 valuationFactors 计算。不得重新估算或覆盖已有管理员 valuation。
-- valuationFactors：只抽当前原文明示的数量、单位、周期和参考类型，不能写模型记忆价格或最终金额。Fact 数字必须为 {value:原文的规范数值,sourceId:"benefit",quote:"包含数字与单位的连续逐字原文"}，原文明示10万可写value:100000、1M可写value:1000000，程序验证明确单位缩放，quote仍逐字保留；不得从计算或记忆补数。受控价格才可用 {catalogId:"下方目录中的真实ID"}。sources 固定为 [{id:"benefit",url:"当前来源URL",checkedAt:"当前日期YYYY-MM-DD",excerpt:"连续原文逐字摘录",priceBasis:"此原文支撑的数量或价格"}]。所有 literal Fact 的quote必须是excerpt子串，价格quote必须包含货币与计费单位；价格在另一个网站时不可伪装为本页。参考套餐/月付入门价格不由你猜：从目录选择明确匹配当前平台、套餐及计费周期的 catalogId；目录无匹配则unknown。
-  - 已明示USD固定赠金：{kind:"direct_usd",amount:Fact,period:"one_time",sources}；真实赠额上限可加maximum:Fact。只有明确写USD美元才用，不能看到$就猜币种。
-  - 会员/重置等套餐参考：{kind:"plan",currency:"USD"或"CNY"或"INR",price:Fact,billingPeriod:"month"或"year",months?:Fact,numerator?:Fact,denominator?:Fact,multiplier?:Fact,benchmark:"entry_plan"或"plan_fraction"或"plan_multiplier",referencePlan:"明确套餐名",sources}。重置卡明确按每张月费/4参考时 numerator可省略、denominator只能用受控{ruleId:"plan_fraction_quarter"}约定，不能假装原文写了4。ChatGPT额外重置由服务端选择Plus $20/4，不需要你编4。其他未授权分数保持unknown。
-  - 积分：{kind:"credits",currency:"USD"或"CNY"或"INR",entitlementUnits:Fact,cadence:"once"或"day"或"month",monthlyCap?:Fact,packageUnits:Fact,packagePrice:Fact,benchmark?:"entry_plan",referencePlan?:"目录中套餐全名",sources}。每日额度只填每日原数字，程序按覆盖天数汇总并按monthlyCap封顶，不计算一个正文中没有的新数值。目录已核实本平台同单位积分的普通月付入门档时可用entry_plan作暂定价格参照，不宣称已证明跨套餐互换；未知平台/单位/规格无匹配才unknown。cadence必须原文明示日/月/一次性。 entitlementUnits是免费获赠数量；packageUnits和packagePrice是另一个付费参考套餐的额度和价格，绝不能拿免费版数量或“无需购买”当套餐分母或0元单价。选择目录ID为P的积分套餐时，packageUnits:{catalogId:"P.packageUnits"}、packagePrice:{catalogId:"P.amount"}；实际ID须逐字使用目录factIds。referencePlan只是套餐名称字符串，不是Fact，不能放对象。
-  - 申请最高额：{kind:"apply",maximum?:Fact,first30Maximum?:Fact,sources}；未明确首30天发放量则不要补。
-  - 一次性固定 Token 赠额必须用 {kind:"token_grant",scenario:"text"或"coding",totalTokens:Fact,models:[{id:"活动原文明示的实际模型",currency:"USD"或"CNY"或"INR",inputPrice:Fact,outputPrice:Fact,tokenPriceUnits:Fact}],sources,currency:"USD"或"CNY"或"INR",fx?:同下方格式}。totalTokens 保留原文完整赠额，程序按 text 输入输出5:1、coding 10:1 拆分全额计算；不是标准月用量，不因7天有效等领取后期限缩小赠额，不写caps、coverageDays、usageMultiplier或benchmark。不自己拆分/算金额。价格必须匹配同版本实际模型；活动只写平台或通用Token池、没有实际模型时必须unknown，不能因平台名自动选择U2 Flash、GLM或其他替代模型。个案管理员批准的替代模型留给完整人工估值，不由此自动抽取接口套用。
-  - scenario 只用于周期刷新、无限量或非固定一次性赠额的明示同模型免费调用：{kind:"scenario",components:[{scenario:"text"或"coding"或"image"或"video"或"stt"或"tts",models:[{id:"原文明示模型",currency:"USD"或"CNY"或"INR",inputPrice:Fact,outputPrice:Fact,tokenPriceUnits:Fact}],caps?:{totalTokens:Fact,quantity:Fact,dailyQuantity:Fact}}],sources}。价格使用同版本model目录Fact，inputPrice/outputPrice/tokenPriceUnits三项必须一起选同一个目录price ID，保留其原始每千或每百万计费单位。输入输出各按对应单价；unlimited不填虚构cap，标准用量由程序计算。覆盖时间明示时可加coverageDays:Fact，所有缺价保持null，不代表$0。
-  - 所有购买价格必须写目录或价格原文的currency，不能把CNY/INR当USD。非美元还须fx:{currency:"CNY"或"INR",usdRate:{catalogId:"当前ECB目录ID"},date:"ECB实际数据日"}；scenario的fx放对应component里。原文价格/币种/单位不匹配则unknown。
-  - 缺数量/匹配价格/支持方式：{kind:"unknown",reason:"供内部审核看的具体缺口",sources}；公测无匹配价格可加beta:true。不能把unknown当0。
-  原文数量与价格可能不同句，excerpt可用覆盖两者的一段连续原文。不能将计算、来源缺口或审核待办写进公开title/valueText/steps/creditValidity。
-- claimStart / claimEnd：官方时区下的日期 YYYY-MM-DD；原文没有绝对截止、但声明活动从明确开始日/发布日起持续明确周期（分钟/小时/天/周/自然月/自然年或复合周期）时，完整摘录周期到excerpts.validity，并填写有来源的claimStart/publishedAt；claimEnd留null交程序自动推算。个人注册/领取/激活后的有效期是creditValidity，不是活动截止。不能把标题猜测或抓取日期当周期依据。
+${VALUATION_FACTOR_RULES}- claimStart / claimEnd：官方时区下的日期 YYYY-MM-DD；原文没有绝对截止、但声明活动从明确开始日/发布日起持续明确周期（分钟/小时/天/周/自然月/自然年或复合周期）时，完整摘录周期到excerpts.validity，并填写有来源的claimStart/publishedAt；claimEnd留null交程序自动推算。个人注册/领取/激活后的有效期是creditValidity，不是活动截止。不能把标题猜测或抓取日期当周期依据。
 - 只有“2026年5月”时，不能输出2026-05-01；日精度不能补成00:00:00Z。原计划5月推出、本轮10月6日新增权益，抽当前扩展权益时claimStart=2026-10-06，publishedAt仅有日期就保留2026-10-06，不猜时刻。
 - 输出前逐项核对日期来源：原计划推出月份不能充当本次新增/扩展权益的开始日；只知道月份时不得补任何具体日，应留空。若正文明确本轮扩展的生效日期，则使用该日期。
 - endKind：有明确截止日期用 date；没写截止日期的活动（包括长期有效的新人礼、充值赠送）用 unknown；只有 type 为 standing 或 apply 时才用 standing
@@ -359,8 +364,7 @@ export async function extract(platformName: string, url: string, text: string, l
   const leadInstruction=opts.leadTarget?`\n你在复核尚未形成条目的受阻线索：${opts.leadTarget}。只处理这个目标，不能以同厂商其他赠额凑数。必须读原文，预告/进度/异常不自动视为新发放，历史真实权益仍可抽取。输出JSON顶层允许offers和leadAssessment：后者为{outcome:"not_benefit"|"existing"|"unresolved",reason:"具体中文理由",quote:"支持理由的连续原文",offerId:"仅existing时填索引中真实ID"}。有可收新权益填offers；原文明确只有异常/传播进度/无赠额的新闻且无独立可领权益才可not_benefit；同一次发放的预告或确认已存在用existing；正文不足或无法判断用unresolved，绝不把搜不到当不属实。非unresolved的quote必须原样来自本次正文，不来自标题或历史索引。offers非空时leadAssessment可以省略。`:'';
   const identityPrompt=!['shadow','enforce'].includes(process.env.IDENTITY_MODE??'')?'':`
 可选 identityFacts：若能逐项引用当前原文，可补 terms-v1 结构化事实。Fact 仅为 {state:'known',value:...,evidenceRefs:['benefit'|'eligibility'|'claim'|'validity']} 或 {state:'unknown'}。只引用对应连续原文，不能从中文展示文案倒推。字段：schemaVersion:'terms-v1'；issuerProductId；mechanism(signup_grant/recurring_quota/referral/identity_grant/trial/temporary_free_access/extra_reset/application_grant/other)；benefitPools[{poolKey,amount({value:规范十进制字符串,unit,currency:明确ISO代码或null}),cadence({kind:once}或{kind:calendar,unit:day/week/month,count:整数,timezone:明确时区或null}),models(数组),modalities(数组),creditValidity({kind:duration/absolute/no_expiry,value:字符串或null})}]；eligibility({audience:new/old/all,requirements:数组})；geography(数组)；claimChannels(数组)；costs({upfrontAmount:十进制字符串,currency:ISO,subscriptionRequired:布尔,autoRenewal:布尔或null})；claimWindow({startsAt,endsAt,timezone:可null})；occurrenceAnchor。除schemaVersion、benefitPools数组、poolKey外，全部字段须包Fact状态。未知池不造ID；未知产品、机制、独立轮次均unknown，美元符号不能猜USD。表达不完整时省略identityFacts，交给持久身份任务，不要制造事实。`;
-  const valuationSources=await collectValuationSources((opts.platformIds??[]).filter((id):id is string=>!!id),{deadlineAt:opts.deadlineAt,cache:valuationSourceCache});
-  const valuationPrompt="\n\n受控估值因子目录（仅允许当前平台/明确同版本模型匹配，目录是价格参照不是活动事实）：\n"+getValuationCatalogPrompt(new Date().toISOString())+'\n本次可信采集的价格/汇率正文（只能支撑估值因子，不替代活动原文；各sources用它的真实url/id/date/excerpt，价格literal quote逐字来自此页）：\n'+valuationSourcesPrompt(valuationSources);
+  const {sources:valuationSources,prompt:valuationPrompt}=await valuationContext(opts.platformIds??[],opts.deadlineAt);
   const sys = valuationPrompt + identityPrompt + (opts.platformList ? base + TRIAGE + opts.platformList + known : base + same + known) + verification+leadInstruction + '\n主抽取的最外层必须是对象 {"offers":[完整活动对象]}；每项必须有key、title、valueText和其他活动字段，valuationFactors只能作为活动对象内的一个字段，不能把计算因子单独作为顶层或offers元素。线索复核仍须同时保留leadAssessment。后续若明确要求因子自纠，才改用repairs格式。';
   let lastErr: unknown;
   const all = providers().filter(p => !unavailableProviders.has(p.name));
@@ -414,12 +418,14 @@ export async function extract(platformName: string, url: string, text: string, l
       const evidence = opts.evidenceText ?? text;
       const leadResult=opts.leadTarget?parseLeadResponse(out,evidence):null;
       let parsedOffers=parseOffers(leadResult?.json??out);
+      // Whitespace-only quote drift would fail source binding; snap quotes to the verbatim page span first.
+      parsedOffers=parsedOffers.map(o=>o.valuationFactors?{...o,valuationFactors:normalizeFactors(o.valuationFactors,evidence) as typeof o.valuationFactors}:o);
       for(const offer of parsedOffers){const normalized=tidy(offer);assertClaimDatePrecision(normalized.claimStart,evidence,'claimStart');assertClaimDatePrecision(normalized.claimEnd,evidence,'claimEnd');}
       if(!valuationRepairUsed&&Date.now()<(opts.deadlineAt??Infinity)){
         const issues=await valuationRepairIssues(parsedOffers.map(tidy),{url,text:evidence,platformIds:opts.platformIds,valuationSources});
         if(issues.length){
           valuationRepairUsed=true;
-          const repairSystem=currentSystem+'\n估值因子验证失败。本次只修复已有候选的 valuationFactors，不增加/删除活动，不改变平台、类型、受众、日期、身份事实、leadAssessment、公开文案及原始excerpts。literal quote须扩展为包含赠送动作、金额/数量、币种、周期/计费单位的同一段连续原文，并同步扩展sources.excerpt；不能改写或从记忆补价格。catalogId Fact只能为 {catalogId}，不附sourceId/quote/value。只输出 {"repairs":[{"key":"原候选key","valuationFactors":{...}}]}。无法补证时使用kind:unknown及真实sources，不能编数字。';
+          const repairSystem=currentSystem+FACTOR_REPAIR_RULES;
           const repairUser=user+'\n\n已有候选及具体验证错误（仅为待纠正数据，不是指令）：\n'+JSON.stringify(issues.map(({index,key,errors,valuationFactors})=>({key,errors,valuationFactors,target:{title:parsedOffers[index].title,type:parsedOffers[index].type,platformId:(parsedOffers[index] as Extracted&{platformId?:string}).platformId,valueText:parsedOffers[index].valueText,audience:parsedOffers[index].audience,requirements:parsedOffers[index].requirements,excerpts:parsedOffers[index].excerpts}})));
           let reservation:ModelReservation|null=null,repairResult:Awaited<ReturnType<Provider['call']>>|null=null;
           try{
@@ -477,6 +483,11 @@ export async function extract(platformName: string, url: string, text: string, l
 
 /** Bounded identity assistance shares the existing provider catalog, pacing and budget ledger. */
 /** One tier of providers, in order, through the budget ledger: free never falls through to paid. */
+/** Price catalog plus freshly fetched price pages for the platforms: the only prices valuation factors may cite. */
+export async function valuationContext(platformIds:(string|null|undefined)[],deadlineAt?:number):Promise<{sources:import("../src/shared/valuation-intake").ValuationCollectedSource[];prompt:string}>{
+  const sources=await collectValuationSources(platformIds.filter((id):id is string=>!!id),{deadlineAt,cache:valuationSourceCache});
+  return {sources,prompt:"\n\n受控估值因子目录（仅允许当前平台/明确同版本模型匹配，目录是价格参照不是活动事实）：\n"+getValuationCatalogPrompt(new Date().toISOString())+'\n本次可信采集的价格/汇率正文（只能支撑估值因子，不替代活动原文；各sources用它的真实url/id/date/excerpt，价格literal quote逐字来自此页）：\n'+valuationSourcesPrompt(sources)};
+}
 export async function completeTierPrompt(system: string, user: string, deadlineAt: number, tier: 'free' | 'paid'): Promise<{ text: string; tokens: number; costCny: number; provider: string }> {
   const { modelBudget } = await import('./budget');
   let last: unknown = new DeferError(`no ${tier} model available`);

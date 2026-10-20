@@ -113,7 +113,9 @@ export async function computeCollectedValuation(input:ValuationIntakeInput,now=n
   if(recipe.denominator&&!singleReset&&!glmTrialCard)return unknown('当前权益未匹配受控套餐分数约定',['unsupported_fraction_policy']);
   if((input.type==='apply')!==(factors.kind==='apply')&&factors.kind!=='unknown')return unknown('申请制与计算周期不一致',['valuation_type_mismatch']);
   const available={...getValuationFactCatalog(now),...runtimeCatalog};
-  const permitted=VALUATION_PRICE_CATALOG.filter(p=>p.kind!=='token_model'?p.platformId===input.platformId:p.platformId===input.platformId||input.sourceText!.toLowerCase().includes(p.model.toLowerCase())&&(input.models??[]).some(m=>m.toLowerCase()===p.model.toLowerCase()));
+  // Model names are matched without spaces/punctuation: “DeepSeek V4.1 Flash” on a page is DeepSeek-V4.1-Flash (2026-10-18).
+  const nameKey=(v:string)=>v.toLowerCase().replace(/[^a-z0-9]/g,''),pageKey=nameKey(input.sourceText??'');
+  const permitted=VALUATION_PRICE_CATALOG.filter(p=>p.kind!=='token_model'?p.platformId===input.platformId:p.platformId===input.platformId||pageKey.includes(nameKey(p.model))&&(input.models??[]).some(m=>nameKey(m)===nameKey(p.model)));
   const catalog=Object.fromEntries(Object.entries(available).filter(([id])=>id.startsWith('ecb-')||permitted.some(p=>id.startsWith(p.id+'.'))));
   const latestFx=(currency:string)=>{
     const rates=Object.entries(catalog).filter(([id,entry])=>entry.kind==='fx'&&entry.currency===currency&&/^ecb-\d{4}-\d{2}-\d{2}\./.test(id)).sort(([a],[b])=>b.localeCompare(a));
@@ -131,7 +133,7 @@ export async function computeCollectedValuation(input:ValuationIntakeInput,now=n
     const normalize=(s:string)=>s.toLowerCase().replace(/[^a-z0-9]/g,'');
     const exact=permitted.find(p=>p.kind==='token_model'&&p.platformId===input.platformId
       &&[p.id,p.model].some(name=>normalize(name)===normalize(String(model.canonicalId??model.id??'')))
-      &&input.sourceText!.toLowerCase().includes(p.model.toLowerCase()));
+      &&pageKey.includes(nameKey(p.model)));
     if(exact?.kind==='token_model'&&(model.currency===undefined||model.currency===exact.currency)
       &&(model.specification===undefined||model.specification===exact.specification)
       &&catalog[exact.id+'.inputPrice']&&catalog[exact.id+'.outputPrice']&&catalog[exact.id+'.tokenPriceUnits']){
@@ -169,9 +171,9 @@ export async function computeCollectedValuation(input:ValuationIntakeInput,now=n
       const normalize=(s:string)=>s.toLowerCase().replace(/[^a-z0-9]/g,'');
       if(![chosen.id,chosen.model].some(name=>normalize(name)===normalize(String(model.id??''))))return unknown('计算型号与可信目录型号不一致',['model_catalog_mismatch']);
       const proxy=scenario.benchmark==='substitute_model'&&chosen.genericProxyEligible&&chosen.platformId===input.platformId;
-      if(!proxy&&!input.sourceText!.toLowerCase().includes(chosen.model.toLowerCase())&&!(medicalRule&&chosen.id==='baichuan-m3-plus'))return unknown('权益原文未确认此模型免费',['model_entitlement_unproven']);
+      if(!proxy&&!pageKey.includes(nameKey(chosen.model))&&!(medicalRule&&chosen.id==='baichuan-m3-plus'))return unknown('权益原文未确认此模型免费',['model_entitlement_unproven']);
       if(chosen.tokenPriceUnits!==1_000_000&&('inputPerMillion' in model||'outputPerMillion' in model))return unknown('模型价格的原始计费单位不同',['model_unit_mismatch']);
-    }else if(!input.sourceText!.toLowerCase().includes(String(model.id??'').toLowerCase()))return unknown('权益原文未确认此模型免费',['model_entitlement_unproven']);
+    }else if(!nameKey(String(model.id??''))||!pageKey.includes(nameKey(String(model.id??''))))return unknown('权益原文未确认此模型免费',['model_entitlement_unproven']);
   }
   }
 

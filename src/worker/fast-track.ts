@@ -3,6 +3,7 @@ import {fastTrackCatalogBlock,type CatalogBlock} from '../shared/fast-track-memb
 import {semanticReviewSchema,semanticReviewIssues,type SemanticReview} from '../shared/fast-track-semantics';
 import type { Env } from './index';
 import { collectedOfferIn } from '../shared/ingest';
+import { sourceFetchSchema } from '../shared/identity/fetch-evidence';
 import { officialTier, wechatBiz, type OfficialPlatform } from '../shared/official-review';
 import { canonicalTermsSchema, type CanonicalTermsV1, type IntakeReceipt } from '../shared/identity/types';
 import { adaptLegacyOffer } from './identity/adapters';
@@ -229,24 +230,35 @@ export async function publishFastTrack(env: Env, job: JobRow, fields: FastTrackF
     const platform = await platformRow(db, job.platform_id);
     if (!platform) throw new FastTrackError(404, '没有这个厂商');
     const ownerLine = `管理员提供的主要权益：${job.benefit}`;
-    const text = [ownerLine, job.note ? `管理员备注：${job.note}` : '', sourceText].filter(Boolean).join('\n').slice(0, 250_000);
-    const given = (fields.excerpts ?? {}) as Record<string, unknown>, excerpts: Record<string, string> = {};
-    for (const key of ['benefit', 'eligibility', 'claim', 'validity']) { const value = given[key]; if (typeof value === 'string' && value.trim() && text.includes(value)) excerpts[key] = value; }
+    const official = officialTier(job.url, toOfficial(platform), await platformSources(db, job.platform_id)), tier = official ?? 'official';
+    const given = (fields.excerpts ?? {}) as Record<string, unknown>;
+    const quotes = (hay: string) => Object.fromEntries(['benefit', 'eligibility', 'claim', 'validity'].flatMap(key => { const value = given[key]; return typeof value === 'string' && value.trim() && hay.includes(value) ? [[key, value]] : []; })) as Record<string, string>;
+    // Valuation needs the untouched page text and its fetch proof (the same binding as collection intake); the identity
+    // system then prices it. Only when the official page itself supports the benefit quote; otherwise list unvalued as before.
+    const proof = sourceFetchSchema.safeParse(fields.sourceFetch);
+    const pageQuotes = quotes(sourceText);
+    const bound = !!fields.valuationFactors && !!official && proof.success && proof.data.sourceVerified && !proof.data.truncated && proof.data.finalUrl === job.url && (pageQuotes.benefit?.trim().length ?? 0) >= 12;
+    const text = bound ? sourceText : [ownerLine, job.note ? `管理员备注：${job.note}` : '', sourceText].filter(Boolean).join('\n').slice(0, 250_000);
+    const excerpts = bound ? pageQuotes : quotes(text);
     if ((excerpts.benefit?.trim().length ?? 0) < 12) excerpts.benefit = ownerLine;
-    const tier = officialTier(job.url, toOfficial(platform), await platformSources(db, job.platform_id)) ?? 'official';
-    const parsed = collectedOfferIn.safeParse({
+    const draft = {
       id: `${job.platform_id}-ft-${job.id.slice(0, 8)}`.toLowerCase().slice(0, 80), platformId: job.platform_id,
       title: fields.title, type: fields.type, modalities: fields.modalities, tags: fields.tags ?? [], models: fields.models ?? [], claimMethod: fields.claimMethod,
       requirements: fields.requirements, audience: fields.audience ?? 'unclear', valueText: String(fields.valueText).slice(0, 200), usdEstimate: null, usdMax: null,
       claimStart: fields.claimStart ?? null, claimEnd: fields.claimEnd ?? null, endKind: fields.endKind, creditValidity: fields.creditValidity ?? null, sourceTz: fields.sourceTz,
       steps: Array.isArray(fields.steps) ? fields.steps.slice(0, 10) : [], firstChannel: 'manual', sourceText: text,
+      // Model factors are only inputs: intake verifies them against the cited prices and computes the dollars (V2).
+      ...(bound ? { valuationFactors: fields.valuationFactors, sourceFetch: proof.data, ...(Array.isArray(fields.valuationSources) ? { valuationSources: fields.valuationSources } : {}) } : {}),
       evidence: { url: job.url, tier, capturedAt: job.created_at, excerpts },
-    });
+    };
+    // Malformed valuation inputs must not block a vouched listing: it then goes live unvalued, as before.
+    let parsed = collectedOfferIn.safeParse(draft);
+    if (!parsed.success && parsed.error.issues.every(i => /^(valuation|sourceFetch)/.test(String(i.path[0])))) { const { valuationFactors: _f, valuationSources: _s, sourceFetch: _p, ...plain } = draft as Record<string, unknown>; parsed = collectedOfferIn.safeParse(plain); }
     if (!parsed.success) throw new FastTrackError(400, '字段不符合上架规则：' + parsed.error.issues.map(i => `${i.path.join('.')} ${i.message}`).join('；'));
     // A failed readiness check can already reserve the legacy request. Corrected owner fields
     // are a new payload revision; keep the old receipt and let activity identity dedupe it.
     const requestRevision=await sha256(stableJson({offer:{...parsed.data,usdEstimate:null,usdMax:null,valuation:null},identityFacts:facts,basis:job.basis}));
-    const adapted = await step(() => adaptLegacyOffer({ ...env, DB: identityDb }, parsed.data, { ...parsed.data, identityFacts: facts, identityRequestId: `fast-track:${job.id}:${requestRevision}` }));
+    const adapted = await step(() => adaptLegacyOffer({ ...env, DB: identityDb }, parsed.data, { ...draft, identityFacts: facts, identityRequestId: `fast-track:${job.id}:${requestRevision}` }));
     if (!adapted) throw new FastTrackError(409, '身份系统未启用（IDENTITY_MODE 不是 enforce），不能快速上架');
     if (adapted.pendingResolution) { progress.pending = adapted.pendingResolution as Progress['pending']; await save(); throw new StepDeferred(); }
     if (adapted.error) throw new FastTrackError(409, String(adapted.error));

@@ -70,8 +70,10 @@ export function missingBasicFields(fields: FastTrackFields): string[] {
 /** The model fallback must see the same schema failures as the publishing endpoint. */
 export function fastTrackFieldIssues(fields: FastTrackFields, context?: SemanticContext): string[] {
   const basic = missingBasicFields(fields);
+  // Valuation inputs are optional extras: publish drops malformed ones and lists unvalued, so they never block here.
+  const { valuationFactors: _factors, valuationSources: _sources, sourceFetch: _proof, ...listing } = fields;
   const parsed = collectedOfferIn.safeParse({
-    ...fields, id: 'fast-track-preflight', platformId: context?.platformId ?? 'preflight',
+    ...listing, id: 'fast-track-preflight', platformId: context?.platformId ?? 'preflight',
     valueText: String(fields.valueText ?? '').slice(0, 200),
     evidence: {url:'https://example.com/',tier:'official',capturedAt:'2026-01-01T00:00:00Z',excerpts:{benefit:'Administrator authorized benefit'}},
   });

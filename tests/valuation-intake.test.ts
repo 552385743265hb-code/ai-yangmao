@@ -1,4 +1,4 @@
-import {afterEach,beforeEach,expect,it,vi} from 'vitest';
+import {afterEach,beforeEach,describe,expect,it,vi} from 'vitest';
 import {auditFixture,auditTerms} from './fixtures/identity/audit';
 import {displayOffer} from './fixtures/identity/offer';
 import {sha256} from '../src/shared/identity/normalize';
@@ -178,4 +178,62 @@ it('Haina keeps a validated real maximum and explicit first-30-day release when 
  const input=await profileInput('baichuan','apply','海纳百川计划：医疗机构申请 Baichuan M3 Plus 永久免费 API。'+maximum+release);
  Object.assign(input.valuationFactors,{kind:'apply',currency:'USD',maximum:{value:100,sourceId:'benefit',quote:maximum},first30Maximum:{value:40,sourceId:'benefit',quote:release}});
  const result=await computeCollectedValuation(input);expect(result.valuation).toMatchObject({status:'priced',usdEstimate:null,usdMax:100,inputs:{first30Max:40,usageCostReference:30.483572}});
+});
+
+it('a reseller\'s limited-time free DeepSeek-V4.1-Flash is priced from the provider catalog entry (2026-10-18)',async()=>{
+ const text='WorkBuddy 国际版限时免费使用 DeepSeek-V4.1-Flash，活动期间调用不扣积分。',sourceUrl='https://www.workbuddy.ai/changelog';
+ const base={platformId:'workbuddy',type:'free',models:['DeepSeek-V4.1-Flash'],sourceText:text,sourceFetch:{originalUrl:sourceUrl,finalUrl:sourceUrl,fetchedUrl:sourceUrl,method:'direct' as const,sourceVerified:true,truncated:false,contentHash:await sha256(text)},evidence:{url:sourceUrl,tier:'official',capturedAt:'2026-10-18T12:00:00Z',excerpts:{benefit:text}}};
+ const recipe={kind:'scenario',sources:[{...sources(text)[0],url:sourceUrl}],components:[{scenario:'text',models:[{id:'DeepSeek-V4.1-Flash',currency:'USD',inputPrice:{catalogId:'deepseek-v4.1-flash.inputPrice'},outputPrice:{catalogId:'deepseek-v4.1-flash.outputPrice'},tokenPriceUnits:{catalogId:'deepseek-v4.1-flash.tokenPriceUnits'}}]}]};
+ const result=await computeCollectedValuation({...base,valuationFactors:recipe},'2026-10-18T12:00:00Z');
+ // Standard 30-day text use: 1M input × $0.15 + 0.2M output × $0.60 = $0.27.
+ expect(result.valuation?.usdEstimate).toBeCloseTo(0.27,4);
+});
+
+it('Meshy free-tier monthly credits are priced from the verified Pro plan rate (2026-10-19 credit-pack benchmarks)',async()=>{
+ const text='Every free account receives 100 credits every month for 3D generation.',sourceUrl='https://www.meshy.ai/pricing';
+ const base={platformId:'meshy',type:'standing',models:[],sourceText:text,sourceFetch:{originalUrl:sourceUrl,finalUrl:sourceUrl,fetchedUrl:sourceUrl,method:'direct' as const,sourceVerified:true,truncated:false,contentHash:await sha256(text)},evidence:{url:sourceUrl,tier:'official',capturedAt:'2026-10-19T12:00:00Z',excerpts:{benefit:text}}};
+ const recipe={kind:'credits',currency:'USD',entitlementUnits:{value:100,sourceId:'benefit',quote:'Every free account receives 100 credits every month'},cadence:'month',packageUnits:{catalogId:'meshy-pro.packageUnits'},packagePrice:{catalogId:'meshy-pro.amount'},benchmark:'entry_plan',referencePlan:'Meshy Pro',sources:[{...sources(text)[0],url:sourceUrl}]};
+ const result=await computeCollectedValuation({...base,valuationFactors:recipe},'2026-10-19T12:00:00Z');
+ // 100 credits × ($20 / 1,000 credits) = $2.
+ expect(result.valuation?.usdEstimate).toBeCloseTo(2,4);
+});
+
+it('“领取”/“送” count as grant wording for credit entitlements (2026-10-19 Qoder 每日领取 100 积分)',async()=>{
+ const text='Qoder 国际版用户每日领取 100 积分，可用于 Agent 模式。',sourceUrl='https://qoder.com/changelog';
+ const base={platformId:'qoder',type:'standing',models:[],sourceText:text,sourceFetch:{originalUrl:sourceUrl,finalUrl:sourceUrl,fetchedUrl:sourceUrl,method:'direct' as const,sourceVerified:true,truncated:false,contentHash:await sha256(text)},evidence:{url:sourceUrl,tier:'official',capturedAt:'2026-10-19T12:00:00Z',excerpts:{benefit:text}}};
+ const recipe={kind:'credits',currency:'USD',entitlementUnits:{value:100,sourceId:'benefit',quote:'每日领取 100 积分'},cadence:'day',packageUnits:{catalogId:'qoder-credit-pack.packageUnits'},packagePrice:{catalogId:'qoder-credit-pack.amount'},sources:[{...sources(text)[0],url:sourceUrl}]};
+ const result=await computeCollectedValuation({...base,valuationFactors:recipe},'2026-10-19T12:00:00Z');
+ expect(result.errors.join(' ')).not.toContain('credit ledger role');
+ expect(result.valuation?.usdEstimate).toBeGreaterThan(0);
+});
+
+it('a short qualifier between the number and the unit still binds (“100 通用 Credits”, “100 monthly credits”)',async()=>{
+ const text='每天可在 Qoder 桌面端内主动领取 100 通用 Credits。',sourceUrl='https://docs.qoder.com/zh/events/100credits';
+ const base={platformId:'qoder',type:'standing',models:[],sourceText:text,sourceFetch:{originalUrl:sourceUrl,finalUrl:sourceUrl,fetchedUrl:sourceUrl,method:'direct' as const,sourceVerified:true,truncated:false,contentHash:await sha256(text)},evidence:{url:sourceUrl,tier:'official',capturedAt:'2026-10-19T12:00:00Z',excerpts:{benefit:text}}};
+ const recipe={kind:'credits',currency:'USD',entitlementUnits:{value:100,sourceId:'benefit',quote:'每天可在 Qoder 桌面端内主动领取 100 通用 Credits'},cadence:'day',packageUnits:{catalogId:'qoder-credit-pack.packageUnits'},packagePrice:{catalogId:'qoder-credit-pack.amount'},sources:[{...sources(text)[0],url:sourceUrl}]};
+ expect((await computeCollectedValuation({...base,valuationFactors:recipe},'2026-10-19T12:00:00Z')).valuation?.usdEstimate).toBeGreaterThan(0);
+});
+
+describe('daily credits that expire the same day are not accumulated (2026-10-19 owner rule)',()=>{
+ const sourceUrl='https://docs.qoder.com/zh/events/100credits';
+ const run=async(text:string,expiresDaily?:{sourceId:string;quote:string})=>{
+  const base={platformId:'qoder',type:'standing',models:[],sourceText:text,sourceFetch:{originalUrl:sourceUrl,finalUrl:sourceUrl,fetchedUrl:sourceUrl,method:'direct' as const,sourceVerified:true,truncated:false,contentHash:await sha256(text)},evidence:{url:sourceUrl,tier:'official',capturedAt:'2026-10-19T12:00:00Z',excerpts:{benefit:text}}};
+  const recipe={kind:'credits',currency:'USD',entitlementUnits:{value:100,sourceId:'benefit',quote:'每天可领取 100 积分'},cadence:'day',...(expiresDaily?{expiresDaily}:{}),packageUnits:{catalogId:'qoder-credit-pack.packageUnits'},packagePrice:{catalogId:'qoder-credit-pack.amount'},sources:[{...sources(text)[0],url:sourceUrl}]};
+  return computeCollectedValuation({...base,valuationFactors:recipe},'2026-10-19T12:00:00Z');
+ };
+ it('values one day when the source says the credits lapse the same day',async()=>{
+  const text='用户每天可领取 100 积分，积分当日有效，次日清零。';
+  const r=await run(text,{sourceId:'benefit',quote:'积分当日有效，次日清零'});
+  expect(r.valuation?.usdEstimate).toBeCloseTo(100/1500*20,2);
+  expect(r.valuation?.formula).toContain('same-day expiry');
+ });
+ it('still accumulates 30 days when credits carry over (Qoder: 30-day validity)',async()=>{
+  const r=await run('用户每天可领取 100 积分，每笔奖励自领取之日起 30 天内有效。');
+  expect(r.valuation?.usdEstimate).toBeCloseTo(40,2);
+ });
+ it('refuses an expiry claim that is not quoted from the source',async()=>{
+  const r=await run('用户每天可领取 100 积分。',{sourceId:'benefit',quote:'积分当日有效'});
+  expect(r.valuation?.usdEstimate??null).toBeNull();
+  expect(r.errors.join(' ')).toContain('Same-day credit expiry');
+ });
 });

@@ -134,6 +134,39 @@ export const VALUATION_PRICE_CATALOG: readonly ValuationPrice[] = [
     genericProxyEligible: true, specification: 'Guangzhou/online/input-context-0-to-128k/uncached', maxAgeDays: 30,
     sources: [source('https://cloud.tencent.com/document/product/1823/130055', modelChecked,
       'Qwen3.5-Flash 输入长度（0, 128k]-0.2 2 0.02', 'current_official_paid_general_text_proxy; CNY per-million input/output/cache-input')] },
+  // 2026-10-18: five recent perks (WorkBuddy, OpenCode ×3, DeepSeek) went unvalued for want of this provider price.
+  // Off-peak is half of peak and covers most hours; V2 takes the lower applicable rate.
+  { id: 'deepseek-v4.1-flash', platformId: 'deepseek', kind: 'token_model', model: 'DeepSeek-V4.1-Flash', modelClass: 'general_text', currency: 'USD',
+    authority: 'provider', inputPrice: 0.15, outputPrice: 0.6, tokenPriceUnits: 1_000_000, inputMode: 'uncached',
+    genericProxyEligible: false, specification: 'DeepSeek-V4.1-Flash-1017/off-peak/uncached-input', maxAgeDays: 30,
+    sources: [source('https://api-docs.deepseek.com/quick_start/pricing/', '2026-10-18T04:20:00Z',
+      '1M INPUT TOKENS (CACHE MISS) OFF-PEAK $0.15 $0.66 PEAK $0.3 $1.32 1M OUTPUT TOKENS OFF-PEAK $0.6 $1.98 PEAK $1.2 $3.96',
+      'same_version_official_model_price; off-peak (half of peak) is the lower applicable rate')] },
+  // 2026-10-19 credit-pack benchmarks for platforms whose free/sign-up credits kept valuing as unknown. Official pages only;
+  // an official top-up price takes priority over plan arithmetic, otherwise the lower applicable plan rate.
+  monthly('meshy-pro', 'meshy', 'Meshy Pro', 20, 'USD', true, 'monthly/credits', [
+    source('https://www.meshy.ai/pricing', '2026-10-19T03:30:00Z', 'Billed monthly, $ 20 / month Subscribe Now Privileges: 🔥 Access to the World\'s First 3D Agent NEW 1,000 monthly credits (up to 100 assets)',
+      'official_entry_monthly_package_regular_price; $10 first month is a new-user promotion'),
+  ], { packageUnits: 1_000, unit: 'credits' }),
+  monthly('vidu-standard', 'vidu', 'Vidu Standard', 8.25, 'USD', true, 'yearly-billed/monthly-equivalent/credits', [
+    source('https://www.vidu.com/pricing', '2026-10-19T03:30:00Z', '$8.25/month$10\n\nBilled yearly as $99\n\n800 credits monthly\n\n100 credits = $1.03',
+      'official_entry_plan; yearly-billed rate is the lower applicable rate and matches the page\'s own 100 credits = $1.03'),
+  ], { packageUnits: 800, unit: 'credits' }),
+  { id: 'tripo-credits-topup', platformId: 'tripo', kind: 'package', plan: 'Tripo credit top-up', amount: 10,
+    currency: 'USD', authority: 'platform', billingPeriod: 'one_off', priceType: 'regular', entryTier: true,
+    packageUnits: 1_000, unit: 'credits', specification: 'top-up/credits/smallest-pack', maxAgeDays: 30,
+    sources: [source('https://www.tripo3d.ai/pricing', '2026-10-19T03:30:00Z', '$10\n\n1000 credits', 'official_topup_benchmark; top-up price preferred over plan arithmetic')] },
+  { id: 'qoder-credit-pack', platformId: 'qoder', kind: 'package', plan: 'Qoder Credit Pack', amount: 20,
+    currency: 'USD', authority: 'platform', billingPeriod: 'one_off', priceType: 'regular', entryTier: true,
+    packageUnits: 1_500, unit: 'credits', specification: 'credit-pack/1-month-validity', maxAgeDays: 30,
+    sources: [source('https://docs.qoder.com/account/pricing', '2026-10-19T03:30:00Z', '| Price | $20 USD / 1,500 Credits |', 'official_topup_benchmark; paid subscribers can buy packs')] },
+  // 2026-10-19: four perks (Command Code, MiniMax Code, Cline, OpenCode) offer MiniMax-M3.1-Flash free; provider list price.
+  { id: 'minimax-m3.1-flash', platformId: 'minimax', kind: 'token_model', model: 'MiniMax-M3.1-Flash', modelClass: 'general_text', currency: 'USD',
+    authority: 'provider', inputPrice: 0.15, outputPrice: 0.6, tokenPriceUnits: 1_000_000, inputMode: 'uncached',
+    genericProxyEligible: false, specification: 'MiniMax-M3.1-Flash/standard/uncached-input', maxAgeDays: 30,
+    sources: [source('https://platform.minimax.io/docs/pricing/overview', '2026-10-19T04:00:00Z',
+      'Model Input Output Prompt caching Read MiniMax-M3.1-Flash $0.15 / M tokens $0.60 / M tokens $0.015 / M tokens',
+      'same_version_official_model_price; standard tier')] },
 ];
 
 export const VALUATION_FX_SNAPSHOT = {
