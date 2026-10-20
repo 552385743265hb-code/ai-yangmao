@@ -61,7 +61,9 @@ function membershipEmptyVendor(vendor) {
   return vendor?.status === 'none' ? '已核对官方资料，暂无公开会员套餐。' : '该厂商的会员目录尚待补齐。';
 }
 function subscriptionControls() {
-  if (!MEMBERSHIP_CATALOG_OK) return '<p class="warn-note">会员目录暂时不可用，会员资格显示为还需确认；其他条件仍可使用。</p>';
+  if (!MEMBERSHIP_CATALOG_OK) return `<div data-owned-subscriptions>${typeof DATA_LOADING !== 'undefined' && DATA_LOADING
+    ? '<p class="small muted" role="status">正在加载会员目录…</p>'
+    : '<p class="warn-note">会员目录暂时不可用，会员资格显示为还需确认；其他条件仍可使用。</p>'}</div>`;
   const vendors=membershipVendors(), subscriptions=C.subscriptions||[];
   if(!vendors.some(v=>v.id===ownedMembershipVendor))ownedMembershipVendor=vendors[0]?.id||'';
   const vendor=vendors.find(v=>v.id===ownedMembershipVendor),plans=membershipVendorPlans(ownedMembershipVendor);

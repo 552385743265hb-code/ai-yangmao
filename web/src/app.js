@@ -2880,11 +2880,13 @@ new MutationObserver(reTheme).observe(document.documentElement, { attributes: tr
   drawShell();
   const agentLanding = route()[0] === 'agent';
   if (agentLanding) render(false);
-  else { main().innerHTML = emptySheep('正在把羊赶进草地…'); DATA_LOADING = true; }
+  else main().innerHTML = emptySheep('正在把羊赶进草地…');
+  DATA_LOADING = true;
   try { await Promise.all([loadData(), restoreAdminRole()]); }
-  catch (e) { DATA_LOADING = false; if (route()[0] !== 'agent') main().innerHTML = emptySheep('数据没有加载成功，请稍后刷新。'); return; }
+  catch (e) { DATA_LOADING = false; refreshSubscriptionControls(); if (route()[0] !== 'agent') main().innerHTML = emptySheep('数据没有加载成功，请稍后刷新。'); return; }
   DATA_LOADING = false;
   prepare();
+  refreshSubscriptionControls();
   drawShell();
   if (window.echarts) render(false);
   else main().innerHTML = ribbon() + emptySheep('图表库没有加载成功，请检查网络后刷新。');

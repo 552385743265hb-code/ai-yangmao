@@ -140,7 +140,37 @@
       "status": "verified",
       "quote": "Basic $0/month; Standard; Pro; Premium; Ultra; Team Ultra",
       "applyReady": true,
-      "remaining": "浏览器已核对六档；另有 Enterprise API 起充入口，尚需核对是否固定订阅"
+      "remaining": "Web六档维持；独立API正式档名从旧官方目录搜索索引找全，但旧文档实时404，当前API Billing匿名页未显示，不能确认仍续费或已停用。",
+      "checkedAt": "2026-10-20",
+      "coverageStatus": "partial",
+      "additionalSources": [
+        {
+          "sourceUrl": "https://docs.platform.pixverse.ai/subscribe-api-plans-882969m0",
+          "quote": "API memberships are separate from PixVerse Web"
+        },
+        {
+          "sourceUrl": "https://platform.pixverse.ai/billing",
+          "observation": "匿名HTTP仅营销内容，未显示Billing目录"
+        },
+        {
+          "sourceUrl": "https://docs.platform.pixverse.ai/pixverse-api-pricing-2394995m0",
+          "observation": "模型按Credits/second或request计费，不能由此推断没有订阅"
+        }
+      ],
+      "verified": true,
+      "legacyPlans": [],
+      "aliases": [],
+      "newPlanIds": {},
+      "existingPlanIds": {},
+      "planSources": {
+        "Basic": "https://app.pixverse.ai/subscribe",
+        "Standard": "https://app.pixverse.ai/subscribe",
+        "Pro": "https://app.pixverse.ai/subscribe",
+        "Premium": "https://app.pixverse.ai/subscribe",
+        "Ultra": "https://app.pixverse.ai/subscribe",
+        "Team Ultra": "https://app.pixverse.ai/subscribe"
+      },
+      "planAliases": {}
     },
     {
       "productId": "hailuo-ai",
@@ -183,8 +213,44 @@
       "freePlans": [],
       "status": "verified",
       "quote": "Individual plans: Plus, Pro, Ultra. Business plans: Team, Enterprise.",
-      "remaining": "旧 Agents FAQ 把 Plus/Pro 的价格反写，使用当前价格页；仍需查 Dream Machine 存量目录",
-      "applyReady": true
+      "remaining": "当前Agents五档沿用已核pricing，API按量可排除；旧Dream Machine五档是否仍可续费及与Agents关系有明确官方冲突，需真实订阅管理页核验。",
+      "applyReady": true,
+      "checkedAt": "2026-10-20",
+      "coverageStatus": "partial",
+      "additionalSources": [
+        {
+          "sourceUrl": "https://lumalabs.ai/llm-info",
+          "quote": "Dream Machine or Ray2, which are deprecated",
+          "note": "官方页面标2026-07-13更新；其目录遗漏Team，所以不覆盖实时pricing；仅记录Dream Machine弃用声明"
+        },
+        {
+          "sourceUrl": "https://docs.agents.lumalabs.ai/guides/faq/",
+          "quote": "Dream Machine remains the consumer-facing product",
+          "note": "当前Agents API FAQ却仍称Dream Machine为消费端产品，不能仅按llm-info推定停服或旧会员终止"
+        },
+        {
+          "sourceUrl": "https://dream-machine.lumalabs.ai/",
+          "note": "实时匿名HTTP空应用壳，未见订阅购买卡"
+        },
+        {
+          "sourceUrl": "https://lumalabs.ai/learning-hub/payments-subscriptions",
+          "quote": "Free Plans; Lite Plans; Plus Plans; Unlimited Plans; Enterprise Plans",
+          "note": "页内更新2026-01-25，明确旧五档及更早credits迁移，不证明2026-10当前续费"
+        }
+      ],
+      "verified": true,
+      "legacyPlans": [],
+      "aliases": [],
+      "newPlanIds": {},
+      "existingPlanIds": {},
+      "planSources": {
+        "Plus": "https://lumalabs.ai/pricing",
+        "Pro": "https://lumalabs.ai/pricing",
+        "Ultra": "https://lumalabs.ai/pricing",
+        "Team": "https://lumalabs.ai/pricing",
+        "Enterprise": "https://lumalabs.ai/pricing"
+      },
+      "planAliases": {}
     },
     {
       "productId": "coze",
@@ -1113,24 +1179,39 @@
         "stepfun"
       ],
       "name": "阶跃 AI（StepClaw）",
-      "sourceUrl": "https://www.stepfun.com/subscription/membership-benefits-explanation",
+      "sourceUrl": "https://www.stepfun.com/subscription",
       "plans": [
         "入门版",
         "高级版",
         "进阶版",
-        "专业版"
+        "专业版",
+        "尝鲜周卡"
       ],
       "freePlans": [],
       "status": "verified",
       "applyReady": true,
-      "quote": "4 个按月正式订阅档：入门版、高级版、进阶版、专业版",
+      "quote": "尝鲜周卡; 入门版; 高级版; 进阶版; 专业版",
       "newPlanIds": {
         "入门版": "stepfun-consumer-entry",
         "高级版": "stepfun-consumer-advanced",
         "进阶版": "stepfun-consumer-progress",
-        "专业版": "stepfun-consumer-professional"
+        "专业版": "stepfun-consumer-professional",
+        "尝鲜周卡": "stepfun-consumer-weekly-trial"
       },
-      "remaining": "尝鲜周卡亦为官方会员档，收费属性尚需核对；本批只写已确认的四个月付档，继续补齐周卡"
+      "remaining": "",
+      "legacyPlans": [],
+      "checkedAt": "2026-10-20",
+      "verificationNote": "新增已确认付费尝鲜周卡¥9.9/周；新用户7天免费体验是活动资格，不建Free永久会员。其余4个月付档沿用已录。",
+      "aliases": [],
+      "existingPlanIds": {},
+      "planSources": {
+        "尝鲜周卡": "https://www.stepfun.com/subscription",
+        "入门版": "https://www.stepfun.com/subscription",
+        "高级版": "https://www.stepfun.com/subscription",
+        "进阶版": "https://www.stepfun.com/subscription",
+        "专业版": "https://www.stepfun.com/subscription"
+      },
+      "planAliases": {}
     },
     {
       "productId": "pollo-ai",
@@ -1157,7 +1238,48 @@
           "reason": "旧抽取占位项，不是官方套餐名称；已核对官网四档",
           "sourceUrl": "https://pollo.ai/pricing"
         }
-      ]
+      ],
+      "checkedAt": "2026-10-20",
+      "coverageStatus": "research_complete",
+      "additionalSources": [
+        {
+          "sourceUrl": "https://pollo.ai/pricing",
+          "quote": "For Free and Lite users; For Pro users",
+          "note": "HTTP动态卡片未输出，沿用已核的四档；FAQ确认三档及滑杆为加积分"
+        },
+        {
+          "sourceUrl": "https://pollo.ai/hub/deevid-ai-vs-pollo-ai",
+          "quote": "Lite: $15 monthly; Pro: $29 monthly; Ultra: $129 monthly",
+          "note": "官方当前对比表覆盖免费与三付费档"
+        },
+        {
+          "sourceUrl": "https://pollo.ai/whats-new",
+          "quote": "Ultra plan",
+          "note": "2026-09-08官方更新再次确认Ultra正式档位"
+        },
+        {
+          "sourceUrl": "https://api.pollo.ai/pricing",
+          "quote": "Top Up; Add funds to your account"
+        },
+        {
+          "sourceUrl": "https://api.pollo.ai/",
+          "quote": "Pay-as-you-go."
+        }
+      ],
+      "remaining": "",
+      "scopeBasis": "仅当前公开官网导航及正式目录：既有浏览器四档结果与公开价格FAQ、官方当前对比表、Whats New/Ultra会员活动相互印证；API由官网导航直达独立api.pollo.ai，明确Top Up/PAYG。未发现具体待证的旧档线索，不推断私人合同。",
+      "verified": true,
+      "legacyPlans": [],
+      "aliases": [],
+      "newPlanIds": {},
+      "existingPlanIds": {},
+      "planSources": {
+        "Free": "https://pollo.ai/pricing",
+        "Lite": "https://pollo.ai/pricing",
+        "Pro": "https://pollo.ai/pricing",
+        "Ultra": "https://pollo.ai/pricing"
+      },
+      "planAliases": {}
     },
     {
       "productId": "higgsfield",
@@ -1876,7 +1998,7 @@
         "aws"
       ],
       "name": "Amazon Q Business",
-      "sourceUrl": "https://aws.amazon.com/q/business/pricing/",
+      "sourceUrl": "https://docs.aws.amazon.com/amazonq/latest/qbusiness-ug/doc-history.html",
       "plans": [
         "Lite",
         "Pro"
@@ -1884,25 +2006,69 @@
       "freePlans": [],
       "status": "verified",
       "applyReady": true,
-      "quote": "Lite; Pro"
+      "quote": "Amazon Q Business is no longer open to new customers",
+      "mergeMode": "retain-plan-names-update-availability",
+      "legacyPlans": [
+        "Lite",
+        "Pro"
+      ],
+      "checkedAt": "2026-10-20",
+      "verificationNote": "2026-07-31起停止新客户准入，当前价格页仍列Lite/Pro；保留既有服务，不当成全部用户终止。Quick是迁移方向但不是同一许可自动改名。",
+      "aliases": [],
+      "newPlanIds": {},
+      "existingPlanIds": {},
+      "planSources": {
+        "Lite": "https://docs.aws.amazon.com/amazonq/latest/qbusiness-ug/doc-history.html",
+        "Pro": "https://docs.aws.amazon.com/amazonq/latest/qbusiness-ug/doc-history.html"
+      },
+      "planAliases": {}
     },
     {
       "productId": "meta-muse-code",
       "platformIds": [
         "meta"
       ],
-      "name": "Meta Muse Code / Model API",
-      "sourceUrl": "https://dev.meta.ai/resources/blog/muse-code-new-plans-and-features",
+      "name": "Meta Muse Code",
+      "sourceUrl": "https://dev.meta.ai/docs/muse-code/subscriptions",
       "plans": [
         "Everyday Usage",
         "High Usage",
-        "Power Usage"
+        "Power Usage",
+        "Maximum Usage"
       ],
       "freePlans": [],
       "status": "verified",
       "applyReady": true,
-      "quote": "Everyday Usage; High Usage; Power Usage",
-      "verificationNote": "官方公告内套餐图已在浏览器读取：Everyday $5/月、High $15/月、Power $50/月；不是从模型名称推测套餐。"
+      "quote": "Everyday Usage; High Usage; Power Usage; Maximum Usage",
+      "verificationNote": "当前官方订阅全文明确4plans；初目录只有3，补MaximumUsage。MuseWonderFull是模型变体不是第五会员。Contributor是数据训练设置不是独立plan。",
+      "mergeMode": "replace-verified-plan-list",
+      "newPlans": [
+        "Maximum Usage"
+      ],
+      "officialSource": "https://dev.meta.ai/docs/muse-code/subscriptions",
+      "checkedAt": "2026-10-20",
+      "evidence": [
+        {
+          "url": "https://dev.meta.ai/docs/muse-code/subscriptions",
+          "quote": "There are 4 subscription plans available for Muse Code",
+          "checkedAt": "2026-10-20"
+        }
+      ],
+      "existingPlanIds": {
+        "Everyday Usage": "meta-muse-code-everyday-usage",
+        "High Usage": "meta-muse-code-high-usage",
+        "Power Usage": "meta-muse-code-power-usage"
+      },
+      "legacyPlans": [],
+      "aliases": [],
+      "newPlanIds": {},
+      "planSources": {
+        "Everyday Usage": "https://dev.meta.ai/docs/muse-code/subscriptions",
+        "High Usage": "https://dev.meta.ai/docs/muse-code/subscriptions",
+        "Power Usage": "https://dev.meta.ai/docs/muse-code/subscriptions",
+        "Maximum Usage": "https://dev.meta.ai/docs/muse-code/subscriptions"
+      },
+      "planAliases": {}
     },
     {
       "productId": "aws-quick",
@@ -2200,7 +2366,8 @@
         "Free",
         "Pro",
         "Max",
-        "Team"
+        "Team",
+        "Starter"
       ],
       "freePlans": [
         "Free"
@@ -2209,7 +2376,53 @@
       "status": "verified",
       "applyReady": true,
       "quote": "Free; Pro; Max; Team",
-      "verificationNote": "当前Studio四档；API及Enterprise渠道仍需独立核查。"
+      "verificationNote": "当前Studio四档；API及Enterprise渠道仍需独立核查。",
+      "checkedAt": "2026-10-20",
+      "coverageStatus": "partial",
+      "remaining": "正式产品文档用Professional而实时价格页与活动用Pro，暂无官方明确同名映射，不新建Professional或自动替换Pro。周年活动提Current Pro and Advanced users，说明存在Advanced存量线索，但尚无其现存续费条款/迁移，保留gap。",
+      "supplementalVerifiedPlans": [
+        "Starter"
+      ],
+      "planSources": {
+        "Starter": "https://www.tripo3d.ai/blog/tripo-turns-1-general-plan",
+        "Free": "https://www.tripo3d.ai/pricing",
+        "Pro": "https://www.tripo3d.ai/pricing",
+        "Max": "https://www.tripo3d.ai/pricing",
+        "Team": "https://www.tripo3d.ai/pricing"
+      },
+      "additionalSources": [
+        {
+          "sourceUrl": "https://www.tripo3d.ai/blog/tripo-turns-1-general-plan",
+          "quote": "Starter users can begin from as low as $0.50 for the first month",
+          "note": "正式一周年活动同时明确Pro monthly/annual、Max和Starter购买优惠，Starter可正式补录"
+        },
+        {
+          "sourceUrl": "https://www.tripo3d.ai/blog/tripo-turns-1-general-plan",
+          "quote": "Current Pro and Advanced users",
+          "note": "仅作为Advanced旧档存续线索，不据此自动建可用存量会员"
+        },
+        {
+          "sourceUrl": "https://www.tripo3d.ai/product-doc/getting-started/pricing-credits",
+          "quote": "Free, Starter, Professional, Max, and Team",
+          "note": "2026-10官方文档，Professional与Pro命名冲突未解"
+        },
+        {
+          "sourceUrl": "https://www.tripo3d.ai/pricing",
+          "quote": "Free; Pro; Max; Team",
+          "note": "实时HTTP可读四个正式卡片，Starter可能依账户/活动入口展示"
+        },
+        {
+          "sourceUrl": "https://docs.tripo3d.ai/get-started/pricing.html",
+          "quote": "pay-before-you-go product",
+          "note": "API为预付按量不新建月度档"
+        }
+      ],
+      "verified": true,
+      "legacyPlans": [],
+      "aliases": [],
+      "newPlanIds": {},
+      "existingPlanIds": {},
+      "planAliases": {}
     },
     {
       "productId": "github-copilot",
@@ -3136,7 +3349,8 @@
       "productId": "doubao",
       "platformIds": [
         "doubao",
-        "feishu"
+        "feishu",
+        "doubao-work"
       ],
       "name": "豆包订阅",
       "plans": [
@@ -3146,7 +3360,7 @@
       ],
       "freePlans": [],
       "legacyPlans": [],
-      "sourceUrl": "https://www.doubao.com/product/subscriptions",
+      "sourceUrl": "https://www.doubao.com/work/pricing",
       "checkedAt": "2026-10-20",
       "status": "verified",
       "quote": "标准; 加强; 高级",
@@ -3165,7 +3379,18 @@
         "https://aily.feishu.cn/hc/1u7kleqg_1cnvbb55"
       ],
       "applyReady": true,
-      "note": "官方《关于豆包订阅》明确仅标准、加强、高级三档；飞书官方交叉核验连续月费68/200/500元。豆包和飞书AI个人功能共享权益，不再为豆包工作伙伴重复创建个人订阅。99元创作额度包为一次性资源包，学生专属权益不是独立档位。"
+      "note": "官方《关于豆包订阅》明确仅标准、加强、高级三档；飞书官方交叉核验连续月费68/200/500元。豆包和飞书AI个人功能共享权益，不再为豆包工作伙伴重复创建个人订阅。99元创作额度包为一次性资源包，学生专属权益不是独立档位。",
+      "sourceExcerpts": [
+        "skuKey:\"doubao_personal_std\",skuName:\"标准套餐\"",
+        "skuKey:\"doubao_personal_plus\",skuName:\"加强套餐\"",
+        "skuKey:\"doubao_personal_pro\",skuName:\"高级套餐\"",
+        "href:\"https://www.doubao.com/member/subscription?enter_from=work_official_website\""
+      ],
+      "verificationNote": "这是既有doubao产品的跨平台共享更新，不新建重复套餐。独立豆包工作个人价格页当前正式脚本列同三个人SKU，其立即升级链接直达统一豆包个人订阅入口；现在有Workapp直接证据，已非从飞书共享类推。当前脚本来源https://lf-flow-web-cdn.doubao.com/obj/flow-doubao/doubao/desktop_online_web/static/js/async/work/pricing_page.462d0f56.js。",
+      "existingProductUpdateOnly": true,
+      "aliases": [],
+      "existingPlanIds": {},
+      "planAliases": {}
     },
     {
       "productId": "kimi-cn",
@@ -4358,14 +4583,14 @@
         "至尊会员 — 适合专业级大规模制作",
         "企业会员 — 适合更大规模与精细化管理的企业团队 — 定制报价"
       ],
-      "remaining": "团队版标签另需核实，见独立gap；免费登录积分未确认正式免费会员名；没有明确仍有效旧合同证据。",
+      "remaining": "",
       "newPlanIds": {
         "标准会员": "seko-standard",
         "高级会员": "seko-advanced",
         "至尊会员": "seko-supreme",
         "企业会员": "seko-enterprise"
       },
-      "note": "官方价格页HTTP SSR完整四张卡；Jina只显示前三张，企业会员已从同源SSR正文提取。个人积分商品不是会员。"
+      "note": "官方价格页HTTP SSR完整四张卡；Jina只显示前三张，企业会员已从同源SSR正文提取。个人积分商品不是会员。 团队版三档已由真实浏览器补核，单列seko-team；企业定制入口不重复。"
     },
     {
       "productId": "wps-office-ai-personal",
@@ -6840,29 +7065,33 @@
         "Studio HED Student",
         "Studio Faculty and Staff",
         "Express Enterprise",
-        "Express EDU-HED Student"
+        "Express EDU-HED Student",
+        "Pro Enterprise",
+        "AI Assistant for teams"
       ],
       "freePlans": [
         "Reader"
       ],
-      "sourceUrl": "https://www.adobe.com/acrobat/pricing.html",
-      "quote": "Acrobat Standard; Acrobat Pro; Acrobat Studio",
+      "sourceUrl": "https://business.adobe.com/uk/products/acrobat-business.html",
+      "quote": "Acrobat Pro is designed for trusted PDF work.",
       "status": "verified",
       "applyReady": true,
-      "remaining": "FAQ将teams、VIP/Marketplace、ETLA列为采购渠道。教育学生/教职工的Studio为独立许可；不因采购渠道重复建档。Enterprise Standard/Pro及旧AI Assistant附加订阅还需目录级核清，不能宣称Acrobat全覆盖。",
+      "remaining": "仅旧个人/企业AI Assistant与Plus许可证关系、Standard Enterprise旧VIP存续待核；当前Pro Enterprise和Teams AI Assistant已补。",
       "planSources": {
         "Express Individual": "https://www.adobe.com/acrobat/acrobat-express.html",
         "Express Teams": "https://www.adobe.com/acrobat/acrobat-express.html",
-        "AI Assistant Plus": "https://helpx.adobe.com/creative-cloud/apps/generative-ai/generative-credits-faq.html",
+        "AI Assistant Plus": "https://helpx.adobe.com/acrobat/desktop/use-acrobat-ai/ai-assistant-plus-acrobat.html",
         "Studio Enterprise": "https://helpx.adobe.com/creative-cloud/apps/generative-ai/generative-credits-faq.html",
         "Studio HED Student": "https://helpx.adobe.com/creative-cloud/apps/generative-ai/generative-credits-faq.html",
         "Studio Faculty and Staff": "https://helpx.adobe.com/creative-cloud/apps/generative-ai/generative-credits-faq.html",
         "Express Enterprise": "https://helpx.adobe.com/creative-cloud/apps/generative-ai/generative-credits-faq.html",
-        "Express EDU-HED Student": "https://helpx.adobe.com/creative-cloud/apps/generative-ai/generative-credits-faq.html"
+        "Express EDU-HED Student": "https://helpx.adobe.com/creative-cloud/apps/generative-ai/generative-credits-faq.html",
+        "AI Assistant for teams": "https://helpx.adobe.com/acrobat/desktop/use-acrobat-ai/set-up-acrobat-generative-ai/ai-assistant-as-teams-admins.html",
+        "Pro Enterprise": "https://business.adobe.com/uk/products/acrobat-business.html"
       },
       "sharedLicenseNotes": "Acrobat Pro作为Creative Cloud单应用或Studio内含时沿用各自原始许可，不重复制造产品内含会员。HED Student与Faculty and Staff不按teams/enterprise/VIP/ETLA再拆四份。",
       "checkedAt": "2026-10-20",
-      "note": "",
+      "note": "Pro是企业官方产品比较表的独立产品而非Studio包含项另造。Teams AI Assistant有正式购买/分配许可证流程，独立附加订阅；不把AI功能试用当会员。",
       "newPlanIds": {
         "Reader": "adobe-acrobat-reader",
         "Standard Individual": "adobe-acrobat-standard-individual",
@@ -6878,8 +7107,17 @@
         "Studio HED Student": "adobe-acrobat-studio-hed-student",
         "Studio Faculty and Staff": "adobe-acrobat-studio-faculty-and-staff",
         "Express Enterprise": "adobe-acrobat-express-enterprise",
-        "Express EDU-HED Student": "adobe-acrobat-express-edu-hed-student"
-      }
+        "Express EDU-HED Student": "adobe-acrobat-express-edu-hed-student",
+        "Pro Enterprise": "adobe-acrobat-pro-enterprise",
+        "AI Assistant for teams": "adobe-acrobat-ai-assistant-teams"
+      },
+      "planQuotes": {
+        "AI Assistant for teams": "If you have already purchased the AI Assistant for Acrobat add-on subscription, select Assign a license"
+      },
+      "legacyPlans": [],
+      "aliases": [],
+      "existingPlanIds": {},
+      "planAliases": {}
     },
     {
       "productId": "adobe-stock",
@@ -6891,16 +7129,20 @@
         "10 Stock credits",
         "10 Stock credits + AI Studio",
         "40 Stock credits + AI Studio",
-        "Unlimited Stock + AI Studio"
+        "Unlimited Stock + AI Studio",
+        "25 Stock credits + AI Studio",
+        "750 Stock credits + AI Studio"
       ],
       "freePlans": [],
-      "sourceUrl": "https://stock.adobe.com/uk/plans",
-      "quote": "10 Stock credits/mo; Unlimited Stock",
+      "sourceUrl": "https://stock.adobe.com/tm/plans",
+      "quote": "25 Stock credits/mo AI Studio; 750 Stock credits/mo AI Studio",
       "status": "verified",
       "applyReady": true,
-      "remaining": "已实读UK当前4个个人档及企业类别。Teams具体SKU尚未成功读取；旧3/25/40/750档官方帮助文档仍提及，但现行续费/适用地区未完成核清，先保留候选，不作为已验证可应用档位。",
+      "remaining": "当前UK/TM个人和Teams及企业许可边界已核；旧个人3/25/40/750不含AI Studio档存续仍待证。",
       "planSources": {
-        "Teams": "https://stock.adobe.com/uk/teams"
+        "Teams": "https://stock.adobe.com/uk/teams",
+        "25 Stock credits + AI Studio": "https://stock.adobe.com/tm/plans",
+        "750 Stock credits + AI Studio": "https://stock.adobe.com/tm/plans"
       },
       "applyReadyPlans": [
         "10 Stock credits",
@@ -6917,13 +7159,22 @@
       ],
       "sharedLicenseNotes": "订阅每月Stock credits是周期权益，需作为具体档位；5/16/40/80/150 credits一次性包不录。CC Pro Plus内含Stock不另造Stock会员。",
       "checkedAt": "2026-10-20",
-      "note": "",
+      "note": "本轮HTTP实读当前官网明确购买卡，不标成仅历史。现有UK 40+AI Studio/Unlimited仍保留，地区目录并集不按付款周期重复。",
       "newPlanIds": {
         "10 Stock credits": "adobe-stock-10-stock-credits",
         "10 Stock credits + AI Studio": "adobe-stock-10-stock-credits-plus-ai-studio",
         "40 Stock credits + AI Studio": "adobe-stock-40-stock-credits-plus-ai-studio",
-        "Unlimited Stock + AI Studio": "adobe-stock-unlimited-stock-plus-ai-studio"
-      }
+        "Unlimited Stock + AI Studio": "adobe-stock-unlimited-stock-plus-ai-studio",
+        "25 Stock credits + AI Studio": "adobe-stock-25-stock-credits-plus-ai-studio",
+        "750 Stock credits + AI Studio": "adobe-stock-750-stock-credits-plus-ai-studio"
+      },
+      "regions": [
+        "TM official locale"
+      ],
+      "legacyPlans": [],
+      "aliases": [],
+      "existingPlanIds": {},
+      "planAliases": {}
     },
     {
       "productId": "adobe-stock-teams",
@@ -7027,15 +7278,16 @@
       "quote": "Prime; Ultimate",
       "status": "verified",
       "applyReady": true,
-      "coverageStatus": "partial",
-      "remaining": "Power/Collaborator/Limited是席位角色，不另造会员。",
+      "coverageStatus": "public_named_catalog_verified",
+      "remaining": "",
       "priceDisclosure": "custom_quote",
       "checkedAt": "2026-10-20",
       "note": "",
       "newPlanIds": {
         "Prime": "adobe-aem-assets-prime",
         "Ultimate": "adobe-aem-assets-ultimate"
-      }
+      },
+      "scopeNote": "此前remaining为已解释的授权/计量边界，并非缺失公开套餐；不应据此维持partial。"
     },
     {
       "productId": "adobe-journey-optimizer",
@@ -7108,8 +7360,8 @@
       "quote": "Customer Journey Analytics – Foundation",
       "status": "verified",
       "applyReady": true,
-      "coverageStatus": "partial",
-      "remaining": "2026-09-25生效产品说明核明4档；B2B add-on是附加产品，不当第五个基础档；额外行数、query、storage等按量不造会员。",
+      "coverageStatus": "public_named_catalog_verified",
+      "remaining": "",
       "priceDisclosure": "custom_quote",
       "checkedAt": "2026-10-20",
       "note": "",
@@ -7118,7 +7370,8 @@
         "Select": "adobe-customer-journey-analytics-select",
         "Prime": "adobe-customer-journey-analytics-prime",
         "Ultimate": "adobe-customer-journey-analytics-ultimate"
-      }
+      },
+      "scopeNote": "此前remaining为已解释的授权/计量边界，并非缺失公开套餐；不应据此维持partial。"
     },
     {
       "productId": "adobe-learning-manager",
@@ -7135,15 +7388,16 @@
       "quote": "With two packages - Prime and Ultimate",
       "status": "verified",
       "applyReady": true,
-      "coverageStatus": "partial",
-      "remaining": "AI credit consumption为高级AI计费，不单建积分会员。",
+      "coverageStatus": "public_named_catalog_verified",
+      "remaining": "",
       "priceDisclosure": "custom_quote",
       "checkedAt": "2026-10-20",
       "note": "",
       "newPlanIds": {
         "Prime": "adobe-learning-manager-prime",
         "Ultimate": "adobe-learning-manager-ultimate"
-      }
+      },
+      "scopeNote": "此前remaining为已解释的授权/计量边界，并非缺失公开套餐；不应据此维持partial。"
     },
     {
       "productId": "adobe-target",
@@ -7185,15 +7439,16 @@
       "quote": "Real-Time Customer Data Platform Prime (B2B Edition)",
       "status": "verified",
       "applyReady": true,
-      "coverageStatus": "partial",
-      "remaining": "官方主价格页只列B2C/B2B/B2P为edition，法律产品说明进一步明确每版Prime/Ultimate；不得只建一个模糊B2C/B2B/B2P占位。",
+      "coverageStatus": "public_named_catalog_verified",
+      "remaining": "",
       "priceDisclosure": "custom_quote",
       "checkedAt": "2026-10-20",
       "note": "",
       "newPlanIds": {
         "Prime": "adobe-real-time-cdp-b2b-prime",
         "Ultimate": "adobe-real-time-cdp-b2b-ultimate"
-      }
+      },
+      "scopeNote": "此前remaining为已解释的授权/计量边界，并非缺失公开套餐；不应据此维持partial。"
     },
     {
       "productId": "adobe-real-time-cdp-b2c",
@@ -7210,15 +7465,16 @@
       "quote": "Real-Time Customer Data Platform Prime (B2C Edition)",
       "status": "verified",
       "applyReady": true,
-      "coverageStatus": "partial",
-      "remaining": "官方主价格页只列B2C/B2B/B2P为edition，法律产品说明进一步明确每版Prime/Ultimate；不得只建一个模糊B2C/B2B/B2P占位。",
+      "coverageStatus": "public_named_catalog_verified",
+      "remaining": "",
       "priceDisclosure": "custom_quote",
       "checkedAt": "2026-10-20",
       "note": "",
       "newPlanIds": {
         "Prime": "adobe-real-time-cdp-b2c-prime",
         "Ultimate": "adobe-real-time-cdp-b2c-ultimate"
-      }
+      },
+      "scopeNote": "此前remaining为已解释的授权/计量边界，并非缺失公开套餐；不应据此维持partial。"
     },
     {
       "productId": "adobe-real-time-cdp-b2p",
@@ -7235,15 +7491,16 @@
       "quote": "Real-Time Customer Data Platform Prime (B2P Edition)",
       "status": "verified",
       "applyReady": true,
-      "coverageStatus": "partial",
-      "remaining": "官方主价格页只列B2C/B2B/B2P为edition，法律产品说明进一步明确每版Prime/Ultimate；不得只建一个模糊B2C/B2B/B2P占位。",
+      "coverageStatus": "public_named_catalog_verified",
+      "remaining": "",
       "priceDisclosure": "custom_quote",
       "checkedAt": "2026-10-20",
       "note": "",
       "newPlanIds": {
         "Prime": "adobe-real-time-cdp-b2p-prime",
         "Ultimate": "adobe-real-time-cdp-b2p-ultimate"
-      }
+      },
+      "scopeNote": "此前remaining为已解释的授权/计量边界，并非缺失公开套餐；不应据此维持partial。"
     },
     {
       "productId": "adobe-commerce",
@@ -7261,8 +7518,8 @@
       "quote": "Adobe Commerce Optimizer",
       "status": "verified",
       "applyReady": true,
-      "coverageStatus": "partial",
-      "remaining": "仅公开3个具体产品方案；站内add-on for certain tiers未公布tier正式名，不展开假想子档。",
+      "coverageStatus": "public_named_catalog_verified",
+      "remaining": "",
       "priceDisclosure": "custom_quote",
       "checkedAt": "2026-10-20",
       "note": "",
@@ -7270,7 +7527,8 @@
         "Adobe Commerce as a Cloud Service (SaaS)": "adobe-commerce-adobe-commerce-as-a-cloud-service-saas",
         "Adobe Commerce on Cloud (PaaS)": "adobe-commerce-adobe-commerce-on-cloud-paas",
         "Adobe Commerce Optimizer": "adobe-commerce-adobe-commerce-optimizer"
-      }
+      },
+      "scopeNote": "此前remaining为已解释的授权/计量边界，并非缺失公开套餐；不应据此维持partial。"
     },
     {
       "productId": "kling-cn-personal",
@@ -7362,6 +7620,1036 @@
         ]
       },
       "note": "官方价格页完整八档，Go/GOAT/Pro/Max 10×/Max 20×/Teams/Enterprise为开发与团队订阅；Provider是固定15美元/月API准入订阅，调用另按量，不是纯充值账户。当前官方limits表称同价同团队档为Team Pro，销售页称Teams，仅作别名不重复建档。注册免费/余额账户存在，但官方完整现行价格目录未给正式命名Free会员卡，因此freePlans为空；免费模型促销不是免费会员。官网首页直接链接@CommandCodeAI，与实时平台记录账号一致，官方GitHub组织亦验证域名commandcode.ai。无需D1查询即可识别官方身份。"
+    },
+    {
+      "productId": "lark-frontline",
+      "platformIds": [
+        "feishu"
+      ],
+      "name": "Lark",
+      "plans": [
+        "Frontline"
+      ],
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://www.larksuite.com/en_us/blog/lark-frontline-empowering-deskless-workforce",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Frontline",
+      "sourceExcerpts": [
+        "Meet the all new Lark mobile-only plan, our tailored solution for the dynamic, on-the-go frontliners.",
+        "For Lark Enterprise, the Frontline solution, or additional support, contact our sales team."
+      ],
+      "verificationNote": "官方2026-09-03文章明确是mobile-only plan，当前价格页明确Frontline销售入口，正式许可按销售报价；不是仅行业场景宣传。无公开更多Frontline等级，不需穷尽私人定制合同。",
+      "remaining": "",
+      "planSources": {
+        "Frontline": "https://www.larksuite.com/en_us/blog/lark-frontline-empowering-deskless-workforce"
+      }
+    },
+    {
+      "productId": "feishu-frontline",
+      "platformIds": [
+        "feishu"
+      ],
+      "name": "飞书",
+      "plans": [
+        "一线版"
+      ],
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://www.feishu.cn/hc/zh-CN/articles/091508897053-视频会议付费权益说明",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "一线版",
+      "sourceExcerpts": [
+        "搭配飞书企业版购买的飞书一线版账号不纳入购买人数计算。"
+      ],
+      "verificationNote": "当前官方权益文档明确可搭配企业版购买的一线版账号，足够证明独立账号许可。不能把Lark Frontline的价格或移动限制移作国内事实。公开口径没有更多一线命名档，目录边界已核。",
+      "remaining": "",
+      "planSources": {
+        "一线版": "https://www.feishu.cn/hc/zh-CN/articles/091508897053-视频会议付费权益说明"
+      },
+      "newPlanIds": {
+        "一线版": "feishu-frontline-license"
+      }
+    },
+    {
+      "productId": "tapnow-enterprise",
+      "platformIds": [
+        "tapnow"
+      ],
+      "name": "TapNow",
+      "plans": [
+        "Enterprise"
+      ],
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://www.tapnow.ai/enterprise",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Enterprise",
+      "sourceExcerpts": [
+        "What is TapNow Enterprise? TapNow Enterprise is a Creative OS for brands, marketing and commerce teams, agencies, and studios.",
+        "How is Enterprise priced? Plans are tailored to seats, shared credits, generation volume, support, and deployment needs.",
+        "Sales will provide a tailored quote and contract terms."
+      ],
+      "verificationNote": "当前官方独立企业销售页明确Enterprise方案和采购合同；按席位、共享积分、用量、支持与部署定制，无公开第二企业等级，公开目录已完成。无需私人合同内容才能列Enterprise。",
+      "remaining": "",
+      "planSources": {
+        "Enterprise": "https://www.tapnow.ai/enterprise"
+      }
+    },
+    {
+      "productId": "google-virustotal-bundles",
+      "platformIds": [
+        "gcloud"
+      ],
+      "name": "VirusTotal",
+      "plans": [
+        "Basic Bundle",
+        "Professional Bundle",
+        "Enterprise Bundle",
+        "Starter Bundle",
+        "Duet"
+      ],
+      "fullPlanNames": {
+        "Basic Bundle": "VirusTotal Basic Bundle",
+        "Professional Bundle": "VirusTotal Professional Bundle",
+        "Enterprise Bundle": "VirusTotal Enterprise Bundle",
+        "Starter Bundle": "VirusTotal Starter Bundle",
+        "Duet": "VirusTotal Duet"
+      },
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://cloud.google.com/skus/other",
+      "officialSource": "https://cloud.google.com/skus/other",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Basic Bundle; Professional Bundle; Enterprise Bundle; Starter Bundle; Duet",
+      "verificationNote": "官方Other Eligible Services当前页面（2026-10-13更新）逐项列正式软件Bundle SKU；不是API次数资源SKU。这里只确认公开正式目录条目，未把Premium泛称另造档。Enterprise通用品牌用语不再与Enterprise Bundle重复建档。",
+      "remaining": "公开旧2024定价PDF另列Professional Plus/Unleashed，未取得它们现售/存量终止的统一新条款，列具体historical gap；当前SKU表列Starter/Enterprise Bundle不等于保证所有渠道都可新购。",
+      "evidence": [
+        {
+          "url": "https://cloud.google.com/skus/other",
+          "quote": "Basic Bundle; Professional Bundle; Enterprise Bundle; Starter Bundle; Duet",
+          "checkedAt": "2026-10-20",
+          "type": "official-full-page"
+        }
+      ],
+      "planSources": {
+        "Basic Bundle": "https://cloud.google.com/skus/other",
+        "Professional Bundle": "https://cloud.google.com/skus/other",
+        "Enterprise Bundle": "https://cloud.google.com/skus/other",
+        "Starter Bundle": "https://cloud.google.com/skus/other",
+        "Duet": "https://cloud.google.com/skus/other"
+      }
+    },
+    {
+      "productId": "google-virustotal-threat-hunter",
+      "platformIds": [
+        "gcloud"
+      ],
+      "name": "VirusTotal",
+      "plans": [
+        "Threat Hunter Pro"
+      ],
+      "fullPlanNames": {
+        "Threat Hunter Pro": "VirusTotal Threat Hunter Pro"
+      },
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://cloud.google.com/skus/other",
+      "officialSource": "https://cloud.google.com/skus/other",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "VirusTotal Threat Hunter Pro",
+      "verificationNote": "明确独立软件功能附加许可，不与API调用数/Retrohunt次数包混同；当前技术文档仍按ThreatHunterPRO许可提供不同回溯能力。",
+      "remaining": "",
+      "evidence": [
+        {
+          "url": "https://cloud.google.com/skus/other",
+          "quote": "VirusTotal Threat Hunter Pro",
+          "checkedAt": "2026-10-20",
+          "type": "official-full-page"
+        },
+        {
+          "url": "https://docs.virustotal.com/docs/virustotal-intelligence-introduction",
+          "quote": "Threat Hunter PRO",
+          "checkedAt": "2026-10-20",
+          "type": "official-full-page"
+        }
+      ],
+      "planSources": {
+        "Threat Hunter Pro": "https://cloud.google.com/skus/other"
+      }
+    },
+    {
+      "productId": "google-secops-standalone",
+      "platformIds": [
+        "gcloud"
+      ],
+      "name": "Google SecOps",
+      "plans": [
+        "SIEM",
+        "SOAR"
+      ],
+      "fullPlanNames": {
+        "SIEM": "Google SecOps SIEM",
+        "SOAR": "Google SecOps SOAR"
+      },
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://docs.cloud.google.com/chronicle/docs/onboard/understand-billing",
+      "officialSource": "https://docs.cloud.google.com/chronicle/docs/onboard/understand-billing",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Google SecOps SIEM or Google SecOps SOAR as standalone products",
+      "verificationNote": "当前正式账单文档明确独立SIEM/SOAR不是统一Standard/Enterprise/EnterprisePlus包，仍独立出账。保留这两实际软件许可，未猜Pro/Enterprise子档，也没把迁移到GCP基础设施误当许可证强制合并。",
+      "remaining": "",
+      "evidence": [
+        {
+          "url": "https://docs.cloud.google.com/chronicle/docs/onboard/understand-billing",
+          "quote": "Google SecOps SIEM or Google SecOps SOAR as standalone products",
+          "checkedAt": "2026-10-20",
+          "type": "official-full-page"
+        },
+        {
+          "url": "https://docs.cloud.google.com/chronicle/docs/soar/overview-and-introduction/soar-overview",
+          "quote": "standalone Google SecOps SOAR platform",
+          "checkedAt": "2026-10-20",
+          "type": "official-full-page"
+        }
+      ],
+      "planSources": {
+        "SIEM": "https://docs.cloud.google.com/chronicle/docs/onboard/understand-billing",
+        "SOAR": "https://docs.cloud.google.com/chronicle/docs/onboard/understand-billing"
+      }
+    },
+    {
+      "productId": "google-mandiant-asm",
+      "platformIds": [
+        "gcloud"
+      ],
+      "name": "Mandiant Attack Surface Management",
+      "plans": [
+        "Self-assessment"
+      ],
+      "fullPlanNames": {
+        "Self-assessment": "Mandiant Attack Surface Management Self-assessment"
+      },
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://cloud.google.com/security/products/attack-surface-management",
+      "officialSource": "https://cloud.google.com/security/products/attack-surface-management",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Self-assessment",
+      "verificationNote": "现行产品价目Subscription表唯一明确软件订阅名称；按组织规模报价但不是纯资源API。已在SCC/GTI某些整包包含，不消灭独立许可。",
+      "remaining": "",
+      "evidence": [
+        {
+          "url": "https://cloud.google.com/security/products/attack-surface-management",
+          "quote": "Self-assessment",
+          "checkedAt": "2026-10-20",
+          "type": "official-full-page"
+        }
+      ],
+      "planSources": {
+        "Self-assessment": "https://cloud.google.com/security/products/attack-surface-management"
+      }
+    },
+    {
+      "productId": "google-mandiant-security-validation",
+      "platformIds": [
+        "gcloud"
+      ],
+      "name": "Mandiant Security Validation",
+      "plans": [
+        "SaaS module"
+      ],
+      "fullPlanNames": {
+        "SaaS module": "Mandiant Security Validation SaaS module"
+      },
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://cloud.google.com/security/products/mandiant-security-validation",
+      "officialSource": "https://cloud.google.com/security/products/mandiant-security-validation",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "SaaS module",
+      "verificationNote": "现行完整价目Subscription表列SaaSmodule；director为基础平台、actors为数量，不将每个agent数量捏成会员等级。",
+      "remaining": "",
+      "evidence": [
+        {
+          "url": "https://cloud.google.com/security/products/mandiant-security-validation",
+          "quote": "SaaS module",
+          "checkedAt": "2026-10-20",
+          "type": "official-full-page"
+        }
+      ],
+      "planSources": {
+        "SaaS module": "https://cloud.google.com/security/products/mandiant-security-validation"
+      }
+    },
+    {
+      "productId": "google-unified-security",
+      "platformIds": [
+        "gcloud"
+      ],
+      "name": "Google",
+      "plans": [
+        "Unified Security"
+      ],
+      "fullPlanNames": {
+        "Unified Security": "Google Unified Security"
+      },
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://docs.cloud.google.com/chronicle/docs/secops/google-unified-security",
+      "officialSource": "https://docs.cloud.google.com/chronicle/docs/secops/google-unified-security",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Google Unified Security package",
+      "verificationNote": "官方当前导航和Onboarding文档明确可购完整软件整包，现有单产品客户可选择升级；不是自动强制统一。包含SCCEnterprise、SecOpsEnterprisePlus、GTIEnterprisePlus、ChromePremium以及MandiantThreatDefense。不把Included组件重新命名成另外同名会员。",
+      "remaining": "",
+      "evidence": [
+        {
+          "url": "https://docs.cloud.google.com/chronicle/docs/secops/google-unified-security",
+          "quote": "Google Unified Security package",
+          "checkedAt": "2026-10-20",
+          "type": "official-full-page"
+        }
+      ],
+      "planSources": {
+        "Unified Security": "https://docs.cloud.google.com/chronicle/docs/secops/google-unified-security"
+      }
+    },
+    {
+      "productId": "wps-office-international",
+      "platformIds": [
+        "lingxi"
+      ],
+      "name": "WPS Office 国际版",
+      "plans": [
+        "WPS Standard",
+        "WPS Pro+",
+        "WPS Pro+ Sharing Plan"
+      ],
+      "freePlans": [
+        "WPS Standard"
+      ],
+      "legacyPlans": [],
+      "sourceUrl": "https://www.wps.com/buy/",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "WPS Standard; WPS Pro+; WPS Pro+ Sharing Plan",
+      "verificationNote": "当前官方完整三卡，Sharing为付费共享计划，3天免费试用不是永久免费。当前AI权益包含在Pro+及Sharing中；不同地区/旧文案中的Pro+AI/Premium不据此重复建档。",
+      "remaining": "",
+      "planSources": {
+        "WPS Standard": "https://www.wps.com/buy/",
+        "WPS Pro+": "https://www.wps.com/buy/",
+        "WPS Pro+ Sharing Plan": "https://www.wps.com/buy/"
+      }
+    },
+    {
+      "productId": "meta-muse",
+      "platformIds": [
+        "meta"
+      ],
+      "name": "Meta Muse",
+      "plans": [
+        "Free",
+        "Power",
+        "Maximum"
+      ],
+      "fullPlanNames": {
+        "Free": "Meta Muse Free",
+        "Power": "Meta Muse Power",
+        "Maximum": "Meta Muse Maximum"
+      },
+      "freePlans": [
+        "Free"
+      ],
+      "legacyPlans": [],
+      "sourceUrl": "https://www.meta.com/help/subscriptions/1021145227643680/",
+      "officialSource": "https://www.meta.com/help/subscriptions/1021145227643680/",
+      "status": "verified",
+      "applyReady": true,
+      "checkedAt": "2026-10-20",
+      "quote": "Power plan; Maximum plan",
+      "verificationNote": "官方帮助明确免费有限量及两付费月订阅。个人AI代理与MuseCode不同产品；地区/账号有限测试，不能与MetaOne Premium或CodePower同名混合。",
+      "remaining": "",
+      "evidence": [
+        {
+          "url": "https://www.meta.com/help/subscriptions/1021145227643680/",
+          "quote": "Power plan; Maximum plan",
+          "checkedAt": "2026-10-20",
+          "type": "official-full-page"
+        }
+      ],
+      "planSources": {
+        "Free": "https://www.meta.com/help/subscriptions/1021145227643680/",
+        "Power": "https://www.meta.com/help/subscriptions/1021145227643680/",
+        "Maximum": "https://www.meta.com/help/subscriptions/1021145227643680/"
+      }
+    },
+    {
+      "productId": "meta-one",
+      "platformIds": [
+        "meta"
+      ],
+      "name": "Meta One",
+      "plans": [
+        "Core",
+        "Premium",
+        "Essential",
+        "Advanced",
+        "Expert",
+        "Max"
+      ],
+      "fullPlanNames": {
+        "Core": "Meta One Core",
+        "Premium": "Meta One Premium",
+        "Essential": "Meta One Essential",
+        "Advanced": "Meta One Advanced",
+        "Expert": "Meta One Expert",
+        "Max": "Meta One Max"
+      },
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://about.fb.com/news/2026/09/introducing-meta-one-subscription-service-more-features-ai/",
+      "officialSource": "https://about.fb.com/news/2026/09/introducing-meta-one-subscription-service-more-features-ai/",
+      "status": "verified",
+      "applyReady": true,
+      "checkedAt": "2026-10-20",
+      "quote": "Core; Premium; Essential; Advanced; Expert; Max",
+      "verificationNote": "Core/Premium为个人高AI用量组合；Essential/Advanced/Expert/Max为创作者和企业组合，含不同MetaBusinessAgent容量。实际权限不同而分档，地区/平台价格不重复。单应用Plus未证实额外AI许可不混入本范围。",
+      "remaining": "",
+      "evidence": [
+        {
+          "url": "https://about.fb.com/news/2026/09/introducing-meta-one-subscription-service-more-features-ai/",
+          "quote": "Core; Premium; Essential; Advanced; Expert; Max",
+          "checkedAt": "2026-10-20",
+          "type": "official-full-page"
+        }
+      ],
+      "planSources": {
+        "Core": "https://about.fb.com/news/2026/09/introducing-meta-one-subscription-service-more-features-ai/",
+        "Premium": "https://about.fb.com/news/2026/09/introducing-meta-one-subscription-service-more-features-ai/",
+        "Essential": "https://about.fb.com/news/2026/09/introducing-meta-one-subscription-service-more-features-ai/",
+        "Advanced": "https://about.fb.com/news/2026/09/introducing-meta-one-subscription-service-more-features-ai/",
+        "Expert": "https://about.fb.com/news/2026/09/introducing-meta-one-subscription-service-more-features-ai/",
+        "Max": "https://about.fb.com/news/2026/09/introducing-meta-one-subscription-service-more-features-ai/"
+      }
+    },
+    {
+      "productId": "nvidia-developer-program",
+      "platformIds": [
+        "nvidia"
+      ],
+      "name": "NVIDIA Developer Program",
+      "plans": [
+        "Free membership"
+      ],
+      "fullPlanNames": {
+        "Free membership": "NVIDIA Developer Program Free membership"
+      },
+      "freePlans": [
+        "Free membership"
+      ],
+      "legacyPlans": [],
+      "sourceUrl": "https://developer.nvidia.com/nim",
+      "officialSource": "https://developer.nvidia.com/nim",
+      "status": "verified",
+      "applyReady": true,
+      "checkedAt": "2026-10-20",
+      "quote": "NVIDIA Developer Program",
+      "verificationNote": "正式免费开发者会员提供NIM开发、测试准入；生产企业支持另用AIEnterprise。不是90天试用或API充值等级，也不按单个模型构造会员。",
+      "remaining": "",
+      "evidence": [
+        {
+          "url": "https://developer.nvidia.com/nim",
+          "quote": "NVIDIA Developer Program",
+          "checkedAt": "2026-10-20",
+          "type": "official-full-page"
+        }
+      ],
+      "planSources": {
+        "Free membership": "https://developer.nvidia.com/nim"
+      }
+    },
+    {
+      "productId": "microsoft-365-government",
+      "platformIds": [
+        "microsoft-ai"
+      ],
+      "name": "Microsoft 365 Government",
+      "plans": [
+        "G3",
+        "G5",
+        "G7 for GCC"
+      ],
+      "fullPlanNames": {
+        "G3": "Microsoft 365 Government G3",
+        "G5": "Microsoft 365 Government G5",
+        "G7 for GCC": "Microsoft 365 Government G7 for GCC"
+      },
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://www.microsoft.com/en-us/microsoft-365/enterprise/government-plans-and-pricing",
+      "officialSource": "https://www.microsoft.com/en-us/microsoft-365/enterprise/government-plans-and-pricing",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "G3; G5; G7 for GCC",
+      "verificationNote": "G3/G5仅基础AIchat及按cloud许可可加完整Copilot；G7forGCC当前公开计划明确内含工作数据Copilot、Agent365和代理治理。政府cloud权限/合规不同于普通E系列，正式独立软件许可。",
+      "remaining": "",
+      "evidence": [
+        {
+          "url": "https://www.microsoft.com/en-us/microsoft-365/enterprise/government-plans-and-pricing",
+          "quote": "G3; G5; G7 for GCC",
+          "checkedAt": "2026-10-20",
+          "type": "official-full-pricing-page"
+        }
+      ],
+      "planSources": {
+        "G3": "https://www.microsoft.com/en-us/microsoft-365/enterprise/government-plans-and-pricing",
+        "G5": "https://www.microsoft.com/en-us/microsoft-365/enterprise/government-plans-and-pricing",
+        "G7 for GCC": "https://www.microsoft.com/en-us/microsoft-365/enterprise/government-plans-and-pricing"
+      }
+    },
+    {
+      "productId": "microsoft-office-365-government",
+      "platformIds": [
+        "microsoft-ai"
+      ],
+      "name": "Office 365 Government",
+      "plans": [
+        "G1",
+        "G3",
+        "G5"
+      ],
+      "fullPlanNames": {
+        "G1": "Office 365 Government G1",
+        "G3": "Office 365 Government G3",
+        "G5": "Office 365 Government G5"
+      },
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://www.microsoft.com/en-us/microsoft-365/enterprise/government-plans-and-pricing",
+      "officialSource": "https://www.microsoft.com/en-us/microsoft-365/enterprise/government-plans-and-pricing",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "G1; G3; G5",
+      "verificationNote": "当前公开政府套件；与Microsoft365Government权限不同，完整生产力Copilot不能从基础G套件自动推断。 G1在当前Copilot政府基础资格表明确列有效许可；当前主营销页只展示G3/G5，不据此宣称G1已全部失效，也不保证新售渠道。",
+      "remaining": "",
+      "evidence": [
+        {
+          "url": "https://www.microsoft.com/en-us/microsoft-365/enterprise/government-plans-and-pricing",
+          "quote": "Office 365 Government G3; Office 365 Government G5",
+          "checkedAt": "2026-10-20",
+          "type": "official-full-pricing-page"
+        },
+        {
+          "url": "https://learn.microsoft.com/en-us/copilot/microsoft-365/microsoft-365-copilot-licensing",
+          "checkedAt": "2026-10-20",
+          "quote": "Office 365 G1",
+          "type": "official-current-eligible-license-table"
+        }
+      ],
+      "planSources": {
+        "G1": "https://learn.microsoft.com/en-us/copilot/microsoft-365/microsoft-365-copilot-licensing",
+        "G3": "https://www.microsoft.com/en-us/microsoft-365/enterprise/government-plans-and-pricing",
+        "G5": "https://www.microsoft.com/en-us/microsoft-365/enterprise/government-plans-and-pricing"
+      }
+    },
+    {
+      "productId": "volc-image-generation-suite",
+      "platformIds": [
+        "volc"
+      ],
+      "name": "火山引擎图像生成大模型套件",
+      "plans": [
+        "Apaas套餐",
+        "专业版",
+        "标准版",
+        "标准版-包月套餐",
+        "旗舰版",
+        "高级版"
+      ],
+      "sourceUrl": "https://docs.volcengine.com/docs/Largemodelofimagegeneration/Packagebillinginstructions?lang=zh",
+      "evidenceSummary": "正式套餐表同时授予模型体验/调试/服务上线功能及子账号、存储等软件功能；加量点包另列，不能混为充值。",
+      "status": "verified",
+      "applyReady": true,
+      "freePlans": [],
+      "legacyPlans": [],
+      "scope": "官方2026-10-15完整6行表；旗舰和高级联系销售但不是假想合同。",
+      "note": "标准版年付与官方命名标准版-包月套餐的子账号数不同，不能仅按支付周期去重。Apaas原拼写保留。",
+      "checkedAt": "2026-10-20",
+      "quote": "正式套餐表同时授予模型体验/调试/服务上线功能及子账号、存储等软件功能；加量点包另列，不能混为充值。",
+      "planSources": {
+        "Apaas套餐": "https://docs.volcengine.com/docs/Largemodelofimagegeneration/Packagebillinginstructions?lang=zh",
+        "专业版": "https://docs.volcengine.com/docs/Largemodelofimagegeneration/Packagebillinginstructions?lang=zh",
+        "标准版": "https://docs.volcengine.com/docs/Largemodelofimagegeneration/Packagebillinginstructions?lang=zh",
+        "标准版-包月套餐": "https://docs.volcengine.com/docs/Largemodelofimagegeneration/Packagebillinginstructions?lang=zh",
+        "旗舰版": "https://docs.volcengine.com/docs/Largemodelofimagegeneration/Packagebillinginstructions?lang=zh",
+        "高级版": "https://docs.volcengine.com/docs/Largemodelofimagegeneration/Packagebillinginstructions?lang=zh"
+      },
+      "newPlanIds": {
+        "Apaas套餐": "volc-image-generation-suite-apaas",
+        "专业版": "volc-image-generation-suite-professional",
+        "标准版": "volc-image-generation-suite-standard-annual",
+        "标准版-包月套餐": "volc-image-generation-suite-standard-monthly",
+        "旗舰版": "volc-image-generation-suite-flagship",
+        "高级版": "volc-image-generation-suite-advanced"
+      }
+    },
+    {
+      "productId": "volc-ai-content-assistant",
+      "platformIds": [
+        "volc"
+      ],
+      "name": "火山引擎AI内容助手",
+      "plans": [
+        "AI内容助手基础版",
+        "AI内容助手旗舰版"
+      ],
+      "sourceUrl": "https://docs.volcengine.com/docs/MarketInsights/billing-method?lang=zh",
+      "evidenceSummary": "官方年度软件套餐分两档，包含创作点数、存储与分发账号权限；另列内容创作增项包不收为会员。",
+      "status": "verified",
+      "applyReady": true,
+      "freePlans": [],
+      "legacyPlans": [],
+      "checkedDocumentDate": "2026-08-26",
+      "checkedAt": "2026-10-20",
+      "quote": "官方年度软件套餐分两档，包含创作点数、存储与分发账号权限；另列内容创作增项包不收为会员。",
+      "planSources": {
+        "AI内容助手基础版": "https://docs.volcengine.com/docs/MarketInsights/billing-method?lang=zh",
+        "AI内容助手旗舰版": "https://docs.volcengine.com/docs/MarketInsights/billing-method?lang=zh"
+      },
+      "newPlanIds": {
+        "AI内容助手基础版": "volc-ai-content-assistant-basic",
+        "AI内容助手旗舰版": "volc-ai-content-assistant-flagship"
+      }
+    },
+    {
+      "productId": "volc-content-insights-agent",
+      "platformIds": [
+        "volc"
+      ],
+      "name": "火山引擎内容洞察Agent",
+      "plans": [
+        "内容洞察 Agent -基础版",
+        "内容洞察 Agent -标准版"
+      ],
+      "sourceUrl": "https://docs.volcengine.com/docs/MarketInsights/Productbillinginstructions?lang=zh",
+      "evidenceSummary": "两档年度订阅，软件权益包含监测任务、研判内容与深度报告；不是模型按量API充值。",
+      "status": "verified",
+      "applyReady": true,
+      "freePlans": [],
+      "legacyPlans": [],
+      "checkedAt": "2026-10-20",
+      "quote": "两档年度订阅，软件权益包含监测任务、研判内容与深度报告；不是模型按量API充值。",
+      "planSources": {
+        "内容洞察 Agent -基础版": "https://docs.volcengine.com/docs/MarketInsights/Productbillinginstructions?lang=zh",
+        "内容洞察 Agent -标准版": "https://docs.volcengine.com/docs/MarketInsights/Productbillinginstructions?lang=zh"
+      },
+      "newPlanIds": {
+        "内容洞察 Agent -基础版": "volc-content-insights-agent-basic",
+        "内容洞察 Agent -标准版": "volc-content-insights-agent-standard"
+      }
+    },
+    {
+      "productId": "baidu-coding-plan-legacy",
+      "platformIds": [
+        "baidu"
+      ],
+      "name": "百度千帆Coding Plan（旧版）",
+      "plans": [
+        "Lite",
+        "Pro"
+      ],
+      "sourceUrl": "https://cloud.baidu.com/doc/Agreements/s/smm60qfx3",
+      "evidenceSummary": "官方活动协议明确旧Coding默认Lite并可升级Pro；当前Token Plan页面说明原限流体系被替换，但不证明旧订单自动改为Token方案。",
+      "status": "verified",
+      "applyReady": true,
+      "freePlans": [],
+      "legacyPlans": [
+        "Lite",
+        "Pro"
+      ],
+      "additionalSources": [
+        "https://qianfan.cloud.baidu.com/qianfandev/topic/687849?like=true",
+        "https://cloud.baidu.com/product/codingplan"
+      ],
+      "note": "3月13日百度千帆团队署名公告明确已订优惠客户原使用及续费权益不变；仅作为可追溯旧资格，不声称现可新购。",
+      "doNotAliasToCurrent": true,
+      "checkedAt": "2026-10-20",
+      "quote": "官方活动协议明确旧Coding默认Lite并可升级Pro；当前Token Plan页面说明原限流体系被替换，但不证明旧订单自动改为Token方案。",
+      "planSources": {
+        "Lite": "https://cloud.baidu.com/doc/Agreements/s/smm60qfx3",
+        "Pro": "https://cloud.baidu.com/doc/Agreements/s/smm60qfx3"
+      }
+    },
+    {
+      "productId": "baidu-keyue-one",
+      "platformIds": [
+        "baidu"
+      ],
+      "name": "百度客悦ONE智能客服",
+      "plans": [
+        "企业免费版",
+        "轻量版",
+        "标准版",
+        "旗舰版"
+      ],
+      "sourceUrl": "https://cloud.baidu.com/product-s/keyue_home/price",
+      "evidenceSummary": "当前完整价目页四档，机器人、并发和人工席位功能配额不同。免费档长期有效；付费档询价而非编造固定金额。",
+      "status": "verified",
+      "applyReady": true,
+      "freePlans": [
+        "企业免费版"
+      ],
+      "legacyPlans": [],
+      "note": "旧UNIT-LLM专业版是旧独立命名，不能不经等价证据直接alias到当前某档。",
+      "checkedAt": "2026-10-20",
+      "quote": "当前完整价目页四档，机器人、并发和人工席位功能配额不同。免费档长期有效；付费档询价而非编造固定金额。",
+      "planSources": {
+        "企业免费版": "https://cloud.baidu.com/product-s/keyue_home/price",
+        "轻量版": "https://cloud.baidu.com/product-s/keyue_home/price",
+        "标准版": "https://cloud.baidu.com/product-s/keyue_home/price",
+        "旗舰版": "https://cloud.baidu.com/product-s/keyue_home/price"
+      },
+      "newPlanIds": {
+        "企业免费版": "baidu-keyue-one-enterprise-free",
+        "轻量版": "baidu-keyue-one-lite",
+        "标准版": "baidu-keyue-one-standard",
+        "旗舰版": "baidu-keyue-one-flagship"
+      }
+    },
+    {
+      "productId": "baidu-creative-saas",
+      "platformIds": [
+        "baidu"
+      ],
+      "name": "百度智能创作平台SaaS",
+      "plans": [
+        "创作专业会员",
+        "创作旗舰会员"
+      ],
+      "sourceUrl": "https://cloud.baidu.com/doc/NLP/s/Kl18psnvc",
+      "evidenceSummary": "当前官方导航仍列SaaS独立购买指南及两档月会员，含存储和平台功能；同文中的增项包/API资源不列会员。",
+      "status": "verified",
+      "applyReady": true,
+      "freePlans": [],
+      "legacyPlans": [],
+      "additionalSources": [
+        "https://cloud.baidu.com/solution/ai-products.html"
+      ],
+      "note": "正式价目更新日较旧2024-05-26，但当前官方特惠页仍展示相同专业/旗舰权益；无明确停售证据，不因此删除。",
+      "checkedAt": "2026-10-20",
+      "quote": "当前官方导航仍列SaaS独立购买指南及两档月会员，含存储和平台功能；同文中的增项包/API资源不列会员。",
+      "planSources": {
+        "创作专业会员": "https://cloud.baidu.com/doc/NLP/s/Kl18psnvc",
+        "创作旗舰会员": "https://cloud.baidu.com/doc/NLP/s/Kl18psnvc"
+      },
+      "newPlanIds": {
+        "创作专业会员": "baidu-creative-saas-professional",
+        "创作旗舰会员": "baidu-creative-saas-flagship"
+      }
+    },
+    {
+      "productId": "baidu-miaoda-enterprise",
+      "platformIds": [
+        "baidu"
+      ],
+      "name": "百度秒哒（企业版）",
+      "plans": [
+        "企业标准版"
+      ],
+      "sourceUrl": "https://cloud.baidu.com/product/opc.html",
+      "evidenceSummary": "官方当前产品购买卡明确企业标准版月订阅，企业协作与安全管控是软件功能；不能由营销价推导全部个人档位。",
+      "status": "verified",
+      "applyReady": true,
+      "freePlans": [],
+      "legacyPlans": [],
+      "scope": "仅本页明确企业标准版，完整个人目录未闭合。",
+      "remaining": "个人会员当前完整价目在miaoda.cn静态/Reader未提供，旧更新日志只能证实历史免费/专业存在。",
+      "checkedAt": "2026-10-20",
+      "quote": "官方当前产品购买卡明确企业标准版月订阅，企业协作与安全管控是软件功能；不能由营销价推导全部个人档位。",
+      "planSources": {
+        "企业标准版": "https://cloud.baidu.com/product/opc.html"
+      },
+      "newPlanIds": {
+        "企业标准版": "baidu-miaoda-enterprise-standard"
+      }
+    },
+    {
+      "productId": "tencent-adp",
+      "platformIds": [
+        "tencent"
+      ],
+      "name": "腾讯云智能体开发平台ADP",
+      "plans": [
+        "体验版",
+        "进阶版",
+        "企业标准版",
+        "免费版（旧版）",
+        "Skill Plan版（旧版）",
+        "专业版（旧版）",
+        "企业版（旧版）"
+      ],
+      "sourceUrl": "https://cloud.tencent.com/document/product/1759/139268",
+      "evidenceSummary": "官方2026-10-10新订阅文档明确10月12起三档；旧四档停止新购但原有效期和已开启自动续费继续。平台成员/应用/知识库等功能授予与资源增购分离。",
+      "status": "verified",
+      "applyReady": true,
+      "freePlans": [
+        "体验版",
+        "免费版（旧版）"
+      ],
+      "legacyPlans": [
+        "免费版（旧版）",
+        "Skill Plan版（旧版）",
+        "专业版（旧版）",
+        "企业版（旧版）"
+      ],
+      "note": "体验版0元；进阶188元/月；企业标准4880元/月。后两可月或年购。增购PU、席位资源和独立算力不另造会员。",
+      "checkedDocumentDate": "2026-10-10",
+      "checkedAt": "2026-10-20",
+      "quote": "官方2026-10-10新订阅文档明确10月12起三档；旧四档停止新购但原有效期和已开启自动续费继续。平台成员/应用/知识库等功能授予与资源增购分离。",
+      "planSources": {
+        "体验版": "https://cloud.tencent.com/document/product/1759/139268",
+        "进阶版": "https://cloud.tencent.com/document/product/1759/139268",
+        "企业标准版": "https://cloud.tencent.com/document/product/1759/139268",
+        "免费版（旧版）": "https://cloud.tencent.com/document/product/1759/139268",
+        "Skill Plan版（旧版）": "https://cloud.tencent.com/document/product/1759/139268",
+        "专业版（旧版）": "https://cloud.tencent.com/document/product/1759/139268",
+        "企业版（旧版）": "https://cloud.tencent.com/document/product/1759/139268"
+      },
+      "newPlanIds": {
+        "体验版": "tencent-adp-experience",
+        "进阶版": "tencent-adp-advanced",
+        "企业标准版": "tencent-adp-enterprise-standard",
+        "免费版（旧版）": "tencent-adp-legacy-free",
+        "Skill Plan版（旧版）": "tencent-adp-legacy-skill-plan",
+        "专业版（旧版）": "tencent-adp-legacy-professional",
+        "企业版（旧版）": "tencent-adp-legacy-enterprise"
+      }
+    },
+    {
+      "productId": "aliyun-aidge-workbench-personal",
+      "platformIds": [
+        "aliyun"
+      ],
+      "name": "阿里云Aidge企业工作台（个人订阅）",
+      "plans": [
+        "免费版-Free",
+        "标准版-Standard",
+        "专业版-Professional",
+        "旗舰版-Ultimate"
+      ],
+      "sourceUrl": "https://help.aliyun.com/zh/aidge/quick-start",
+      "evidenceSummary": "正式快速开始中的订阅表四档；Agent工作台与并发权限随方案提供。免费档14天不是永久免费；企业坐席明确未来推出。",
+      "status": "verified",
+      "applyReady": true,
+      "freePlans": [
+        "免费版-Free"
+      ],
+      "legacyPlans": [],
+      "note": "个人订阅与未来企业席位分开，不能因产品叫企业工作台把个人套餐误记企业版。积分加油包排除。",
+      "checkedAt": "2026-10-20",
+      "quote": "正式快速开始中的订阅表四档；Agent工作台与并发权限随方案提供。免费档14天不是永久免费；企业坐席明确未来推出。",
+      "planSources": {
+        "免费版-Free": "https://help.aliyun.com/zh/aidge/quick-start",
+        "标准版-Standard": "https://help.aliyun.com/zh/aidge/quick-start",
+        "专业版-Professional": "https://help.aliyun.com/zh/aidge/quick-start",
+        "旗舰版-Ultimate": "https://help.aliyun.com/zh/aidge/quick-start"
+      }
+    },
+    {
+      "productId": "kiro-govcloud",
+      "platformIds": [
+        "kiro"
+      ],
+      "name": "Kiro（AWS GovCloud US）",
+      "plans": [
+        "Pro",
+        "Pro+",
+        "Pro Max",
+        "Power"
+      ],
+      "sourceUrl": "https://kiro.dev/pricing/",
+      "evidenceSummary": "官方价目FAQ明确GovCloud适用同四付费等级但不提供Free，约高20%；AWS官方说明认证与功能限制有实质差异。",
+      "status": "verified",
+      "applyReady": true,
+      "freePlans": [],
+      "legacyPlans": [],
+      "additionalSources": [
+        "https://docs.aws.amazon.com/govcloud-us/latest/UserGuide/govcloud-kiro.html"
+      ],
+      "note": "建议以独立区域产品或等价结构化区域限制承载，不能再造Enterprise这个不存在的独立等级。GovCloud无社交/BuilderID登录，插件/行内补全/autonomous/web search不可用。",
+      "dedupeReview": "若现catalog已用地区限制表达GovCloud，不重复产品；平台只读报告不执行新增。",
+      "checkedAt": "2026-10-20",
+      "quote": "官方价目FAQ明确GovCloud适用同四付费等级但不提供Free，约高20%；AWS官方说明认证与功能限制有实质差异。",
+      "planSources": {
+        "Pro": "https://kiro.dev/pricing/",
+        "Pro+": "https://kiro.dev/pricing/",
+        "Pro Max": "https://kiro.dev/pricing/",
+        "Power": "https://kiro.dev/pricing/"
+      }
+    },
+    {
+      "productId": "baidu-dumate-enterprise",
+      "platformIds": [
+        "baidu"
+      ],
+      "name": "百度办公搭子DuMate",
+      "plans": [
+        "企业坐席"
+      ],
+      "sourceUrl": "https://cloud.baidu.com/product/dumate.html",
+      "evidenceSummary": "官网正式价格区列企业软件席位，含团队技能/记忆/组织权限；企业增量包是附属用量不收会员。",
+      "status": "verified",
+      "applyReady": true,
+      "freePlans": [],
+      "legacyPlans": [],
+      "note": "189元/席位/月，1席起。列为邻接官方导航新增事实，不把共享资源使用权再拆多个会员。",
+      "checkedAt": "2026-10-20",
+      "quote": "官网正式价格区列企业软件席位，含团队技能/记忆/组织权限；企业增量包是附属用量不收会员。",
+      "planSources": {
+        "企业坐席": "https://cloud.baidu.com/product/dumate.html"
+      },
+      "newPlanIds": {
+        "企业坐席": "baidu-dumate-enterprise-seat"
+      }
+    },
+    {
+      "productId": "baidu-dumate-comate-joint-seat",
+      "platformIds": [
+        "baidu"
+      ],
+      "name": "百度DuMate与Comate",
+      "plans": [
+        "联合席位"
+      ],
+      "sourceUrl": "https://cloud.baidu.com/product/dumate.html",
+      "evidenceSummary": "同官网明确联合购买同时开通两软件，联合席位并不包含资源，需另外购买；不等同单独DuMate企业坐席。",
+      "status": "verified",
+      "applyReady": true,
+      "freePlans": [],
+      "legacyPlans": [],
+      "note": "138元/席位/月；席位软件许可与资源包分开，不把联购套餐拆成两项独立持有资格。",
+      "checkedAt": "2026-10-20",
+      "quote": "同官网明确联合购买同时开通两软件，联合席位并不包含资源，需另外购买；不等同单独DuMate企业坐席。",
+      "planSources": {
+        "联合席位": "https://cloud.baidu.com/product/dumate.html"
+      },
+      "newPlanIds": {
+        "联合席位": "baidu-dumate-comate-joint-seat-seat"
+      }
+    },
+    {
+      "productId": "aliyun-ims-enterprise",
+      "platformIds": [
+        "aliyun"
+      ],
+      "name": "阿里云智能媒体服务 IMS",
+      "plans": [
+        "入门版",
+        "标准版",
+        "旗舰版",
+        "功能体验月包"
+      ],
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://help.aliyun.com/zh/ims/billing-overview",
+      "additionalSources": [
+        "https://help.aliyun.com/zh/ims/support/billing-faq"
+      ],
+      "status": "verified",
+      "applyReady": true,
+      "scopeDecision": "Named software licences with functional access and fixed validity; savings-plan mechanism is billing, not license identity. The separate refill requires a base subscription and is excluded.",
+      "evidenceSummary": "正式功能矩阵按版本解锁AI生产/剪辑能力；云剪辑WebSDK集成授权及品牌替换仅标准/旗舰年付。结算又以节省计划实例承载并有容量抵扣。",
+      "note": "三档按月/年同一许可，不按计费周期造重复档；功能体验月包是独立功能许可。企业订阅容量用尽后仅有效期内可按量，期满须续费才能继续软件功能。订阅加油包仅续量，不独立列会员。",
+      "checkedAt": "2026-10-20",
+      "quote": "“智能媒资”和“智能媒体生产”：自 2024 年 8 月 20 日起升级为订阅计费制，须购买【企业订阅服务】获得功能使用权限。",
+      "remaining": "",
+      "newPlanIds": {
+        "入门版": "aliyun-ims-enterprise-entry",
+        "标准版": "aliyun-ims-enterprise-standard",
+        "旗舰版": "aliyun-ims-enterprise-flagship",
+        "功能体验月包": "aliyun-ims-enterprise-monthly-experience"
+      },
+      "planNotes": {
+        "功能体验月包": "20元；每账号每月限购一次；按实际调用消耗容量，用尽或到期停服；可到期续购；不含专属客服/视频剪辑高级特效包，智能检索另计。"
+      }
+    },
+    {
+      "productId": "seko-team",
+      "platformIds": [
+        "sensenova"
+      ],
+      "name": "Seko 团队版",
+      "plans": [
+        "团队标准会员",
+        "团队高级会员",
+        "团队至尊会员"
+      ],
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://seko.sensetime.com/pricing",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "团队标准会员; 团队高级会员; 团队至尊会员",
+      "newPlanIds": {
+        "团队标准会员": "seko-team-standard",
+        "团队高级会员": "seko-team-advanced",
+        "团队至尊会员": "seko-team-supreme"
+      },
+      "verificationNote": "真实浏览器点击团队版标签，完整三张年度付费销售卡；个人版企业会员与团队页同名定制企业入口不重复另建。席位可增购不按人数另造档。",
+      "remaining": ""
+    },
+    {
+      "productId": "vidu-cn",
+      "platformIds": [
+        "vidu"
+      ],
+      "name": "Vidu 国内版",
+      "plans": [
+        "免费版",
+        "标准版",
+        "专业版",
+        "旗舰版"
+      ],
+      "freePlans": [
+        "免费版"
+      ],
+      "legacyPlans": [],
+      "sourceUrl": "https://www.vidu.cn/pricing",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "免费版; 标准版; 专业版; 旗舰版",
+      "newPlanIds": {
+        "免费版": "vidu-cn-free",
+        "标准版": "vidu-cn-standard",
+        "专业版": "vidu-cn-professional",
+        "旗舰版": "vidu-cn-flagship"
+      },
+      "verificationNote": "真实浏览器定价卡加载后，分别切年付、月付、连续包月均为同四档；旗舰积分滑杆不改变套餐名。官方API是单独充值资源目录，不按企业并发量造会员。",
+      "remaining": ""
     }
   ]
 }

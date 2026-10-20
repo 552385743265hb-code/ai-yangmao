@@ -1,0 +1,39 @@
+{
+  "mode": "rebuild",
+  "businessWrites": 0,
+  "catalogRevision": 60,
+  "rebuildInputs": {
+    "ownerFields": {},
+    "previousFieldsSupplied": false,
+    "savedFieldsSupplied": false,
+    "approvedFieldsSupplied": false
+  },
+  "tokens": 40588,
+  "costCny": 0,
+  "model": "gemini",
+  "validationIssues": [],
+  "passed": true,
+  "errors": [],
+  "checkedAt": "2026-10-20",
+  "workflowRun": "https://github.com/accesaver-byte/ai-yangmao/actions/runs/39398522313",
+  "runtimeCommit": "77c5818f9545696e1e0dbd9403222c63f0199106",
+  "runtimeVersionId": "6e7b1cbc-7ce7-47f9-83e1-8a3bc5a62dbe",
+  "runtimeTrafficPercentage": 100,
+  "finalFields": {
+    "type": "free",
+    "modalities": [
+      "text"
+    ],
+    "audience": "all",
+    "requirements": [
+      "member:MiniMax Code（国际版 M Plan / Token Plan） 付费订阅",
+      "net"
+    ],
+    "claimEnd": "2026-10-25",
+    "sourceTz": "Asia/Shanghai"
+  },
+  "membershipPlanCount": 6,
+  "membershipEquivalent": true,
+  "businessBeforeAfterSHA256": "ab0f1ba7df0579cf295b6adf47539a36004b86421c1e9aa2d1fdf99c6caf1811",
+  "note": "Only original admin request and current catalogue supplied to inference; saved/approved answer compared after inference. Production job/offer rows unchanged. Existing deployed fix was not reapplied."
+}

@@ -1,0 +1,27 @@
+{
+  "checkedAt": "2026-10-20T09:59:22.322Z",
+  "source": "Built frontend over localhost with unchanged real production GET API responses; /api/platforms delayed 6000ms",
+  "catalogRevision": 62,
+  "loadingVisibleBeforeData": true,
+  "unavailableBeforeData": false,
+  "selectorsAfterData": 1,
+  "staleUnavailableAfterData": false,
+  "requiredClosingReopening": false,
+  "regressionTests": {
+    "routes": [
+      "#today",
+      "#agent"
+    ],
+    "savedMembershipAndOtherPreferenceDomPreserved": true,
+    "realFailureShown": true,
+    "closedSheetStaysClosed": true
+  },
+  "testSuite": {
+    "files": 141,
+    "tests": 1526,
+    "cli": 11,
+    "typecheckPassed": true,
+    "webBuildPassed": true
+  },
+  "consoleErrors": []
+}

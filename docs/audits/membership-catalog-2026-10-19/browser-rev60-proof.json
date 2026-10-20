@@ -1,0 +1,914 @@
+{
+  "checkedAt": "2026-10-20T09:37:53.950Z",
+  "url": "https://ai-yangmao.com/",
+  "catalogRevision": 60,
+  "runtimeCommit": "77c5818f9545696e1e0dbd9403222c63f0199106",
+  "vendors": [
+    {
+      "vendorId": "aws",
+      "name": "AWS",
+      "controls": 13,
+      "tested": 13,
+      "empty": null
+    },
+    {
+      "vendorId": "gcloud",
+      "name": "Google Cloud",
+      "controls": 42,
+      "tested": 42,
+      "empty": null
+    },
+    {
+      "vendorId": "azure",
+      "name": "Microsoft Azure",
+      "controls": 0,
+      "tested": 0,
+      "empty": "unverified"
+    },
+    {
+      "vendorId": "huaweicloud",
+      "name": "华为云",
+      "controls": 6,
+      "tested": 6,
+      "empty": null
+    },
+    {
+      "vendorId": "volc",
+      "name": "火山方舟",
+      "controls": 12,
+      "tested": 12,
+      "empty": null
+    },
+    {
+      "vendorId": "baidu",
+      "name": "百度千帆",
+      "controls": 20,
+      "tested": 20,
+      "empty": null
+    },
+    {
+      "vendorId": "tencent",
+      "name": "腾讯云",
+      "controls": 18,
+      "tested": 18,
+      "empty": null
+    },
+    {
+      "vendorId": "aliyun",
+      "name": "阿里云百炼",
+      "controls": 2,
+      "tested": 2,
+      "empty": null
+    },
+    {
+      "vendorId": "cerebras",
+      "name": "Cerebras",
+      "controls": 0,
+      "tested": 0,
+      "empty": "none"
+    },
+    {
+      "vendorId": "cloudflare",
+      "name": "Cloudflare Workers AI",
+      "controls": 3,
+      "tested": 3,
+      "empty": null
+    },
+    {
+      "vendorId": "deepinfra",
+      "name": "DeepInfra",
+      "controls": 0,
+      "tested": 0,
+      "empty": "none"
+    },
+    {
+      "vendorId": "fireworks",
+      "name": "Fireworks AI",
+      "controls": 0,
+      "tested": 0,
+      "empty": "none"
+    },
+    {
+      "vendorId": "gmi",
+      "name": "GMI Cloud",
+      "controls": 0,
+      "tested": 0,
+      "empty": "none"
+    },
+    {
+      "vendorId": "github",
+      "name": "GitHub Models",
+      "controls": 0,
+      "tested": 0,
+      "empty": "none"
+    },
+    {
+      "vendorId": "groq",
+      "name": "Groq",
+      "controls": 0,
+      "tested": 0,
+      "empty": "none"
+    },
+    {
+      "vendorId": "hoonify-ai",
+      "name": "Hoonify AI",
+      "controls": 0,
+      "tested": 0,
+      "empty": "unverified"
+    },
+    {
+      "vendorId": "hf",
+      "name": "Hugging Face",
+      "controls": 3,
+      "tested": 3,
+      "empty": null
+    },
+    {
+      "vendorId": "nvidia",
+      "name": "NVIDIA NIM",
+      "controls": 2,
+      "tested": 2,
+      "empty": null
+    },
+    {
+      "vendorId": "novita",
+      "name": "Novita AI",
+      "controls": 0,
+      "tested": 0,
+      "empty": "none"
+    },
+    {
+      "vendorId": "opencode",
+      "name": "OpenCode（Zen / Go）",
+      "controls": 2,
+      "tested": 2,
+      "empty": null
+    },
+    {
+      "vendorId": "openrouter",
+      "name": "OpenRouter",
+      "controls": 0,
+      "tested": 0,
+      "empty": "none"
+    },
+    {
+      "vendorId": "ppio",
+      "name": "PPIO 派欧云",
+      "controls": 3,
+      "tested": 3,
+      "empty": null
+    },
+    {
+      "vendorId": "replicas",
+      "name": "Replicas",
+      "controls": 3,
+      "tested": 3,
+      "empty": null
+    },
+    {
+      "vendorId": "sambanova",
+      "name": "SambaNova",
+      "controls": 1,
+      "tested": 1,
+      "empty": null
+    },
+    {
+      "vendorId": "together",
+      "name": "Together AI",
+      "controls": 0,
+      "tested": 0,
+      "empty": "none"
+    },
+    {
+      "vendorId": "ucloud",
+      "name": "UCloud 星图",
+      "controls": 0,
+      "tested": 0,
+      "empty": "unverified"
+    },
+    {
+      "vendorId": "vercel",
+      "name": "Vercel AI Gateway",
+      "controls": 7,
+      "tested": 7,
+      "empty": null
+    },
+    {
+      "vendorId": "qiniu",
+      "name": "七牛云 AI",
+      "controls": 3,
+      "tested": 3,
+      "empty": null
+    },
+    {
+      "vendorId": "tokenrhythm",
+      "name": "基元律动 TokenRhythm",
+      "controls": 0,
+      "tested": 0,
+      "empty": "unverified"
+    },
+    {
+      "vendorId": "moark",
+      "name": "模力方舟",
+      "controls": 0,
+      "tested": 0,
+      "empty": "unverified"
+    },
+    {
+      "vendorId": "siliconflow",
+      "name": "硅基流动",
+      "controls": 0,
+      "tested": 0,
+      "empty": "unverified"
+    },
+    {
+      "vendorId": "modelscope",
+      "name": "阿里 魔搭 ModelScope",
+      "controls": 0,
+      "tested": 0,
+      "empty": "unverified"
+    },
+    {
+      "vendorId": "anthropic",
+      "name": "Anthropic",
+      "controls": 10,
+      "tested": 10,
+      "empty": null
+    },
+    {
+      "vendorId": "cohere",
+      "name": "Cohere",
+      "controls": 2,
+      "tested": 2,
+      "empty": null
+    },
+    {
+      "vendorId": "deepseek",
+      "name": "DeepSeek",
+      "controls": 0,
+      "tested": 0,
+      "empty": "none"
+    },
+    {
+      "vendorId": "google",
+      "name": "Google AI（Gemini / AI Studio）",
+      "controls": 43,
+      "tested": 43,
+      "empty": null
+    },
+    {
+      "vendorId": "hume",
+      "name": "Hume AI",
+      "controls": 7,
+      "tested": 7,
+      "empty": null
+    },
+    {
+      "vendorId": "inception",
+      "name": "Inception",
+      "controls": 0,
+      "tested": 0,
+      "empty": "unverified"
+    },
+    {
+      "vendorId": "moonshot",
+      "name": "Kimi 开放平台（月之暗面）",
+      "controls": 19,
+      "tested": 19,
+      "empty": null
+    },
+    {
+      "vendorId": "meta",
+      "name": "Meta Llama",
+      "controls": 3,
+      "tested": 3,
+      "empty": null
+    },
+    {
+      "vendorId": "microsoft-ai",
+      "name": "Microsoft AI（Copilot）",
+      "controls": 105,
+      "tested": 105,
+      "empty": null
+    },
+    {
+      "vendorId": "minimax",
+      "name": "MiniMax",
+      "controls": 18,
+      "tested": 18,
+      "empty": null
+    },
+    {
+      "vendorId": "mistral",
+      "name": "Mistral AI",
+      "controls": 4,
+      "tested": 4,
+      "empty": null
+    },
+    {
+      "vendorId": "nex-agi",
+      "name": "Nex AGI",
+      "controls": 0,
+      "tested": 0,
+      "empty": "none"
+    },
+    {
+      "vendorId": "odyssey",
+      "name": "Odyssey",
+      "controls": 0,
+      "tested": 0,
+      "empty": "unverified"
+    },
+    {
+      "vendorId": "openai",
+      "name": "OpenAI",
+      "controls": 11,
+      "tested": 11,
+      "empty": null
+    },
+    {
+      "vendorId": "sakana",
+      "name": "Sakana AI（Fugu）",
+      "controls": 6,
+      "tested": 6,
+      "empty": null
+    },
+    {
+      "vendorId": "xai",
+      "name": "xAI",
+      "controls": 24,
+      "tested": 24,
+      "empty": null
+    },
+    {
+      "vendorId": "unisound",
+      "name": "云知声 Unisound（Token Hub）",
+      "controls": 7,
+      "tested": 7,
+      "empty": null
+    },
+    {
+      "vendorId": "sensenova",
+      "name": "商汤 SenseNova（日日新）",
+      "controls": 9,
+      "tested": 9,
+      "empty": null
+    },
+    {
+      "vendorId": "doubao",
+      "name": "字节跳动 豆包 Doubao",
+      "controls": 3,
+      "tested": 3,
+      "empty": null
+    },
+    {
+      "vendorId": "xiaomi-mimo",
+      "name": "小米 MiMo",
+      "controls": 7,
+      "tested": 7,
+      "empty": null
+    },
+    {
+      "vendorId": "zhipu",
+      "name": "智谱 Z.ai",
+      "controls": 28,
+      "tested": 28,
+      "empty": null
+    },
+    {
+      "vendorId": "baichuan",
+      "name": "百川智能",
+      "controls": 0,
+      "tested": 0,
+      "empty": "unverified"
+    },
+    {
+      "vendorId": "meituan",
+      "name": "美团 LongCat",
+      "controls": 0,
+      "tested": 0,
+      "empty": "unverified"
+    },
+    {
+      "vendorId": "tencent-hy",
+      "name": "腾讯混元",
+      "controls": 0,
+      "tested": 0,
+      "empty": "unverified"
+    },
+    {
+      "vendorId": "stepfun",
+      "name": "阶跃星辰",
+      "controls": 8,
+      "tested": 8,
+      "empty": null
+    },
+    {
+      "vendorId": "qwen",
+      "name": "阿里 通义千问 Qwen",
+      "controls": 14,
+      "tested": 14,
+      "empty": null
+    },
+    {
+      "vendorId": "ami-labs",
+      "name": "AMI Labs（Yann LeCun）",
+      "controls": 0,
+      "tested": 0,
+      "empty": "none"
+    },
+    {
+      "vendorId": "bolt",
+      "name": "Bolt",
+      "controls": 4,
+      "tested": 4,
+      "empty": null
+    },
+    {
+      "vendorId": "nous",
+      "name": "Nous Research",
+      "controls": 5,
+      "tested": 5,
+      "empty": null
+    },
+    {
+      "vendorId": "periodic",
+      "name": "Periodic Labs",
+      "controls": 0,
+      "tested": 0,
+      "empty": "none"
+    },
+    {
+      "vendorId": "physical-intelligence",
+      "name": "Physical Intelligence",
+      "controls": 0,
+      "tested": 0,
+      "empty": "none"
+    },
+    {
+      "vendorId": "prime-intellect",
+      "name": "Prime Intellect",
+      "controls": 0,
+      "tested": 0,
+      "empty": "none"
+    },
+    {
+      "vendorId": "reflection",
+      "name": "Reflection AI",
+      "controls": 0,
+      "tested": 0,
+      "empty": "unverified"
+    },
+    {
+      "vendorId": "ssi",
+      "name": "Safe Superintelligence（SSI，Ilya Sutskever）",
+      "controls": 0,
+      "tested": 0,
+      "empty": "none"
+    },
+    {
+      "vendorId": "thinking-machines",
+      "name": "Thinking Machines Lab（Mira Murati）",
+      "controls": 0,
+      "tested": 0,
+      "empty": "none"
+    },
+    {
+      "vendorId": "typesafe",
+      "name": "TypeSafe · Jev",
+      "controls": 0,
+      "tested": 0,
+      "empty": "none"
+    },
+    {
+      "vendorId": "worldlabs",
+      "name": "World Labs（李飞飞）",
+      "controls": 5,
+      "tested": 5,
+      "empty": null
+    },
+    {
+      "vendorId": "adobe-firefly",
+      "name": "Adobe Firefly",
+      "controls": 137,
+      "tested": 137,
+      "empty": null
+    },
+    {
+      "vendorId": "browser-use",
+      "name": "Browser Use",
+      "controls": 0,
+      "tested": 0,
+      "empty": "unverified"
+    },
+    {
+      "vendorId": "cline",
+      "name": "Cline",
+      "controls": 2,
+      "tested": 2,
+      "empty": null
+    },
+    {
+      "vendorId": "cursor",
+      "name": "Cursor（Anysphere）",
+      "controls": 18,
+      "tested": 18,
+      "empty": null
+    },
+    {
+      "vendorId": "devin",
+      "name": "Devin（Cognition）",
+      "controls": 9,
+      "tested": 9,
+      "empty": null
+    },
+    {
+      "vendorId": "dreamina",
+      "name": "Dreamina（CapCut 国际版即梦）",
+      "controls": 4,
+      "tested": 4,
+      "empty": null
+    },
+    {
+      "vendorId": "elevenlabs",
+      "name": "ElevenLabs",
+      "controls": 7,
+      "tested": 7,
+      "empty": null
+    },
+    {
+      "vendorId": "free-ai",
+      "name": "Free.ai",
+      "controls": 10,
+      "tested": 10,
+      "empty": null
+    },
+    {
+      "vendorId": "gamma",
+      "name": "Gamma",
+      "controls": 6,
+      "tested": 6,
+      "empty": null
+    },
+    {
+      "vendorId": "genspark",
+      "name": "Genspark",
+      "controls": 5,
+      "tested": 5,
+      "empty": null
+    },
+    {
+      "vendorId": "copilot",
+      "name": "GitHub Copilot",
+      "controls": 9,
+      "tested": 9,
+      "empty": null
+    },
+    {
+      "vendorId": "higgsfield",
+      "name": "Higgsfield",
+      "controls": 10,
+      "tested": 10,
+      "empty": null
+    },
+    {
+      "vendorId": "ideogram",
+      "name": "Ideogram",
+      "controls": 6,
+      "tested": 6,
+      "empty": null
+    },
+    {
+      "vendorId": "instinct",
+      "name": "Instinct（Spear Street Technology）",
+      "controls": 0,
+      "tested": 0,
+      "empty": "unverified"
+    },
+    {
+      "vendorId": "kilo",
+      "name": "Kilo Code",
+      "controls": 6,
+      "tested": 6,
+      "empty": null
+    },
+    {
+      "vendorId": "kiro",
+      "name": "Kiro",
+      "controls": 5,
+      "tested": 5,
+      "empty": null
+    },
+    {
+      "vendorId": "krea",
+      "name": "Krea",
+      "controls": 6,
+      "tested": 6,
+      "empty": null
+    },
+    {
+      "vendorId": "leonardo",
+      "name": "Leonardo.Ai",
+      "controls": 11,
+      "tested": 11,
+      "empty": null
+    },
+    {
+      "vendorId": "liblibtv",
+      "name": "LiblibAI（含 LibTV）",
+      "controls": 6,
+      "tested": 6,
+      "empty": null
+    },
+    {
+      "vendorId": "lovable",
+      "name": "Lovable",
+      "controls": 4,
+      "tested": 4,
+      "empty": null
+    },
+    {
+      "vendorId": "lovart",
+      "name": "Lovart",
+      "controls": 6,
+      "tested": 6,
+      "empty": null
+    },
+    {
+      "vendorId": "luma",
+      "name": "Luma AI",
+      "controls": 5,
+      "tested": 5,
+      "empty": null
+    },
+    {
+      "vendorId": "magnific",
+      "name": "Magnific",
+      "controls": 6,
+      "tested": 6,
+      "empty": null
+    },
+    {
+      "vendorId": "manus",
+      "name": "Manus",
+      "controls": 4,
+      "tested": 4,
+      "empty": null
+    },
+    {
+      "vendorId": "meshy",
+      "name": "Meshy",
+      "controls": 6,
+      "tested": 6,
+      "empty": null
+    },
+    {
+      "vendorId": "midjourney",
+      "name": "Midjourney",
+      "controls": 4,
+      "tested": 4,
+      "empty": null
+    },
+    {
+      "vendorId": "hailuo",
+      "name": "MiniMax 海螺 AI",
+      "controls": 6,
+      "tested": 6,
+      "empty": null
+    },
+    {
+      "vendorId": "niteshift",
+      "name": "Niteshift",
+      "controls": 3,
+      "tested": 3,
+      "empty": null
+    },
+    {
+      "vendorId": "oiioii",
+      "name": "OiiOii（AI 动画创作）",
+      "controls": 9,
+      "tested": 9,
+      "empty": null
+    },
+    {
+      "vendorId": "ollama",
+      "name": "Ollama",
+      "controls": 5,
+      "tested": 5,
+      "empty": null
+    },
+    {
+      "vendorId": "otter",
+      "name": "Otter.ai",
+      "controls": 4,
+      "tested": 4,
+      "empty": null
+    },
+    {
+      "vendorId": "perplexity",
+      "name": "Perplexity",
+      "controls": 6,
+      "tested": 6,
+      "empty": null
+    },
+    {
+      "vendorId": "pika",
+      "name": "Pika",
+      "controls": 7,
+      "tested": 7,
+      "empty": null
+    },
+    {
+      "vendorId": "pixverse",
+      "name": "PixVerse",
+      "controls": 6,
+      "tested": 6,
+      "empty": null
+    },
+    {
+      "vendorId": "poe",
+      "name": "Poe",
+      "controls": 5,
+      "tested": 5,
+      "empty": null
+    },
+    {
+      "vendorId": "pollo",
+      "name": "Pollo AI",
+      "controls": 4,
+      "tested": 4,
+      "empty": null
+    },
+    {
+      "vendorId": "replit",
+      "name": "Replit",
+      "controls": 4,
+      "tested": 4,
+      "empty": null
+    },
+    {
+      "vendorId": "runway",
+      "name": "Runway",
+      "controls": 7,
+      "tested": 7,
+      "empty": null
+    },
+    {
+      "vendorId": "seaart",
+      "name": "SeaArt",
+      "controls": 5,
+      "tested": 5,
+      "empty": null
+    },
+    {
+      "vendorId": "suno",
+      "name": "Suno",
+      "controls": 3,
+      "tested": 3,
+      "empty": null
+    },
+    {
+      "vendorId": "tapnow",
+      "name": "TapNow",
+      "controls": 4,
+      "tested": 4,
+      "empty": null
+    },
+    {
+      "vendorId": "trae",
+      "name": "Trae",
+      "controls": 17,
+      "tested": 17,
+      "empty": null
+    },
+    {
+      "vendorId": "tripo",
+      "name": "Tripo",
+      "controls": 4,
+      "tested": 4,
+      "empty": null
+    },
+    {
+      "vendorId": "vidu",
+      "name": "Vidu",
+      "controls": 4,
+      "tested": 4,
+      "empty": null
+    },
+    {
+      "vendorId": "lingxi",
+      "name": "WPS 灵犀",
+      "controls": 16,
+      "tested": 16,
+      "empty": null
+    },
+    {
+      "vendorId": "windsurf",
+      "name": "Windsurf",
+      "controls": 9,
+      "tested": 9,
+      "empty": null
+    },
+    {
+      "vendorId": "workbuddy",
+      "name": "WorkBuddy",
+      "controls": 7,
+      "tested": 7,
+      "empty": null
+    },
+    {
+      "vendorId": "n8n",
+      "name": "n8n",
+      "controls": 5,
+      "tested": 5,
+      "empty": null
+    },
+    {
+      "vendorId": "jimeng",
+      "name": "即梦",
+      "controls": 4,
+      "tested": 4,
+      "empty": null
+    },
+    {
+      "vendorId": "kling",
+      "name": "可灵 AI",
+      "controls": 11,
+      "tested": 11,
+      "empty": null
+    },
+    {
+      "vendorId": "feishu",
+      "name": "字节跳动 飞书 Lark",
+      "controls": 23,
+      "tested": 23,
+      "empty": null
+    },
+    {
+      "vendorId": "coze",
+      "name": "扣子",
+      "controls": 16,
+      "tested": 16,
+      "empty": null
+    },
+    {
+      "vendorId": "doubao-work",
+      "name": "豆包工作",
+      "controls": 5,
+      "tested": 5,
+      "empty": null
+    },
+    {
+      "vendorId": "qoder",
+      "name": "阿里 Qoder",
+      "controls": 19,
+      "tested": 19,
+      "empty": null
+    },
+    {
+      "vendorId": "qwenwork",
+      "name": "阿里 千问办公",
+      "controls": 5,
+      "tested": 5,
+      "empty": null
+    },
+    {
+      "vendorId": "command-code",
+      "name": "Command Code",
+      "controls": 8,
+      "tested": 8,
+      "empty": null
+    }
+  ],
+  "displayedControlsTested": 1005,
+  "uniquePlansTested": 964,
+  "allVerifiedPlanIdsCovered": true,
+  "missingPlanIds": [],
+  "unexpectedPlanIds": [],
+  "disabled": [],
+  "sharedPlan": {
+    "planId": "x-subscription-plus",
+    "vendors": [
+      "xai",
+      "cursor"
+    ],
+    "checkedInBoth": true,
+    "chips": 1
+  },
+  "persistence": {
+    "before": [
+      "github-copilot-pro",
+      "qoder-global-pro"
+    ],
+    "afterReload": [
+      "github-copilot-pro",
+      "qoder-global-pro"
+    ],
+    "afterRemovingOne": [
+      "qoder-global-pro"
+    ]
+  },
+  "initialOwnedRestored": true,
+  "otherPreferencesUnchanged": true,
+  "consoleErrors": []
+}
