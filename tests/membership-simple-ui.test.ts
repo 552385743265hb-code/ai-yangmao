@@ -126,3 +126,57 @@ it('serializes an empty fast-track choice for the server to defer to the model',
  const {ctx}=fixture();(ctx as any).editor={touched:true,selectionOnly:true,selectedPlanIds:[],catalogAvailable:true,catalogRevision:1,requirement:{...requirement([]),status:'not_required'}};
  expect(vm.runInContext(`membershipEditFields({},editor,[],false,'https://official.example/perk').membershipRequirement.status`,ctx)).toBe('not_required');
 });
+
+it('saves the 39-product Microsoft vendor selection and matches only selected memberships',()=>{
+ const {ctx}=fixture();
+ // Concrete product/plan identities from the revision-59 catalog (105 verified plans).
+ const microsoftPlans:Record<string,string[]>={
+  "microsoft-copilot-personal":["microsoft-copilot-personal-personal","microsoft-copilot-personal-family","microsoft-copilot-personal-premium","microsoft-copilot-personal-pro"],
+  "microsoft-copilot-free":["microsoft-copilot-free-free"],
+  "microsoft-copilot-business":["microsoft-copilot-business-copilot-business-add-on","microsoft-copilot-business-business-standard-with-copilot","microsoft-copilot-business-business-premium-with-copilot","microsoft-copilot-business-business-standard-with-copilot-no-teams","microsoft-copilot-business-business-premium-with-copilot-no-teams"],
+  "microsoft-copilot-enterprise":["microsoft-copilot-enterprise-add-on"],
+  "microsoft-365-enterprise":["microsoft-365-enterprise-e7"],
+  "microsoft-teams-premium":["microsoft-teams-premium-premium"],
+  "microsoft-power-apps":["microsoft-power-apps-developer-plan","microsoft-power-apps-premium"],
+  "microsoft-power-automate":["microsoft-power-automate-premium","microsoft-power-automate-process","microsoft-power-automate-hosted-process"],
+  "microsoft-copilot-studio":["microsoft-copilot-studio-copilot-credit-pack-subscription"],
+  "microsoft-dynamics-sales":["microsoft-dynamics-sales-sales-professional","microsoft-dynamics-sales-sales-enterprise-edition","microsoft-dynamics-sales-sales-premium"],
+  "microsoft-relationship-sales":["microsoft-relationship-sales-relationship-sales"],
+  "microsoft-dynamics-customer-service":["microsoft-dynamics-customer-service-customer-service-professional","microsoft-dynamics-customer-service-customer-service-enterprise","microsoft-dynamics-customer-service-customer-service-premium"],
+  "microsoft-dynamics-contact-center":["microsoft-dynamics-contact-center-contact-center","microsoft-dynamics-contact-center-contact-center-digital","microsoft-dynamics-contact-center-contact-center-voice"],
+  "microsoft-dynamics-field-service":["microsoft-dynamics-field-service-field-service","microsoft-dynamics-field-service-field-service-contractor"],
+  "microsoft-dynamics-finance":["microsoft-dynamics-finance-finance","microsoft-dynamics-finance-finance-premium"],
+  "microsoft-dynamics-supply-chain-management":["microsoft-dynamics-supply-chain-management-supply-chain-management","microsoft-dynamics-supply-chain-management-supply-chain-management-premium"],
+  "microsoft-dynamics-intelligent-order-management":["microsoft-dynamics-intelligent-order-management-intelligent-order-management"],
+  "microsoft-dynamics-customer-insights":["microsoft-dynamics-customer-insights-customer-insights","microsoft-dynamics-customer-insights-customer-insights-attach"],
+  "microsoft-dynamics-customer-insights-legacy":["microsoft-dynamics-customer-insights-legacy-marketing-standalone","microsoft-dynamics-customer-insights-legacy-customer-insights-standalone"],
+  "microsoft-dynamics-business-central":["microsoft-dynamics-business-central-business-central-essentials","microsoft-dynamics-business-central-business-central-premium","microsoft-dynamics-business-central-business-central-team-members"],
+  "microsoft-dynamics-project-operations":["microsoft-dynamics-project-operations-project-operations"],
+  "microsoft-dynamics-commerce":["microsoft-dynamics-commerce-commerce","microsoft-dynamics-commerce-commerce-e-commerce-add-on","microsoft-dynamics-commerce-commerce-headless-add-on"],
+  "microsoft-dynamics-human-resources":["microsoft-dynamics-human-resources-human-resources","microsoft-dynamics-human-resources-human-resources-self-service"],
+  "microsoft-dynamics-additional-software-licenses":["microsoft-dynamics-additional-software-licenses-sales-device","microsoft-dynamics-additional-software-licenses-sales-insights","microsoft-dynamics-additional-software-licenses-customer-service-device","microsoft-dynamics-additional-software-licenses-contact-center-digital-add-on","microsoft-dynamics-additional-software-licenses-contact-center-voice-add-on","microsoft-dynamics-additional-software-licenses-contact-center-add-on-digital-plus-voice","microsoft-dynamics-additional-software-licenses-field-service-device","microsoft-dynamics-additional-software-licenses-field-service-resource-scheduling-optimization","microsoft-dynamics-additional-software-licenses-team-members","microsoft-dynamics-additional-software-licenses-operations-activity","microsoft-dynamics-additional-software-licenses-operations-device"],
+  "microsoft-power-bi":["microsoft-power-bi-free-account","microsoft-power-bi-pro","microsoft-power-bi-premium-per-user"],
+  "microsoft-clipchamp-personal":["microsoft-clipchamp-personal-free","microsoft-clipchamp-personal-premium-standalone-existing-subscribers"],
+  "microsoft-clipchamp-work":["microsoft-clipchamp-work-standard","microsoft-clipchamp-work-premium"],
+  "microsoft-teams-rooms":["microsoft-teams-rooms-basic","microsoft-teams-rooms-pro"],
+  "microsoft-365-education":["microsoft-365-education-a1","microsoft-365-education-a3","microsoft-365-education-a5"],
+  "microsoft-office-365-education":["microsoft-office-365-education-a1","microsoft-office-365-education-a3","microsoft-office-365-education-a5"],
+  "microsoft-power-apps-per-app":["microsoft-power-apps-per-app-per-app"],
+  "microsoft-power-automate-per-flow-legacy":["microsoft-power-automate-per-flow-legacy-per-flow"],
+  "microsoft-power-automate-user-legacy":["microsoft-power-automate-user-legacy-per-user-plan","microsoft-power-automate-user-legacy-p1","microsoft-power-automate-user-legacy-p2"],
+  "microsoft-365-business-base":["microsoft-365-business-base-business-basic","microsoft-365-business-base-business-standard","microsoft-365-business-base-business-premium","microsoft-365-business-base-business-basic-no-teams","microsoft-365-business-base-business-standard-no-teams","microsoft-365-business-base-business-premium-no-teams","microsoft-365-business-base-apps-for-business"],
+  "microsoft-365-enterprise-base":["microsoft-365-enterprise-base-e3","microsoft-365-enterprise-base-e5","microsoft-365-enterprise-base-e3-no-teams","microsoft-365-enterprise-base-e5-no-teams","microsoft-365-enterprise-base-e7-no-teams"],
+  "microsoft-365-frontline-base":["microsoft-365-frontline-base-f1","microsoft-365-frontline-base-f3","microsoft-365-frontline-base-f1-no-teams","microsoft-365-frontline-base-f3-no-teams"],
+  "microsoft-office-365-enterprise-base":["microsoft-office-365-enterprise-base-e1","microsoft-office-365-enterprise-base-e3","microsoft-office-365-enterprise-base-e5","microsoft-office-365-enterprise-base-e1-no-teams","microsoft-office-365-enterprise-base-e3-no-teams","microsoft-office-365-enterprise-base-e5-no-teams","microsoft-office-365-enterprise-base-f3"],
+  "microsoft-365-apps-enterprise-base":["microsoft-365-apps-enterprise-base-apps-for-enterprise"],
+  "microsoft-agent-365":["microsoft-agent-365-agent-365"]
+ };
+ const products=Object.keys(microsoftPlans).map(id=>({...entry(id,id),platformIds:['microsoft-ai']}));
+ const plans=Object.entries(microsoftPlans).flatMap(([productId,ids])=>ids.map(id=>({...entry(id,id),productId,billing:'paid'})));
+ (ctx as any).largeCatalog={...catalog,revision:59,products:[...catalog.products,...products],plans:[...catalog.plans,...plans]};
+ vm.runInContext(`MEMBERSHIP_CATALOG=largeCatalog;const ids=MEMBERSHIP_CATALOG.plans.filter(p=>p.productId.startsWith('microsoft-')).map(p=>p.id);const r=membershipSelectionRequirement(ids,{schemaVersion:'membership-v1',status:'not_required',catalogRevision:59,evidenceUrls:[],anyOf:[]},59);editor={touched:true,requirement:r,catalogAvailable:true,catalogRevision:59}`,ctx);
+ const saved=vm.runInContext(`membershipEditFields({},editor,[],false,'https://www.microsoft.com/en-us/copilot/pricing').membershipRequirement`,ctx);
+ expect(saved.anyOf).toHaveLength(39);expect(saved.anyOf.flatMap((g:any)=>g.allOf).flatMap((c:any)=>c.planIds)).toHaveLength(105);
+ expect(core.matchMembership(saved,[{planId:plans[0].id}],(ctx as any).largeCatalog)).toBe('yes');
+ expect(core.matchMembership(saved,[{planId:'b-pro'}],(ctx as any).largeCatalog)).toBe('no');
+});

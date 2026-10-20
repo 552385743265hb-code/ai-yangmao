@@ -48,7 +48,7 @@ const clauseSchema = z.object({
 });
 const membershipBaseSchema = z.object({
   schemaVersion: z.literal('membership-v1'), status: z.enum(['not_required', 'needs_review', 'confirmed']),
-  catalogRevision: z.number().int().nonnegative(), anyOf: z.array(z.object({ allOf: z.array(clauseSchema).min(1).max(20) }).strict()).max(20),
+  catalogRevision: z.number().int().nonnegative(), anyOf: z.array(z.object({ allOf: z.array(clauseSchema).min(1).max(20) }).strict()).max(500),
   evidenceUrls: z.array(url).max(50), legacyText: z.array(z.string().max(4000)).max(100).optional(),
 }).strict();
 export const membershipFactsSchema = membershipBaseSchema.omit({ catalogRevision: true, evidenceUrls: true, legacyText: true }).superRefine((v, ctx) => {

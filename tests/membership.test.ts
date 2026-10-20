@@ -86,3 +86,9 @@ it('treats cyclic or broken catalog redirects as unknown rather than accepting t
  expect(matchMembership(req(),[{planId:'ap'}],c)).toBe('unknown');
  c.planReplacements={ap:['missing']};expect(matchMembership(req(),[{planId:'ap'}],c)).toBe('unknown');
 });
+it('keeps large membership selections bounded without expanding joint-rule complexity',()=>{
+ const original=req(),group=original.anyOf[0];
+ expect(membershipSchema.safeParse({...original,anyOf:Array.from({length:500},()=>group)}).success).toBe(true);
+ expect(membershipSchema.safeParse({...original,anyOf:Array.from({length:501},()=>group)}).success).toBe(false);
+ expect(membershipSchema.safeParse({...original,anyOf:[{allOf:Array.from({length:21},()=>group.allOf[0])}]}).success).toBe(false);
+});
