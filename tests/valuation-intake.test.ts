@@ -197,3 +197,19 @@ it('Meshy free-tier monthly credits are priced from the verified Pro plan rate (
  // 100 credits × ($20 / 1,000 credits) = $2.
  expect(result.valuation?.usdEstimate).toBeCloseTo(2,4);
 });
+
+it('“领取”/“送” count as grant wording for credit entitlements (2026-10-19 Qoder 每日领取 100 积分)',async()=>{
+ const text='Qoder 国际版用户每日领取 100 积分，可用于 Agent 模式。',sourceUrl='https://qoder.com/changelog';
+ const base={platformId:'qoder',type:'standing',models:[],sourceText:text,sourceFetch:{originalUrl:sourceUrl,finalUrl:sourceUrl,fetchedUrl:sourceUrl,method:'direct' as const,sourceVerified:true,truncated:false,contentHash:await sha256(text)},evidence:{url:sourceUrl,tier:'official',capturedAt:'2026-10-19T12:00:00Z',excerpts:{benefit:text}}};
+ const recipe={kind:'credits',currency:'USD',entitlementUnits:{value:100,sourceId:'benefit',quote:'每日领取 100 积分'},cadence:'day',packageUnits:{catalogId:'qoder-credit-pack.packageUnits'},packagePrice:{catalogId:'qoder-credit-pack.amount'},sources:[{...sources(text)[0],url:sourceUrl}]};
+ const result=await computeCollectedValuation({...base,valuationFactors:recipe},'2026-10-19T12:00:00Z');
+ expect(result.errors.join(' ')).not.toContain('credit ledger role');
+ expect(result.valuation?.usdEstimate).toBeGreaterThan(0);
+});
+
+it('a short qualifier between the number and the unit still binds (“100 通用 Credits”, “100 monthly credits”)',async()=>{
+ const text='每天可在 Qoder 桌面端内主动领取 100 通用 Credits。',sourceUrl='https://docs.qoder.com/zh/events/100credits';
+ const base={platformId:'qoder',type:'standing',models:[],sourceText:text,sourceFetch:{originalUrl:sourceUrl,finalUrl:sourceUrl,fetchedUrl:sourceUrl,method:'direct' as const,sourceVerified:true,truncated:false,contentHash:await sha256(text)},evidence:{url:sourceUrl,tier:'official',capturedAt:'2026-10-19T12:00:00Z',excerpts:{benefit:text}}};
+ const recipe={kind:'credits',currency:'USD',entitlementUnits:{value:100,sourceId:'benefit',quote:'每天可在 Qoder 桌面端内主动领取 100 通用 Credits'},cadence:'day',packageUnits:{catalogId:'qoder-credit-pack.packageUnits'},packagePrice:{catalogId:'qoder-credit-pack.amount'},sources:[{...sources(text)[0],url:sourceUrl}]};
+ expect((await computeCollectedValuation({...base,valuationFactors:recipe},'2026-10-19T12:00:00Z')).valuation?.usdEstimate).toBeGreaterThan(0);
+});

@@ -239,10 +239,10 @@ export function calculateValuationV2(raw: unknown, context: ValuationEngineConte
         const packageMetadata = catalogRole(f.packagePrice, f.currency, 'price', 'amount', f.referencePlan);
         const unitMetadata = catalogRole(f.packageUnits, f.currency, 'units', 'packageUnits', f.referencePlan);
         if (packageMetadata && unitMetadata && packageMetadata.priceId !== unitMetadata.priceId) throw new Error('Catalog package price and units belong to different plans');
-        for (const [label, p, role] of [['entitlementUnits', f.entitlementUnits, '(?:gift|free|receive|赠|获得|获赠)'], ['packageUnits', f.packageUnits, '(?:package|includes|buy|purchase|套餐|包含|购买)']] as const) {
+        for (const [label, p, role] of [['entitlementUnits', f.entitlementUnits, '(?:gift|free|receive|赠|获得|获赠|领取|送)'], ['packageUnits', f.packageUnits, '(?:package|includes|buy|purchase|套餐|包含|购买)']] as const) {
           if ('value' in p) {
             const n = numericPattern(p.value);
-            if (!new RegExp(`${role}[^\\d]{0,30}${n}(?![\\d.])\\s*(?:credits?|points?|积分|点数)|${n}(?![\\d.])\\s*(?:credits?|points?|积分|点数)[^\\d]{0,30}${role}`, 'i').test(canonicalNumericText(p.quote))) throw new Error(`Source ${p.sourceId}: ${label} is not tied to the correct credit ledger role`);
+            if (!new RegExp(`${role}[^\\d]{0,30}${n}(?![\\d.])[^\\d]{0,10}?(?:credits?|points?|积分|点数)|${n}(?![\\d.])[^\\d]{0,10}?(?:credits?|points?|积分|点数)[^\\d]{0,30}${role}`, 'i').test(canonicalNumericText(p.quote))) throw new Error(`Source ${p.sourceId}: ${label} is not tied to the correct credit ledger role`);
           }
         }
         if (units <= 0) throw new Error('Package units must be positive');

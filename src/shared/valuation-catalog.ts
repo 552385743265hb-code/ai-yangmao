@@ -160,6 +160,13 @@ export const VALUATION_PRICE_CATALOG: readonly ValuationPrice[] = [
     currency: 'USD', authority: 'platform', billingPeriod: 'one_off', priceType: 'regular', entryTier: true,
     packageUnits: 1_500, unit: 'credits', specification: 'credit-pack/1-month-validity', maxAgeDays: 30,
     sources: [source('https://docs.qoder.com/account/pricing', '2026-10-19T03:30:00Z', '| Price | $20 USD / 1,500 Credits |', 'official_topup_benchmark; paid subscribers can buy packs')] },
+  // 2026-10-19: four perks (Command Code, MiniMax Code, Cline, OpenCode) offer MiniMax-M3.1-Flash free; provider list price.
+  { id: 'minimax-m3.1-flash', platformId: 'minimax', kind: 'token_model', model: 'MiniMax-M3.1-Flash', modelClass: 'general_text', currency: 'USD',
+    authority: 'provider', inputPrice: 0.15, outputPrice: 0.6, tokenPriceUnits: 1_000_000, inputMode: 'uncached',
+    genericProxyEligible: false, specification: 'MiniMax-M3.1-Flash/standard/uncached-input', maxAgeDays: 30,
+    sources: [source('https://platform.minimax.io/docs/pricing/overview', '2026-10-19T04:00:00Z',
+      'Model Input Output Prompt caching Read MiniMax-M3.1-Flash $0.15 / M tokens $0.60 / M tokens $0.015 / M tokens',
+      'same_version_official_model_price; standard tier')] },
 ];
 
 export const VALUATION_FX_SNAPSHOT = {
