@@ -31,7 +31,7 @@ const common = { sources: z.array(sourceSchema).min(1).max(100), coverageDays: f
 export const valuationFactorsSchema = z.discriminatedUnion('kind', [
   z.object({ ...common, kind: z.literal('direct_usd'), amount: fact, maximum: fact.optional(), fullAmount: fact.optional(), period: z.enum(['one_time', 'monthly', 'first30']).default('one_time') }),
   z.object({ ...common, kind: z.literal('plan'), price: fact, billingPeriod: z.enum(['month', 'year']), months: fact.optional(), numerator: fact.optional(), denominator: fact.optional(), multiplier: fact.optional(), benchmark: z.enum(['entry_plan', 'plan_fraction', 'plan_multiplier']).optional(), referencePlan: z.string().min(1).max(200).optional() }),
-  z.object({ ...common, kind: z.literal('credits'), entitlementUnits: fact, cadence: z.enum(['once', 'day', 'month']).default('once'), monthlyCap: fact.optional(), packageUnits: fact, packagePrice: fact, benchmark: z.literal('entry_plan').optional(), referencePlan: z.string().min(1).max(200).optional() }),
+  z.object({ ...common, kind: z.literal('credits'), entitlementUnits: fact, cadence: z.enum(['once', 'day', 'month']).default('once'), monthlyCap: fact.optional(), expiresDaily: z.object({ sourceId: z.string().min(1), quote: z.string().min(1).max(2_000) }).strict().optional(), packageUnits: fact, packagePrice: fact, benchmark: z.literal('entry_plan').optional(), referencePlan: z.string().min(1).max(200).optional() }),
   z.object({ ...common, kind: z.literal('scenario'), ...scenarioShape }),
   z.object({ ...common, kind: z.literal('token_grant'), scenario:z.enum(['text','coding']), totalTokens:fact, models:z.array(modelSchema).min(1).max(100) }).strict(),
   z.object({ ...common, kind: z.literal('apply'), maximum: fact.optional(), first30Maximum: fact.optional(), scenario: scenarioSchema.optional() }),
@@ -228,7 +228,11 @@ export function calculateValuationV2(raw: unknown, context: ValuationEngineConte
         const rawQuantity = resolve(f.entitlementUnits, 'entitlementUnits');
         const cadencePattern = f.cadence === 'day' ? /daily|per\s*day|each\s*day|every\s*day|每日|每天|日赠/i : /monthly|per\s*month|each\s*month|every\s*month|每月|月赠/i;
         if (f.cadence !== 'once' && (!('value' in f.entitlementUnits) || !cadencePattern.test(f.entitlementUnits.quote))) throw new Error('Recurring credit cadence must be explicit in the actual entitlement quote');
-        let quantity = rawQuantity * (f.cadence === 'day' ? coverageDays : 1);
+        // Daily credits that lapse at the end of each day (or within 24 hours) cannot be stockpiled: value one day's grant,
+        // not the 30-day total. The expiry must be quoted from a cited source (2026-10-19 owner rule).
+        const sameDay = f.cadence === 'day' && !!f.expiresDaily;
+        if (sameDay && (!f.sources.some(s => s.excerpt.includes(f.expiresDaily!.quote)) || !/当日有效|当天有效|当日失效|当天失效|次日清零|当日清零|每日清零|每天清零|不可累计|不累计|24\s*小时内有效|expires?\s+(?:at\s+)?(?:the\s+)?end\s+of\s+(?:the|each)\s+day|valid\s+(?:only\s+)?(?:for\s+)?(?:that|the\s+same)\s+day|valid\s+for\s+24\s*hours|do(?:es)?\s+not\s+(?:roll\s+over|carry\s+over|accumulate)/i.test(f.expiresDaily!.quote))) throw new Error('Same-day credit expiry must be quoted from a cited source');
+        let quantity = rawQuantity * (f.cadence === 'day' && !sameDay ? coverageDays : 1);
         const monthlyCap = f.monthlyCap ? resolve(f.monthlyCap, 'monthlyCap') : null;
         if (f.monthlyCap) {
           const cap = f.monthlyCap;
@@ -239,17 +243,17 @@ export function calculateValuationV2(raw: unknown, context: ValuationEngineConte
         const packageMetadata = catalogRole(f.packagePrice, f.currency, 'price', 'amount', f.referencePlan);
         const unitMetadata = catalogRole(f.packageUnits, f.currency, 'units', 'packageUnits', f.referencePlan);
         if (packageMetadata && unitMetadata && packageMetadata.priceId !== unitMetadata.priceId) throw new Error('Catalog package price and units belong to different plans');
-        for (const [label, p, role] of [['entitlementUnits', f.entitlementUnits, '(?:gift|free|receive|赠|获得|获赠)'], ['packageUnits', f.packageUnits, '(?:package|includes|buy|purchase|套餐|包含|购买)']] as const) {
+        for (const [label, p, role] of [['entitlementUnits', f.entitlementUnits, '(?:gift|free|receive|赠|获得|获赠|领取|送)'], ['packageUnits', f.packageUnits, '(?:package|includes|buy|purchase|套餐|包含|购买)']] as const) {
           if ('value' in p) {
             const n = numericPattern(p.value);
-            if (!new RegExp(`${role}[^\\d]{0,30}${n}(?![\\d.])\\s*(?:credits?|points?|积分|点数)|${n}(?![\\d.])\\s*(?:credits?|points?|积分|点数)[^\\d]{0,30}${role}`, 'i').test(canonicalNumericText(p.quote))) throw new Error(`Source ${p.sourceId}: ${label} is not tied to the correct credit ledger role`);
+            if (!new RegExp(`${role}[^\\d]{0,30}${n}(?![\\d.])[^\\d]{0,10}?(?:credits?|points?|积分|点数)|${n}(?![\\d.])[^\\d]{0,10}?(?:credits?|points?|积分|点数)[^\\d]{0,30}${role}`, 'i').test(canonicalNumericText(p.quote))) throw new Error(`Source ${p.sourceId}: ${label} is not tied to the correct credit ledger role`);
           }
         }
         if (units <= 0) throw new Error('Package units must be positive');
         const paid = price(f.packagePrice, 'packagePrice', f.currency, /credit|point|积分|点数|额度/i);
         const amount = quantity / units * paid * rate;
         Object.assign(inputs, { entitlementUnits: quantity, packageUnits: units, packagePrice: paid, currency: f.currency, rate, ...(f.cadence === 'day' ? { dailyQuantity: rawQuantity, monthlyQuantity: quantity } : f.cadence === 'month' ? { monthlyQuantity: quantity } : {}) });
-        return finish({ ...base, status: benchmark ? 'provisional' : 'priced', method: 'official_price', period: f.cadence === 'once' ? 'one_time' : 'monthly', usdEstimate: round(amount), fullValue: benchmark || f.cadence !== 'once' ? null : round(amount), formula: `${f.cadence === 'day' ? `min(${rawQuantity} × ${coverageDays} days, ${monthlyCap ?? 'no monthly cap'}) = ${quantity}; ` : ''}${quantity} / ${units} × ${paid} ${f.currency} × ${rate} USD/${f.currency}` });
+        return finish({ ...base, status: benchmark ? 'provisional' : 'priced', method: 'official_price', period: f.cadence === 'once' ? 'one_time' : 'monthly', usdEstimate: round(amount), fullValue: benchmark || f.cadence !== 'once' ? null : round(amount), formula: `${sameDay ? `${rawQuantity} (same-day expiry, not accumulated)` : f.cadence === 'day' ? `min(${rawQuantity} × ${coverageDays} days, ${monthlyCap ?? 'no monthly cap'}) = ${quantity}; ` : ''}${quantity} / ${units} × ${paid} ${f.currency} × ${rate} USD/${f.currency}` });
       }
       const paid = price(f.price, 'price', f.currency, f.billingPeriod === 'year' ? /year|annual|年/i : /month|月/i);
       catalogRole(f.price, f.currency, 'price', 'amount', f.referencePlan, f.billingPeriod);
