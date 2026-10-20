@@ -2657,26 +2657,95 @@ function ecg(h) {
  * 外壳：导航、条件面板、对比、路由
  * ============================================================ */
 function pAgent() {
-  const mcp='https://ai-yangmao.com/api/mcp';
-  const install='curl --fail --silent --show-error https://ai-yangmao.com/ai-yangmao-public/install.sh -o /tmp/ai-yangmao-install.sh\nbash /tmp/ai-yangmao-install.sh';
-  const config=JSON.stringify({mcpServers:{'ai-yangmao':{url:mcp}}},null,2);
-  const prompt='安装并使用 AI 羊毛牧场公开查询 Skill：https://ai-yangmao.com/ai-yangmao-public/SKILL.md 。先读取 https://ai-yangmao.com/api/agent 的能力说明，然后查询最新日报，或按我的用途和领取条件筛选权益。';
-  const block=(label,text,id)=>`<div class="agent-code"><div class="row" style="justify-content:space-between"><span class="small muted">${label}</span><button type="button" class="btn sm" data-agent-copy="${id}">复制</button></div><pre id="${id}">${esc(text)}</pre></div>`;
-  main().innerHTML=ph('Agent 接入','让你的 agent 读日报、找羊毛，并按你的条件判断能不能领。')+`
-    <div class="agent-page"><div class="agent-intro"><b>直接连接，不需要 Key</b><p>公开查询，无需项目仓库。支持最新日报、权益筛选、领取详情和会员套餐目录。</p><div class="chips"><span class="chip">Skill</span><span class="chip">只读 MCP</span><span class="chip">按条件匹配</span></div></div>
-    <section>${secH('安装 Skill','适合能使用技能与 HTTP 工具的 agent')}<p>把下面这段话交给你的 agent，或将技能文件保存到它使用的技能目录。</p>${block('给 agent 的提示词',prompt,'agentPrompt')}
-      <div class="row"><a class="btn" href="/ai-yangmao-public/SKILL.md" target="_blank" rel="noopener">查看 Skill</a><a class="btn" href="/ai-yangmao-public/agents/openai.yaml" target="_blank" rel="noopener">查看技能元数据</a></div>
-      <details class="agent-install"><summary>用终端安装（macOS / Linux）</summary><p class="small muted">默认安装到 ~/.agents/skills/ai-yangmao-public；可用 --dir 指定你的 agent 技能目录。更新前会保留旧版备份。</p>${block('下载安装脚本，再执行',install,'agentInstall')}</details>
-    </section>
-    <section>${secH('连接 MCP','适合支持远程 MCP 的客户端')}<p>在客户端的 MCP 设置中添加以下地址，连接方式选择 Streamable HTTP。</p>${block('MCP 地址',mcp,'agentMcp')}
-      <details class="agent-install"><summary>JSON 配置示例</summary><p class="small muted">适用于接受 mcpServers + url 配置的客户端；其他客户端直接填上方地址。</p>${block('MCP 配置',config,'agentConfig')}</details>
-    </section>
-    <section>${secH('可以这样问')}<ul class="agent-examples"><li>给我最新一期羊毛日报。</li><li>找不绑卡、不用付费的图像生成工具。</li><li>我不是学生，没有海外手机号，但有某个会员，哪些羊毛适合我？</li><li>列出未来 3 天截止的权益，附官方出处和领取步骤。</li></ul></section>
-    <section>${secH('结果怎么看')}<p>日报与飞书共用一份固定内容，只提供最新一期；不是当天的会标明日期。领取前，agent 会继续查询当前详情。</p><p>资格分为符合、不符合和还需确认。你没提供的条件不会被猜成满足；价值待定不会按零计算。遇到快照或采集覆盖不完整，会注明时间与限制。</p><div class="row"><a class="btn" href="/api/agent" target="_blank" rel="noopener">读取能力说明</a><a class="btn" href="/api/agent/daily?format=markdown" target="_blank" rel="noopener">读取最新日报</a><a class="btn" href="/api/agent/search?requirement=nopay&format=markdown" target="_blank" rel="noopener">查看筛选示例</a></div></section></div>`;
-  $$('[data-agent-copy]').forEach(button=>button.addEventListener('click',async()=>{
-    try{await navigator.clipboard.writeText(document.getElementById(button.dataset.agentCopy).textContent);toast('已复制');}
-    catch{toast('复制未完成，请选中文字手动复制');}
-  }));
+  const mcp = 'https://ai-yangmao.com/api/mcp';
+  const skillBase = 'https://ai-yangmao.com/ai-yangmao-public';
+  const prompt = '安装并使用 AI 羊毛牧场公开查询 Skill：' + skillBase + '/SKILL.md 。先读取 https://ai-yangmao.com/api/agent 的能力说明，然后查询最新日报，或按我的用途和领取条件筛选权益。';
+  let system = /win/i.test(navigator.userAgentData?.platform || navigator.platform || navigator.userAgent || '') ? 'windows' : 'unix';
+  const block = (label, text, id) => '<div class="agent-code"><div class="row"><span class="small muted">' + esc(label) + '</span><button type="button" class="btn sm" data-agent-copy="' + id + '" aria-label="复制' + esc(label) + '">复制</button></div><pre id="' + id + '">' + esc(text) + '</pre></div>';
+  const tools = ['yangmao_search_offers', 'yangmao_get_offer', 'yangmao_get_daily', 'yangmao_get_catalog'];
+  const examples = ['给我最新一期羊毛日报。', '找不绑卡、不用付费的图像生成工具。', '我不是学生，没有海外手机号，但有某个会员，哪些羊毛适合我？', '列出未来 3 天截止的权益，附官方出处和领取步骤。'];
+  main().innerHTML = ph('Agent 接入', '让你的 agent 读日报、找羊毛，并按你的条件判断能不能领。') +
+    '<div class="agent-page"><div class="agent-intro"><b>选一种方式，就能开始查询</b><p>Skill 告诉 agent 怎么查，MCP 把查询工具接到客户端。任选一种即可，也可以搭配使用。</p><div class="chips"><span class="chip">公开只读</span><span class="chip">无需 API Key</span><span class="chip">无需项目仓库</span></div></div>' +
+    '<div class="agent-platform"><span class="small muted">你的系统</span><div class="seg" role="group" aria-label="使用的操作系统"><button type="button" data-agent-os="windows" aria-pressed="false">Windows</button><button type="button" data-agent-os="unix" aria-pressed="false">macOS / Linux</button></div></div>' +
+    '<section>' + secH('安装 Skill', '让 agent 了解查询方式与资格判断') + '<p>把下面这段话交给能安装技能的 agent；也可以自己在本机安装。</p>' + block('给 agent 的提示词', prompt, 'agentPrompt') +
+    '<details class="agent-install" open><summary>自己在本机安装</summary><label class="agent-select">使用的 Agent<select data-agent-skill-client aria-label="Skill 使用的 Agent"><option value="codex" selected>Codex / 使用 .agents 技能目录的 Agent</option><option value="claude">Claude Code</option></select></label><p class="small muted" data-agent-install-hint aria-live="polite"></p><div data-agent-install-code></div><p class="small muted">安装器校验文件并在更新前备份旧版。安装后开启新对话；若未识别到技能，重启客户端。</p></details>' +
+    '<div class="row"><a class="btn" href="/ai-yangmao-public/SKILL.md" target="_blank" rel="noopener">查看 Skill</a><a class="btn" href="/ai-yangmao-public/agents/openai.yaml" target="_blank" rel="noopener">查看技能元数据</a></div></section>' +
+    '<section>' + secH('连接 MCP', '在客户端直接使用四个查询工具') + '<p>使用远程连接，传输方式为 Streamable HTTP，无需填写 Token 或在本机启动服务。</p>' + block('MCP 地址', mcp, 'agentMcp') +
+    '<label class="agent-select">使用的客户端<select data-agent-mcp-client aria-label="MCP 客户端"><option value="codex" selected>Codex</option><option value="claude">Claude Code</option><option value="cursor">Cursor</option><option value="other">其他支持远程 MCP 的客户端</option></select></label><div data-agent-mcp-code></div>' +
+    '<div class="agent-check"><b>怎么知道连接好了？</b><p>开启新对话，查看客户端的 MCP 工具列表，应出现以下四个工具，再试着问“给我最新一期羊毛日报”。</p><div class="chips">' + tools.map(tool => '<code class="chip">' + tool + '</code>').join('') + '</div></div></section>' +
+    '<section>' + secH('可以这样问') + '<ul class="agent-examples">' + examples.map((text, i) => '<li><span id="agentExample' + i + '">' + esc(text) + '</span><button type="button" class="btn sm" data-agent-copy="agentExample' + i + '" aria-label="复制示例问题 ' + (i + 1) + '">复制问题</button></li>').join('') + '</ul></section>' +
+    '<section>' + secH('结果怎么看') + '<p>日报与飞书共用一份固定内容，只提供最新一期；不是当天的会标明日期。领取前，agent 会继续查询当前详情。</p><p>资格分为符合、不符合和还需确认。你没提供的条件不会被猜成满足；价值待定不会按零计算。遇到快照或采集覆盖不完整，会注明时间与限制。</p><div class="row"><a class="btn" href="/api/agent" target="_blank" rel="noopener">读取能力说明</a><a class="btn" href="/api/agent/daily?format=markdown" target="_blank" rel="noopener">读取最新日报</a><a class="btn" href="/api/agent/search?requirement=nopay&format=markdown" target="_blank" rel="noopener">查看筛选示例</a></div></section></div>';
+  const page = main().querySelector('.agent-page');
+  const updateSkill = () => {
+    const client = page.querySelector('[data-agent-skill-client]').value;
+    const folder = client === 'claude' ? '.claude' : '.agents';
+    const path = system === 'windows' ? '%USERPROFILE%\\' + folder + '\\skills\\ai-yangmao-public' : '~/' + folder + '/skills/ai-yangmao-public';
+    const command = system === 'windows' ? [
+      '& {',
+      "  $ErrorActionPreference = 'Stop'",
+      "  $installer = Join-Path $env:TEMP ('ai-yangmao-' + [guid]::NewGuid().ToString('N') + '.ps1')",
+      '  try {',
+      "    $download = Invoke-WebRequest -UseBasicParsing '" + skillBase + "/install.ps1' -TimeoutSec 30 -MaximumRedirection 0",
+      '    [IO.File]::WriteAllBytes($installer, $download.RawContentStream.ToArray())',
+      '    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $installer' + (client === 'claude' ? " -Dir (Join-Path $env:USERPROFILE '.claude\\skills\\ai-yangmao-public')" : ''),
+      "    if ($LASTEXITCODE -ne 0) { throw 'Skill installation failed.' }",
+      '  } finally {',
+      '    if (Test-Path -LiteralPath $installer) { Remove-Item -LiteralPath $installer -Force }',
+      '  }',
+      '}',
+    ].join('\n') : [
+      'curl --fail --silent --show-error ' + skillBase + '/install.sh -o /tmp/ai-yangmao-install.sh',
+      'bash /tmp/ai-yangmao-install.sh' + (client === 'claude' ? ' --dir "$HOME/.claude/skills/ai-yangmao-public"' : ''),
+    ].join('\n');
+    page.querySelector('[data-agent-install-hint]').textContent = (system === 'windows' ? '在 PowerShell 中运行；支持 Windows PowerShell 5.1 和 PowerShell 7，无需 Bash、Node.js 或管理员权限。' : '在 macOS / Linux 终端中运行。') + ' 安装到 ' + path + '。';
+    page.querySelector('[data-agent-install-code]').innerHTML = block(system === 'windows' ? 'Windows PowerShell 安装命令' : 'macOS / Linux 安装命令', command, 'agentInstall');
+  };
+  const updateMcp = () => {
+    const client = page.querySelector('[data-agent-mcp-client]').value;
+    let html;
+    if (client === 'codex') {
+      const path = system === 'windows' ? '%USERPROFILE%\\.codex\\config.toml' : '~/.codex/config.toml';
+      html = '<p class="small muted">已安装 Codex CLI 时，在终端运行以下命令；添加后用 list 查看配置。</p>' +
+        block('Codex MCP 命令', 'codex mcp add ai-yangmao --url ' + mcp + '\ncodex mcp list', 'agentCodex') +
+        '<details class="agent-install"><summary>手动编辑 Codex 配置（TOML）</summary><p class="small muted">将下面的服务段添加到 ' + esc(path) + '，保留已有配置。</p>' +
+        block('Codex TOML 配置', '[mcp_servers.ai-yangmao]\nurl = "' + mcp + '"', 'agentCodexConfig') + '</details>';
+    } else if (client === 'claude') {
+      html = '<p class="small muted">在已安装 Claude Code 的终端中运行。用户级配置可在不同项目中使用；用 get 查看该服务。</p>' +
+        block('Claude Code MCP 命令', 'claude mcp add --transport http --scope user ai-yangmao ' + mcp + '\nclaude mcp get ai-yangmao', 'agentClaude');
+    } else if (client === 'cursor') {
+      const path = system === 'windows' ? '%USERPROFILE%\\.cursor\\mcp.json' : '~/.cursor/mcp.json';
+      html = '<p class="small muted">在 ' + esc(path) + ' 中添加以下服务。已有 mcpServers 时只合并 ai-yangmao 这一项，保留其他服务；保存后重新打开客户端。</p>' +
+        block('Cursor JSON 配置', JSON.stringify({ mcpServers: { 'ai-yangmao': { url: mcp } } }, null, 2), 'agentConfig');
+    } else {
+      html = '<div class="agent-check"><p>打开客户端的 MCP 或连接器设置，添加远程服务：</p><dl><div><dt>名称</dt><dd>ai-yangmao</dd></div><div><dt>地址</dt><dd>' + mcp + '</dd></div><div><dt>传输方式</dt><dd>Streamable HTTP</dd></div><div><dt>认证</dt><dd>无需认证</dd></div></dl><p class="small muted">使用客户端自己的配置格式；上方 Cursor JSON 和 Codex TOML 分别用于对应客户端。</p></div>';
+    }
+    page.querySelector('[data-agent-mcp-code]').innerHTML = html;
+  };
+  const updateSystem = () => {
+    page.querySelectorAll('[data-agent-os]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.agentOs === system)));
+    updateSkill();
+    updateMcp();
+  };
+  page.querySelectorAll('[data-agent-os]').forEach(button => button.addEventListener('click', () => { system = button.dataset.agentOs; updateSystem(); }));
+  page.querySelector('[data-agent-skill-client]').addEventListener('change', updateSkill);
+  page.querySelector('[data-agent-mcp-client]').addEventListener('change', updateMcp);
+  const copyTimers = new WeakMap();
+  page.addEventListener('click', async event => {
+    const button = event.target.closest?.('[data-agent-copy]');
+    if (!button || button.disabled) return;
+    const label = button.dataset.agentCopyLabel ||= button.textContent;
+    button.disabled = true;
+    try {
+      await navigator.clipboard.writeText(document.getElementById(button.dataset.agentCopy).textContent);
+      if (!button.isConnected) return;
+      button.textContent = '已复制';
+      toast('已复制');
+      clearTimeout(copyTimers.get(button));
+      copyTimers.set(button, setTimeout(() => { if (button.isConnected) button.textContent = label; }, 1600));
+    } catch { if (button.isConnected) toast('复制未完成，请选中文字手动复制'); }
+    finally { button.disabled = false; }
+  });
+  updateSystem();
 }
 const PAGES = { today: pToday, calendar: pCalendar, timeline: pTimeline, insights: pInsights, all: pAll, library: pLibrary, apply: pApply, models: pModels, mine: pMine, coverage: pCoverage, 'valuation-method': pValuationMethod, agent:pAgent, admin: pAdmin };
 const NAVS = [
@@ -2822,8 +2891,8 @@ window.addEventListener('resize', () => {
   }, 180);
 });
 let refreshInFlight = false, lastRefreshAt = Date.now();
-// 后台页、或者正在填表时不自动重画：重画会清空正在修改的表单（2026-10-03 管理员反馈）。后台的数据点“待审”标签或刷新浏览器即可更新。
-const keepPage = () => route()[0] === 'admin' || (route()[0] === 'offer' && (NOTE_DRAFTS.has(route()[1]) || NOTE_SAVES.has(route()[1]) || COMMENT_STATE.get(route()[1])?.removing.size || !!$('[data-comment-delete-confirm]'))) || !!document.activeElement?.closest?.('form, textarea, input, select') || $$('[data-editform]:not([hidden])').length > 0 || !!$('[data-online-edit-box] [data-code]');
+// 后台、接入说明和正在填表的页面保留操作状态；接入说明不依赖定期加载的活动数据。
+const keepPage = () => ['admin', 'agent'].includes(route()[0]) || (route()[0] === 'offer' && (NOTE_DRAFTS.has(route()[1]) || NOTE_SAVES.has(route()[1]) || COMMENT_STATE.get(route()[1])?.removing.size || !!$('[data-comment-delete-confirm]'))) || !!document.activeElement?.closest?.('form, textarea, input, select') || $$('[data-editform]:not([hidden])').length > 0 || !!$('[data-online-edit-box] [data-code]');
 async function refreshPage() {
   if (refreshInFlight) return;
   refreshInFlight = true;

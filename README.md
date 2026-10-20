@@ -50,13 +50,20 @@
 
 地址：`https://ai-yangmao.com/api/mcp`（Streamable HTTP，无需认证）
 
+Codex CLI（Windows PowerShell、macOS / Linux 均可）：
+
+```text
+codex mcp add ai-yangmao --url https://ai-yangmao.com/api/mcp
+codex mcp list
+```
+
 Claude Code：
 
 ```bash
-claude mcp add --transport http ai-yangmao https://ai-yangmao.com/api/mcp
+claude mcp add --transport http --scope user ai-yangmao https://ai-yangmao.com/api/mcp
 ```
 
-Cursor、Claude Desktop 等接受 `mcpServers` 配置的客户端：
+Cursor 的 `mcp.json` 配置（合并到已有 `mcpServers`，保留其他服务）：
 
 ```json
 {
@@ -76,6 +83,27 @@ Cursor、Claude Desktop 等接受 `mcpServers` 配置的客户端：
 ### 方式二：Skill
 
 适合能读取技能文件、能发 HTTP 请求的 agent。安装到默认目录 `~/.agents/skills/ai-yangmao-public`：
+
+Windows PowerShell 5.1 / PowerShell 7（无需 Bash、Node.js 或管理员权限）：
+
+```powershell
+& {
+  $ErrorActionPreference = 'Stop'
+  $installer = Join-Path $env:TEMP ('ai-yangmao-' + [guid]::NewGuid().ToString('N') + '.ps1')
+  try {
+    $download = Invoke-WebRequest -UseBasicParsing 'https://ai-yangmao.com/ai-yangmao-public/install.ps1' -TimeoutSec 30 -MaximumRedirection 0
+    [IO.File]::WriteAllBytes($installer, $download.RawContentStream.ToArray())
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $installer
+    if ($LASTEXITCODE -ne 0) { throw 'Skill installation failed.' }
+  } finally {
+    if (Test-Path -LiteralPath $installer) { Remove-Item -LiteralPath $installer -Force }
+  }
+}
+```
+
+Windows 默认目录为 `%USERPROFILE%\.agents\skills\ai-yangmao-public`。Claude Code 使用自己的目录，在 `& powershell.exe ... -File $installer` 这一行末尾添加 `-Dir (Join-Path $env:USERPROFILE '.claude\skills\ai-yangmao-public')`；其他客户端用 `-Dir` 指定目录。执行策略参数仅作用于此次安装进程。
+
+macOS / Linux：
 
 ```bash
 curl --fail --silent --show-error https://ai-yangmao.com/ai-yangmao-public/install.sh -o /tmp/ai-yangmao-install.sh

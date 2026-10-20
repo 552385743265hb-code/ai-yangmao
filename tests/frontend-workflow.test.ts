@@ -1,5 +1,5 @@
 import { fixture, publicOffer } from './fixtures/frontend';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 const pause = () => new Promise(resolve => setTimeout(resolve, 0));
 const offer = (id: string, extra: Record<string, unknown> = {}) => ({ id, code: id, platformId: 'vendor', platform: 'Vendor', title: '免费额度', type: '限时免费开放', value: '免费 10 积分', end: '截止未知', status: 'active', reviewState: 'pending', requirements: ['none'], audience: 'all', claimMethod: 'auto', sourceTz: 'UTC', evidenceUrl: 'https://vendor.example', evidenceTier: 'docs', excerpts: {}, models: [], tags: [], modalities: ['text'], checks: [], steps: [], ...extra });
@@ -280,11 +280,16 @@ describe('frontend review workflow', () => {
     expect(page.run('claimable(OFFERS[1])')).toBe(false);
   });
   it('shows an approved dated offer through its deadline even when an old probe failed', () => {
-    const page = fixture(() => ({}));
-    publicOffer(page.run, { ty: 'free', ek: 'date', e: 2, verify: 'evidence_missing', verifiedAt: '2025-01-01T00:00:00Z' });
-    expect(page.run("statusOf(OFFERS[0])")).toBe('ending');
-    page.run("Object.assign(OFFERS[0],{e:-1});prepare()");
-    expect(page.run("statusOf(OFFERS[0])")).toBe('ended');
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      vi.setSystemTime(new Date(2026, 9, 21, 12));
+      const page = fixture(() => ({}));
+      // 此处验证旧探测不撤销批准；让相对天数与来源时区一致，避免凌晨误跨 UTC 截止线。
+      publicOffer(page.run, { ty: 'free', ek: 'date', e: 2, tz: Intl.DateTimeFormat().resolvedOptions().timeZone, verify: 'evidence_missing', verifiedAt: '2025-01-01T00:00:00Z' });
+      expect(page.run("statusOf(OFFERS[0])")).toBe('ending');
+      page.run("Object.assign(OFFERS[0],{e:-1});prepare()");
+      expect(page.run("statusOf(OFFERS[0])")).toBe('ended');
+    } finally { vi.useRealTimers(); }
   });
   it('explains that an old probe error does not revoke a prior human approval',()=>{
     const page=fixture(()=>({}));publicOffer(page.run,{verify:'evidence_missing'});page.run("pOffer('public-offer')");

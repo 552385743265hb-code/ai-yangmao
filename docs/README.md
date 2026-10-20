@@ -41,6 +41,9 @@
 
 ## 发布、事故与工作流查证
 
+- [Windows 开发兼容与公开 Agent 接入（本地）](agent-windows-2026-10-20.md)：两项兼容修复、PowerShell 安装器、按系统与客户端展示 Skill / MCP 配置，以及本地验证与未发布边界。
+- [Windows 与 Agent 接入复查（本地）](agent-windows-2026-10-21.md)：兼容问题修复、回归结果、Codex / Claude Code 的 Skill 与 MCP 真实调用，以及尚未完成的桌面 GUI 和官网安装资产验收。
+
 - [OpenRouter 官方模型证据与审核恢复](openrouter-evidence-recovery-2026-10-18.md)：官方短帖补证、误关恢复、负面学习纠正与平台要点。
 
 - [AIHOT Codex reset 自动上架](aihot-reset-auto-publish-2026-10-18.md)：管理员授权范围、员工原帖证据、持久续传及发布凭证。

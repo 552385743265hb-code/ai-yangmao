@@ -52,13 +52,20 @@ First read the capability description at https://ai-yangmao.com/api/agent, then 
 
 Endpoint: `https://ai-yangmao.com/api/mcp` (Streamable HTTP, no authentication)
 
+Codex CLI (Windows PowerShell, macOS and Linux):
+
+```text
+codex mcp add ai-yangmao --url https://ai-yangmao.com/api/mcp
+codex mcp list
+```
+
 Claude Code:
 
 ```bash
-claude mcp add --transport http ai-yangmao https://ai-yangmao.com/api/mcp
+claude mcp add --transport http --scope user ai-yangmao https://ai-yangmao.com/api/mcp
 ```
 
-Cursor, Claude Desktop and other clients that accept an `mcpServers` config:
+Cursor's `mcp.json` (merge into existing `mcpServers` and keep other services):
 
 ```json
 {
@@ -78,6 +85,27 @@ Cursor, Claude Desktop and other clients that accept an `mcpServers` config:
 ### Option 2: Skill
 
 For agents that can read skill files and make HTTP requests. Installs to the default directory `~/.agents/skills/ai-yangmao-public`:
+
+Windows PowerShell 5.1 / PowerShell 7 (no Bash, Node.js or administrator privileges required):
+
+```powershell
+& {
+  $ErrorActionPreference = 'Stop'
+  $installer = Join-Path $env:TEMP ('ai-yangmao-' + [guid]::NewGuid().ToString('N') + '.ps1')
+  try {
+    $download = Invoke-WebRequest -UseBasicParsing 'https://ai-yangmao.com/ai-yangmao-public/install.ps1' -TimeoutSec 30 -MaximumRedirection 0
+    [IO.File]::WriteAllBytes($installer, $download.RawContentStream.ToArray())
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $installer
+    if ($LASTEXITCODE -ne 0) { throw 'Skill installation failed.' }
+  } finally {
+    if (Test-Path -LiteralPath $installer) { Remove-Item -LiteralPath $installer -Force }
+  }
+}
+```
+
+The Windows default is `%USERPROFILE%\.agents\skills\ai-yangmao-public`. For Claude Code, append `-Dir (Join-Path $env:USERPROFILE '.claude\skills\ai-yangmao-public')` to the line starting with `& powershell.exe` and ending with `-File $installer`. Use `-Dir` for other directories. The execution policy argument applies only to this installation process.
+
+macOS / Linux:
 
 ```bash
 curl --fail --silent --show-error https://ai-yangmao.com/ai-yangmao-public/install.sh -o /tmp/ai-yangmao-install.sh
