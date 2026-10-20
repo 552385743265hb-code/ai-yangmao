@@ -4583,14 +4583,14 @@
         "至尊会员 — 适合专业级大规模制作",
         "企业会员 — 适合更大规模与精细化管理的企业团队 — 定制报价"
       ],
-      "remaining": "团队版标签另需核实，见独立gap；免费登录积分未确认正式免费会员名；没有明确仍有效旧合同证据。",
+      "remaining": "",
       "newPlanIds": {
         "标准会员": "seko-standard",
         "高级会员": "seko-advanced",
         "至尊会员": "seko-supreme",
         "企业会员": "seko-enterprise"
       },
-      "note": "官方价格页HTTP SSR完整四张卡；Jina只显示前三张，企业会员已从同源SSR正文提取。个人积分商品不是会员。"
+      "note": "官方价格页HTTP SSR完整四张卡；Jina只显示前三张，企业会员已从同源SSR正文提取。个人积分商品不是会员。 团队版三档已由真实浏览器补核，单列seko-team；企业定制入口不重复。"
     },
     {
       "productId": "wps-office-ai-personal",
@@ -8594,6 +8594,62 @@
       "planNotes": {
         "功能体验月包": "20元；每账号每月限购一次；按实际调用消耗容量，用尽或到期停服；可到期续购；不含专属客服/视频剪辑高级特效包，智能检索另计。"
       }
+    },
+    {
+      "productId": "seko-team",
+      "platformIds": [
+        "sensenova"
+      ],
+      "name": "Seko 团队版",
+      "plans": [
+        "团队标准会员",
+        "团队高级会员",
+        "团队至尊会员"
+      ],
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://seko.sensetime.com/pricing",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "团队标准会员; 团队高级会员; 团队至尊会员",
+      "newPlanIds": {
+        "团队标准会员": "seko-team-standard",
+        "团队高级会员": "seko-team-advanced",
+        "团队至尊会员": "seko-team-supreme"
+      },
+      "verificationNote": "真实浏览器点击团队版标签，完整三张年度付费销售卡；个人版企业会员与团队页同名定制企业入口不重复另建。席位可增购不按人数另造档。",
+      "remaining": ""
+    },
+    {
+      "productId": "vidu-cn",
+      "platformIds": [
+        "vidu"
+      ],
+      "name": "Vidu 国内版",
+      "plans": [
+        "免费版",
+        "标准版",
+        "专业版",
+        "旗舰版"
+      ],
+      "freePlans": [
+        "免费版"
+      ],
+      "legacyPlans": [],
+      "sourceUrl": "https://www.vidu.cn/pricing",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "免费版; 标准版; 专业版; 旗舰版",
+      "newPlanIds": {
+        "免费版": "vidu-cn-free",
+        "标准版": "vidu-cn-standard",
+        "专业版": "vidu-cn-professional",
+        "旗舰版": "vidu-cn-flagship"
+      },
+      "verificationNote": "真实浏览器定价卡加载后，分别切年付、月付、连续包月均为同四档；旗舰积分滑杆不改变套餐名。官方API是单独充值资源目录，不按企业并发量造会员。",
+      "remaining": ""
     }
   ]
 }

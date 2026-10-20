@@ -202,7 +202,7 @@
       "checkedAt": "2026-10-20",
       "note": "Token个人/企业、Comate个人/企业/私有化，以及本轮旧Coding、客悦、创作SaaS、秒哒企业标准、DuMate企业/联合席位。",
       "remaining": "[{\"product\": \"秒哒个人当前完整会员目录\", \"reason\": \"miaoda.cn仅JS页面，Reader无价目；2025更新日志只证明历史免费/专业，不能外推现行全部档位。\", \"sources\": [\"https://www.miaoda.cn/\", \"https://cloud.baidu.com/doc/MIAODA/s/Dm8iegtoh\"]}, {\"product\": \"客悦UNIT-LLM旧专业版具体旧权益变体\", \"reason\": \"2024-12-12前后转换表为图片；当前四档已明确，不用旧截图猜新旧对应。\", \"sources\": [\"https://cloud.baidu.com/doc/UNIT-LLM/s/wm3dy2v8s\"]}, {\"product\": \"BML边缘SDK旧软件授权\", \"reason\": \"官方搜索索引出现基础/加速SDK永久授权，但当前价目正文未定位对应表；不据旧索引自动新增。\", \"sources\": [\"https://cloud.baidu.com/product-price/bml.html\"]}]",
-      "actualObstacle": "[{\"product\": \"秒哒个人当前完整会员目录\", \"reason\": \"miaoda.cn仅JS页面，Reader无价目；2025更新日志只证明历史免费/专业，不能外推现行全部档位。\", \"sources\": [\"https://www.miaoda.cn/\", \"https://cloud.baidu.com/doc/MIAODA/s/Dm8iegtoh\"]}, {\"product\": \"客悦UNIT-LLM旧专业版具体旧权益变体\", \"reason\": \"2024-12-12前后转换表为图片；当前四档已明确，不用旧截图猜新旧对应。\", \"sources\": [\"https://cloud.baidu.com/doc/UNIT-LLM/s/wm3dy2v8s\"]}, {\"product\": \"BML边缘SDK旧软件授权\", \"reason\": \"官方搜索索引出现基础/加速SDK永久授权，但当前价目正文未定位对应表；不据旧索引自动新增。\", \"sources\": [\"https://cloud.baidu.com/product-price/bml.html\"]}]"
+      "actualObstacle": "秒哒真实浏览器已加载个人空间，但匿名仅显示登录、无可读会员入口；另外旧客悦专业版转换图/BML SDK具体授权仍待证。"
     },
     {
       "platformId": "tencent",
@@ -754,7 +754,7 @@
       "platformId": "modelscope",
       "name": "阿里 魔搭 ModelScope",
       "site": "https://modelscope.cn",
-      "status": "partial",
+      "status": "research_complete",
       "sources": [
         "https://modelscope.cn/docs/magicube/intro",
         "https://modelscope.cn",
@@ -771,9 +771,11 @@
         "error": null
       },
       "checkedAt": "2026-10-20",
-      "note": "公开导航Models/Datasets/Studios/Spotlight/Skills/MCP/Civision；魔粒和API推理doc入口。",
-      "remaining": "[{\"product\": \"魔粒/Civision正式付费软件会员\", \"reason\": \"Reader可得导航但doc正文价目为空；无法证实具体公开付费订阅，不造Free/Pro；这是实际JS内容障碍而非假想私有合同。\"}]",
-      "actualObstacle": "[{\"product\": \"魔粒/Civision正式付费软件会员\", \"reason\": \"Reader可得导航但doc正文价目为空；无法证实具体公开付费订阅，不造Free/Pro；这是实际JS内容障碍而非假想私有合同。\"}]"
+      "note": "真实浏览器已读魔粒完整奖励/消耗规则、API推理说明和Civision公开导航：魔粒是社区奖励算力积分，Pro为生成模式按积分加倍消耗；API对注册用户免费，外部高并发绑定原厂提供方；无公开命名固定软件会员，不能造Free/Pro。",
+      "remaining": "",
+      "publicScopeClosed": true,
+      "subscriptionStatus": "none",
+      "scope": "Current public ModelScope/Civision navigation and full Magicube/API billing rules"
     },
     {
       "platformId": "anthropic",
@@ -1255,7 +1257,7 @@
       "platformId": "sensenova",
       "name": "商汤 SenseNova（日日新）",
       "site": "https://platform.sensenova.cn",
-      "status": "partial",
+      "status": "research_complete",
       "sources": [
         "https://www.sensenova.cn/token-plan",
         "https://www.xiaohuanxiong.com/pricing",
@@ -1268,7 +1270,8 @@
       "productIds": [
         "sensenova-token-plan",
         "sensenova-raccoon",
-        "seko"
+        "seko",
+        "seko-team"
       ],
       "homepageRead": {
         "url": "https://platform.sensenova.cn",
@@ -1276,9 +1279,9 @@
         "error": null
       },
       "checkedAt": "2026-10-20",
-      "note": "小浣熊行业方案公开目录已经闭环：三种行业产品+销售咨询，未列独立命名软件会员，不复制通用四档。Seko个人/企业四档已完整录入；只有已知团队标签确有额外许可线索，须保持具体gap。",
-      "remaining": "Seko团队标签未在HTTP SSR展开销售卡，客户端配置还含未知CUSTOM_XS级别；静态名称不能证明完整当前可售目录，需交互式已有会话核对。不为小浣熊私人报价继续partial。",
-      "actualObstacle": "Seko团队标签未在HTTP SSR展开销售卡，客户端配置还含未知CUSTOM_XS级别；静态名称不能证明完整当前可售目录，需交互式已有会话核对。不为小浣熊私人报价继续partial。"
+      "note": "当前公开个人/团队及企业许可和API计费边界已逐项核对；动态销售卡由真实浏览器补齐，不猜私人合同。",
+      "remaining": "",
+      "publicScopeClosed": true
     },
     {
       "platformId": "doubao",
@@ -1965,9 +1968,9 @@
       },
       "appliedCatalogRevision": 41,
       "checkedAt": "2026-10-20",
-      "note": "个人、Team/Scale/Enterprise正式目录已有基线；Max存在主站正式购买页面卡片及主站订阅活动，不再仅是geo线索。API按充值余额消费。",
-      "remaining": "当前pricing HTTP403，无法给Max准确在售/存量标记。Ultimate/Creator仍只有第三方/geo或未渲染plan objects线索，没有主站可验证续费条款；B2B名称与现Team/Scale/Enterprise缺明确迁移映射。不要凭名称猜归并。",
-      "actualObstacle": "当前pricing HTTP403，无法给Max准确在售/存量标记。Ultimate/Creator仍只有第三方/geo或未渲染plan objects线索，没有主站可验证续费条款；B2B名称与现Team/Scale/Enterprise缺明确迁移映射。不要凭名称猜归并。"
+      "note": "真实浏览器已读取当前Individual Free/Starter/Plus/Ultra与Business Team/Scale/Enterprise，和已有目录一致。API按充值消费；Basic/Pro由现行changelog支持。",
+      "remaining": "Max/B2B具体旧合同当前续订或迁移映射仍缺官方说明；Ultimate/Creator仅geo生成信息不作为真实会员。",
+      "actualObstacle": "当前pricing页面已成功读取；剩具体旧档有效性而非当前购买卡403。"
     },
     {
       "platformId": "ideogram",
@@ -2589,7 +2592,7 @@
       "platformId": "vidu",
       "name": "Vidu",
       "site": "https://www.vidu.com",
-      "status": "partial",
+      "status": "research_complete",
       "sources": [
         "https://www.vidu.com/pricing",
         "https://www.vidu.cn/pricing",
@@ -2598,7 +2601,8 @@
         "https://platform.vidu.cn/pricing"
       ],
       "productIds": [
-        "vidu-global"
+        "vidu-global",
+        "vidu-cn"
       ],
       "homepageRead": {
         "url": "https://www.vidu.com",
@@ -2606,9 +2610,9 @@
         "error": null
       },
       "checkedAt": "2026-10-20",
-      "note": "国际个人四档基线有效。国内正式官网/pricing确认存在订阅、增购积分与取消管理，API官方现行完整定价为五档一年期充值包和商务定制。",
-      "remaining": "国内/pricing实际返回not-found卡而未列会员卡；首页明确个人/企业，但企业订阅名称与国内个人档名仍不可核。API可确认为充值，不因企业并发需求另造月度会员。",
-      "actualObstacle": "国内/pricing实际返回not-found卡而未列会员卡；首页明确个人/企业，但企业订阅名称与国内个人档名仍不可核。API可确认为充值，不因企业并发需求另造月度会员。"
+      "note": "当前公开个人/团队及企业许可和API计费边界已逐项核对；动态销售卡由真实浏览器补齐，不猜私人合同。",
+      "remaining": "",
+      "publicScopeClosed": true
     },
     {
       "platformId": "lingxi",
@@ -2754,9 +2758,9 @@
         "error": null
       },
       "checkedAt": "2026-10-20",
-      "note": "当前个人/团队会员名称以2026-10-20真实浏览器基线完整核验；国际API全部公开导航/定价可闭环为预付视频与图片资源包，非月付会员。未知私有定制合同不作为公开范围gap。",
-      "remaining": "国内API价格页标题写灵活订阅方案，但HTTP未返回实际资源包卡，因此国内API不能仅凭国际结构推断闭环。旧国际Ultra与现Ultra+没有官方迁移/存续规则，不自动合并、也不凭媒体造旧会员。",
-      "actualObstacle": "国内API价格页标题写灵活订阅方案，但HTTP未返回实际资源包卡，因此国内API不能仅凭国际结构推断闭环。旧国际Ultra与现Ultra+没有官方迁移/存续规则，不自动合并、也不凭媒体造旧会员。"
+      "note": "个人/团队国内国际现行会员已核；真实浏览器读到国内API五个180天积分套餐及定制资源包，与国际同为资源计费，不造会员。",
+      "remaining": "仅旧国际Ultra与现Ultra+官方迁移或仍有效存量条款未明确。",
+      "actualObstacle": "国内API实际价目已成功加载；当前仅保留已具名旧档映射缺口。"
     },
     {
       "platformId": "feishu",

@@ -1,0 +1,69 @@
+{
+  "checkedAt": "2026-10-20",
+  "expectedRevision": 61,
+  "revision": 62,
+  "products": 272,
+  "plans": 1072,
+  "vendors": 125,
+  "verifiedPlans": 1051,
+  "pendingPlans": 0,
+  "newPlans": 7,
+  "fullReadback": true,
+  "publicApiExactReadback": true,
+  "runtimeCommit": "77c5818f9545696e1e0dbd9403222c63f0199106",
+  "runtimeCodeUnchangedAtDataWrite": true,
+  "historicalMatchRehearsal": {
+    "approvedRules": 9,
+    "cases": 9405,
+    "differences": []
+  },
+  "allOldPlanIdsPreserved": true,
+  "coverage": {
+    "research_complete": 105,
+    "partial": 20
+  },
+  "changes": [
+    {
+      "id": "seko-team-standard",
+      "oldName": "Seko 团队版 团队标准会员",
+      "name": "Seko 团队版 团队标准会员",
+      "productId": "seko-team"
+    },
+    {
+      "id": "seko-team-advanced",
+      "oldName": "Seko 团队版 团队高级会员",
+      "name": "Seko 团队版 团队高级会员",
+      "productId": "seko-team"
+    },
+    {
+      "id": "seko-team-supreme",
+      "oldName": "Seko 团队版 团队至尊会员",
+      "name": "Seko 团队版 团队至尊会员",
+      "productId": "seko-team"
+    },
+    {
+      "id": "vidu-cn-free",
+      "oldName": "Vidu 国内版 免费版",
+      "name": "Vidu 国内版 免费版",
+      "productId": "vidu-cn"
+    },
+    {
+      "id": "vidu-cn-standard",
+      "oldName": "Vidu 国内版 标准版",
+      "name": "Vidu 国内版 标准版",
+      "productId": "vidu-cn"
+    },
+    {
+      "id": "vidu-cn-professional",
+      "oldName": "Vidu 国内版 专业版",
+      "name": "Vidu 国内版 专业版",
+      "productId": "vidu-cn"
+    },
+    {
+      "id": "vidu-cn-flagship",
+      "oldName": "Vidu 国内版 旗舰版",
+      "name": "Vidu 国内版 旗舰版",
+      "productId": "vidu-cn"
+    }
+  ]
+}

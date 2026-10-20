@@ -1,0 +1,32 @@
+{
+  "checkedAt": "2026-10-20T09:52:43.250Z",
+  "url": "https://ai-yangmao.com/",
+  "catalogRevision": 62,
+  "baselineRevision": 61,
+  "newPlanIds": [
+    "seko-team-standard",
+    "seko-team-advanced",
+    "seko-team-supreme",
+    "vidu-cn-free",
+    "vidu-cn-standard",
+    "vidu-cn-professional",
+    "vidu-cn-flagship"
+  ],
+  "vendors": [
+    {
+      "vendorId": "sensenova",
+      "planSetExactlyMatchesCatalog": true,
+      "controls": 12
+    },
+    {
+      "vendorId": "vidu",
+      "planSetExactlyMatchesCatalog": true,
+      "controls": 8
+    }
+  ],
+  "consoleErrors": [],
+  "modelscopeEmptyState": "暂无公开会员套餐",
+  "uniqueVerifiedPlans": 1051,
+  "allPlansCoveredByRevision60AndDeltas": true,
+  "knownIssue": "Opening My Conditions before initial data fetch resolves leaves a stale unavailable message; closing/reopening after load restores controls. Separate regression required before declaring all UI states verified."
+}

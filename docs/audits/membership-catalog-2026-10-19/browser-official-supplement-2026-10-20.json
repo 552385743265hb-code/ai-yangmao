@@ -1,0 +1,129 @@
+{
+  "checkedAt": "2026-10-20",
+  "method": "Real browser; official pages; no login, registration, purchase or external messages",
+  "products": [
+    {
+      "productId": "seko-team",
+      "platformIds": [
+        "sensenova"
+      ],
+      "name": "Seko 团队版",
+      "plans": [
+        "团队标准会员",
+        "团队高级会员",
+        "团队至尊会员"
+      ],
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://seko.sensetime.com/pricing",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "团队标准会员; 团队高级会员; 团队至尊会员",
+      "newPlanIds": {
+        "团队标准会员": "seko-team-standard",
+        "团队高级会员": "seko-team-advanced",
+        "团队至尊会员": "seko-team-supreme"
+      },
+      "verificationNote": "真实浏览器点击团队版标签，完整三张年度付费销售卡；个人版企业会员与团队页同名定制企业入口不重复另建。席位可增购不按人数另造档。",
+      "remaining": ""
+    },
+    {
+      "productId": "vidu-cn",
+      "platformIds": [
+        "vidu"
+      ],
+      "name": "Vidu 国内版",
+      "plans": [
+        "免费版",
+        "标准版",
+        "专业版",
+        "旗舰版"
+      ],
+      "freePlans": [
+        "免费版"
+      ],
+      "legacyPlans": [],
+      "sourceUrl": "https://www.vidu.cn/pricing",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "免费版; 标准版; 专业版; 旗舰版",
+      "newPlanIds": {
+        "免费版": "vidu-cn-free",
+        "标准版": "vidu-cn-standard",
+        "专业版": "vidu-cn-professional",
+        "旗舰版": "vidu-cn-flagship"
+      },
+      "verificationNote": "真实浏览器定价卡加载后，分别切年付、月付、连续包月均为同四档；旗舰积分滑杆不改变套餐名。官方API是单独充值资源目录，不按企业并发量造会员。",
+      "remaining": ""
+    }
+  ],
+  "additionalReadbacks": [
+    {
+      "platformId": "higgsfield",
+      "sourceUrl": "https://higgsfield.ai/pricing",
+      "currentIndividualPlans": [
+        "Free",
+        "Starter",
+        "Plus",
+        "Ultra"
+      ],
+      "currentBusinessPlans": [
+        "Team",
+        "Scale",
+        "Enterprise"
+      ],
+      "newPlans": [],
+      "heldLegacyNames": [
+        "Max",
+        "B2B"
+      ],
+      "decision": "Current purchase catalogue matches existing records; no historical Max added without renewal evidence"
+    },
+    {
+      "platformId": "modelscope",
+      "sourceUrls": [
+        "https://modelscope.cn/docs/magicube/intro",
+        "https://modelscope.cn/docs/model-service/API-Inference/intro",
+        "https://modelscope.cn/aigc"
+      ],
+      "quote": "a system of free compute Magicubes and incentives that reward active participation",
+      "decision": "Reward resource units and generation modes are not membership tiers; public named subscription catalogue closed with none; no account registration or purchase."
+    },
+    {
+      "platformId": "baidu",
+      "sourceUrl": "https://www.miaoda.cn/",
+      "currentPublicInterface": [
+        "个人空间",
+        "首页",
+        "项目",
+        "技能中心",
+        "素材库",
+        "社区",
+        "商单平台",
+        "登录"
+      ],
+      "decision": "Real browser loaded account app. Logged-out interface has no readable membership menu; current personal subscription list remains an authentication barrier rather than only an HTTP shell."
+    },
+    {
+      "platformId": "kling",
+      "sourceUrl": "https://klingai.com/dev/pricing",
+      "currentApiPackages": [
+        "套餐一",
+        "套餐二",
+        "套餐三",
+        "套餐四",
+        "套餐五",
+        "定制资源包"
+      ],
+      "validity": "180 days; no extension of unused points",
+      "decision": "Prepaid API resource units, not software membership; old Ultra/Ultra+ migration remains a specific gap"
+    },
+    {
+      "platformId": "hailuo",
+      "sourceUrl": "https://hailuoai.com/subscribe",
+      "decision": "Real browser redirects to home. The price entry ¥42/month does not reveal an anonymous full sales catalogue; do not infer domestic tiers from international account terms."
+    }
+  ]
+}
