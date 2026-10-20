@@ -438,7 +438,7 @@
       ],
       "status": "verified",
       "quote": "Legacy plans: Hobby, Start, Pro, Pro+, Ultra, Teams Standard, Teams Premium",
-      "applyReady": false,
+      "applyReady": true,
       "existingPlanIds": {
         "Enterprise": "cursor-enterprise"
       },
@@ -464,7 +464,10 @@
           "sourceUrl": "https://cursor.com/docs/account/pricing/legacy-cursor-plans"
         }
       ],
-      "remaining": "等待planReplacements运行时代码上线后再应用；更早请求制合同尚须明确具体档位，不把usage legacy混同request legacy。"
+      "remaining": "更早request-based合同可用至续费，但当前官方页未列具体各档名称；不将请求制与这里的用量制旧套餐混合。",
+      "checkedAt": "2026-10-20",
+      "note": "2026-10-20重新核对当前官方Legacy Cursor Plans与X Subscription资格表。Cursor Teams旧总称用已核实Standard/Premium一对多映射保留；必须先部署认识planReplacements的Worker后才能执行此准备补丁。",
+      "runtimePrerequisite": "Deploy membership planReplacements support and verify before applying retirement."
     },
     {
       "productId": "workbuddy",

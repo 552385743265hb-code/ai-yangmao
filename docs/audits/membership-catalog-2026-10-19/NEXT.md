@@ -6,7 +6,7 @@
 
 - 生产会员目录 **revision 59**：241 产品、970 套餐；950 verified、19 retired、1 pending。完整产品/套餐及根级别迁移元数据已与预备补丁逐项读回一致。
 - 仅剩1个旧pending：`cursor-plan-1`。Grok/X三个占位项已退休并补官方具体套餐。
-- 厂商研究覆盖：71 research_complete、44 partial、9 unreviewed。**这比 pending 数更接近剩余工作规模，不能只清四条就宣布完成。**
+- 厂商研究覆盖：71 research_complete、53 partial、0 unreviewed。**这比 pending 数更接近剩余工作规模，不能只清四条就宣布完成。**
 - 生产代码已更新为 PR106 / cc1f94632ef2（100%流量，2026-10-19实时读取）；新界面在草稿 PR105，未合并部署。当前工作区 `/tmp/ym-hf-link-worktree`，分支 `codex/membership-catalog-complete`。
 - 主 checkout 是其他任务的估值修复，勿覆盖。node_modules 为临时 symlink，不提交。
 - 本地最近完整验证：类型检查、1479 Vitest + 11 CLI（合并main及模型目录投影后）、build:web、diff --check 通过。代码新增：按厂商套餐复选、个人选择去重、旧记录提示可单独清除、跨厂商资格默认显示实际会员厂商、退休产品不重新出现在厂商下拉、目录准备工具的归并/退休守卫与回归。
@@ -128,3 +128,11 @@ CUA的IAB临时tab2当前在TRAE计费文档，可继续看企业版；`pvCatalo
 - 最新30快速上架记录全为published（包括MiniMax M3.1 Flash b521745f、Perplexity 5bcf9a33），不能用空队列代替真实模型重放。完整实时资格快照仍41会员approved；32原始needs_review需逐条等价判断，不允许仅因目录缺项重审/撤下。
 - research-gaps.json保留已发现未闭环子产品；9 unreviewed厂商实际上已有私有研究资料，可按来源更新partial，但不能伪造成全量完成或无会员。
 - 待执行：提交/推送PR105、Node24 CI、合并部署、核对marker/SHA/static/API，再应用Cursor一对多退休补丁，然后全量真实浏览器验收。
+
+## 发布分支最终补充
+
+- 已将main PR111导航更新合入61e7c82，仅文档冲突保留新导航与会员选择语义。生产另有已发布5852b6d AIHOT修复；用户明确不再重做它，发布分支4fde2f5仅保留其既有代码作基线，未重写AIHOT。
+- 5d1eb03用真实Microsoft 39产品/105套餐复现并修复anyOf最多20导致完整多选保存失败；新有界500，allOf20及其他请求限制不变，1502+11/typecheck/build通过。
+- 新增默认关闭的fast_track_rebuild只读诊断：只给同一fillFields原始job/catalog，清空ownerFields，不传保存/批准答案，返回真实完整字段与会员并在模型后对比。共享月预算仍受控，业务写为0。待main合并后对真实MiniMax b521745f执行。
+- Cursor官方现行与Enterprise已于10-20再核：新旧不等价不能合并；Teams旧总称对应Standard/Premium一对多。cursor-migration-plan.json仅准备，不是已应用；必须在新Worker部署验证之后将D1 59写到60。
+- 9个旧unreviewed厂商的已读资料已归入partial和sources，所有124厂商均有研究，但53家仍有具体子产品/存量/登录资料缺口，不能宣布无遗漏。

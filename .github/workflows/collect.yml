@@ -48,6 +48,10 @@ on:
         description: '诊断：重放已有快通任务的模型初稿，真实模型校正并比对已批准条目，不发布业务数据'
         type: string
         default: ''
+      fast_track_rebuild:
+        description: '诊断：仅从管理员原始描述重新补字段，模型之后才比较保存/批准基线；须指定已有任务'
+        type: boolean
+        default: false
 
 concurrency:
   group: collect
@@ -71,6 +75,16 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      - name: 校验只读重建诊断参数
+        if: ${{ inputs.fast_track_rebuild == true }}
+        run: |
+          if [ -z "$FAST_TRACK_REVIEW_JOB" ] || [ -n "$PROBE_URLS" ]; then
+            echo 'fast_track_rebuild requires fast_track_review_job and cannot use probe_urls'
+            exit 1
+          fi
+        env:
+          FAST_TRACK_REVIEW_JOB: ${{ inputs.fast_track_review_job }}
+          PROBE_URLS: ${{ inputs.probe_urls }}
       - name: 读取诊断
         if: ${{ inputs.probe_urls != '' && inputs.probe_urls != null }}
         run: npx tsx scripts/probe-fetch.ts
@@ -88,6 +102,7 @@ jobs:
           fi
         env:
           FAST_TRACK_REVIEW_JOB: ${{ inputs.fast_track_review_job }}
+          FAST_TRACK_REBUILD_FIELDS: ${{ inputs.fast_track_rebuild && '1' || '0' }}
           API_BASE: ${{ secrets.API_BASE }}
           IDENTITY_MODE: ${{ vars.IDENTITY_MODE || 'off' }}
           INGEST_TOKEN: ${{ secrets.INGEST_TOKEN }}

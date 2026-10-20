@@ -1,0 +1,75 @@
+{
+  "stage": "prepared-not-applied",
+  "checkedAt": "2026-10-20",
+  "expectedRevision": 59,
+  "targetRevision": 60,
+  "products": 241,
+  "plans": 977,
+  "prerequisite": "Deploy and verify Worker support for planReplacements before applying.",
+  "changes": [
+    {
+      "id": "cursor-hobby",
+      "oldName": "Cursor（存量订阅） Hobby",
+      "name": "Cursor（存量订阅） Hobby",
+      "productId": "cursor"
+    },
+    {
+      "id": "cursor-start-india",
+      "oldName": "Cursor（存量订阅） Start（印度）",
+      "name": "Cursor（存量订阅） Start（印度）",
+      "productId": "cursor"
+    },
+    {
+      "id": "cursor-pro",
+      "oldName": "Cursor（存量订阅） Pro",
+      "name": "Cursor（存量订阅） Pro",
+      "productId": "cursor"
+    },
+    {
+      "id": "cursor-pro-plus",
+      "oldName": "Cursor（存量订阅） Pro+",
+      "name": "Cursor（存量订阅） Pro+",
+      "productId": "cursor"
+    },
+    {
+      "id": "cursor-ultra",
+      "oldName": "Cursor（存量订阅） Ultra",
+      "name": "Cursor（存量订阅） Ultra",
+      "productId": "cursor"
+    },
+    {
+      "id": "cursor-teams-standard",
+      "oldName": "Cursor（存量订阅） Teams Standard",
+      "name": "Cursor（存量订阅） Teams Standard",
+      "productId": "cursor"
+    },
+    {
+      "id": "cursor-teams-premium",
+      "oldName": "Cursor（存量订阅） Teams Premium",
+      "name": "Cursor（存量订阅） Teams Premium",
+      "productId": "cursor"
+    },
+    {
+      "id": "cursor-enterprise",
+      "oldName": "Enterprise",
+      "name": "Cursor（存量订阅） Enterprise",
+      "productId": "cursor"
+    },
+    {
+      "id": "cursor-plan-1",
+      "oldName": "会员（具体档位待核实）",
+      "name": "会员（具体档位待核实）",
+      "productId": "cursor",
+      "action": "retire",
+      "reason": "原目录未区分实际套餐的占位记录，现按官方明确列示档位录入"
+    },
+    {
+      "id": "cursor-teams",
+      "oldName": "Teams",
+      "name": "Teams",
+      "productId": "cursor",
+      "action": "retire",
+      "reason": "官方明确旧Teams包含Standard/Premium两种席位；用一对多映射保留历史已批准资格，不猜用户具体席位"
+    }
+  ]
+}

@@ -137,6 +137,11 @@ async function fillFields(job: Job, options: FastTrackOptions): Promise<Result> 
  return best?{fields:await withValuation(best.fields),sourceText:pageText,model:best.model,error:lastError||'未完成发布前字段语义核对'}:{error:lastError||'模型没有返回可用字段'};
 }
 
+/** Read-only extraction diagnostic; whitelist original inputs so saved answers cannot enter the prompt. */
+export function rebuildFastTrackFields(job:Pick<Job,'id'|'platformId'|'platformName'|'url'|'benefit'|'note'|'membershipCatalog'>,options:FastTrackOptions){
+ return fillFields({id:job.id,platformId:job.platformId,platformName:job.platformName,url:job.url,benefit:job.benefit,note:job.note,membershipCatalog:job.membershipCatalog,ownerFields:{}},options);
+}
+
 export async function runFastTrack(options: FastTrackOptions) {
   const stats = { claimed: 0, published: 0, needsOwner: 0, requeued: 0 };
   if (options.dry) return stats;

@@ -342,14 +342,20 @@
       "platformId": "hoonify-ai",
       "name": "Hoonify AI",
       "site": "https://www.hoonify.com",
-      "status": "unreviewed",
-      "sources": [],
+      "status": "partial",
+      "sources": [
+        "https://www.hoonify.com/catalog",
+        "https://www.hoonify.com",
+        "https://www.hoonify.com/solutions/sovereign-ai"
+      ],
       "productIds": [],
       "homepageRead": {
         "url": "https://www.hoonify.com",
         "chars": 11232,
         "error": null
-      }
+      },
+      "checkedAt": "2026-10-20",
+      "note": "需核实 Sovereign AI / TurbOS 企业报价是否存在固定软件会员档位，以及登录后/存量订阅目录。"
     },
     {
       "platformId": "hf",
@@ -519,14 +525,22 @@
       "platformId": "ucloud",
       "name": "UCloud 星图",
       "site": "https://www.ucloud.cn",
-      "status": "unreviewed",
-      "sources": [],
+      "status": "partial",
+      "sources": [
+        "https://docs.ucloud.cn/modelverse/mdToPdf/modelverse.pdf",
+        "https://www.ucloud.cn",
+        "https://www.ucloud.cn/site/active/astraflow",
+        "https://www.ucloud.cn/site/product/FinClaw.html",
+        "https://www.ucloud-global.com/zh/blog/astraflow-xingtu-ucloud-global-llm-app-platform"
+      ],
       "productIds": [],
       "homepageRead": {
         "url": "https://www.ucloud.cn",
         "chars": 4627,
         "error": null
-      }
+      },
+      "checkedAt": "2026-10-20",
+      "note": "星图现行产品页/控制台固定订阅及仍有效旧套餐目录尚未核实；不能宣称全厂商无会员。；需跟进官网FinClaw立即体验按钮（JS动作）及 https://spt.ucloud.cn/30001 咨询入口；产品付费机制/会员目录未知。；公开自助API目录已闭环为按量；企业销售包年包月无正式档名/完整报价，FinClaw另留gap，因此全厂商不标complete。；公开产品页没有完整固定订阅目录；询价/登录后方案未知，保留gap；未发销售消息。"
     },
     {
       "platformId": "vercel",
@@ -569,53 +583,95 @@
       "platformId": "tokenrhythm",
       "name": "基元律动 TokenRhythm",
       "site": "https://tokenrhythm.studio",
-      "status": "unreviewed",
-      "sources": [],
+      "status": "partial",
+      "sources": [
+        "https://tokenrhythm.studio/docs/faq",
+        "https://tokenrhythm.studio",
+        "https://tokenrhythm.studio/models",
+        "https://tokenrhythm.studio/docs/overview"
+      ],
       "productIds": [],
       "homepageRead": {
         "url": "https://tokenrhythm.studio",
         "chars": 1013,
         "error": null
-      }
+      },
+      "checkedAt": "2026-10-20",
+      "note": "用户中心 https://tokenrhythm.studio/account 的订阅/充值目录及仍有效旧套餐未知。体验官免费Token不是命名Free会员。"
     },
     {
       "platformId": "moark",
       "name": "模力方舟",
       "site": "https://ai.gitee.com",
-      "status": "unreviewed",
-      "sources": [],
+      "status": "partial",
+      "sources": [
+        "https://ai.gitee.com/docs/billing/purchase",
+        "https://ai.gitee.com",
+        "https://ai.gitee.com/docs/appstore/price",
+        "https://ai.gitee.com/docs/pocketclaw",
+        "https://ai.gitee.com/docs/",
+        "https://ai.gitee.com/docs/billing/intro",
+        "https://ai.gitee.com/docs/FAQ"
+      ],
       "productIds": [],
       "homepageRead": {
         "url": "https://ai.gitee.com",
         "chars": 2785,
         "error": null
-      }
+      },
+      "checkedAt": "2026-10-20",
+      "note": "需核实平台登录后是否有独立Coding/Token固定周期订阅与仍有效旧会员；PocketClaw配套软件服务如有独立订阅须补。；当前公开产品/费用目录按量与资源包已闭环；组织/工作台登录后或未公开旧套餐仍未知，厂商完整性保留partial。"
     },
     {
       "platformId": "siliconflow",
       "name": "硅基流动",
       "site": "https://siliconflow.cn",
-      "status": "unreviewed",
-      "sources": [],
+      "status": "partial",
+      "sources": [
+        "https://www.siliconflow.cn",
+        "https://www.siliconflow.com/pricing",
+        "https://www.tokenplus.cn/docs/terms",
+        "https://cloud.siliconflow.cn",
+        "https://www.siliconflow.com/products",
+        "https://www.tokenplus.cn",
+        "https://www.tokenplus.cn/docs/guides/overview",
+        "https://www.tokenplus.cn/docs/guides/account-management",
+        "https://www.tokenplus.cn/docs/guides/channel-model-prices",
+        "https://www.tokenplus.cn/docs/guides/recharge",
+        "https://www.tokenplus.cn/docs/guides/consolidated-billing",
+        "https://www.tokenplus.cn/docs/faq",
+        "https://www.tokenplus.cn/docs/changelog"
+      ],
       "productIds": [],
       "homepageRead": {
         "url": "https://siliconflow.cn",
         "chars": 0,
         "error": "The read operation timed out"
-      }
+      },
+      "checkedAt": "2026-10-20",
+      "note": "国内登录控制台固定订阅及存量目录未完整核实；不能由按量产品推定整厂无会员。；结论限公开 Serverless/API 定价；登录后及未公开企业合同目录未知。；结论限公开目录，企业认证后私有报价及登录后任何订阅未知。；公开目录已证实按量，登录后或非公开企业合同未知；无证据生成Free/Pro或充值会员等级。"
     },
     {
       "platformId": "modelscope",
       "name": "阿里 魔搭 ModelScope",
       "site": "https://modelscope.cn",
-      "status": "unreviewed",
-      "sources": [],
+      "status": "partial",
+      "sources": [
+        "https://modelscope.cn/docs/magicube/intro",
+        "https://modelscope.cn",
+        "https://www.modelscope.cn/posts/435591",
+        "https://modelscope.cn/docs/model-service/API-Inference/intro",
+        "https://modelscope.cn/protocol/Terms-and-Condition",
+        "https://www.modelscope.cn/spotlight/community"
+      ],
       "productIds": [],
       "homepageRead": {
         "url": "https://modelscope.cn/home",
         "chars": 20,
         "error": null
-      }
+      },
+      "checkedAt": "2026-10-20",
+      "note": "当前官方文档 https://modelscope.cn/docs/magicube/intro 与 https://modelscope.cn/docs/model-service/API-Inference/intro 为JS页，静态抓取未得正文；登录后是否存在具体付费订阅及有效旧套餐仍未知。；魔粒当前完整计费/购买规则、Civision AI创作区和登录后权益目录未能取得正式订阅证据；不造Free/Pro，不标全厂商complete。"
     },
     {
       "platformId": "anthropic",
@@ -1138,40 +1194,57 @@
       "platformId": "baichuan",
       "name": "百川智能",
       "site": "https://www.baichuan-ai.com",
-      "status": "unreviewed",
-      "sources": [],
+      "status": "partial",
+      "sources": [
+        "https://platform.baichuan-ai.com/prices",
+        "https://ying.baichuan-ai.com/chat"
+      ],
       "productIds": [],
       "homepageRead": {
         "url": "https://www.baichuan-ai.com",
         "chars": 10,
         "error": null
-      }
+      },
+      "checkedAt": "2026-10-20",
+      "note": "百小应等聊天产品未取得现行正式会员目录；不能将开放平台按量结论外推整个厂商。；需要在现行百小医/百小应产品客户端检查会员、医疗付费服务是否正式软件订阅；不凭旧工具站免费价格新造Free。"
     },
     {
       "platformId": "meituan",
       "name": "美团 LongCat",
       "site": "https://longcat.chat",
-      "status": "unreviewed",
-      "sources": [],
+      "status": "partial",
+      "sources": [
+        "https://longcat.ai/platform/docs/zh/api-pay-as-you-go",
+        "https://longcat.chat/"
+      ],
       "productIds": [],
       "homepageRead": {
         "url": "https://longcat.chat",
         "chars": 10,
         "error": null
-      }
+      },
+      "checkedAt": "2026-10-20",
+      "note": "LongCat聊天 https://longcat.chat/pricing 仅返回聊天壳，未取得完整订阅目录，不能宣称整个美团LongCat无会员。；需登录设置/客户端确认是否现行付费套餐，并取得有效协议路径。LongCat API无固定套餐门槛和一次性Token包已在别处记录，不外推聊天。"
     },
     {
       "platformId": "tencent-hy",
       "name": "腾讯混元",
       "site": "https://hunyuan.tencent.com",
-      "status": "unreviewed",
-      "sources": [],
+      "status": "partial",
+      "sources": [
+        "https://cloud.tencent.com/document/product/1823/130060",
+        "https://cloud.tencent.com/document/product/1823/131172",
+        "https://cloud.tencent.com/document/product/1823/130055",
+        "https://yuanbao.tencent.com/"
+      ],
       "productIds": [],
       "homepageRead": {
         "url": "https://hunyuan.tencent.com",
         "chars": 4,
         "error": null
-      }
+      },
+      "checkedAt": "2026-10-20",
+      "note": "官方完整个人版目录分通用与Hy两独立系列；本通用系列39/99/299/599元/月。使用积分抵扣，非模型名称。；官方明确Hy与通用为独立套餐，可同时持有，两者共用API Key。Hy四档28/78/238/468元/月。；官方概述完整列两档。专业为自定义积分池最低5万积分500元/月；轻享为Token池最低5000万Tokens，广州100元/新加坡130元每月；规格为自定义资源量，不再拆造档位。；腾讯元宝聊天会员未在本范围取得明确官方目录，不根据混元API目录断言元宝无会员。；未取得明确无订阅的官方依据。需登录用户中心/客户端会员入口核实，不能凭API按量结论外推元宝。"
     },
     {
       "platformId": "stepfun",
