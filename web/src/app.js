@@ -2440,7 +2440,7 @@ function bindFastTrackForm(form, leadId, onDone, link = {}) {
   select.addEventListener('change', sync); sync();
   // The catalog loads only when the owner opens the picker: this form appears on many cards at once.
   const member = form.querySelector('[data-ft-membership]');
-  const mountMember = () => { const host = member.querySelector('[data-membership-editor]'), fresh = host.cloneNode(false); fresh.textContent = '正在加载会员资格目录…'; host.replaceWith(fresh); form.membershipEditor = undefined; mountMembershipEditor(form, { requirements: [] }); };
+  const mountMember = () => { const host = member.querySelector('[data-membership-editor]'), fresh = host.cloneNode(false); fresh.textContent = '正在加载会员资格目录…'; host.replaceWith(fresh); form.membershipEditor = undefined; mountMembershipEditor(form, { requirements: [] }, {selectionOnly:true}); };
   member.addEventListener('toggle', () => { if (member.open && !form.membershipEditor) mountMember(); });
   form.addEventListener('submit', async e => {
     e.preventDefault();
@@ -2448,7 +2448,7 @@ function bindFastTrackForm(form, leadId, onDone, link = {}) {
     if (!fd.platformId && !fd.newName.trim()) { msg.textContent = '请选择厂商，或填写新厂商名称'; return; }
     const body = { url: fd.url, benefit: fd.benefit.trim(), basis: fd.basis, ...(fd.platformId ? { platformId: fd.platformId } : { newPlatform: { name: fd.newName.trim(), type: fd.newType } }),
       ...Object.fromEntries(['title', 'claimStart', 'claimEnd', 'note'].filter(k => fd[k]?.trim()).map(k => [k, fd[k].trim()])), ...(leadId ? { leadId } : {}), ...link };
-    if (form.membershipEditor?.touched) {
+    if (form.membershipEditor?.touched && form.membershipEditor.selectedPlanIds.length) {
       try { const { membershipRequirement } = membershipEditFields({ requirements: [] }, form.membershipEditor, [], false, fd.url); if (membershipRequirement.status !== 'not_required') { body.membershipRequirement = membershipRequirement; body.membershipSelectionOnly = true; } }
       catch (err) { msg.textContent = err.message; return; }
     }
@@ -2495,7 +2495,7 @@ async function loadFastTrackJobs(box) {
     const job = card => jobs.find(j => j.id === card.dataset.ftJob), need = card => job(card)?.missing || [];
     box.querySelectorAll('[data-ft-job]').forEach(card => {
       const complete = card.querySelector('[data-ft-complete]');
-      if (complete?.querySelector('[data-membership-editor]')) mountMembershipEditor(complete, { requirements: job(card).requirements || [] });
+      if (complete?.querySelector('[data-membership-editor]')) mountMembershipEditor(complete, { platformId:job(card).platformId,requirements: job(card).requirements || [],membershipRequirement:job(card).membershipRequirement }, {selectionOnly:true});
       const id = card.dataset.ftJob, done = r => { toast(r.state === 'published' ? '已上架' : r.state === 'needs_owner' ? (r.error || '还缺字段：' + (r.missing || []).map(k => FIELD_L[k] || k).join('、')) : '已提交'); loadFastTrackJobs(box); };
       const directory=card.querySelector('[data-ft-directory]');
       directory?.addEventListener('toggle',async()=>{if(!directory.open||directory.dataset.loaded)return;directory.dataset.loaded='1';const host=directory.querySelector('[data-ft-catalog]');try{MEMBERSHIP_CATALOG=await adm('/memberships');MEMBERSHIP_CATALOG_OK=true;const redraw=()=>{renderMembershipCatalog(host,redraw);adm(`/fast-track/${id}/reconcile`,{}).then(r=>{if(r.state==='queued'||r.state==='published')done(r);}).catch(error=>toast(error.message));};renderMembershipCatalog(host,redraw);}catch(error){host.textContent=error.message;directory.dataset.loaded='';}});

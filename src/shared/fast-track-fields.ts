@@ -14,7 +14,11 @@ export function mergeFastTrackFields(extracted: FastTrackFields, owner: FastTrac
   if (owner.membershipSelectionOnly === true && owner.membershipRequirement) {
     const selected = membershipSchema.safeParse(owner.membershipRequirement);
     const modeled = membershipSchema.safeParse(extracted.membershipRequirement);
-    if (selected.success && ['confirmed','needs_review'].includes(selected.data.status)) {
+    if(selected.success && selected.data.status==='not_required'){
+      // Clearing checkboxes delegates eligibility to the model; it is not a full-rule override.
+      fields.membershipRequirement=modeled.success&&['confirmed','not_required'].includes(modeled.data.status)
+        ? modeled.data : {...selected.data,status:'needs_review'};
+    } else if (selected.success && ['confirmed','needs_review'].includes(selected.data.status)) {
       const choices = (r: MembershipRequirement) => {
         const clauses = r.anyOf.flatMap(g => g.allOf);
         if (!clauses.length || clauses.some(c => c.scope !== 'plans' || !c.planIds.length || c.excludePlanIds.length)) return null;

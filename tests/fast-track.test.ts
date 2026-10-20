@@ -434,3 +434,31 @@ it('selection-only unresolved identities can receive the model complete rule wit
  const empty={...picked,anyOf:[]};
  expect(mergeFastTrackFields({membershipRequirement:{...empty,status:'confirmed'}},{membershipRequirement:empty,membershipSelectionOnly:true},'x').membershipRequirement).toMatchObject({status:'needs_review'});
 });
+it('returns the merged structured membership to the owner completion panel',async()=>{
+ const created=await call('admin/fast-track',{newPlatform:{name:'Odyssey'},url:'https://odyssey.world/introducing-odyssey-3',benefit:'会员免费体验'});
+ const modeled={...proMembership(1),anyOf:[{allOf:[{...proMembership(1).anyOf[0].allOf[0],limits:{billingCycles:['annual']}}]}]};
+ f.sqlite.prepare("UPDATE fast_track_jobs SET state='needs_owner',fields_json=? WHERE id=?").run(JSON.stringify({fields:{membershipRequirement:modeled,requirements:['member:Odyssey Pro']}}),created.body.jobId);
+ expect((await call('admin/fast-track')).body.jobs.find((j:any)=>j.id===created.body.jobId).membershipRequirement).toEqual(modeled);
+});
+
+it('treats empty selection-only identity as defer-to-model while preserving explicit full no-membership overrides',()=>{
+ const empty={...proMembership(1),status:'not_required',anyOf:[],evidenceUrls:[]};const modeled=proMembership(1);
+ expect(mergeFastTrackFields({membershipRequirement:modeled},{membershipRequirement:empty,membershipSelectionOnly:true},'x').membershipRequirement).toEqual(modeled);
+ expect(mergeFastTrackFields({},{membershipRequirement:empty,membershipSelectionOnly:true},'x').membershipRequirement).toMatchObject({status:'needs_review',anyOf:[]});
+ expect(mergeFastTrackFields({membershipRequirement:modeled},{membershipRequirement:empty},'x').membershipRequirement).toEqual(empty);
+});
+it('an API caller clearing selection-only choices requeues completion and still needs modeled membership',async()=>{
+ const empty={...proMembership(1),status:'not_required',anyOf:[],evidenceUrls:[]};
+ const created=await call('admin/fast-track',{newPlatform:{name:'Odyssey'},url:'https://odyssey.world/introducing-odyssey-3',benefit:'会员额外免费体验',membershipRequirement:empty,membershipSelectionOnly:true});
+ const id=created.body.jobId;
+ expect((await call('admin/fast-track')).body.jobs.find((j:any)=>j.id===id).membershipRequirement.status).toBe('needs_review');
+ f.sqlite.prepare('UPDATE membership_catalog SET revision=1,data_json=? WHERE id=1').run(JSON.stringify(catalog));
+ f.sqlite.prepare("UPDATE fast_track_jobs SET state='needs_owner',owner_fields_json=?,fields_json=? WHERE id=?").run(JSON.stringify({membershipRequirement:proMembership(1),membershipSelectionOnly:true}),JSON.stringify({fields:memberPerk}),id);
+ expect((await call(`admin/fast-track/${id}/complete`,{fields:{membershipRequirement:empty,membershipSelectionOnly:true}})).body.state).toBe('queued');
+ expect(f.sqlite.prepare('SELECT count(*) n FROM offers').get()).toEqual({n:0});
+ expect((await ingest(`fast-track/${id}/claim`,{})).status).toBe(200);
+ const modeled={...proMembership(1),anyOf:[{allOf:[{...proMembership(1).anyOf[0].allOf[0],limits:{billingCycles:['annual']}}]}]};
+ const result=await settle(id,await ingest(`fast-track/${id}/result`,{fields:{...memberPerk,membershipRequirement:modeled},sourceText:'Annual Pro subscribers receive additional free video generation.'}));
+ expect(result.body.state).toBe('published');
+ const saved=JSON.parse(f.sqlite.prepare('SELECT membership_requirement FROM offers').get().membership_requirement);expect(saved).toMatchObject({status:'confirmed',anyOf:modeled.anyOf});
+});

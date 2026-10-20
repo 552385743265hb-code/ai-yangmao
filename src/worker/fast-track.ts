@@ -159,11 +159,14 @@ export async function listFastTrack(db: D1Database) {
   const rows = await db.prepare("SELECT j.*, p.name platform_name FROM fast_track_jobs j JOIN platforms p ON p.id=j.platform_id ORDER BY CASE WHEN j.state IN ('published','rejected') THEN 1 ELSE 0 END,j.created_at DESC LIMIT 100").all<JobRow & { platform_name: string }>();
   return rows.results.map(r => ({ id: r.id, platformId: r.platform_id, platformName: r.platform_name, url: r.url, benefit: r.benefit, basis: r.basis, state: r.state, attempts: r.attempts, missing: r.missing_json ? JSON.parse(r.missing_json) as string[] : [], error: r.error, offerId: r.offer_id, leadId: r.lead_id, identityTaskId: r.identity_task_id ?? null, createdAt: r.created_at, publishedAt: r.published_at, updatedAt: r.updated_at, resolution: r.resolution_json ? JSON.parse(r.resolution_json) : null, catalogBlock:JSON.parse(r.fields_json??'{}').catalogBlock??null,
     // Current requirements let the membership picker show what the model read and keep the non-member ones.
-    requirements: jobRequirements(r, r.platform_name) }));
+    requirements: jobRequirements(r, r.platform_name), membershipRequirement: jobFields(r,r.platform_name).membershipRequirement }));
+}
+function jobFields(r: JobRow, platformName: string): FastTrackFields {
+  const stored = JSON.parse(r.fields_json ?? '{}') as { fields?: FastTrackFields }, owner = JSON.parse(r.owner_fields_json) as FastTrackFields;
+  return mergeFastTrackFields(stored.fields ?? {}, owner, r.benefit, platformName);
 }
 function jobRequirements(r: JobRow, platformName: string): string[] {
-  const stored = JSON.parse(r.fields_json ?? '{}') as { fields?: FastTrackFields }, owner = JSON.parse(r.owner_fields_json) as FastTrackFields;
-  const value = mergeFastTrackFields(stored.fields ?? {}, owner, r.benefit, platformName).requirements;
+  const value = jobFields(r,platformName).requirements;
   return Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string') : [];
 }
 

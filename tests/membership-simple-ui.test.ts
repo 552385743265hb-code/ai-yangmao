@@ -97,5 +97,32 @@ it('blocks ambiguous additions to restriction branches rather than choosing the 
 });
 it('does not confirm an unresolved requirement just because a plan was selected',()=>{
  const {ctx}=fixture();(ctx as any).original={...requirement([{allOf:[clause('a',['a-pro','a-max'])]}]),status:'needs_review'};
- expect(vm.runInContext(`membershipSelectionRequirement(['a-pro'],original,1).status`,ctx)).toBe('needs_review');
+ expect(vm.runInContext(`membershipSelectionRequirement(['a-pro'],original,1,true).status`,ctx)).toBe('needs_review');
+});
+
+it('lets the normal administrator editor confirm an unresolved rule with source evidence',async()=>{
+ const {ctx,document,change}=fixture();(ctx as any).offer={membershipRequirement:{...requirement([{allOf:[clause('a',['a-pro','a-max'])]}]),status:'needs_review',evidenceUrls:[]}};
+ await vm.runInContext(`mountMembershipEditor(document.querySelector('form'),offer)`,ctx);change('[data-member-plan="a-pro"]',undefined,false);
+ expect(vm.runInContext(`membershipEditFields(offer,document.querySelector('form').membershipEditor,[],false,'https://official.example/perk').membershipRequirement`,ctx)).toMatchObject({status:'confirmed',evidenceUrls:['https://official.example/perk']});
+});
+it('expands a retired excluded alias without removing the exclusion',()=>{
+ const {ctx}=fixture();vm.runInContext(`MEMBERSHIP_CATALOG={...MEMBERSHIP_CATALOG,planIdAliases:{'old-max':'a-max'},plans:[...MEMBERSHIP_CATALOG.plans,{...MEMBERSHIP_CATALOG.plans[1],id:'old-max',status:'retired'}]}`,ctx);
+ (ctx as any).original=requirement([{allOf:[{...clause('a',['a-pro','a-max']),excludePlanIds:['old-max']}]}]);
+ const saved=vm.runInContext(`membershipSelectionRequirement(['a-pro'],original,1)`,ctx);
+ expect(saved.anyOf[0].allOf[0].excludePlanIds).toEqual(['a-max']);expect(core.validateMembership(saved,vm.runInContext('MEMBERSHIP_CATALOG',ctx))).toEqual([]);
+});
+it('keeps the fast-track editor full conjunction and restrictions but submits only unresolved concrete identities',async()=>{
+ const {ctx,document,change}=fixture();const original=requirement([{allOf:[{...clause('a',['a-pro','a-max'],{billingCycles:['annual']}),excludePlanIds:['a-pro']},clause('b',['b-pro'])]}]);(ctx as any).offer={membershipRequirement:original};
+ await vm.runInContext(`mountMembershipEditor(document.querySelector('form'),offer,{selectionOnly:true})`,ctx);
+ // Change a selected plan off/on while the required usage product stays selected.
+ change('[data-member-plan="a-max"]',undefined,false);
+ expect(vm.runInContext(`document.querySelector('form').membershipEditor.requirement.anyOf[0].allOf.length`,ctx)).toBe(2);
+ change('[data-member-plan="a-max"]',undefined,true);
+ const saved=vm.runInContext(`membershipEditFields(offer,document.querySelector('form').membershipEditor,[],false,'https://official.example/perk').membershipRequirement`,ctx);
+ expect(saved).toMatchObject({status:'needs_review',evidenceUrls:[]});
+ expect(saved.anyOf.flatMap((g:any)=>g.allOf).map((c:any)=>({ids:c.planIds,excluded:c.excludePlanIds,limits:c.limits}))).toEqual([{ids:['a-max'],excluded:[],limits:undefined},{ids:['b-pro'],excluded:[],limits:undefined}]);
+});
+it('serializes an empty fast-track choice for the server to defer to the model',()=>{
+ const {ctx}=fixture();(ctx as any).editor={touched:true,selectionOnly:true,selectedPlanIds:[],catalogAvailable:true,catalogRevision:1,requirement:{...requirement([]),status:'not_required'}};
+ expect(vm.runInContext(`membershipEditFields({},editor,[],false,'https://official.example/perk').membershipRequirement.status`,ctx)).toBe('not_required');
 });

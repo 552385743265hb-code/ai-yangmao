@@ -684,12 +684,22 @@
         "TEAM LITE",
         "TEAM PLUS",
         "TEAM PRO",
-        "TEAM MAX"
+        "TEAM MAX",
+        "Enterprise"
       ],
       "freePlans": [],
-      "status": "partial",
+      "status": "verified",
       "quote": "BASE; STAR; PRO; APEX; TEAM LITE; TEAM PLUS; TEAM PRO; TEAM MAX",
-      "remaining": "核对企业定制入口与国内版本"
+      "remaining": "核对企业定制入口与国内版本",
+      "applyReady": true,
+      "planSources": {
+        "Enterprise": "https://www.oiioii.ai/price"
+      },
+      "note": "官方价格页企业定制订阅，未公开金额或周期，企业方案不能省略。",
+      "newPlanIds": {
+        "Enterprise": "oiioii-enterprise"
+      },
+      "checkedAt": "2026-10-20"
     },
     {
       "productId": "kiro",
@@ -2108,7 +2118,8 @@
         "Plus",
         "Pro",
         "Team",
-        "Enterprise"
+        "Enterprise",
+        "Basic（存量）"
       ],
       "freePlans": [
         "Free"
@@ -2117,7 +2128,18 @@
       "status": "verified",
       "applyReady": true,
       "quote": "Free; Plus; Pro; Team; Enterprise",
-      "verificationNote": "FAQ明确免费账号；Enterprise为定制软件团队计划。按量积分不作为月付会员。旧Basic是否仍支持需进一步核实。"
+      "verificationNote": "FAQ明确免费账号；Enterprise为定制软件团队计划。按量积分不作为月付会员。旧Basic是否仍支持需进一步核实。",
+      "planSources": {
+        "Basic（存量）": "https://docs.ideogram.ai/plans-and-pricing/available-plans"
+      },
+      "legacyPlans": [
+        "Basic（存量）"
+      ],
+      "note": "官方完整目录明确Basic停售但现有用户继续960credits/月。按量/预付API钱包不作订阅。",
+      "newPlanIds": {
+        "Basic（存量）": "ideogram-basic-legacy"
+      },
+      "checkedAt": "2026-10-20"
     },
     {
       "productId": "leonardo-solo",
@@ -4053,6 +4075,554 @@
         "https://portal.nousresearch.com/business"
       ],
       "note": "官方Business页面独立Enterprise卡明确Contact us，私有云/本地受控部署，带SSO、SLA与定制入门；作为正式企业软件方案列Enterprise，不推定金额或结算周期。"
+    },
+    {
+      "productId": "minimax-design-cn",
+      "platformIds": [
+        "minimax"
+      ],
+      "name": "MiniMax Design 国内版",
+      "plans": [
+        "Starter",
+        "Plus",
+        "Pro"
+      ],
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://design.minimaxi.com/media-plan/subscribe",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Starter; Plus; Pro",
+      "sourceExcerpts": [
+        "订阅会员",
+        "对比套餐 | Starter | Plus | Pro 热门",
+        "月度积分 | 10,000 | 87,000 | 270,000"
+      ],
+      "remaining": "未找到明确仍有效旧Design套餐；不把官网新用户赠3000积分视为Free正式套餐。与海螺、MPlan不自动合并。",
+      "note": "官方完整价格页三档。月费65/499/1399元，年费624/4788/13428元；积分单购不是会员。官网企业通道是项目制作、私有部署和销售服务，并未公开独立命名会员。"
+    },
+    {
+      "productId": "minimax-design-international",
+      "platformIds": [
+        "minimax"
+      ],
+      "name": "MiniMax Design 国际版",
+      "plans": [
+        "Starter",
+        "Plus",
+        "Pro"
+      ],
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://design.minimax.io/media-plan/subscribe",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Starter; Plus; Pro",
+      "sourceExcerpts": [
+        "MiniMax Design Membership",
+        "Compare plans | Starter | Plus | Pro Popular",
+        "Monthly Credits | 10,000 | 87,000 | 270,000"
+      ],
+      "remaining": "未找到明确仍有效旧Design套餐；免费起步文案不等于正式Free档。与国内独立计价，不凭同品牌合并。",
+      "note": "官方完整三档；月费10.5/76/215美元，年费100.8/729.6/2064美元。企业销售为定制制作服务，未公开独立订阅名称。"
+    },
+    {
+      "productId": "tapnow",
+      "platformIds": [
+        "tapnow"
+      ],
+      "name": "TapNow",
+      "plans": [
+        "Basic",
+        "Pro",
+        "Ultimate",
+        "Max"
+      ],
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://app.tapnow.ai/pricing",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Basic; Pro; Ultimate; Max",
+      "sourceExcerpts": [
+        "Select your plan",
+        "Basic — For getting started",
+        "Pro — MOST POPULAR",
+        "Ultimate — For high-volume production",
+        "Max — BEST VALUE",
+        "Up to 100 team members"
+      ],
+      "remaining": "价格页有Enterprise标签但正文未展开其报价及具体命名，另留gap；未证实仍有效旧套餐或正式Free档。",
+      "note": "官方当前四张订阅卡完整列名。Pro、Ultimate、Max有积分量滑杆，不凭表格残留Unlimited字符串创建旧会员；卡片均自带最多100团队成员。充值、无限卡活动非另一个会员等级。"
+    },
+    {
+      "productId": "liblibai-creative",
+      "platformIds": [
+        "liblibtv"
+      ],
+      "name": "LiblibAI 创作会员",
+      "plans": [
+        "入门版",
+        "标准版",
+        "进阶版",
+        "高级版",
+        "豪华版",
+        "至尊版"
+      ],
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://www.liblib.art/viphome",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "入门版; 标准版; 进阶版; 高级版; 豪华版; 至尊版",
+      "sourceExcerpts": [
+        "创作会员",
+        "每月生成数量 | 入门版 0.7k | 标准版 1.5k | 进阶版 4.6k | 高级版 11.7k | 高级版 16.3k | 豪华版 32.8k | 至尊版 50.5k | 至尊版 66k | 至尊版 92k",
+        "高级版会员可通过滑杆选择。"
+      ],
+      "remaining": "团队会员另列gap；当前目录未给仍有效旧训练会员合同依据。不要依据同公司和共用登录合并LibTV。",
+      "newPlanIds": {
+        "入门版": "liblibai-creative-entry",
+        "标准版": "liblibai-creative-standard",
+        "进阶版": "liblibai-creative-advanced",
+        "高级版": "liblibai-creative-high",
+        "豪华版": "liblibai-creative-deluxe",
+        "至尊版": "liblibai-creative-supreme"
+      },
+      "note": "当前完整创作会员目录六个命名等级；高级版与至尊版可调积分量，表格展示9种额度，非9个命名等级。单独积分超市、模型专享积分均非会员。免费登录赠分不是已确认正式Free套餐名。"
+    },
+    {
+      "productId": "trae-cn",
+      "platformIds": [
+        "trae"
+      ],
+      "name": "TRAE 国内个人版",
+      "plans": [
+        "Free",
+        "会员 Lite",
+        "会员 Pro",
+        "会员 Pro+",
+        "会员 Ultra",
+        "会员 Express（存量）"
+      ],
+      "freePlans": [
+        "Free"
+      ],
+      "legacyPlans": [
+        "会员 Express（存量）"
+      ],
+      "sourceUrl": "https://docs.trae.cn/ide_plans-and-billing",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Free; 会员 Lite; 会员 Pro; 会员 Pro+; 会员 Ultra; 会员 Express（存量）",
+      "sourceExcerpts": [
+        "套餐总览：会员 Lite | 会员 Pro | 会员 Pro+ | 会员 Ultra",
+        "如果原“优速通 Express”套餐仍在有效期内，系统会自动将其切换为新的“会员 Express”套餐。该套餐不再开放购买，并将在所有存量套餐到期后下架。"
+      ],
+      "remaining": "国内官网地域403，但官方文档完整可读；旧速通迁移前是否仍可持有原名需要控制台确认，不据迁移赠分说明推定。",
+      "note": "当前官方完整四付费档+免费模式。Lite/Pro/Pro+/Ultra单月49/99/239/699元。Express为官方明确继续服务的存量套餐；不把原速通Pro/Pro+/Ultra重造仍可续费旧档。"
+    },
+    {
+      "productId": "trae-cn-enterprise",
+      "platformIds": [
+        "trae"
+      ],
+      "name": "TRAE 国内企业版",
+      "plans": [
+        "团队版",
+        "旗舰版",
+        "教育版"
+      ],
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://docs.trae.cn/enterprise_billing-overview-for-trae-enterprise",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "团队版; 旗舰版; 教育版",
+      "sourceExcerpts": [
+        "TRAE 企业版提供团队版和旗舰版两种套餐",
+        "TRAE 教育版面向院校、教育主管单位及教育与科研机构",
+        "教育版不支持升级到团队版或旗舰版。"
+      ],
+      "remaining": "未找到官方明确仍有效旧企业合同档；不把Work专属账号赠送权益列作套餐。",
+      "planSources": {
+        "教育版": "https://docs.trae.cn/enterprise_education-edition"
+      },
+      "newPlanIds": {
+        "团队版": "trae-cn-enterprise-team",
+        "旗舰版": "trae-cn-enterprise-flagship",
+        "教育版": "trae-cn-enterprise-education"
+      },
+      "note": "团队149元/席/月1席起；旗舰259元/席/月3席起。教育版为销售报价的独立许可，1席起，并非团队版折扣。教育版专属来源https://docs.trae.cn/enterprise_education-edition。"
+    },
+    {
+      "productId": "trae-byteplus-enterprise",
+      "platformIds": [
+        "trae"
+      ],
+      "name": "TRAE BytePlus 企业版",
+      "plans": [
+        "Teams"
+      ],
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://docs.byteplus.com/en/docs/trae/trae-enterprise-plans",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Teams",
+      "sourceExcerpts": [
+        "Currently, TRAE Enterprise offers the Teams plan. Details are as follows:",
+        "Monthly price 40 USD/seat/month",
+        "Minimum number of seats 1"
+      ],
+      "remaining": "未取得仍有效旧企业合同目录；当前官方页无其他命名等级。",
+      "note": "当前BytePlus官方完整目录仅Teams，40美元/席/月，1席起；不沿用国内旗舰/教育档，也不重复已有国际个人套餐。"
+    },
+    {
+      "productId": "coze-international",
+      "platformIds": [
+        "coze"
+      ],
+      "name": "Coze 国际版",
+      "plans": [
+        "Free",
+        "Premium Lite",
+        "Premium",
+        "Premium Plus"
+      ],
+      "freePlans": [
+        "Free"
+      ],
+      "legacyPlans": [],
+      "sourceUrl": "https://www.coze.com/premium",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Free; Premium Lite; Premium; Premium Plus",
+      "sourceExcerpts": [
+        "Free 0 USD / month 10 credits/day",
+        "Premium Lite",
+        "Premium",
+        "Premium Plus 39 USD / month 1000 credits/day",
+        "Coze subscription services include Premium Lite, Premium, and Premium Plus."
+      ],
+      "remaining": "无官方明确仍有效旧国际订阅名称；不复制国内12档。",
+      "note": "官方现行价格页和完整订阅帮助双源确认四档，付费9/19/39美元/月，团队协作人数为各档权益而非另一个Team会员。积分/Coze Tokens按量资源另行购买不列套餐。帮助https://docs.coze.com/guides/subscription明确取消后保留至当前账期结束。"
+    },
+    {
+      "productId": "seko",
+      "platformIds": [
+        "sensenova"
+      ],
+      "name": "Seko 个人版与企业定制",
+      "plans": [
+        "标准会员",
+        "高级会员",
+        "至尊会员",
+        "企业会员"
+      ],
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://seko.sensetime.com/pricing",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "标准会员; 高级会员; 至尊会员; 企业会员",
+      "sourceExcerpts": [
+        "订阅 Seko 畅享更多权益",
+        "标准会员 — 适合首次探索AI视频创作",
+        "高级会员 — 适合高频内容创作",
+        "至尊会员 — 适合专业级大规模制作",
+        "企业会员 — 适合更大规模与精细化管理的企业团队 — 定制报价"
+      ],
+      "remaining": "团队版标签另需核实，见独立gap；免费登录积分未确认正式免费会员名；没有明确仍有效旧合同证据。",
+      "newPlanIds": {
+        "标准会员": "seko-standard",
+        "高级会员": "seko-advanced",
+        "至尊会员": "seko-supreme",
+        "企业会员": "seko-enterprise"
+      },
+      "note": "官方价格页HTTP SSR完整四张卡；Jina只显示前三张，企业会员已从同源SSR正文提取。个人积分商品不是会员。"
+    },
+    {
+      "productId": "wps-office-ai-personal",
+      "platformIds": [
+        "lingxi"
+      ],
+      "name": "WPS Office 国内个人会员",
+      "plans": [
+        "注册用户",
+        "WPS超级会员",
+        "WPS大会员"
+      ],
+      "freePlans": [
+        "注册用户"
+      ],
+      "legacyPlans": [],
+      "sourceUrl": "https://vip.wps.cn/price",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "注册用户; WPS超级会员; WPS大会员",
+      "sourceExcerpts": [
+        "选择适合你的会员方案",
+        "key:\"register\",title:\"注册用户\"",
+        "key:\"vip_pro\",title:\"WPS超级会员\"",
+        "key:\"vip_365\",title:\"WPS大会员\"",
+        "isPurchasable: \"vip_365\" === this.card.key || \"vip_pro\" === this.card.key"
+      ],
+      "remaining": "旧WPS AI会员和超级会员Pro仅在通用脚本sku映射出现，当前价格完整卡不包含；尚无官方明确仍有效旧合同或续费说明，暂不作为legacyPlan。",
+      "newPlanIds": {
+        "注册用户": "wps-office-ai-personal-free",
+        "WPS超级会员": "wps-office-ai-personal-super",
+        "WPS大会员": "wps-office-ai-personal-grand"
+      },
+      "note": "当前官方价格页三张完整卡，付费128/268元每年。名称以该页当前公开price脚本https://personal-act.wpscdn.cn/operations-fe/vip-v3/js/s-1.aa60d0a98a992a06ac69.js核实。注册用户为官方实际命名基础档，可免费用部分AI；超级和大会员均有AI权益，非仅普通办公产品。与灵犀四档保持独立。"
+    },
+    {
+      "productId": "wps365-business",
+      "platformIds": [
+        "lingxi"
+      ],
+      "name": "WPS 365 国内商业版",
+      "plans": [
+        "体验版",
+        "商业协作版",
+        "商业高级版",
+        "商业旗舰版"
+      ],
+      "freePlans": [
+        "体验版"
+      ],
+      "legacyPlans": [],
+      "sourceUrl": "https://365.wps.cn/price",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "体验版; 商业协作版; 商业高级版; 商业旗舰版",
+      "sourceExcerpts": [
+        "以下版本仅适用于中国大陆地区",
+        "套餐名称 / 价格 | 体验版 0元/人/年 | 商业协作版 199元/人/年 | 商业高级版 399元/人/年 | 商业旗舰版 599元/人/年"
+      ],
+      "remaining": "",
+      "newPlanIds": {
+        "体验版": "wps365-business-free",
+        "商业协作版": "wps365-business-collaboration",
+        "商业高级版": "wps365-business-advanced",
+        "商业旗舰版": "wps365-business-flagship"
+      },
+      "note": "官方完整商业四档，含企业AI功能差异。到期自动降体验版、数据成员保留、续费恢复。FAQ举例的旧商业标准版不能作为仍有效旧合同证明。"
+    },
+    {
+      "productId": "wps365-smart",
+      "platformIds": [
+        "lingxi"
+      ],
+      "name": "WPS 365（智能版）",
+      "plans": [
+        "智能高级版",
+        "智能旗舰版"
+      ],
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://365.wps.cn/price",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "WPS 365 智能高级版; WPS 365 智能旗舰版",
+      "sourceExcerpts": [
+        "当前官网导航：WPS 365 智能高级版；WPS 365 智能旗舰版",
+        "name:\"wps365_smart_advanced\",name_zh:\"WPS 365 智能高级版\",pricing_price:\"1199\"",
+        "name:\"wps365_smart_flagship\",name_zh:\"WPS 365 智能旗舰版\",pricing_price:\"2399\""
+      ],
+      "remaining": "当前HTML默认商业标签，智能页定价由公开当前脚本核实；无已证实旧合同。",
+      "newPlanIds": {
+        "智能高级版": "wps365-smart-advanced",
+        "智能旗舰版": "wps365-smart-flagship"
+      },
+      "note": "官方价目页导航完整列智能版两档；当前公开价格数据脚本https://qn.cache.wpscdn.cn/encs/plus/be8bc29.js列实际套餐对象、year价格和询价入口。非将商业版改名。"
+    },
+    {
+      "productId": "wps365-ai-package",
+      "platformIds": [
+        "lingxi"
+      ],
+      "name": "WPS 365 AI 智点年度许可",
+      "plans": [
+        "基础包",
+        "高级包",
+        "旗舰包"
+      ],
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://365.wps.cn/ai_price",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "applyReady": true,
+      "quote": "WPS 365 AI 智点基础包; WPS 365 AI 智点高级包; WPS 365 AI 智点旗舰包",
+      "sourceExcerpts": [
+        "WPS 365 AI 智点基础包 ¥9800/年",
+        "WPS 365 AI 智点高级包 ¥9.8万/年",
+        "WPS 365 AI 智点旗舰包 联系销售",
+        "企业购买WPS 365 AI 智点基础包、高级包或旗舰包后，可获得对应的智点及AI使用权益。"
+      ],
+      "remaining": "需要更多智点或定制方案是咨询选项，不另造第四会员；与WPS灵犀、WPS365席位档分别记录。",
+      "newPlanIds": {
+        "基础包": "wps365-ai-package-basic",
+        "高级包": "wps365-ai-package-advanced",
+        "旗舰包": "wps365-ai-package-flagship"
+      },
+      "note": "年度方案除了共享智点，还授予WPS Comate/企业AI知识库/专家/Skill/连接器等权限，高级与旗舰额外Studio、API Hub、Data Hub和安全管理；因此不是只充余额的单次资源包，按有功能授权的AI年度许可记录。"
+    },
+    {
+      "productId": "ppio-token-plan",
+      "platformIds": [
+        "ppio"
+      ],
+      "name": "PPIO 企业 Token Plan",
+      "plans": [
+        "Enterprise Basic",
+        "Enterprise Pro",
+        "Enterprise Max"
+      ],
+      "freePlans": [],
+      "legacyPlans": [],
+      "sourceUrl": "https://ppio.com/token-plan",
+      "checkedAt": "2026-10-20",
+      "status": "verified",
+      "quote": "Enterprise Basic | Enterprise Pro | Enterprise Max",
+      "remaining": "名称/周期/现价已闭环；厂商还有DeepSeek-畅享旧规格见独立待核项，不能称全厂商存量目录完整。",
+      "evidenceUrls": [
+        "https://ppio.com/token-plan",
+        "https://ppio.com/_next/static/chunks/50798-20d1f5f61681cf85.js",
+        "https://ppio.com/_next/static/chunks/2226-f91168b7765cd5e4.js",
+        "https://api-server.ppio.com/v1/product/resource-pack-specs/list"
+      ],
+      "applyReady": true,
+      "planPrices": {
+        "Enterprise Basic": {
+          "amount": 1598,
+          "currency": "CNY",
+          "period": "month"
+        },
+        "Enterprise Pro": {
+          "amount": 4798,
+          "currency": "CNY",
+          "period": "month"
+        },
+        "Enterprise Max": {
+          "amount": 13998,
+          "currency": "CNY",
+          "period": "month"
+        }
+      },
+      "existingPlanAliases": {
+        "Basic": "Enterprise Basic",
+        "Pro": "Enterprise Pro",
+        "Max": "Enterprise Max"
+      },
+      "note": "当前官网HTML实际引用50798-20d1f5f61681cf85.js：固定三张显示名Enterprise Basic/Pro/Max，标注连续包月；其E函数从公开API只覆盖price/quota/tier，不覆盖显示name。公开GET资源规格API取回id4企业Token Plan，cycle-based、有效期1 month，底层tier Lite/Pro/Max；前端价格除1e4，当前1598/4798/13998元/月。套餐融合Token额度16亿/48亿/140亿。8月发布价1520/4560/13300已过时，不能继续当现价。加量套餐包id5有效3个月按扣减，为资源补充非会员。"
+    },
+    {
+      "productId": "jimeng-membership",
+      "platformIds": [
+        "jimeng"
+      ],
+      "name": "即梦",
+      "plans": [
+        "基础会员",
+        "标准会员",
+        "高级会员",
+        "超级会员"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://jimeng.jianying.com/",
+      "quote": "基础会员; 标准会员; 高级会员; 超级会员",
+      "note": "2026-10-20真实浏览器核对四周期：单月三档；连续包月/季/年另有超级会员。高级积分滑杆仍同名，不按额度重复；活动优惠日期不是订阅有效截止。",
+      "newPlanIds": {
+        "基础会员": "jimeng-membership-basic",
+        "标准会员": "jimeng-membership-standard",
+        "高级会员": "jimeng-membership-advanced",
+        "超级会员": "jimeng-membership-super"
+      },
+      "status": "verified",
+      "applyReady": true,
+      "checkedAt": "2026-10-20"
+    },
+    {
+      "productId": "kling-international-personal",
+      "platformIds": [
+        "kling"
+      ],
+      "name": "Kling AI（国际个人版）",
+      "plans": [
+        "Basic",
+        "Standard",
+        "Pro",
+        "Premier",
+        "Ultra+"
+      ],
+      "freePlans": [
+        "Basic"
+      ],
+      "sourceUrl": "https://kling.ai/app/membership/membership-plan",
+      "quote": "Basic; Standard; Pro; Premier; Ultra+",
+      "note": "真实浏览器完整会员比较表，Basic免费。Premier积分滑杆0-3改变8000/18000/28000/38000额度，不改正式名称。当前新Ultra+与旧媒体Ultra不猜同档。月/年同一会员。",
+      "status": "verified",
+      "applyReady": true,
+      "checkedAt": "2026-10-20"
+    },
+    {
+      "productId": "kling-international-team",
+      "platformIds": [
+        "kling"
+      ],
+      "name": "Kling AI（国际团队版）",
+      "plans": [
+        "Team Plan"
+      ],
+      "freePlans": [],
+      "sourceUrl": "https://kling.ai/app/membership/team-membership-plan",
+      "quote": "Team Plan",
+      "note": "真实浏览器Business入口核对；月/年同一Team Plan。官方明确个人与团队workspaces独立，资产/积分/订阅权益不能共享或转移，不把团队席位与个人合并。",
+      "status": "verified",
+      "applyReady": true,
+      "checkedAt": "2026-10-20"
+    },
+    {
+      "productId": "leonardo-api",
+      "platformIds": [
+        "leonardo"
+      ],
+      "name": "Leonardo API",
+      "sourceUrl": "https://intercom.help/leonardo-ai/en/articles/9698289-leonardo-phoenix-leonardo-ai-s-foundational-model",
+      "freePlans": [],
+      "status": "verified",
+      "applyReady": true,
+      "quote": "Basic API Plan, Standard API Plan, Pro API Plan, and Custom API Plan",
+      "additionalSources": [
+        {
+          "sourceUrl": "https://intercom.help/leonardo-ai/en/articles/9698274-how-to-get-your-invoices-for-api-subscription",
+          "quote": "For our API plans, Leonardo.Ai uses Paddle"
+        }
+      ],
+      "remaining": "官网/api HTTP403；现行月度价格/付费周期与存量迁移未闭环。目录四档可录，不能填写未经核实的价格。",
+      "coverageStatus": "partial",
+      "checkedAt": "2026-10-20",
+      "plans": [
+        "Basic",
+        "Standard",
+        "Pro",
+        "Custom"
+      ],
+      "note": "官方Phoenix FAQ列明全部四个API Plan，独立API发票帮助明确称subscription；不因API按量单价而忽略正式API订阅。"
     }
   ]
 }

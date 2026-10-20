@@ -23,7 +23,9 @@ function migrateMembershipPreferences(previous) {
 }
 function membershipEditFields(original, editor, nonmember, otherTouched, evidenceUrl) {
   if (!editor?.touched) return otherTouched ? { requirements: [...nonmember, ...(original.requirements || []).filter(r => r.startsWith('member:'))] } : {};
-  const requirement = structuredClone(editor.requirement);
+  const requirement = editor.selectionOnly && editor.requirement.status !== 'not_required'
+    ? {...membershipSelectionRequirement(editor.selectedPlanIds,{schemaVersion:'membership-v1',status:'not_required',catalogRevision:editor.catalogRevision,anyOf:[],evidenceUrls:[]},editor.catalogRevision,true),status:'needs_review',evidenceUrls:[]}
+    : structuredClone(editor.requirement);
   if (requirement.status === 'confirmed' && (!MEMBERSHIP_CATALOG_OK || editor.catalogAvailable === false)) throw new Error('会员目录未加载，不能保存已确认资格');
   requirement.catalogRevision = editor.catalogRevision ?? requirement.catalogRevision;
   if (requirement.status === 'not_required') requirement.anyOf = [];
@@ -96,7 +98,7 @@ function membershipSelectedPlans(requirement) {
     return MEMBERSHIP_CATALOG.plans.filter(p=>p.productId===c.productId&&p.status==='verified'&&!excluded.includes(p.id)&&(c.scope==='plans'?selected.includes(p.id):c.scope==='any_paid'?p.billing==='paid':true)).map(p=>p.id);
   })))];
 }
-function membershipSelectionRequirement(ids, original, revision) {
+function membershipSelectionRequirement(ids, original, revision, selectionOnly = false) {
   const selected=[...new Set(ids)].filter(id=>MEMBERSHIP_CATALOG.plans.some(p=>p.id===id&&p.status==='verified'));
   if(!selected.length){
     if(original.anyOf.some(g=>g.allOf.length>1))throw new Error('联合资格不能移除全部必需套餐，请按官方条款重新核对。');
@@ -115,7 +117,12 @@ function membershipSelectionRequirement(ids, original, revision) {
         if(plan.productId===clause.productId&&peers.length===1&&!clause.excludePlanIds.some(old=>(YMMembership.membershipPlanAlternatives(old,MEMBERSHIP_CATALOG)||[]).includes(id)))planIds.push(id);
       }
     }
-    return {...structuredClone(clause),scope:'plans',planIds};
+    const excludePlanIds=[...new Set(clause.excludePlanIds.flatMap(id=>{
+      const alternatives=YMMembership.membershipPlanAlternatives(id,MEMBERSHIP_CATALOG);
+      if(!alternatives||alternatives.some(current=>!MEMBERSHIP_CATALOG.plans.some(p=>p.id===current&&p.productId===clause.productId&&p.status==='verified')))throw new Error('原排除套餐尚未完成目录映射，不能移除其限制。');
+      return alternatives;
+    }))];
+    return {...structuredClone(clause),scope:'plans',planIds,excludePlanIds};
   })}));
   if(anyOf.some(g=>g.allOf.length>1&&g.allOf.some(c=>!c.planIds.length)))throw new Error('联合资格中的必需产品不能取消全部套餐，请按官方条款重新核对。');
   const retained=anyOf.filter(g=>g.allOf.every(c=>c.planIds.length));
@@ -127,12 +134,12 @@ function membershipSelectionRequirement(ids, original, revision) {
     if(!group){group={allOf:[{productId:plan.productId,scope:'plans',planIds:[],excludePlanIds:[]}]};retained.push(group);}
     group.allOf[0].planIds.push(id);
   }
-  return {...original,status:original.status==='needs_review'?'needs_review':'confirmed',catalogRevision:revision,anyOf:retained};
+  return {...original,status:selectionOnly?'needs_review':'confirmed',catalogRevision:revision,anyOf:retained};
 }
 function membershipEditorMarkup(state) {
   const vendors=membershipVendors();if(!vendors.some(v=>v.id===state.vendorId))state.vendorId=vendors[0]?.id||'';
   const vendor=vendors.find(v=>v.id===state.vendorId),plans=membershipVendorPlans(state.vendorId);
-  return `<p class="small">选择厂商，再勾选适用的会员套餐；未选择套餐表示无需会员。</p>
+  return `<p class="small">选择厂商，再勾选适用的会员套餐；${state.selectionOnly?'未勾选由模型补齐。':'未选择套餐表示无需会员。'}</p>
     ${state.error?`<p class="warn-note">${esc(state.error)}</p>`:''}
     ${state.requirement.legacyText?.length?`<p class="small muted">原会员条件：${state.requirement.legacyText.map(esc).join('；')}</p>`:''}
     ${state.catalogRevision!==MEMBERSHIP_CATALOG.revision?'<p class="warn-note">目录已更新，请刷新后核对选择。</p>':''}
@@ -142,10 +149,10 @@ function membershipEditorMarkup(state) {
     <button type="button" class="btn sm" data-membership-clear>清除会员选择</button> <button type="button" class="btn sm" data-membership-refresh>刷新目录</button>
     <details data-membership-detail="catalog"><summary>管理会员目录</summary><div data-membership-catalog></div></details>`;
 }
-async function mountMembershipEditor(form, original) {
+async function mountMembershipEditor(form, original, options = {}) {
   const host=form.querySelector('[data-membership-editor]');
   const requirement=structuredClone(membershipRequirementOf(original));
-  const state={touched:false,requirement,original:structuredClone(requirement),selectedPlanIds:[],vendorId:original.platformId||form.querySelector('[name="platformId"]')?.value||'',catalogRevision:MEMBERSHIP_CATALOG.revision,catalogAvailable:false,error:''};
+  const state={selectionOnly:options.selectionOnly===true,touched:false,requirement,original:structuredClone(requirement),selectedPlanIds:[],vendorId:original.platformId||form.querySelector('[name="platformId"]')?.value||'',catalogRevision:MEMBERSHIP_CATALOG.revision,catalogAvailable:false,error:''};
   form.membershipEditor=state;
   form.addEventListener('change',e=>{if(e.target.matches('[name="req"],[name="reqPay"]'))form.nonmemberTouched=true;});
   try{const catalog=await adm('/memberships');if(!Array.isArray(catalog.products)||!Array.isArray(catalog.plans))throw new Error('目录响应无效');MEMBERSHIP_CATALOG=catalog;MEMBERSHIP_CATALOG_OK=true;state.catalogAvailable=true;state.catalogRevision=catalog.revision;}
@@ -158,7 +165,7 @@ async function mountMembershipEditor(form, original) {
   }
   const redraw=()=>{const open=host.querySelector('[data-membership-detail="catalog"]')?.open;host.innerHTML=membershipEditorMarkup(state);host.querySelector('[data-membership-detail="catalog"]').open=!!open;renderMembershipCatalog(host.querySelector('[data-membership-catalog]'),redraw);};
   const update=()=>{
-    try{state.requirement=membershipSelectionRequirement(state.selectedPlanIds,state.original,state.catalogRevision);state.touched=true;state.error='';}
+    try{state.requirement=membershipSelectionRequirement(state.selectedPlanIds,state.original,state.catalogRevision,state.selectionOnly);state.touched=true;state.error='';}
     catch(error){state.error=error.message;state.selectedPlanIds=membershipSelectedPlans(state.requirement);}
     redraw();
   };

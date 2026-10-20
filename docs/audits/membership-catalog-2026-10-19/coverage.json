@@ -406,14 +406,21 @@
       "platformId": "ppio",
       "name": "PPIO 派欧云",
       "site": "https://ppio.com",
-      "status": "unreviewed",
-      "sources": [],
-      "productIds": [],
+      "status": "partial",
+      "sources": [
+        "https://ppio.com/token-plan",
+        "https://api-server.ppio.com/v1/product/resource-pack-specs/list"
+      ],
+      "productIds": [
+        "ppio-token-plan"
+      ],
       "homepageRead": {
         "url": "https://ppio.com",
         "chars": 2798,
         "error": null
-      }
+      },
+      "checkedAt": "2026-10-20",
+      "note": "当前官网脚本和同源公开价目API闭环企业Basic/Pro/Max三个正式档（1598/4798/13998元月）；API另有DeepSeek旧包但当前购买入口未展示，存量有效性未证实。"
     },
     {
       "platformId": "replicas",
@@ -775,18 +782,24 @@
       "status": "partial",
       "sources": [
         "https://platform.minimaxi.com/docs/m-plan/intro",
-        "https://platform.minimax.io/docs/m-plan/intro"
+        "https://platform.minimax.io/docs/m-plan/intro",
+        "https://design.minimaxi.com/media-plan/subscribe",
+        "https://design.minimax.io/media-plan/subscribe"
       ],
       "productIds": [
         "minimax",
-        "member-ecd9b66d-5b49-4fe9-87fd-0252cf6b42d7"
+        "member-ecd9b66d-5b49-4fe9-87fd-0252cf6b42d7",
+        "minimax-design-cn",
+        "minimax-design-international"
       ],
       "homepageRead": {
         "url": "https://www.minimax.cn/",
         "chars": 1702,
         "error": null
       },
-      "appliedCatalogRevision": 41
+      "appliedCatalogRevision": 41,
+      "checkedAt": "2026-10-20",
+      "note": "国内/国际M Plan及存量Token Plan、独立Design国内/国际三档均已核；海螺国内当前动态价格仍待核。"
     },
     {
       "platformId": "mistral",
@@ -936,18 +949,21 @@
       "status": "partial",
       "sources": [
         "https://www.sensenova.cn/token-plan",
-        "https://www.xiaohuanxiong.com/pricing"
+        "https://www.xiaohuanxiong.com/pricing",
+        "https://seko.sensetime.com/pricing"
       ],
       "productIds": [
         "sensenova-token-plan",
-        "sensenova-raccoon"
+        "sensenova-raccoon",
+        "seko"
       ],
       "homepageRead": {
         "url": "https://platform.sensenova.cn",
         "chars": 24,
         "error": null
       },
-      "checkedAt": "2026-10-20"
+      "checkedAt": "2026-10-20",
+      "note": "TokenPlan公测、小浣熊四档、Seko个人三档及企业已核；Seko团队和小浣熊行业命名许可待核。"
     },
     {
       "platformId": "doubao",
@@ -1516,9 +1532,10 @@
       "platformId": "ideogram",
       "name": "Ideogram",
       "site": "https://ideogram.ai",
-      "status": "partial",
+      "status": "research_complete",
       "sources": [
-        "https://ideogram.ai/pricing/"
+        "https://ideogram.ai/pricing/",
+        "https://docs.ideogram.ai/plans-and-pricing/available-plans"
       ],
       "productIds": [
         "ideogram"
@@ -1527,7 +1544,9 @@
         "url": "https://ideogram.ai",
         "chars": 0,
         "error": "HTTP Error 403: Forbidden"
-      }
+      },
+      "checkedAt": "2026-10-20",
+      "note": "当前Free/Plus/Pro/Team/Enterprise及明确仍有效Basic存量已核；同目录区分API按量/预付钱包。"
     },
     {
       "platformId": "instinct",
@@ -1608,30 +1627,40 @@
       "site": "https://leonardo.ai",
       "status": "partial",
       "sources": [
-        "https://leonardo.ai/pricing"
+        "https://leonardo.ai/pricing",
+        "https://intercom.help/leonardo-ai/en/articles/9698289-leonardo-phoenix-leonardo-ai-s-foundational-model"
       ],
       "productIds": [
         "leonardo-solo",
-        "leonardo-teams"
+        "leonardo-teams",
+        "leonardo-api"
       ],
       "homepageRead": {
         "url": "https://leonardo.ai",
         "chars": 0,
         "error": "HTTP Error 403: Forbidden"
-      }
+      },
+      "checkedAt": "2026-10-20",
+      "note": "个人/团队和独立API Basic/Standard/Pro/Custom已核；旧Apprentice/Artisan/Maestro是否仍有效未证实。"
     },
     {
       "platformId": "liblibtv",
       "name": "LiblibAI（含 LibTV）",
       "site": "https://www.liblib.art",
-      "status": "unreviewed",
-      "sources": [],
-      "productIds": [],
+      "status": "partial",
+      "sources": [
+        "https://www.liblib.art/viphome"
+      ],
+      "productIds": [
+        "liblibai-creative"
+      ],
       "homepageRead": {
         "url": "https://www.liblib.art",
         "chars": 32,
         "error": null
-      }
+      },
+      "checkedAt": "2026-10-20",
+      "note": "LiblibAI创作会员六个命名等级已核；LibTV、团队及共享许可仍需核实。"
     },
     {
       "platformId": "lovable",
@@ -1797,7 +1826,7 @@
       "platformId": "oiioii",
       "name": "OiiOii（AI 动画创作）",
       "site": "https://www.oiioii.ai",
-      "status": "partial",
+      "status": "research_complete",
       "sources": [
         "https://www.oiioii.ai/price"
       ],
@@ -1808,7 +1837,9 @@
         "url": "https://www.oiioii.ai",
         "chars": 2938,
         "error": null
-      }
+      },
+      "checkedAt": "2026-10-20",
+      "note": "当前个人四档、团队四档和正式企业定制入口已核；中文页面是同档美元本地化，不自造国内独立账号套餐。"
     },
     {
       "platformId": "ollama",
@@ -2010,32 +2041,46 @@
       "platformId": "tapnow",
       "name": "TapNow",
       "site": "https://www.tapnow.ai",
-      "status": "unreviewed",
-      "sources": [],
-      "productIds": [],
+      "status": "partial",
+      "sources": [
+        "https://app.tapnow.ai/pricing"
+      ],
+      "productIds": [
+        "tapnow"
+      ],
       "homepageRead": {
         "url": "https://www.tapnow.ai",
         "chars": 702,
         "error": null
-      }
+      },
+      "checkedAt": "2026-10-20",
+      "note": "当前Basic/Pro/Ultimate/Max已核，Enterprise页签尚未展开，不从读取空白猜无套餐。"
     },
     {
       "platformId": "trae",
       "name": "Trae",
       "site": "https://www.trae.ai",
-      "status": "partial",
+      "status": "research_complete",
       "sources": [
-        "https://docs.trae.ai/ide/new-plans-and-billing?_lang=en"
+        "https://docs.trae.ai/ide/new-plans-and-billing?_lang=en",
+        "https://docs.trae.cn/ide_plans-and-billing",
+        "https://docs.trae.cn/enterprise_billing-overview-for-trae-enterprise",
+        "https://docs.byteplus.com/en/docs/trae/trae-enterprise-plans"
       ],
       "productIds": [
-        "trae"
+        "trae",
+        "trae-cn",
+        "trae-cn-enterprise",
+        "trae-byteplus-enterprise"
       ],
       "homepageRead": {
         "url": "https://www.trae.ai",
         "chars": 81,
         "error": null
       },
-      "appliedCatalogRevision": 41
+      "appliedCatalogRevision": 41,
+      "checkedAt": "2026-10-20",
+      "note": "已核国际个人现行及年付存量、国内个人现行及Express到期前存量、国内企业团队/旗舰/教育、BytePlus企业Teams；官方迁移原速通旧档不重复建身份。"
     },
     {
       "platformId": "tripo",
@@ -2077,10 +2122,17 @@
       "site": "https://www.lingxi.cn",
       "status": "partial",
       "sources": [
-        "https://www.lingxi.cn/docs"
+        "https://www.lingxi.cn/docs",
+        "https://vip.wps.cn/price",
+        "https://365.wps.cn/price",
+        "https://365.wps.cn/ai_price"
       ],
       "productIds": [
-        "wps-lingxi"
+        "wps-lingxi",
+        "wps-office-ai-personal",
+        "wps365-business",
+        "wps365-smart",
+        "wps365-ai-package"
       ],
       "homepageRead": {
         "url": "https://www.lingxi.cn",
@@ -2088,7 +2140,7 @@
         "error": null
       },
       "checkedAt": "2026-10-20",
-      "note": "灵犀体验/标准/进阶/旗舰四档已核；WPS其他AI/365及企业AI许可需继续核对。"
+      "note": "灵犀四档、WPS个人3档、365商业4/智能2/年度AI许可3档已核。独立WPSAI存量和国际产品仍待官方证据；与灵犀不同订阅不合并。"
     },
     {
       "platformId": "windsurf",
@@ -2154,27 +2206,41 @@
       "platformId": "jimeng",
       "name": "即梦",
       "site": "https://jimeng.jianying.com",
-      "status": "unreviewed",
-      "sources": [],
-      "productIds": [],
+      "status": "research_complete",
+      "sources": [
+        "https://jimeng.jianying.com/"
+      ],
+      "productIds": [
+        "jimeng-membership"
+      ],
       "homepageRead": {
         "url": "https://jimeng.jianying.com",
         "chars": 1091,
         "error": null
-      }
+      },
+      "checkedAt": "2026-10-20",
+      "note": "当前真实浏览器四计费周期完整基础/标准/高级/超级；积分滑杆不改会员名，国内独立于国际Dreamina。"
     },
     {
       "platformId": "kling",
       "name": "可灵 AI",
       "site": "https://klingai.com",
-      "status": "unreviewed",
-      "sources": [],
-      "productIds": [],
+      "status": "partial",
+      "sources": [
+        "https://kling.ai/app/membership/membership-plan",
+        "https://kling.ai/app/membership/team-membership-plan"
+      ],
+      "productIds": [
+        "kling-international-personal",
+        "kling-international-team"
+      ],
       "homepageRead": {
         "url": "https://kling.ai/",
         "chars": 6639,
         "error": null
-      }
+      },
+      "checkedAt": "2026-10-20",
+      "note": "当前国际个人五档、团队TeamPlan完整核对；国内站已从快手官方IR链接进入，当前动态会员及API/旧档仍待核。"
     },
     {
       "platformId": "feishu",
@@ -2211,19 +2277,24 @@
       "platformId": "coze",
       "name": "扣子",
       "site": "https://www.coze.cn",
-      "status": "partial",
+      "status": "research_complete",
       "sources": [
-        "https://docs.coze.cn/coze_pro_premium_package"
+        "https://docs.coze.cn/coze_pro_premium_package",
+        "https://www.coze.com/premium",
+        "https://docs.coze.com/guides/subscription"
       ],
       "productIds": [
-        "coze"
+        "coze",
+        "coze-international"
       ],
       "homepageRead": {
         "url": "https://www.coze.cn",
         "chars": 43,
         "error": null
       },
-      "appliedCatalogRevision": 41
+      "appliedCatalogRevision": 41,
+      "checkedAt": "2026-10-20",
+      "note": "国内个人/团队/企业现行及可续存量十二档、国际完整Free/PremiumLite/Premium/PremiumPlus四档已核；Tokens按量资源不算会员。"
     },
     {
       "platformId": "doubao-work",
