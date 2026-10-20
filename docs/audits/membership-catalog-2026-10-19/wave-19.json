@@ -1,0 +1,179 @@
+{
+  "checkedAt": "2026-10-19",
+  "expectedRevision": 48,
+  "revision": 49,
+  "products": 89,
+  "plans": 472,
+  "vendors": 124,
+  "fullReadback": true,
+  "changes": [
+    {
+      "id": "x-subscription-free",
+      "oldName": "The X Subscription（Cursor / Grok / X） Free",
+      "name": "The X Subscription（Cursor / Grok / X） Free",
+      "productId": "x-subscription"
+    },
+    {
+      "id": "x-subscription-plus",
+      "oldName": "The X Subscription（Cursor / Grok / X） Plus",
+      "name": "The X Subscription（Cursor / Grok / X） Plus",
+      "productId": "x-subscription"
+    },
+    {
+      "id": "x-subscription-premium",
+      "oldName": "The X Subscription（Cursor / Grok / X） Premium",
+      "name": "The X Subscription（Cursor / Grok / X） Premium",
+      "productId": "x-subscription"
+    },
+    {
+      "id": "x-subscription-super",
+      "oldName": "The X Subscription（Cursor / Grok / X） Super",
+      "name": "The X Subscription（Cursor / Grok / X） Super",
+      "productId": "x-subscription"
+    },
+    {
+      "id": "x-subscription-ultra",
+      "oldName": "The X Subscription（Cursor / Grok / X） Ultra",
+      "name": "The X Subscription（Cursor / Grok / X） Ultra",
+      "productId": "x-subscription"
+    },
+    {
+      "id": "x-subscription-teams-free",
+      "oldName": "The X Subscription（Cursor / Grok / X） Teams Free",
+      "name": "The X Subscription（Cursor / Grok / X） Teams Free",
+      "productId": "x-subscription"
+    },
+    {
+      "id": "x-subscription-teams-premium",
+      "oldName": "The X Subscription（Cursor / Grok / X） Teams Premium",
+      "name": "The X Subscription（Cursor / Grok / X） Teams Premium",
+      "productId": "x-subscription"
+    },
+    {
+      "id": "x-subscription-teams-super",
+      "oldName": "The X Subscription（Cursor / Grok / X） Teams Super",
+      "name": "The X Subscription（Cursor / Grok / X） Teams Super",
+      "productId": "x-subscription"
+    },
+    {
+      "id": "x-subscription-teams-ultra",
+      "oldName": "The X Subscription（Cursor / Grok / X） Teams Ultra",
+      "name": "The X Subscription（Cursor / Grok / X） Teams Ultra",
+      "productId": "x-subscription"
+    },
+    {
+      "id": "x-subscription-enterprise",
+      "oldName": "The X Subscription（Cursor / Grok / X） Enterprise",
+      "name": "The X Subscription（Cursor / Grok / X） Enterprise",
+      "productId": "x-subscription"
+    },
+    {
+      "id": "grok-supergrok-lite-verified",
+      "oldName": "Grok（独立存量订阅） SuperGrok Lite",
+      "name": "Grok（独立存量订阅） SuperGrok Lite",
+      "productId": "grok"
+    },
+    {
+      "id": "grok-supergrok",
+      "oldName": "Grok（独立存量订阅） SuperGrok",
+      "name": "Grok（独立存量订阅） SuperGrok",
+      "productId": "grok"
+    },
+    {
+      "id": "grok-supergrok-plus",
+      "oldName": "Grok（独立存量订阅） SuperGrok Plus",
+      "name": "Grok（独立存量订阅） SuperGrok Plus",
+      "productId": "grok"
+    },
+    {
+      "id": "grok-supergrok-heavy",
+      "oldName": "Grok（独立存量订阅） SuperGrok Heavy",
+      "name": "Grok（独立存量订阅） SuperGrok Heavy",
+      "productId": "grok"
+    },
+    {
+      "id": "grok-business-supergrok",
+      "oldName": "Grok（独立存量订阅） Business SuperGrok",
+      "name": "Grok（独立存量订阅） Business SuperGrok",
+      "productId": "grok"
+    },
+    {
+      "id": "grok-business-supergrok-heavy",
+      "oldName": "Grok（独立存量订阅） Business SuperGrok Heavy",
+      "name": "Grok（独立存量订阅） Business SuperGrok Heavy",
+      "productId": "grok"
+    },
+    {
+      "id": "grok-enterprise",
+      "oldName": "Enterprise",
+      "name": "Grok（独立存量订阅） Enterprise",
+      "productId": "grok"
+    },
+    {
+      "id": "grok-supergrok-lite",
+      "oldName": "会员（除 SuperGrok lite，档位待核实）",
+      "name": "会员（除 SuperGrok lite，档位待核实）",
+      "productId": "grok",
+      "action": "retire",
+      "reason": "该旧ID实际描述排除Lite的未知套餐，不是SuperGrok Lite本身；不以ID猜资格"
+    },
+    {
+      "id": "grok-bot",
+      "oldName": "Bot 付费订阅（具体档位待核实）",
+      "name": "Bot 付费订阅（具体档位待核实）",
+      "productId": "grok",
+      "action": "retire",
+      "reason": "官方明确Bot没有独立订阅，按真实Cursor、SuperGrok、Business席位或X订阅授权；不能将应用入口当作套餐"
+    },
+    {
+      "id": "x-basic",
+      "oldName": "X Premium（独立订阅） Basic",
+      "name": "X Premium（独立订阅） Basic",
+      "productId": "x"
+    },
+    {
+      "id": "x-premium",
+      "oldName": "X Premium（独立订阅） Premium",
+      "name": "X Premium（独立订阅） Premium",
+      "productId": "x"
+    },
+    {
+      "id": "x-premium-plus",
+      "oldName": "X Premium（独立订阅） Premium+",
+      "name": "X Premium（独立订阅） Premium+",
+      "productId": "x"
+    },
+    {
+      "id": "x-plan-1",
+      "oldName": "会员（具体档位待核实）",
+      "name": "会员（具体档位待核实）",
+      "productId": "x",
+      "action": "retire",
+      "reason": "原记录只写X会员未说明档位；现按官方三档录入，不猜原资格"
+    },
+    {
+      "id": "x-premium-business-basic",
+      "oldName": "X Premium Business Basic",
+      "name": "X Premium Business Basic",
+      "productId": "x-premium-business"
+    },
+    {
+      "id": "x-premium-business-full-access",
+      "oldName": "X Premium Business Full Access",
+      "name": "X Premium Business Full Access",
+      "productId": "x-premium-business"
+    },
+    {
+      "id": "x-premium-organizations-full-access",
+      "oldName": "X Premium Organizations Full Access",
+      "name": "X Premium Organizations Full Access",
+      "productId": "x-premium-organizations"
+    },
+    {
+      "id": "x-premium-organizations-custom-plans-for-governments",
+      "oldName": "X Premium Organizations Custom Plans for Governments",
+      "name": "X Premium Organizations Custom Plans for Governments",
+      "productId": "x-premium-organizations"
+    }
+  ]
+}

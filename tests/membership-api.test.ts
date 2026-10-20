@@ -76,3 +76,22 @@ it('editing membership on a published legacy offer stages a proposal instead of 
  expect(JSON.parse(String(f.sqlite.prepare('SELECT requirements FROM offers').get()?.requirements))).toEqual(['none']);
  const proposal=f.sqlite.prepare('SELECT candidate FROM offer_proposals').get();expect(JSON.parse(String(proposal?.candidate)).membershipRequirement.status).toBe('confirmed');
 });
+it('preserves vendor coverage and exact ID redirects when the directory is read and edited',async()=>{
+ catalog();const old=JSON.parse(String(f.sqlite.prepare('SELECT data_json FROM membership_catalog WHERE id=1').get()?.data_json));
+ old.vendors=[{id:'vendor',name:'Vendor',status:'available',sourceUrl:'https://vendor.example/plans',verifiedAt:'2026-10-19'}];old.planIdAliases={'old-pro':'vendor-pro'};
+ f.sqlite.prepare('UPDATE membership_catalog SET data_json=? WHERE id=1').run(JSON.stringify(old));
+ expect((await f.call('memberships')).body).toMatchObject({vendors:old.vendors,planIdAliases:old.planIdAliases});
+ const result=await f.call('admin/memberships',{kind:'plan',name:'Vendor Max',productId:'vendor-sub',billing:'paid',sourceUrl:'https://vendor.example/plans',expectedCatalogRevision:1},true);expect(result.status).toBe(201);
+ expect((await readMembershipCatalog(f.db))).toMatchObject({vendors:old.vendors,planIdAliases:old.planIdAliases});
+});
+it('creates qualified plan names and rejects short-name duplicates within the same product',async()=>{
+ catalog();
+ const duplicate=await f.call('admin/memberships',{kind:'plan',name:'Pro',productId:'vendor-sub',sourceUrl:'https://vendor.example/plans',expectedCatalogRevision:1},true);
+ expect(duplicate.status).toBe(409);
+ const created=await f.call('admin/memberships',{kind:'plan',name:'Max',productId:'vendor-sub',sourceUrl:'https://vendor.example/plans',expectedCatalogRevision:1},true);
+ expect(created.body.entry.name).toBe('Vendor Max');
+});
+it('records product vendor ownership and rejects nonexistent vendor IDs',async()=>{
+ const bad=await f.call('admin/memberships',{kind:'product',name:'Unknown',platformIds:['missing'],sourceUrl:'https://vendor.example/plans',expectedCatalogRevision:0},true);expect(bad.status).toBe(400);
+ const created=await f.call('admin/memberships',{kind:'product',name:'Vendor subscription',platformIds:['vendor'],sourceUrl:'https://vendor.example/plans',expectedCatalogRevision:0},true);expect(created.status).toBe(201);expect(created.body.entry.platformIds).toEqual(['vendor']);
+});

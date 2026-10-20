@@ -7,6 +7,19 @@ export function fastTrackCatalogChoices(c:MembershipCatalog):MembershipCatalog{
  const products=c.products.filter(p=>p.status==='verified');
  return {...c,products,plans:c.plans.filter(p=>p.status==='verified'&&products.some(x=>x.id===p.productId))};
 }
+/** Prompt-only projection: grouping removes repeated ownership and audit fields, never identities. */
+export function fastTrackCatalogPrompt(c:MembershipCatalog){
+ const choices=fastTrackCatalogChoices(c);
+ return {revision:choices.revision,products:choices.products.map(p=>({
+  id:p.id,name:p.name,
+  ...(p.aliases?.length?{aliases:p.aliases}:{}),
+  ...(p.platformIds?.length?{platformIds:p.platformIds}:{}),
+  ...(p.legacy===true?{legacy:true}:{}),
+  plans:choices.plans.filter(plan=>plan.productId===p.id).map(plan=>({
+   id:plan.id,name:plan.name,...(plan.aliases?.length?{aliases:plan.aliases}:{}),billing:plan.billing,...(plan.legacy===true?{legacy:true}:{}),
+  })),
+ }))};
+}
 export interface CatalogBlock {catalogRevision:number;reason:string;entries:{id:string;name:string;kind:'product'|'plan';status:string;sourceUrl:string}[]}
 /** A changed directory can resolve the pause; another model call cannot verify pending directory facts. */
 export function fastTrackCatalogBlock(fields:Fields,c:MembershipCatalog,benefit:string):CatalogBlock|null{

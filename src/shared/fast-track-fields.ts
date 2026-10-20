@@ -1,4 +1,5 @@
 /** Fast-track listing fields: shared by the Worker (publish gate) and the pipeline (paid fallback decision). */
+import {membershipSchema,type MembershipRequirement} from './membership';
 import {semanticFieldIssues,type SemanticContext} from './fast-track-semantics';
 import { collectedOfferIn, normalizeRequirements } from './ingest';
 
@@ -8,7 +9,28 @@ export type FastTrackFields = Record<string, unknown>;
 /** Owner-entered values win; the owner's benefit line is the listing's benefit text; the model fills the rest. */
 export function mergeFastTrackFields(extracted: FastTrackFields, owner: FastTrackFields, benefit: string, platformName?: string): FastTrackFields {
   const fields: FastTrackFields = { ...extracted };
-  for (const [key, value] of Object.entries(owner)) if (value !== undefined && value !== null && value !== '' && !(Array.isArray(value) && !value.length)) fields[key] = value;
+  for (const [key, value] of Object.entries(owner)) if (key !== 'membershipSelectionOnly' && value !== undefined && value !== null && value !== '' && !(Array.isArray(value) && !value.length)) fields[key] = value;
+  // Checkbox input chooses identities only. The model remains responsible for source restrictions.
+  if (owner.membershipSelectionOnly === true && owner.membershipRequirement) {
+    const selected = membershipSchema.safeParse(owner.membershipRequirement);
+    const modeled = membershipSchema.safeParse(extracted.membershipRequirement);
+    if(selected.success && selected.data.status==='not_required'){
+      // Clearing checkboxes delegates eligibility to the model; it is not a full-rule override.
+      fields.membershipRequirement=modeled.success&&['confirmed','not_required'].includes(modeled.data.status)
+        ? modeled.data : {...selected.data,status:'needs_review'};
+    } else if (selected.success && ['confirmed','needs_review'].includes(selected.data.status)) {
+      const choices = (r: MembershipRequirement) => {
+        const clauses = r.anyOf.flatMap(g => g.allOf);
+        if (!clauses.length || clauses.some(c => c.scope !== 'plans' || !c.planIds.length || c.excludePlanIds.length)) return null;
+        return JSON.stringify([...new Set(clauses.flatMap(c => c.planIds.map(id => JSON.stringify([c.productId,id]))))].sort());
+      };
+      const picked = choices(selected.data);
+      fields.membershipRequirement = modeled.success && modeled.data.status === 'confirmed' && picked !== null && choices(modeled.data) === picked
+        ? {...modeled.data,catalogRevision:selected.data.catalogRevision}
+        : {...selected.data,status:'needs_review'};
+    }
+  }
+  delete fields.membershipSelectionOnly;
   // A bare `member` used to fail the listing schema with no field for the owner to fix (Higgsfield Wan 3.0, 2026-10-16/17).
   if (fields.requirements !== undefined) fields.requirements = normalizeRequirements(fields.requirements, platformName);
   fields.valueText = typeof owner.valueText === 'string' && owner.valueText.trim() ? owner.valueText : benefit;
@@ -31,7 +53,7 @@ export function mergeFastTrackFields(extracted: FastTrackFields, owner: FastTrac
 export function missingOwnerChoices(fields: FastTrackFields): string[] {
   const member = Array.isArray(fields.requirements) && fields.requirements.some(r => typeof r === 'string' && r.startsWith('member:'));
   const picked = (fields.membershipRequirement as { status?: unknown } | undefined)?.status;
-  return member && picked !== 'confirmed' && picked !== 'not_required' ? ['membershipRequirement'] : [];
+  return (member || picked === 'needs_review') && picked !== 'confirmed' && picked !== 'not_required' ? ['membershipRequirement'] : [];
 }
 
 export function missingBasicFields(fields: FastTrackFields): string[] {

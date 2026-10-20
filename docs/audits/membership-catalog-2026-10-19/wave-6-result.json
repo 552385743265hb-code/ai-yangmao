@@ -1,0 +1,404 @@
+{
+  "appliedAt": "2026-10-19",
+  "beforeRevision": 35,
+  "afterRevision": 36,
+  "products": 46,
+  "plans": 247,
+  "planStates": {
+    "verified": 222,
+    "retired": 9,
+    "pending": 16
+  },
+  "changes": [
+    {
+      "id": "adobe-firefly-standard",
+      "oldName": "Adobe Firefly Standard",
+      "name": "Adobe Firefly Standard",
+      "productId": "adobe-firefly"
+    },
+    {
+      "id": "adobe-firefly-pro",
+      "oldName": "Pro",
+      "name": "Adobe Firefly Pro",
+      "productId": "adobe-firefly"
+    },
+    {
+      "id": "adobe-firefly-pro-plus",
+      "oldName": "Pro Plus",
+      "name": "Adobe Firefly Pro Plus",
+      "productId": "adobe-firefly"
+    },
+    {
+      "id": "adobe-firefly-premium",
+      "oldName": "Premium",
+      "name": "Adobe Firefly Premium",
+      "productId": "adobe-firefly"
+    },
+    {
+      "id": "adobe-firefly-pro-for-teams",
+      "oldName": "Adobe Firefly Pro for teams",
+      "name": "Adobe Firefly Pro for teams",
+      "productId": "adobe-firefly"
+    },
+    {
+      "id": "adobe-firefly-pro-plus-for-teams",
+      "oldName": "Adobe Firefly Pro Plus for teams",
+      "name": "Adobe Firefly Pro Plus for teams",
+      "productId": "adobe-firefly"
+    },
+    {
+      "id": "adobe-firefly-premium-for-teams",
+      "oldName": "Adobe Firefly Premium for teams",
+      "name": "Adobe Firefly Premium for teams",
+      "productId": "adobe-firefly"
+    },
+    {
+      "id": "adobe-firefly-2-000-credits",
+      "oldName": "Adobe Firefly 2,000 Credits",
+      "name": "Adobe Firefly 2,000 Credits",
+      "productId": "adobe-firefly"
+    },
+    {
+      "id": "adobe-firefly-4-000-credits",
+      "oldName": "4,000 Credits",
+      "name": "Adobe Firefly 4,000 Credits",
+      "productId": "adobe-firefly"
+    },
+    {
+      "id": "adobe-firefly-7-000-credits",
+      "oldName": "7,000 Credits",
+      "name": "Adobe Firefly 7,000 Credits",
+      "productId": "adobe-firefly"
+    },
+    {
+      "id": "adobe-firefly-10-000-credits",
+      "oldName": "10,000 Credits",
+      "name": "Adobe Firefly 10,000 Credits",
+      "productId": "adobe-firefly"
+    },
+    {
+      "id": "adobe-firefly-50-000-credits",
+      "oldName": "50,000 Credits",
+      "name": "Adobe Firefly 50,000 Credits",
+      "productId": "adobe-firefly"
+    },
+    {
+      "id": "adobe-firefly-mobile-and-web",
+      "oldName": "Adobe Firefly Mobile and web",
+      "name": "Adobe Firefly Mobile and web",
+      "productId": "adobe-firefly"
+    },
+    {
+      "id": "adobe-firefly-legacy-100",
+      "oldName": "Adobe Firefly Legacy（100 credits）",
+      "name": "Adobe Firefly Legacy（100 credits）",
+      "productId": "adobe-firefly"
+    },
+    {
+      "id": "adobe-firefly-generative-credits-legacy-100",
+      "oldName": "Adobe Firefly Generative credits add-on Legacy（100 credits）",
+      "name": "Adobe Firefly Generative credits add-on Legacy（100 credits）",
+      "productId": "adobe-firefly"
+    },
+    {
+      "id": "adobe-firefly-plan-8",
+      "oldName": "付费个人套餐（具体档位待核实）",
+      "name": "付费个人套餐（具体档位待核实）",
+      "productId": "adobe-firefly",
+      "action": "retire",
+      "reason": "旧抽取的模糊占位项，已用官方明确档位及积分附加订阅替代"
+    },
+    {
+      "id": "adobe-firefly-credits",
+      "oldName": "credits 订阅（具体档位待核实）",
+      "name": "credits 订阅（具体档位待核实）",
+      "productId": "adobe-firefly",
+      "action": "retire",
+      "reason": "旧抽取的模糊占位项，已用官方明确档位及积分附加订阅替代"
+    },
+    {
+      "id": "adobe-creative-cloud-pro",
+      "oldName": "Pro",
+      "name": "Adobe Creative Cloud Pro（个人版）",
+      "productId": "adobe-creative-cloud"
+    },
+    {
+      "id": "adobe-creative-cloud-standard",
+      "oldName": "Adobe Creative Cloud Standard（个人版）",
+      "name": "Adobe Creative Cloud Standard（个人版）",
+      "productId": "adobe-creative-cloud"
+    },
+    {
+      "id": "adobe-creative-cloud-photography-1tb",
+      "oldName": "Adobe Creative Cloud Photography 1TB",
+      "name": "Adobe Creative Cloud Photography 1TB",
+      "productId": "adobe-creative-cloud"
+    },
+    {
+      "id": "adobe-creative-cloud-photography-20gb",
+      "oldName": "Adobe Creative Cloud Photography 20GB",
+      "name": "Adobe Creative Cloud Photography 20GB",
+      "productId": "adobe-creative-cloud"
+    },
+    {
+      "id": "adobe-creative-cloud-lightroom-individual",
+      "oldName": "Adobe Creative Cloud Lightroom（个人版）",
+      "name": "Adobe Creative Cloud Lightroom（个人版）",
+      "productId": "adobe-creative-cloud"
+    },
+    {
+      "id": "adobe-creative-cloud-lightroom-mobile-web",
+      "oldName": "Adobe Creative Cloud Lightroom Mobile and web",
+      "name": "Adobe Creative Cloud Lightroom Mobile and web",
+      "productId": "adobe-creative-cloud"
+    },
+    {
+      "id": "adobe-creative-cloud-photoshop-express",
+      "oldName": "Adobe Creative Cloud Photoshop Express",
+      "name": "Adobe Creative Cloud Photoshop Express",
+      "productId": "adobe-creative-cloud"
+    },
+    {
+      "id": "adobe-creative-cloud-photoshop-mobile-web",
+      "oldName": "Adobe Creative Cloud Photoshop Mobile and web",
+      "name": "Adobe Creative Cloud Photoshop Mobile and web",
+      "productId": "adobe-creative-cloud"
+    },
+    {
+      "id": "adobe-creative-cloud-pro-teams",
+      "oldName": "Adobe Creative Cloud Pro for teams",
+      "name": "Adobe Creative Cloud Pro for teams",
+      "productId": "adobe-creative-cloud"
+    },
+    {
+      "id": "adobe-creative-cloud-pro-plus-teams",
+      "oldName": "Adobe Creative Cloud Pro Plus for teams",
+      "name": "Adobe Creative Cloud Pro Plus for teams",
+      "productId": "adobe-creative-cloud"
+    },
+    {
+      "id": "adobe-creative-cloud-lightroom-teams",
+      "oldName": "Adobe Creative Cloud Lightroom for teams",
+      "name": "Adobe Creative Cloud Lightroom for teams",
+      "productId": "adobe-creative-cloud"
+    },
+    {
+      "id": "adobe-creative-cloud-photoshop-individual",
+      "oldName": "Adobe Creative Cloud Photoshop（个人单应用）",
+      "name": "Adobe Creative Cloud Photoshop（个人单应用）",
+      "productId": "adobe-creative-cloud"
+    },
+    {
+      "id": "adobe-creative-cloud-illustrator-individual",
+      "oldName": "Adobe Creative Cloud Illustrator（个人单应用）",
+      "name": "Adobe Creative Cloud Illustrator（个人单应用）",
+      "productId": "adobe-creative-cloud"
+    },
+    {
+      "id": "adobe-creative-cloud-premiere-individual",
+      "oldName": "Adobe Creative Cloud Premiere（个人单应用）",
+      "name": "Adobe Creative Cloud Premiere（个人单应用）",
+      "productId": "adobe-creative-cloud"
+    },
+    {
+      "id": "adobe-creative-cloud-indesign-individual",
+      "oldName": "Adobe Creative Cloud InDesign（个人单应用）",
+      "name": "Adobe Creative Cloud InDesign（个人单应用）",
+      "productId": "adobe-creative-cloud"
+    },
+    {
+      "id": "adobe-creative-cloud-after-effects-individual",
+      "oldName": "Adobe Creative Cloud After Effects（个人单应用）",
+      "name": "Adobe Creative Cloud After Effects（个人单应用）",
+      "productId": "adobe-creative-cloud"
+    },
+    {
+      "id": "adobe-creative-cloud-audition-individual",
+      "oldName": "Adobe Creative Cloud Audition（个人单应用）",
+      "name": "Adobe Creative Cloud Audition（个人单应用）",
+      "productId": "adobe-creative-cloud"
+    },
+    {
+      "id": "adobe-creative-cloud-animate-individual",
+      "oldName": "Adobe Creative Cloud Animate（个人单应用）",
+      "name": "Adobe Creative Cloud Animate（个人单应用）",
+      "productId": "adobe-creative-cloud"
+    },
+    {
+      "id": "adobe-creative-cloud-dreamweaver-individual",
+      "oldName": "Adobe Creative Cloud Dreamweaver（个人单应用）",
+      "name": "Adobe Creative Cloud Dreamweaver（个人单应用）",
+      "productId": "adobe-creative-cloud"
+    },
+    {
+      "id": "adobe-creative-cloud-xd-individual",
+      "oldName": "Adobe Creative Cloud XD（个人单应用）",
+      "name": "Adobe Creative Cloud XD（个人单应用）",
+      "productId": "adobe-creative-cloud"
+    },
+    {
+      "id": "adobe-creative-cloud-incopy-individual",
+      "oldName": "Adobe Creative Cloud InCopy（个人单应用）",
+      "name": "Adobe Creative Cloud InCopy（个人单应用）",
+      "productId": "adobe-creative-cloud"
+    },
+    {
+      "id": "adobe-creative-cloud-photoshop-teams",
+      "oldName": "Adobe Creative Cloud Photoshop（团队单应用）",
+      "name": "Adobe Creative Cloud Photoshop（团队单应用）",
+      "productId": "adobe-creative-cloud"
+    },
+    {
+      "id": "adobe-creative-cloud-illustrator-teams",
+      "oldName": "Adobe Creative Cloud Illustrator（团队单应用）",
+      "name": "Adobe Creative Cloud Illustrator（团队单应用）",
+      "productId": "adobe-creative-cloud"
+    },
+    {
+      "id": "adobe-creative-cloud-premiere-teams",
+      "oldName": "Adobe Creative Cloud Premiere（团队单应用）",
+      "name": "Adobe Creative Cloud Premiere（团队单应用）",
+      "productId": "adobe-creative-cloud"
+    },
+    {
+      "id": "adobe-creative-cloud-indesign-teams",
+      "oldName": "Adobe Creative Cloud InDesign（团队单应用）",
+      "name": "Adobe Creative Cloud InDesign（团队单应用）",
+      "productId": "adobe-creative-cloud"
+    },
+    {
+      "id": "adobe-creative-cloud-after-effects-teams",
+      "oldName": "Adobe Creative Cloud After Effects（团队单应用）",
+      "name": "Adobe Creative Cloud After Effects（团队单应用）",
+      "productId": "adobe-creative-cloud"
+    },
+    {
+      "id": "adobe-creative-cloud-audition-teams",
+      "oldName": "Adobe Creative Cloud Audition（团队单应用）",
+      "name": "Adobe Creative Cloud Audition（团队单应用）",
+      "productId": "adobe-creative-cloud"
+    },
+    {
+      "id": "adobe-creative-cloud-dreamweaver-teams",
+      "oldName": "Adobe Creative Cloud Dreamweaver（团队单应用）",
+      "name": "Adobe Creative Cloud Dreamweaver（团队单应用）",
+      "productId": "adobe-creative-cloud"
+    },
+    {
+      "id": "adobe-creative-cloud-animate-teams",
+      "oldName": "Adobe Creative Cloud Animate（团队单应用）",
+      "name": "Adobe Creative Cloud Animate（团队单应用）",
+      "productId": "adobe-creative-cloud"
+    },
+    {
+      "id": "adobe-creative-cloud-incopy-teams",
+      "oldName": "Adobe Creative Cloud InCopy（团队单应用）",
+      "name": "Adobe Creative Cloud InCopy（团队单应用）",
+      "productId": "adobe-creative-cloud"
+    },
+    {
+      "id": "adobe-creative-cloud-photoshop-teams-stock",
+      "oldName": "Adobe Creative Cloud Photoshop Pro for teams with Adobe Stock",
+      "name": "Adobe Creative Cloud Photoshop Pro for teams with Adobe Stock",
+      "productId": "adobe-creative-cloud"
+    },
+    {
+      "id": "adobe-creative-cloud-illustrator-teams-stock",
+      "oldName": "Adobe Creative Cloud Illustrator Pro for teams with Adobe Stock",
+      "name": "Adobe Creative Cloud Illustrator Pro for teams with Adobe Stock",
+      "productId": "adobe-creative-cloud"
+    },
+    {
+      "id": "adobe-creative-cloud-premiere-teams-stock",
+      "oldName": "Adobe Creative Cloud Premiere Pro for teams with Adobe Stock",
+      "name": "Adobe Creative Cloud Premiere Pro for teams with Adobe Stock",
+      "productId": "adobe-creative-cloud"
+    },
+    {
+      "id": "adobe-creative-cloud-indesign-teams-stock",
+      "oldName": "Adobe Creative Cloud InDesign Pro for teams with Adobe Stock",
+      "name": "Adobe Creative Cloud InDesign Pro for teams with Adobe Stock",
+      "productId": "adobe-creative-cloud"
+    },
+    {
+      "id": "adobe-creative-cloud-lightroom-teams-stock",
+      "oldName": "Adobe Creative Cloud Lightroom Pro for teams with Adobe Stock",
+      "name": "Adobe Creative Cloud Lightroom Pro for teams with Adobe Stock",
+      "productId": "adobe-creative-cloud"
+    },
+    {
+      "id": "adobe-creative-cloud-after-effects-teams-stock",
+      "oldName": "Adobe Creative Cloud After Effects Pro for teams with Adobe Stock",
+      "name": "Adobe Creative Cloud After Effects Pro for teams with Adobe Stock",
+      "productId": "adobe-creative-cloud"
+    },
+    {
+      "id": "adobe-creative-cloud-audition-teams-stock",
+      "oldName": "Adobe Creative Cloud Audition Pro for teams with Adobe Stock",
+      "name": "Adobe Creative Cloud Audition Pro for teams with Adobe Stock",
+      "productId": "adobe-creative-cloud"
+    },
+    {
+      "id": "adobe-creative-cloud-dreamweaver-teams-stock",
+      "oldName": "Adobe Creative Cloud Dreamweaver Pro for teams with Adobe Stock",
+      "name": "Adobe Creative Cloud Dreamweaver Pro for teams with Adobe Stock",
+      "productId": "adobe-creative-cloud"
+    },
+    {
+      "id": "adobe-creative-cloud-animate-teams-stock",
+      "oldName": "Adobe Creative Cloud Animate Pro for teams with Adobe Stock",
+      "name": "Adobe Creative Cloud Animate Pro for teams with Adobe Stock",
+      "productId": "adobe-creative-cloud"
+    },
+    {
+      "id": "adobe-creative-cloud-incopy-teams-stock",
+      "oldName": "Adobe Creative Cloud InCopy Pro for teams with Adobe Stock",
+      "name": "Adobe Creative Cloud InCopy Pro for teams with Adobe Stock",
+      "productId": "adobe-creative-cloud"
+    },
+    {
+      "id": "adobe-creative-cloud-enterprise-edition-3",
+      "oldName": "Adobe Creative Cloud Enterprise Edition 3",
+      "name": "Adobe Creative Cloud Enterprise Edition 3",
+      "productId": "adobe-creative-cloud"
+    },
+    {
+      "id": "adobe-creative-cloud-enterprise-edition-4",
+      "oldName": "Adobe Creative Cloud Enterprise Edition 4",
+      "name": "Adobe Creative Cloud Enterprise Edition 4",
+      "productId": "adobe-creative-cloud"
+    },
+    {
+      "id": "adobe-creative-cloud-enterprise-edition-4-stock",
+      "oldName": "Adobe Creative Cloud Enterprise Edition 4 with Premium Stock",
+      "name": "Adobe Creative Cloud Enterprise Edition 4 with Premium Stock",
+      "productId": "adobe-creative-cloud"
+    },
+    {
+      "id": "adobe-creative-cloud-enterprise-edition-5",
+      "oldName": "Adobe Creative Cloud Enterprise Edition 5",
+      "name": "Adobe Creative Cloud Enterprise Edition 5",
+      "productId": "adobe-creative-cloud"
+    },
+    {
+      "id": "adobe-creative-cloud-enterprise-single-edition-4",
+      "oldName": "Adobe Creative Cloud Enterprise Single App Edition 4",
+      "name": "Adobe Creative Cloud Enterprise Single App Edition 4",
+      "productId": "adobe-creative-cloud"
+    },
+    {
+      "id": "adobe-creative-cloud-enterprise-single-edition-4-stock",
+      "oldName": "Adobe Creative Cloud Enterprise Single App Edition 4 with Premium Stock",
+      "name": "Adobe Creative Cloud Enterprise Single App Edition 4 with Premium Stock",
+      "productId": "adobe-creative-cloud"
+    },
+    {
+      "id": "adobe-creative-cloud-enterprise-single-edition-5",
+      "oldName": "Adobe Creative Cloud Enterprise Single App Edition 5",
+      "name": "Adobe Creative Cloud Enterprise Single App Edition 5",
+      "productId": "adobe-creative-cloud"
+    }
+  ],
+  "verification": "final revision 41 full catalog products/plans/root metadata equals prepared plan; intermediate snapshots retained outside Git",
+  "writeMethod": "D1 revision-guarded catalog update"
+}

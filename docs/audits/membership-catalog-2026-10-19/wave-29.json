@@ -1,0 +1,1699 @@
+{
+  "checkedAt": "2026-10-20",
+  "expectedRevision": 58,
+  "revision": 59,
+  "products": 241,
+  "plans": 970,
+  "vendors": 124,
+  "fullReadback": true,
+  "changedExistingPlans": [
+    {
+      "id": "adobe-firefly-pro",
+      "fields": [
+        "revision",
+        "verifiedAt"
+      ]
+    },
+    {
+      "id": "adobe-firefly-pro-plus",
+      "fields": [
+        "revision",
+        "verifiedAt"
+      ]
+    },
+    {
+      "id": "adobe-firefly-premium",
+      "fields": [
+        "revision",
+        "verifiedAt"
+      ]
+    },
+    {
+      "id": "adobe-firefly-4-000-credits",
+      "fields": [
+        "revision",
+        "verifiedAt"
+      ]
+    },
+    {
+      "id": "adobe-firefly-7-000-credits",
+      "fields": [
+        "revision",
+        "verifiedAt"
+      ]
+    },
+    {
+      "id": "adobe-firefly-10-000-credits",
+      "fields": [
+        "revision",
+        "verifiedAt"
+      ]
+    },
+    {
+      "id": "adobe-firefly-50-000-credits",
+      "fields": [
+        "revision",
+        "verifiedAt"
+      ]
+    },
+    {
+      "id": "adobe-firefly-standard",
+      "fields": [
+        "revision",
+        "verifiedAt"
+      ]
+    },
+    {
+      "id": "adobe-firefly-pro-for-teams",
+      "fields": [
+        "revision",
+        "verifiedAt"
+      ]
+    },
+    {
+      "id": "adobe-firefly-pro-plus-for-teams",
+      "fields": [
+        "revision",
+        "verifiedAt"
+      ]
+    },
+    {
+      "id": "adobe-firefly-premium-for-teams",
+      "fields": [
+        "revision",
+        "verifiedAt"
+      ]
+    },
+    {
+      "id": "adobe-firefly-2-000-credits",
+      "fields": [
+        "revision",
+        "verifiedAt"
+      ]
+    },
+    {
+      "id": "adobe-firefly-mobile-and-web",
+      "fields": [
+        "revision",
+        "verifiedAt"
+      ]
+    },
+    {
+      "id": "adobe-firefly-legacy-100",
+      "fields": [
+        "revision",
+        "verifiedAt"
+      ]
+    },
+    {
+      "id": "adobe-firefly-generative-credits-legacy-100",
+      "fields": [
+        "revision",
+        "verifiedAt"
+      ]
+    },
+    {
+      "id": "google-workspace-business-starter",
+      "fields": [
+        "revision",
+        "verifiedAt"
+      ]
+    },
+    {
+      "id": "google-workspace-business-standard",
+      "fields": [
+        "revision",
+        "verifiedAt"
+      ]
+    },
+    {
+      "id": "google-workspace-business-plus",
+      "fields": [
+        "revision",
+        "verifiedAt"
+      ]
+    },
+    {
+      "id": "google-workspace-enterprise-standard",
+      "fields": [
+        "revision",
+        "verifiedAt"
+      ]
+    },
+    {
+      "id": "google-workspace-enterprise-plus",
+      "fields": [
+        "revision",
+        "verifiedAt"
+      ]
+    },
+    {
+      "id": "google-workspace-essentials-starter",
+      "fields": [
+        "revision",
+        "verifiedAt"
+      ]
+    },
+    {
+      "id": "google-workspace-essentials-legacy",
+      "fields": [
+        "revision",
+        "verifiedAt"
+      ]
+    },
+    {
+      "id": "google-workspace-enterprise-essentials",
+      "fields": [
+        "revision",
+        "verifiedAt"
+      ]
+    },
+    {
+      "id": "google-workspace-enterprise-essentials-plus",
+      "fields": [
+        "revision",
+        "verifiedAt"
+      ]
+    },
+    {
+      "id": "google-workspace-frontline-starter",
+      "fields": [
+        "revision",
+        "verifiedAt"
+      ]
+    },
+    {
+      "id": "google-workspace-frontline-standard",
+      "fields": [
+        "revision",
+        "verifiedAt"
+      ]
+    },
+    {
+      "id": "google-workspace-frontline-plus",
+      "fields": [
+        "revision",
+        "verifiedAt"
+      ]
+    },
+    {
+      "id": "google-workspace-education-fundamentals",
+      "fields": [
+        "revision",
+        "verifiedAt"
+      ]
+    },
+    {
+      "id": "google-workspace-education-standard",
+      "fields": [
+        "revision",
+        "verifiedAt"
+      ]
+    },
+    {
+      "id": "google-workspace-education-plus",
+      "fields": [
+        "revision",
+        "verifiedAt"
+      ]
+    }
+  ],
+  "changes": [
+    {
+      "id": "adobe-firefly-standard",
+      "oldName": "Adobe Firefly Standard",
+      "name": "Adobe Firefly Standard",
+      "productId": "adobe-firefly"
+    },
+    {
+      "id": "adobe-firefly-pro",
+      "oldName": "Adobe Firefly Pro",
+      "name": "Adobe Firefly Pro",
+      "productId": "adobe-firefly"
+    },
+    {
+      "id": "adobe-firefly-pro-plus",
+      "oldName": "Adobe Firefly Pro Plus",
+      "name": "Adobe Firefly Pro Plus",
+      "productId": "adobe-firefly"
+    },
+    {
+      "id": "adobe-firefly-premium",
+      "oldName": "Adobe Firefly Premium",
+      "name": "Adobe Firefly Premium",
+      "productId": "adobe-firefly"
+    },
+    {
+      "id": "adobe-firefly-pro-for-teams",
+      "oldName": "Adobe Firefly Pro for teams",
+      "name": "Adobe Firefly Pro for teams",
+      "productId": "adobe-firefly"
+    },
+    {
+      "id": "adobe-firefly-pro-plus-for-teams",
+      "oldName": "Adobe Firefly Pro Plus for teams",
+      "name": "Adobe Firefly Pro Plus for teams",
+      "productId": "adobe-firefly"
+    },
+    {
+      "id": "adobe-firefly-premium-for-teams",
+      "oldName": "Adobe Firefly Premium for teams",
+      "name": "Adobe Firefly Premium for teams",
+      "productId": "adobe-firefly"
+    },
+    {
+      "id": "adobe-firefly-2-000-credits",
+      "oldName": "Adobe Firefly 2,000 Credits",
+      "name": "Adobe Firefly 2,000 Credits",
+      "productId": "adobe-firefly"
+    },
+    {
+      "id": "adobe-firefly-4-000-credits",
+      "oldName": "Adobe Firefly 4,000 Credits",
+      "name": "Adobe Firefly 4,000 Credits",
+      "productId": "adobe-firefly"
+    },
+    {
+      "id": "adobe-firefly-7-000-credits",
+      "oldName": "Adobe Firefly 7,000 Credits",
+      "name": "Adobe Firefly 7,000 Credits",
+      "productId": "adobe-firefly"
+    },
+    {
+      "id": "adobe-firefly-10-000-credits",
+      "oldName": "Adobe Firefly 10,000 Credits",
+      "name": "Adobe Firefly 10,000 Credits",
+      "productId": "adobe-firefly"
+    },
+    {
+      "id": "adobe-firefly-50-000-credits",
+      "oldName": "Adobe Firefly 50,000 Credits",
+      "name": "Adobe Firefly 50,000 Credits",
+      "productId": "adobe-firefly"
+    },
+    {
+      "id": "adobe-firefly-mobile-and-web",
+      "oldName": "Adobe Firefly Mobile and web",
+      "name": "Adobe Firefly Mobile and web",
+      "productId": "adobe-firefly"
+    },
+    {
+      "id": "adobe-firefly-legacy-100",
+      "oldName": "Adobe Firefly Legacy（100 credits）",
+      "name": "Adobe Firefly Legacy（100 credits）",
+      "productId": "adobe-firefly"
+    },
+    {
+      "id": "adobe-firefly-generative-credits-legacy-100",
+      "oldName": "Adobe Firefly Generative credits add-on Legacy（100 credits）",
+      "name": "Adobe Firefly Generative credits add-on Legacy（100 credits）",
+      "productId": "adobe-firefly"
+    },
+    {
+      "id": "adobe-firefly-free",
+      "oldName": "Adobe Firefly Free",
+      "name": "Adobe Firefly Free",
+      "productId": "adobe-firefly"
+    },
+    {
+      "id": "google-workspace-business-starter",
+      "oldName": "Google Workspace Business Starter",
+      "name": "Google Workspace Business Starter",
+      "productId": "google-workspace"
+    },
+    {
+      "id": "google-workspace-business-standard",
+      "oldName": "Google Workspace Business Standard",
+      "name": "Google Workspace Business Standard",
+      "productId": "google-workspace"
+    },
+    {
+      "id": "google-workspace-business-plus",
+      "oldName": "Google Workspace Business Plus",
+      "name": "Google Workspace Business Plus",
+      "productId": "google-workspace"
+    },
+    {
+      "id": "google-workspace-enterprise-standard",
+      "oldName": "Google Workspace Enterprise Standard",
+      "name": "Google Workspace Enterprise Standard",
+      "productId": "google-workspace"
+    },
+    {
+      "id": "google-workspace-enterprise-plus",
+      "oldName": "Google Workspace Enterprise Plus",
+      "name": "Google Workspace Enterprise Plus",
+      "productId": "google-workspace"
+    },
+    {
+      "id": "google-workspace-essentials-starter",
+      "oldName": "Google Workspace Essentials Starter",
+      "name": "Google Workspace Essentials Starter",
+      "productId": "google-workspace"
+    },
+    {
+      "id": "google-workspace-essentials-legacy",
+      "oldName": "Google Workspace Essentials（存量）",
+      "name": "Google Workspace Essentials（存量）",
+      "productId": "google-workspace"
+    },
+    {
+      "id": "google-workspace-enterprise-essentials",
+      "oldName": "Google Workspace Enterprise Essentials",
+      "name": "Google Workspace Enterprise Essentials",
+      "productId": "google-workspace"
+    },
+    {
+      "id": "google-workspace-enterprise-essentials-plus",
+      "oldName": "Google Workspace Enterprise Essentials Plus",
+      "name": "Google Workspace Enterprise Essentials Plus",
+      "productId": "google-workspace"
+    },
+    {
+      "id": "google-workspace-frontline-starter",
+      "oldName": "Google Workspace Frontline Starter",
+      "name": "Google Workspace Frontline Starter",
+      "productId": "google-workspace"
+    },
+    {
+      "id": "google-workspace-frontline-standard",
+      "oldName": "Google Workspace Frontline Standard",
+      "name": "Google Workspace Frontline Standard",
+      "productId": "google-workspace"
+    },
+    {
+      "id": "google-workspace-frontline-plus",
+      "oldName": "Google Workspace Frontline Plus",
+      "name": "Google Workspace Frontline Plus",
+      "productId": "google-workspace"
+    },
+    {
+      "id": "google-workspace-education-fundamentals",
+      "oldName": "Google Workspace Education Fundamentals",
+      "name": "Google Workspace Education Fundamentals",
+      "productId": "google-workspace"
+    },
+    {
+      "id": "google-workspace-education-standard",
+      "oldName": "Google Workspace Education Standard",
+      "name": "Google Workspace Education Standard",
+      "productId": "google-workspace"
+    },
+    {
+      "id": "google-workspace-education-plus",
+      "oldName": "Google Workspace Education Plus",
+      "name": "Google Workspace Education Plus",
+      "productId": "google-workspace"
+    },
+    {
+      "id": "google-workspace-individual",
+      "oldName": "Google Workspace Individual",
+      "name": "Google Workspace Individual",
+      "productId": "google-workspace"
+    },
+    {
+      "id": "google-workspace-for-nonprofits",
+      "oldName": "Google Workspace for Nonprofits",
+      "name": "Google Workspace for Nonprofits",
+      "productId": "google-workspace"
+    },
+    {
+      "id": "microsoft-dynamics-sales-sales-professional",
+      "oldName": "Dynamics 365 Sales Professional",
+      "name": "Dynamics 365 Sales Professional",
+      "productId": "microsoft-dynamics-sales"
+    },
+    {
+      "id": "microsoft-dynamics-sales-sales-enterprise-edition",
+      "oldName": "Dynamics 365 Sales Enterprise Edition",
+      "name": "Dynamics 365 Sales Enterprise Edition",
+      "productId": "microsoft-dynamics-sales"
+    },
+    {
+      "id": "microsoft-dynamics-sales-sales-premium",
+      "oldName": "Dynamics 365 Sales Premium",
+      "name": "Dynamics 365 Sales Premium",
+      "productId": "microsoft-dynamics-sales"
+    },
+    {
+      "id": "microsoft-relationship-sales-relationship-sales",
+      "oldName": "Microsoft Relationship Sales",
+      "name": "Microsoft Relationship Sales",
+      "productId": "microsoft-relationship-sales"
+    },
+    {
+      "id": "microsoft-dynamics-customer-service-customer-service-professional",
+      "oldName": "Dynamics 365 Customer Service Professional",
+      "name": "Dynamics 365 Customer Service Professional",
+      "productId": "microsoft-dynamics-customer-service"
+    },
+    {
+      "id": "microsoft-dynamics-customer-service-customer-service-enterprise",
+      "oldName": "Dynamics 365 Customer Service Enterprise",
+      "name": "Dynamics 365 Customer Service Enterprise",
+      "productId": "microsoft-dynamics-customer-service"
+    },
+    {
+      "id": "microsoft-dynamics-customer-service-customer-service-premium",
+      "oldName": "Dynamics 365 Customer Service Premium",
+      "name": "Dynamics 365 Customer Service Premium",
+      "productId": "microsoft-dynamics-customer-service"
+    },
+    {
+      "id": "microsoft-dynamics-contact-center-contact-center",
+      "oldName": "Dynamics 365 Contact Center",
+      "name": "Dynamics 365 Contact Center",
+      "productId": "microsoft-dynamics-contact-center"
+    },
+    {
+      "id": "microsoft-dynamics-contact-center-contact-center-digital",
+      "oldName": "Dynamics 365 Contact Center Digital",
+      "name": "Dynamics 365 Contact Center Digital",
+      "productId": "microsoft-dynamics-contact-center"
+    },
+    {
+      "id": "microsoft-dynamics-contact-center-contact-center-voice",
+      "oldName": "Dynamics 365 Contact Center Voice",
+      "name": "Dynamics 365 Contact Center Voice",
+      "productId": "microsoft-dynamics-contact-center"
+    },
+    {
+      "id": "microsoft-dynamics-field-service-field-service",
+      "oldName": "Dynamics 365 Field Service",
+      "name": "Dynamics 365 Field Service",
+      "productId": "microsoft-dynamics-field-service"
+    },
+    {
+      "id": "microsoft-dynamics-field-service-field-service-contractor",
+      "oldName": "Dynamics 365 Field Service Contractor",
+      "name": "Dynamics 365 Field Service Contractor",
+      "productId": "microsoft-dynamics-field-service"
+    },
+    {
+      "id": "microsoft-dynamics-finance-finance",
+      "oldName": "Dynamics 365 Finance",
+      "name": "Dynamics 365 Finance",
+      "productId": "microsoft-dynamics-finance"
+    },
+    {
+      "id": "microsoft-dynamics-finance-finance-premium",
+      "oldName": "Dynamics 365 Finance Premium",
+      "name": "Dynamics 365 Finance Premium",
+      "productId": "microsoft-dynamics-finance"
+    },
+    {
+      "id": "microsoft-dynamics-supply-chain-management-supply-chain-management",
+      "oldName": "Dynamics 365 Supply Chain Management",
+      "name": "Dynamics 365 Supply Chain Management",
+      "productId": "microsoft-dynamics-supply-chain-management"
+    },
+    {
+      "id": "microsoft-dynamics-supply-chain-management-supply-chain-management-premium",
+      "oldName": "Dynamics 365 Supply Chain Management Premium",
+      "name": "Dynamics 365 Supply Chain Management Premium",
+      "productId": "microsoft-dynamics-supply-chain-management"
+    },
+    {
+      "id": "microsoft-dynamics-intelligent-order-management-intelligent-order-management",
+      "oldName": "Dynamics 365 Intelligent Order Management",
+      "name": "Dynamics 365 Intelligent Order Management",
+      "productId": "microsoft-dynamics-intelligent-order-management"
+    },
+    {
+      "id": "microsoft-dynamics-customer-insights-customer-insights",
+      "oldName": "Dynamics 365 Customer Insights",
+      "name": "Dynamics 365 Customer Insights",
+      "productId": "microsoft-dynamics-customer-insights"
+    },
+    {
+      "id": "microsoft-dynamics-customer-insights-customer-insights-attach",
+      "oldName": "Dynamics 365 Customer Insights Attach",
+      "name": "Dynamics 365 Customer Insights Attach",
+      "productId": "microsoft-dynamics-customer-insights"
+    },
+    {
+      "id": "microsoft-dynamics-customer-insights-legacy-marketing-standalone",
+      "oldName": "Dynamics 365 Marketing (standalone)",
+      "name": "Dynamics 365 Marketing (standalone)",
+      "productId": "microsoft-dynamics-customer-insights-legacy"
+    },
+    {
+      "id": "microsoft-dynamics-customer-insights-legacy-customer-insights-standalone",
+      "oldName": "Dynamics 365 Customer Insights (standalone)",
+      "name": "Dynamics 365 Customer Insights (standalone)",
+      "productId": "microsoft-dynamics-customer-insights-legacy"
+    },
+    {
+      "id": "microsoft-dynamics-business-central-business-central-essentials",
+      "oldName": "Dynamics 365 Business Central Essentials",
+      "name": "Dynamics 365 Business Central Essentials",
+      "productId": "microsoft-dynamics-business-central"
+    },
+    {
+      "id": "microsoft-dynamics-business-central-business-central-premium",
+      "oldName": "Dynamics 365 Business Central Premium",
+      "name": "Dynamics 365 Business Central Premium",
+      "productId": "microsoft-dynamics-business-central"
+    },
+    {
+      "id": "microsoft-dynamics-business-central-business-central-team-members",
+      "oldName": "Dynamics 365 Business Central Team Members",
+      "name": "Dynamics 365 Business Central Team Members",
+      "productId": "microsoft-dynamics-business-central"
+    },
+    {
+      "id": "microsoft-dynamics-project-operations-project-operations",
+      "oldName": "Dynamics 365 Project Operations",
+      "name": "Dynamics 365 Project Operations",
+      "productId": "microsoft-dynamics-project-operations"
+    },
+    {
+      "id": "microsoft-dynamics-commerce-commerce",
+      "oldName": "Dynamics 365 Commerce",
+      "name": "Dynamics 365 Commerce",
+      "productId": "microsoft-dynamics-commerce"
+    },
+    {
+      "id": "microsoft-dynamics-commerce-commerce-e-commerce-add-on",
+      "oldName": "Dynamics 365 Commerce e-Commerce add on",
+      "name": "Dynamics 365 Commerce e-Commerce add on",
+      "productId": "microsoft-dynamics-commerce"
+    },
+    {
+      "id": "microsoft-dynamics-commerce-commerce-headless-add-on",
+      "oldName": "Dynamics 365 Commerce headless add on",
+      "name": "Dynamics 365 Commerce headless add on",
+      "productId": "microsoft-dynamics-commerce"
+    },
+    {
+      "id": "microsoft-dynamics-human-resources-human-resources",
+      "oldName": "Dynamics 365 Human Resources",
+      "name": "Dynamics 365 Human Resources",
+      "productId": "microsoft-dynamics-human-resources"
+    },
+    {
+      "id": "microsoft-dynamics-human-resources-human-resources-self-service",
+      "oldName": "Dynamics 365 Human Resources Self Service",
+      "name": "Dynamics 365 Human Resources Self Service",
+      "productId": "microsoft-dynamics-human-resources"
+    },
+    {
+      "id": "microsoft-dynamics-additional-software-licenses-sales-device",
+      "oldName": "Dynamics 365 Sales Device",
+      "name": "Dynamics 365 Sales Device",
+      "productId": "microsoft-dynamics-additional-software-licenses"
+    },
+    {
+      "id": "microsoft-dynamics-additional-software-licenses-sales-insights",
+      "oldName": "Dynamics 365 Sales Insights",
+      "name": "Dynamics 365 Sales Insights",
+      "productId": "microsoft-dynamics-additional-software-licenses"
+    },
+    {
+      "id": "microsoft-dynamics-additional-software-licenses-customer-service-device",
+      "oldName": "Dynamics 365 Customer Service Device",
+      "name": "Dynamics 365 Customer Service Device",
+      "productId": "microsoft-dynamics-additional-software-licenses"
+    },
+    {
+      "id": "microsoft-dynamics-additional-software-licenses-contact-center-digital-add-on",
+      "oldName": "Dynamics 365 Contact Center Digital Add-on",
+      "name": "Dynamics 365 Contact Center Digital Add-on",
+      "productId": "microsoft-dynamics-additional-software-licenses"
+    },
+    {
+      "id": "microsoft-dynamics-additional-software-licenses-contact-center-voice-add-on",
+      "oldName": "Dynamics 365 Contact Center Voice Add-on",
+      "name": "Dynamics 365 Contact Center Voice Add-on",
+      "productId": "microsoft-dynamics-additional-software-licenses"
+    },
+    {
+      "id": "microsoft-dynamics-additional-software-licenses-contact-center-add-on-digital-plus-voice",
+      "oldName": "Dynamics 365 Contact Center Add-on (Digital + Voice)",
+      "name": "Dynamics 365 Contact Center Add-on (Digital + Voice)",
+      "productId": "microsoft-dynamics-additional-software-licenses"
+    },
+    {
+      "id": "microsoft-dynamics-additional-software-licenses-field-service-device",
+      "oldName": "Dynamics 365 Field Service Device",
+      "name": "Dynamics 365 Field Service Device",
+      "productId": "microsoft-dynamics-additional-software-licenses"
+    },
+    {
+      "id": "microsoft-dynamics-additional-software-licenses-field-service-resource-scheduling-optimization",
+      "oldName": "Dynamics 365 Field Service Resource Scheduling Optimization",
+      "name": "Dynamics 365 Field Service Resource Scheduling Optimization",
+      "productId": "microsoft-dynamics-additional-software-licenses"
+    },
+    {
+      "id": "microsoft-dynamics-additional-software-licenses-team-members",
+      "oldName": "Dynamics 365 Team Members",
+      "name": "Dynamics 365 Team Members",
+      "productId": "microsoft-dynamics-additional-software-licenses"
+    },
+    {
+      "id": "microsoft-dynamics-additional-software-licenses-operations-activity",
+      "oldName": "Dynamics 365 Operations – Activity",
+      "name": "Dynamics 365 Operations – Activity",
+      "productId": "microsoft-dynamics-additional-software-licenses"
+    },
+    {
+      "id": "microsoft-dynamics-additional-software-licenses-operations-device",
+      "oldName": "Dynamics 365 Operations – Device",
+      "name": "Dynamics 365 Operations – Device",
+      "productId": "microsoft-dynamics-additional-software-licenses"
+    },
+    {
+      "id": "microsoft-power-bi-free-account",
+      "oldName": "Microsoft Power BI Free account",
+      "name": "Microsoft Power BI Free account",
+      "productId": "microsoft-power-bi"
+    },
+    {
+      "id": "microsoft-power-bi-pro",
+      "oldName": "Microsoft Power BI Pro",
+      "name": "Microsoft Power BI Pro",
+      "productId": "microsoft-power-bi"
+    },
+    {
+      "id": "microsoft-power-bi-premium-per-user",
+      "oldName": "Microsoft Power BI Premium Per User",
+      "name": "Microsoft Power BI Premium Per User",
+      "productId": "microsoft-power-bi"
+    },
+    {
+      "id": "microsoft-clipchamp-personal-free",
+      "oldName": "Microsoft Clipchamp Free",
+      "name": "Microsoft Clipchamp Free",
+      "productId": "microsoft-clipchamp-personal"
+    },
+    {
+      "id": "microsoft-clipchamp-personal-premium-standalone-existing-subscribers",
+      "oldName": "Microsoft Clipchamp Premium (standalone, existing subscribers)",
+      "name": "Microsoft Clipchamp Premium (standalone, existing subscribers)",
+      "productId": "microsoft-clipchamp-personal"
+    },
+    {
+      "id": "microsoft-clipchamp-work-standard",
+      "oldName": "Microsoft Clipchamp Standard",
+      "name": "Microsoft Clipchamp Standard",
+      "productId": "microsoft-clipchamp-work"
+    },
+    {
+      "id": "microsoft-clipchamp-work-premium",
+      "oldName": "Microsoft Clipchamp Premium",
+      "name": "Microsoft Clipchamp Premium",
+      "productId": "microsoft-clipchamp-work"
+    },
+    {
+      "id": "microsoft-teams-rooms-basic",
+      "oldName": "Microsoft Teams Rooms Basic",
+      "name": "Microsoft Teams Rooms Basic",
+      "productId": "microsoft-teams-rooms"
+    },
+    {
+      "id": "microsoft-teams-rooms-pro",
+      "oldName": "Microsoft Teams Rooms Pro",
+      "name": "Microsoft Teams Rooms Pro",
+      "productId": "microsoft-teams-rooms"
+    },
+    {
+      "id": "microsoft-365-education-a1",
+      "oldName": "Microsoft 365 Education A1",
+      "name": "Microsoft 365 Education A1",
+      "productId": "microsoft-365-education"
+    },
+    {
+      "id": "microsoft-365-education-a3",
+      "oldName": "Microsoft 365 Education A3",
+      "name": "Microsoft 365 Education A3",
+      "productId": "microsoft-365-education"
+    },
+    {
+      "id": "microsoft-365-education-a5",
+      "oldName": "Microsoft 365 Education A5",
+      "name": "Microsoft 365 Education A5",
+      "productId": "microsoft-365-education"
+    },
+    {
+      "id": "microsoft-office-365-education-a1",
+      "oldName": "Office 365 A1",
+      "name": "Office 365 A1",
+      "productId": "microsoft-office-365-education"
+    },
+    {
+      "id": "microsoft-office-365-education-a3",
+      "oldName": "Office 365 A3",
+      "name": "Office 365 A3",
+      "productId": "microsoft-office-365-education"
+    },
+    {
+      "id": "microsoft-office-365-education-a5",
+      "oldName": "Office 365 A5",
+      "name": "Office 365 A5",
+      "productId": "microsoft-office-365-education"
+    },
+    {
+      "id": "microsoft-power-apps-per-app-per-app",
+      "oldName": "Microsoft Power Apps per app",
+      "name": "Microsoft Power Apps per app",
+      "productId": "microsoft-power-apps-per-app"
+    },
+    {
+      "id": "microsoft-power-automate-per-flow-legacy-per-flow",
+      "oldName": "Microsoft Power Automate per-flow",
+      "name": "Microsoft Power Automate per-flow",
+      "productId": "microsoft-power-automate-per-flow-legacy"
+    },
+    {
+      "id": "microsoft-power-automate-user-legacy-per-user-plan",
+      "oldName": "Microsoft Power Automate Per-user plan",
+      "name": "Microsoft Power Automate Per-user plan",
+      "productId": "microsoft-power-automate-user-legacy"
+    },
+    {
+      "id": "microsoft-power-automate-user-legacy-p1",
+      "oldName": "Microsoft Power Automate P1",
+      "name": "Microsoft Power Automate P1",
+      "productId": "microsoft-power-automate-user-legacy"
+    },
+    {
+      "id": "microsoft-power-automate-user-legacy-p2",
+      "oldName": "Microsoft Power Automate P2",
+      "name": "Microsoft Power Automate P2",
+      "productId": "microsoft-power-automate-user-legacy"
+    },
+    {
+      "id": "microsoft-365-business-base-business-basic",
+      "oldName": "Microsoft 365 Business Basic",
+      "name": "Microsoft 365 Business Basic",
+      "productId": "microsoft-365-business-base"
+    },
+    {
+      "id": "microsoft-365-business-base-business-standard",
+      "oldName": "Microsoft 365 Business Standard",
+      "name": "Microsoft 365 Business Standard",
+      "productId": "microsoft-365-business-base"
+    },
+    {
+      "id": "microsoft-365-business-base-business-premium",
+      "oldName": "Microsoft 365 Business Premium",
+      "name": "Microsoft 365 Business Premium",
+      "productId": "microsoft-365-business-base"
+    },
+    {
+      "id": "microsoft-365-business-base-business-basic-no-teams",
+      "oldName": "Microsoft 365 Business Basic (no Teams)",
+      "name": "Microsoft 365 Business Basic (no Teams)",
+      "productId": "microsoft-365-business-base"
+    },
+    {
+      "id": "microsoft-365-business-base-business-standard-no-teams",
+      "oldName": "Microsoft 365 Business Standard (no Teams)",
+      "name": "Microsoft 365 Business Standard (no Teams)",
+      "productId": "microsoft-365-business-base"
+    },
+    {
+      "id": "microsoft-365-business-base-business-premium-no-teams",
+      "oldName": "Microsoft 365 Business Premium (no Teams)",
+      "name": "Microsoft 365 Business Premium (no Teams)",
+      "productId": "microsoft-365-business-base"
+    },
+    {
+      "id": "microsoft-365-business-base-apps-for-business",
+      "oldName": "Microsoft 365 Apps for business",
+      "name": "Microsoft 365 Apps for business",
+      "productId": "microsoft-365-business-base"
+    },
+    {
+      "id": "microsoft-365-enterprise-base-e3",
+      "oldName": "Microsoft 365 E3",
+      "name": "Microsoft 365 E3",
+      "productId": "microsoft-365-enterprise-base"
+    },
+    {
+      "id": "microsoft-365-enterprise-base-e5",
+      "oldName": "Microsoft 365 E5",
+      "name": "Microsoft 365 E5",
+      "productId": "microsoft-365-enterprise-base"
+    },
+    {
+      "id": "microsoft-365-enterprise-base-e3-no-teams",
+      "oldName": "Microsoft 365 E3 (no Teams)",
+      "name": "Microsoft 365 E3 (no Teams)",
+      "productId": "microsoft-365-enterprise-base"
+    },
+    {
+      "id": "microsoft-365-enterprise-base-e5-no-teams",
+      "oldName": "Microsoft 365 E5 (no Teams)",
+      "name": "Microsoft 365 E5 (no Teams)",
+      "productId": "microsoft-365-enterprise-base"
+    },
+    {
+      "id": "microsoft-365-enterprise-base-e7-no-teams",
+      "oldName": "Microsoft 365 E7 (No Teams)",
+      "name": "Microsoft 365 E7 (No Teams)",
+      "productId": "microsoft-365-enterprise-base"
+    },
+    {
+      "id": "microsoft-365-frontline-base-f1",
+      "oldName": "Microsoft 365 F1",
+      "name": "Microsoft 365 F1",
+      "productId": "microsoft-365-frontline-base"
+    },
+    {
+      "id": "microsoft-365-frontline-base-f3",
+      "oldName": "Microsoft 365 F3",
+      "name": "Microsoft 365 F3",
+      "productId": "microsoft-365-frontline-base"
+    },
+    {
+      "id": "microsoft-365-frontline-base-f1-no-teams",
+      "oldName": "Microsoft 365 F1 (no Teams)",
+      "name": "Microsoft 365 F1 (no Teams)",
+      "productId": "microsoft-365-frontline-base"
+    },
+    {
+      "id": "microsoft-365-frontline-base-f3-no-teams",
+      "oldName": "Microsoft 365 F3 (no Teams)",
+      "name": "Microsoft 365 F3 (no Teams)",
+      "productId": "microsoft-365-frontline-base"
+    },
+    {
+      "id": "microsoft-office-365-enterprise-base-e1",
+      "oldName": "Office 365 E1",
+      "name": "Office 365 E1",
+      "productId": "microsoft-office-365-enterprise-base"
+    },
+    {
+      "id": "microsoft-office-365-enterprise-base-e3",
+      "oldName": "Office 365 E3",
+      "name": "Office 365 E3",
+      "productId": "microsoft-office-365-enterprise-base"
+    },
+    {
+      "id": "microsoft-office-365-enterprise-base-e5",
+      "oldName": "Office 365 E5",
+      "name": "Office 365 E5",
+      "productId": "microsoft-office-365-enterprise-base"
+    },
+    {
+      "id": "microsoft-office-365-enterprise-base-e1-no-teams",
+      "oldName": "Office 365 E1 (no Teams)",
+      "name": "Office 365 E1 (no Teams)",
+      "productId": "microsoft-office-365-enterprise-base"
+    },
+    {
+      "id": "microsoft-office-365-enterprise-base-e3-no-teams",
+      "oldName": "Office 365 E3 (no Teams)",
+      "name": "Office 365 E3 (no Teams)",
+      "productId": "microsoft-office-365-enterprise-base"
+    },
+    {
+      "id": "microsoft-office-365-enterprise-base-e5-no-teams",
+      "oldName": "Office 365 E5 (no Teams)",
+      "name": "Office 365 E5 (no Teams)",
+      "productId": "microsoft-office-365-enterprise-base"
+    },
+    {
+      "id": "microsoft-office-365-enterprise-base-f3",
+      "oldName": "Office 365 F3",
+      "name": "Office 365 F3",
+      "productId": "microsoft-office-365-enterprise-base"
+    },
+    {
+      "id": "microsoft-365-apps-enterprise-base-apps-for-enterprise",
+      "oldName": "Microsoft 365 Apps for enterprise",
+      "name": "Microsoft 365 Apps for enterprise",
+      "productId": "microsoft-365-apps-enterprise-base"
+    },
+    {
+      "id": "microsoft-agent-365-agent-365",
+      "oldName": "Microsoft Agent 365",
+      "name": "Microsoft Agent 365",
+      "productId": "microsoft-agent-365"
+    },
+    {
+      "id": "volc-coding-plan-enterprise-team-lite",
+      "oldName": "火山方舟 Coding Plan（企业版） Team Lite",
+      "name": "火山方舟 Coding Plan（企业版） Team Lite",
+      "productId": "volc-coding-plan-enterprise"
+    },
+    {
+      "id": "volc-coding-plan-enterprise-team-pro",
+      "oldName": "火山方舟 Coding Plan（企业版） Team Pro",
+      "name": "火山方舟 Coding Plan（企业版） Team Pro",
+      "productId": "volc-coding-plan-enterprise"
+    },
+    {
+      "id": "volc-agent-plan-enterprise-team-small",
+      "oldName": "火山方舟 Agent Plan（企业版） Team Small",
+      "name": "火山方舟 Agent Plan（企业版） Team Small",
+      "productId": "volc-agent-plan-enterprise"
+    },
+    {
+      "id": "volc-agent-plan-enterprise-team-medium",
+      "oldName": "火山方舟 Agent Plan（企业版） Team Medium",
+      "name": "火山方舟 Agent Plan（企业版） Team Medium",
+      "productId": "volc-agent-plan-enterprise"
+    },
+    {
+      "id": "volc-agent-plan-enterprise-team-large",
+      "oldName": "火山方舟 Agent Plan（企业版） Team Large",
+      "name": "火山方舟 Agent Plan（企业版） Team Large",
+      "productId": "volc-agent-plan-enterprise"
+    },
+    {
+      "id": "volc-agent-plan-enterprise-team-max",
+      "oldName": "火山方舟 Agent Plan（企业版） Team Max",
+      "name": "火山方舟 Agent Plan（企业版） Team Max",
+      "productId": "volc-agent-plan-enterprise"
+    },
+    {
+      "id": "baidu-comate-personal-plan-b9be6a8030",
+      "oldName": "百度文心快码 Comate（个人版） 个人标准版",
+      "name": "百度文心快码 Comate（个人版） 个人标准版",
+      "productId": "baidu-comate-personal"
+    },
+    {
+      "id": "baidu-comate-personal-plan-a967a92597",
+      "oldName": "百度文心快码 Comate（个人版） 个人专业版",
+      "name": "百度文心快码 Comate（个人版） 个人专业版",
+      "productId": "baidu-comate-personal"
+    },
+    {
+      "id": "baidu-comate-personal-plan-277c274cc1",
+      "oldName": "百度文心快码 Comate（个人版） 个人旗舰版",
+      "name": "百度文心快码 Comate（个人版） 个人旗舰版",
+      "productId": "baidu-comate-personal"
+    },
+    {
+      "id": "baidu-comate-personal-2026-7-1",
+      "oldName": "百度文心快码 Comate（个人版） 个人专业版（2026年7月1日前订单）",
+      "name": "百度文心快码 Comate（个人版） 个人专业版（2026年7月1日前订单）",
+      "productId": "baidu-comate-personal"
+    },
+    {
+      "id": "baidu-comate-enterprise-plan-b5c6512ba2",
+      "oldName": "百度文心快码 Comate（企业版） 企业专业版",
+      "name": "百度文心快码 Comate（企业版） 企业专业版",
+      "productId": "baidu-comate-enterprise"
+    },
+    {
+      "id": "baidu-comate-enterprise-plan-93a2340904",
+      "oldName": "百度文心快码 Comate（企业版） 企业旗舰版",
+      "name": "百度文心快码 Comate（企业版） 企业旗舰版",
+      "productId": "baidu-comate-enterprise"
+    },
+    {
+      "id": "baidu-comate-enterprise-plan-43ec86731c",
+      "oldName": "百度文心快码 Comate（企业版） 企业专属版",
+      "name": "百度文心快码 Comate（企业版） 企业专属版",
+      "productId": "baidu-comate-enterprise"
+    },
+    {
+      "id": "baidu-comate-private-plan-2ef67766ee",
+      "oldName": "百度文心快码 Comate（私有化版） 私有化版",
+      "name": "百度文心快码 Comate（私有化版） 私有化版",
+      "productId": "baidu-comate-private"
+    },
+    {
+      "id": "huawei-agentarts-plan-0bfb3ec3c5",
+      "oldName": "华为云智果 AgentArts 体验版",
+      "name": "华为云智果 AgentArts 体验版",
+      "productId": "huawei-agentarts"
+    },
+    {
+      "id": "google-workspace-gsuite-legacy-basic",
+      "oldName": "G Suite Basic",
+      "name": "G Suite Basic",
+      "productId": "google-workspace-gsuite-legacy"
+    },
+    {
+      "id": "google-workspace-gsuite-legacy-business",
+      "oldName": "G Suite Business",
+      "name": "G Suite Business",
+      "productId": "google-workspace-gsuite-legacy"
+    },
+    {
+      "id": "google-workspace-gsuite-legacy-legacy-free-edition",
+      "oldName": "G Suite legacy free edition",
+      "name": "G Suite legacy free edition",
+      "productId": "google-workspace-gsuite-legacy"
+    },
+    {
+      "id": "google-workspace-teaching-learning-teaching-and-learning-add-on",
+      "oldName": "Google Workspace for Education Teaching and Learning add-on",
+      "name": "Google Workspace for Education Teaching and Learning add-on",
+      "productId": "google-workspace-teaching-learning"
+    },
+    {
+      "id": "google-gemini-education-premium-legacy-gemini-education-premium",
+      "oldName": "Google Workspace Gemini Education Premium",
+      "name": "Google Workspace Gemini Education Premium",
+      "productId": "google-gemini-education-premium-legacy"
+    },
+    {
+      "id": "google-appsheet-starter",
+      "oldName": "Google AppSheet Starter",
+      "name": "Google AppSheet Starter",
+      "productId": "google-appsheet"
+    },
+    {
+      "id": "google-appsheet-core",
+      "oldName": "Google AppSheet Core",
+      "name": "Google AppSheet Core",
+      "productId": "google-appsheet"
+    },
+    {
+      "id": "google-appsheet-enterprise-plus",
+      "oldName": "Google AppSheet Enterprise Plus",
+      "name": "Google AppSheet Enterprise Plus",
+      "productId": "google-appsheet"
+    },
+    {
+      "id": "google-appsheet-publisher-pro",
+      "oldName": "Google AppSheet Publisher Pro",
+      "name": "Google AppSheet Publisher Pro",
+      "productId": "google-appsheet"
+    },
+    {
+      "id": "google-appsheet-user-pass-user-pass",
+      "oldName": "Google AppSheet User Pass",
+      "name": "Google AppSheet User Pass",
+      "productId": "google-appsheet-user-pass"
+    },
+    {
+      "id": "google-appsheet-external-legacy-enterprise-plus-external-user",
+      "oldName": "Google AppSheet Enterprise Plus External User",
+      "name": "Google AppSheet Enterprise Plus External User",
+      "productId": "google-appsheet-external-legacy"
+    },
+    {
+      "id": "google-looker-core-standard",
+      "oldName": "Google Looker (Google Cloud core) Standard",
+      "name": "Google Looker (Google Cloud core) Standard",
+      "productId": "google-looker-core"
+    },
+    {
+      "id": "google-looker-core-enterprise",
+      "oldName": "Google Looker (Google Cloud core) Enterprise",
+      "name": "Google Looker (Google Cloud core) Enterprise",
+      "productId": "google-looker-core"
+    },
+    {
+      "id": "google-looker-core-embed",
+      "oldName": "Google Looker (Google Cloud core) Embed",
+      "name": "Google Looker (Google Cloud core) Embed",
+      "productId": "google-looker-core"
+    },
+    {
+      "id": "google-looker-user-licenses-developer-user",
+      "oldName": "Google Looker Developer User",
+      "name": "Google Looker Developer User",
+      "productId": "google-looker-user-licenses"
+    },
+    {
+      "id": "google-looker-user-licenses-standard-user",
+      "oldName": "Google Looker Standard User",
+      "name": "Google Looker Standard User",
+      "productId": "google-looker-user-licenses"
+    },
+    {
+      "id": "google-looker-user-licenses-viewer-user",
+      "oldName": "Google Looker Viewer User",
+      "name": "Google Looker Viewer User",
+      "productId": "google-looker-user-licenses"
+    },
+    {
+      "id": "google-looker-original-advanced",
+      "oldName": "Google Looker (original) Advanced",
+      "name": "Google Looker (original) Advanced",
+      "productId": "google-looker-original"
+    },
+    {
+      "id": "google-looker-original-elite",
+      "oldName": "Google Looker (original) Elite",
+      "name": "Google Looker (original) Elite",
+      "productId": "google-looker-original"
+    },
+    {
+      "id": "google-data-studio-free",
+      "oldName": "Google Data Studio Free",
+      "name": "Google Data Studio Free",
+      "productId": "google-data-studio"
+    },
+    {
+      "id": "google-data-studio-pro",
+      "oldName": "Google Data Studio Pro",
+      "name": "Google Data Studio Pro",
+      "productId": "google-data-studio"
+    },
+    {
+      "id": "google-security-operations-standard",
+      "oldName": "Google Security Operations Standard",
+      "name": "Google Security Operations Standard",
+      "productId": "google-security-operations"
+    },
+    {
+      "id": "google-security-operations-enterprise",
+      "oldName": "Google Security Operations Enterprise",
+      "name": "Google Security Operations Enterprise",
+      "productId": "google-security-operations"
+    },
+    {
+      "id": "google-security-operations-enterprise-plus",
+      "oldName": "Google Security Operations Enterprise Plus",
+      "name": "Google Security Operations Enterprise Plus",
+      "productId": "google-security-operations"
+    },
+    {
+      "id": "google-threat-intelligence-standard",
+      "oldName": "Google Threat Intelligence Standard",
+      "name": "Google Threat Intelligence Standard",
+      "productId": "google-threat-intelligence"
+    },
+    {
+      "id": "google-threat-intelligence-enterprise",
+      "oldName": "Google Threat Intelligence Enterprise",
+      "name": "Google Threat Intelligence Enterprise",
+      "productId": "google-threat-intelligence"
+    },
+    {
+      "id": "google-threat-intelligence-enterprise-plus",
+      "oldName": "Google Threat Intelligence Enterprise+",
+      "name": "Google Threat Intelligence Enterprise+",
+      "productId": "google-threat-intelligence"
+    },
+    {
+      "id": "google-threat-intelligence-oem",
+      "oldName": "Google Threat Intelligence OEM",
+      "name": "Google Threat Intelligence OEM",
+      "productId": "google-threat-intelligence"
+    },
+    {
+      "id": "google-security-command-center-standard",
+      "oldName": "Google Security Command Center Standard",
+      "name": "Google Security Command Center Standard",
+      "productId": "google-security-command-center"
+    },
+    {
+      "id": "google-security-command-center-premium",
+      "oldName": "Google Security Command Center Premium",
+      "name": "Google Security Command Center Premium",
+      "productId": "google-security-command-center"
+    },
+    {
+      "id": "google-security-command-center-enterprise",
+      "oldName": "Google Security Command Center Enterprise",
+      "name": "Google Security Command Center Enterprise",
+      "productId": "google-security-command-center"
+    },
+    {
+      "id": "google-chrome-enterprise-core",
+      "oldName": "Google Chrome Enterprise Core",
+      "name": "Google Chrome Enterprise Core",
+      "productId": "google-chrome-enterprise"
+    },
+    {
+      "id": "google-chrome-enterprise-premium",
+      "oldName": "Google Chrome Enterprise Premium",
+      "name": "Google Chrome Enterprise Premium",
+      "productId": "google-chrome-enterprise"
+    },
+    {
+      "id": "adobe-creative-cloud-education-hed-pro-plus-for-enterprise",
+      "oldName": "Adobe Creative Cloud Education HED Pro Plus for Enterprise",
+      "name": "Adobe Creative Cloud Education HED Pro Plus for Enterprise",
+      "productId": "adobe-creative-cloud-education"
+    },
+    {
+      "id": "adobe-creative-cloud-education-hed-pro-for-enterprise",
+      "oldName": "Adobe Creative Cloud Education HED Pro for Enterprise",
+      "name": "Adobe Creative Cloud Education HED Pro for Enterprise",
+      "productId": "adobe-creative-cloud-education"
+    },
+    {
+      "id": "adobe-creative-cloud-education-hed-all-apps-for-enterprise",
+      "oldName": "Adobe Creative Cloud Education HED All Apps for Enterprise",
+      "name": "Adobe Creative Cloud Education HED All Apps for Enterprise",
+      "productId": "adobe-creative-cloud-education"
+    },
+    {
+      "id": "adobe-creative-cloud-education-student-teacher-all-apps",
+      "oldName": "Adobe Creative Cloud Education Student Teacher All Apps",
+      "name": "Adobe Creative Cloud Education Student Teacher All Apps",
+      "productId": "adobe-creative-cloud-education"
+    },
+    {
+      "id": "adobe-creative-cloud-education-k-12-all-apps",
+      "oldName": "Adobe Creative Cloud Education K-12 All Apps",
+      "name": "Adobe Creative Cloud Education K-12 All Apps",
+      "productId": "adobe-creative-cloud-education"
+    },
+    {
+      "id": "adobe-firefly-education-2-000-credits-for-education",
+      "oldName": "Adobe Firefly Education 2,000 credits for Education",
+      "name": "Adobe Firefly Education 2,000 credits for Education",
+      "productId": "adobe-firefly-education"
+    },
+    {
+      "id": "adobe-firefly-education-7-000-credits-for-education",
+      "oldName": "Adobe Firefly Education 7,000 credits for Education",
+      "name": "Adobe Firefly Education 7,000 credits for Education",
+      "productId": "adobe-firefly-education"
+    },
+    {
+      "id": "adobe-firefly-education-50-000-credits-for-education",
+      "oldName": "Adobe Firefly Education 50,000 credits for Education",
+      "name": "Adobe Firefly Education 50,000 credits for Education",
+      "productId": "adobe-firefly-education"
+    },
+    {
+      "id": "adobe-express-free",
+      "oldName": "Adobe Express Free",
+      "name": "Adobe Express Free",
+      "productId": "adobe-express"
+    },
+    {
+      "id": "adobe-express-premium",
+      "oldName": "Adobe Express Premium",
+      "name": "Adobe Express Premium",
+      "productId": "adobe-express"
+    },
+    {
+      "id": "adobe-express-teams",
+      "oldName": "Adobe Express Teams",
+      "name": "Adobe Express Teams",
+      "productId": "adobe-express"
+    },
+    {
+      "id": "adobe-express-enterprise",
+      "oldName": "Adobe Express Enterprise",
+      "name": "Adobe Express Enterprise",
+      "productId": "adobe-express"
+    },
+    {
+      "id": "adobe-express-express-firefly-enterprise",
+      "oldName": "Adobe Express Express & Firefly Enterprise",
+      "name": "Adobe Express Express & Firefly Enterprise",
+      "productId": "adobe-express"
+    },
+    {
+      "id": "adobe-express-k-12-education",
+      "oldName": "Adobe Express K-12 Education",
+      "name": "Adobe Express K-12 Education",
+      "productId": "adobe-express"
+    },
+    {
+      "id": "adobe-express-higher-education",
+      "oldName": "Adobe Express Higher Education",
+      "name": "Adobe Express Higher Education",
+      "productId": "adobe-express"
+    },
+    {
+      "id": "adobe-substance-3d-collection-individual",
+      "oldName": "Adobe Substance 3D Collection Individual",
+      "name": "Adobe Substance 3D Collection Individual",
+      "productId": "adobe-substance-3d"
+    },
+    {
+      "id": "adobe-substance-3d-collection-teams",
+      "oldName": "Adobe Substance 3D Collection Teams",
+      "name": "Adobe Substance 3D Collection Teams",
+      "productId": "adobe-substance-3d"
+    },
+    {
+      "id": "adobe-substance-3d-collection-students-teachers",
+      "oldName": "Adobe Substance 3D Collection Students & Teachers",
+      "name": "Adobe Substance 3D Collection Students & Teachers",
+      "productId": "adobe-substance-3d"
+    },
+    {
+      "id": "adobe-substance-3d-texturing-individual",
+      "oldName": "Adobe Substance 3D Texturing Individual",
+      "name": "Adobe Substance 3D Texturing Individual",
+      "productId": "adobe-substance-3d"
+    },
+    {
+      "id": "adobe-substance-3d-collection-enterprise",
+      "oldName": "Adobe Substance 3D Collection Enterprise",
+      "name": "Adobe Substance 3D Collection Enterprise",
+      "productId": "adobe-substance-3d"
+    },
+    {
+      "id": "adobe-acrobat-reader",
+      "oldName": "Adobe Acrobat Reader",
+      "name": "Adobe Acrobat Reader",
+      "productId": "adobe-acrobat"
+    },
+    {
+      "id": "adobe-acrobat-standard-individual",
+      "oldName": "Adobe Acrobat Standard Individual",
+      "name": "Adobe Acrobat Standard Individual",
+      "productId": "adobe-acrobat"
+    },
+    {
+      "id": "adobe-acrobat-pro-individual",
+      "oldName": "Adobe Acrobat Pro Individual",
+      "name": "Adobe Acrobat Pro Individual",
+      "productId": "adobe-acrobat"
+    },
+    {
+      "id": "adobe-acrobat-studio-individual",
+      "oldName": "Adobe Acrobat Studio Individual",
+      "name": "Adobe Acrobat Studio Individual",
+      "productId": "adobe-acrobat"
+    },
+    {
+      "id": "adobe-acrobat-express-individual",
+      "oldName": "Adobe Acrobat Express Individual",
+      "name": "Adobe Acrobat Express Individual",
+      "productId": "adobe-acrobat"
+    },
+    {
+      "id": "adobe-acrobat-ai-assistant-plus",
+      "oldName": "Adobe Acrobat AI Assistant Plus",
+      "name": "Adobe Acrobat AI Assistant Plus",
+      "productId": "adobe-acrobat"
+    },
+    {
+      "id": "adobe-acrobat-standard-teams",
+      "oldName": "Adobe Acrobat Standard Teams",
+      "name": "Adobe Acrobat Standard Teams",
+      "productId": "adobe-acrobat"
+    },
+    {
+      "id": "adobe-acrobat-pro-teams",
+      "oldName": "Adobe Acrobat Pro Teams",
+      "name": "Adobe Acrobat Pro Teams",
+      "productId": "adobe-acrobat"
+    },
+    {
+      "id": "adobe-acrobat-studio-teams",
+      "oldName": "Adobe Acrobat Studio Teams",
+      "name": "Adobe Acrobat Studio Teams",
+      "productId": "adobe-acrobat"
+    },
+    {
+      "id": "adobe-acrobat-express-teams",
+      "oldName": "Adobe Acrobat Express Teams",
+      "name": "Adobe Acrobat Express Teams",
+      "productId": "adobe-acrobat"
+    },
+    {
+      "id": "adobe-acrobat-studio-enterprise",
+      "oldName": "Adobe Acrobat Studio Enterprise",
+      "name": "Adobe Acrobat Studio Enterprise",
+      "productId": "adobe-acrobat"
+    },
+    {
+      "id": "adobe-acrobat-studio-hed-student",
+      "oldName": "Adobe Acrobat Studio HED Student",
+      "name": "Adobe Acrobat Studio HED Student",
+      "productId": "adobe-acrobat"
+    },
+    {
+      "id": "adobe-acrobat-studio-faculty-and-staff",
+      "oldName": "Adobe Acrobat Studio Faculty and Staff",
+      "name": "Adobe Acrobat Studio Faculty and Staff",
+      "productId": "adobe-acrobat"
+    },
+    {
+      "id": "adobe-acrobat-express-enterprise",
+      "oldName": "Adobe Acrobat Express Enterprise",
+      "name": "Adobe Acrobat Express Enterprise",
+      "productId": "adobe-acrobat"
+    },
+    {
+      "id": "adobe-acrobat-express-edu-hed-student",
+      "oldName": "Adobe Acrobat Express EDU-HED Student",
+      "name": "Adobe Acrobat Express EDU-HED Student",
+      "productId": "adobe-acrobat"
+    },
+    {
+      "id": "adobe-stock-10-stock-credits",
+      "oldName": "Adobe Stock 10 Stock credits",
+      "name": "Adobe Stock 10 Stock credits",
+      "productId": "adobe-stock"
+    },
+    {
+      "id": "adobe-stock-10-stock-credits-plus-ai-studio",
+      "oldName": "Adobe Stock 10 Stock credits + AI Studio",
+      "name": "Adobe Stock 10 Stock credits + AI Studio",
+      "productId": "adobe-stock"
+    },
+    {
+      "id": "adobe-stock-40-stock-credits-plus-ai-studio",
+      "oldName": "Adobe Stock 40 Stock credits + AI Studio",
+      "name": "Adobe Stock 40 Stock credits + AI Studio",
+      "productId": "adobe-stock"
+    },
+    {
+      "id": "adobe-stock-unlimited-stock-plus-ai-studio",
+      "oldName": "Adobe Stock Unlimited Stock + AI Studio",
+      "name": "Adobe Stock Unlimited Stock + AI Studio",
+      "productId": "adobe-stock"
+    },
+    {
+      "id": "adobe-stock-teams-10-standard-assets-a-month",
+      "oldName": "Adobe Stock Teams 10 standard assets a month",
+      "name": "Adobe Stock Teams 10 standard assets a month",
+      "productId": "adobe-stock-teams"
+    },
+    {
+      "id": "adobe-stock-teams-40-standard-assets-or-6-videos-a-month",
+      "oldName": "Adobe Stock Teams 40 standard assets or 6 videos a month",
+      "name": "Adobe Stock Teams 40 standard assets or 6 videos a month",
+      "productId": "adobe-stock-teams"
+    },
+    {
+      "id": "adobe-stock-teams-750-standard-assets-or-25-videos-a-month",
+      "oldName": "Adobe Stock Teams 750 standard assets or 25 videos a month",
+      "name": "Adobe Stock Teams 750 standard assets or 25 videos a month",
+      "productId": "adobe-stock-teams"
+    },
+    {
+      "id": "adobe-marketo-engage-growth",
+      "oldName": "Adobe Marketo Engage Growth",
+      "name": "Adobe Marketo Engage Growth",
+      "productId": "adobe-marketo-engage"
+    },
+    {
+      "id": "adobe-marketo-engage-select",
+      "oldName": "Adobe Marketo Engage Select",
+      "name": "Adobe Marketo Engage Select",
+      "productId": "adobe-marketo-engage"
+    },
+    {
+      "id": "adobe-marketo-engage-prime",
+      "oldName": "Adobe Marketo Engage Prime",
+      "name": "Adobe Marketo Engage Prime",
+      "productId": "adobe-marketo-engage"
+    },
+    {
+      "id": "adobe-marketo-engage-ultimate",
+      "oldName": "Adobe Marketo Engage Ultimate",
+      "name": "Adobe Marketo Engage Ultimate",
+      "productId": "adobe-marketo-engage"
+    },
+    {
+      "id": "adobe-workfront-select",
+      "oldName": "Adobe Workfront Select",
+      "name": "Adobe Workfront Select",
+      "productId": "adobe-workfront"
+    },
+    {
+      "id": "adobe-workfront-prime",
+      "oldName": "Adobe Workfront Prime",
+      "name": "Adobe Workfront Prime",
+      "productId": "adobe-workfront"
+    },
+    {
+      "id": "adobe-workfront-ultimate",
+      "oldName": "Adobe Workfront Ultimate",
+      "name": "Adobe Workfront Ultimate",
+      "productId": "adobe-workfront"
+    },
+    {
+      "id": "adobe-aem-assets-prime",
+      "oldName": "Adobe Experience Manager Assets Prime",
+      "name": "Adobe Experience Manager Assets Prime",
+      "productId": "adobe-aem-assets"
+    },
+    {
+      "id": "adobe-aem-assets-ultimate",
+      "oldName": "Adobe Experience Manager Assets Ultimate",
+      "name": "Adobe Experience Manager Assets Ultimate",
+      "productId": "adobe-aem-assets"
+    },
+    {
+      "id": "adobe-journey-optimizer-select",
+      "oldName": "Adobe Journey Optimizer Select",
+      "name": "Adobe Journey Optimizer Select",
+      "productId": "adobe-journey-optimizer"
+    },
+    {
+      "id": "adobe-journey-optimizer-prime",
+      "oldName": "Adobe Journey Optimizer Prime",
+      "name": "Adobe Journey Optimizer Prime",
+      "productId": "adobe-journey-optimizer"
+    },
+    {
+      "id": "adobe-journey-optimizer-ultimate",
+      "oldName": "Adobe Journey Optimizer Ultimate",
+      "name": "Adobe Journey Optimizer Ultimate",
+      "productId": "adobe-journey-optimizer"
+    },
+    {
+      "id": "adobe-analytics-select",
+      "oldName": "Adobe Analytics Select",
+      "name": "Adobe Analytics Select",
+      "productId": "adobe-analytics"
+    },
+    {
+      "id": "adobe-analytics-prime",
+      "oldName": "Adobe Analytics Prime",
+      "name": "Adobe Analytics Prime",
+      "productId": "adobe-analytics"
+    },
+    {
+      "id": "adobe-analytics-ultimate",
+      "oldName": "Adobe Analytics Ultimate",
+      "name": "Adobe Analytics Ultimate",
+      "productId": "adobe-analytics"
+    },
+    {
+      "id": "adobe-customer-journey-analytics-foundation",
+      "oldName": "Adobe Customer Journey Analytics Foundation",
+      "name": "Adobe Customer Journey Analytics Foundation",
+      "productId": "adobe-customer-journey-analytics"
+    },
+    {
+      "id": "adobe-customer-journey-analytics-select",
+      "oldName": "Adobe Customer Journey Analytics Select",
+      "name": "Adobe Customer Journey Analytics Select",
+      "productId": "adobe-customer-journey-analytics"
+    },
+    {
+      "id": "adobe-customer-journey-analytics-prime",
+      "oldName": "Adobe Customer Journey Analytics Prime",
+      "name": "Adobe Customer Journey Analytics Prime",
+      "productId": "adobe-customer-journey-analytics"
+    },
+    {
+      "id": "adobe-customer-journey-analytics-ultimate",
+      "oldName": "Adobe Customer Journey Analytics Ultimate",
+      "name": "Adobe Customer Journey Analytics Ultimate",
+      "productId": "adobe-customer-journey-analytics"
+    },
+    {
+      "id": "adobe-learning-manager-prime",
+      "oldName": "Adobe Learning Manager Prime",
+      "name": "Adobe Learning Manager Prime",
+      "productId": "adobe-learning-manager"
+    },
+    {
+      "id": "adobe-learning-manager-ultimate",
+      "oldName": "Adobe Learning Manager Ultimate",
+      "name": "Adobe Learning Manager Ultimate",
+      "productId": "adobe-learning-manager"
+    },
+    {
+      "id": "adobe-target-standard",
+      "oldName": "Adobe Target Standard",
+      "name": "Adobe Target Standard",
+      "productId": "adobe-target"
+    },
+    {
+      "id": "adobe-target-premium",
+      "oldName": "Adobe Target Premium",
+      "name": "Adobe Target Premium",
+      "productId": "adobe-target"
+    },
+    {
+      "id": "adobe-real-time-cdp-b2b-prime",
+      "oldName": "Adobe Real-Time CDP B2B Prime",
+      "name": "Adobe Real-Time CDP B2B Prime",
+      "productId": "adobe-real-time-cdp-b2b"
+    },
+    {
+      "id": "adobe-real-time-cdp-b2b-ultimate",
+      "oldName": "Adobe Real-Time CDP B2B Ultimate",
+      "name": "Adobe Real-Time CDP B2B Ultimate",
+      "productId": "adobe-real-time-cdp-b2b"
+    },
+    {
+      "id": "adobe-real-time-cdp-b2c-prime",
+      "oldName": "Adobe Real-Time CDP B2C Prime",
+      "name": "Adobe Real-Time CDP B2C Prime",
+      "productId": "adobe-real-time-cdp-b2c"
+    },
+    {
+      "id": "adobe-real-time-cdp-b2c-ultimate",
+      "oldName": "Adobe Real-Time CDP B2C Ultimate",
+      "name": "Adobe Real-Time CDP B2C Ultimate",
+      "productId": "adobe-real-time-cdp-b2c"
+    },
+    {
+      "id": "adobe-real-time-cdp-b2p-prime",
+      "oldName": "Adobe Real-Time CDP B2P Prime",
+      "name": "Adobe Real-Time CDP B2P Prime",
+      "productId": "adobe-real-time-cdp-b2p"
+    },
+    {
+      "id": "adobe-real-time-cdp-b2p-ultimate",
+      "oldName": "Adobe Real-Time CDP B2P Ultimate",
+      "name": "Adobe Real-Time CDP B2P Ultimate",
+      "productId": "adobe-real-time-cdp-b2p"
+    },
+    {
+      "id": "adobe-commerce-adobe-commerce-as-a-cloud-service-saas",
+      "oldName": "Adobe Commerce as a Cloud Service (SaaS)",
+      "name": "Adobe Commerce as a Cloud Service (SaaS)",
+      "productId": "adobe-commerce"
+    },
+    {
+      "id": "adobe-commerce-adobe-commerce-on-cloud-paas",
+      "oldName": "Adobe Commerce on Cloud (PaaS)",
+      "name": "Adobe Commerce on Cloud (PaaS)",
+      "productId": "adobe-commerce"
+    },
+    {
+      "id": "adobe-commerce-adobe-commerce-optimizer",
+      "oldName": "Adobe Commerce Optimizer",
+      "name": "Adobe Commerce Optimizer",
+      "productId": "adobe-commerce"
+    },
+    {
+      "id": "kling-cn-personal-gold",
+      "oldName": "可灵 AI（国内个人版） 黄金会员",
+      "name": "可灵 AI（国内个人版） 黄金会员",
+      "productId": "kling-cn-personal"
+    },
+    {
+      "id": "kling-cn-personal-platinum",
+      "oldName": "可灵 AI（国内个人版） 铂金会员",
+      "name": "可灵 AI（国内个人版） 铂金会员",
+      "productId": "kling-cn-personal"
+    },
+    {
+      "id": "kling-cn-personal-diamond",
+      "oldName": "可灵 AI（国内个人版） 钻石会员",
+      "name": "可灵 AI（国内个人版） 钻石会员",
+      "productId": "kling-cn-personal"
+    },
+    {
+      "id": "kling-cn-personal-black-gold",
+      "oldName": "可灵 AI（国内个人版） 黑金会员",
+      "name": "可灵 AI（国内个人版） 黑金会员",
+      "productId": "kling-cn-personal"
+    },
+    {
+      "id": "kling-cn-team-team",
+      "oldName": "可灵 AI（国内团队版） 团队会员",
+      "name": "可灵 AI（国内团队版） 团队会员",
+      "productId": "kling-cn-team"
+    }
+  ]
+}

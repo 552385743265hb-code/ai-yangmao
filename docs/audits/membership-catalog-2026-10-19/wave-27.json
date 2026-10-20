@@ -1,0 +1,588 @@
+{
+  "checkedAt": "2026-10-20",
+  "expectedRevision": 56,
+  "revision": 57,
+  "products": 151,
+  "plans": 681,
+  "vendors": 124,
+  "fullReadback": true,
+  "changedExistingPlans": [],
+  "changes": [
+    {
+      "id": "doubao-standard",
+      "oldName": "豆包订阅 标准",
+      "name": "豆包订阅 标准",
+      "productId": "doubao"
+    },
+    {
+      "id": "doubao-enhanced",
+      "oldName": "豆包订阅 加强",
+      "name": "豆包订阅 加强",
+      "productId": "doubao"
+    },
+    {
+      "id": "doubao-advanced",
+      "oldName": "豆包订阅 高级",
+      "name": "豆包订阅 高级",
+      "productId": "doubao"
+    },
+    {
+      "id": "kimi-cn-go",
+      "oldName": "Kimi 国内会员 Go",
+      "name": "Kimi 国内会员 Go",
+      "productId": "kimi-cn"
+    },
+    {
+      "id": "kimi-cn-plus",
+      "oldName": "Kimi 国内会员 Plus",
+      "name": "Kimi 国内会员 Plus",
+      "productId": "kimi-cn"
+    },
+    {
+      "id": "kimi-cn-pro",
+      "oldName": "Kimi 国内会员 Pro",
+      "name": "Kimi 国内会员 Pro",
+      "productId": "kimi-cn"
+    },
+    {
+      "id": "kimi-cn-max",
+      "oldName": "Kimi 国内会员 Max",
+      "name": "Kimi 国内会员 Max",
+      "productId": "kimi-cn"
+    },
+    {
+      "id": "kimi-cn-ultra",
+      "oldName": "Kimi 国内会员 Ultra",
+      "name": "Kimi 国内会员 Ultra",
+      "productId": "kimi-cn"
+    },
+    {
+      "id": "kimi-cn-andante",
+      "oldName": "Kimi 国内会员 Andante",
+      "name": "Kimi 国内会员 Andante",
+      "productId": "kimi-cn"
+    },
+    {
+      "id": "kimi-cn-moderato",
+      "oldName": "Kimi 国内会员 Moderato",
+      "name": "Kimi 国内会员 Moderato",
+      "productId": "kimi-cn"
+    },
+    {
+      "id": "kimi-cn-allegretto",
+      "oldName": "Kimi 国内会员 Allegretto",
+      "name": "Kimi 国内会员 Allegretto",
+      "productId": "kimi-cn"
+    },
+    {
+      "id": "kimi-cn-allegro",
+      "oldName": "Kimi 国内会员 Allegro",
+      "name": "Kimi 国内会员 Allegro",
+      "productId": "kimi-cn"
+    },
+    {
+      "id": "kimi-international-plus",
+      "oldName": "Kimi 国际会员 Plus",
+      "name": "Kimi 国际会员 Plus",
+      "productId": "kimi-international"
+    },
+    {
+      "id": "kimi-international-pro",
+      "oldName": "Kimi 国际会员 Pro",
+      "name": "Kimi 国际会员 Pro",
+      "productId": "kimi-international"
+    },
+    {
+      "id": "kimi-international-max",
+      "oldName": "Kimi 国际会员 Max",
+      "name": "Kimi 国际会员 Max",
+      "productId": "kimi-international"
+    },
+    {
+      "id": "kimi-international-ultra",
+      "oldName": "Kimi 国际会员 Ultra",
+      "name": "Kimi 国际会员 Ultra",
+      "productId": "kimi-international"
+    },
+    {
+      "id": "kimi-international-moderato",
+      "oldName": "Kimi 国际会员 Moderato",
+      "name": "Kimi 国际会员 Moderato",
+      "productId": "kimi-international"
+    },
+    {
+      "id": "kimi-international-allegretto",
+      "oldName": "Kimi 国际会员 Allegretto",
+      "name": "Kimi 国际会员 Allegretto",
+      "productId": "kimi-international"
+    },
+    {
+      "id": "kimi-international-allegro",
+      "oldName": "Kimi 国际会员 Allegro",
+      "name": "Kimi 国际会员 Allegro",
+      "productId": "kimi-international"
+    },
+    {
+      "id": "kimi-international-vivace",
+      "oldName": "Kimi 国际会员 Vivace",
+      "name": "Kimi 国际会员 Vivace",
+      "productId": "kimi-international"
+    },
+    {
+      "id": "unisound-token-plan-standard",
+      "oldName": "云知声 Token Hub Token Plan Standard",
+      "name": "云知声 Token Hub Token Plan Standard",
+      "productId": "unisound-token-plan"
+    },
+    {
+      "id": "unisound-token-plan-plus",
+      "oldName": "云知声 Token Hub Token Plan Plus",
+      "name": "云知声 Token Hub Token Plan Plus",
+      "productId": "unisound-token-plan"
+    },
+    {
+      "id": "unisound-token-plan-max",
+      "oldName": "云知声 Token Hub Token Plan Max",
+      "name": "云知声 Token Hub Token Plan Max",
+      "productId": "unisound-token-plan"
+    },
+    {
+      "id": "unisound-token-plan-legacy-lite",
+      "oldName": "云知声 Token Hub Token Plan Lite（旧版至到期）",
+      "name": "云知声 Token Hub Token Plan Lite（旧版至到期）",
+      "productId": "unisound-token-plan"
+    },
+    {
+      "id": "unisound-token-plan-legacy-standard",
+      "oldName": "云知声 Token Hub Token Plan Standard（旧版至到期）",
+      "name": "云知声 Token Hub Token Plan Standard（旧版至到期）",
+      "productId": "unisound-token-plan"
+    },
+    {
+      "id": "unisound-token-plan-legacy-pro",
+      "oldName": "云知声 Token Hub Token Plan Pro（旧版至到期）",
+      "name": "云知声 Token Hub Token Plan Pro（旧版至到期）",
+      "productId": "unisound-token-plan"
+    },
+    {
+      "id": "unisound-token-plan-legacy-max",
+      "oldName": "云知声 Token Hub Token Plan Max（旧版至到期）",
+      "name": "云知声 Token Hub Token Plan Max（旧版至到期）",
+      "productId": "unisound-token-plan"
+    },
+    {
+      "id": "kimi-business-cn-business",
+      "oldName": "Kimi（国内企业版） Business",
+      "name": "Kimi（国内企业版） Business",
+      "productId": "kimi-business-cn"
+    },
+    {
+      "id": "kimi-business-international-business",
+      "oldName": "Kimi（国际企业版） Business",
+      "name": "Kimi（国际企业版） Business",
+      "productId": "kimi-business-international"
+    },
+    {
+      "id": "qwen-token-personal-lite",
+      "oldName": "千问AI Token Plan个人版 Lite",
+      "name": "千问AI Token Plan个人版 Lite",
+      "productId": "qwen-token-personal"
+    },
+    {
+      "id": "qwen-token-personal-essential",
+      "oldName": "千问AI Token Plan个人版 Essential",
+      "name": "千问AI Token Plan个人版 Essential",
+      "productId": "qwen-token-personal"
+    },
+    {
+      "id": "qwen-token-personal-standard",
+      "oldName": "千问AI Token Plan个人版 Standard",
+      "name": "千问AI Token Plan个人版 Standard",
+      "productId": "qwen-token-personal"
+    },
+    {
+      "id": "qwen-token-personal-pro",
+      "oldName": "千问AI Token Plan个人版 Pro",
+      "name": "千问AI Token Plan个人版 Pro",
+      "productId": "qwen-token-personal"
+    },
+    {
+      "id": "qwen-token-team-standard",
+      "oldName": "千问AI Token Plan团队版 标准席位 Standard",
+      "name": "千问AI Token Plan团队版 标准席位 Standard",
+      "productId": "qwen-token-team"
+    },
+    {
+      "id": "qwen-token-team-pro",
+      "oldName": "千问AI Token Plan团队版 高级席位 Pro",
+      "name": "千问AI Token Plan团队版 高级席位 Pro",
+      "productId": "qwen-token-team"
+    },
+    {
+      "id": "qwen-token-team-max",
+      "oldName": "千问AI Token Plan团队版 尊享席位 Max",
+      "name": "千问AI Token Plan团队版 尊享席位 Max",
+      "productId": "qwen-token-team"
+    },
+    {
+      "id": "qwencloud-token-personal-lite",
+      "oldName": "QwenCloud Token Plan（国际版）个人版 Lite",
+      "name": "QwenCloud Token Plan（国际版）个人版 Lite",
+      "productId": "qwencloud-token-personal"
+    },
+    {
+      "id": "qwencloud-token-personal-essential",
+      "oldName": "QwenCloud Token Plan（国际版）个人版 Essential",
+      "name": "QwenCloud Token Plan（国际版）个人版 Essential",
+      "productId": "qwencloud-token-personal"
+    },
+    {
+      "id": "qwencloud-token-personal-standard",
+      "oldName": "QwenCloud Token Plan（国际版）个人版 Standard",
+      "name": "QwenCloud Token Plan（国际版）个人版 Standard",
+      "productId": "qwencloud-token-personal"
+    },
+    {
+      "id": "qwencloud-token-personal-pro",
+      "oldName": "QwenCloud Token Plan（国际版）个人版 Pro",
+      "name": "QwenCloud Token Plan（国际版）个人版 Pro",
+      "productId": "qwencloud-token-personal"
+    },
+    {
+      "id": "qwencloud-token-team-standard",
+      "oldName": "QwenCloud Token Plan（国际版）团队版 Standard seat",
+      "name": "QwenCloud Token Plan（国际版）团队版 Standard seat",
+      "productId": "qwencloud-token-team"
+    },
+    {
+      "id": "qwencloud-token-team-pro",
+      "oldName": "QwenCloud Token Plan（国际版）团队版 Pro seat",
+      "name": "QwenCloud Token Plan（国际版）团队版 Pro seat",
+      "productId": "qwencloud-token-team"
+    },
+    {
+      "id": "qwencloud-token-team-max",
+      "oldName": "QwenCloud Token Plan（国际版）团队版 Max seat",
+      "name": "QwenCloud Token Plan（国际版）团队版 Max seat",
+      "productId": "qwencloud-token-team"
+    },
+    {
+      "id": "wps-lingxi-free",
+      "oldName": "WPS 灵犀 体验版",
+      "name": "WPS 灵犀 体验版",
+      "productId": "wps-lingxi"
+    },
+    {
+      "id": "wps-lingxi-standard",
+      "oldName": "WPS 灵犀 标准版",
+      "name": "WPS 灵犀 标准版",
+      "productId": "wps-lingxi"
+    },
+    {
+      "id": "wps-lingxi-advanced",
+      "oldName": "WPS 灵犀 进阶版",
+      "name": "WPS 灵犀 进阶版",
+      "productId": "wps-lingxi"
+    },
+    {
+      "id": "wps-lingxi-flagship",
+      "oldName": "WPS 灵犀 旗舰版",
+      "name": "WPS 灵犀 旗舰版",
+      "productId": "wps-lingxi"
+    },
+    {
+      "id": "feishu-suite-free",
+      "oldName": "飞书套件 免费版",
+      "name": "飞书套件 免费版",
+      "productId": "feishu-suite"
+    },
+    {
+      "id": "feishu-suite-business-standard",
+      "oldName": "飞书套件 商业标准版",
+      "name": "飞书套件 商业标准版",
+      "productId": "feishu-suite"
+    },
+    {
+      "id": "feishu-suite-business-pro",
+      "oldName": "飞书套件 商业专业版",
+      "name": "飞书套件 商业专业版",
+      "productId": "feishu-suite"
+    },
+    {
+      "id": "feishu-suite-business-flagship",
+      "oldName": "飞书套件 商业旗舰版",
+      "name": "飞书套件 商业旗舰版",
+      "productId": "feishu-suite"
+    },
+    {
+      "id": "feishu-suite-enterprise-flagship",
+      "oldName": "飞书套件 企业旗舰版",
+      "name": "飞书套件 企业旗舰版",
+      "productId": "feishu-suite"
+    },
+    {
+      "id": "lark-suite-starter",
+      "oldName": "Lark（国际套件） Starter",
+      "name": "Lark（国际套件） Starter",
+      "productId": "lark-suite"
+    },
+    {
+      "id": "lark-suite-basic",
+      "oldName": "Lark（国际套件） Basic",
+      "name": "Lark（国际套件） Basic",
+      "productId": "lark-suite"
+    },
+    {
+      "id": "lark-suite-pro",
+      "oldName": "Lark（国际套件） Pro",
+      "name": "Lark（国际套件） Pro",
+      "productId": "lark-suite"
+    },
+    {
+      "id": "lark-suite-enterprise",
+      "oldName": "Lark（国际套件） Enterprise",
+      "name": "Lark（国际套件） Enterprise",
+      "productId": "lark-suite"
+    },
+    {
+      "id": "feishu-ai-personal-legacy-ai-member",
+      "oldName": "飞书（存量个人订阅） AI 会员",
+      "name": "飞书（存量个人订阅） AI 会员",
+      "productId": "feishu-ai-personal-legacy"
+    },
+    {
+      "id": "feishu-ai-personal-legacy-ai-member-plus",
+      "oldName": "飞书（存量个人订阅） AI 会员 Plus",
+      "name": "飞书（存量个人订阅） AI 会员 Plus",
+      "productId": "feishu-ai-personal-legacy"
+    },
+    {
+      "id": "feishu-ai-business-basic",
+      "oldName": "飞书 AI 基础版",
+      "name": "飞书 AI 基础版",
+      "productId": "feishu-ai-business"
+    },
+    {
+      "id": "doubao-work-seats-team",
+      "oldName": "豆包（组织席位） 团队订阅",
+      "name": "豆包（组织席位） 团队订阅",
+      "productId": "doubao-work-seats"
+    },
+    {
+      "id": "doubao-work-seats-enterprise",
+      "oldName": "豆包（组织席位） 企业订阅",
+      "name": "豆包（组织席位） 企业订阅",
+      "productId": "doubao-work-seats"
+    },
+    {
+      "id": "doubao-enterprise-usage-2m",
+      "oldName": "豆包企业用量套餐 200 万点",
+      "name": "豆包企业用量套餐 200 万点",
+      "productId": "doubao-enterprise-usage"
+    },
+    {
+      "id": "doubao-enterprise-usage-6m",
+      "oldName": "豆包企业用量套餐 600 万点",
+      "name": "豆包企业用量套餐 600 万点",
+      "productId": "doubao-enterprise-usage"
+    },
+    {
+      "id": "doubao-enterprise-usage-20m",
+      "oldName": "豆包企业用量套餐 2000 万点",
+      "name": "豆包企业用量套餐 2000 万点",
+      "productId": "doubao-enterprise-usage"
+    },
+    {
+      "id": "feishu-aily-legacy-enterprise",
+      "oldName": "飞书 aily（存量专用订阅） 企业版",
+      "name": "飞书 aily（存量专用订阅） 企业版",
+      "productId": "feishu-aily-legacy"
+    },
+    {
+      "id": "feishu-aily-legacy-flagship",
+      "oldName": "飞书 aily（存量专用订阅） 旗舰版",
+      "name": "飞书 aily（存量专用订阅） 旗舰版",
+      "productId": "feishu-aily-legacy"
+    },
+    {
+      "id": "feishu-meeting-notes-legacy-enterprise",
+      "oldName": "飞书智能会议纪要（存量订阅） 企业版",
+      "name": "飞书智能会议纪要（存量订阅） 企业版",
+      "productId": "feishu-meeting-notes-legacy"
+    },
+    {
+      "id": "microsoft-copilot-personal-personal",
+      "oldName": "Microsoft 365（个人订阅） Personal",
+      "name": "Microsoft 365（个人订阅） Personal",
+      "productId": "microsoft-copilot-personal"
+    },
+    {
+      "id": "microsoft-copilot-personal-family",
+      "oldName": "Microsoft 365（个人订阅） Family",
+      "name": "Microsoft 365（个人订阅） Family",
+      "productId": "microsoft-copilot-personal"
+    },
+    {
+      "id": "microsoft-copilot-personal-premium",
+      "oldName": "Microsoft 365（个人订阅） Premium",
+      "name": "Microsoft 365（个人订阅） Premium",
+      "productId": "microsoft-copilot-personal"
+    },
+    {
+      "id": "microsoft-copilot-personal-pro",
+      "oldName": "Microsoft 365（个人订阅） Pro",
+      "name": "Microsoft 365（个人订阅） Pro",
+      "productId": "microsoft-copilot-personal"
+    },
+    {
+      "id": "microsoft-copilot-free-free",
+      "oldName": "Microsoft Copilot Free",
+      "name": "Microsoft Copilot Free",
+      "productId": "microsoft-copilot-free"
+    },
+    {
+      "id": "microsoft-copilot-business-copilot-business-add-on",
+      "oldName": "Microsoft 365（商业 Copilot） Copilot Business (add-on)",
+      "name": "Microsoft 365（商业 Copilot） Copilot Business (add-on)",
+      "productId": "microsoft-copilot-business"
+    },
+    {
+      "id": "microsoft-copilot-business-business-standard-with-copilot",
+      "oldName": "Microsoft 365（商业 Copilot） Business Standard with Copilot",
+      "name": "Microsoft 365（商业 Copilot） Business Standard with Copilot",
+      "productId": "microsoft-copilot-business"
+    },
+    {
+      "id": "microsoft-copilot-business-business-premium-with-copilot",
+      "oldName": "Microsoft 365（商业 Copilot） Business Premium with Copilot",
+      "name": "Microsoft 365（商业 Copilot） Business Premium with Copilot",
+      "productId": "microsoft-copilot-business"
+    },
+    {
+      "id": "microsoft-copilot-business-business-standard-with-copilot-no-teams",
+      "oldName": "Microsoft 365（商业 Copilot） Business Standard with Copilot (no Teams)",
+      "name": "Microsoft 365（商业 Copilot） Business Standard with Copilot (no Teams)",
+      "productId": "microsoft-copilot-business"
+    },
+    {
+      "id": "microsoft-copilot-business-business-premium-with-copilot-no-teams",
+      "oldName": "Microsoft 365（商业 Copilot） Business Premium with Copilot (no Teams)",
+      "name": "Microsoft 365（商业 Copilot） Business Premium with Copilot (no Teams)",
+      "productId": "microsoft-copilot-business"
+    },
+    {
+      "id": "microsoft-copilot-enterprise-add-on",
+      "oldName": "Microsoft 365 Copilot Add-on",
+      "name": "Microsoft 365 Copilot Add-on",
+      "productId": "microsoft-copilot-enterprise"
+    },
+    {
+      "id": "microsoft-365-enterprise-e7",
+      "oldName": "Microsoft 365（企业套件） E7",
+      "name": "Microsoft 365（企业套件） E7",
+      "productId": "microsoft-365-enterprise"
+    },
+    {
+      "id": "microsoft-teams-premium-premium",
+      "oldName": "Microsoft Teams Premium",
+      "name": "Microsoft Teams Premium",
+      "productId": "microsoft-teams-premium"
+    },
+    {
+      "id": "microsoft-power-apps-developer-plan",
+      "oldName": "Microsoft Power Apps Developer Plan",
+      "name": "Microsoft Power Apps Developer Plan",
+      "productId": "microsoft-power-apps"
+    },
+    {
+      "id": "microsoft-power-apps-premium",
+      "oldName": "Microsoft Power Apps Premium",
+      "name": "Microsoft Power Apps Premium",
+      "productId": "microsoft-power-apps"
+    },
+    {
+      "id": "microsoft-power-automate-premium",
+      "oldName": "Microsoft Power Automate Premium",
+      "name": "Microsoft Power Automate Premium",
+      "productId": "microsoft-power-automate"
+    },
+    {
+      "id": "microsoft-power-automate-process",
+      "oldName": "Microsoft Power Automate Process",
+      "name": "Microsoft Power Automate Process",
+      "productId": "microsoft-power-automate"
+    },
+    {
+      "id": "microsoft-power-automate-hosted-process",
+      "oldName": "Microsoft Power Automate Hosted Process",
+      "name": "Microsoft Power Automate Hosted Process",
+      "productId": "microsoft-power-automate"
+    },
+    {
+      "id": "microsoft-copilot-studio-copilot-credit-pack-subscription",
+      "oldName": "Microsoft Copilot Studio Copilot Credit pack subscription",
+      "name": "Microsoft Copilot Studio Copilot Credit pack subscription",
+      "productId": "microsoft-copilot-studio"
+    },
+    {
+      "id": "sakana-fugu-standard-plan",
+      "oldName": "Sakana Fugu Standard Plan",
+      "name": "Sakana Fugu Standard Plan",
+      "productId": "sakana-fugu"
+    },
+    {
+      "id": "sakana-fugu-pro-plan",
+      "oldName": "Sakana Fugu Pro Plan",
+      "name": "Sakana Fugu Pro Plan",
+      "productId": "sakana-fugu"
+    },
+    {
+      "id": "sakana-fugu-max-plan",
+      "oldName": "Sakana Fugu Max Plan",
+      "name": "Sakana Fugu Max Plan",
+      "productId": "sakana-fugu"
+    },
+    {
+      "id": "sakana-marlin-pro",
+      "oldName": "Sakana Marlin Pro",
+      "name": "Sakana Marlin Pro",
+      "productId": "sakana-marlin"
+    },
+    {
+      "id": "sakana-marlin-team",
+      "oldName": "Sakana Marlin Team",
+      "name": "Sakana Marlin Team",
+      "productId": "sakana-marlin"
+    },
+    {
+      "id": "sakana-marlin-enterprise",
+      "oldName": "Sakana Marlin Enterprise",
+      "name": "Sakana Marlin Enterprise",
+      "productId": "sakana-marlin"
+    },
+    {
+      "id": "replicas-developer",
+      "oldName": "Replicas Developer",
+      "name": "Replicas Developer",
+      "productId": "replicas"
+    },
+    {
+      "id": "replicas-team",
+      "oldName": "Replicas Team",
+      "name": "Replicas Team",
+      "productId": "replicas"
+    },
+    {
+      "id": "replicas-enterprise",
+      "oldName": "Replicas Enterprise",
+      "name": "Replicas Enterprise",
+      "productId": "replicas"
+    },
+    {
+      "id": "nous-hermes-enterprise-enterprise",
+      "oldName": "Hermes（企业私有部署） Enterprise",
+      "name": "Hermes（企业私有部署） Enterprise",
+      "productId": "nous-hermes-enterprise"
+    }
+  ]
+}

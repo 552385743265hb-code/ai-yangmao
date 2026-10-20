@@ -3,11 +3,26 @@ import { z } from 'zod';
 export interface MembershipProduct {
   id: string; name: string; aliases: string[]; status: 'pending' | 'verified' | 'retired';
   sourceUrl: string; verifiedAt: string | null; revision: number;
+  /** Products may be shared by multiple vendor applications (for example Cursor and Grok). */
+  platformIds?: string[]; legacy?: boolean;
+  retiredReason?: string; retiredSourceUrl?: string; retiredAt?: string;
 }
 export interface MembershipPlan extends MembershipProduct {
   productId: string; billing: 'free' | 'paid' | 'unknown';
 }
-export interface MembershipCatalog { revision: number; products: MembershipProduct[]; plans: MembershipPlan[] }
+export interface MembershipVendor {
+  id: string; name: string; status: 'available' | 'none' | 'unverified';
+  sourceUrl?: string; verifiedAt?: string | null;
+}
+export interface MembershipCatalog {
+  revision: number; products: MembershipProduct[]; plans: MembershipPlan[];
+  vendors?: MembershipVendor[];
+  /** Only evidence-backed one-to-one ID migrations; ambiguous legacy selections remain unresolved. */
+  planIdAliases?: Record<string,string>;
+  planReplacements?: Record<string,string[]>;
+  productIdAliases?: Record<string,string>;
+  productReplacements?: Record<string,string[]>;
+}
 const strings = () => z.array(z.string().trim().min(1).max(200)).max(100);
 const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(v => {
   const parsed = new Date(`${v}T00:00:00Z`);
@@ -33,7 +48,7 @@ const clauseSchema = z.object({
 });
 const membershipBaseSchema = z.object({
   schemaVersion: z.literal('membership-v1'), status: z.enum(['not_required', 'needs_review', 'confirmed']),
-  catalogRevision: z.number().int().nonnegative(), anyOf: z.array(z.object({ allOf: z.array(clauseSchema).min(1).max(20) }).strict()).max(20),
+  catalogRevision: z.number().int().nonnegative(), anyOf: z.array(z.object({ allOf: z.array(clauseSchema).min(1).max(20) }).strict()).max(500),
   evidenceUrls: z.array(url).max(50), legacyText: z.array(z.string().max(4000)).max(100).optional(),
 }).strict();
 export const membershipFactsSchema = membershipBaseSchema.omit({ catalogRevision: true, evidenceUrls: true, legacyText: true }).superRefine((v, ctx) => {
@@ -101,20 +116,32 @@ export function membershipFacts(r: MembershipRequirement) {
   return facts;
 }
 /** Match complete name boundaries: Alpha must not match Alphabet. */
-function qualifiedPlanName(plan: MembershipPlan, catalog: MembershipCatalog): string {
+export function qualifiedPlanName(plan: MembershipPlan, catalog: MembershipCatalog): string {
   const product = catalog.products.find(p => p.id === plan.productId);
   if (!product) return plan.name;
   const escaped = product.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const containsName = new RegExp(`(^|[^\\p{L}\\p{N}])${escaped}($|[^\\p{L}\\p{N}])`, 'iu').test(plan.name);
   return containsName ? plan.name : `${product.name} ${plan.name}`;
 }
+/** A retired aggregate can name several concrete seats; this does not mean the user owns all of them. */
+export function membershipPlanAlternatives(id: string, catalog: MembershipCatalog, path = new Set<string>()): string[] | null {
+  if (path.has(id)) return null;
+  const group = Object.hasOwn(catalog.planReplacements ?? {}, id) ? catalog.planReplacements![id] : undefined;
+  const alias = Object.hasOwn(catalog.planIdAliases ?? {}, id) ? catalog.planIdAliases![id] : undefined;
+  const replacements = group ?? (alias ? [alias] : undefined);
+  if (!replacements) return catalog.plans.some(p => p.id === id) ? [id] : null;
+  if (!Array.isArray(replacements) || !replacements.length || replacements.some(id => typeof id !== 'string')) return null;
+  const next = new Set(path); next.add(id);
+  const resolved = replacements.map(id => membershipPlanAlternatives(id, catalog, next));
+  return resolved.some(ids => ids === null) ? null : [...new Set(resolved.flatMap(ids => ids!))];
+}
 export function formatMembership(r: MembershipRequirement, catalog: MembershipCatalog): string {
   if (r.status === 'not_required') return '无需会员';
-  const name = (id: string) => { const plan = catalog.plans.find(p => p.id === id); return plan ? qualifiedPlanName(plan, catalog) : id; };
+  const names = (ids: string[]) => [...new Set(ids.flatMap(id => membershipPlanAlternatives(id, catalog) ?? [id]))].map(id => { const plan = catalog.plans.find(p => p.id === id); return plan ? qualifiedPlanName(plan, catalog) : id; });
   const text = r.anyOf.map(g => g.allOf.map(c => {
     const product = catalog.products.find(p => p.id === c.productId)?.name ?? c.productId;
-    let text = c.scope === 'plans' ? c.planIds.map(name).join(' / ') : `${product}${c.scope === 'any_paid' ? '任一付费订阅' : '任一订阅'}`;
-    if (c.excludePlanIds.length) text += `（排除 ${c.excludePlanIds.map(name).join('、')}）`;
+    let text = c.scope === 'plans' ? names(c.planIds).join(' / ') : `${product}${c.scope === 'any_paid' ? '任一付费订阅' : '任一订阅'}`;
+    if (c.excludePlanIds.length) text += `（排除 ${names(c.excludePlanIds).join('、')}）`;
     const l = c.limits; const qualifiers: string[] = [];
     if (l?.billingCycles) qualifiers.push(l.billingCycles.map(v => v === 'monthly' ? '月付' : '年付').join('/'));
     if (l?.seatTypes) qualifiers.push(`席位：${l.seatTypes.join('/')}`);
@@ -139,24 +166,33 @@ export function matchMembership(r: MembershipRequirement, owned: OwnedSubscripti
   return or(r.anyOf.map(g => and(g.allOf.map(c => {
     const product = catalog.products.find(p => p.id === c.productId);
     if (!product || product.status === 'pending') return 'unknown';
-    if ([...c.planIds, ...c.excludePlanIds].some(id => !catalog.plans.some(p => p.id === id && p.productId === c.productId && p.status !== 'pending'))) return 'unknown';
+    const selected = c.planIds.map(id => membershipPlanAlternatives(id, catalog));
+    const excluded = c.excludePlanIds.map(id => membershipPlanAlternatives(id, catalog));
+    if ([...selected, ...excluded].some(ids => ids === null)) return 'unknown';
+    const planIds = selected.flatMap(ids => ids!), excludeIds = excluded.flatMap(ids => ids!);
+    if ([...planIds, ...excludeIds].some(id => !catalog.plans.some(p => p.id === id && p.productId === c.productId && p.status !== 'pending'))) return 'unknown';
     return or(owned.map(s => {
-      const p = catalog.plans.find(p => p.id === s.planId);
-      if (!p) return 'unknown';
-      if (p.productId !== c.productId || c.excludePlanIds.includes(p.id) || (c.scope === 'plans' && !c.planIds.includes(p.id))) return 'no';
-      if (p.status === 'pending') return 'unknown';
-      const checks: MembershipMatch[] = [];
-      if (c.scope === 'any_paid') checks.push(p.billing === 'unknown' ? 'unknown' : p.billing === 'paid' ? 'yes' : 'no');
-      const l = c.limits;
-      const check = (needed: string[] | undefined, actual: string | undefined) => { if (needed) checks.push(actual === undefined ? 'unknown' : needed.includes(actual) ? 'yes' : 'no'); };
-      check(l?.billingCycles, s.billingCycle === 'monthly' || s.billingCycle === 'annual' ? s.billingCycle : undefined); check(l?.seatTypes, s.seatType); check(l?.regions, s.region);
-      if (l?.startedBefore || l?.startedAfter) {
-        if (!s.startedOn || !date.safeParse(s.startedOn).success) checks.push('unknown');
-        else checks.push((!l.startedBefore || s.startedOn < l.startedBefore) && (!l.startedAfter || s.startedOn > l.startedAfter) ? 'yes' : 'no');
-      }
-      if (l?.trial && l.trial !== 'include') checks.push(typeof s.trial !== 'boolean' ? 'unknown' : s.trial === (l.trial === 'only') ? 'yes' : 'no');
-      if (l?.legacy !== undefined) checks.push(typeof s.legacy !== 'boolean' ? 'unknown' : s.legacy === l.legacy ? 'yes' : 'no');
-      return and(checks);
+      const alternatives = membershipPlanAlternatives(s.planId, catalog);
+      if (!alternatives) return 'unknown';
+      const results = alternatives.map((id): MembershipMatch => {
+        const p = catalog.plans.find(p => p.id === id)!;
+        if (p.productId !== c.productId || excludeIds.includes(p.id) || (c.scope === 'plans' && !planIds.includes(p.id))) return 'no';
+        if (p.status === 'pending') return 'unknown';
+        const checks: MembershipMatch[] = [];
+        if (c.scope === 'any_paid') checks.push(p.billing === 'unknown' ? 'unknown' : p.billing === 'paid' ? 'yes' : 'no');
+        const l = c.limits;
+        const check = (needed: string[] | undefined, actual: string | undefined) => { if (needed) checks.push(actual === undefined ? 'unknown' : needed.includes(actual) ? 'yes' : 'no'); };
+        check(l?.billingCycles, s.billingCycle === 'monthly' || s.billingCycle === 'annual' ? s.billingCycle : undefined); check(l?.seatTypes, s.seatType); check(l?.regions, s.region);
+        if (l?.startedBefore || l?.startedAfter) {
+          if (!s.startedOn || !date.safeParse(s.startedOn).success) checks.push('unknown');
+          else checks.push((!l.startedBefore || s.startedOn < l.startedBefore) && (!l.startedAfter || s.startedOn > l.startedAfter) ? 'yes' : 'no');
+        }
+        if (l?.trial && l.trial !== 'include') checks.push(typeof s.trial !== 'boolean' ? 'unknown' : s.trial === (l.trial === 'only') ? 'yes' : 'no');
+        if (l?.legacy !== undefined) checks.push(typeof s.legacy !== 'boolean' ? 'unknown' : s.legacy === l.legacy ? 'yes' : 'no');
+        return and(checks);
+      });
+      // Ambiguous ownership only proves eligibility if every possible concrete plan agrees.
+      return results.every(result => result === results[0]) ? results[0] : 'unknown';
     }));
   }))));
 }
@@ -166,8 +202,8 @@ function exactPlan(value: string, catalog: MembershipCatalog): MembershipPlan | 
   const candidates = catalog.plans.filter(p => {
     const product = catalog.products.find(x => x.id === p.productId && x.status === 'verified');
     if (p.status !== 'verified' || !product) return false;
-    const fullName = qualifiedPlanName(p, catalog);
-    return target === fullName.toLocaleLowerCase('en');
+    const names=[p.name,...p.aliases].map(name=>qualifiedPlanName({...p,name},catalog));
+    return names.some(name=>target===name.toLocaleLowerCase('en'));
   });
   return candidates.length === 1 ? candidates[0] : undefined;
 }

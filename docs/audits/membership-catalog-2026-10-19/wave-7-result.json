@@ -1,0 +1,78 @@
+{
+  "appliedAt": "2026-10-19",
+  "beforeRevision": 36,
+  "afterRevision": 37,
+  "products": 46,
+  "plans": 249,
+  "planStates": {
+    "verified": 224,
+    "retired": 10,
+    "pending": 15
+  },
+  "changes": [
+    {
+      "id": "devin-free",
+      "oldName": "Devin Free",
+      "name": "Devin Free",
+      "productId": "devin"
+    },
+    {
+      "id": "devin-pro",
+      "oldName": "Pro",
+      "name": "Devin Pro",
+      "productId": "devin"
+    },
+    {
+      "id": "devin-max",
+      "oldName": "Max",
+      "name": "Devin Max",
+      "productId": "devin"
+    },
+    {
+      "id": "devin-teams",
+      "oldName": "Teams",
+      "name": "Devin Teams",
+      "productId": "devin"
+    },
+    {
+      "id": "devin-enterprise",
+      "oldName": "Devin Enterprise",
+      "name": "Devin Enterprise",
+      "productId": "devin"
+    },
+    {
+      "id": "windsurf-pro",
+      "oldName": "Pro",
+      "name": "Windsurf（历史订阅） Pro",
+      "productId": "windsurf"
+    },
+    {
+      "id": "windsurf-teams",
+      "oldName": "Teams",
+      "name": "Windsurf（历史订阅） Teams",
+      "productId": "windsurf"
+    },
+    {
+      "id": "windsurf-enterprise",
+      "oldName": "Enterprise",
+      "name": "Windsurf（历史订阅） Enterprise",
+      "productId": "windsurf"
+    },
+    {
+      "id": "windsurf-trial",
+      "oldName": "Trial",
+      "name": "Windsurf（历史订阅） Trial",
+      "productId": "windsurf"
+    },
+    {
+      "id": "windsurf-plan-1",
+      "oldName": "付费套餐（具体档位待核实）",
+      "name": "付费套餐（具体档位待核实）",
+      "productId": "windsurf",
+      "action": "retire",
+      "reason": "旧泛付费套餐占位项，真实 Pro/Teams/Enterprise 已明确列出"
+    }
+  ],
+  "verification": "final revision 41 full catalog products/plans/root metadata equals prepared plan; intermediate snapshots retained outside Git",
+  "writeMethod": "D1 revision-guarded catalog update"
+}

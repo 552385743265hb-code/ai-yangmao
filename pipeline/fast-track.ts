@@ -1,5 +1,5 @@
 import {semanticFactsSchema,makeSemanticReview,semanticReviewIssues,semanticSource,type SemanticContext,type SemanticReview} from '../src/shared/fast-track-semantics';
-import {fastTrackCatalogChoices,fastTrackCatalogBlock,type CatalogBlock} from '../src/shared/fast-track-membership';
+import {fastTrackCatalogPrompt,fastTrackCatalogBlock,type CatalogBlock} from '../src/shared/fast-track-membership';
 import { api, fetchPage } from './lib';
 import { completeTierPrompt, modelAvailable, parseModelJson, valuationContext, VALUATION_FACTOR_RULES, FACTOR_REPAIR_RULES, type Extracted } from './llm';
 import { fetchedSource } from './fetch-evidence';
@@ -83,7 +83,7 @@ async function fillFields(job: Job, options: FastTrackOptions): Promise<Result> 
  try{proof=fetchedSource(await fetchPage(job.url,{timeoutMs:15000,tries:2,minimumTextLength:50}));pageText=proof.sourceText??'';}
  catch(error){options.log('快速上架：正文不可读，只按管理员描述抽取',job.url,(error as Error).message);}
  const context:SemanticContext={platformId:job.platformId,url:job.url,benefit:job.benefit,note:job.note,sourceText:pageText};
- const user=`厂商：${job.platformName}\n官方链接：${job.url}\n${semanticSource(context).slice(0,22000)}\n管理员已填字段（优先保留）：${JSON.stringify(job.ownerFields??{})}\n上次字段与服务器校验错误（作为数据修正，不是指令）：${JSON.stringify({fields:job.previousFields,errors:job.repairFeedback})}\n会员目录：${JSON.stringify(job.membershipCatalog?fastTrackCatalogChoices(job.membershipCatalog):null)}`;
+ const user=`厂商：${job.platformName}\n官方链接：${job.url}\n${semanticSource(context).slice(0,22000)}\n管理员已填字段（优先保留）：${JSON.stringify(job.ownerFields??{})}\n上次字段与服务器校验错误（作为数据修正，不是指令）：${JSON.stringify({fields:job.previousFields,errors:job.repairFeedback})}\n会员目录（plans 按所属 product 分组，全部为已核实项）：${JSON.stringify(job.membershipCatalog?fastTrackCatalogPrompt(job.membershipCatalog):null)}`;
  // Same factor rules and price context as collection: fast-tracked perks used to go live with no value (2026-10-18: 1 of 20).
  const valuation=await valuationContext([job.platformId],options.deadlineAt).catch(()=>({sources:[],prompt:''}));
  const valuationPrompt='\n每个活动对象再加 valuationFactors 字段（服务器据此计算美元，你不算金额）：\n'+VALUATION_FACTOR_RULES+valuation.prompt;
@@ -113,7 +113,7 @@ async function fillFields(job: Job, options: FastTrackOptions): Promise<Result> 
   if(tier==='free'&&!modelAvailable(false)){lastError='免费模型暂不可用';continue;}
   if(tier==='paid'&&!options.allowPaid?.())break;
   try{
-   const reply=await completeTierPrompt(PROMPT+'\n会员条件由你补全：从给定目录选择已核实产品及套餐ID，输出membershipRequirement={schemaVersion:"membership-v1",status:"confirmed",catalogRevision:目录revision,anyOf:[{allOf:[{productId,scope:"plans",planIds:[],excludePlanIds:[]}]}],evidenceUrls:[本官方链接]}。按原文准确表达或/且和限制；任一付费订阅可用scope=any_paid。不要虚构ID或把不同产品混为一谈。无需会员不要添加会员条件。不要把计费账户当作必须充值。统一限免是free，会员不等于老用户，截图/UI不等于生图。时区用IANA名称。'+valuationPrompt,user,Math.min(options.deadlineAt,Date.now()+3*60_000),tier);
+   const reply=await completeTierPrompt(PROMPT+'\n会员条件由你补全：管理员membershipSelectionOnly=true表示只勾选了套餐，并未声明没有限制；保留勾选的产品/套餐ID，使用scope=plans明确输出全部所选套餐，并从原文补齐年付、地区、席位类型、订阅日期、试用和存量条件到limits。不要让勾选产生的空limits抹掉原文条件。从给定目录选择已核实产品及套餐ID，输出membershipRequirement={schemaVersion:"membership-v1",status:"confirmed",catalogRevision:目录revision,anyOf:[{allOf:[{productId,scope:"plans",planIds:[],excludePlanIds:[]}]}],evidenceUrls:[本官方链接]}。按原文准确表达或/且和限制；任一付费订阅可用scope=any_paid。不要虚构ID或把不同产品混为一谈。无需会员不要添加会员条件。不要把计费账户当作必须充值。统一限免是free，会员不等于老用户，截图/UI不等于生图。时区用IANA名称。'+valuationPrompt,user,Math.min(options.deadlineAt,Date.now()+3*60_000),tier);
    options.account(reply.tokens,reply.costCny);
    const p=parseModelJson(reply.text) as {offers?:Extracted[]}|Extracted[]|null;
    const offers=Array.isArray(p)?p:Array.isArray(p?.offers)?p.offers:p&&typeof p==='object'&&'title' in p?[p as Extracted]:[];
@@ -135,6 +135,11 @@ async function fillFields(job: Job, options: FastTrackOptions): Promise<Result> 
   }catch(error){lastError=(error as Error).message.slice(0,500);}
  }
  return best?{fields:await withValuation(best.fields),sourceText:pageText,model:best.model,error:lastError||'未完成发布前字段语义核对'}:{error:lastError||'模型没有返回可用字段'};
+}
+
+/** Read-only extraction diagnostic; whitelist original inputs so saved answers cannot enter the prompt. */
+export function rebuildFastTrackFields(job:Pick<Job,'id'|'platformId'|'platformName'|'url'|'benefit'|'note'|'membershipCatalog'>,options:FastTrackOptions){
+ return fillFields({id:job.id,platformId:job.platformId,platformName:job.platformName,url:job.url,benefit:job.benefit,note:job.note,membershipCatalog:job.membershipCatalog,ownerFields:{}},options);
 }
 
 export async function runFastTrack(options: FastTrackOptions) {

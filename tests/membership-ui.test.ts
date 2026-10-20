@@ -7,15 +7,11 @@ function context() {
  vm.runInContext(source(), c); return c;
 }
 describe('membership browser contract', () => {
- it('shows newly recorded pending vendors to visitors without claiming eligibility', () => {
+ it('shows pending directory entries disabled instead of treating them as selectable memberships', () => {
   const c=context();
   vm.runInContext(`MEMBERSHIP_CATALOG={revision:2,products:[{id:'new-vendor',name:'New Vendor',status:'pending'}],plans:[{id:'new-vendor-pro',productId:'new-vendor',name:'Pro',status:'pending'}]}`,c);
   const html=vm.runInContext(`subscriptionControls()`,c);
-  expect(html).toContain('<summary>New Vendor</summary>');
-  expect(html).toContain('data-add-subscription="new-vendor-pro"');
-  expect(html).toContain('＋ New Vendor Pro</button>');
-  expect(html).not.toContain('待核实');
-  expect(html).toContain('选择会员只记录你拥有的套餐');
+  expect(html).toContain('New Vendor');expect(html).toContain('data-owned-plan="new-vendor-pro"');expect(html).toContain('disabled');expect(html).toContain('待核实');
  });
  it('treats unstructured member text as unknown without exact-string matching', () => {
   expect(vm.runInContext(`membershipResult({r:['member:Pro']},[])`, context())).toBe('unknown');
@@ -28,7 +24,7 @@ describe('membership browser contract', () => {
  });
  it('keeps local nonmember preferences and unresolved old memberships during migration', () => {
   const result=JSON.parse(vm.runInContext(`JSON.stringify(migrateMembershipPreferences({phone:true,members:['Pro']}))`, context()));
-  expect(result).toMatchObject({phone:true,membershipStorageVersion:1,subscriptions:[],unresolvedMembers:['Pro']});
+  expect(result).toMatchObject({phone:true,membershipStorageVersion:2,subscriptions:[],unresolvedMembers:['Pro']});
  });
  it('refuses a confirmed edit if the catalog was unavailable', () => {
   const c=context();vm.runInContext('MEMBERSHIP_CATALOG_OK=false',c);
@@ -47,20 +43,16 @@ function editorFixture() {
  return {document,window,c,change};
 }
 describe('membership editor controls',()=>{
- it('builds OR alternatives with product-scoped plans and preserves the selected IDs on save',async()=>{
+ it('saves checked plans across vendors without logical-group controls',async()=>{
   const {c,document,window,change}=editorFixture();
   await vm.runInContext(`mountMembershipEditor(document.querySelector('form'),{requirements:['none']})`,c);
-  change('[data-membership-status]','confirmed');
-  change('[data-clause="productId"]','cursor');
-  const plan=document.querySelector('[data-plan="planIds"]') as HTMLInputElement;plan.checked=true;plan.setAttribute('checked','');plan.dispatchEvent(new window.Event('change',{bubbles:true}));
-  document.querySelector('[data-membership-add-group]')!.dispatchEvent(new window.Event('click',{bubbles:true}));
-  change('[data-membership-group="1"] [data-clause="productId"]','claude');
-  change('[data-membership-group="1"] [data-clause="scope"]','any_paid');
+  const check=(id:string)=>{const p=document.querySelector(`[data-member-plan="${id}"]`)!;Object.defineProperty(p,'checked',{configurable:true,value:true});p.dispatchEvent(new window.Event('change',{bubbles:true}));};
+  check('cursor-pro');change('[data-member-vendor]','claude');check('claude-pro');
   const result=vm.runInContext(`membershipEditFields({},document.querySelector('form').membershipEditor,[],false,'https://example.com/eligibility')`,c);
-  expect(result.membershipRequirement.anyOf).toMatchObject([{allOf:[{productId:'cursor',planIds:['cursor-pro']}]},{allOf:[{productId:'claude',scope:'any_paid',planIds:[]}]}]);
+  expect(result.membershipRequirement.anyOf).toMatchObject([{allOf:[{productId:'cursor',planIds:['cursor-pro']}]},{allOf:[{productId:'claude',scope:'plans',planIds:['claude-pro']}]}]);
   expect(core.matchMembership(result.membershipRequirement,[{planId:'claude-pro'}],catalog as core.MembershipCatalog)).toBe('yes');
   expect(core.matchMembership(result.membershipRequirement,[],catalog as core.MembershipCatalog)).toBe('no');
-  expect(document.querySelector('[name="reqMember"]')).toBeNull();
+  expect(document.querySelector('[data-membership-add-group], [data-limit], [data-clause]')).toBeNull();
  });
  it('shows missing details as unknown and does not turn bare Pro into either platform',()=>{
   const {c}=editorFixture();
@@ -86,20 +78,17 @@ describe('membership editor catalog refresh',()=>{
   expect(vm.runInContext(`membershipPlanLabel(MEMBERSHIP_CATALOG.plans[0])`,c)).toBe('Cursor Pro');
   expect(vm.runInContext(`subscriptionControls()`,c)).not.toContain('Cursor Cursor Pro');
  });
- it('adopts a newer revision only on explicit refresh and preserves choices and expanded limits',async()=>{
-  const {c,document,window,change}=editorFixture();
-  await vm.runInContext(`mountMembershipEditor(document.querySelector('form'),{requirements:['none']})`,c);
-  change('[data-membership-status]','confirmed');change('[data-clause="productId"]','cursor');
-  const plan=document.querySelector('[data-plan="planIds"]')!;plan.setAttribute('checked','');plan.dispatchEvent(new window.Event('change',{bubbles:true}));
-  document.querySelector('[data-membership-detail="limits-0-0"]')!.setAttribute('open','');
-  change('[data-limit="trial"]','exclude');
-  expect(document.querySelector('[data-membership-detail="limits-0-0"]')!.hasAttribute('open')).toBe(true);
+ it('adopts a newer revision on refresh and preserves existing eligibility facts without exposing logic controls',async()=>{
+  const {c,document,window}=editorFixture();
+  const req={schemaVersion:'membership-v1',status:'confirmed',catalogRevision:3,evidenceUrls:['https://example.com'],anyOf:[{allOf:[{productId:'cursor',scope:'plans',planIds:['cursor-pro'],excludePlanIds:[],limits:{trial:'exclude'}}]}]};
+  c.original={membershipRequirement:req};
+  await vm.runInContext(`mountMembershipEditor(document.querySelector('form'),original)`,c);
+  expect(document.querySelector('[data-limit]')).toBeNull();
   vm.runInContext(`adm=async()=>({...MEMBERSHIP_CATALOG,revision:4})`,c);
   document.querySelector('[data-membership-refresh]')!.dispatchEvent(new window.Event('click',{bubbles:true}));
   await new Promise(resolve=>setTimeout(resolve,0));
   const saved=vm.runInContext(`membershipEditFields({},document.querySelector('form').membershipEditor,[],false,'https://example.com')`,c);
   expect(saved.membershipRequirement.catalogRevision).toBe(4);
   expect(saved.membershipRequirement.anyOf[0].allOf[0]).toMatchObject({productId:'cursor',planIds:['cursor-pro'],limits:{trial:'exclude'}});
-  expect(document.querySelector('[data-membership-detail="limits-0-0"]')!.hasAttribute('open')).toBe(true);
  });
 });

@@ -1,0 +1,179 @@
+{
+  "checkedAt": "2026-10-19",
+  "expectedRevision": 45,
+  "revision": 46,
+  "products": 82,
+  "plans": 444,
+  "vendors": 0,
+  "fullReadback": true,
+  "changes": [
+    {
+      "id": "github-copilot-free",
+      "oldName": "GitHub Copilot Free",
+      "name": "GitHub Copilot Free",
+      "productId": "github-copilot"
+    },
+    {
+      "id": "github-copilot-student",
+      "oldName": "GitHub Copilot Student",
+      "name": "GitHub Copilot Student",
+      "productId": "github-copilot"
+    },
+    {
+      "id": "github-copilot-pro",
+      "oldName": "GitHub Copilot Pro",
+      "name": "GitHub Copilot Pro",
+      "productId": "github-copilot"
+    },
+    {
+      "id": "github-copilot-pro-plus",
+      "oldName": "GitHub Copilot Pro+",
+      "name": "GitHub Copilot Pro+",
+      "productId": "github-copilot"
+    },
+    {
+      "id": "github-copilot-max",
+      "oldName": "GitHub Copilot Max",
+      "name": "GitHub Copilot Max",
+      "productId": "github-copilot"
+    },
+    {
+      "id": "github-copilot-business",
+      "oldName": "GitHub Copilot Business",
+      "name": "GitHub Copilot Business",
+      "productId": "github-copilot"
+    },
+    {
+      "id": "github-copilot-enterprise",
+      "oldName": "GitHub Copilot Enterprise",
+      "name": "GitHub Copilot Enterprise",
+      "productId": "github-copilot"
+    },
+    {
+      "id": "github-copilot-pro-legacy-annual",
+      "oldName": "GitHub Copilot Pro（存量年付请求制）",
+      "name": "GitHub Copilot Pro（存量年付请求制）",
+      "productId": "github-copilot"
+    },
+    {
+      "id": "github-copilot-pro-plus-legacy-annual",
+      "oldName": "GitHub Copilot Pro+（存量年付请求制）",
+      "name": "GitHub Copilot Pro+（存量年付请求制）",
+      "productId": "github-copilot"
+    },
+    {
+      "id": "qoder-global-free",
+      "oldName": "Qoder（国际版） Free",
+      "name": "Qoder（国际版） Free",
+      "productId": "qoder-global"
+    },
+    {
+      "id": "qoder-global-pro-trial",
+      "oldName": "Qoder（国际版） Pro Trial",
+      "name": "Qoder（国际版） Pro Trial",
+      "productId": "qoder-global"
+    },
+    {
+      "id": "qoder-global-pro",
+      "oldName": "Qoder（国际版） Pro",
+      "name": "Qoder（国际版） Pro",
+      "productId": "qoder-global"
+    },
+    {
+      "id": "qoder-global-pro-plus",
+      "oldName": "Qoder（国际版） Pro+",
+      "name": "Qoder（国际版） Pro+",
+      "productId": "qoder-global"
+    },
+    {
+      "id": "qoder-global-ultra",
+      "oldName": "Qoder（国际版） Ultra",
+      "name": "Qoder（国际版） Ultra",
+      "productId": "qoder-global"
+    },
+    {
+      "id": "qoder-global-teams",
+      "oldName": "Qoder（国际版） Teams",
+      "name": "Qoder（国际版） Teams",
+      "productId": "qoder-global"
+    },
+    {
+      "id": "qoder-global-enterprise",
+      "oldName": "Qoder（国际版） Enterprise",
+      "name": "Qoder（国际版） Enterprise",
+      "productId": "qoder-global"
+    },
+    {
+      "id": "qoder-cn-suite-free",
+      "oldName": "Qoder CN（全家桶） 个人体验版 Free",
+      "name": "Qoder CN（全家桶） 个人体验版 Free",
+      "productId": "qoder-cn-suite"
+    },
+    {
+      "id": "qoder-cn-suite-pro",
+      "oldName": "Qoder CN（全家桶） 个人专业版 Pro",
+      "name": "Qoder CN（全家桶） 个人专业版 Pro",
+      "productId": "qoder-cn-suite"
+    },
+    {
+      "id": "qoder-cn-suite-pro-plus",
+      "oldName": "Qoder CN（全家桶） 个人高级版 Pro+",
+      "name": "Qoder CN（全家桶） 个人高级版 Pro+",
+      "productId": "qoder-cn-suite"
+    },
+    {
+      "id": "qoder-cn-suite-ultra",
+      "oldName": "Qoder CN（全家桶） 个人旗舰版 Ultra",
+      "name": "Qoder CN（全家桶） 个人旗舰版 Ultra",
+      "productId": "qoder-cn-suite"
+    },
+    {
+      "id": "qoder-cn-suite-teams",
+      "oldName": "Qoder CN（全家桶） 团队版 Teams",
+      "name": "Qoder CN（全家桶） 团队版 Teams",
+      "productId": "qoder-cn-suite"
+    },
+    {
+      "id": "qoder-cn-suite-enterprise",
+      "oldName": "Qoder CN（全家桶） 企业标准版 Enterprise",
+      "name": "Qoder CN（全家桶） 企业标准版 Enterprise",
+      "productId": "qoder-cn-suite"
+    },
+    {
+      "id": "qoder-cn-suite-enterprise-vpc",
+      "oldName": "Qoder CN（全家桶） 企业专属版 Enterprise VPC",
+      "name": "Qoder CN（全家桶） 企业专属版 Enterprise VPC",
+      "productId": "qoder-cn-suite"
+    },
+    {
+      "id": "qoder-cn-lingma-enterprise",
+      "oldName": "Qoder CN（原灵码单产品） 企业标准版",
+      "name": "Qoder CN（原灵码单产品） 企业标准版",
+      "productId": "qoder-cn-lingma"
+    },
+    {
+      "id": "qoder-lingma-legacy-basic",
+      "oldName": "通义灵码（2026年5月20日前存量合同） 个人基础版",
+      "name": "通义灵码（2026年5月20日前存量合同） 个人基础版",
+      "productId": "qoder-lingma-legacy"
+    },
+    {
+      "id": "qoder-lingma-legacy-pro",
+      "oldName": "通义灵码（2026年5月20日前存量合同） 个人专业版",
+      "name": "通义灵码（2026年5月20日前存量合同） 个人专业版",
+      "productId": "qoder-lingma-legacy"
+    },
+    {
+      "id": "qoder-lingma-legacy-enterprise",
+      "oldName": "通义灵码（2026年5月20日前存量合同） 企业标准版",
+      "name": "通义灵码（2026年5月20日前存量合同） 企业标准版",
+      "productId": "qoder-lingma-legacy"
+    },
+    {
+      "id": "qoder-lingma-legacy-vpc",
+      "oldName": "通义灵码（2026年5月20日前存量合同） 企业专属版",
+      "name": "通义灵码（2026年5月20日前存量合同） 企业专属版",
+      "productId": "qoder-lingma-legacy"
+    }
+  ]
+}

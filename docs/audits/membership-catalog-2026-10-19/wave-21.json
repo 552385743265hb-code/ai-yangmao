@@ -1,0 +1,197 @@
+{
+  "checkedAt": "2026-10-19",
+  "expectedRevision": 50,
+  "revision": 51,
+  "products": 100,
+  "plans": 526,
+  "vendors": 124,
+  "fullReadback": true,
+  "changes": [
+    {
+      "id": "google-ai-plus",
+      "oldName": "Google AI Plus",
+      "name": "Google AI Plus",
+      "productId": "google-ai"
+    },
+    {
+      "id": "google-ai-pro",
+      "oldName": "Google AI Pro",
+      "name": "Google AI Pro",
+      "productId": "google-ai"
+    },
+    {
+      "id": "google-ai-ultra-5x",
+      "oldName": "Google AI Ultra 5x",
+      "name": "Google AI Ultra 5x",
+      "productId": "google-ai"
+    },
+    {
+      "id": "google-ai-ultra-20x",
+      "oldName": "Google AI Ultra 20x",
+      "name": "Google AI Ultra 20x",
+      "productId": "google-ai"
+    },
+    {
+      "id": "gemini-enterprise-business",
+      "oldName": "Google Gemini Enterprise Business",
+      "name": "Google Gemini Enterprise Business",
+      "productId": "gemini-enterprise"
+    },
+    {
+      "id": "gemini-enterprise-standard",
+      "oldName": "Google Gemini Enterprise Standard",
+      "name": "Google Gemini Enterprise Standard",
+      "productId": "gemini-enterprise"
+    },
+    {
+      "id": "gemini-enterprise-plus",
+      "oldName": "Google Gemini Enterprise Plus",
+      "name": "Google Gemini Enterprise Plus",
+      "productId": "gemini-enterprise"
+    },
+    {
+      "id": "gemini-enterprise-pay-as-you-go",
+      "oldName": "Google Gemini Enterprise Pay-as-you-go",
+      "name": "Google Gemini Enterprise Pay-as-you-go",
+      "productId": "gemini-enterprise"
+    },
+    {
+      "id": "gemini-enterprise-frontline",
+      "oldName": "Google Gemini Enterprise Frontline",
+      "name": "Google Gemini Enterprise Frontline",
+      "productId": "gemini-enterprise"
+    },
+    {
+      "id": "gemini-notebook-enterprise-enterprise",
+      "oldName": "Google Gemini Notebook Enterprise",
+      "name": "Google Gemini Notebook Enterprise",
+      "productId": "gemini-notebook-enterprise"
+    },
+    {
+      "id": "google-code-assist-standard",
+      "oldName": "Google Gemini Code Assist（存量企业订阅） Standard",
+      "name": "Google Gemini Code Assist（存量企业订阅） Standard",
+      "productId": "google-code-assist"
+    },
+    {
+      "id": "google-code-assist-enterprise",
+      "oldName": "Google Gemini Code Assist（存量企业订阅） Enterprise",
+      "name": "Google Gemini Code Assist（存量企业订阅） Enterprise",
+      "productId": "google-code-assist"
+    },
+    {
+      "id": "google-developer-program-standard",
+      "oldName": "Google Developer Program Standard",
+      "name": "Google Developer Program Standard",
+      "productId": "google-developer-program"
+    },
+    {
+      "id": "google-developer-premium-legacy-annual",
+      "oldName": "Google Developer Program Premium（存量年付）",
+      "name": "Google Developer Program Premium（存量年付）",
+      "productId": "google-developer-program"
+    },
+    {
+      "id": "google-developer-enterprise-legacy",
+      "oldName": "Google Developer Program Enterprise（存量）",
+      "name": "Google Developer Program Enterprise（存量）",
+      "productId": "google-developer-program"
+    },
+    {
+      "id": "google-workspace-business-starter",
+      "oldName": "Google Workspace Business Starter",
+      "name": "Google Workspace Business Starter",
+      "productId": "google-workspace"
+    },
+    {
+      "id": "google-workspace-business-standard",
+      "oldName": "Google Workspace Business Standard",
+      "name": "Google Workspace Business Standard",
+      "productId": "google-workspace"
+    },
+    {
+      "id": "google-workspace-business-plus",
+      "oldName": "Google Workspace Business Plus",
+      "name": "Google Workspace Business Plus",
+      "productId": "google-workspace"
+    },
+    {
+      "id": "google-workspace-enterprise-standard",
+      "oldName": "Google Workspace Enterprise Standard",
+      "name": "Google Workspace Enterprise Standard",
+      "productId": "google-workspace"
+    },
+    {
+      "id": "google-workspace-enterprise-plus",
+      "oldName": "Google Workspace Enterprise Plus",
+      "name": "Google Workspace Enterprise Plus",
+      "productId": "google-workspace"
+    },
+    {
+      "id": "google-workspace-essentials-starter",
+      "oldName": "Google Workspace Essentials Starter",
+      "name": "Google Workspace Essentials Starter",
+      "productId": "google-workspace"
+    },
+    {
+      "id": "google-workspace-essentials-legacy",
+      "oldName": "Google Workspace Essentials（存量）",
+      "name": "Google Workspace Essentials（存量）",
+      "productId": "google-workspace"
+    },
+    {
+      "id": "google-workspace-enterprise-essentials",
+      "oldName": "Google Workspace Enterprise Essentials",
+      "name": "Google Workspace Enterprise Essentials",
+      "productId": "google-workspace"
+    },
+    {
+      "id": "google-workspace-enterprise-essentials-plus",
+      "oldName": "Google Workspace Enterprise Essentials Plus",
+      "name": "Google Workspace Enterprise Essentials Plus",
+      "productId": "google-workspace"
+    },
+    {
+      "id": "google-workspace-frontline-starter",
+      "oldName": "Google Workspace Frontline Starter",
+      "name": "Google Workspace Frontline Starter",
+      "productId": "google-workspace"
+    },
+    {
+      "id": "google-workspace-frontline-standard",
+      "oldName": "Google Workspace Frontline Standard",
+      "name": "Google Workspace Frontline Standard",
+      "productId": "google-workspace"
+    },
+    {
+      "id": "google-workspace-frontline-plus",
+      "oldName": "Google Workspace Frontline Plus",
+      "name": "Google Workspace Frontline Plus",
+      "productId": "google-workspace"
+    },
+    {
+      "id": "google-workspace-education-fundamentals",
+      "oldName": "Google Workspace Education Fundamentals",
+      "name": "Google Workspace Education Fundamentals",
+      "productId": "google-workspace"
+    },
+    {
+      "id": "google-workspace-education-standard",
+      "oldName": "Google Workspace Education Standard",
+      "name": "Google Workspace Education Standard",
+      "productId": "google-workspace"
+    },
+    {
+      "id": "google-workspace-education-plus",
+      "oldName": "Google Workspace Education Plus",
+      "name": "Google Workspace Education Plus",
+      "productId": "google-workspace"
+    },
+    {
+      "id": "google-ai-pro-for-education-license",
+      "oldName": "Google AI Pro for Education 订阅许可",
+      "name": "Google AI Pro for Education 订阅许可",
+      "productId": "google-ai-education"
+    }
+  ]
+}

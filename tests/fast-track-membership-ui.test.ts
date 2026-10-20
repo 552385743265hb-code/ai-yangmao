@@ -19,9 +19,8 @@ function formData(window: any) {
 }
 function pick(document: any, window: any) {
   const change = (selector: string, value: string) => { const input = document.querySelector(selector)!; Object.defineProperty(input, 'value', { configurable: true, value }); input.dispatchEvent(new window.Event('change', { bubbles: true })); };
-  change('[data-membership-status]', 'confirmed');
-  change('[data-clause="productId"]', 'higgsfield');
-  const plan = document.querySelector('[data-plan="planIds"][value="higgsfield-pro"]')!; plan.checked = true; plan.setAttribute('checked', ''); plan.dispatchEvent(new window.Event('change', { bubbles: true }));
+  change('[data-member-vendor]', 'higgsfield');
+  const plan = document.querySelector('[data-member-plan="higgsfield-pro"]')!; plan.checked = true; plan.setAttribute('checked', ''); plan.dispatchEvent(new window.Event('change', { bubbles: true }));
 }
 
 it('the needs-owner panel asks for a catalog membership and submits the picked plan', async () => {
@@ -38,7 +37,8 @@ it('the needs-owner panel asks for a catalog membership and submits the picked p
   pick(document, window);
   form.dispatchEvent(new window.Event('submit', { cancelable: true })); await tick();
   expect(posts.some(p => p.url.endsWith('/fast-track/j1/complete'))).toBe(true);
-  expect(posts.find(p => p.url.endsWith('/complete'))!.body.fields.membershipRequirement).toMatchObject({ status: 'confirmed', catalogRevision: 3, evidenceUrls: [job.url], anyOf: [{ allOf: [{ productId: 'higgsfield', planIds: ['higgsfield-pro'] }] }] });
+  expect(posts.find(p => p.url.endsWith('/complete'))!.body.fields.membershipSelectionOnly).toBe(true);
+  expect(posts.find(p => p.url.endsWith('/complete'))!.body.fields.membershipRequirement).toMatchObject({ status: 'needs_review', catalogRevision: 3, evidenceUrls: [], anyOf: [{ allOf: [{ productId: 'higgsfield', planIds: ['higgsfield-pro'] }] }] });
 });
 
 it('the fast-track form loads the catalog only when opened and sends the picked membership with the job', async () => {
@@ -55,5 +55,25 @@ it('the fast-track form loads the catalog only when opened and sends the picked 
   const details = form.querySelector('[data-ft-membership]')!; details.open = true; details.dispatchEvent(new window.Event('toggle')); await tick(); await tick();
   pick(document, window);
   form.dispatchEvent(new window.Event('submit', { cancelable: true })); await tick();
-  expect(posts[0]).toMatchObject({ platformId: 'vendor', benefit: 'Wan 3.0 七天无限', membershipRequirement: { status: 'confirmed', anyOf: [{ allOf: [{ planIds: ['higgsfield-pro'] }] }] } });
+  expect(posts[0]).toMatchObject({ platformId: 'vendor', benefit: 'Wan 3.0 七天无限', membershipSelectionOnly:true, membershipRequirement: { status: 'needs_review', evidenceUrls:[], anyOf: [{ allOf: [{ planIds: ['higgsfield-pro'] }] }] } });
+});
+
+it('restores a paused joint rule and keeps its restrictions while sending narrowed identities to the model',async()=>{
+ const seat={...catalog.plans[0],id:'higgsfield-max',name:'Max'};
+ const excluded={...catalog.plans[0],id:'higgsfield-excluded',name:'Excluded'};
+ const usage={...catalog.plans[0],id:'usage-pack',name:'Usage Pack',productId:'usage'};
+ const fullCatalog={...catalog,products:[...catalog.products,{...catalog.products[0],id:'usage',name:'Usage',platformIds:['higgsfield']}],plans:[...catalog.plans,seat,excluded,usage]};
+ const rule={schemaVersion:'membership-v1',status:'confirmed',catalogRevision:3,evidenceUrls:['https://higgsfield.ai/perk'],anyOf:[{allOf:[{productId:'higgsfield',scope:'plans',planIds:['higgsfield-pro','higgsfield-max','higgsfield-excluded'],excludePlanIds:['higgsfield-excluded'],limits:{billingCycles:['annual']}},{productId:'usage',scope:'plans',planIds:['usage-pack'],excludePlanIds:[]}]}]};
+ const job={id:'joint',platformId:'higgsfield',platformName:'Higgsfield',benefit:'Member bonus',url:'https://higgsfield.ai/perk',state:'needs_owner',missing:['membershipRequirement'],requirements:['member:Pro / Max AND usage pack'],membershipRequirement:rule};
+ const posts:any[]=[];const {document,window,run,context}=fixture((url,init)=>{if(init?.method==='POST'){posts.push({url,body:JSON.parse(String(init.body))});return {state:'queued'};}return {jobs:[job]};},'#admin',fullCatalog);
+ context.FormData=formData(window);document.querySelector('#admBody')!.innerHTML='<div data-ft-jobs></div>';
+ await run("loadFastTrackJobs(document.querySelector('[data-ft-jobs]'))");await tick();await tick();
+ const form:any=document.querySelector('[data-ft-complete]');expect(form.membershipEditor.requirement).toEqual(rule);
+ const pro:any=form.querySelector('[data-member-plan="higgsfield-pro"]');expect(pro.hasAttribute('checked')).toBe(true);pro.checked=false;pro.removeAttribute('checked');pro.dispatchEvent(new window.Event('change',{bubbles:true}));
+ expect(form.membershipEditor.requirement.anyOf[0].allOf).toEqual([{...rule.anyOf[0].allOf[0],planIds:['higgsfield-max']},rule.anyOf[0].allOf[1]]);
+ form.dispatchEvent(new window.Event('submit',{cancelable:true}));await tick();
+ const sent=posts.find(p=>p.url.endsWith('/complete')).body.fields;
+ expect(sent.membershipSelectionOnly).toBe(true);expect(sent.membershipRequirement.status).toBe('needs_review');
+ expect(sent.membershipRequirement.anyOf.flatMap((g:any)=>g.allOf).flatMap((c:any)=>c.planIds).sort()).toEqual(['higgsfield-max','usage-pack']);
+ expect(sent.membershipRequirement.anyOf.flatMap((g:any)=>g.allOf).every((c:any)=>!c.excludePlanIds.length&&!c.limits)).toBe(true);
 });

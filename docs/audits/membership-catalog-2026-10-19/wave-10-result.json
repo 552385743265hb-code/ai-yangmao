@@ -1,0 +1,136 @@
+{
+  "appliedAt": "2026-10-19",
+  "beforeRevision": 39,
+  "afterRevision": 40,
+  "products": 54,
+  "plans": 314,
+  "planStates": {
+    "verified": 294,
+    "retired": 14,
+    "pending": 6
+  },
+  "changes": [
+    {
+      "id": "n8n-cloud-starter",
+      "oldName": "Starter",
+      "name": "n8n Cloud Starter",
+      "productId": "n8n-cloud"
+    },
+    {
+      "id": "n8n-cloud-pro",
+      "oldName": "Pro",
+      "name": "n8n Cloud Pro",
+      "productId": "n8n-cloud"
+    },
+    {
+      "id": "n8n-self-hosted-community-edition",
+      "oldName": "n8n Self-hosted Community Edition",
+      "name": "n8n Self-hosted Community Edition",
+      "productId": "n8n-self-hosted"
+    },
+    {
+      "id": "n8n-self-hosted-business",
+      "oldName": "n8n Self-hosted Business",
+      "name": "n8n Self-hosted Business",
+      "productId": "n8n-self-hosted"
+    },
+    {
+      "id": "kiro-free",
+      "oldName": "Kiro Free",
+      "name": "Kiro Free",
+      "productId": "kiro"
+    },
+    {
+      "id": "kiro-pro",
+      "oldName": "Kiro Pro",
+      "name": "Kiro Pro",
+      "productId": "kiro"
+    },
+    {
+      "id": "kiro-pro-plus",
+      "oldName": "Kiro Pro+",
+      "name": "Kiro Pro+",
+      "productId": "kiro"
+    },
+    {
+      "id": "kiro-pro-max",
+      "oldName": "Kiro Pro Max",
+      "name": "Kiro Pro Max",
+      "productId": "kiro"
+    },
+    {
+      "id": "kiro-power",
+      "oldName": "Kiro Power",
+      "name": "Kiro Power",
+      "productId": "kiro"
+    },
+    {
+      "id": "higgsfield-free",
+      "oldName": "Higgsfield Free",
+      "name": "Higgsfield Free",
+      "productId": "higgsfield"
+    },
+    {
+      "id": "higgsfield-starter",
+      "oldName": "Starter",
+      "name": "Higgsfield Starter",
+      "productId": "higgsfield"
+    },
+    {
+      "id": "higgsfield-plus",
+      "oldName": "Plus",
+      "name": "Higgsfield Plus",
+      "productId": "higgsfield"
+    },
+    {
+      "id": "higgsfield-ultra",
+      "oldName": "Ultra",
+      "name": "Higgsfield Ultra",
+      "productId": "higgsfield"
+    },
+    {
+      "id": "higgsfield-team",
+      "oldName": "Higgsfield Team",
+      "name": "Higgsfield Team",
+      "productId": "higgsfield"
+    },
+    {
+      "id": "higgsfield-scale",
+      "oldName": "Scale",
+      "name": "Higgsfield Scale",
+      "productId": "higgsfield"
+    },
+    {
+      "id": "higgsfield-enterprise",
+      "oldName": "Higgsfield Enterprise",
+      "name": "Higgsfield Enterprise",
+      "productId": "higgsfield"
+    },
+    {
+      "id": "higgsfield-basic",
+      "oldName": "Basic",
+      "name": "Higgsfield Basic",
+      "productId": "higgsfield"
+    },
+    {
+      "id": "higgsfield-pro",
+      "oldName": "Pro",
+      "name": "Higgsfield Pro",
+      "productId": "higgsfield"
+    },
+    {
+      "id": "higgsfield-b2b",
+      "oldName": "B2B",
+      "name": "Higgsfield B2B",
+      "productId": "higgsfield"
+    },
+    {
+      "id": "n8n-enterprise-enterprise",
+      "oldName": "n8n Enterprise",
+      "name": "n8n Enterprise",
+      "productId": "n8n-enterprise"
+    }
+  ],
+  "verification": "final revision 41 full catalog products/plans/root metadata equals prepared plan; intermediate snapshots retained outside Git",
+  "writeMethod": "D1 revision-guarded catalog update"
+}

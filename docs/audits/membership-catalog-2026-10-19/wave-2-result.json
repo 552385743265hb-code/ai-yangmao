@@ -1,0 +1,131 @@
+{
+  "appliedAt": "2026-10-19",
+  "beforeRevision": 31,
+  "afterRevision": 32,
+  "products": 44,
+  "plans": 159,
+  "verifiedPlans": 103,
+  "changes": [
+    {
+      "id": "bolt-free",
+      "oldName": "Bolt Free",
+      "name": "Bolt Free",
+      "productId": "bolt"
+    },
+    {
+      "id": "bolt-pro",
+      "oldName": "Bolt Pro",
+      "name": "Bolt Pro",
+      "productId": "bolt"
+    },
+    {
+      "id": "bolt-teams",
+      "oldName": "Bolt Teams",
+      "name": "Bolt Teams",
+      "productId": "bolt"
+    },
+    {
+      "id": "bolt-enterprise",
+      "oldName": "Bolt Enterprise",
+      "name": "Bolt Enterprise",
+      "productId": "bolt"
+    },
+    {
+      "id": "suno-free",
+      "oldName": "Suno Free",
+      "name": "Suno Free",
+      "productId": "suno"
+    },
+    {
+      "id": "suno-pro",
+      "oldName": "Suno Pro",
+      "name": "Suno Pro",
+      "productId": "suno"
+    },
+    {
+      "id": "suno-premier",
+      "oldName": "Suno Premier",
+      "name": "Suno Premier",
+      "productId": "suno"
+    },
+    {
+      "id": "lovable-free",
+      "oldName": "Lovable Free",
+      "name": "Lovable Free",
+      "productId": "lovable"
+    },
+    {
+      "id": "lovable-pro",
+      "oldName": "Lovable Pro",
+      "name": "Lovable Pro",
+      "productId": "lovable"
+    },
+    {
+      "id": "lovable-business",
+      "oldName": "Lovable Business",
+      "name": "Lovable Business",
+      "productId": "lovable"
+    },
+    {
+      "id": "lovable-enterprise",
+      "oldName": "Lovable Enterprise",
+      "name": "Lovable Enterprise",
+      "productId": "lovable"
+    },
+    {
+      "id": "worldlabs-marble-free",
+      "oldName": "World Labs Marble Free",
+      "name": "World Labs Marble Free",
+      "productId": "worldlabs-marble"
+    },
+    {
+      "id": "worldlabs-marble-standard",
+      "oldName": "World Labs Marble Standard",
+      "name": "World Labs Marble Standard",
+      "productId": "worldlabs-marble"
+    },
+    {
+      "id": "worldlabs-marble-pro",
+      "oldName": "World Labs Marble Pro",
+      "name": "World Labs Marble Pro",
+      "productId": "worldlabs-marble"
+    },
+    {
+      "id": "worldlabs-marble-max",
+      "oldName": "World Labs Marble Max",
+      "name": "World Labs Marble Max",
+      "productId": "worldlabs-marble"
+    },
+    {
+      "id": "worldlabs-marble-enterprise",
+      "oldName": "World Labs Marble Enterprise",
+      "name": "World Labs Marble Enterprise",
+      "productId": "worldlabs-marble"
+    },
+    {
+      "id": "nous-research-free",
+      "oldName": "Nous Portal Free",
+      "name": "Nous Portal Free",
+      "productId": "nous-research"
+    },
+    {
+      "id": "nous-research-plus",
+      "oldName": "Plus",
+      "name": "Nous Portal Plus",
+      "productId": "nous-research"
+    },
+    {
+      "id": "nous-research-super",
+      "oldName": "Super",
+      "name": "Nous Portal Super",
+      "productId": "nous-research"
+    },
+    {
+      "id": "nous-research-ultra",
+      "oldName": "Ultra",
+      "name": "Nous Portal Ultra",
+      "productId": "nous-research"
+    }
+  ],
+  "readback": "all 20 changed plan objects equal prepared patch"
+}
