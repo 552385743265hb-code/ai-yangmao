@@ -26,6 +26,14 @@ curl --fail --silent --show-error 'https://ai-yangmao.com/api/agent/search?modal
 curl --fail --silent --show-error 'https://ai-yangmao.com/api/agent/catalog'
 ```
 
+在 Windows PowerShell 中优先用原生 HTTP 工具；`curl` 在旧版 PowerShell 中可能是别名，Bash 的续行与参数不能直接照搬。读取 JSON 用 `Invoke-RestMethod`，读取 Markdown 用 `Invoke-WebRequest` 的 `.Content`：
+
+```powershell
+(Invoke-WebRequest -UseBasicParsing 'https://ai-yangmao.com/api/agent/daily?format=markdown').Content
+Invoke-RestMethod 'https://ai-yangmao.com/api/agent/search?modality=image&requirement=nopay&limit=5'
+Invoke-RestMethod 'https://ai-yangmao.com/api/agent/catalog'
+```
+
 用户条件通过只读查询 POST 传入，例如：
 
 条件键含义：phone 为海外手机号，card 为可用的海外信用卡 / PayPal，net 为可用海外网络，student 为学生认证资格；biz 为企业认证，invite 为邀请码，realname 为国内实名，pay 为接受付费/充值，targeted 为官方定向资格，newUser 为新用户身份。
@@ -34,6 +42,13 @@ curl --fail --silent --show-error 'https://ai-yangmao.com/api/agent/catalog'
 curl --fail --silent --show-error 'https://ai-yangmao.com/api/agent/search' \
   -H 'Content-Type: application/json' \
   --data '{"modality":"text","profile":{"card":false,"student":false},"limit":5}'
+```
+
+同一查询在 PowerShell 中可传 UTF-8 JSON 字节，避免中文条件在 Windows PowerShell 5.1 中使用系统代码页编码：
+
+```powershell
+$body = @{ modality = 'text'; profile = @{ card = $false; student = $false }; limit = 5 } | ConvertTo-Json -Depth 5
+Invoke-RestMethod -Method Post -Uri 'https://ai-yangmao.com/api/agent/search' -ContentType 'application/json; charset=utf-8' -Body ([Text.Encoding]::UTF8.GetBytes($body))
 ```
 
 ## 先问清需求，再筛选
