@@ -3,3 +3,12 @@
   Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; upgrade-insecure-requests
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
+
+/ai-yangmao-public/SKILL.md
+  Content-Type: text/markdown; charset=utf-8
+
+/ai-yangmao-public/agents/openai.yaml
+  Content-Type: text/yaml; charset=utf-8
+
+/ai-yangmao-public/install.ps1
+  Content-Type: text/plain; charset=utf-8
